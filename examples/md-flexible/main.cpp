@@ -16,7 +16,7 @@
 #include "MDFlexParser.h"
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "autopas/AutoPas.h"
-#include "autopas/pairwiseFunctors/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
 
 using namespace std;
 using namespace autopas;
@@ -60,7 +60,7 @@ void writeVTKFile(string &filename, AutoPasTemplate &autopas) {
 }
 
 int main(int argc, char **argv) {
-  // starts
+  // start simulation timer
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
 
   // Parsing
@@ -68,7 +68,6 @@ int main(int argc, char **argv) {
   if (not parser->parseInput(argc, argv)) {
     exit(-1);
   }
-  auto vtkFilename(parser->getWriteVTK());
   parser->printConfig();
   cout << endl;
 
@@ -82,8 +81,6 @@ int main(int argc, char **argv) {
   cout << "Simulation done!" << endl;
 
   simulation.printStatistics();
-  // frage FABIO, wenn ich hier manuel den destructor von simlation aufrufe; wieso kriege ich 4 invalid reads(autopas
-  // container-traversals usw) und 18 invalid free
 
   return EXIT_SUCCESS;
 }

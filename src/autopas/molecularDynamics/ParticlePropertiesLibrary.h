@@ -12,82 +12,141 @@
 
 //@todo soon: add template parameter to support 32 or 64 bit values-> did resolve into undefined references
 
-/**This Class is used to map the Particles to their Physical Properties used in the
- * Force calculations(epsilon,sigma) and in the timeDiscretization (mass)
- * The mapping key is the type of the Particles
- * for the lennard jones force Calculation this class provides the preprocessed values
- * of the mixing rules for epsilon and sigma values
- * */
+/**
+ * This class stores the (physical) properties of particle types.
+ *
+ * It also provides mixed values for (force) calculations between known types.
+ */
+template <typename floatType = double, typename intType = unsigned long>
 class ParticlePropertiesLibrary {
  public:
-  ParticlePropertiesLibrary() = default;
-  /**Constructor if there is only one Type used
-   * @param epsilon
-   * @param sigma
-   * @param mass
-   * */
-  ParticlePropertiesLibrary(double &epsilon, double &sigma, double mass);
-  /**Copy Constructor
-   * @param pcl
-   * */
-  ParticlePropertiesLibrary(const ParticlePropertiesLibrary &pcl);
-  /**Copy assignment operator
-   * @param plc
-   * @return ParticlePropertiesLibrary
-   * */
-  ParticlePropertiesLibrary &operator=(const ParticlePropertiesLibrary &plc);
+  /**
+   * Type for floating point numbers.
+   */
+  using ParticlePropertiesLibraryFloatType = floatType;
 
-  /**adds the Properties of a particle type to the class members
-   * calculates and adds the values of the mixing rules between the added particle type and the existing ones to the
-   * appropriate members
+  /**
+   * Type for integer numbers.
+   */
+  using ParticlePropertiesLibraryIntType = intType;
+
+  /**
+   * Default constructor.
+   */
+  ParticlePropertiesLibrary() = default;
+
+  /**
+   * Copy Constructor.
+   * @param particlePropertiesLibrary
+   */
+  ParticlePropertiesLibrary(const ParticlePropertiesLibrary &particlePropertiesLibrary) = default;
+
+  /**
+   * Copy assignment operator.
+   * @param particlePropertiesLibrary
+   * @return
+   */
+  ParticlePropertiesLibrary &operator=(const ParticlePropertiesLibrary &particlePropertiesLibrary) = default;
+
+  /**
+   * Adds the properties of a particle type to the library.
+   *
+   * This function also precomputes all possible mixed values with already known particle types.
+   * If the type id already exists the values will be overwritten.
    * @param typeID
    * @param epsilon
    * @param sigma
    * @param mass
-   * */
-  void addType(unsigned long typeID, double epsilon, double sigma, double mass);
+   */
+  void addType(intType typeID, floatType epsilon, floatType sigma, floatType mass);
 
   ~ParticlePropertiesLibrary() = default;
-  /**Getter for Particle Epsilon*24
-   * @param i (typeId of Particle)
-   * @return Epsilon*24
-   */
-  double get24Epsilon(unsigned long i);
-  /**Getter for Particle Square Sigma
-   * @param i (typeId of Particle)
-   * @return Sigma²
-   */
-  double getSigmaSquare(unsigned long i);
 
-  /**Getter for Particle Mass
-   * @param i (typeId of Particle)
-   * @return Sigma
+  /**
+   * Getter for the particle's epsilon*24.
+   * @param i typeId of the particle.
+   * @return 24*epsilon_i
    */
-  double getMass(unsigned long i);
+  floatType get24Epsilon(intType i);
 
-  /**Returns (Epsilon*24) of the MixingRule of 2 Particles precalculated in computedMixing24Epsilon
-   * @param  i (typeId index)
-   * @param  j (typeId index)
-   * @return 24*(epsilonMixingRule)
+  /**
+   * Getter for the particle's squared sigma.
+   * @param i typeId of the particle.
+   * @return sigma_i²
+   */
+  floatType getSigmaSquare(intType i);
+
+  /**
+   * Getter for the particle's mass.
+   * @param i typeId of the particle.
+   * @return mass_i
+   */
+  floatType getMass(intType i);
+
+  /**
+   * Returns the precomputed mixed epsilon24.
+   * @param  i typeId index of particle one.
+   * @param  j typeId index of particle two.
+   * @return 24*epsilon_ij
    * */
-  inline double mixing24Epsilon(unsigned long i, unsigned long j) {
+  inline floatType mixing24Epsilon(intType i, intType j) const {
     auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
-    return computedMixing24Epsilon.at(key);
+    return _computedMixing24Epsilon.at(key);
   }
-  /**Returns Sigma Square of the MixingRule of 2 Particles precalculated in computedMixingSigmaSquare
-   * @param i (typeId index)
-   * @param j (typeId index)
-   * @return (sigmaMixingRule)²
-   * */
-  inline double mixingSigmaSquare(unsigned long i, unsigned long j) {
+  /**
+   * Returns precomputed mixed squared sigma.
+   * @param i typeId index of particle one.
+   * @param j typeId index of particle two.
+   * @return sigma_ij²
+   */
+  inline floatType mixingSigmaSquare(intType i, intType j) const {
     auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
-    return computedMixingSigmaSquare.at(key);
+    return _computedMixingSigmaSquare.at(key);
   }
 
  private:
-  std::map<unsigned long, double> Epsilon;
-  std::map<unsigned long, double> Sigma;
-  std::map<unsigned long, double> Mass;
-  std::map<std::pair<unsigned long, unsigned long>, double> computedMixing24Epsilon;
-  std::map<std::pair<unsigned long, unsigned long>, double> computedMixingSigmaSquare;
+  std::map<intType, floatType> _epsilons;
+  std::map<intType, floatType> _sigmas;
+  std::map<intType, floatType> _masses;
+  std::map<std::pair<intType, intType>, floatType> _computedMixing24Epsilon;
+  std::map<std::pair<intType, intType>, floatType> _computedMixingSigmaSquare;
 };
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::addType(intType typeID, floatType epsilon, floatType sigma,
+                                                            floatType mass) {
+  _epsilons.emplace(typeID, epsilon);
+  for (auto &e : _epsilons) {
+    unsigned long indexOfExistingEpsilon = std::get<0>(e);
+    auto secondEpsilon = std::get<1>(e);
+    floatType epsilon24 = 24 * sqrt(epsilon * secondEpsilon);
+    auto newEntry = std::make_pair(indexOfExistingEpsilon, typeID);
+    _computedMixing24Epsilon.emplace(newEntry, epsilon24);
+  }
+
+  _sigmas.emplace(typeID, sigma);
+  for (auto &s : _sigmas) {
+    unsigned long indexOfExistingSigma = std::get<0>(s);
+    auto existingSigma = std::get<1>(s);
+    floatType newSigma = (sigma + existingSigma) / 2.0;
+    auto newEntry = std::make_pair(indexOfExistingSigma, typeID);
+    _computedMixingSigmaSquare.emplace(newEntry, (newSigma * newSigma));
+  }
+
+  _masses.emplace(typeID, mass);
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getMass(intType i) {
+  return _masses.at(i);
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::get24Epsilon(intType i) {
+  return _computedMixing24Epsilon[std::make_pair(i, i)];
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquare(intType i) {
+  return _computedMixingSigmaSquare[std::make_pair(i, i)];
+}

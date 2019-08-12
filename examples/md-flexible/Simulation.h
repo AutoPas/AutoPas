@@ -17,24 +17,23 @@
 #include "PrintableMolecule.h"
 #include "TimeDiscretization.h"
 #include "autopas/AutoPas.h"
-#include "autopas/pairwiseFunctors/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
 
 template <class Particle, class ParticleCell>
 class Simulation {
- private:
-  autopas::AutoPas<Particle, ParticleCell> _autopas;
-  std::shared_ptr<MDFlexParser> _parser;
-  std::ofstream _logFile;
-  std::unique_ptr<ParticlePropertiesLibrary> _PCL;
-
-  struct timers {
-    long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
-    std::chrono::system_clock::time_point startTotal, stopTotal;
-  } _timers;
-
  public:
+  /**
+   * Constructor.
+   *
+   * This starts the timer for total simulation time.
+   */
   explicit Simulation() { _timers.startTotal = std::chrono::high_resolution_clock::now(); };
 
+  /**
+   * Destructor.
+   *
+   * Closes the log file if applicable.
+   */
   ~Simulation() {
     if (not _parser->getLogFileName().empty()) {
       _logFile.close();
@@ -48,10 +47,11 @@ class Simulation {
    * @param numParticles
    * @param autopas
    */
-  void writeVTKFile(int iteration, size_t numParticles, autopas::AutoPas<Particle, ParticleCell> &autopas) {
-    std::string filename = "VtkOutput";
+  void writeVTKFile(unsigned int iteration) {
+    std::string fileBaseName = _parser->getVTKFilenName();
     std::stringstream strstr;
-    strstr << filename << "_" << std::setfill('0') << std::setw(4) << iteration << ".vtu";
+    auto maxNumDigits = std::to_string(_parser->getIterations()).length();
+    strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtu";
     std::ofstream vtkFile;
     vtkFile.open(strstr.str());
 
@@ -60,9 +60,9 @@ class Simulation {
     vtkFile << "ASCII" << std::endl;
     vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
     vtkFile << "DIMENSIONS 1 1 1" << std::endl;
-    vtkFile << "POINTS " << numParticles << " double" << std::endl;
+    vtkFile << "POINTS " << _autopas.getNumberOfParticles() << " double" << std::endl;
 
-    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
       auto pos = iter->getR();
       vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
     }
@@ -90,17 +90,18 @@ class Simulation {
   void initContainerUniform(autopas::AutoPas<Particle, ParticleCell> &autopas, std::array<double, 3> boxLength,
                             size_t numParticles);
 
-  /**  This function
+  /**
+   * This function
    * -initializes the autopas Object
    * -sets/initializes the simulation domain with the particles generators
-   * @todo -initialized Velocities and Positions (and forces?)
    */
-  void initialize(std::shared_ptr<MDFlexParser> parser);
+  void initialize(const std::shared_ptr<MDFlexParser> &parser);
 
   /**
    * Does the ForceCalculation
    * @param Force Calculation Functor
-   * */
+   */
+  template <class FunctorType>
   void calculateForces();
 
   /**
@@ -111,16 +112,36 @@ class Simulation {
    */
   void simulate();
 
-  /**Getter for Autopas Oject
+  /**
+   * Getter for AutoPas object.
    * @return Autopas Object
    */
   autopas::AutoPas<Particle, ParticleCell> *getAutopas() const;
-  /**Return current number of Particles in AutoPas Object
-   * */
+
+  /**
+   * Return the current number of Particles in the AutoPas Object.
+   * @return
+   */
   size_t getNumParticles() { return _autopas.getNumberOfParticles(); }
-  /**Prints Statistics(duration of calculation, etc ..) of the Simulation
-   * */
+
+  /**
+   * Prints statistics like duration of calculation etc of the Simulation.
+   */
   void printStatistics();
+
+ private:
+  autopas::AutoPas<Particle, ParticleCell> _autopas;
+  std::shared_ptr<MDFlexParser> _parser;
+  std::ofstream _logFile;
+  std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> _particlePropertiesLibrary;
+  std::unique_ptr<
+      TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>
+      _timeDiscretization;
+
+  struct timers {
+    long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
+    std::chrono::system_clock::time_point startTotal, stopTotal;
+  } _timers;
 };
 
 template <class Particle, class ParticleCell>
@@ -129,14 +150,17 @@ autopas::AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::ge
 }
 
 template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::initialize(std::shared_ptr<MDFlexParser> parser) {
+void Simulation<Particle, ParticleCell>::initialize(const std::shared_ptr<MDFlexParser> &parser) {
   _parser = parser;
   double epsilon = _parser->getEpsilon();
   double sigma = _parser->getSigma();
   double mass = _parser->getMass();
-  // initialisierung of PCL
-  // this implementation doesnt support multiple particle Types, will be coming with PR md-parser
-  _PCL = std::make_unique<ParticlePropertiesLibrary>(epsilon, sigma, mass);
+  _particlePropertiesLibrary = std::make_unique<std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>();
+  _particlePropertiesLibrary->addType(0, epsilon, sigma, mass);
+  _timeDiscretization = std::make_unique<
+      TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
+      _parser->getDeltaT(), *_particlePropertiesLibrary);
+
   auto logFileName(_parser->getLogFileName());
   auto particlesTotal(_parser->getParticlesTotal());
   auto particlesPerDim(_parser->getParticlesPerDim());
@@ -151,7 +175,6 @@ void Simulation<Particle, ParticleCell>::initialize(std::shared_ptr<MDFlexParser
   auto dataLayoutOptions(_parser->getDataLayoutOptions());
   auto distributionMean(_parser->getDistributionMean());
   auto distributionStdDev(_parser->getDistributionStdDev());
-  // auto functorChoice(_parser->getFunctorOption());
   auto generatorChoice(_parser->getGeneratorOption());
   auto newton3Options(_parser->getNewton3Options());
   auto particleSpacing(_parser->getParticleSpacing());
@@ -186,8 +209,7 @@ void Simulation<Particle, ParticleCell>::initialize(std::shared_ptr<MDFlexParser
 
   switch (generatorChoice) {
     case MDFlexParser::GeneratorOption::grid: {
-      this->initContainerGrid(_autopas, particlesPerDim,
-                              particleSpacing);  // particlesTotal wird in diesem fall in der main geupdated
+      this->initContainerGrid(_autopas, particlesPerDim, particleSpacing);
       break;
     }
     case MDFlexParser::GeneratorOption::uniform: {
@@ -254,10 +276,11 @@ void Simulation<Particle, ParticleCell>::initContainerUniform(autopas::AutoPas<P
 }
 
 template <class Particle, class ParticleCell>
+template <class FunctorType>
 void Simulation<Particle, ParticleCell>::calculateForces() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
-  auto functor = autopas::LJFunctor<Particle, ParticleCell>(_autopas.getCutoff(), *_PCL, 0.0);
+  auto functor = FunctorType(_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary);
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
@@ -268,22 +291,35 @@ template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate() {
   std::chrono::high_resolution_clock::time_point startSim, stopSim;
   startSim = std::chrono::high_resolution_clock::now();
-  double deltaT = _parser->getDeltaT();
-  double simTimeNow = 0;
-  double simTimeEnd = _parser->getDeltaT() * _parser->getIterations();
-  TimeDiscretization<decltype(_autopas)> timeDiscretization(deltaT, *_PCL);
 
   // main simulation loop
-  while (simTimeNow < simTimeEnd) {
-    _timers.durationPositionUpdate += timeDiscretization.CalculateX(_autopas);
-    this->calculateForces();
+  for (size_t iteration = 0; iteration < _parser->getIterations(); ++iteration) {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      std::cout << "Iteration " << simTimeNow / deltaT << std::endl;
+      std::cout << "Iteration " << iteration << std::endl;
+    }
+
+    _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
+
+    switch (this->_parser->getFunctorOption()) {
+      case MDFlexParser::FunctorOption::lj12_6: {
+        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>>();
+        break;
+      }
+      case MDFlexParser::FunctorOption::lj12_6_AVX: {
+        this->calculateForces<autopas::LJFunctorAVX<Particle, ParticleCell, /* mixing */ true>>();
+        break;
+      }
+    }
+
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
-    _timers.durationVelocityUpdate += timeDiscretization.CalculateV(_autopas);
-    simTimeNow += deltaT;
-    this->writeVTKFile(simTimeNow / deltaT, _autopas.getNumberOfParticles(), _autopas);
+    _timers.durationVelocityUpdate += _timeDiscretization->CalculateV(_autopas);
+
+    // only write vtk files periodically and if a filename is given
+    if ((not _parser->getVTKFilenName().empty()) and iteration % _parser->getVtkWriteFrequency() == 0) {
+      this->writeVTKFile(iteration);
+    }
   }
 
   stopSim = std::chrono::high_resolution_clock::now();
@@ -295,7 +331,6 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   using namespace std;
   size_t flopsPerKernelCall;
 
-  // FlopsPerKernelCall ließt vom Functor
   switch (_parser->getFunctorOption()) {
     case MDFlexParser::FunctorOption ::lj12_6: {
       flopsPerKernelCall = autopas::LJFunctor<PrintableMolecule,
@@ -309,7 +344,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
       break;
     }
     default:
-      throw std::runtime_error("Not allowed Functor choice");
+      throw std::runtime_error("Invalid Functor choice");
   }
 
   _timers.stopTotal = std::chrono::high_resolution_clock::now();
@@ -321,7 +356,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   // time statistics
   cout << "Simulation duration without initilization: " << _timers.durationSimulate << " \u03bcs" << endl;
   // Statistics
-  cout << fixed << setprecision(2);
+  cout << fixed << setprecision(3);
   cout << endl << "Measurements:" << endl;
   cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
   cout << "Duration of Physics Calculations: " << endl;
@@ -338,7 +373,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
     cout << "One iteration: " << _timers.durationSimulate / numIterations << " \u03bcs ("
          << durationSimulateSec / numIterations << "s)" << endl;
   }
-  auto mfups = _autopas.getNumberOfParticles() * numIterations / durationSimulateSec;
+  auto mfups = _autopas.getNumberOfParticles() * numIterations / durationSimulateSec * 1e-6;
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (_parser->getMeasureFlops()) {

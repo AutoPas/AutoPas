@@ -5,30 +5,27 @@
  */
 
 #include "LJFunctorTest.h"
-#include "autopas/particles/MoleculeLJ.h"
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "testingHelpers/commonTypedefs.h"
 
-void LJFunctorTest::testAoSNoGlobals(bool newton3, bool Mixing) {
-  ParticlePropertiesLibrary PCL;
-  if (Mixing) {
-    PCL = ParticlePropertiesLibrary();
-    PCL.addType(0, epsilon, sigma, 1.0);
-    PCL.addType(1, epsilon2, sigma2, 1.0);
-  } else {  // epsilon=sigma=mass=1.0
-    double universalValue = 1;
-    PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
+template <bool mixing>
+void LJFunctorTest::testAoSNoGlobals(bool newton3) {
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0);
+  if (mixing) {
+    particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0);
   }
-  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, shift);
+  autopas::LJFunctor<Molecule, FMCell, /* mixing */ mixing> functor(cutoff, shift, particlePropertiesLibrary);
 
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (Mixing) ? 1 : 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
 
   functor.AoSFunctor(p1, p2, newton3);
 
   auto f1one = p1.getF();
   auto f2one = p2.getF();
 
-  if (Mixing) {
+  if (mixing) {
     EXPECT_NEAR(f1one[0], expectedForceMixing[0], absDelta);
     EXPECT_NEAR(f1one[1], expectedForceMixing[1], absDelta);
     EXPECT_NEAR(f1one[2], expectedForceMixing[2], absDelta);
@@ -38,7 +35,7 @@ void LJFunctorTest::testAoSNoGlobals(bool newton3, bool Mixing) {
     EXPECT_NEAR(f1one[2], expectedForce[2], absDelta);
   }
   if (newton3) {
-    if (Mixing) {
+    if (mixing) {
       EXPECT_NEAR(f2one[0], -expectedForceMixing[0], absDelta);
       EXPECT_NEAR(f2one[1], -expectedForceMixing[1], absDelta);
       EXPECT_NEAR(f2one[2], -expectedForceMixing[2], absDelta);
@@ -59,7 +56,7 @@ void LJFunctorTest::testAoSNoGlobals(bool newton3, bool Mixing) {
   auto f2two = p2.getF();
 
   double factor = newton3 ? 2. : 1.;
-  if (Mixing) {
+  if (mixing) {
     EXPECT_NEAR(f1two[0], factor * expectedForceMixing[0], absDelta);
     EXPECT_NEAR(f1two[1], factor * expectedForceMixing[1], absDelta);
     EXPECT_NEAR(f1two[2], factor * expectedForceMixing[2], absDelta);
@@ -80,36 +77,33 @@ void LJFunctorTest::testAoSNoGlobals(bool newton3, bool Mixing) {
 
 TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsNoN3) {
   bool newton3 = false;
-  testAoSNoGlobals(newton3, false);
+  testAoSNoGlobals<false>(newton3);
 }
 
 TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
   bool newton3 = true;
-  testAoSNoGlobals(newton3, false);
+  testAoSNoGlobals<false>(newton3);
 }
 
 TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsNoN3) {
   bool newton3 = false;
-  testAoSNoGlobals(newton3, true);
+  testAoSNoGlobals<true>(newton3);
 }
 
 TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsN3) {
   bool newton3 = true;
-  testAoSNoGlobals(newton3, true);
+  testAoSNoGlobals<true>(newton3);
 }
 
-void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType, bool Mixing) {
-  ParticlePropertiesLibrary PCL;
-  if (Mixing) {
-    PCL = ParticlePropertiesLibrary();
-    PCL.addType(0, epsilon, sigma, 1.0);
-    PCL.addType(1, epsilon2, sigma2, 1.0);
-  } else {  // epsilon=sigma=mass=1.0
-    double universalValue = 1;
-    PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
+template <bool mixing>
+void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType) {
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0);
+  if constexpr (mixing) {
+    particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0);
   }
   // test is for the soa functors the forces are calculated correctly
-  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, PCL, shift);
+  autopas::LJFunctor<Molecule, FMCell, mixing> functor(cutoff, shift, particlePropertiesLibrary);
 
   FMCell cell1, cell2;
   {
@@ -118,7 +112,7 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
     cell1.addParticle(p1);
 
     // The cell of particle 2 depends on the InteractionType.
-    Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (Mixing) ? 1 : 0);
+    Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
     switch (interactionType) {
       case InteractionType::verlet:
         // same as for own
@@ -164,7 +158,7 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
   // force of particle 1
   auto f1 = cell1.begin()->getF();
 
-  if (Mixing) {
+  if (mixing) {
     EXPECT_NEAR(f1[0], expectedForceMixing[0], absDelta);
     EXPECT_NEAR(f1[1], expectedForceMixing[1], absDelta);
     EXPECT_NEAR(f1[2], expectedForceMixing[2], absDelta);
@@ -187,7 +181,7 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
   }
   // if the interactiontype is own, then the forces of the second particle should always be calculated!
   if (newton3 or interactionType != InteractionType::pair) {
-    if (Mixing) {
+    if (mixing) {
       EXPECT_NEAR(f2[0], -expectedForceMixing[0], absDelta);
       EXPECT_NEAR(f2[1], -expectedForceMixing[1], absDelta);
       EXPECT_NEAR(f2[2], -expectedForceMixing[2], absDelta);
@@ -213,7 +207,7 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
     f2 = cell2.begin()->getF();
 
     double factor = newton3 ? 2. : 1.;
-    if (Mixing) {
+    if (mixing) {
       EXPECT_NEAR(f1[0], factor * expectedForceMixing[0], absDelta);
       EXPECT_NEAR(f1[1], factor * expectedForceMixing[1], absDelta);
       EXPECT_NEAR(f1[2], factor * expectedForceMixing[2], absDelta);
@@ -241,26 +235,24 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
 TEST_F(LJFunctorTest, testSoAFunctorNoGlobals) {
   for (InteractionType interactionType : {pair, verlet, own}) {
     for (bool newton3 : {false, true}) {
-      testSoANoGlobals(newton3, interactionType);
+      testSoANoGlobals<false>(newton3, interactionType);
     }
   }
 }
 TEST_F(LJFunctorTest, testSoAMixingFunctorNoGlobals) {
   for (InteractionType interactionType : {pair, own, verlet}) {
     for (bool newton3 : {false, true}) {
-      testSoANoGlobals(newton3, interactionType, true);
+      testSoANoGlobals<true>(newton3, interactionType);
     }
   }
 }
 
 TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
-  double universalValue = 1;  // epsilon=mass=sigma=1.0
-  auto PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
   bool duplicatedCalculation = true;
   typedef autopas::utils::ExceptionHandler::AutoPasException exception_type;
 
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
-                                                                                    duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift,
+                                                                                           duplicatedCalculation);
 
   // getupot without postprocessing is not allowed
   EXPECT_THROW(functor.getUpot(), exception_type);
@@ -279,10 +271,8 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
 }
 
 void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation) {
-  double universalValue = 1;  // epsilon=sigma=mass=1.0
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
-                                                                                    duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift,
+                                                                                           duplicatedCalculation);
   double xOffset;
   double whereFactor;
   std::string where_str;
@@ -316,9 +306,9 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
     default:
       FAIL() << "not in enum where_type";
   }
-  Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0);
+  Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0, 0);
   p1.setOwned(owned1);
-  Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
   p2.setOwned(owned2);
   functor.initTraversal();
 
@@ -349,10 +339,8 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
 
 void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation,
                                    InteractionType interactionType, size_t additionalParticlesToVerletNumber) {
-  double universalValue = 1;  // epsilon=sigma=mass=1.0
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
-                                                                                    duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift,
+                                                                                           duplicatedCalculation);
   double xOffset;
   double whereFactor;
   std::string where_str;
@@ -388,12 +376,12 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
   }
   FMCell cell1, cell2;
   {
-    Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0);
+    Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0, 0);
     p1.setOwned(owned1);
     cell1.addParticle(p1);
-    Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1);
+    Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
     p2.setOwned(owned2);
-    Molecule pAdditional({1.2 + xOffset, 0., 0.}, {0., 0., 0.}, 2);
+    Molecule pAdditional({1.2 + xOffset, 0., 0.}, {0., 0., 0.}, 2, 0);
     pAdditional.setOwned(owned2);
     switch (interactionType) {
       case InteractionType::verlet:
@@ -511,15 +499,13 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
   double multiParticleFactor = 2.;  // two particles, so factor 2
   double whereFactor = 1.;          // all inside, so factor 1
   std::string where_str = "inside";
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
 
-  Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0);
-  Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1);
-  double universalValue = 1;  // epsilon=mass=sigma=1.0
-  auto PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> functor(cutoff, PCL, shift,
-                                                                                    duplicatedCalculation);
+  Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1, 0);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift,
+                                                                                           duplicatedCalculation);
 
   functor.initTraversal();
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in

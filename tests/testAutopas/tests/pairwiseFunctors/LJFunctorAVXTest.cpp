@@ -8,7 +8,7 @@
 
 #include "LJFunctorAVXTest.h"
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/pairwiseFunctors/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/particles/Particle.h"
 #include "testingHelpers/RandomGenerator.h"
 
@@ -84,7 +84,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
 
   size_t numParticles = 7;
 
-  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
+  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   RandomGenerator::fillWithParticles(cell1AVX, defaultParticle, _lowCorner,
                                      {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
   RandomGenerator::fillWithParticles(cell2AVX, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]},
@@ -93,11 +93,14 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   // copy cells
   FMCell cell1NoAVX(cell1AVX);
   FMCell cell2NoAVX(cell2AVX);
-  double universalValue = 1;  // epsilon=sigma=mass=1.0
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL, 0.0);
-  autopas::LJFunctorAVX<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma,
-                                                                                            0.0);
+  autopas::LJFunctor<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff,
+                                                                                                               0.0);
+  ljFunctorNoAVX.setEpsilon24(_epsilon * 24.0);
+  ljFunctorNoAVX.setSigmaSquare(_sigma * _sigma);
+  autopas::LJFunctorAVX<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff,
+                                                                                                                0.0);
+  ljFunctorAVX.setEpsilon24(_epsilon * 24.0);
+  ljFunctorAVX.setSigmaSquare(_sigma * _sigma);
 
   ljFunctorAVX.initTraversal();
   ljFunctorNoAVX.initTraversal();
@@ -144,16 +147,19 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
 
   size_t numParticles = 7;
 
-  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
+  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner, numParticles);
 
   // copy cells
   FMCell cellNoAVX(cellAVX);
-  double universalValue = 1;  // epsilon=sigma=mass=1.0
-  ParticlePropertiesLibrary PCL = ParticlePropertiesLibrary(universalValue, universalValue, universalValue);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PCL, 0.0);
-  autopas::LJFunctorAVX<Molecule, FMCell, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, _epsilon, _sigma,
-                                                                                            0.0);
+  autopas::LJFunctor<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff,
+                                                                                                               0.0);
+  ljFunctorNoAVX.setEpsilon24(_epsilon * 24.0);
+  ljFunctorNoAVX.setSigmaSquare(_sigma * _sigma);
+  autopas::LJFunctorAVX<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff,
+                                                                                                                0.0);
+  ljFunctorAVX.setEpsilon24(_epsilon * 24.0);
+  ljFunctorAVX.setSigmaSquare(_sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
 

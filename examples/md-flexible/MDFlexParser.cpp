@@ -339,7 +339,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'w': {
-        writeVTK = strArg;
+        vtkFileName = strArg;
         break;
       }
       case 'r': {
@@ -535,7 +535,7 @@ double MDFlexParser::getDistributionMean() const { return distributionMean; }
 
 double MDFlexParser::getDistributionStdDev() const { return distributionStdDev; }
 
-std::string MDFlexParser::getWriteVTK() const { return writeVTK; }
+std::string MDFlexParser::getVTKFilenName() const { return vtkFileName; }
 
 double MDFlexParser::getBoxLength() {
   if (boxLength == -1) boxLength = ceil(2 * distributionMean);
@@ -567,3 +567,5 @@ double MDFlexParser::getDeltaT() const { return delta_t; }
 double MDFlexParser::getMass() const { return mass; }
 
 autopas::TuningStrategyOption MDFlexParser::getTuningStrategyOption() const { return tuningStrategyOption; }
+
+size_t MDFlexParser::getVtkWriteFrequency() const { return vtkWriteFrequency; }
