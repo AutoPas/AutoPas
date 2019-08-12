@@ -36,10 +36,13 @@ enum class FunctorN3Modes {
  * A functor to handle lennard-jones interactions between two particles (molecules).
  * @tparam Particle The type of particle.
  * @tparam ParticleCell The type of particlecell.
+ * @tparam useMixing Switch for the functor to be used with multiple particle types.
+ * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
+ * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
+template <class Particle, class ParticleCell, bool useMixing = false, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
           bool calculateGlobals = false, bool relevantForTuning = true>
 class LJFunctor
     : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType, LJFunctor<Particle, ParticleCell>> {
@@ -55,16 +58,13 @@ class LJFunctor
   /**
    * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
    * @param cutoff
-   * @param PCLibrary
    * @param shift
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctor(floatPrecision cutoff, ParticlePropertiesLibrary &PCLibrary, floatPrecision shift,
-                     bool duplicatedCalculation = true)
+  explicit LJFunctor(floatPrecision cutoff, floatPrecision shift, bool duplicatedCalculation = true)
       : Functor<Particle, ParticleCell, SoAArraysType, LJFunctor<Particle, ParticleCell>>(cutoff),
         _cutoffsquare{cutoff * cutoff},
-        _PPLibrary(&PCLibrary),
         _shift6{shift * (floatPrecision)6.0},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
@@ -77,7 +77,8 @@ class LJFunctor
   , _streams(32)
 #endif
   {
-    if (calculateGlobals) {
+    //@TODO: check that this constructor is only called with mixing == false
+    if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
     }
 #if defined(AUTOPAS_CUDA)
@@ -85,6 +86,22 @@ class LJFunctor
                                                  _PPLibrary->getSigmaSquare(0) /* sigmasquare */, _shift6);
     _cudawrapper.loadConstants(&constants);
 #endif
+  }
+
+  /**
+   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   * @param cutoff
+   * @param shift
+   * @param particlePropertiesLibrary
+   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
+   * simulation boundary. e.g. eightShell: false, fullShell: true.
+   */
+  explicit LJFunctor(floatPrecision cutoff, floatPrecision shift,
+                     ParticlePropertiesLibrary<floatPrecision, size_t> &particlePropertiesLibrary,
+                     bool duplicatedCalculation = true)
+      : LJFunctor(cutoff, shift, duplicatedCalculation) {
+    _PPLibrary = &particlePropertiesLibrary;
+    //@TODO: check that this constructor is only called with mixing == true
   }
 
   bool isRelevantForTuning() override { return relevantForTuning; }
@@ -98,28 +115,32 @@ class LJFunctor
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    double _sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
-    double _epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
+    auto sigmasquare = _sigmasquare;
+    auto epsilon24 = _epsilon24;
+    if constexpr (useMixing) {
+      sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
+      epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
+    }
     auto dr = ArrayMath::sub(i.getR(), j.getR());
     floatPrecision dr2 = ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffsquare) return;
 
     floatPrecision invdr2 = 1. / dr2;
-    floatPrecision lj6 = _sigmasquare * invdr2;
+    floatPrecision lj6 = sigmasquare * invdr2;
     lj6 = lj6 * lj6 * lj6;
     floatPrecision lj12 = lj6 * lj6;
     floatPrecision lj12m6 = lj12 - lj6;
-    floatPrecision fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
+    floatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = ArrayMath::mulScalar(dr, fac);
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
       j.subF(f);
     }
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       auto virial = ArrayMath::mul(dr, f);
-      floatPrecision upot = _epsilon24 * lj12m6 + _shift6;
+      floatPrecision upot = epsilon24 * lj12m6 + _shift6;
 
       const int threadnum = autopas_get_thread_num();
       if (_duplicatedCalculations) {
@@ -163,10 +184,10 @@ class LJFunctor
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
     auto *const __restrict__ typeptr = soa.template begin<Particle::AttributeNames::typeId>();
-    double sigmasquare;
-    double epsilon24;
     // the local redeclaration of the following values helps the auto-generation of various compilers.
     const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
+    auto sigmasquare = _sigmasquare;
+    auto epsilon24 = _epsilon24;
     if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
       //_____man kann sich den Boolean hier noch sparen oder?___
@@ -185,12 +206,27 @@ class LJFunctor
       floatPrecision fxacc = 0.;
       floatPrecision fyacc = 0.;
       floatPrecision fzacc = 0.;
+
+      std::vector<floatPrecision, AlignedAllocator<floatPrecision>> sigmaSquares;
+      std::vector<floatPrecision, AlignedAllocator<floatPrecision>> epsilon24s;
+      if constexpr (useMixing) {
+        // preload all sigma and epsilons for next vectorized region
+        sigmaSquares.resize(soa.getNumParticles());
+        epsilon24s.resize(soa.getNumParticles());
+        for (unsigned int j = 0; j < soa.getNumParticles(); ++j) {
+          sigmaSquares[j] = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
+          epsilon24s[j] = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
+        }
+      }
+
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
-        epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
+        if constexpr (useMixing) {
+          sigmasquare = sigmaSquares[j];
+          epsilon24 = epsilon24s[j];
+        }
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
         const floatPrecision drz = zptr[i] - zptr[j];
@@ -241,7 +277,7 @@ class LJFunctor
       fyptr[i] += fyacc;
       fzptr[i] += fzacc;
     }
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
       // we assume newton3 to be enabled in this functor call, thus we multiply by two if the value of newton3 is false,
       // since for newton3 disabled we divide by two later on.
@@ -275,8 +311,7 @@ class LJFunctor
     auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
     auto *const __restrict__ typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
     auto *const __restrict__ typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
-    double sigmasquare;
-    double epsilon24;
+
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
     // Checks whether the cells are halo cells.
@@ -298,17 +333,34 @@ class LJFunctor
     floatPrecision virialSumZ = 0.;
 
     const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
+    auto sigmasquare = _sigmasquare;
+    auto epsilon24 = _epsilon24;
+
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       floatPrecision fxacc = 0;
       floatPrecision fyacc = 0;
       floatPrecision fzacc = 0;
 
+      // preload all sigma and epsilons for next vectorized region
+      std::vector<floatPrecision, AlignedAllocator<floatPrecision>> sigmaSquares;
+      std::vector<floatPrecision, AlignedAllocator<floatPrecision>> epsilon24s;
+      if constexpr (useMixing) {
+        sigmaSquares.resize(soa2.getNumParticles());
+        epsilon24s.resize(soa2.getNumParticles());
+        for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
+          sigmaSquares[j] = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
+          epsilon24s[j] = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
+        }
+      }
+
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
-        epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
+        if constexpr (useMixing) {
+          sigmasquare = sigmaSquares[j];
+          epsilon24 = epsilon24s[j];
+        }
         const floatPrecision drx = x1ptr[i] - x2ptr[j];
         const floatPrecision dry = y1ptr[i] - y2ptr[j];
         const floatPrecision drz = z1ptr[i] - z2ptr[j];
@@ -602,11 +654,11 @@ class LJFunctor
   }
 
   /**
-   * Get the potential Energy
+   * Get the potential Energy.
    * @return the potential Energy
    */
   floatPrecision getUpot() {
-    if (not calculateGlobals) {
+    if constexpr (not calculateGlobals) {
       throw utils::ExceptionHandler::AutoPasException(
           "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
@@ -618,11 +670,11 @@ class LJFunctor
   }
 
   /**
-   * Get the virial
-   * @return the virial
+   * Get the virial.
+   * @return
    */
   floatPrecision getVirial() {
-    if (not calculateGlobals) {
+    if constexpr (not calculateGlobals) {
       throw utils::ExceptionHandler::AutoPasException(
           "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
@@ -632,6 +684,30 @@ class LJFunctor
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
+
+  /**
+   * Getter for 24*epsilon.
+   * @return 24*epsilon
+   */
+  floatPrecision getEpsilon24() const { return _epsilon24; }
+
+  /**
+   * Setter for 24*epsilon.
+   * @param epsilon24
+   */
+  void setEpsilon24(floatPrecision epsilon24) { _epsilon24 = epsilon24; }
+
+  /**
+   * Getter for the squared sigma.
+   * @return squared sigma.
+   */
+  floatPrecision getSigmaSquare() const { return _sigmasquare; }
+
+  /**
+   * Setter for the squared sigma.
+   * @param sigmaSquare
+   */
+  void setSigmaSquare(floatPrecision sigmaSquare) { _sigmasquare = sigmaSquare; }
 
  private:
   template <bool newton3, bool duplicatedCalculations>
@@ -650,10 +726,12 @@ class LJFunctor
     auto *const __restrict__ typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
     auto *const __restrict__ typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
 
-    double epsilon24;
-    double sigmasquare;
     const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
     const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
+
+    auto sigmasquare = _sigmasquare;
+    auto epsilon24 = _epsilon24;
+
     floatPrecision upotSum = 0.;
     floatPrecision virialSumX = 0.;
     floatPrecision virialSumY = 0.;
@@ -670,7 +748,7 @@ class LJFunctor
       floatPrecision inbox1Mul = 0.;
       if (duplicatedCalculations) {  // only for duplicated calculations we need this value
         inbox1Mul = ownedPtr[i];
-        if (newton3) {
+        if constexpr (newton3) {
           inbox1Mul *= 0.5;
         }
       }
@@ -708,6 +786,16 @@ class LJFunctor
           // vecsize particles in the neighborlist of particle i starting at
           // particle joff
 
+          alignas(DEFAULT_CACHE_LINE_SIZE) std::array<floatPrecision, vecsize> sigmaSquares;
+          alignas(DEFAULT_CACHE_LINE_SIZE) std::array<floatPrecision, vecsize> epsilon24s;
+          if constexpr (useMixing) {
+            for (size_t j = 0; j < vecsize; j++) {
+              sigmaSquares[j] =
+                  (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
+              epsilon24s[j] = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[currentList[joff + j]]);
+            }
+          }
+
           // gather position of particle j
 #pragma omp simd safelen(vecsize)
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
@@ -720,8 +808,10 @@ class LJFunctor
           // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
-            sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
-            epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[currentList[joff + j]]);
+            if constexpr (useMixing) {
+              sigmasquare = sigmaSquares[j];
+              epsilon24 = epsilon24s[j];
+            }
             // const size_t j = currentList[jNeighIndex];
 
             const floatPrecision drx = xtmp[j] - xArr[j];
@@ -779,7 +869,7 @@ class LJFunctor
             }
           }
           // scatter the forces to where they belong, this is only needed for newton3
-          if (newton3) {
+          if constexpr (newton3) {
 #pragma omp simd safelen(vecsize)
             for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
               const size_t j = currentList[joff + tmpj];
@@ -794,8 +884,10 @@ class LJFunctor
       for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
         size_t j = neighborList[i][jNeighIndex];
         if (i == j) continue;
-        sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
-        epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
+        if constexpr (useMixing) {
+          sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
+          epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
+        }
 
         const floatPrecision drx = xptr[i] - xptr[j];
         const floatPrecision dry = yptr[i] - yptr[j];
@@ -823,7 +915,7 @@ class LJFunctor
         fxacc += fx;
         fyacc += fy;
         fzacc += fz;
-        if (newton3) {
+        if constexpr (newton3) {
           fxptr[j] -= fx;
           fyptr[j] -= fy;
           fzptr[j] -= fz;
@@ -872,7 +964,7 @@ class LJFunctor
       }
     }
 
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
 
       _aosThreadData[threadnum].upotSum += upotSum;
@@ -904,8 +996,12 @@ class LJFunctor
   // make sure of the size of AoSThreadData
   // static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
+  // default values for epsilon = sigma = 1
+  floatPrecision _epsilon24 = 24;
+  floatPrecision _sigmasquare = 1;
+
   floatPrecision _cutoffsquare;
-  ParticlePropertiesLibrary *_PPLibrary;
+  ParticlePropertiesLibrary<floatPrecision, size_t> *_PPLibrary = nullptr;
   floatPrecision _shift6;
   // sum of the potential energy, only calculated if calculateGlobals is true
   floatPrecision _upotSum;

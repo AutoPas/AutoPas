@@ -23,5 +23,5 @@ class ParticlePropertiesLibraryTest : public AutoPasTestBase {
   double epsilon2;
   double sigma2;
   double mass;
-  ParticlePropertiesLibrary PPL;
+  ParticlePropertiesLibrary<double, size_t> PPL;
 };

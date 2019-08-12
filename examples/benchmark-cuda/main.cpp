@@ -80,8 +80,7 @@ int main(int argc, char **argv) {
   fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.8, numParticles);
 
   typedef LJFunctor<MyMolecule, FullParticleCell<MyMolecule>> Func;
-  auto PCL = ParticlePropertiesLibrary(epsilon, sigma, 1.0);
-  Func func(cutoff, PCL, 0.0);
+  Func func(cutoff, 0.0);
 
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::aos, false> traversalAoS(&func);
   DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::soa, false> traversalSoA(&func);

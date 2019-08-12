@@ -277,7 +277,7 @@ bool YamlParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'w': {
-        writeVTK = strArg;
+        VTKFileName = strArg;
         break;
       }
       case 'y': {
@@ -411,7 +411,7 @@ void YamlParser::parseYamlFile() {
     this->verletSkinRadius = config["verlet-skin-raduis"].as<double>();
   }
   if (config["vtk"]) {
-    this->writeVTK = config["vtk"].as<std::string>();
+    this->VTKFileName = config["vtk"].as<std::string>();
   }
 
   if (config["Objects"]) {
@@ -695,7 +695,7 @@ unsigned int YamlParser::getTuningSamples() const { return tuningSamples; }
 
 unsigned int YamlParser::getTuningMaxEvidence() const { return tuningMaxEvidence; }
 
-const std::string &YamlParser::getWriteVtk() const { return writeVTK; }
+const std::string &YamlParser::getVTKFileName() const { return VTKFileName; }
 
 const std::string &YamlParser::getLogFileName() const { return logFileName; }
 
@@ -724,3 +724,7 @@ const std::map<unsigned long, double> &YamlParser::getEpsilonMap() const { retur
 const std::map<unsigned long, double> &YamlParser::getSigmaMap() const { return sigmaMap; }
 
 const std::map<unsigned long, double> &YamlParser::getMassMap() const { return massMap; }
+
+size_t YamlParser::getVtkWriteFrequency() const { return vtkWriteFrequency; }
+
+void YamlParser::setVtkWriteFrequency(size_t vtkWriteFrequency) { YamlParser::vtkWriteFrequency = vtkWriteFrequency; }

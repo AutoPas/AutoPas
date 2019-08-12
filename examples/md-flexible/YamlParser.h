@@ -96,7 +96,7 @@ class YamlParser {
 
   [[nodiscard]] unsigned int getTuningMaxEvidence() const;
 
-  [[nodiscard]] const std::string &getWriteVtk() const;
+  [[nodiscard]] const std::string &getVTKFileName() const;
 
   [[nodiscard]] const std::string &getLogFileName() const;
 
@@ -120,9 +120,10 @@ class YamlParser {
 
   const std::map<unsigned long, double> &getMassMap() const;
 
- private:
- public:
   void setFilename(const std::string &inputFilename);
+  size_t getVtkWriteFrequency() const;
+
+  void setVtkWriteFrequency(size_t vtkWriteFrequency);
 
  private:
   static constexpr size_t valueOffset = 32;
@@ -141,7 +142,8 @@ class YamlParser {
   unsigned int tuningInterval = 100;
   unsigned int tuningSamples = 3;
   unsigned int tuningMaxEvidence = 10;
-  std::string writeVTK = "";
+  std::string VTKFileName = "";
+  size_t vtkWriteFrequency = 100;
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;

@@ -25,7 +25,7 @@ namespace autopas {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
+template <class Particle, class ParticleCell, bool useMixing = false, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
           bool calculateGlobals = false, bool relevantForTuning = true>
 class LJFunctorAVX
     : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType, LJFunctorAVX<Particle, ParticleCell>> {
@@ -40,13 +40,11 @@ class LJFunctorAVX
   /**
    * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
    * @param cutoff
-   * @param epsilon
-   * @param sigma
    * @param shift
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctorAVX(double cutoff, double epsilon, double sigma, double shift, bool duplicatedCalculation = false)
+  explicit LJFunctorAVX(double cutoff, double shift, bool duplicatedCalculation = false)
 #ifdef __AVX__
       : Functor<Particle, ParticleCell, SoAArraysType, LJFunctorAVX<Particle, ParticleCell>>(cutoff),
         _one{_mm256_set1_pd(1.)},
@@ -56,9 +54,7 @@ class LJFunctorAVX
             _mm256_set_epi64x(0, -1, -1, -1),
         },
         _cutoffsquare{_mm256_set1_pd(cutoff * cutoff)},
-        _epsilon24{_mm256_set1_pd(epsilon * 24.0)},
-        _sigmasquare{_mm256_set1_pd(sigma * sigma)},
-        _shift6{shift * 6.0},
+        _shift6{_mm256_set1_pd(shift * 6.0)},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
@@ -74,11 +70,28 @@ class LJFunctorAVX
         _one{0},
         _masks{0, 0, 0},
         _cutoffsquare{0},
+        _shift6{0},
         _epsilon24{0},
-        _sigmasquare{0} {
+        _sigmaSquare{0} {
     utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
+
+  /**
+   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   * @param cutoff
+   * @param shift
+   * @param particlePropertiesLibrary
+   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
+   * simulation boundary. e.g. eightShell: false, fullShell: true.
+   */
+  explicit LJFunctorAVX(double cutoff, double shift,
+                        ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
+                        bool duplicatedCalculation = true)
+      : LJFunctorAVX(cutoff, shift, duplicatedCalculation) {
+    _PPLibrary = &particlePropertiesLibrary;
+    //@TODO: check that this constructor is only called with mixing == true
+  }
 
   bool isRelevantForTuning() override { return relevantForTuning; }
 
@@ -102,14 +115,17 @@ class LJFunctorAVX
 #ifdef __AVX__
     if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
     const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
 
-    double *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    const auto *const __restrict__ typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -136,15 +152,15 @@ class LJFunctorAVX
       const __m256d z1 = _mm256_broadcast_sd(&zptr[i]);
 
       // floor soa numParticles to multiple of vecLength
-      unsigned int j = 0;
+      size_t j = 0;
       for (; j < (i & ~(vecLength - 1)); j += 4) {
-        SoAKernel<true, false>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, &virialSumX,
-                               &virialSumY, &virialSumZ, &upotSum);
+        SoAKernel<true, false>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc,
+                               fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
       }
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0)
-        SoAKernel<true, true>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, fxacc, fyacc, fzacc, &virialSumX,
-                              &virialSumY, &virialSumZ, &upotSum, rest);
+        SoAKernel<true, true>(j, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc,
+                              fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -203,13 +219,26 @@ class LJFunctorAVX
 
  private:
   template <bool newton3, bool masked>
-  inline void SoAKernel(size_t j, const __m256d &x1, const __m256d &y1, const __m256d &z1,
-                        double *const __restrict__ &x2ptr, double *const __restrict__ &y2ptr,
-                        double *const __restrict__ &z2ptr, double *const __restrict__ &fx2ptr,
-                        double *const __restrict__ &fy2ptr, double *const __restrict__ &fz2ptr, __m256d &fxacc,
-                        __m256d &fyacc, __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ,
-                        __m256d *upotSum, const unsigned int rest = 0) {
+  inline void SoAKernel(const size_t j, const __m256d &x1, const __m256d &y1, const __m256d &z1,
+                        const double *const x2ptr, const double *const y2ptr, const double *const z2ptr,
+                        double *const fx2ptr, double *const fy2ptr, double *const fz2ptr,
+                        const size_t *const typeID1ptr, const size_t *const type2IDptr, __m256d &fxacc, __m256d &fyacc,
+                        __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ, __m256d *upotSum,
+                        const unsigned int rest = 0) {
 #ifdef __AVX__
+    __m256d epsilon24s = _epsilon24;
+    __m256d sigmaSquares = _sigmaSquare;
+    if (useMixing) {
+      epsilon24s = _mm256_set_pd(_PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 0)),
+                                 _PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 1)),
+                                 _PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 2)),
+                                 _PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 3)));
+      sigmaSquares = _mm256_set_pd(_PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 0)),
+                                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 1)),
+                                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 2)),
+                                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 3)));
+    }
+
     const __m256d x2 = masked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&x2ptr[j]);
     const __m256d y2 = masked ? _mm256_maskload_pd(&y2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&y2ptr[j]);
     const __m256d z2 = masked ? _mm256_maskload_pd(&z2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&z2ptr[j]);
@@ -229,15 +258,16 @@ class LJFunctorAVX
     // signaling = throw error if NaN is encountered
     // dr2 <= _cutoffsquare ? 0xFFFFFFFFFFFFFFFF : 0
     const __m256d cutoffMask = _mm256_cmp_pd(dr2, _cutoffsquare, _CMP_LE_OS);
+    // @TODO abort if everything is masked away
 
     const __m256d invdr2 = _mm256_div_pd(_one, dr2);
-    const __m256d lj2 = _mm256_mul_pd(_sigmasquare, invdr2);
+    const __m256d lj2 = _mm256_mul_pd(sigmaSquares, invdr2);
     const __m256d lj4 = _mm256_mul_pd(lj2, lj2);
     const __m256d lj6 = _mm256_mul_pd(lj2, lj4);
     const __m256d lj12 = _mm256_mul_pd(lj6, lj6);
     const __m256d lj12m6 = _mm256_sub_pd(lj12, lj6);
     const __m256d lj12m6alj12 = _mm256_add_pd(lj12m6, lj12);
-    const __m256d lj12m6alj12e = _mm256_mul_pd(lj12m6alj12, _epsilon24);
+    const __m256d lj12m6alj12e = _mm256_mul_pd(lj12m6alj12, epsilon24s);
     const __m256d fac = _mm256_mul_pd(lj12m6alj12e, invdr2);
 
     const __m256d facMasked = masked
@@ -274,9 +304,8 @@ class LJFunctorAVX
       const __m256d virialz = _mm256_mul_pd(fz, drz);
 
       // Global Potential
-      const __m256d upotPART1 = _mm256_mul_pd(_epsilon24, lj12m6);
-      const __m256d shift6V = _mm256_set1_pd(_shift6);
-      const __m256d upotPART2 = _mm256_add_pd(shift6V, upotPART1);
+      const __m256d upotPART1 = _mm256_mul_pd(epsilon24s, lj12m6);
+      const __m256d upotPART2 = _mm256_add_pd(_shift6, upotPART1);
       const __m256d upot =
           masked ? _mm256_and_pd(upotPART2, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
                  : _mm256_and_pd(upotPART2, cutoffMask);
@@ -297,22 +326,25 @@ class LJFunctorAVX
 #ifdef __AVX__
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
     const auto *const __restrict__ ownedPtr1 = soa1.template begin<Particle::AttributeNames::owned>();
     const auto *const __restrict__ ownedPtr2 = soa2.template begin<Particle::AttributeNames::owned>();
 
-    double *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
-    double *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
-    double *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
-    double *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+
+    const auto *const __restrict__ typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict__ typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
 
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -349,23 +381,23 @@ class LJFunctorAVX
       if (newton3) {
         unsigned int j = 0;
         for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-          SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
-                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum);
+          SoAKernel<true, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
+                                 fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
         }
         const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
         if (rest > 0)
-          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
-                                &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+          SoAKernel<true, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
+                                fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
       } else {
         unsigned int j = 0;
         for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-          SoAKernel<false, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
-                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum);
+          SoAKernel<false, false>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
+                                  fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
         }
         const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
         if (rest > 0)
-          SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
-                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+          SoAKernel<false, true>(j, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
+                                 fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
       }
 
       // horizontally reduce fDacc to sumfD
@@ -552,6 +584,18 @@ class LJFunctorAVX
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
 
+  /**
+   * Setter for 24*epsilon.
+   * @param epsilon24
+   */
+  void setEpsilon24(double epsilon24) { _epsilon24 = _mm256_set1_pd(epsilon24); }
+
+  /**
+   * Setter for the squared sigma.
+   * @param sigmaSquare
+   */
+  void setSigmaSquare(double sigmaSquare) { _sigmaSquare = _mm256_set1_pd(sigmaSquare); }
+
  private:
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
@@ -575,14 +619,14 @@ class LJFunctorAVX
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
-  //  double _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
   const __m256d _one;
-  //  const std::vector<__m256i> _masks;
   const __m256i _masks[3];
   const __m256d _cutoffsquare;
-  const __m256d _epsilon24;
-  const __m256d _sigmasquare;
-  double _shift6;
+  const __m256d _shift6;
+  __m256d _epsilon24;
+  __m256d _sigmaSquare;
+
+  ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _upotSum;
