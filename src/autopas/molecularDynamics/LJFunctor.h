@@ -81,11 +81,6 @@ class LJFunctor
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
     }
-#if defined(AUTOPAS_CUDA)
-    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, _PPLibrary->get24Epsilon(0) /* epsilon24 */,
-                                                 _PPLibrary->getSigmaSquare(0) /* sigmasquare */, _shift6);
-    _cudawrapper.loadConstants(&constants);
-#endif
   }
 
   /**
@@ -475,10 +470,28 @@ class LJFunctor
     }
 
 #else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
+    utils::ExceptionHandler::exception("LJFunctor::CudaFunctor: AutoPas was compiled without CUDA support!");
 #endif
   }
 
+  /**
+   * Sets the particle properties constants for this functor.
+   *
+   * This is only necessary if no particlePropertiesLibrary is used.
+   * If compiled with CUDA this function also loads the values to the GPU.
+   *
+   * @param epsilon24
+   * @param sigmaSquare
+   */
+  void setParticleProperties(floatPrecision epsilon24, floatPrecision sigmaSquare) {
+    _epsilon24 = epsilon24;
+    _sigmasquare = sigmaSquare;
+#if defined(AUTOPAS_CUDA)
+    LJFunctorConstants<floatPrecision> constants(_cutoffsquare, _epsilon24 /* epsilon24 */,
+                                                 _sigmasquare /* sigmasquare */, _shift6);
+    _cudawrapper.loadConstants(&constants);
+#endif
+  }
   /**
    * @brief Functor using Cuda on SoAs in device Memory
    *
@@ -551,7 +564,7 @@ class LJFunctor
     device_handle.template get<Particle::AttributeNames::forceZ>().copyHostToDevice(
         size, soa.template begin<Particle::AttributeNames::forceZ>());
 #else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
+    utils::ExceptionHandler::exception("LJFunctor::deviceSoALoader: AutoPas was compiled without CUDA support!");
 #endif
   }
 
@@ -573,7 +586,7 @@ class LJFunctor
         size, soa.template begin<Particle::AttributeNames::forceZ>());
 
 #else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
+    utils::ExceptionHandler::exception("LJFunctor::deviceSoAExtractor: AutoPas was compiled without CUDA support!");
 #endif
   }
 
@@ -692,22 +705,10 @@ class LJFunctor
   floatPrecision getEpsilon24() const { return _epsilon24; }
 
   /**
-   * Setter for 24*epsilon.
-   * @param epsilon24
-   */
-  void setEpsilon24(floatPrecision epsilon24) { _epsilon24 = epsilon24; }
-
-  /**
    * Getter for the squared sigma.
    * @return squared sigma.
    */
   floatPrecision getSigmaSquare() const { return _sigmasquare; }
-
-  /**
-   * Setter for the squared sigma.
-   * @param sigmaSquare
-   */
-  void setSigmaSquare(floatPrecision sigmaSquare) { _sigmasquare = sigmaSquare; }
 
  private:
   template <bool newton3, bool duplicatedCalculations>

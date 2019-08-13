@@ -95,12 +95,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   FMCell cell2NoAVX(cell2AVX);
   autopas::LJFunctor<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff,
                                                                                                                0.0);
-  ljFunctorNoAVX.setEpsilon24(_epsilon * 24.0);
-  ljFunctorNoAVX.setSigmaSquare(_sigma * _sigma);
+  ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   autopas::LJFunctorAVX<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff,
                                                                                                                 0.0);
-  ljFunctorAVX.setEpsilon24(_epsilon * 24.0);
-  ljFunctorAVX.setSigmaSquare(_sigma * _sigma);
+  ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ljFunctorAVX.initTraversal();
   ljFunctorNoAVX.initTraversal();
@@ -154,12 +152,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   FMCell cellNoAVX(cellAVX);
   autopas::LJFunctor<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff,
                                                                                                                0.0);
-  ljFunctorNoAVX.setEpsilon24(_epsilon * 24.0);
-  ljFunctorNoAVX.setSigmaSquare(_sigma * _sigma);
+  ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   autopas::LJFunctorAVX<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff,
                                                                                                                 0.0);
-  ljFunctorAVX.setEpsilon24(_epsilon * 24.0);
-  ljFunctorAVX.setSigmaSquare(_sigma * _sigma);
+  ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
 

@@ -285,8 +285,7 @@ void testSimulationLoop(testingTuple options) {
     autoPas.addParticle(particle2);
   }
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift);
-  functor.setEpsilon24(24);
-  functor.setSigmaSquare(1);
+  functor.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
 
@@ -398,11 +397,9 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
     }
   }
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor1(cutoff, shift);
-  functor1.setEpsilon24(24);
-  functor1.setSigmaSquare(1);
+  functor1.setParticleProperties(24.0, 1);
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor2(cutoff, shift);
-  functor2.setEpsilon24(24);
-  functor2.setSigmaSquare(1);
+  functor2.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
 
