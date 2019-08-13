@@ -144,7 +144,7 @@ class YamlParser {
   unsigned int tuningSamples = 3;
   unsigned int tuningMaxEvidence = 10;
   std::string VTKFileName = "";
-    size_t vtkWriteFrequency = 100;
+    size_t vtkWriteFrequency = 1;
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 20;
   double verletSkinRadius = .2;
@@ -164,9 +164,8 @@ class YamlParser {
   size_t defaultParticlesTotal = 1000;
 
   // Object Generation:
-  std::vector<CubeGrid> CubeGridObjects = {};
+  std::vector<CubeGrid> CubeGridObjects = {CubeGrid({10, 10, 10},0.8, {0., 0., 0.}, {5., 5., 5.}, 0, 0.5, 0.5, 1.0)};
   std::vector<CubeGauss> CubeGaussObjects = {};
-  std::vector<CubeUniform> CubeUniformObjects = {
-      CubeUniform(defaultParticlesTotal, {10., 10., 10.}, {0., 0., 0.}, {5., 5., 5.}, 0, 1.0, 1.0, 1.0)};
+  std::vector<CubeUniform> CubeUniformObjects = {};
   std::vector<Sphere> SphereObjects = {};
 };
