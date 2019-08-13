@@ -258,7 +258,10 @@ class LJFunctorAVX
     // signaling = throw error if NaN is encountered
     // dr2 <= _cutoffsquare ? 0xFFFFFFFFFFFFFFFF : 0
     const __m256d cutoffMask = _mm256_cmp_pd(dr2, _cutoffsquare, _CMP_LE_OS);
-    // @TODO abort if everything is masked away
+    // if everything is masked away abort.
+    if (_mm256_movemask_pd(cutoffMask) == 0) {
+      return;
+    }
 
     const __m256d invdr2 = _mm256_div_pd(_one, dr2);
     const __m256d lj2 = _mm256_mul_pd(sigmaSquares, invdr2);
