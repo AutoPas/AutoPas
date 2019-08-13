@@ -12,12 +12,12 @@
 #include <set>
 #include <string>
 #include <vector>
+#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/NumberSet.h"
 
 namespace autopas::utils::StringUtils {
@@ -456,7 +456,8 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
  * Possible options: lcb, ucb, mean
  *
  * @param acquisitionFunctionString String containing the acquisition function
- * @return An enum representing the acquisitionFunctionOption. If no valid option was found an error value of -1 is returned.
+ * @return An enum representing the acquisitionFunctionOption. If no valid option was found an error value of -1 is
+ * returned.
  */
 inline autopas::AcquisitionFunctionOption parseAcquisitionFunctionOption(const std::string &acquisitionFunctionString) {
   // hack to initialize the enum out of range as an error value.
