@@ -114,11 +114,11 @@ class YamlParser {
 
   [[nodiscard]] const std::vector<Sphere> &getSphere() const;
 
-  const std::map<unsigned long, double> &getEpsilonMap() const;
+  [[nodiscard]] const std::map<unsigned long, double> &getEpsilonMap() const;
 
-  const std::map<unsigned long, double> &getSigmaMap() const;
+  [[nodiscard]] const std::map<unsigned long, double> &getSigmaMap() const;
 
-  const std::map<unsigned long, double> &getMassMap() const;
+  [[nodiscard]] const std::map<unsigned long, double> &getMassMap() const;
 
   void setFilename(const std::string &inputFilename);
   size_t getVtkWriteFrequency() const;
@@ -126,7 +126,9 @@ class YamlParser {
   void setVtkWriteFrequency(size_t vtkWriteFrequency);
     void setVtkFileName(const std::string &vtkFileName);
 
- private:
+    bool isPeriodic() const;
+
+private:
   static constexpr size_t valueOffset = 32;
   // defaults:
   std::string filename;  // default configuration = CubeGrid
@@ -144,7 +146,7 @@ class YamlParser {
   unsigned int tuningSamples = 3;
   unsigned int tuningMaxEvidence = 10;
   std::string VTKFileName = "";
-    size_t vtkWriteFrequency = 1;
+    size_t vtkWriteFrequency = 100;
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 20;
   double verletSkinRadius = .2;
@@ -155,6 +157,7 @@ class YamlParser {
   double cutoff = 1.;
   FunctorOption functorOption = FunctorOption::lj12_6;
   size_t iterations = 10;
+  bool periodic = true;
   bool measureFlops = true;
   double delta_t = 0.001;
   std::map<unsigned long, double> epsilonMap;

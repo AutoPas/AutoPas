@@ -62,7 +62,7 @@ class CubeGrid {
   std::array<double, 3> getBoxMin() {
     return {center[0] - 0.5 * particlesPerDim[0] * particleSpacing,
             center[1] - 0.5 * particlesPerDim[1] * particleSpacing,
-            center[1] - 0.5 * particlesPerDim[1] * particleSpacing};
+            center[2] - 0.5 * particlesPerDim[1] * particleSpacing};
   }
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
@@ -70,7 +70,7 @@ class CubeGrid {
   std::array<double, 3> getBoxMax() {
     return {center[0] + 0.5 * particlesPerDim[0] * particleSpacing,
             center[1] + 0.5 * particlesPerDim[1] * particleSpacing,
-            center[1] + 0.5 * particlesPerDim[1] * particleSpacing};
+            center[2] + 0.5 * particlesPerDim[1] * particleSpacing};
   }
   /**Prints the Configuration of the current Object
    * */

@@ -20,6 +20,7 @@ bool YamlParser::parseInput(int argc, char **argv) {
                                          {"no-flops", no_argument, nullptr, 'F'},
                                          {"newton3", required_argument, nullptr, '3'},
                                          {"particles-total", required_argument, nullptr, 'P'},
+                                         {"periodic",required_argument,nullptr,'p'},
                                          {"selector-strategy", required_argument, nullptr, 'y'},
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
@@ -30,7 +31,8 @@ bool YamlParser::parseInput(int argc, char **argv) {
                                          {"log-file", required_argument, nullptr, 'L'},
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
                                          {"verlet-skin-radius", required_argument, nullptr, 'r'},
-                                         {"vtk", required_argument, nullptr, 'w'},
+                                         {"vtk-filename", required_argument, nullptr, 'w'},
+                                         {"vtk-write-frequency",required_argument,nullptr,'z'},
                                          {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   string strArg;
   // Yaml Parsing file parameter muss als erstes übergeben werden
@@ -216,16 +218,20 @@ bool YamlParser::parseInput(int argc, char **argv) {
         if (yamlparsed) break;
         try {
           defaultParticlesTotal = stoul(strArg);
-          // deletes the default Uniform Cube with the default particleTotal=1000 and sets the new
-          CubeUniformObjects.clear();
-          CubeUniformObjects.emplace_back(
-              CubeUniform(defaultParticlesTotal, {10., 10., 10.}, {0., 0., 0.}, {5., 5., 5.}, 0, 1.0, 1.0, 1.0));
+          // deletes the default CubeGrid with the default particleTotal=1000 and sets the new
+          CubeGridObjects.clear();
+          CubeGridObjects.emplace_back(
+              CubeGrid({10,10,10},1., {0., 0., 0.}, {5., 5., 5.}, 0, 1.0, 1.0, 1.0));
         } catch (const exception &) {
           cerr << "Error parsing total number of particles: " << strArg << endl;
           displayHelp = true;
         }
         break;
       }
+        case 'p': {
+            periodic=true;
+            break;
+        }
       case 'S': {
         try {
           tuningSamples = (unsigned int)stoul(strArg);
@@ -292,6 +298,10 @@ bool YamlParser::parseInput(int argc, char **argv) {
       case 'Y': {
         break;
       }
+      case 'z' : {
+          vtkWriteFrequency = stoul(strArg);
+          break;
+      }
       default: {
         // error message handled by getopt
         displayHelp = true;
@@ -323,6 +333,9 @@ void YamlParser::parseYamlFile() {
     this->selectorStrategy =
         autopas::utils::StringUtils::parseSelectorStrategy(config["selector-strategy"].as<std::string>());
   }
+    if (config["periodic-boundaries"]) {
+        this->periodic =config["periodic-boundaries"].as<bool>();
+    }
   if (config["cutoff"]) {
     this->cutoff = config["cutoff"].as<double>();
   }
@@ -410,12 +423,14 @@ void YamlParser::parseYamlFile() {
   if (config["verlet-skin-radius"]) {
     this->verletSkinRadius = config["verlet-skin-raduis"].as<double>();
   }
-  if (config["vtk"]) {
-    this->VTKFileName = config["vtk"].as<std::string>();
+  if (config["vtk-filename"]) {
+    this->VTKFileName = config["vtk-filename"].as<std::string>();
   }
-
+  if (config["vtk-write-frequency"]) {
+   this->vtkWriteFrequency = config["vtk-write-frequency"].as<size_t>();
+  }
   if (config["Objects"]) {
-    CubeUniformObjects = {};
+    CubeGridObjects = {};
     for (YAML::const_iterator Obj_it = config["Objects"].begin(); Obj_it != config["Objects"].end(); ++Obj_it) {
       if (Obj_it->first.as<std::string>() == "CubeGrid") {
         for (YAML::const_iterator it = Obj_it->second.begin(); it != Obj_it->second.end(); ++it) {
@@ -731,4 +746,8 @@ void YamlParser::setVtkWriteFrequency(size_t vtkWriteFrequency) { YamlParser::vt
 
 void YamlParser::setVtkFileName(const std::string &vtkFileName) {
     VTKFileName = vtkFileName;
+}
+
+bool YamlParser::isPeriodic() const {
+    return periodic;
 }

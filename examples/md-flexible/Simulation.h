@@ -1,5 +1,3 @@
-//
-// Created by nicola on 12.05.19.
 /**
  * @file Simulation.h
  * @author N. Fottner
@@ -236,6 +234,9 @@ void Simulation<Particle, ParticleCell>::initialize(const std::shared_ptr<YamlPa
                                               S.getTypeId(), S.getVelocity());
     idcounter = +S.getParticlesTotal();
   }
+  for(auto iter=_autopas.begin();iter.isValid();++iter){
+      std::cout <<iter->toString() << std::endl;
+  }
 }
 
 template <class Particle, class ParticleCell>
@@ -254,14 +255,18 @@ template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate() {
   std::chrono::high_resolution_clock::time_point startSim, stopSim;
   startSim = std::chrono::high_resolution_clock::now();
-  BoundaryConditions<Particle,ParticleCell> BoundaryConditions;
-
-  // main simulation loop
+  //writes initial state of simulation as vtkFile if filename is specified
+    if ((not _parser->getVTKFileName().empty())) {
+        this->writeVTKFile(0);
+    }
+    // main simulation loop
   for (size_t iteration = 0; iteration < _parser->getIterations(); ++iteration) {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << iteration << std::endl;
     }
-    BoundaryConditions.applyPeriodic(_autopas);
+      if(_parser->isPeriodic()) {
+          BoundaryConditions<Particle,ParticleCell>::applyPeriodic(_autopas);
+      }
     _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
 
     switch (this->_parser->getFunctorOption()) {
@@ -274,7 +279,6 @@ void Simulation<Particle, ParticleCell>::simulate() {
         break;
       }
     }
-
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
@@ -282,7 +286,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
 
     // only write vtk files periodically and if a filename is given
     if ((not _parser->getVTKFileName().empty()) and iteration % _parser->getVtkWriteFrequency() == 0) {
-      this->writeVTKFile(iteration);
+      this->writeVTKFile(iteration+1);
     }
   }
 

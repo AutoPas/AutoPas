@@ -18,15 +18,14 @@
 #verlet-skin-radius                 #double option
 #no-flops:                          #boolean option
 #log-file:                          #string option
-#vtk:                               #string option
+#vtk-filename:                      #string option
+#vtk-write-frequency:                #size_t option
 
 ###Simulation Options=
 
 #functor:                           #string option
 #delta_t:                           #double option
-#epsilon:                           #double option
-#sigma:                             #double option
-#particle-mass:                     #double option
+#iterations:                         #size_t option
 #cutoff:                            #double option
 
 
@@ -75,10 +74,3 @@
 #      particleSpacing: 0.5
 #      firstId: 0
 #      velocity: [5.,5.,5.]
-
-
-
-log-level: debug
-iteration: 2
-container: linkedcell
-newton3: disabled

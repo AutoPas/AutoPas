@@ -32,7 +32,7 @@ class BoundaryConditions {
    * @param leavingParticles
    * @return vector of particles that will enter the container.
    */
-  std::vector<Particle> convertToEnteringParticles(autopas::AutoPas<Particle,ParticleCell> &autopas,
+  static std::vector<Particle> convertToEnteringParticles(autopas::AutoPas<Particle,ParticleCell> &autopas,
                                                    const std::vector<Particle> &leavingParticles);
 
   /**
@@ -41,25 +41,25 @@ class BoundaryConditions {
    * @param autoPas
    * @return vector of particles that are already shifted for the next process.
    */
-  std::vector<Particle> identifyAndSendHaloParticles(autopas::AutoPas<Particle,ParticleCell> &autoPas);
+  static std::vector<Particle> identifyAndSendHaloParticles(autopas::AutoPas<Particle,ParticleCell> &autoPas);
 
   /**Adds entering Particles to the Autopas Object
    * @param autoPas
    * @param enteringParticles
    * @return number of Particles Added
    * */
-  size_t addEnteringParticles(autopas::AutoPas<Particle,ParticleCell> &autoPas, std::vector<Particle> enteringParticles);
+  static size_t addEnteringParticles(autopas::AutoPas<Particle,ParticleCell> &autoPas, std::vector<Particle> enteringParticles);
 
   /**Adds Halo Particles to the AutoPas Object
    * @param autoPas
    * @param haloParticles
    * */
-  void addHaloParticles(autopas::AutoPas<Particle,ParticleCell> &autoPas, std::vector<Particle> haloParticles);
+  static void addHaloParticles(autopas::AutoPas<Particle,ParticleCell> &autoPas, std::vector<Particle> haloParticles);
 
   /**Realizes periodic Boundaries for the simulation
    * By handling halo particles and updating the container
    * */
-  void applyPeriodic(autopas::AutoPas<Particle,ParticleCell> &autoPas);
+  static void applyPeriodic(autopas::AutoPas<Particle,ParticleCell> &autoPas);
 };
 template <typename Particle,typename ParticleCell>
 std::vector<Particle> BoundaryConditions<Particle,ParticleCell>::convertToEnteringParticles(
