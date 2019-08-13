@@ -69,37 +69,12 @@ class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell, DataLayo
 
           for (unsigned int c = 0; c < cells.size(); c++) {
           _dataLayoutConverter.storeDataLayout(cells[c]);
-          /*
-              //std::cout << "Num Particles in Cell: " << cells[c].numParticles() << "\n";
-
-              FloatMatrix3Type buffer("_buffer", cells[c].numParticles(), 3, KOKKOS_DIM);
-
-              FloatMatrix3Type::HostMirror h_matrix = Kokkos::create_mirror_view(buffer);
-              for (unsigned int x = 0; x < cells[c]._particles.size(); x++) {
-                  //position
-                  auto arr_r = cells[c]._particles[x].getR();
-                  auto arr_f = cells[c]._particles[x].getF();
-                  auto arr_v = cells[c]._particles[x].getV();
-                  for (unsigned int i = 0; i < KOKKOS_DIM; i++) {
-                      h_matrix(x, 0, i) = arr_r[i];//position
-                      h_matrix(x, 1, i) = arr_f[i];//force
-                      h_matrix(x, 2, i) = arr_v[i];//velocity
-                  }
-              }
-              Kokkos::deep_copy(buffer, h_matrix);
-              //std::cout << buffer.extent(0) << ", " << buffer.extent(1) << ", " << buffer.extent(2) << "\n";
-              //Test structure
-              //Kokkos::parallel_for(cell._particles.size(), KOKKOS_LAMBDA(const int i){
-              //cell._particleKokkosBuffer(0, 0, 0) += 1;
-              //});
-              cells[c]._particleKokkosBuffer =  buffer;*/
           }
 
         }
 
           break;
           default:;
-
               //std::cout << "not soa" << utils::StringUtils::to_string(DataLayout) << "\n";
       }
       //auto buffer = cells[0]._particleKokkosBuffer;
@@ -130,11 +105,13 @@ class DirectSumKokkosTraversal : public CellPairTraversal<ParticleCell, DataLayo
           }
           default:;
       }
+      /*
       for (unsigned int c = 0; c < cells.size(); c++) {
           for(unsigned int i = 0; i  < cells[c]._particles.size(); i++){
               std::cout << cells[c]._particles[i].toString() << "\n";
           }
       }
+       */
 #endif
   }
 

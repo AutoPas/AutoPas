@@ -76,11 +76,11 @@ namespace autopas {
                     _dataLayoutConverter.storeDataLayout(cells[c]);
                 }
             }
-            for (unsigned int c = 0; c < cells.size(); c++) {
+            /*for (unsigned int c = 0; c < cells.size(); c++) {
                 for(Particle p:cells[c]._particles){
                     std::cout << p.toString() << "\n";
                 }
-            }
+            }*/
         }
 
         /**
@@ -95,14 +95,11 @@ namespace autopas {
                 }
             }
             //check particle attributes
-            for (unsigned int c = 0; c < cells.size(); c++) {
+            /*for (unsigned int c = 0; c < cells.size(); c++) {
                 for(unsigned int i = 0; i  < cells[c]._particles.size(); i++){
                     std::cout << cells[c]._particles[i].toString() << "\n";
                 }
-            }
-
-
-
+            }*/
         }
 
     protected:
