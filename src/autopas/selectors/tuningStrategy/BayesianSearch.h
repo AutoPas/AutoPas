@@ -174,9 +174,17 @@ FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFu
     }
 
     // sort by acquisition
-    std::sort(samples.begin(), samples.end(), [&acquisitions](const FeatureVector &f1, const FeatureVector &f2) {
-      return acquisitions[f1] < acquisitions[f2];
-    });
+    if (af == AcquisitionFunctionOption::var) {
+      // max variance first
+      std::sort(samples.begin(), samples.end(), [&acquisitions](const FeatureVector &f1, const FeatureVector &f2) {
+        return acquisitions[f1] > acquisitions[f2];
+      });
+    } else {
+      // min estimated value first
+      std::sort(samples.begin(), samples.end(), [&acquisitions](const FeatureVector &f1, const FeatureVector &f2) {
+        return acquisitions[f1] < acquisitions[f2];
+      });
+    }
 
     // find first valid configuration
     auto best = std::find_if(samples.begin(), samples.end(), [this](const FeatureVector &fv) {
