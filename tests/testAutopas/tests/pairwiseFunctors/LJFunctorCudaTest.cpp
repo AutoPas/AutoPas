@@ -89,10 +89,11 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   // copy cells
   FMCell cell1NoCuda(cell1Cuda);
   FMCell cell2NoCuda(cell2Cuda);
-  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
-  particlePropertiesLibrary.addType(0, _epsilon, _sigma, 1);
-  autopas::LJFunctor<Molecule, FMCell> ljFunctorNoCuda(_cutoff, 0.0, particlePropertiesLibrary);
-  autopas::LJFunctor<Molecule, FMCell> ljFunctorCuda(_cutoff, 0.0, particlePropertiesLibrary);
+
+  autopas::LJFunctor<Molecule, FMCell> ljFunctorNoCuda(_cutoff, 0.0);
+  ljFunctorNoCuda.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  autopas::LJFunctor<Molecule, FMCell> ljFunctorCuda(_cutoff, 0.0);
+  ljFunctorCuda.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cell1Cuda, cell1NoCuda)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2Cuda, cell2NoCuda)) << "Cells 2 not equal after copy initialization.";
@@ -135,10 +136,11 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
 
   // copy cells
   FMCell cellNoCuda(cellCuda);
-  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
-  particlePropertiesLibrary.addType(0, _epsilon, _sigma, 1);
-  autopas::LJFunctor<Molecule, FMCell> ljFunctorNoCuda(_cutoff, 0.0, particlePropertiesLibrary);
-  autopas::LJFunctor<Molecule, FMCell> ljFunctorCuda(_cutoff, 0.0, particlePropertiesLibrary);
+
+  autopas::LJFunctor<Molecule, FMCell> ljFunctorNoCuda(_cutoff, 0.0);
+  ljFunctorNoCuda.setParticleProperties(sqrt(_epsilon*_epsilon) * 24.0, ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
+  autopas::LJFunctor<Molecule, FMCell> ljFunctorCuda(_cutoff, 0.0);
+  ljFunctorCuda.setParticleProperties(sqrt(_epsilon*_epsilon) * 24.0, ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
 
   ASSERT_TRUE(AoSParticlesEqual(cellCuda, cellNoCuda)) << "Cells not equal after copy initialization.";
 

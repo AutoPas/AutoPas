@@ -185,7 +185,6 @@ class LJFunctor
     auto epsilon24 = _epsilon24;
     if constexpr (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
-      //_____man kann sich den Boolean hier noch sparen oder?___
       bool isHaloCell = ownedPtr[0] ? false : true;
       if (isHaloCell) {
         return;
@@ -998,8 +997,8 @@ class LJFunctor
   // static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
   // default values for epsilon = sigma = 1
-  floatPrecision _epsilon24 = 24;
-  floatPrecision _sigmasquare = 1;
+  floatPrecision _epsilon24;
+  floatPrecision _sigmasquare;
 
   floatPrecision _cutoffsquare;
   ParticlePropertiesLibrary<floatPrecision, size_t> *_PPLibrary = nullptr;

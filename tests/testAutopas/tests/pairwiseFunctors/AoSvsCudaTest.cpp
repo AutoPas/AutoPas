@@ -40,10 +40,8 @@ TEST_F(AoSvsCudaTest, testAoSvsCuda) {
   auto particlesSoA = particlesAoS;
   double epsilon = 1.0;
   double sigma = 1.0;
-  double mass = 1.0;
-  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
-  particlePropertiesLibrary.addType(0, epsilon, sigma, mass);
-  LJFunctor<Molecule, FMCell> ljFunctor(PARTICLES_PER_DIM * 10, 0, particlePropertiesLibrary);
+  LJFunctor<Molecule, FMCell> ljFunctor(PARTICLES_PER_DIM * 10, 0);
+  ljFunctor.setParticleProperties(epsilon * 24.0, sigma * sigma);
 
   // AoS
   std::chrono::high_resolution_clock::time_point start, stop;

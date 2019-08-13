@@ -11,11 +11,14 @@
 template <bool mixing>
 void LJFunctorTest::testAoSNoGlobals(bool newton3) {
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  autopas::LJFunctor<Molecule, FMCell, /* mixing */ mixing> functor(cutoff, shift, particlePropertiesLibrary);
   particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0);
   if (mixing) {
     particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0);
+  } else {
+    functor.setParticleProperties(epsilon * 24, 1);
   }
-  autopas::LJFunctor<Molecule, FMCell, /* mixing */ mixing> functor(cutoff, shift, particlePropertiesLibrary);
+
 
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
@@ -85,12 +88,14 @@ TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
   testAoSNoGlobals<false>(newton3);
 }
 
-TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsNoN3) {
+TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsNoN3)
+{
   bool newton3 = false;
   testAoSNoGlobals<true>(newton3);
 }
 
-TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsN3) {
+TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsN3)
+{
   bool newton3 = true;
   testAoSNoGlobals<true>(newton3);
 }
@@ -98,12 +103,14 @@ TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsN3) {
 template <bool mixing>
 void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType) {
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  // test is for the soa functors the forces are calculated correctly
+  autopas::LJFunctor<Molecule, FMCell, mixing> functor(cutoff, shift, particlePropertiesLibrary);
   particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0);
   if constexpr (mixing) {
     particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0);
+  } else {
+    functor.setParticleProperties(epsilon * 24, 1);
   }
-  // test is for the soa functors the forces are calculated correctly
-  autopas::LJFunctor<Molecule, FMCell, mixing> functor(cutoff, shift, particlePropertiesLibrary);
 
   FMCell cell1, cell2;
   {
@@ -273,6 +280,7 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
 void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation) {
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift,
                                                                                            duplicatedCalculation);
+  functor.setParticleProperties(epsilon * 24, 1);
   double xOffset;
   double whereFactor;
   std::string where_str;
@@ -341,6 +349,7 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
                                    InteractionType interactionType, size_t additionalParticlesToVerletNumber) {
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift,
                                                                                            duplicatedCalculation);
+  functor.setParticleProperties(epsilon * 24, 1);
   double xOffset;
   double whereFactor;
   std::string where_str;
@@ -506,6 +515,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
   Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1, 0);
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift,
                                                                                            duplicatedCalculation);
+  functor.setParticleProperties(epsilon * 24, 1);
 
   functor.initTraversal();
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
