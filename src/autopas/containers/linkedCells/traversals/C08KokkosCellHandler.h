@@ -113,11 +113,22 @@ namespace autopas {
         ParticleCell &cell2 = cells[cellIndex2];
 
         //Changes compared to C08CellHandler.h: use kokkos functor implementation
-        if (cellIndex1 == cellIndex2) {
-          _cellFunctor.processCell(cell1);
-        } else {
-          _cellFunctor.processCellPair(cell1, cell2);
+        if(DataLayout == DataLayoutOption::kokkos){
+
+            if (cellIndex1 == cellIndex2) {
+                _cellFunctor.processCellOneThread(cell1);
+            } else {
+                _cellFunctor.processCellPairOneThread(cell1, cell2);
+            }
+        }else{
+            if (cellIndex1 == cellIndex2) {
+                _cellFunctor.processCell(cell1);
+            } else {
+                _cellFunctor.processCellPair(cell1, cell2);
+            }
         }
+
+
       }
     }
 

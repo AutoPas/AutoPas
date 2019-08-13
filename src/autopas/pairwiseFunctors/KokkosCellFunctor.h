@@ -95,7 +95,7 @@ namespace autopas {
                     }
                 }else{
                     //Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, particles.size())
-                    Kokkos::parallel_for(particles.size(), KOKKOS_LAMBDA(const unsigned int i) {
+                    Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, particles.size()), KOKKOS_LAMBDA(const unsigned int i) {
                         for (unsigned int l = 0; l < particles.size(); l++) {
                             if(i != l) {
                                 _functor->SoAFunctorInline(cell, cell, i, l,  useNewton3);
@@ -136,14 +136,14 @@ namespace autopas {
                     //Newton 3 off
                     Kokkos::parallel_for(2, KOKKOS_LAMBDA(const int x){
                         if(x == 0){
-                            Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, part0.size()), KOKKOS_LAMBDA(const int i) {
+                            Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, part0.size()), KOKKOS_LAMBDA(const unsigned int i) {
                                 for (unsigned int l = 0; l < part1.size(); l++) {
                                     _functor->AoSFunctorInline(part0[i], part1[l], useNewton3);
 
                                 }
                             });
                         }else {
-                            Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, part1.size()), KOKKOS_LAMBDA(const int i) {
+                            Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, part1.size()), KOKKOS_LAMBDA(const unsigned int i) {
                                 for (unsigned int l = 0; l < part0.size(); l++) {
                                     _functor->AoSFunctorInline(part1[i], part0[l], useNewton3);
                                 }
@@ -161,16 +161,15 @@ namespace autopas {
                     }
                 }else{
                     //Newton 3 off
-                    Kokkos::parallel_for(2, KOKKOS_LAMBDA(const int x){
+                    Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, 2), KOKKOS_LAMBDA(const int x){
                         if(x == 0){
-                            Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, part0.size()), KOKKOS_LAMBDA(const int i) {
+                            Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, part0.size()), KOKKOS_LAMBDA(const unsigned int i) {
                                 for (unsigned int l = 0; l < part1.size(); l++) {
                                     _functor->SoAFunctorInline(cell1, cell2, i, l, useNewton3);
-
                                 }
                             });
                         }else {
-                            Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, part1.size()), KOKKOS_LAMBDA(const int i) {
+                            Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, part1.size()), KOKKOS_LAMBDA(const unsigned int i) {
                                 for (unsigned int l = 0; l < part0.size(); l++) {
                                     _functor->SoAFunctorInline(cell2, cell1, i, l, useNewton3);
                                 }
@@ -211,7 +210,7 @@ namespace autopas {
                 if(useNewton3){
                     for (unsigned int i = 0; i < particles.size(); i++) {
                         for (unsigned int l = i + 1; l < particles.size(); l++) {
-                            _functor->SoAFunctorInline(particles, particles, i, l, true);
+                            _functor->SoAFunctorInline(cell, cell, i, l, true);
                             //_functor->AoSFunctorInline(particles[l], particles[i], useNewton3);
                         }
                     }
