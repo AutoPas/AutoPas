@@ -124,6 +124,7 @@ class YamlParser {
   size_t getVtkWriteFrequency() const;
 
   void setVtkWriteFrequency(size_t vtkWriteFrequency);
+    void setVtkFileName(const std::string &vtkFileName);
 
  private:
   static constexpr size_t valueOffset = 32;
@@ -143,9 +144,9 @@ class YamlParser {
   unsigned int tuningSamples = 3;
   unsigned int tuningMaxEvidence = 10;
   std::string VTKFileName = "";
-  size_t vtkWriteFrequency = 100;
+    size_t vtkWriteFrequency = 100;
   std::string logFileName = "";
-  unsigned int verletRebuildFrequency = 5;
+  unsigned int verletRebuildFrequency = 20;
   double verletSkinRadius = .2;
   std::array<double, 3> BoxMin = {0., 0., 0.};
   std::array<double, 3> BoxMax = {10., 10., 10.};

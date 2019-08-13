@@ -728,3 +728,7 @@ const std::map<unsigned long, double> &YamlParser::getMassMap() const { return m
 size_t YamlParser::getVtkWriteFrequency() const { return vtkWriteFrequency; }
 
 void YamlParser::setVtkWriteFrequency(size_t vtkWriteFrequency) { YamlParser::vtkWriteFrequency = vtkWriteFrequency; }
+
+void YamlParser::setVtkFileName(const std::string &vtkFileName) {
+    VTKFileName = vtkFileName;
+}

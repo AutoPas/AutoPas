@@ -22,7 +22,6 @@ int main(int argc, char **argv) {
   if (not parser->parseInput(argc, argv)) {
     exit(-1);
   }
-  auto vtkFilename(parser->getVTKFileName());
   parser->printConfig();
   std::cout << std::endl;
 
