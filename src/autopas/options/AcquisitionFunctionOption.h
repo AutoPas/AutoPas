@@ -25,12 +25,16 @@ enum AcquisitionFunctionOption {
   /**
    * mean
    */
-  mean
+  mean,
+  /**
+   * variance
+   */
+  var
 };
 
 /**
  * Provides a way to iterate over the possible choices of AcquisitionFunction.
  */
 static const std::set<AcquisitionFunctionOption> allAcquisitionFunctionOptions = {
-    AcquisitionFunctionOption::ucb, AcquisitionFunctionOption::lcb, AcquisitionFunctionOption::mean};
+    AcquisitionFunctionOption::ucb, AcquisitionFunctionOption::lcb, AcquisitionFunctionOption::mean, AcquisitionFunctionOption::var};
 }  // namespace autopas

@@ -28,6 +28,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
                                          {"traversal", required_argument, nullptr, 't'},
+                                         {"tuning-function", required_argument, nullptr, 'A'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
                                          {"tuning-max-evidence", required_argument, nullptr, 'E'},
@@ -270,6 +271,15 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'A': {
+        tuningAcqFun = autopas::utils::StringUtils::parseAcquisitionFunctionOption(strArg);
+        if (tuningAcqFun == autopas::AcquisitionFunctionOption(-1)) {
+          cerr << "Unknown acquisition function: " << strArg << endl;
+          cerr << "Please use 'lcb', 'ucb', 'mean' or 'var'!" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 't': {
         traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
         if (traversalOptions.empty()) {
@@ -446,6 +456,8 @@ void MDFlexParser::printConfig() {
        << ":  " << tuningSamples << endl;
   cout << setw(valueOffset) << left << "Tuning Max evidence"
        << ":  " << tuningMaxEvidence << endl;
+  cout << setw(valueOffset) << left << "Tuning Acquisition Function"
+       << ":  " << autopas::utils::StringUtils::to_string(tuningAcqFun) << endl;
 }
 
 std::set<autopas::ContainerOption> MDFlexParser::getContainerOptions() const { return containerOptions; }
@@ -492,6 +504,8 @@ unsigned int MDFlexParser::getTuningInterval() const { return tuningInterval; }
 unsigned int MDFlexParser::getTuningSamples() const { return tuningSamples; }
 
 unsigned int MDFlexParser::getTuningMaxEvidence() const { return tuningMaxEvidence; }
+
+autopas::AcquisitionFunctionOption MDFlexParser::getAcquisitionFunctionOption() const { return tuningAcqFun; }
 
 autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 

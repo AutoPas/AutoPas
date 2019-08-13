@@ -17,6 +17,7 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/NumberSet.h"
 
 namespace autopas::utils::StringUtils {
@@ -181,6 +182,29 @@ inline std::string to_string(const TuningStrategyOption &option) {
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
   return "Unknown TuningStrategyOption (" + std::to_string(option) + ")";
+}
+/**
+ * Converts a AcquisitionFunctionOption to its respective string representation.
+ * @param option
+ * @return The string representation or "Unknown option (<IntValue>)".
+ */
+inline std::string to_string(const AcquisitionFunctionOption &option) {
+  switch (option) {
+    case autopas::AcquisitionFunctionOption::lcb: {
+      return "lcb";
+    }
+    case autopas::AcquisitionFunctionOption::ucb: {
+      return "ucb";
+    }
+    case autopas::AcquisitionFunctionOption::mean: {
+      return "mean";
+    }
+    case autopas::AcquisitionFunctionOption::var: {
+      return "var";
+    }
+  }
+  // do not implement default case to provoke compiler warnings if new options are introduced.
+  return "Unknown AcquisitionFunctionOption (" + std::to_string(option) + ")";
 }
 /**
  * Converts a double to its respective string representation.
@@ -407,7 +431,7 @@ inline std::set<autopas::DataLayoutOption> parseDataLayout(const std::string &da
 /**
  * Converts a string containing a tuning strategy to an enum. The option is expected to be lower case.
  *
- * Possible options: full-search
+ * Possible options: full-search, random, bayesian
  *
  * @param tuningStrategyString String containing the tuning strategy option
  * @return An enum representing the tuningStrategy. If no valid option was found an error value of -1 is returned.
@@ -424,6 +448,29 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
     tuningStrategy = autopas::TuningStrategyOption::bayesianSearch;
   }
   return tuningStrategy;
+}
+
+/**
+ * Converts a string containing a acquisition function to an enum. The option is expected to be lower case.
+ *
+ * Possible options: lcb, ucb, mean
+ *
+ * @param acquisitionFunctionString String containing the acquisition function
+ * @return An enum representing the acquisitionFunctionOption. If no valid option was found an error value of -1 is returned.
+ */
+inline autopas::AcquisitionFunctionOption parseAcquisitionFunctionOption(const std::string &acquisitionFunctionString) {
+  // hack to initialize the enum out of range as an error value.
+  auto acqFun(autopas::AcquisitionFunctionOption(-1));
+  if (acquisitionFunctionString.find("lcb") != std::string::npos) {
+    acqFun = autopas::AcquisitionFunctionOption::lcb;
+  } else if (acquisitionFunctionString.find("ucb") != std::string::npos) {
+    acqFun = autopas::AcquisitionFunctionOption::ucb;
+  } else if (acquisitionFunctionString.find("mean") != std::string::npos) {
+    acqFun = autopas::AcquisitionFunctionOption::mean;
+  } else if (acquisitionFunctionString.find("var") != std::string::npos) {
+    acqFun = autopas::AcquisitionFunctionOption::var;
+  }
+  return acqFun;
 }
 
 /**

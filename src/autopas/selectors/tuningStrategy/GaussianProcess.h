@@ -175,6 +175,9 @@ class GaussianProcess {
       case mean: {
         return predictMean(input);
       }
+      case var: {
+        return predictVar(input);
+      }
     }
 
     autopas::utils::ExceptionHandler::exception("GaussianProcess.calcAcquisition: Unknown acquisition function {}.",

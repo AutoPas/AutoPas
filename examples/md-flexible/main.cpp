@@ -184,6 +184,7 @@ int main(int argc, char **argv) {
   auto tuningSamples(parser.getTuningSamples());
   auto tuningStrategy(parser.getTuningStrategyOption());
   auto tuningMaxEvidence(parser.getTuningMaxEvidence());
+  auto tuningAcqFun(parser.getAcquisitionFunctionOption());
   auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
   auto verletSkinRadius(parser.getVerletSkinRadius());
   auto vtkFilename(parser.getWriteVTK());
@@ -216,6 +217,7 @@ int main(int argc, char **argv) {
   autopas.setTuningStrategyOption(tuningStrategy);
   autopas.setNumSamples(tuningSamples);
   autopas.setMaxEvidence(tuningMaxEvidence);
+  autopas.setAcquisitionFunction(tuningAcqFun);
   autopas.setSelectorStrategy(selectorStrategy);
   autopas.setAllowedContainers(containerChoice);
   autopas.setAllowedTraversals(traversalOptions);

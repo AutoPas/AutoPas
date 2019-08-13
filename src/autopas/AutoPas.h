@@ -50,6 +50,7 @@ class AutoPas {
         _tuningInterval(5000),
         _numSamples(3),
         _maxEvidence(10),
+        _acquisitionFunctionOption(AcquisitionFunctionOption::var),
         _tuningStrategyOption(TuningStrategyOption::fullSearch),
         _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(allContainerOptions),
@@ -346,6 +347,18 @@ class AutoPas {
   void setMaxEvidence(unsigned int maxEvidence) { AutoPas::_maxEvidence = maxEvidence; }
 
   /**
+   * Get acquisition function used for tuning
+   * @return
+   */
+  AcquisitionFunctionOption getAcquisitionFunction() const { return _acquisitionFunctionOption; }
+
+  /**
+   * Set acquisition function for tuning
+   * @param acqFun acquisition function
+   */
+  void setAcquisitionFunction(AcquisitionFunctionOption acqFun) { AutoPas::_acquisitionFunctionOption = acqFun; }
+
+  /**
    * Get the selector configuration strategy.
    * @return
    */
@@ -463,7 +476,7 @@ class AutoPas {
 
       case TuningStrategyOption::bayesianSearch: {
         return std::make_unique<BayesianSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
-                                                _allowedDataLayouts, _allowedNewton3Options, _maxEvidence);
+                                                _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _acquisitionFunctionOption);
       }
     }
 
@@ -504,6 +517,11 @@ class AutoPas {
    * Tuning Strategies which work on a fixed number of evidence should use this value.
    */
   unsigned int _maxEvidence;
+  /**
+   * Acquisition function used for tuning.
+   * For possible acquisition function choices see AutoPas::AcquisitionFunction.
+   */
+  AcquisitionFunctionOption _acquisitionFunctionOption;
 
   /**
    * Strategy option for the auto tuner.

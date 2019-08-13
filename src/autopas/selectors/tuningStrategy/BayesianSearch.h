@@ -49,7 +49,7 @@ class BayesianSearch : public TuningStrategyInterface {
                  const std::set<TraversalOption> &allowedTraversalOptions = allTraversalOptions,
                  const std::set<DataLayoutOption> &allowedDataLayoutOptions = allDataLayoutOptions,
                  const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options, size_t maxEvidence = 10,
-                 AcquisitionFunctionOption predAcqFunction = lcb, size_t predNumSamples = 1000,
+                 AcquisitionFunctionOption predAcqFunction = var, size_t predNumSamples = 1000,
                  unsigned long seed = std::random_device()())
       : _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
