@@ -627,7 +627,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   index_t buildClusterIndexMap() {
     index_t nextFreeMapIndex = 0;
 
-    int gridsPerColoringCell = static_cast<int>(std::ceil(_cutoff / _gridSideLength));
+    int gridsPerColoringCell = static_cast<int>(std::ceil((_cutoff + _skin) / _gridSideLength));
     std::array<unsigned long, 3> coloringCellsPerDim{};
     for (int i = 0; i < 3; i++) {
       coloringCellsPerDim[i] =
