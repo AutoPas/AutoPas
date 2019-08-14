@@ -95,7 +95,7 @@ class LJFunctor
                      ParticlePropertiesLibrary<floatPrecision, size_t> &particlePropertiesLibrary,
                      bool duplicatedCalculation = true)
       : LJFunctor(cutoff, shift, duplicatedCalculation) {
-    _PPLibrary = std::make_shared<ParticlePropertiesLibrary<floatPrecision, size_t>>(particlePropertiesLibrary);
+    _PPLibrary = &particlePropertiesLibrary;
     //@TODO: check that this constructor is only called with mixing == true
   }
 
@@ -1001,7 +1001,7 @@ class LJFunctor
   floatPrecision _sigmasquare;
 
   floatPrecision _cutoffsquare;
-  std::shared_ptr<ParticlePropertiesLibrary<floatPrecision, size_t>> _PPLibrary;
+  ParticlePropertiesLibrary<floatPrecision, size_t> *_PPLibrary = nullptr;
   floatPrecision _shift6;
   // sum of the potential energy, only calculated if calculateGlobals is true
   floatPrecision _upotSum;
