@@ -19,7 +19,6 @@ void LJFunctorTest::testAoSNoGlobals(bool newton3) {
     functor.setParticleProperties(epsilon * 24, 1);
   }
 
-
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
 
@@ -88,14 +87,12 @@ TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
   testAoSNoGlobals<false>(newton3);
 }
 
-TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsNoN3)
-{
+TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsNoN3) {
   bool newton3 = false;
   testAoSNoGlobals<true>(newton3);
 }
 
-TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsN3)
-{
+TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsN3) {
   bool newton3 = true;
   testAoSNoGlobals<true>(newton3);
 }
@@ -547,4 +544,64 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
       << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
   EXPECT_NEAR(virial, whereFactor * multiParticleFactor * expectedVirial, absDelta)
       << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
+}
+
+TEST_F(LJFunctorTest, testSetPropertiesVSPPLSoA) {
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> funNoPPL(1, 0);
+  funNoPPL.setParticleProperties(24, 1);
+
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  particlePropertiesLibrary.addType(0, 1, 1, 1);
+  autopas::LJFunctor<Molecule, FMCell, true, autopas::FunctorN3Modes::Both, true> funPPL(1, 0,
+                                                                                         particlePropertiesLibrary);
+
+  size_t numParticlesPerCell = 9;
+
+  Molecule defaultParticle;
+  FMCell cell1NoPPL;
+  FMCell cell2NoPPL;
+  RandomGenerator::fillWithParticles(cell1NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5}, numParticlesPerCell, 42);
+  RandomGenerator::fillWithParticles(cell2NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5}, numParticlesPerCell, 43);
+
+  funNoPPL.SoALoader(cell1NoPPL, cell1NoPPL._particleSoABuffer);
+  funNoPPL.SoALoader(cell2NoPPL, cell2NoPPL._particleSoABuffer);
+
+  FMCell cell1PPL(cell1NoPPL);
+  FMCell cell2PPL(cell2NoPPL);
+
+  funNoPPL.SoAFunctor(cell1NoPPL._particleSoABuffer, cell2NoPPL._particleSoABuffer, true);
+  funPPL.SoAFunctor(cell1PPL._particleSoABuffer, cell2PPL._particleSoABuffer, true);
+
+  funPPL.SoAExtractor(cell1PPL, cell1PPL._particleSoABuffer);
+  funPPL.SoAExtractor(cell2PPL, cell2PPL._particleSoABuffer);
+  funNoPPL.SoAExtractor(cell1NoPPL, cell1NoPPL._particleSoABuffer);
+  funNoPPL.SoAExtractor(cell2NoPPL, cell2NoPPL._particleSoABuffer);
+
+  for (size_t i = 0; i < numParticlesPerCell; ++i) {
+    for (size_t j = 0; j < 3; ++j) {
+      EXPECT_EQ(cell1NoPPL[i], cell1PPL[i]);
+      EXPECT_EQ(cell2NoPPL[i], cell2PPL[i]);
+    }
+  }
+}
+
+TEST_F(LJFunctorTest, testSetPropertiesVSPPLAoS) {
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> funNoPPL(1, 0);
+  funNoPPL.setParticleProperties(24, 1);
+
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  particlePropertiesLibrary.addType(0, 1, 1, 1);
+  autopas::LJFunctor<Molecule, FMCell, true, autopas::FunctorN3Modes::Both, true> funPPL(1, 0,
+                                                                                         particlePropertiesLibrary);
+
+  std::vector<Molecule> moleculesNoPPL = {Molecule({0, 0, 0}, {0, 0, 0}, 0, 0), Molecule({0, 0, 1}, {0, 0, 0}, 1, 0)};
+  std::vector<Molecule> moleculesPPL(moleculesNoPPL);
+
+  funPPL.AoSFunctor(moleculesPPL[0], moleculesPPL[1], false);
+  funNoPPL.AoSFunctor(moleculesNoPPL[0], moleculesNoPPL[1], false);
+
+  // sanity check
+  ASSERT_GT(moleculesPPL.size(), 0);
+  // Molecules should be exactly the same
+  EXPECT_THAT(moleculesNoPPL, testing::ElementsAreArray(moleculesPPL));
 }
