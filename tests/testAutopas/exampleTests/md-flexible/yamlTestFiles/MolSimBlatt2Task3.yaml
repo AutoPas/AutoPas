@@ -3,7 +3,7 @@
 ###AutoPas Options=
 
 newton3: enabled
-container: linkedcell
+container: directsum
 #cell-size-factor:                  #string option
 log-level: debug
 #tuning-interval:                   #int option
@@ -14,14 +14,14 @@ log-level: debug
 #no-flops:                          #boolean option
 #log-file:                          #string option
 vtk-filename:  MolSimBlatt2Task3
-vtk-write-frequency: 30              #size_t option
+vtk-write-frequency: 10              #size_t option
 
 ###Simulation Options=
 
 #functor:                           #string option
 delta_t: 0.0002                     #double option
-cutoff: 2.5                        #double option
-iterations: 8000 #in der MolSim Simulation waren hier 25000 iterationen, 8000 sind aber mehr als ausreichend
+cutoff: 2.5                         #double option
+iterations: 25000
 periodic-boundaries: false          #boolean option
 
 ###Objects generation Options
@@ -33,15 +33,15 @@ Objects:
       particle-sigma: 1
       particle-mass: 1.
       particles-per-Dim: [8,8,1]
-      particleSpacing: 1.1225
+      particleSpacing: 1.12
       velocity: [0.,-10.,0.]
       center: [19.49,19.49,0.]
-    1:
-      particle-type: 0
-      particle-epsilon: 5.
-      particle-sigma: 1
-      particle-mass: 1.
-      particles-per-Dim: [40,8,1]
-      particleSpacing: 1.1225
-      velocity: [0.,0.,0.]
-      center: [22.45,4.49,0.]
+#    1:
+#      particle-type: 0
+#      particle-epsilon: 5.
+#      particle-sigma: 1
+#      particle-mass: 1.
+#      particles-per-Dim: [40,8,1]
+#      particleSpacing: 1.12
+#      velocity: [0.,0.,0.]
+#      center: [22.45,4.49,0.]

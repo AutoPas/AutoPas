@@ -9,6 +9,7 @@
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
 #include "../../../../examples/md-flexible/YamlParser.h"
 #include "../../../../src/autopas/utils/ArrayMath.h"
+#include "../../../../src/autopas/utils/ArrayUtils.h"
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"

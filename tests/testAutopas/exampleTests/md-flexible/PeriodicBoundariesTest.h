@@ -27,7 +27,8 @@ class PeriodicBoundariesTest : public AutoPasTestBase {
   PeriodicBoundariesTest()
       : AutoPasTestBase(),
         _parser{std::make_shared<YamlParser>()}
-        {_parser->setFilename("periodic.yaml");
+        {/* _parser->setFilename("periodic.yaml"); */
+        _parser->setFilename("MolSimBlatt2Task3.yaml");
         _parser->parseYamlFile();
         _parser->setFilename("VtkPeriodicOutput");
         _simulation.initialize(_parser);
