@@ -38,6 +38,7 @@ class RandomGenerator {
    * @param container
    * @param defaultParticle
    * @param numParticles
+   * @param seed
    */
   template <class Container, class Particle>
   static void fillWithParticles(Container &container, const Particle &defaultParticle,
@@ -52,6 +53,7 @@ class RandomGenerator {
    * @param boxMin min. position
    * @param boxMax max. position
    * @param numParticles number of particles
+   * @param seed
    */
   template <class Container, class Particle>
   static void fillWithParticles(Container &container, const Particle &defaultParticle,
@@ -66,6 +68,7 @@ class RandomGenerator {
    * @param defaultParticle
    * @param haloWidth
    * @param numParticles
+   * @param seed
    */
   template <class Container, class Particle>
   static void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
