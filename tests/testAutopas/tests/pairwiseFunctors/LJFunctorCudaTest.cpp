@@ -138,9 +138,11 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
   FMCell cellNoCuda(cellCuda);
 
   autopas::LJFunctor<Molecule, FMCell> ljFunctorNoCuda(_cutoff, 0.0);
-  ljFunctorNoCuda.setParticleProperties(sqrt(_epsilon*_epsilon) * 24.0, ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
+  ljFunctorNoCuda.setParticleProperties(sqrt(_epsilon * _epsilon) * 24.0,
+                                        ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
   autopas::LJFunctor<Molecule, FMCell> ljFunctorCuda(_cutoff, 0.0);
-  ljFunctorCuda.setParticleProperties(sqrt(_epsilon*_epsilon) * 24.0, ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
+  ljFunctorCuda.setParticleProperties(sqrt(_epsilon * _epsilon) * 24.0,
+                                      ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
 
   ASSERT_TRUE(AoSParticlesEqual(cellCuda, cellNoCuda)) << "Cells not equal after copy initialization.";
 

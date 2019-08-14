@@ -585,13 +585,13 @@ class LJFunctorAVX
   }
 
   /**
- * Sets the particle properties constants for this functor.
- *
- * This is only necessary if no particlePropertiesLibrary is used.
- *
- * @param epsilon24
- * @param sigmaSquare
- */
+   * Sets the particle properties constants for this functor.
+   *
+   * This is only necessary if no particlePropertiesLibrary is used.
+   *
+   * @param epsilon24
+   * @param sigmaSquare
+   */
   void setParticleProperties(double epsilon24, double sigmaSquare) {
     _epsilon24 = _mm256_set1_pd(epsilon24);
     _sigmaSquare = _mm256_set1_pd(sigmaSquare);
