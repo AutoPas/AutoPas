@@ -183,7 +183,7 @@ class LJFunctor
     const floatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
     auto sigmasquare = _sigmasquare;
     auto epsilon24 = _epsilon24;
-    if constexpr (calculateGlobals) {
+    if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
       bool isHaloCell = ownedPtr[0] ? false : true;
       if (isHaloCell) {
@@ -253,7 +253,7 @@ class LJFunctor
         fyptr[j] -= fy;
         fzptr[j] -= fz;
 
-        if constexpr (calculateGlobals) {
+        if (calculateGlobals) {
           const floatPrecision virialx = drx * fx;
           const floatPrecision virialy = dry * fy;
           const floatPrecision virialz = drz * fz;
@@ -271,7 +271,7 @@ class LJFunctor
       fyptr[i] += fyacc;
       fzptr[i] += fzacc;
     }
-    if constexpr (calculateGlobals) {
+    if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
       // we assume newton3 to be enabled in this functor call, thus we multiply by two if the value of newton3 is false,
       // since for newton3 disabled we divide by two later on.
@@ -311,7 +311,7 @@ class LJFunctor
     // Checks whether the cells are halo cells.
     // This check cannot be done if _lowCorner and _highCorner are not set. So we do this only if calculateGlobals is
     // defined. (as of 23.11.2018)
-    if constexpr (calculateGlobals) {
+    if (calculateGlobals) {
       isHaloCell1 = ownedPtr1[0] ? false : true;
       isHaloCell2 = ownedPtr2[0] ? false : true;
 
@@ -338,7 +338,7 @@ class LJFunctor
       // preload all sigma and epsilons for next vectorized region
       std::vector<floatPrecision, AlignedAllocator<floatPrecision>> sigmaSquares;
       std::vector<floatPrecision, AlignedAllocator<floatPrecision>> epsilon24s;
-      if constexpr (useMixing) {
+      if (useMixing) {
         sigmaSquares.resize(soa2.getNumParticles());
         epsilon24s.resize(soa2.getNumParticles());
         for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
@@ -351,7 +351,7 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        if constexpr (useMixing) {
+        if (useMixing) {
           sigmasquare = sigmaSquares[j];
           epsilon24 = epsilon24s[j];
         }
@@ -387,7 +387,7 @@ class LJFunctor
           fz2ptr[j] -= fz;
         }
 
-        if constexpr (calculateGlobals) {
+        if (calculateGlobals) {
           floatPrecision virialx = drx * fx;
           floatPrecision virialy = dry * fy;
           floatPrecision virialz = drz * fz;
@@ -403,7 +403,7 @@ class LJFunctor
       fy1ptr[i] += fyacc;
       fz1ptr[i] += fzacc;
     }
-    if constexpr (calculateGlobals) {
+    if (calculateGlobals) {
       floatPrecision energyfactor = 1.;
       if (_duplicatedCalculations) {
         // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
@@ -746,9 +746,9 @@ class LJFunctor
 
       // checks whether particle 1 is in the domain box, unused if _duplicatedCalculations is false!
       floatPrecision inbox1Mul = 0.;
-      if constexpr (duplicatedCalculations) {  // only for duplicated calculations we need this value
+      if (duplicatedCalculations) {  // only for duplicated calculations we need this value
         inbox1Mul = ownedPtr[i];
-        if constexpr (newton3) {
+        if (newton3) {
           inbox1Mul *= 0.5;
         }
       }
@@ -788,7 +788,7 @@ class LJFunctor
 
           alignas(DEFAULT_CACHE_LINE_SIZE) std::array<floatPrecision, vecsize> sigmaSquares;
           alignas(DEFAULT_CACHE_LINE_SIZE) std::array<floatPrecision, vecsize> epsilon24s;
-          if constexpr (useMixing) {
+          if (useMixing) {
             for (size_t j = 0; j < vecsize; j++) {
               sigmaSquares[j] =
                   (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
@@ -808,7 +808,7 @@ class LJFunctor
           // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
-            if constexpr (useMixing) {
+            if (useMixing) {
               sigmasquare = sigmaSquares[j];
               epsilon24 = epsilon24s[j];
             }
@@ -840,18 +840,18 @@ class LJFunctor
             fxacc += fx;
             fyacc += fy;
             fzacc += fz;
-            if constexpr (newton3) {
+            if (newton3) {
               fxArr[j] = fx;
               fyArr[j] = fy;
               fzArr[j] = fz;
             }
-            if constexpr (calculateGlobals) {
+            if (calculateGlobals) {
               floatPrecision virialx = drx * fx;
               floatPrecision virialy = dry * fy;
               floatPrecision virialz = drz * fz;
               floatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
 
-              if constexpr (duplicatedCalculations) {
+              if (duplicatedCalculations) {
                 // for non-newton3 the division is in the post-processing step.
                 floatPrecision inboxMul = inbox1Mul + (newton3 ? ownedArr[j] * .5 : 0.);
                 upotSum += upot * inboxMul;
@@ -869,7 +869,7 @@ class LJFunctor
             }
           }
           // scatter the forces to where they belong, this is only needed for newton3
-          if constexpr (newton3) {
+          if (newton3) {
 #pragma omp simd safelen(vecsize)
             for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
               const size_t j = currentList[joff + tmpj];
@@ -884,7 +884,7 @@ class LJFunctor
       for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
         size_t j = neighborList[i][jNeighIndex];
         if (i == j) continue;
-        if constexpr (useMixing) {
+        if (useMixing) {
           sigmasquare = (floatPrecision)_PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
           epsilon24 = (floatPrecision)_PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
         }
@@ -915,20 +915,20 @@ class LJFunctor
         fxacc += fx;
         fyacc += fy;
         fzacc += fz;
-        if constexpr (newton3) {
+        if (newton3) {
           fxptr[j] -= fx;
           fyptr[j] -= fy;
           fzptr[j] -= fz;
         }
-        if constexpr (calculateGlobals) {
+        if (calculateGlobals) {
           floatPrecision virialx = drx * fx;
           floatPrecision virialy = dry * fy;
           floatPrecision virialz = drz * fz;
           floatPrecision upot = (epsilon24 * lj12m6 + shift6);
 
-          if constexpr (duplicatedCalculations) {
+          if (duplicatedCalculations) {
             // for non-newton3 the division is in the post-processing step.
-            if constexpr (newton3) {
+            if (newton3) {
               upot *= 0.5;
               virialx *= 0.5;
               virialy *= 0.5;
@@ -964,7 +964,7 @@ class LJFunctor
       }
     }
 
-    if constexpr (calculateGlobals) {
+    if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
 
       _aosThreadData[threadnum].upotSum += upotSum;
