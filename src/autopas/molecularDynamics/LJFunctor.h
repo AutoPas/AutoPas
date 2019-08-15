@@ -112,7 +112,7 @@ class LJFunctor
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto sigmasquare = _sigmasquare;
     auto epsilon24 = _epsilon24;
-    if constexpr (useMixing) {
+    if (useMixing) {
       sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
       epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
     }
@@ -133,7 +133,7 @@ class LJFunctor
       // only if we use newton 3 here, we want to
       j.subF(f);
     }
-    if constexpr (calculateGlobals) {
+    if (calculateGlobals) {
       auto virial = ArrayMath::mul(dr, f);
       floatPrecision upot = epsilon24 * lj12m6 + _shift6;
 
@@ -203,7 +203,7 @@ class LJFunctor
 
       std::vector<floatPrecision, AlignedAllocator<floatPrecision>> sigmaSquares;
       std::vector<floatPrecision, AlignedAllocator<floatPrecision>> epsilon24s;
-      if constexpr (useMixing) {
+      if (useMixing) {
         // preload all sigma and epsilons for next vectorized region
         sigmaSquares.resize(soa.getNumParticles());
         epsilon24s.resize(soa.getNumParticles());
@@ -217,7 +217,7 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        if constexpr (useMixing) {
+        if (useMixing) {
           sigmasquare = sigmaSquares[j];
           epsilon24 = epsilon24s[j];
         }
