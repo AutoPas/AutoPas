@@ -219,27 +219,34 @@ namespace autopas {
 
     template<class Particle, class ParticleCell, FunctorN3Modes useNewton3>
     void KokkosStructLJFunctor<Particle, ParticleCell, useNewton3>::kokkosLoader(ParticleCell &cell) {
-        FloatMatrix3Type buffer("_buffer", cell.numParticles(), 3, KOKKOS_DIM);
+        if(cell.numParticles() > 0){
+            //FloatMatrix3Type buffer("_buffer", cell.numParticles(), 3, KOKKOS_DIM);
 
-        FloatMatrix3Type::HostMirror h_matrix = Kokkos::create_mirror_view(buffer);
-        for (unsigned int x = 0; x < cell._particles.size(); x++) {
-            //position
-            auto arr_r = cell._particles[x].getR();
-            auto arr_f = cell._particles[x].getF();
-            auto arr_v = cell._particles[x].getV();
-            for (unsigned int i = 0; i < KOKKOS_DIM; i++) {
-                h_matrix(x, 0, i) = arr_r[i];//position
-                h_matrix(x, 1, i) = arr_f[i];//force
-                h_matrix(x, 2, i) = arr_v[i];//velocity
+
+
+            Kokkos::resize(cell._particleKokkosBuffer, cell.numParticles(), 3, KOKKOS_DIM);
+
+
+            FloatMatrix3Type::HostMirror h_matrix = Kokkos::create_mirror_view(cell._particleKokkosBuffer);
+            for (unsigned int x = 0; x < cell._particles.size(); x++) {
+                //position
+                auto arr_r = cell._particles[x].getR();
+                auto arr_f = cell._particles[x].getF();
+                auto arr_v = cell._particles[x].getV();
+                for (unsigned int i = 0; i < KOKKOS_DIM; i++) {
+                    h_matrix(x, 0, i) = arr_r[i];//position
+                    h_matrix(x, 1, i) = arr_f[i];//force
+                    h_matrix(x, 2, i) = arr_v[i];//velocity
+                }
             }
+            Kokkos::deep_copy(cell._particleKokkosBuffer, h_matrix);
+            //std::cout << buffer.extent(0) << ", " << buffer.extent(1) << ", " << buffer.extent(2) << "\n";
+            //Test structure
+            //Kokkos::parallel_for(cell._particles.size(), KOKKOS_LAMBDA(const int i){
+            //cell._particleKokkosBuffer(0, 0, 0) += 1;
+            //});
+            //cell._particleKokkosBuffer =  buffer;
         }
-        Kokkos::deep_copy(buffer, h_matrix);
-        //std::cout << buffer.extent(0) << ", " << buffer.extent(1) << ", " << buffer.extent(2) << "\n";
-        //Test structure
-        //Kokkos::parallel_for(cell._particles.size(), KOKKOS_LAMBDA(const int i){
-        //cell._particleKokkosBuffer(0, 0, 0) += 1;
-        //});
-        cell._particleKokkosBuffer =  buffer;
     }
 
     template<class Particle, class ParticleCell, FunctorN3Modes useNewton3>

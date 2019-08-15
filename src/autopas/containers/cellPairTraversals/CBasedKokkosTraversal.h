@@ -72,9 +72,17 @@ namespace autopas {
                 }
                  */
                 //std::cout << "--------------------\n";
+                //std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
+
+                //startCalc = std::chrono::high_resolution_clock::now();
                 for (unsigned int c = 0; c < cells.size(); c++) {
                     _dataLayoutConverter.storeDataLayout(cells[c]);
                 }
+                //stopCalc = std::chrono::high_resolution_clock::now();
+
+                //auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
+                //auto durationCalcSec = durationCalc * 1e-6;
+                //std::cout << "Time init: " << durationCalc << " \u03bcs (" << durationCalcSec << "s)" << std::endl;
             }
             /*for (unsigned int c = 0; c < cells.size(); c++) {
                 for(Particle p:cells[c]._particles){
@@ -90,9 +98,17 @@ namespace autopas {
         void endTraversal(std::vector<ParticleCell> &cells) override {
             if(dataLayout == DataLayoutOption::kokkos){
                 //copy data to particle
+                //std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
+
+                //startCalc = std::chrono::high_resolution_clock::now();
                 for (unsigned int c = 0; c < cells.size(); c++) {
                     _dataLayoutConverter.loadDataLayout(cells[c]);
                 }
+                //stopCalc = std::chrono::high_resolution_clock::now();
+
+                //auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
+                //auto durationCalcSec = durationCalc * 1e-6;
+                //std::cout << "Time exit: " << durationCalc << " \u03bcs (" << durationCalcSec << "s)" << std::endl;
             }
             //check particle attributes
             /*for (unsigned int c = 0; c < cells.size(); c++) {
@@ -158,8 +174,7 @@ namespace autopas {
           const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 #ifdef AUTOPAS_KOKKOS
 
-          //typedef Kokkos::TeamPolicy<> team_policy;
-          //typedef Kokkos::TeamPolicy<>::member_type member_type;
+
 
           int iterationsZ = 1 + (end_z - 1 - start_z)/stride_z;
           if(end_z < start_z || iterationsZ < 0) iterationsZ = 0;
@@ -169,6 +184,7 @@ namespace autopas {
 
             unsigned int iterationsX = 1 + (end_x - 1 - start_x)/stride_x;
             if(end_x < start_x || iterationsX < 0) iterationsX = 0;
+
 
 /*
           Kokkos::parallel_for(team_policy( iterationsZ, Kokkos::AUTO), KOKKOS_LAMBDA ( const member_type &teamMember){
@@ -183,6 +199,8 @@ namespace autopas {
           });
 */
 /*
+            typedef Kokkos::TeamPolicy<> team_policy;
+            typedef Kokkos::TeamPolicy<>::member_type member_type;
             Kokkos::parallel_for(team_policy( iterationsZ, Kokkos::AUTO), KOKKOS_LAMBDA ( const member_type &teamMember){
                 const int i = teamMember.league_rank();
                 //std::cout << "League Size: " << teamMember.team_size() <<"\n";
@@ -197,6 +215,7 @@ namespace autopas {
 
             //Test version, currently decreases perormance in OpenMP Kokkos, perhaps useful for CUDA?
             //best result
+
             Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {iterationsZ, iterationsY, iterationsX}),
                     KOKKOS_LAMBDA(int z, int y, int x){
                         //std::cout << x << ", " << y << ", " << z << "\n";
