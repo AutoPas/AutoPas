@@ -997,8 +997,8 @@ class LJFunctor
   // static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
   // default values for epsilon = sigma = 1
-  floatPrecision _epsilon24;
-  floatPrecision _sigmasquare;
+  floatPrecision _epsilon24 = 1.;
+  floatPrecision _sigmasquare = 1.;
 
   floatPrecision _cutoffsquare;
   ParticlePropertiesLibrary<floatPrecision, size_t> *_PPLibrary = nullptr;

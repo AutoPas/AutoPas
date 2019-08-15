@@ -134,16 +134,22 @@ TEST_F(TimeDiscretizationTest, GlobalForce) {
   initFillWithParticles(auto1b, eightParticles);
   //    globalForceTest(auto1a,auto1b,10);
   //    globalForceTest(auto1a,auto1b,20);
-  globalForceTest(auto1a, auto1b, 30);
-  initFillWithParticles(auto2a, hundred_twenty_fiveParticles);
-  initFillWithParticles(auto2b, hundred_twenty_fiveParticles);
+  globalForceTest(auto1a, auto1b, 5);
+  //  initFillWithParticles(auto2a, hundred_twenty_fiveParticles);
+  //  initFillWithParticles(auto2b, hundred_twenty_fiveParticles);
   //    globalForceTest(auto2a,auto2b,10);
   //    globalForceTest(auto2a,auto2b,20);
-  globalForceTest(auto2a, auto2b, 30);
+  //  globalForceTest(auto2a, auto2b, 30);
 }
 
 TEST_F(TimeDiscretizationTest, PositionsAndVelocity) {
   auto autopas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
   Pos_and_Velo_Test(autopas, 25, 10);
   Pos_and_Velo_Test(autopas, 100, 10);
+}
+
+TEST_F(TimeDiscretizationTest, miniSzenario) {
+  auto auto1a = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
+
+  ASSERT_TRUE(true);
 }
