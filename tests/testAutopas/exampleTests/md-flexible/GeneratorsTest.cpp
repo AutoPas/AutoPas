@@ -175,24 +175,24 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   EXPECT_EQ(ids.size(), autoPas.getNumberOfParticles());
 }
 
-TEST_F(GeneratorsTest,distanceBetweenParticles){
-    auto autoPas = autopas::AutoPas<autopas::MoleculeLJ<>, FMCell>(std::cout);
-    std::string input = "MolSimBlatt2Task3.yaml";
-    parser.setFilename(input);
-    parser.parseYamlFile();
-    autoPas.setBoxMax(parser.getBoxMax());
-    autoPas.setBoxMin(parser.getBoxMin());
-    autoPas.init();
-    auto CubeGrid(parser.getCubeGrid());
-    size_t idcounter = 0;  // to avoid multiple particles with the same ids
-
-    Generator::CubeGrid(autoPas, CubeGrid.at(0).getTypeId(), idcounter, CubeGrid.at(0).getBoxMin(),
-                        CubeGrid.at(0).getParticlesPerDim(), CubeGrid.at(0).getParticleSpacing(),
-                        CubeGrid.at(0).getVelocity());
-    idcounter += CubeGrid.at(0).getParticlesTotal();
-    std::cout << "number of particles: " << autoPas.getNumberOfParticles() << std::endl;
-    for(auto iter=autoPas.begin();iter.isValid();++iter){
-        std::cout <<  iter->toString() /*autopas::ArrayUtils::to_string(iter->getR())*/ << std::endl;
-    }
-    //testen ob distanz richtig ist nach initialisierung der Grids
-}
+//TEST_F(GeneratorsTest,distanceBetweenParticles){
+//    auto autoPas = autopas::AutoPas<autopas::MoleculeLJ<>, FMCell>(std::cout);
+//    std::string input = "MolSimBlatt2Task3.yaml";
+//    parser.setFilename(input);
+//    parser.parseYamlFile();
+//    autoPas.setBoxMax(parser.getBoxMax());
+//    autoPas.setBoxMin(parser.getBoxMin());
+//    autoPas.init();
+//    auto CubeGrid(parser.getCubeGrid());
+//    size_t idcounter = 0;  // to avoid multiple particles with the same ids
+//
+//    Generator::CubeGrid(autoPas, CubeGrid.at(0).getTypeId(), idcounter, CubeGrid.at(0).getBoxMin(),
+//                        CubeGrid.at(0).getParticlesPerDim(), CubeGrid.at(0).getParticleSpacing(),
+//                        CubeGrid.at(0).getVelocity());
+//    idcounter += CubeGrid.at(0).getParticlesTotal();
+//    std::cout << "number of particles: " << autoPas.getNumberOfParticles() << std::endl;
+//    for(auto iter=autoPas.begin();iter.isValid();++iter){
+//        std::cout <<  iter->toString() /*autopas::ArrayUtils::to_string(iter->getR())*/ << std::endl;
+//    }
+//    //testen ob distanz richtig ist nach initialisierung der Grids
+//}

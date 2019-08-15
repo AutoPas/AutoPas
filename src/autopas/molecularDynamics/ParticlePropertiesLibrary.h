@@ -141,10 +141,10 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getMass(intType i) {
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::get24Epsilon(intType i) {
-  return _computedMixing24Epsilon[std::make_pair(i, i)];
+  return _computedMixing24Epsilon.at(std::make_pair(i, i));
 }
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquare(intType i) {
-  return _computedMixingSigmaSquare[std::make_pair(i, i)];
+  return _computedMixingSigmaSquare.at(std::make_pair(i, i));
 }

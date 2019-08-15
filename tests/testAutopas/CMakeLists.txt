@@ -1,9 +1,8 @@
 file(
-    GLOB
+    GLOB_RECURSE
     MY_SRC
     "*.cpp"
     "*.h"
-        "exampleTests/md-flexible/*"
         "../../examples/md-flexible/YamlParser.cpp"
         "../../examples/md-flexible/YamlParser.h"
         "../../examples/md-flexible/Simulation.h"

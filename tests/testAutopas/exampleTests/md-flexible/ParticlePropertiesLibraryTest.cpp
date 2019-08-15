@@ -38,9 +38,9 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
   EXPECT_EQ(SimPpL.getMass(3), 4.0);
   EXPECT_EQ(SimPpL.get24Epsilon(3), 96.0);
   EXPECT_EQ(SimPpL.getSigmaSquare(3), 16.0);
-  ASSERT_ANY_THROW(SimPpL.get24Epsilon(4));
-  ASSERT_ANY_THROW(SimPpL.getSigmaSquare(4));
-  ASSERT_ANY_THROW(SimPpL.getMass(4));
+  ASSERT_ANY_THROW(SimPpL.get24Epsilon(10));
+  ASSERT_ANY_THROW(SimPpL.getSigmaSquare(10));
+  ASSERT_ANY_THROW(SimPpL.getMass(10));
 }
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitializationDefault) {
