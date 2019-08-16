@@ -132,13 +132,9 @@ TEST_F(TimeDiscretizationTest, GlobalForce) {
   std::array<unsigned long, 3> hundred_twenty_fiveParticles = {5, 5, 5};
   initFillWithParticles(auto1a, eightParticles);
   initFillWithParticles(auto1b, eightParticles);
-  //    globalForceTest(auto1a,auto1b,10);
-  //    globalForceTest(auto1a,auto1b,20);
-  globalForceTest(auto1a, auto1b, 30);
+  globalForceTest(auto1a, auto1b, 5);
   initFillWithParticles(auto2a, hundred_twenty_fiveParticles);
   initFillWithParticles(auto2b, hundred_twenty_fiveParticles);
-  //    globalForceTest(auto2a,auto2b,10);
-  //    globalForceTest(auto2a,auto2b,20);
   globalForceTest(auto2a, auto2b, 30);
 }
 
