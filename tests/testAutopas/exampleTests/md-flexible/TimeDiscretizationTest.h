@@ -30,6 +30,7 @@ class TimeDiscretizationTest : public AutoPasTestBase {
         boxmax{{5., 5., 5.}},
         _particlePropertiesLibrary(),
         functor{autopas::LJFunctor<PrintableMolecule, autopas::ParticleCell<PrintableMolecule>>(cutoff, 0.0)} {
+    functor.setParticleProperties(1., 1.);
     _particlePropertiesLibrary.addType(0, 1, 1, 1);
   }
 

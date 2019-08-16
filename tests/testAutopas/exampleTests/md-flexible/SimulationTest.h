@@ -22,19 +22,20 @@
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "testingHelpers/commonTypedefs.h"
-class PeriodicBoundariesTest : public AutoPasTestBase {
+class SimulationTest : public AutoPasTestBase {
  public:
-  PeriodicBoundariesTest()
+  SimulationTest()
       : AutoPasTestBase(),
-        _parser{std::make_shared<YamlParser>()}
-        {/* _parser->setFilename("periodic.yaml"); */
-        _parser->setFilename("MolSimBlatt2Task3.yaml");
-        _parser->parseYamlFile();
-        _parser->setFilename("VtkPeriodicOutput");
-        _simulation.initialize(_parser);
-        }
-        /**Prints state of current Iteration of Simulation as .vtu file
-         * */
+        _parser{std::make_shared<YamlParser>()},
+    boxmin{{0., 0., 0.}},
+    boxmax{{5., 5., 5.}}
+        {}
+
+ void initFillWithParticles(autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas,
+                           std::array<unsigned long, 3> particlesPerDim);
+
+/**Prints state of current Iteration of Simulation as .vtu file
+* */
   template <class AutoPasTemplate>
   void writeVTKFile(std::string &vtkFilename, size_t numParticles, AutoPasTemplate &autopas) {
     using namespace std;
@@ -60,5 +61,7 @@ class PeriodicBoundariesTest : public AutoPasTestBase {
  protected:
   std::shared_ptr<YamlParser> _parser;
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> _simulation;
+  std::array<double,3> boxmin;
+  std::array<double,3> boxmax;
 
 };

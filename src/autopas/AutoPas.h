@@ -139,7 +139,7 @@ class AutoPas {
    * If the neighbor lists of AutoPas are valid the particle will be used to update an already existing halo particle.
    * In this case if there is no matching halo particle, the given haloParticle will be ignored.
    * @note Exceptions are thrown in the following cases:
-   * 1. If the halo particle is added and it is insided of the owned domain (defined by boxmin and boxmax)of the
+   * 1. If the halo particle is added and it is inside of the owned domain (defined by boxmin and boxmax)of the
    * container.
    * 2. If the halo particle should be updated and the given haloParticle is too far inside of the domain (by more than
    * skin/2)
