@@ -25,12 +25,13 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
 
   double shift = 0.0;
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), shift);
+  func.setParticleProperties(24, 1);
 
   auto verletTraversal = autopas::TraversalSelector<FMCell>::generateTraversal(
       traversalOption, func, _verletLists.getTraversalSelectorInfo(), dataLayout,
       useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled);
 
-  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3> traversalLinkedLJ(
+  autopas::C08Traversal<FMCell, decltype(func), dataLayout, useNewton3> traversalLinkedLJ(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   _verletLists.rebuildNeighborLists(verletTraversal.get());
   _verletLists.iteratePairwise(verletTraversal.get());
@@ -60,7 +61,7 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
 
-  autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, dataLayout, useNewton3> traversalFLOPS(
+  autopas::C08Traversal<FMCell, decltype(flopsLinked), dataLayout, useNewton3> traversalFLOPS(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
 
   auto traversalFLOPSVerlet = autopas::TraversalSelector<FMCell>::generateTraversal(

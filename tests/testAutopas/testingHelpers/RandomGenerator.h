@@ -38,10 +38,11 @@ class RandomGenerator {
    * @param container
    * @param defaultParticle
    * @param numParticles
+   * @param seed
    */
   template <class Container, class Particle>
   static void fillWithParticles(Container &container, const Particle &defaultParticle,
-                                unsigned long numParticles = 100ul);
+                                unsigned long numParticles = 100ul, unsigned int seed = 42);
 
   /**
    * Fills the given container with randomly distributed particles between boxMin and boxMax.
@@ -52,11 +53,12 @@ class RandomGenerator {
    * @param boxMin min. position
    * @param boxMax max. position
    * @param numParticles number of particles
+   * @param seed
    */
   template <class Container, class Particle>
   static void fillWithParticles(Container &container, const Particle &defaultParticle,
                                 const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                unsigned long numParticles = 100ul);
+                                unsigned long numParticles = 100ul, unsigned int seed = 42);
 
   /**
    * Fills only a given part of a container (also AutoPas object) with randomly uniformly distributed particles.
@@ -66,24 +68,25 @@ class RandomGenerator {
    * @param defaultParticle
    * @param haloWidth
    * @param numParticles
+   * @param seed
    */
   template <class Container, class Particle>
   static void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
-                                    unsigned long numParticles = 100ul);
+                                    unsigned long numParticles = 100ul, unsigned int seed = 42);
 };
 
 template <class Container, class Particle>
 void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
-                                        unsigned long numParticles) {
+                                        unsigned long numParticles, unsigned int seed) {
   RandomGenerator::fillWithParticles(container, defaultParticle, container.getBoxMin(), container.getBoxMax(),
-                                     numParticles);
+                                     numParticles, seed);
 }
 
 template <class Container, class Particle>
 void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
                                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                        unsigned long numParticles) {
-  srand(42);  // fixed seedpoint
+                                        unsigned long numParticles, unsigned int seed) {
+  srand(seed);  // fixed seedpoint
 
   for (unsigned long i = 0; i < numParticles; ++i) {
     Particle particle(defaultParticle);
@@ -95,8 +98,8 @@ void RandomGenerator::fillWithParticles(Container &container, const Particle &de
 
 template <class Container, class Particle>
 void RandomGenerator::fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
-                                            unsigned long numParticles) {
-  srand(42);  // fixed seedpoint
+                                            unsigned long numParticles, unsigned int seed) {
+  srand(seed);  // fixed seedpoint
 
   auto haloBoxMin = container.getBoxMin();
   auto haloBoxMax = container.getBoxMax();
