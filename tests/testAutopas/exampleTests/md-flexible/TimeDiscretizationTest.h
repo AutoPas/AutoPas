@@ -33,6 +33,28 @@ class TimeDiscretizationTest : public AutoPasTestBase {
     _particlePropertiesLibrary.addType(0, 1, 1, 1);
   }
 
+    template <class AutoPasTemplate>
+    void writeVTKFile(std::string &vtkFilename, size_t numParticles, AutoPasTemplate &autopas) {
+        using namespace std;
+        stringstream strstr;
+        strstr << vtkFilename;
+        // string path = "./vtk";
+        std::ofstream vtkFile;
+        vtkFile.open(strstr.str());
+        vtkFile << "# vtk DataFile Version 2.0" << endl;
+        vtkFile << "Timestep" << endl;
+        vtkFile << "ASCII" << endl;
+        vtkFile << "DATASET STRUCTURED_GRID" << endl;
+        vtkFile << "DIMENSIONS 1 1 1" << endl;
+        vtkFile << "POINTS " << numParticles << " double" << endl;
+
+        for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+            auto pos = iter->getR();
+            vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
+        }
+        vtkFile.close();
+    }
+
   void globalForceTest(autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &auto1,
                        autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &auto2,
                        int iterations);

@@ -147,3 +147,11 @@ TEST_F(TimeDiscretizationTest, PositionsAndVelocity) {
   Pos_and_Velo_Test(autopas, 25, 10);
   Pos_and_Velo_Test(autopas, 100, 10);
 }
+
+TEST_F(TimeDiscretizationTest, miniSzenarioTestingParticlesInteraction) {
+  auto auto1a = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
+  initFillWithParticles(auto1a,{2,2,2});
+
+
+  ASSERT_TRUE(true);
+}
