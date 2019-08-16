@@ -37,7 +37,7 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   auto particlesSoA = particlesAoS;
   LJFunctor<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> ljFunctor(PARTICLES_PER_DIM * 10,
                                                                                                0);
-
+  ljFunctor.setParticleProperties(1., 1.);
   // AoS
   std::chrono::high_resolution_clock::time_point start, stop;
   start = std::chrono::high_resolution_clock::now();

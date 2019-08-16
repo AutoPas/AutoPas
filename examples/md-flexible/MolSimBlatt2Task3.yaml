@@ -20,8 +20,8 @@ vtk-write-frequency: 30              #size_t option
 
 #functor:                           #string option
 delta_t: 0.0002                     #double option
-cutoff: 2.5                        #double option
-iterations: 8000 #in der MolSim Simulation waren hier 25000 iterationen, 8000 sind aber mehr als ausreichend
+cutoff: 1.1225                      #double option
+iterations: 8000                    #in der MolSim Simulation waren hier 25000 iterationen, 8000 sind aber mehr als ausreichend
 periodic-boundaries: false          #boolean option
 
 ###Objects generation Options
@@ -33,7 +33,7 @@ Objects:
       particle-sigma: 1
       particle-mass: 1.
       particles-per-Dim: [8,8,1]
-      particleSpacing: 1.1225
+      particleSpacing: 1.12
       velocity: [0.,-10.,0.]
       center: [19.49,19.49,0.]
     1:

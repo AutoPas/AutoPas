@@ -22,6 +22,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "testingHelpers/commonTypedefs.h"
+
 class SimulationTest : public AutoPasTestBase {
  public:
   SimulationTest()
@@ -32,17 +33,16 @@ class SimulationTest : public AutoPasTestBase {
  static void initFillWithParticles(autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas,
                            std::array<unsigned long, 3> particlesPerDim,double particleSpacing,double cutoff);
 
-  void smallSzenario(std::array<size_t,3> particlesPerDim,double cutoff,double particleSpacing,double epsilon,double sigma,double mass,int iterations,double delta_t);
+  void VisualizeSmallSzenario(std::array<size_t,3> particlesPerDim, double cutoff, double particleSpacing, double epsilon, double sigma, double mass, int iterations, double delta_t, const std::string &filename);
 
 /**Prints state of current Iteration of Simulation as .vtu file
 * */
   template <class AutoPasTemplate>
-  void writeVTKFile(AutoPasTemplate &autopas,size_t iteration) {
+  void writeVTKFile(AutoPasTemplate &autopas,size_t iteration,const std::string &filename) {
     using namespace std;
-        std::string fileBaseName = "smallSzenario";
         std::stringstream strstr;
         auto maxNumDigits = 4;
-        strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtu";
+        strstr << filename << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtu";
         std::ofstream vtkFile;
         vtkFile.open(strstr.str());
 
@@ -62,6 +62,5 @@ class SimulationTest : public AutoPasTestBase {
 
  protected:
   std::shared_ptr<YamlParser> _parser;
-
 
 };
