@@ -508,6 +508,7 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
   Molecule p({-.1, 10.1, -.1}, {0., 0., 0.}, 1, 0);
   verletLists.addHaloParticle(p);
   autopas::LJFunctor<Molecule, FMCell> ljFunctor(cutoff, 0 /*shift*/);
+  ljFunctor.setParticleProperties(1., 1.);
   autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, false>
       verletTraversal(&ljFunctor);
 
@@ -530,6 +531,7 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
   RandomGenerator::fillWithParticles(verletLists1, defaultParticle, 100);
   RandomGenerator::fillWithParticles(verletLists2, defaultParticle, 100);
   autopas::LJFunctor<Molecule, FMCell> ljFunctor(cutoff, 0);
+  ljFunctor.setParticleProperties(1., 1.);
   autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>
       verletTraversal1(&ljFunctor);
   autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, false>
