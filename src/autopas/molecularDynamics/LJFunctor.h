@@ -998,7 +998,7 @@ class LJFunctor
 
   // default values for epsilon = sigma = 1
   floatPrecision _epsilon24 = 1.;
-  floatPrecision _sigmasquare = 1.;
+  floatPrecision _sigmasquare = 1.w;
 
   floatPrecision _cutoffsquare;
   ParticlePropertiesLibrary<floatPrecision, size_t> *_PPLibrary = nullptr;
