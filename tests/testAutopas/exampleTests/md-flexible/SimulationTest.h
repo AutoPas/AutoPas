@@ -26,42 +26,42 @@ class SimulationTest : public AutoPasTestBase {
  public:
   SimulationTest()
       : AutoPasTestBase(),
-        _parser{std::make_shared<YamlParser>()},
-    boxmin{{0., 0., 0.}},
-    boxmax{{5., 5., 5.}}
-        {}
+        _parser{std::make_shared<YamlParser>()}
+      {}
 
- void initFillWithParticles(autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas,
-                           std::array<unsigned long, 3> particlesPerDim);
+ static void initFillWithParticles(autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas,
+                           std::array<unsigned long, 3> particlesPerDim,double particleSpacing,double cutoff);
+
+  void smallSzenario(std::array<size_t,3> particlesPerDim,double cutoff,double particleSpacing,double epsilon,double sigma,double mass,int iterations,double delta_t);
 
 /**Prints state of current Iteration of Simulation as .vtu file
 * */
   template <class AutoPasTemplate>
-  void writeVTKFile(std::string &vtkFilename, size_t numParticles, AutoPasTemplate &autopas) {
+  void writeVTKFile(AutoPasTemplate &autopas,size_t iteration) {
     using namespace std;
-    stringstream strstr;
-    strstr << vtkFilename;
-    // string path = "./vtk";
-    std::ofstream vtkFile;
-    vtkFile.open(strstr.str());
-    vtkFile << "# vtk DataFile Version 2.0" << endl;
-    vtkFile << "Timestep" << endl;
-    vtkFile << "ASCII" << endl;
-    vtkFile << "DATASET STRUCTURED_GRID" << endl;
-    vtkFile << "DIMENSIONS 1 1 1" << endl;
-    vtkFile << "POINTS " << numParticles << " double" << endl;
+        std::string fileBaseName = "smallSzenario";
+        std::stringstream strstr;
+        auto maxNumDigits = 4;
+        strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtu";
+        std::ofstream vtkFile;
+        vtkFile.open(strstr.str());
 
-    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      auto pos = iter->getR();
-      vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
-    }
-    vtkFile.close();
+        vtkFile << "# vtk DataFile Version 2.0" << std::endl;
+        vtkFile << "Timestep" << std::endl;
+        vtkFile << "ASCII" << std::endl;
+        vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
+        vtkFile << "DIMENSIONS 1 1 1" << std::endl;
+        vtkFile << "POINTS " << autopas.getNumberOfParticles() << " double" << std::endl;
+
+        for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+            auto pos = iter->getR();
+            vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
+        }
+        vtkFile.close();
   }
 
  protected:
   std::shared_ptr<YamlParser> _parser;
-  Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> _simulation;
-  std::array<double,3> boxmin;
-  std::array<double,3> boxmax;
+
 
 };
