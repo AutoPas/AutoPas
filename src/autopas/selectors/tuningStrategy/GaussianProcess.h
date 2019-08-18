@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
 
@@ -67,6 +68,18 @@ class GaussianProcess {
                                          inputVec.size(), _dims);
     }
 
+    if (_inputs.empty()) {
+      // first evidence
+      _evidenceMinValue = _evidenceMaxValue = output;
+      _evidenceMinVector = _evidenceMaxVector = input;
+    } else if (output < _evidenceMinValue) {
+      _evidenceMinValue = output;
+      _evidenceMinVector = input;
+    } else if (output > _evidenceMaxValue) {
+      _evidenceMaxValue = output;
+      _evidenceMaxVector = input;
+    }
+
     _inputs.push_back(input);
     long newSize = _inputs.size();
 
@@ -86,17 +99,7 @@ class GaussianProcess {
       utils::ExceptionHandler::exception("GaussianProcess has no evidence");
     }
 
-    double min = _outputs[0];
-    Vector minVec = _inputs[0];
-
-    for (size_t i = 1; i < _inputs.size(); ++i) {
-      if (_outputs[i] < min) {
-        min = _outputs[i];
-        minVec = _inputs[i];
-      }
-    }
-
-    return minVec;
+    return _evidenceMinVector;
   }
 
   /**
@@ -108,17 +111,7 @@ class GaussianProcess {
       utils::ExceptionHandler::exception("GaussianProcess has no evidence");
     }
 
-    double max = _outputs[0];
-    Vector maxVec = _inputs[0];
-
-    for (size_t i = 1; i < _inputs.size(); ++i) {
-      if (_outputs[i] > max) {
-        max = _outputs[i];
-        maxVec = _inputs[i];
-      }
-    }
-
-    return maxVec;
+    return _evidenceMaxVector;
   }
 
   /**
@@ -166,17 +159,26 @@ class GaussianProcess {
    */
   inline double calcAcquisition(AcquisitionFunctionOption af, const Vector &input) const {
     switch (af) {
-      case ucb: {
-        return predictMean(input) + std::sqrt(predictVar(input));
+      case UpperConfidenceBound: {
+        return predictMean(input) + 2 * std::sqrt(predictVar(input));
       }
-      case lcb: {
-        return predictMean(input) - std::sqrt(predictVar(input));
+      case LowerConfidenceBound: {
+        return predictMean(input) - 2 * std::sqrt(predictVar(input));
       }
-      case mean: {
+      case Mean: {
         return predictMean(input);
       }
-      case var: {
+      case Variance: {
         return predictVar(input);
+      }
+      case ProbabilityOfDecrease: {
+        return Math::normalCDF((_evidenceMinValue - predictMean(input)) / predictVar(input));
+      }
+      case ExpectedDecrease: {
+        double mean = predictMean(input);
+        double var = predictVar(input);
+        double minNormed = (_evidenceMinValue - mean) / var;
+        return (_evidenceMinValue - mean) * Math::normalCDF(minNormed) + var * Math::normalPDF(minNormed);
       }
     }
 
@@ -394,6 +396,23 @@ class GaussianProcess {
 
   std::vector<Vector> _inputs;
   Eigen::VectorXd _outputs;
+
+  /**
+   * Current smallest evidence output
+   */
+  double _evidenceMinValue;
+  /**
+   * Current smallest evidence input
+   */
+  Vector _evidenceMinVector;
+  /**
+   * Current greatest evidence output
+   */
+  double _evidenceMaxValue;
+  /**
+   * Current greatest evidence input
+   */
+  Vector _evidenceMaxVector;
 
   /**
    * input dimensions

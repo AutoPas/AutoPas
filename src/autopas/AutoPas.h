@@ -50,7 +50,7 @@ class AutoPas {
         _tuningInterval(5000),
         _numSamples(3),
         _maxEvidence(10),
-        _acquisitionFunctionOption(AcquisitionFunctionOption::var),
+        _acquisitionFunctionOption(AcquisitionFunctionOption::LowerConfidenceBound),
         _tuningStrategyOption(TuningStrategyOption::fullSearch),
         _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(allContainerOptions),

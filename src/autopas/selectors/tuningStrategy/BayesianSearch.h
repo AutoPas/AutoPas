@@ -49,7 +49,7 @@ class BayesianSearch : public TuningStrategyInterface {
                  const std::set<TraversalOption> &allowedTraversalOptions = allTraversalOptions,
                  const std::set<DataLayoutOption> &allowedDataLayoutOptions = allDataLayoutOptions,
                  const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options, size_t maxEvidence = 10,
-                 AcquisitionFunctionOption predAcqFunction = var, size_t predNumSamples = 1000,
+                 AcquisitionFunctionOption predAcqFunction = LowerConfidenceBound, size_t predNumSamples = 1000,
                  unsigned long seed = std::random_device()())
       : _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
@@ -174,15 +174,16 @@ FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFu
     }
 
     // sort by acquisition
-    if (af == AcquisitionFunctionOption::var) {
-      // max variance first
-      std::sort(samples.begin(), samples.end(), [&acquisitions](const FeatureVector &f1, const FeatureVector &f2) {
-        return acquisitions[f1] > acquisitions[f2];
-      });
-    } else {
+    if (af == AcquisitionFunctionOption::Mean or af == AcquisitionFunctionOption::LowerConfidenceBound or
+        af == AcquisitionFunctionOption::UpperConfidenceBound) {
       // min estimated value first
       std::sort(samples.begin(), samples.end(), [&acquisitions](const FeatureVector &f1, const FeatureVector &f2) {
         return acquisitions[f1] < acquisitions[f2];
+      });
+    } else {
+      // max acquisition first
+      std::sort(samples.begin(), samples.end(), [&acquisitions](const FeatureVector &f1, const FeatureVector &f2) {
+        return acquisitions[f1] > acquisitions[f2];
       });
     }
 
