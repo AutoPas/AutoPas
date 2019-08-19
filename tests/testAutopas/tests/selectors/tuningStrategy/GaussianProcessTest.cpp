@@ -199,7 +199,7 @@ TEST(GaussianProcessTest, 2dMax) {
 
   // try to find the max of -(i1 + 1)^2 - (i2 - 1)^2
   auto functor = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
-  double epsilon = 0.05;  // allowed error
+  double epsilon = 0.1;  // allowed error
   std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
                                              NumberInterval<double>(-2, 2)};  // domain of function
 
@@ -246,7 +246,7 @@ TEST(GaussianProcessTest, 2dMax) {
         Eigen::VectorXd sample(2);
         sample << (x * xSpace - 2), (y * ySpace - 2);
         double val = gp.calcAcquisition(af, sample);
-        int color = static_cast<int>(val * 5 + 250);
+        int color = static_cast<int>(val * 2.5 + 250);
         color = std::clamp(color, 232, 255);
 
         std::cout << "\033[48;5;" << color << "m  ";
@@ -258,7 +258,7 @@ TEST(GaussianProcessTest, 2dMax) {
         Eigen::VectorXd sample(2);
         sample << (x * xSpace - 2), (y * ySpace - 2);
         double val = gp.predictMean(sample);
-        int color = static_cast<int>(val * 5 + 250);
+        int color = static_cast<int>(val * 2.5 + 250);
         color = std::clamp(color, 232, 255);
 
         std::cout << "\033[48;5;" << color << "m  ";
@@ -285,7 +285,7 @@ TEST(GaussianProcessTest, 2dMin) {
 
   // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
   auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
-  double epsilon = 0.05;  // allowed error
+  double epsilon = 0.1;  // allowed error
   std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
                                              NumberInterval<double>(-2, 2)};  // domain of function
 
@@ -370,7 +370,7 @@ TEST(GaussianProcessTest, 2dMinGrid) {
 
   // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
   auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
-  double epsilon = 0.05;  // allowed error
+  double epsilon = 0.1;  // allowed error
 
   // domain of function
   int domHalf = 10;
@@ -517,7 +517,7 @@ TEST(GaussianProcessTest, 2dMinGridBig) {
         Eigen::VectorXd sample(2);
         sample << (x * xSpace - 2), (y * ySpace - 2);
         double val = gp.calcAcquisition(af, sample);
-        int color = static_cast<int>(val / 50 + 232);
+        int color = static_cast<int>(val / 100 + 232);
         color = std::clamp(color, 232, 255);
 
         std::cout << "\033[48;5;" << color << "m  ";
@@ -529,7 +529,7 @@ TEST(GaussianProcessTest, 2dMinGridBig) {
         Eigen::VectorXd sample(2);
         sample << (x * xSpace - 2), (y * ySpace - 2);
         double val = gp.predictMean(sample);
-        int color = static_cast<int>(val / 50 + 232);
+        int color = static_cast<int>(val / 100 + 232);
         color = std::clamp(color, 232, 255);
 
         std::cout << "\033[48;5;" << color << "m  ";

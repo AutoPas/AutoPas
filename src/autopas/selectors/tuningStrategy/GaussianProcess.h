@@ -20,7 +20,7 @@ namespace autopas {
  * output of a blackbox function f(x) for given input x. To do so, some sample
  * input-output pairs (x,f(x)) should be provided as evidence.
  *
- * Currently the default mean is 0 and squared exponential kernel is used.
+ * Currently the squared exponential kernel is used.
  * TODO: maybe offer some options.
  * @tparam Vector class should be subtractable and convertible to Eigen::VectorXd
  */
@@ -28,6 +28,76 @@ template <class Vector>
 class GaussianProcess {
   // number of samples to find optimal hyperparameters
   static constexpr size_t hp_sample_size = 10000;
+  // number of hyperparameters
+  static constexpr size_t hp_size = 100;
+
+  /**
+   * Hyperparameters and derived matrices used for prediction
+   */
+  struct Hyperparameters {
+    /**
+     * score used to weight hyperparameters
+     */
+    double score;
+    /**
+     * prior mean
+     */
+    double mean;
+    /**
+     * prior variance
+     */
+    double theta;
+    /**
+     * Scale for each input dimension
+     */
+    Eigen::VectorXd dimScales;
+
+    /**
+     * Matrices used for predictions
+     */
+    Eigen::MatrixXd covMatInv;
+    Eigen::VectorXd weights;
+
+    Hyperparameters()
+        : mean(0.),
+          theta(1.),
+          dimScales(Eigen::VectorXd::Ones(1)),
+          covMatInv(Eigen::MatrixXd::Ones(1, 1)),
+          weights(Eigen::VectorXd::Ones(1)) {}
+
+    Hyperparameters(double mean, double theta, const Eigen::VectorXd &dimScales, double sigma,
+                    const std::vector<Vector> &inputs, const Eigen::VectorXd &outputs)
+        : mean(mean), theta(theta), dimScales(dimScales) {
+      size_t size = outputs.size();
+      // mean of output shifted to zero
+      Eigen::VectorXd outputCentered = outputs - mean * Eigen::VectorXd::Ones(size);
+
+      Eigen::MatrixXd covMat(size, size);
+      // calculate covariance matrix
+      for (size_t i = 0; i < size; ++i) {
+        covMat(i, i) = kernel(inputs[i], inputs[i], theta, dimScales) + sigma;
+        for (size_t j = i + 1; j < size; ++j) {
+          covMat(i, j) = covMat(j, i) = kernel(inputs[i], inputs[j], theta, dimScales);
+        }
+      }
+
+      // cholesky decomposition
+      Eigen::LLT<Eigen::MatrixXd> llt = covMat.llt();
+      Eigen::MatrixXd l = llt.matrixL();
+
+      // likelihood of evidence given parameters
+      score = std::exp(-0.5 * outputCentered.dot(llt.solve(outputCentered))) / l.diagonal().prod();
+
+      if (std::isnan(score)) {
+        // error score calculation failed
+        utils::ExceptionHandler::exception("GaussianProcess: invalid score ", score);
+      }
+
+      // precalculate inverse of covMat and weights for predictions
+      covMatInv = llt.solve(Eigen::MatrixXd::Identity(size, size));
+      weights = covMatInv * outputCentered;
+    }
+  };
 
  public:
   /**
@@ -37,7 +107,7 @@ class GaussianProcess {
    * @param rngRef reference to rng
    */
   GaussianProcess(size_t dims, double sigma, Random &rngRef)
-      : _inputs(), _outputs(), _dims(dims), _sigma(sigma), _covMat(), _covMatInv(), _weights(), _rng(rngRef) {
+      : _inputs(), _outputs(), _dims(dims), _sigma(sigma), _hypers(), _rng(rngRef) {
     updateHyperparameters();
   }
 
@@ -127,9 +197,15 @@ class GaussianProcess {
                                          inputVec.size(), _dims);
     }
 
-    if (_inputs.size() == 0) return _mean;
+    // default mean 0.
+    if (_inputs.size() == 0) return 0.;
 
-    return _mean + kernelVector(input).dot(_weights);
+    double result = 0.;
+    for (auto &hyper : _hypers) {
+      result += hyper.score * (hyper.mean + kernelVector(input, hyper.theta, hyper.dimScales).dot(hyper.weights));
+    }
+
+    return result;
   }
 
   /**
@@ -144,10 +220,15 @@ class GaussianProcess {
                                          inputVec.size(), _dims);
     }
 
-    if (_inputs.size() == 0) return kernel(input, input);
+    // default variance 1.
+    if (_inputs.size() == 0) return 1.;
 
-    Eigen::VectorXd kVec = kernelVector(input);
-    return kernel(input, input) - kVec.dot(_covMatInv * kVec);
+    double result = 0.;
+    for (auto &hyper : _hypers) {
+      Eigen::VectorXd kVec = kernelVector(input, hyper.theta, hyper.dimScales);
+      result += hyper.score * (kernel(input, input, hyper.theta, hyper.dimScales) - kVec.dot(hyper.covMatInv * kVec));
+    }
+    return result;
   }
 
   /**
@@ -246,34 +327,28 @@ class GaussianProcess {
   inline void updateHyperparameters() {
     // number of evidence
     size_t newSize = _inputs.size();
-    _covMat.resize(newSize, newSize);
+    _hypers.clear();
 
     // if no evidence
     if (newSize == 0) {
       // use default values
-      _mean = 0;
-      _theta = 1.;
-      _dimScale = Eigen::VectorXd::Ones(_dims);
       return;
     }
 
     if (newSize == 1) {
       // default values for one evidence
-      _mean = _outputs[0];
-      _theta = _mean * _mean;
-      _dimScale = Eigen::VectorXd::Ones(_dims);
+      _hypers.emplace_back(_outputs[0], _outputs[0] * _outputs[0], Eigen::VectorXd::Ones(_dims), _sigma, _inputs,
+                           _outputs);
     } else {
-      // output bounds
-      double sampleMin = _outputs.minCoeff();
-      double sampleMax = _outputs.maxCoeff();
-
       // range of mean
       // inside bounds of evidence outputs
-      NumberInterval<double> meanRange(sampleMin, sampleMax);
+      NumberInterval<double> meanRange(_evidenceMinValue, _evidenceMaxValue);
       // range of theta
       // max sample stddev: (max - min)
       // max stddev from zero: abs(min) & abs(max)
-      double thetaMax = std::pow(std::max({sampleMax - sampleMin, std::abs(sampleMin), std::abs(sampleMax)}), 2);
+      double thetaMax = std::pow(
+          std::max({_evidenceMaxValue - _evidenceMinValue, std::abs(_evidenceMinValue), std::abs(_evidenceMaxValue)}),
+          2);
       NumberInterval<double> thetaRange(_sigma, thetaMax);
       // range of dimScale
       // Assuming most distances are greater equal 1.
@@ -304,56 +379,29 @@ class GaussianProcess {
         sample_dimScales.push_back(std::move(dimScale));
       }
 
-      double scoreMax = std::numeric_limits<double>::lowest();
+      // evaluate all hyperparameter samples
+      _hypers.reserve(hp_sample_size);
       // @TODO parallelize?
-      // find max likelyhood in samples
       for (size_t t = 0; t < hp_sample_size; ++t) {
-        double mean = sample_means[t];
-        double theta = sample_thetas[t];
-        Eigen::VectorXd dimScale = sample_dimScales[t];
-
-        // mean of output shifted to zero
-        Eigen::VectorXd outputCentered = _outputs - mean * Eigen::VectorXd::Ones(newSize);
-
-        // calculate covariance matrix
-        for (size_t i = 0; i < newSize; ++i) {
-          _covMat(i, i) = kernel(_inputs[i], _inputs[i], theta, dimScale) + _sigma;
-          for (size_t j = i + 1; j < newSize; ++j) {
-            _covMat(i, j) = _covMat(j, i) = kernel(_inputs[i], _inputs[j], theta, dimScale);
-          }
-        }
-
-        // cholesky decomposition
-        Eigen::LLT<Eigen::MatrixXd> llt = _covMat.llt();
-        Eigen::MatrixXd l = llt.matrixL();
-
-        // log likelihood of evidence given parameters
-        double score = -0.5 * outputCentered.dot(llt.solve(outputCentered)) - std::log(l.diagonal().prod());
-
-        if (std::isnan(score)) {
-          // error score calculation failed
-          utils::ExceptionHandler::exception("GaussianProcess: invalid score ", score);
-        }
-
-        if (score > scoreMax) {
-          scoreMax = score;
-          _mean = mean;
-          _theta = theta;
-          _dimScale = dimScale;
-        }
+        _hypers.emplace_back(sample_means[t], sample_thetas[t], sample_dimScales[t], _sigma, _inputs, _outputs);
       }
+
+      // sort by score
+      std::sort(_hypers.begin(), _hypers.end(),
+                [](const Hyperparameters &h1, const Hyperparameters &h2) { return h1.score > h2.score; });
+
+      // only keep top 'hp_size' hyperparameters
+      _hypers.resize(hp_size);
     }
 
-    // calculate needed matrix and vector for predictions
-    for (size_t i = 0; i < newSize; ++i) {
-      _covMat(i, i) = kernel(_inputs[i], _inputs[i]) + _sigma;
-      for (size_t j = i + 1; j < newSize; ++j) {
-        _covMat(i, j) = _covMat(j, i) = kernel(_inputs[i], _inputs[j]);
-      }
+    // normalize scores
+    double scoreSum = 0.;
+    for (auto &hyper : _hypers) {
+      scoreSum += hyper.score;
     }
-    // mean of output shifted to zero
-    _covMatInv = _covMat.llt().solve(Eigen::MatrixXd::Identity(newSize, newSize));
-    _weights = _covMatInv * (_outputs - _mean * Eigen::VectorXd::Ones(newSize));
+    for (auto &hyper : _hypers) {
+      hyper.score /= scoreSum;
+    }
   }
 
   /**
@@ -365,20 +413,11 @@ class GaussianProcess {
    * @param dimScale
    * @return
    */
-  inline double kernel(const Vector &input1, const Vector &input2, double theta, Eigen::VectorXd dimScale) const {
+  static inline double kernel(const Vector &input1, const Vector &input2, double theta,
+                              const Eigen::VectorXd &dimScale) {
     Eigen::VectorXd r = static_cast<Eigen::VectorXd>(input1 - input2);
     Eigen::VectorXd rSquared = r.array().square();
     return theta * exp(-rSquared.dot(dimScale));
-  }
-
-  /**
-   * Kernel function to describe similarity between two inputs.
-   * @param input1
-   * @param input2
-   * @return
-   */
-  inline double kernel(const Vector &input1, const Vector &input2) const {
-    return kernel(input1, input2, _theta, _dimScale);
   }
 
   /**
@@ -386,10 +425,10 @@ class GaussianProcess {
    * @param input
    * @return Vector of covariances
    */
-  Eigen::VectorXd kernelVector(const Vector &input) const {
+  Eigen::VectorXd kernelVector(const Vector &input, double theta, const Eigen::VectorXd &dimScale) const {
     std::vector<double> k;
     for (auto &d : _inputs) {
-      k.push_back(kernel(input, d));
+      k.push_back(kernel(input, d, theta, dimScale));
     }
     return Eigen::Map<Eigen::VectorXd>(k.data(), k.size());
   }
@@ -420,25 +459,14 @@ class GaussianProcess {
   const size_t _dims;
 
   /**
-   * prior mean
-   */
-  double _mean;
-  /**
-   * prior variance
-   */
-  double _theta;
-  /**
-   * Scale for each input dimension
-   */
-  Eigen::VectorXd _dimScale;
-  /**
    * fixed noise assumed
    */
   const double _sigma;
 
-  Eigen::MatrixXd _covMat;
-  Eigen::MatrixXd _covMatInv;
-  Eigen::VectorXd _weights;
+  /**
+   * hyperparameters
+   */
+  std::vector<Hyperparameters> _hypers;
 
   Random &_rng;
 };

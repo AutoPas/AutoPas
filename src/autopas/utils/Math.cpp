@@ -4,8 +4,6 @@
  * @date 18.08.19
  */
 
-#pragma once
-
 #include "Math.h"
 
 namespace autopas::Math {
