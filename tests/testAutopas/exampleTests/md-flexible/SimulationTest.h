@@ -33,10 +33,14 @@ class SimulationTest : public AutoPasTestBase {
  static void initFillWithParticles(autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas,
                            std::array<unsigned long, 3> particlesPerDim,double particleSpacing,double cutoff);
 
-  void VisualizeSmallSzenario(std::array<size_t,3> particlesPerDim, double cutoff, double particleSpacing, double epsilon, double sigma, double mass, int iterations, double delta_t, const std::string &filename);
+ void VisualizeSmallSzenario(std::array<size_t,3> particlesPerDim, double cutoff, double particleSpacing, double epsilon, double sigma, double mass, int iterations, double delta_t, const std::string &filename);
 
-/**Prints state of current Iteration of Simulation as .vtu file
-* */
+ static double distanceBetween2Points(const std::array<double, 3>& iPos,const std::array<double, 3>& jPos);
+
+ static void initWithTwoParticlesWithDistance(autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas, double distance, double cutoff);
+
+    /**Prints state of current Iteration of Simulation as .vtu file
+    * */
   template <class AutoPasTemplate>
   void writeVTKFile(AutoPasTemplate &autopas,size_t iteration,const std::string &filename) {
     using namespace std;
@@ -62,5 +66,4 @@ class SimulationTest : public AutoPasTestBase {
 
  protected:
   std::shared_ptr<YamlParser> _parser;
-
 };
