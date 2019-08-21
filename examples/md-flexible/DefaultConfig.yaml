@@ -28,7 +28,7 @@ Objects:
 #      distribution-mean: 2.0
 #      distribution-stddev: 5.0
 #      velocity: [0.,0.,0.]
-#      center: [5.,5.,5.]
+#      bottomLeftCorner: [5.,5.,5.]
 #  CubeUniform:
 #    0:
 #      particle-type: 0
@@ -38,7 +38,7 @@ Objects:
 #      numberOfParticles: 100
 #      box-length: [10.,10.,10.]
 #      velocity: [0.,0.,0.]
-#      center: [5.,5.,5.]
+#      bottomLeftCorner: [5.,5.,5.]
 #  Sphere:
 #    0:
 #      particle-type: 0
