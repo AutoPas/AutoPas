@@ -93,7 +93,7 @@ class CubeGrid {
     cout << setw(valueOffset) << left << "Particles Sigma"
          << ":  " << sigma << endl;
     cout << setw(valueOffset) << left << "Particles Mass"
-         << ":  " << mass << endl;
+         << ":  " << mass << endl << endl;
   }
 
   /**Getter for typeId of Particles in Objet

@@ -617,6 +617,7 @@ size_t YamlParser::particlesTotal() {
 }
 
 void YamlParser::calcAutopasBox() {
+  double InteractionLengt= cutoff+verletSkinRadius;
   std::vector<double> XcoordMin;
   std::vector<double> YcoordMin;
   std::vector<double> ZcoordMin;
@@ -662,6 +663,13 @@ void YamlParser::calcAutopasBox() {
     BoxMax = {*std::max_element(XcoordMax.begin(), XcoordMax.end()),
               *std::max_element(YcoordMax.begin(), YcoordMax.end()),
               *std::max_element(ZcoordMax.begin(), ZcoordMax.end())};
+  }
+  //needed for 2D Simulation, that BoxLength >= InteractionLength for all Dimensions
+  for(int i=0;i<3;i++){
+      if(BoxMin[i]-BoxMax[i]<InteractionLengt){
+          BoxMin[i]=- (InteractionLengt-(BoxMin[i]-BoxMax[i]))/2;
+          BoxMax[i]=+ (InteractionLengt-(BoxMin[i]-BoxMax[i]))/2;
+      }
   }
 }
 
