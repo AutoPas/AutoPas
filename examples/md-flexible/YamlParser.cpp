@@ -10,6 +10,8 @@ bool YamlParser::parseInput(int argc, char **argv) {
   int option, option_index;
   static struct option long_options[] = {{"filename", required_argument, nullptr, 'Y'},
                                          {"box-length", required_argument, nullptr, 'b'},
+                                         {"box-min",required_argument,nullptr,'k'},
+                                         {"box-max",required_argument,nullptr,'K'},
                                          {"cutoff", required_argument, nullptr, 'C'},
                                          {"cell-size-factor", required_argument, nullptr, 'a'},
                                          {"data-layout", required_argument, nullptr, 'd'},
@@ -38,7 +40,7 @@ bool YamlParser::parseInput(int argc, char **argv) {
                                          {"vtk", required_argument, nullptr, 'w'},
                                          {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   string strArg;
-  // Yaml Parsing file parameter muss als erstes übergeben werden
+  // Yaml Parsing file parameter must be set before all other Options
   bool yamlparsed = false;
   option = getopt_long(argc, argv, "", long_options, &option_index);
   if (option == 'Y') {
@@ -55,7 +57,12 @@ bool YamlParser::parseInput(int argc, char **argv) {
   if (yamlparsed) {
     parseYamlFile();
   }
-  optind = 1;
+    //booleans needed to change autopas Box properties if specified in command line
+    bool setBoxMin=false;
+    bool setBoxMax=false;
+    std::array<double,3> parsingBoxMin{};
+    std::array<double,3> parsingBoxMax{};
+    optind = 1;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
       if (optarg != nullptr) strArg = optarg;
       transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
@@ -193,6 +200,28 @@ bool YamlParser::parseInput(int argc, char **argv) {
               } catch (const exception &) {
                   cerr << "Error parsing tuning interval: " << optarg << endl;
                   displayHelp = true;
+              }
+              break;
+          }
+          case 'k' : {
+              try {
+                  parsingBoxMin = autopas::utils::StringUtils::parseBoxOption(strArg);
+                  setBoxMin =true;
+              }
+              catch (const exception &){
+                  cerr << "Error parsing BoxMinOption: " << optarg << endl;
+                  displayHelp =true;
+              }
+              break;
+          }
+          case 'K': {
+              try {
+                  parsingBoxMax = autopas::utils::StringUtils::parseBoxOption(strArg);
+                  setBoxMax =true;
+              }
+              catch (const exception &){
+                  cerr << "Error parsing BoxMaxOption: " << optarg << endl;
+                  displayHelp =true;
               }
               break;
           }
@@ -400,8 +429,14 @@ bool YamlParser::parseInput(int argc, char **argv) {
             case YamlParser::empty:
                 break;
         }
-        this->calcAutopasBox();
+            this->calcAutopasBox();
     }
+  if(setBoxMin){
+      BoxMin=parsingBoxMin;
+  }
+  if(setBoxMax){
+      BoxMax=parsingBoxMax;
+  }
   if (displayHelp) {
     cout << "Usage: " << argv[0] << endl;
     for (auto o : long_options) {
@@ -652,7 +687,10 @@ void YamlParser::printConfig() {
 
   cout << setw(valueOffset) << left << "Cutoff radius"
        << ":  " << cutoff << endl;
-
+  cout << setw(valueOffset) << left << "BoxMin"
+       << ":  " << autopas::ArrayUtils::to_string(BoxMin) << endl;
+  cout << setw(valueOffset) << left << "BoxMax"
+         << ":  " << autopas::ArrayUtils::to_string(BoxMax) << endl;
   cout << setw(valueOffset) << left << "Cell size factor"
        << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
   cout << setw(valueOffset) << left << "delta_t"

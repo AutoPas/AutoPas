@@ -155,8 +155,8 @@ class YamlParser {
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
   double verletSkinRadius = .2;
-  std::array<double, 3> BoxMin = {0., 0., 0.};
-  std::array<double, 3> BoxMax = {10., 10., 10.};
+  std::array<double, 3> BoxMin = {};
+  std::array<double, 3> BoxMax = {};
 
   // Simulation Options:
   double cutoff = 1.;
