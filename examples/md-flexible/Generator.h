@@ -115,7 +115,7 @@ void Generator::Sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const 
                                                         particleSpacing));  // actual coordinates of new particle
               double disCheck = L2Norm(autopas::ArrayMath::sub(posVector, center));
               if (disCheck <= (double)(radius + 1) * particleSpacing) {
-                Particle p(posVector, velocity, id,typeId);
+                Particle p(posVector, velocity, id, typeId);
                 autopas.addParticle(p);
                 id++;
               }

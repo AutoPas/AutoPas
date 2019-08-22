@@ -11,11 +11,11 @@
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
-#include "VTKWriter/VTKWriter.h"
 #include "BoundaryConditions.h"
 #include "Generator.h"
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "TimeDiscretization.h"
+#include "VTKWriter/VTKWriter.h"
 #include "YamlParser.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
@@ -40,25 +40,17 @@ class Simulation {
       _logFile.close();
     }
   }
-    /**
-     * Writes a VTK file for the current state of the AutoPas object
-     * @tparam AutoPasTemplate Template for the templetized autopas type.
-     * @param filename
-     * @param numParticles
-     * @param autopas
-     */
   /**Writes a VTK file for the current state of the AutoPas object
    * code taken from the MolSim course
    * @param iteration
    * */
   void plotVTK(int iteration) {
-      writer.initializeOutput(_autopas.getNumberOfParticles());
-      for(auto iter = _autopas.begin();iter.isValid();++iter){
-          writer.plotParticle(*iter);
-      }
-      writer.writeFile(_parser->getVTKFileName(), iteration);
+    writer.initializeOutput(_autopas.getNumberOfParticles());
+    for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+      writer.plotParticle(*iter);
+    }
+    writer.writeFile(_parser->getVTKFileName(), iteration);
   }
-
 
   /**Initialized the ParticlePropertiesLibrary for usage in functor
    * during Simualtion::initialize call
@@ -226,8 +218,8 @@ void Simulation<Particle, ParticleCell>::initialize(const std::shared_ptr<YamlPa
                                               S.getTypeId(), S.getVelocity());
     idcounter = +S.getParticlesTotal();
   }
-  for(auto iter=_autopas.begin();iter.isValid();++iter){
-      std::cout <<iter->toString() << std::endl;
+  for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+    std::cout << iter->toString() << std::endl;
   }
 }
 
@@ -247,18 +239,18 @@ template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate() {
   std::chrono::high_resolution_clock::time_point startSim, stopSim;
   startSim = std::chrono::high_resolution_clock::now();
-  //writes initial state of simulation as vtkFile if filename is specified
-    if ((not _parser->getVTKFileName().empty())) {
-        this->plotVTK(0);
-    }
-    // main simulation loop
+  // writes initial state of simulation as vtkFile if filename is specified
+  if ((not _parser->getVTKFileName().empty())) {
+    this->plotVTK(0);
+  }
+  // main simulation loop
   for (size_t iteration = 0; iteration < _parser->getIterations(); ++iteration) {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << iteration << std::endl;
     }
-      if(_parser->isPeriodic()) {
-          BoundaryConditions<Particle,ParticleCell>::applyPeriodic(_autopas);
-      }
+    if (_parser->isPeriodic()) {
+      BoundaryConditions<Particle, ParticleCell>::applyPeriodic(_autopas);
+    }
     _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
 
     switch (this->_parser->getFunctorOption()) {
@@ -278,7 +270,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
 
     // only write vtk files periodically and if a filename is given
     if ((not _parser->getVTKFileName().empty()) and iteration % _parser->getVtkWriteFrequency() == 0) {
-      this->plotVTK(iteration+1);
+      this->plotVTK(iteration + 1);
     }
   }
 

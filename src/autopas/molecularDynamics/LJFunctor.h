@@ -502,7 +502,7 @@ class LJFunctor
    * @param newton3 defines whether or whether not to use newton
    */
   void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-          CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {
+                   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {
 #if defined(AUTOPAS_CUDA)
     const size_t size1 = device_handle1.template get<Particle::AttributeNames::posX>().size();
     const size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();

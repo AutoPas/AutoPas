@@ -17,8 +17,7 @@ namespace outputWriter {
  * particles.
  */
 class VTKWriter {
-
-public:
+ public:
   VTKWriter();
 
   virtual ~VTKWriter();
@@ -44,8 +43,8 @@ public:
    */
   void writeFile(const std::string &filename, int iteration);
 
-private:
+ private:
   VTKFile_t *vtkFile;
 };
 
-} // namespace outputWriter
+}  // namespace outputWriter

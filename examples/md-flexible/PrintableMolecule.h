@@ -29,7 +29,8 @@ class PrintableMolecule
    * @param moleculeId Molecule ID
    * @param typeId Molecule Type ID
    */
-  PrintableMolecule(std::array<double, 3> pos, std::array<double, 3> v, unsigned long moleculeId, unsigned int typeId = 0)
+  PrintableMolecule(std::array<double, 3> pos, std::array<double, 3> v, unsigned long moleculeId,
+                    unsigned int typeId = 0)
       : MoleculeLJ(pos, v, moleculeId, typeId) {}
 
   /**

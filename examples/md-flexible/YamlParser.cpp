@@ -10,8 +10,8 @@ bool YamlParser::parseInput(int argc, char **argv) {
   int option, option_index;
   static struct option long_options[] = {{"filename", required_argument, nullptr, 'Y'},
                                          {"box-length", required_argument, nullptr, 'b'},
-                                         {"box-min",required_argument,nullptr,'k'},
-                                         {"box-max",required_argument,nullptr,'K'},
+                                         {"box-min", required_argument, nullptr, 'k'},
+                                         {"box-max", required_argument, nullptr, 'K'},
                                          {"container", required_argument, nullptr, 'c'},
                                          {"cutoff", required_argument, nullptr, 'C'},
                                          {"cell-size-factor", required_argument, nullptr, 'a'},
@@ -28,7 +28,7 @@ bool YamlParser::parseInput(int argc, char **argv) {
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
                                          {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
-                                         {"periodic",required_argument,nullptr,'p'},
+                                         {"periodic", required_argument, nullptr, 'p'},
                                          {"selector-strategy", required_argument, nullptr, 'y'},
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
@@ -40,7 +40,7 @@ bool YamlParser::parseInput(int argc, char **argv) {
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
                                          {"verlet-skin-radius", required_argument, nullptr, 'r'},
                                          {"vtk-filename", required_argument, nullptr, 'w'},
-                                         {"vtk-write-frequency",required_argument,nullptr,'z'},
+                                         {"vtk-write-frequency", required_argument, nullptr, 'z'},
                                          {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   string strArg;
   // Yaml Parsing file parameter must be set before all other Options
@@ -60,12 +60,12 @@ bool YamlParser::parseInput(int argc, char **argv) {
   if (yamlparsed) {
     parseYamlFile();
   }
-    //booleans needed to change autopas Box properties if specified in command line
-    bool setBoxMin=false;
-    bool setBoxMax=false;
-    std::array<double,3> parsingBoxMin{};
-    std::array<double,3> parsingBoxMax{};
-    optind = 1;
+  // booleans needed to change autopas Box properties if specified in command line
+  bool setBoxMin = false;
+  bool setBoxMax = false;
+  std::array<double, 3> parsingBoxMin{};
+  std::array<double, 3> parsingBoxMax{};
+  optind = 1;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
@@ -87,15 +87,15 @@ bool YamlParser::parseInput(int argc, char **argv) {
         }
         break;
       }
-        case 'b': {
-            try {
-                boxLength = stod(strArg);
-            } catch (const exception &) {
-                cerr << "Error parsing box length: " << strArg << endl;
-                displayHelp = true;
-            }
-            break;
+      case 'b': {
+        try {
+          boxLength = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing box length: " << strArg << endl;
+          displayHelp = true;
         }
+        break;
+      }
       case 'c': {
         // overwrite default argument
         containerOptions = autopas::utils::StringUtils::parseContainerOptions(strArg, false);
@@ -162,20 +162,20 @@ bool YamlParser::parseInput(int argc, char **argv) {
         measureFlops = false;
         break;
       }
-        case 'g': {
-            if (strArg.find("grid") != string::npos) {
-                generatorOption = GeneratorOption::grid;
-            } else if (strArg.find("uni") != string::npos) {
-                generatorOption = GeneratorOption::uniform;
-            } else if (strArg.find("gaus") != string::npos) {
-                generatorOption = GeneratorOption::gaussian;
-            } else {
-                cerr << "Unknown generator: " << strArg << endl;
-                cerr << "Please use 'Grid' or 'Gaussian'" << endl;
-                displayHelp = true;
-            }
-            break;
+      case 'g': {
+        if (strArg.find("grid") != string::npos) {
+          generatorOption = GeneratorOption::grid;
+        } else if (strArg.find("uni") != string::npos) {
+          generatorOption = GeneratorOption::uniform;
+        } else if (strArg.find("gaus") != string::npos) {
+          generatorOption = GeneratorOption::gaussian;
+        } else {
+          cerr << "Unknown generator: " << strArg << endl;
+          cerr << "Please use 'Grid' or 'Gaussian'" << endl;
+          displayHelp = true;
         }
+        break;
+      }
       case 'h': {
         displayHelp = true;
         break;
@@ -206,28 +206,26 @@ bool YamlParser::parseInput(int argc, char **argv) {
         }
         break;
       }
-        case 'k' : {
-            try {
-                parsingBoxMin = autopas::utils::StringUtils::parseBoxOption(strArg);
-                setBoxMin =true;
-            }
-            catch (const exception &){
-                cerr << "Error parsing BoxMinOption: " << optarg << endl;
-                displayHelp =true;
-            }
-            break;
+      case 'k': {
+        try {
+          parsingBoxMin = autopas::utils::StringUtils::parseBoxOption(strArg);
+          setBoxMin = true;
+        } catch (const exception &) {
+          cerr << "Error parsing BoxMinOption: " << optarg << endl;
+          displayHelp = true;
         }
-        case 'K': {
-            try {
-                parsingBoxMax = autopas::utils::StringUtils::parseBoxOption(strArg);
-                setBoxMax =true;
-            }
-            catch (const exception &){
-                cerr << "Error parsing BoxMaxOption: " << optarg << endl;
-                displayHelp =true;
-            }
-            break;
+        break;
+      }
+      case 'K': {
+        try {
+          parsingBoxMax = autopas::utils::StringUtils::parseBoxOption(strArg);
+          setBoxMax = true;
+        } catch (const exception &) {
+          cerr << "Error parsing BoxMaxOption: " << optarg << endl;
+          displayHelp = true;
         }
+        break;
+      }
       case 'l': {
         switch (strArg[0]) {
           case 't': {
@@ -270,46 +268,46 @@ bool YamlParser::parseInput(int argc, char **argv) {
         logFileName = strArg;
         break;
       }
-        case 'm': {
-            try {
-                distributionMean = stod(strArg);
-            } catch (const exception &) {
-                cerr << "Error parsing distribution mean: " << strArg << endl;
-                displayHelp = true;
-            }
-            break;
+      case 'm': {
+        try {
+          distributionMean = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing distribution mean: " << strArg << endl;
+          displayHelp = true;
         }
-        case 'n': {
-            try {
-                particlesPerDim = stoul(strArg);
-            } catch (const exception &) {
-                cerr << "Error parsing number of particles per dimension: " << strArg << endl;
-                displayHelp = true;
-            }
-            break;
+        break;
+      }
+      case 'n': {
+        try {
+          particlesPerDim = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing number of particles per dimension: " << strArg << endl;
+          displayHelp = true;
         }
-        case 'P': {
-            try {
-                defaultParticlesTotal = stoul(strArg);
-            } catch (const exception &) {
-                cerr << "Error parsing total number of particles: " << strArg << endl;
-                displayHelp = true;
-            }
-            break;
+        break;
+      }
+      case 'P': {
+        try {
+          defaultParticlesTotal = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing total number of particles: " << strArg << endl;
+          displayHelp = true;
         }
-        case 'p': {
-            periodic=true;
-            break;
+        break;
+      }
+      case 'p': {
+        periodic = true;
+        break;
+      }
+      case 'r': {
+        try {
+          verletSkinRadius = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
+          displayHelp = true;
         }
-        case 'r': {
-            try {
-                verletSkinRadius = stod(strArg);
-            } catch (const exception &) {
-                cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
-                displayHelp = true;
-            }
-            break;
-        }
+        break;
+      }
       case 'S': {
         try {
           tuningSamples = (unsigned int)stoul(strArg);
@@ -323,15 +321,15 @@ bool YamlParser::parseInput(int argc, char **argv) {
         }
         break;
       }
-        case 's': {
-            try {
-                particleSpacing = stod(strArg);
-            } catch (const exception &) {
-                cerr << "Error parsing separation of particles: " << strArg << endl;
-                displayHelp = true;
-            }
-            break;
+      case 's': {
+        try {
+          particleSpacing = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing separation of particles: " << strArg << endl;
+          displayHelp = true;
         }
+        break;
+      }
       case 't': {
         traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
         if (traversalOptions.empty()) {
@@ -375,69 +373,55 @@ bool YamlParser::parseInput(int argc, char **argv) {
       case 'Y': {
         break;
       }
-        case 'z' : {
-            vtkWriteFrequency = stoul(strArg);
-            break;
-        }
+      case 'z': {
+        vtkWriteFrequency = stoul(strArg);
+        break;
+      }
       default: {
         // error message handled by getopt
         displayHelp = true;
       }
     }
-      //switch case for generating basic Objects using the command line, makes only sense if Generating one Object:
-      //to generate multiple Object or single and more detailed Objects: use the yaml files
-
+    // switch case for generating basic Objects using the command line, makes only sense if Generating one Object:
+    // to generate multiple Object or single and more detailed Objects: use the yaml files
   }
 
-
-    if (not yamlparsed){
-        if(generatorOption==GeneratorOption::empty){
-            //default without yamlFile and without command line specification
-            generatorOption=GeneratorOption::grid;
-        }
-        switch (generatorOption) {
-            case GeneratorOption::grid: {
-                CubeGrid C({particlesPerDim, particlesPerDim, particlesPerDim},
-                           particleSpacing,
-                           {0., 0., 0.},
-                           {0., 0., 0.},
-                           0, 1, 1, 1);
-                CubeGridObjects.emplace_back(C);
-                this->addType(0, 1, 1, 1);
-                break;
-            }
-            case GeneratorOption::gaussian: {
-                CubeGauss C(defaultParticlesTotal,
-                            {boxLength, boxLength, boxLength},
-                            distributionMean,
-                            distributionStdDev,
-                            {0., 0., 0.},
-                            {0., 0., 0.},
-                            0, 1, 1, 1);
-                CubeGaussObjects.emplace_back(C);
-                this->addType(0, 1, 1, 1);
-                break;
-            }
-            case GeneratorOption::uniform: {
-                CubeUniform C(defaultParticlesTotal,
-                              {boxLength, boxLength, boxLength},
-                              {0., 0., 0.},
-                              {0., 0., 0.},
-                              0, 1, 1, 1);
-                CubeUniformObjects.emplace_back(C);
-                this->addType(0, 1, 1, 1);
-                break;
-            }
-            case YamlParser::empty:
-                break;
-        }
-            this->calcAutopasBox();
+  if (not yamlparsed) {
+    if (generatorOption == GeneratorOption::empty) {
+      // default without yamlFile and without command line specification
+      generatorOption = GeneratorOption::grid;
     }
-  if(setBoxMin){
-      BoxMin=parsingBoxMin;
+    switch (generatorOption) {
+      case GeneratorOption::grid: {
+        CubeGrid C({particlesPerDim, particlesPerDim, particlesPerDim}, particleSpacing, {0., 0., 0.}, {0., 0., 0.}, 0,
+                   1, 1, 1);
+        CubeGridObjects.emplace_back(C);
+        this->addType(0, 1, 1, 1);
+        break;
+      }
+      case GeneratorOption::gaussian: {
+        CubeGauss C(defaultParticlesTotal, {boxLength, boxLength, boxLength}, distributionMean, distributionStdDev,
+                    {0., 0., 0.}, {0., 0., 0.}, 0, 1, 1, 1);
+        CubeGaussObjects.emplace_back(C);
+        this->addType(0, 1, 1, 1);
+        break;
+      }
+      case GeneratorOption::uniform: {
+        CubeUniform C(defaultParticlesTotal, {boxLength, boxLength, boxLength}, {0., 0., 0.}, {0., 0., 0.}, 0, 1, 1, 1);
+        CubeUniformObjects.emplace_back(C);
+        this->addType(0, 1, 1, 1);
+        break;
+      }
+      case YamlParser::empty:
+        break;
+    }
+    this->calcAutopasBox();
   }
-  if(setBoxMax){
-      BoxMax=parsingBoxMax;
+  if (setBoxMin) {
+    BoxMin = parsingBoxMin;
+  }
+  if (setBoxMax) {
+    BoxMax = parsingBoxMax;
   }
   if (displayHelp) {
     cout << "Usage: " << argv[0] << endl;
@@ -464,9 +448,9 @@ void YamlParser::parseYamlFile() {
     this->selectorStrategy =
         autopas::utils::StringUtils::parseSelectorStrategy(config["selector-strategy"].as<std::string>());
   }
-    if (config["periodic-boundaries"]) {
-        this->periodic =config["periodic-boundaries"].as<bool>();
-    }
+  if (config["periodic-boundaries"]) {
+    this->periodic = config["periodic-boundaries"].as<bool>();
+  }
   if (config["cutoff"]) {
     this->cutoff = config["cutoff"].as<double>();
   }
@@ -558,7 +542,7 @@ void YamlParser::parseYamlFile() {
     this->VTKFileName = config["vtk-filename"].as<std::string>();
   }
   if (config["vtk-write-frequency"]) {
-   this->vtkWriteFrequency = config["vtk-write-frequency"].as<size_t>();
+    this->vtkWriteFrequency = config["vtk-write-frequency"].as<size_t>();
   }
   if (config["Objects"]) {
     CubeGridObjects = {};
@@ -697,7 +681,7 @@ void YamlParser::printConfig() {
   cout << setw(valueOffset) << left << "BoxMin"
        << ":  " << autopas::ArrayUtils::to_string(BoxMin) << endl;
   cout << setw(valueOffset) << left << "BoxMax"
-         << ":  " << autopas::ArrayUtils::to_string(BoxMax) << endl;
+       << ":  " << autopas::ArrayUtils::to_string(BoxMax) << endl;
   cout << setw(valueOffset) << left << "Cell size factor"
        << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
   cout << setw(valueOffset) << left << "delta_t"
@@ -751,7 +735,7 @@ size_t YamlParser::particlesTotal() {
 }
 
 void YamlParser::calcAutopasBox() {
-  double InteractionLength= cutoff + verletSkinRadius;
+  double InteractionLength = cutoff + verletSkinRadius;
   std::vector<double> XcoordMin;
   std::vector<double> YcoordMin;
   std::vector<double> ZcoordMin;
@@ -798,12 +782,12 @@ void YamlParser::calcAutopasBox() {
               *std::max_element(YcoordMax.begin(), YcoordMax.end()),
               *std::max_element(ZcoordMax.begin(), ZcoordMax.end())};
   }
-  //needed for 2D Simulation, that BoxLength >= InteractionLength for all Dimensions
-  for(int i=0;i<3;i++){
-      if(BoxMax[i]-BoxMin[i] < InteractionLength){
-          BoxMin[i]-= InteractionLength/2;
-          BoxMax[i]+= InteractionLength/2;
-      }
+  // needed for 2D Simulation, that BoxLength >= InteractionLength for all Dimensions
+  for (int i = 0; i < 3; i++) {
+    if (BoxMax[i] - BoxMin[i] < InteractionLength) {
+      BoxMin[i] -= InteractionLength / 2;
+      BoxMax[i] += InteractionLength / 2;
+    }
   }
 }
 
@@ -886,10 +870,6 @@ size_t YamlParser::getVtkWriteFrequency() const { return vtkWriteFrequency; }
 
 void YamlParser::setVtkWriteFrequency(size_t vtkWriteFrequency) { YamlParser::vtkWriteFrequency = vtkWriteFrequency; }
 
-void YamlParser::setVtkFileName(const std::string &vtkFileName) {
-    VTKFileName = vtkFileName;
-}
+void YamlParser::setVtkFileName(const std::string &vtkFileName) { VTKFileName = vtkFileName; }
 
-bool YamlParser::isPeriodic() const {
-    return periodic;
-}
+bool YamlParser::isPeriodic() const { return periodic; }
