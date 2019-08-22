@@ -48,11 +48,17 @@ pipeline{
                         }
                     },
                     "custom checks": {
+                        echo 'Testing src folder'
                         dir("src"){
-                            check()
+                            checkCustom()
                         }
+                        echo 'Testing tests folder'
                         dir("tests"){
-                            check()
+                            checkCustom()
+                        }
+                        echo 'Testing examples folder'
+                        dir("examples"){
+                            checkCustom()
                         }
                     }
                 )
@@ -293,7 +299,7 @@ pipeline{
     }
 }
 
-void check() {
+void checkCustom() {
     script{
         // check if all header files have a #pragma once
         try{
