@@ -70,7 +70,9 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   void deleteByIndex(size_t index) override {
     particlesLock.lock();
-    assert(index < numParticles());
+    if (index >= numParticles()) {
+      utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
+    }
 
     if (index < numParticles() - 1) {
       std::swap(_particles[index], _particles[numParticles() - 1]);
