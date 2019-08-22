@@ -175,7 +175,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   EXPECT_EQ(ids.size(), autoPas.getNumberOfParticles());
 }
 
-//TEST_F(GeneratorsTest,distanceBetweenParticles){
+// TEST_F(GeneratorsTest,distanceBetweenParticles){
 //    auto autoPas = autopas::AutoPas<autopas::MoleculeLJ<>, FMCell>(std::cout);
 //    std::string input = "MolSimBlatt2Task3.yaml";
 //    parser.setFilename(input);

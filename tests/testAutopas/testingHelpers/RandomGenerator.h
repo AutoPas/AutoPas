@@ -45,7 +45,7 @@ class RandomGenerator {
    */
   template <class Container, class Particle>
   static void fillWithParticles(Container &container, const Particle &defaultParticle,
-                                unsigned long numParticles = 100ul,unsigned int seed=42);
+                                unsigned long numParticles = 100ul, unsigned int seed = 42);
 
   /**
    * Fills the given container with randomly distributed particles between boxMin and boxMax.

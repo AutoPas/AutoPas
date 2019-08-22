@@ -372,17 +372,17 @@ inline std::set<autopas::ContainerOption> parseContainerOptions(const std::strin
  * @param boxOptionString
  * @return autopas boxOption
  * */
-inline std::array<double,3> parseBoxOption(const std::string &boxOptionString){
-    std::array<double,3> boxOption{};
-    auto doubles= tokenize(boxOptionString,delimiters);
-    auto size = doubles.size();
-    if(size>3){
-        throw std::runtime_error("wrong BoxOption: " + boxOptionString);
-    }
-    for(int i=0;i< 3;i++){
-        boxOption[i] = std::stod(doubles.at(i));
-    }
-    return boxOption;
+inline std::array<double, 3> parseBoxOption(const std::string &boxOptionString) {
+  std::array<double, 3> boxOption{};
+  auto doubles = tokenize(boxOptionString, delimiters);
+  auto size = doubles.size();
+  if (size > 3) {
+    throw std::runtime_error("wrong BoxOption: " + boxOptionString);
+  }
+  for (int i = 0; i < 3; i++) {
+    boxOption[i] = std::stod(doubles.at(i));
+  }
+  return boxOption;
 }
 
 /**

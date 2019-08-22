@@ -23,8 +23,8 @@ class CubeGrid {
    * @param mass
    * */
   CubeGrid(const std::array<size_t, 3> &particlesPerDim, double particleSpacing, const std::array<double, 3> &velocity,
-           const std::array<double, 3> &bottomLeftCorner, const unsigned long &typeId, const double &epsilon, const double &sigma,
-           const double &mass)
+           const std::array<double, 3> &bottomLeftCorner, const unsigned long &typeId, const double &epsilon,
+           const double &sigma, const double &mass)
       : particlesPerDim(particlesPerDim),
         particleSpacing(particleSpacing),
         velocity(velocity),
@@ -99,8 +99,7 @@ class CubeGrid {
    * */
   [[nodiscard]] unsigned long getTypeId() const { return typeId; }
 
- private:
-  static constexpr size_t valueOffset = 32;
+  private : static constexpr size_t valueOffset = 32;
   std::array<size_t, 3> particlesPerDim;
   double particleSpacing;
   std::array<double, 3> velocity;
@@ -128,8 +127,9 @@ class CubeGauss {
    * @param mass
    * */
   CubeGauss(size_t numParticles, const std::array<double, 3> &boxLength, double distributionMean,
-            double distributionStdDev, const std::array<double, 3> &velocity, const std::array<double, 3> &bottomLeftCorner,
-            const unsigned long &typeId, const double &epsilon, const double &sigma, const double &mass)
+            double distributionStdDev, const std::array<double, 3> &velocity,
+            const std::array<double, 3> &bottomLeftCorner, const unsigned long &typeId, const double &epsilon,
+            const double &sigma, const double &mass)
       : numParticles(numParticles),
         boxLength(boxLength),
         distributionMean(distributionMean),
@@ -167,9 +167,7 @@ class CubeGauss {
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() {
-    return bottomLeftCorner;
-  }
+  std::array<double, 3> getBoxMin() { return bottomLeftCorner; }
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
@@ -344,10 +342,12 @@ class Sphere {
    * @return typeId
    * */
   [[nodiscard]] unsigned long getTypeId() const { return typeId; }
-  /**Getter for initial velocity of Particles
-   * @return velocity
-   * */
-  [[nodiscard]] const std::array<double, 3> &getVelocity() const { return velocity; }
+      /**Getter for initial velocity of Particles
+       * @return velocity
+       * */
+      [[nodiscard]] const std::array<double, 3> &getVelocity() const {
+    return velocity;
+  }
   /**Returns the number of particles that will be generated for this Object
    * @return totalNumberOfParticles
    * */
