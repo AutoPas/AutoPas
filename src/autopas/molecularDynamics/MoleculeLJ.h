@@ -22,14 +22,14 @@ class MoleculeLJ : public Particle {
 
   /**
    * Constructor of lennard jones molecule with initialization of typeID.
-   * @param r Position of the molecule.
+   * @param pos Position of the molecule.
    * @param v Velocitiy of the molecule.
-   * @param id Id of the molecule.
+   * @param moleculeId Id of the molecule.
    * @param typeId TypeId of the molecule.
    */
-  explicit MoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, unsigned long id,
+  explicit MoleculeLJ(std::array<floatType, 3> pos, std::array<floatType, 3> v, unsigned long moleculeId,
                       unsigned long typeId =0)
-      : Particle(r, v, id), _typeId(typeId) {}
+      : Particle(pos, v, moleculeId), _typeId(typeId) {}
 
   ~MoleculeLJ() override = default;
 
