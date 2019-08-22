@@ -20,10 +20,20 @@ namespace autopas {
 namespace ArrayMath {}
 
 /**
+ * In this namespace some helper functions for floating point std::array's can be found.
+ */
+namespace ArrayUtils {}
+
+/**
  * This namespace is used for implementation specifics.
  * If you are a developer of AutoPas you might want to take a look inside here.
  */
 namespace internal {}  // namespace internal
+
+/**
+ * This namespace is used for memory profiling functions.
+ */
+namespace memoryProfiler {}
 
 /**
  * In this namespace all functionality of the Smoothed Particle Hydrodynamics module of autopas is present.
