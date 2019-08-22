@@ -48,7 +48,7 @@ pipeline{
                         }
                     },
                     "custom checks": {
-                        dir("src"){
+                        void check() {
                             script{
                                 // check if all header files have a #pragma once
                                 try{
@@ -82,6 +82,12 @@ pipeline{
                                     sh "exit 1"
                                 }
                             }
+                        }
+                        dir("src"){
+                            check()
+                        }
+                        dir("tests"){
+                            check()
                         }
                     }
                 )
