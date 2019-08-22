@@ -10,7 +10,7 @@ add_executable(md-flexible ${MY_SRC})
 
 include_directories(${PROJECT_SOURCE_DIR}/libs/yaml-cpp/include)
 
-target_link_libraries(md-flexible autopas ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a)
+target_link_libraries(md-flexible autopas ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a xerces-c)
 # --- copy script files to build dir ---
 file(
     GLOB_RECURSE SCRIPTS

@@ -14,14 +14,14 @@ log-level: debug
 #no-flops:                          #boolean option
 #log-file:                          #string option
 vtk-filename:  MolSimBlatt2Task3
-vtk-write-frequency: 30              #size_t option
+vtk-write-frequency: 50              #size_t option
 
 ###Simulation Options=
 
 #functor:                           #string option
 delta_t: 0.0002                     #double option
-cutoff: 20                          #double option
-iterations: 8000                    #in der MolSim Simulation waren hier 25000 iterationen, 8000 sind aber mehr als ausreichend
+cutoff: 2                         #double option
+iterations: 8000                  #in der MolSim Simulation waren hier 25000 iterationen, 8000 sind aber mehr als ausreichend
 periodic-boundaries: false          #boolean option
 
 ###Objects generation Options

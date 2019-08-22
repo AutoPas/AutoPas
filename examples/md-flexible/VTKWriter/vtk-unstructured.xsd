@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+
+<!--
+
+file      : examples/cxx/tree/hello/hello.xsd
+author    : Boris Kolpackov <boris@codesynthesis.com>
+copyright : not copyrighted - public domain
+
+-->
+
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+<!-- Definition of the DataArray (see "vtk file formats", page 15.
+     Following difference is made from the specification:
+     * format is fixed to "ascii"
+     * offset is optional, it should not be set for paraview
+     * attributes of <PointData> and <CellData> are not defined
+     * attributes "NumberOfComponents" and "Name" in element <DataArray> are required
+ -->
+
+ <xsd:simpleType name='DataArrayList_t'>
+    <xsd:list itemType='xsd:decimal'/>
+  </xsd:simpleType>
+
+
+  <xsd:complexType name="DataArray_t">
+    <xsd:simpleContent>
+      <xsd:extension base="DataArrayList_t"> <!-- hier typ der daten in liste  --> 
+        <xsd:attribute name="type" use="required">
+          <xsd:simpleType>
+            <xsd:restriction base="xsd:string">
+              <xsd:enumeration value="Int8"/>
+              <xsd:enumeration value="UInt8"/>
+              <xsd:enumeration value="Int16"/>
+              <xsd:enumeration value="UInt16"/>
+              <xsd:enumeration value="Int32"/>
+              <xsd:enumeration value="UInt32"/>
+              <xsd:enumeration value="Int64"/>
+              <xsd:enumeration value="UInt64"/>
+              <xsd:enumeration value="Float32"/>
+              <xsd:enumeration value="Float64"/>
+            </xsd:restriction>
+          </xsd:simpleType>
+        </xsd:attribute>
+        <xsd:attribute name="Name" type="xsd:string" use="required"/>
+        <xsd:attribute name="NumberOfComponents" type="xsd:integer" use="required"/>
+        <xsd:attribute name="format" type="xsd:string" fixed="ascii"/>
+        <xsd:attribute name="offset" type="xsd:integer" use="optional"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+
+  <xsd:complexType name="PieceUnstructuredGrid_t">
+    <xsd:sequence>
+      <xsd:element name="PointData">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="DataArray" type="DataArray_t" minOccurs="0" maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="CellData">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="DataArray" type="DataArray_t" minOccurs="0" maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="Points">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="DataArray" type="DataArray_t" minOccurs="0" maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="Cells">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="DataArray" type="DataArray_t" minOccurs="0" maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+  	</xsd:sequence>
+  	<xsd:attribute name="NumberOfPoints" type="xsd:integer" use="required"/>
+  	<xsd:attribute name="NumberOfCells" type="xsd:integer" use="required"/>
+  </xsd:complexType>	
+
+  <xsd:complexType name="UnstructuredGrid_t">
+    <xsd:all>
+      <xsd:element name="Piece" type="PieceUnstructuredGrid_t"/>
+    </xsd:all>
+  </xsd:complexType>
+
+  <xsd:complexType name="PolyData_t">
+   <xsd:sequence>
+   <xsd:element name="greeting" type="xsd:string"/>
+   </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="VTKFile_t">
+    <xsd:annotation>
+      <xsd:documentation>
+        The hello_t type consists of a greeting phrase and a
+        collection of names to which this greeting applies.
+      </xsd:documentation>
+    </xsd:annotation>
+	
+    <xsd:choice>
+      <xsd:element name="UnstructuredGrid" type="UnstructuredGrid_t"/>
+      <xsd:element name="PolyData" type="PolyData_t"/>
+    </xsd:choice>
+    
+    <xsd:attribute name="type" type="xsd:string" use="required"/>
+    <xsd:attribute name="version" type="xsd:string" fixed="0.1" use="required"/>
+    <xsd:attribute name="byte_order" type="xsd:string" fixed="LittleEndian" use="required"/>
+  </xsd:complexType>
+
+
+  <xsd:element name="VTKFile" type="VTKFile_t">
+    <xsd:annotation>
+      <xsd:documentation>
+        The hello element is a root of the Hello XML vocabulary.
+        Every conforming document should start with this element.
+      </xsd:documentation>
+    </xsd:annotation>
+  </xsd:element>
+
+</xsd:schema>
