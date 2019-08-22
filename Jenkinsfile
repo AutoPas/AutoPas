@@ -325,7 +325,7 @@ void checkCustom() {
 
         // check that no file contains NULL or assert
         try{
-            // if .cpp or .h files do not contain a file comment, return 2
+            // if .cpp or .h files contain NULL or assert, return 2
             sh "grep -lrE '(NULL|[^_]assert)' . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
         } catch (Exception e) {
             // change detected
