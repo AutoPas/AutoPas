@@ -20,7 +20,7 @@ namespace autopas {
 namespace ArrayMath {}
 
 /**
- * In this namespace some helper functions for floating point std::array's can be found.
+ * In this namespace some helper functions for std::array can be found.
  */
 namespace ArrayUtils {}
 
