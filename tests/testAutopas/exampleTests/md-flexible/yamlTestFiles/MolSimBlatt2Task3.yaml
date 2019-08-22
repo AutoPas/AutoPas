@@ -35,7 +35,7 @@ Objects:
       particles-per-Dim: [8,8,1]
       particleSpacing: 1.12
       velocity: [0.,-10.,0.]
-      center: [19.49,19.49,0.]
+      bottomLeftCorner: [19.49,19.49,0.]
 #    1:
 #      particle-type: 0
 #      particle-epsilon: 5.
@@ -44,4 +44,4 @@ Objects:
 #      particles-per-Dim: [40,8,1]
 #      particleSpacing: 1.12
 #      velocity: [0.,0.,0.]
-#      center: [22.45,4.49,0.]
+#      bottomLeftCorner: [22.45,4.49,0.]

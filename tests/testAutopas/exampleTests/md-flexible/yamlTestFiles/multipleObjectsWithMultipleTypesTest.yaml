@@ -13,7 +13,7 @@ Objects:
       particles-per-Dim: [10,10,10]
       particleSpacing: 0.5
       velocity: [0.,0.,0.]
-      center: [5.,5.,5.]
+      bottomLeftCorner: [5.,5.,5.]
   CubeGauss:
     0:
       particle-type: 1
@@ -25,7 +25,7 @@ Objects:
       distribution-mean: 2.0
       distribution-stddev: 5.0
       velocity: [0.,0.,0.]
-      center: [15.,0.,5.]
+      bottomLeftCorner: [15.,0.,5.]
   CubeUniform:
     0:
       particle-type: 2
@@ -35,7 +35,7 @@ Objects:
       numberOfParticles: 100
       box-length: [10.,10.,10.]
       velocity: [0.,0.,0.]
-      center: [0.,0.,-15.]
+      bottomLeftCorner: [0.,0.,-15.]
   Sphere:
     0:
       particle-type: 3

@@ -12,7 +12,7 @@ Objects:
       particles-per-Dim: [10,10,10]
       particleSpacing: 0.5
       velocity: [0.,0.,0.]
-      center: [5.,5.,5.]
+      bottomLeftCorner: [0.,0.,0.]
   CubeGauss:
     0:
       particle-type: 0
@@ -24,4 +24,4 @@ Objects:
       distribution-mean: 2.0
       distribution-stddev: 5.0
       velocity: [0.,0.,0.]
-      center: [15.,0.,5.]
+      bottomLeftCorner: [15.,0.,5.]

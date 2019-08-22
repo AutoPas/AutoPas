@@ -18,7 +18,15 @@ class YamlParser {
    * @author F. Gratl
    */
  public:
+    /**
+ * Choice of the functor
+ */
   enum FunctorOption { lj12_6, lj12_6_AVX };
+
+   /**
+   * Choice of the particle generators specified in the command line
+   */
+    enum GeneratorOption { empty, grid, uniform, gaussian };
 
   /**Constructor für YAMl Parser:
    * */
@@ -121,7 +129,7 @@ class YamlParser {
   [[nodiscard]] const std::map<unsigned long, double> &getMassMap() const;
 
   void setFilename(const std::string &inputFilename);
-  size_t getVtkWriteFrequency() const;
+  [[nodiscard]] size_t getVtkWriteFrequency() const;
 
   void setVtkWriteFrequency(size_t vtkWriteFrequency);
     void setVtkFileName(const std::string &vtkFileName);
@@ -140,7 +148,7 @@ private:
   autopas::TuningStrategyOption tuningStrategyOption = autopas::TuningStrategyOption::fullSearch;
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
   std::shared_ptr<autopas::NumberSet<double>> cellSizeFactors =
-      std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
+  std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
   spdlog::level::level_enum logLevel = spdlog::level::info;
   unsigned int tuningInterval = 100;
   unsigned int tuningSamples = 3;
@@ -150,8 +158,8 @@ private:
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 20;
   double verletSkinRadius = .2;
-  std::array<double, 3> BoxMin = {0., 0., 0.};
-  std::array<double, 3> BoxMax = {10., 10., 10.};
+  std::array<double, 3> BoxMin = {};
+  std::array<double, 3> BoxMax = {};
 
   // Simulation Options:
   double cutoff = 1.;
@@ -163,11 +171,18 @@ private:
   std::map<unsigned long, double> epsilonMap;
   std::map<unsigned long, double> sigmaMap;
   std::map<unsigned long, double> massMap;
-  // for default generation when no parsing file is specified
-  size_t defaultParticlesTotal = 1000;
 
-  // Object Generation:
-  std::vector<CubeGrid> CubeGridObjects = {CubeGrid({10, 10, 10},0.8, {0., 0., 0.}, {5., 5., 5.}, 0, 0.5, 0.5, 1.0)};
+  //Options for additional Object Generation on command line
+    double boxLength = 10;
+    double distributionMean = 5.;
+    double distributionStdDev = 2.;
+    size_t particlesPerDim = 10;
+    size_t defaultParticlesTotal = 1000;
+    double particleSpacing = .5;
+    GeneratorOption generatorOption=GeneratorOption::empty;
+
+    // Object Generation:
+  std::vector<CubeGrid> CubeGridObjects = {};
   std::vector<CubeGauss> CubeGaussObjects = {};
   std::vector<CubeUniform> CubeUniformObjects = {};
   std::vector<Sphere> SphereObjects = {};

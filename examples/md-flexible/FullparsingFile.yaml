@@ -40,7 +40,7 @@
 #      particles-per-Dim: [10,10,10]
 #      particleSpacing: 0.5
 #      velocity: [10.,10.,10.]
-#      center: [5.,5.,5.]
+#      bottomLeftCorner: [5.,5.,5.]
 #  CubeGauss:
 #    0:
 #      particle-type: 0
@@ -52,7 +52,7 @@
 #      distribution-mean: 2.0
 #      distribution-stddev: 5.0
 #      velocity: [0.,0.,0.]
-#      center: [5.,5.,5.]
+#      bottomLeftCorner: [5.,5.,5.]
 #  CubeUniform:
 #    0:
 #      particle-type: 0
@@ -62,7 +62,7 @@
 #      numberOfParticles: 100
 #      box-length: [10.,10.,10.]
 #      velocity: [0.,0.,0.]
-#      center: [5.,5.,5.]
+#      bottomLeftCorner: [5.,5.,5.]
 #  Sphere:
 #    0:
 #      particle-type: 0
