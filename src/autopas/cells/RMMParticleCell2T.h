@@ -53,8 +53,9 @@ class RMMParticleCell2T : public ParticleCell<Particle> {
   void clear() override { _particleSoABuffer.clear(); }
 
   void deleteByIndex(size_t index) override {
-    assert(index >= 0 and index < numParticles());
-    assert(numParticles() > 0);
+    if (index >= numParticles()) {
+      utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
+    }
     if (index < numParticles() - 1) {
       _particleSoABuffer.swap(index, numParticles() - 1);
     }
