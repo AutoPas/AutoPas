@@ -53,32 +53,32 @@ pipeline{
                                 // check if all header files have a #pragma once
                                 try{
                                     // if header files do not contain #pragma once, make build unstable
-                                    sh 'grep -qLr --include=*.h "#pragma once" . && exit 2 || exit 0'
+                                    sh 'grep -qLr --include="*.h" "#pragma once" . && exit 2 || exit 0'
                                 } catch (Exception e) {
                                     // change detected
                                     echo 'all header include guards should be implemented using "#pragma once". Affected files:'
-                                    sh 'grep -Lr --include=*.h "#pragma once" .'
+                                    sh 'grep -Lr --include="*.h" "#pragma once" .'
                                     sh "exit 1"
                                 }
 
                                 // check if all files are documented with @file or \file doxygen comments
                                 try{
                                     // if .cpp or .h files do not contain a file comment, return 2
-                                    sh "grep -qLr --include=*.{h,cpp} '\\\\file\\|\\@file' . && exit 2 || exit 0"
+                                    sh "grep -qLr --include=\\"*.{h,cpp}\\" '\\\\file\\|\\@file' . && exit 2 || exit 0"
                                 } catch (Exception e) {
                                     // change detected
                                     echo 'all .h and .cpp files should be documented with doxygen comments (@file)". Affected files:'
-                                    sh "grep -Lr --include=*.{h,cpp} '\\\\file\\|\\@file' ."
+                                    sh "grep -Lr --include=\\"*.{h,cpp}\\" '\\\\file\\|\\@file' ."
                                     sh "exit 1"
                                 }
                                 // check that no file contains NULL or assert
                                 try{
                                     // if .cpp or .h files do not contain a file comment, return 2
-                                    sh "grep -qlr --include=*.{h,cpp} -E '(NULL|[^_]assert)' . && exit 2 || exit 0"
+                                    sh "grep -qlr --include=\\"*.{h,cpp}\\" -E '(NULL|[^_]assert)' . && exit 2 || exit 0"
                                 } catch (Exception e) {
                                     // change detected
                                     echo 'Usage of NULL and assert is prohibited". Affected files:'
-                                    sh "grep -lr --include=*.{h,cpp} -E '(NULL|[^_]assert)' ."
+                                    sh "grep -lr --include=\\"*.{h,cpp}\\" -E '(NULL|[^_]assert)' ."
                                     sh "exit 1"
                                 }
                             }
