@@ -1,7 +1,7 @@
 /**
  * @file Simulation.h
  * @author N. Fottner
- * @date 7/3/19
+ * @date 12/05/19
  */
 #pragma once
 #include <autopas/utils/MemoryProfiler.h>
