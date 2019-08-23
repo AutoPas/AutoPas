@@ -11,7 +11,6 @@
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
-#include "BoundaryConditions.h"
 #include "Generator.h"
 #include "PrintableMolecule.h"  // includes autopas.h
 #include "TimeDiscretization.h"
@@ -245,11 +244,6 @@ void Simulation<Particle, ParticleCell>::simulate() {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << iteration << std::endl;
     }
-    if (_parser->isPeriodic()) {
-      BoundaryConditions<Particle, ParticleCell>::applyPeriodic(_autopas);
-    }
-    _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
-
     switch (this->_parser->getFunctorOption()) {
       case YamlParser::FunctorOption::lj12_6: {
         this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>>();

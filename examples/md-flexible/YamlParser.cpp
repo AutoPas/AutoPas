@@ -28,7 +28,6 @@ bool YamlParser::parseInput(int argc, char **argv) {
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
                                          {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
-                                         {"periodic", required_argument, nullptr, 'p'},
                                          {"selector-strategy", required_argument, nullptr, 'y'},
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
@@ -295,10 +294,6 @@ bool YamlParser::parseInput(int argc, char **argv) {
         }
         break;
       }
-      case 'p': {
-        periodic = true;
-        break;
-      }
       case 'r': {
         try {
           verletSkinRadius = stod(strArg);
@@ -447,9 +442,6 @@ void YamlParser::parseYamlFile() {
   if (config["selector-strategy"]) {
     this->selectorStrategy =
         autopas::utils::StringUtils::parseSelectorStrategy(config["selector-strategy"].as<std::string>());
-  }
-  if (config["periodic-boundaries"]) {
-    this->periodic = config["periodic-boundaries"].as<bool>();
   }
   if (config["cutoff"]) {
     this->cutoff = config["cutoff"].as<double>();
@@ -871,5 +863,3 @@ size_t YamlParser::getVtkWriteFrequency() const { return vtkWriteFrequency; }
 void YamlParser::setVtkWriteFrequency(size_t vtkWriteFrequency) { YamlParser::vtkWriteFrequency = vtkWriteFrequency; }
 
 void YamlParser::setVtkFileName(const std::string &vtkFileName) { VTKFileName = vtkFileName; }
-
-bool YamlParser::isPeriodic() const { return periodic; }
