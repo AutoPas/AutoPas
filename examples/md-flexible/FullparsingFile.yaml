@@ -3,7 +3,6 @@
 ###AutoPas Options=
 
 #container:                         #string option
-#box-length:                        #double option
 #data-layout:                       #string option
 #selector-strategy:                 #string option
 #traversal:                         #string option
