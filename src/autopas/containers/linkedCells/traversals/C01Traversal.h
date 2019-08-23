@@ -20,6 +20,7 @@ namespace autopas {
  * This class provides the c01 traversal and the c01 traversal with combined SoA buffers.
  *
  * The traversal uses the c01 base step performed on every single cell.
+ * \image html C01.png "C01 base step in 2D. (dark blue cell = base cell)"
  * newton3 cannot be applied!
  * If combineSoA equals true, SoA buffers are combined slice-wise. Each slice is constructed as FIFO buffer and slices
  * are stored in circular buffer (_combinationSlices).
