@@ -1,3 +1,8 @@
+/**
+ * @file PCLTest.h
+ * @author N. Fottner
+ * @date 7/7/19
+ */
 #pragma once
 #include <gtest/gtest.h>
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
