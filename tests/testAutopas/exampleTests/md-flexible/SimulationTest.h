@@ -1,7 +1,7 @@
 /**
- * @file PeriodicBoundariesTest.h
+ * @file SimulationTest.h
  * @author N. Fottner
- * @date 2/8/19
+ * @date 3/8/19
  */
 
 #pragma once
