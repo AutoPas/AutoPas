@@ -23,12 +23,12 @@ class MDFlexParser {
   /**
    * Choice of the functor
    */
-  enum FunctorOption { lj12_6, lj12_6_AVX };
+  enum class FunctorOption { lj12_6, lj12_6_AVX };
 
   /**
    * Choice of the particle generator
    */
-  enum GeneratorOption { grid, uniform, gaussian };
+  enum class GeneratorOption { grid, uniform, gaussian };
 
   MDFlexParser() = default;
 
@@ -62,13 +62,13 @@ class MDFlexParser {
   unsigned int getTuningSamples() const;
   unsigned int getTuningMaxEvidence() const;
   autopas::TuningStrategyOption getTuningStrategyOption() const;
-  std::string getVTKFilenName() const;
+  std::string getVTKFileName() const;
   size_t getVtkWriteFrequency() const;
   const std::set<autopas::TraversalOption> &getTraversalOptions() const;
   unsigned int getVerletRebuildFrequency() const;
   double getVerletSkinRadius() const;
   bool parseInput(int argc, char **argv);
-  void printConfig();
+  void printConfig() const;
   double getMass() const;
 
  private:

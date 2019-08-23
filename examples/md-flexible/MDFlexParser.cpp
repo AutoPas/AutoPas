@@ -151,9 +151,9 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       }
       case 'f': {
         if (strArg.find("avx") != string::npos) {
-          functorOption = lj12_6_AVX;
+          functorOption = FunctorOption::lj12_6_AVX;
         } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
-          functorOption = lj12_6;
+          functorOption = FunctorOption::lj12_6;
         } else {
           cerr << "Unknown functor: " << strArg << endl;
           cerr << "Please use 'Lennard-Jones' or 'Lennard-Jones-AVX'" << endl;
@@ -399,7 +399,7 @@ std::string iterableToString(T arr) {
   return ss.str();
 }
 
-void MDFlexParser::printConfig() {
+void MDFlexParser::printConfig() const {
   using namespace std;
   constexpr size_t valueOffset = 32;
   cout << setw(valueOffset) << left << "Container"
@@ -535,7 +535,7 @@ double MDFlexParser::getDistributionMean() const { return distributionMean; }
 
 double MDFlexParser::getDistributionStdDev() const { return distributionStdDev; }
 
-std::string MDFlexParser::getVTKFilenName() const { return vtkFileName; }
+std::string MDFlexParser::getVTKFileName() const { return vtkFileName; }
 
 double MDFlexParser::getBoxLength() {
   if (boxLength == -1) boxLength = ceil(2 * distributionMean);

@@ -1,9 +1,7 @@
-//
-// Created by nicola on 12.05.19.
 /**
  * @file Simulation.h
  * @author N. Fottner
- * @date 7/3/19
+ * @date 12/05/19
  */
 #pragma once
 #include <autopas/utils/MemoryProfiler.h>
@@ -48,8 +46,8 @@ class Simulation {
    * @param autopas
    */
   void writeVTKFile(unsigned int iteration) {
-    std::string fileBaseName = _parser->getVTKFilenName();
-    std::stringstream strstr;
+    std::string fileBaseName = _parser->getVTKFileName();
+    std::ostringstream strstr;
     auto maxNumDigits = std::to_string(_parser->getIterations()).length();
     strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtu";
     std::ofstream vtkFile;
@@ -317,7 +315,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
     _timers.durationVelocityUpdate += _timeDiscretization->CalculateV(_autopas);
 
     // only write vtk files periodically and if a filename is given
-    if ((not _parser->getVTKFilenName().empty()) and iteration % _parser->getVtkWriteFrequency() == 0) {
+    if ((not _parser->getVTKFileName().empty()) and iteration % _parser->getVtkWriteFrequency() == 0) {
       this->writeVTKFile(iteration);
     }
   }

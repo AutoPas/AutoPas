@@ -1,7 +1,8 @@
-//
-// Created by nicola on 13.05.19.
-//
-
+/**
+ * @file TimeDiscretization.h
+ * @author N. Fottner
+ * @date 13/05/19
+ */
 #pragma once
 #include <chrono>
 #include <fstream>
