@@ -244,6 +244,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << iteration << std::endl;
     }
+    _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
     switch (this->_parser->getFunctorOption()) {
       case YamlParser::FunctorOption::lj12_6: {
         this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>>();

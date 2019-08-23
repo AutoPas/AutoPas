@@ -5,8 +5,8 @@ TEST_F(YamlParserTest, calcAutopasBox) {
   std::string file = "multipleObjectsWithMultipleTypesTest.yaml";
   parser.setFilename(file);
   parser.parseYamlFile();
-  std::array<double, 3> compBoxMin = {-5, -15, -20};
-  std::array<double, 3> compBoxMax = {19, 7.5, 9};
+  std::array<double, 3> compBoxMin = {0, -15, -15};
+  std::array<double, 3> compBoxMax = {23, 10, 13};
   EXPECT_EQ(parser.getBoxMin(), compBoxMin);
   EXPECT_EQ(parser.getBoxMax(), compBoxMax);
 }
