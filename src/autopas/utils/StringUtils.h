@@ -190,23 +190,23 @@ inline std::string to_string(const TuningStrategyOption &option) {
  */
 inline std::string to_string(const AcquisitionFunctionOption &option) {
   switch (option) {
-    case autopas::AcquisitionFunctionOption::LowerConfidenceBound: {
-      return "LowerConfidenceBound";
+    case autopas::AcquisitionFunctionOption::upperConfidenceBound: {
+      return "upperConfidenceBound";
     }
-    case autopas::AcquisitionFunctionOption::UpperConfidenceBound: {
-      return "UpperConfidenceBound";
+    case autopas::AcquisitionFunctionOption::lowerConfidenceBound: {
+      return "lowerConfidenceBound";
     }
-    case autopas::AcquisitionFunctionOption::Mean: {
-      return "Mean";
+    case autopas::AcquisitionFunctionOption::mean: {
+      return "mean";
     }
-    case autopas::AcquisitionFunctionOption::Variance: {
-      return "Variance";
+    case autopas::AcquisitionFunctionOption::variance: {
+      return "variance";
     }
-    case autopas::AcquisitionFunctionOption::ProbabilityOfDecrease: {
-      return "ProbabilityOfDecrease";
+    case autopas::AcquisitionFunctionOption::probabilityOfDecrease: {
+      return "probabilityOfDecrease";
     }
-    case autopas::AcquisitionFunctionOption::ExpectedDecrease: {
-      return "ExpectedDecrease";
+    case autopas::AcquisitionFunctionOption::expectedDecrease: {
+      return "expectedDecrease";
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
@@ -468,18 +468,22 @@ inline autopas::TuningStrategyOption parseTuningStrategyOption(const std::string
 inline autopas::AcquisitionFunctionOption parseAcquisitionFunctionOption(const std::string &acquisitionFunctionString) {
   // hack to initialize the enum out of range as an error value.
   auto acqFun(autopas::AcquisitionFunctionOption(-1));
-  if (acquisitionFunctionString.find("lcb") != std::string::npos) {
-    acqFun = autopas::AcquisitionFunctionOption::LowerConfidenceBound;
-  } else if (acquisitionFunctionString.find("ucb") != std::string::npos) {
-    acqFun = autopas::AcquisitionFunctionOption::UpperConfidenceBound;
+  if (acquisitionFunctionString.find("lcb") != std::string::npos or
+      acquisitionFunctionString.find("lower") != std::string::npos) {
+    acqFun = autopas::AcquisitionFunctionOption::lowerConfidenceBound;
+  } else if (acquisitionFunctionString.find("ucb") != std::string::npos or
+             acquisitionFunctionString.find("upper") != std::string::npos) {
+    acqFun = autopas::AcquisitionFunctionOption::upperConfidenceBound;
   } else if (acquisitionFunctionString.find("mean") != std::string::npos) {
-    acqFun = autopas::AcquisitionFunctionOption::Mean;
+    acqFun = autopas::AcquisitionFunctionOption::mean;
   } else if (acquisitionFunctionString.find("var") != std::string::npos) {
-    acqFun = autopas::AcquisitionFunctionOption::Variance;
-  } else if (acquisitionFunctionString.find("pd") != std::string::npos) {
-    acqFun = autopas::AcquisitionFunctionOption::ProbabilityOfDecrease;
-  } else if (acquisitionFunctionString.find("ed") != std::string::npos) {
-    acqFun = autopas::AcquisitionFunctionOption::ExpectedDecrease;
+    acqFun = autopas::AcquisitionFunctionOption::variance;
+  } else if (acquisitionFunctionString.find("pd") != std::string::npos or
+             acquisitionFunctionString.find("prob") != std::string::npos) {
+    acqFun = autopas::AcquisitionFunctionOption::probabilityOfDecrease;
+  } else if (acquisitionFunctionString.find("ed") != std::string::npos or
+             acquisitionFunctionString.find("expect") != std::string::npos) {
+    acqFun = autopas::AcquisitionFunctionOption::expectedDecrease;
   }
   return acqFun;
 }

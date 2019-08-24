@@ -85,17 +85,17 @@ class GaussianProcess {
       Eigen::LLT<Eigen::MatrixXd> llt = covMat.llt();
       Eigen::MatrixXd l = llt.matrixL();
 
+      // precalculate inverse of covMat and weights for predictions
+      covMatInv = llt.solve(Eigen::MatrixXd::Identity(size, size));
+      weights = covMatInv * outputCentered;
+
       // likelihood of evidence given parameters
-      score = std::exp(-0.5 * outputCentered.dot(llt.solve(outputCentered))) / l.diagonal().prod();
+      score = std::exp(-0.5 * outputCentered.dot(weights)) / l.diagonal().prod();
 
       if (std::isnan(score)) {
         // error score calculation failed
         utils::ExceptionHandler::exception("GaussianProcess: invalid score ", score);
       }
-
-      // precalculate inverse of covMat and weights for predictions
-      covMatInv = llt.solve(Eigen::MatrixXd::Identity(size, size));
-      weights = covMatInv * outputCentered;
     }
   };
 
@@ -240,22 +240,22 @@ class GaussianProcess {
    */
   inline double calcAcquisition(AcquisitionFunctionOption af, const Vector &input) const {
     switch (af) {
-      case UpperConfidenceBound: {
+      case upperConfidenceBound: {
         return predictMean(input) + 2 * std::sqrt(predictVar(input));
       }
-      case LowerConfidenceBound: {
+      case lowerConfidenceBound: {
         return predictMean(input) - 2 * std::sqrt(predictVar(input));
       }
-      case Mean: {
+      case mean: {
         return predictMean(input);
       }
-      case Variance: {
+      case variance: {
         return predictVar(input);
       }
-      case ProbabilityOfDecrease: {
+      case probabilityOfDecrease: {
         return Math::normalCDF((_evidenceMinValue - predictMean(input)) / predictVar(input));
       }
-      case ExpectedDecrease: {
+      case expectedDecrease: {
         double mean = predictMean(input);
         double var = predictVar(input);
         double minNormed = (_evidenceMinValue - mean) / var;

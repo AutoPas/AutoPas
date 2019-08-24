@@ -208,7 +208,7 @@ TEST(GaussianProcessTest, 2dMax) {
   max << -1, 1;
   unsigned numEvidence = 10;      // number of samples allowed to make
   unsigned lhsNumSamples = 1000;  // number of sample to find max of acquisition function
-  AcquisitionFunctionOption af = AcquisitionFunctionOption::UpperConfidenceBound;
+  AcquisitionFunctionOption af = AcquisitionFunctionOption::upperConfidenceBound;
 
   GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
 
@@ -294,7 +294,7 @@ TEST(GaussianProcessTest, 2dMin) {
   min << 1, 1;
   unsigned numEvidence = 10;      // number of samples allowed to make
   unsigned lhsNumSamples = 1000;  // number of sample to find min of acquisition function
-  AcquisitionFunctionOption af = AcquisitionFunctionOption::LowerConfidenceBound;
+  AcquisitionFunctionOption af = AcquisitionFunctionOption::lowerConfidenceBound;
 
   GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
 
@@ -385,7 +385,7 @@ TEST(GaussianProcessTest, 2dMinGrid) {
   min << 1, 1;
   unsigned numEvidence = 10;      // number of samples allowed to make
   unsigned lhsNumSamples = 1000;  // number of sample to find min of acquisition function
-  AcquisitionFunctionOption af = AcquisitionFunctionOption::LowerConfidenceBound;
+  AcquisitionFunctionOption af = AcquisitionFunctionOption::lowerConfidenceBound;
 
   GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
 
@@ -479,7 +479,7 @@ TEST(GaussianProcessTest, 2dMinGridBig) {
   min << 1, 1;
   unsigned numEvidence = 10;      // number of samples allowed to make
   unsigned lhsNumSamples = 1000;  // number of sample to find min of acquisition function
-  AcquisitionFunctionOption af = AcquisitionFunctionOption::LowerConfidenceBound;
+  AcquisitionFunctionOption af = AcquisitionFunctionOption::lowerConfidenceBound;
 
   GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
 

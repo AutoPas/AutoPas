@@ -14,22 +14,22 @@ namespace autopas {
  * Different acquisition functions
  */
 enum AcquisitionFunctionOption {
-  UpperConfidenceBound,
-  LowerConfidenceBound,
-  Mean,
-  Variance,
-  ProbabilityOfDecrease,
-  ExpectedDecrease
+  upperConfidenceBound,
+  lowerConfidenceBound,
+  mean,
+  variance,
+  probabilityOfDecrease,
+  expectedDecrease
 };
 
 /**
  * Provides a way to iterate over the possible choices of AcquisitionFunction.
  */
 static const std::set<AcquisitionFunctionOption> allAcquisitionFunctionOptions = {
-    AcquisitionFunctionOption::UpperConfidenceBound,
-    AcquisitionFunctionOption::LowerConfidenceBound,
-    AcquisitionFunctionOption::Mean,
-    AcquisitionFunctionOption::Variance,
-    AcquisitionFunctionOption::ProbabilityOfDecrease,
-    AcquisitionFunctionOption::ExpectedDecrease};
+    AcquisitionFunctionOption::upperConfidenceBound,
+    AcquisitionFunctionOption::lowerConfidenceBound,
+    AcquisitionFunctionOption::mean,
+    AcquisitionFunctionOption::variance,
+    AcquisitionFunctionOption::probabilityOfDecrease,
+    AcquisitionFunctionOption::expectedDecrease};
 }  // namespace autopas

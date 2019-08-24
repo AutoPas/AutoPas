@@ -82,7 +82,7 @@ class MDFlexParser {
   unsigned int tuningInterval = 100;
   unsigned int tuningSamples = 3;
   unsigned int tuningMaxEvidence = 10;
-  autopas::AcquisitionFunctionOption tuningAcqFun = autopas::AcquisitionFunctionOption::LowerConfidenceBound;
+  autopas::AcquisitionFunctionOption tuningAcqFun = autopas::AcquisitionFunctionOption::lowerConfidenceBound;
   std::string writeVTK = "";
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 5;

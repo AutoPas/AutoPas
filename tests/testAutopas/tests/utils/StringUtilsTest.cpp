@@ -52,8 +52,15 @@ TEST(StringUtilsTest, parseSelectorOptionsTest) {
 }
 
 TEST(StringUtilsTest, parseTuningStrategyOptionsTest) {
-  testParseSingle<autopas::TuningStrategyOption>(autopas::allTuningStrategyOptions, {"full-search", "bayesian-search"},
+  testParseSingle<autopas::TuningStrategyOption>(autopas::allTuningStrategyOptions,
+                                                 {"random-search", "full-search", "bayesian-search"},
                                                  autopas::utils::StringUtils::parseTuningStrategyOption);
+}
+
+TEST(StringUtilsTest, parseAcquisitionFunctionOptionsTest) {
+  testParseSingle<autopas::AcquisitionFunctionOption>(autopas::allAcquisitionFunctionOptions,
+                                                      {"ucb", "lcb", "mean", "var", "pd", "ed"},
+                                                      autopas::utils::StringUtils::parseAcquisitionFunctionOption);
 }
 
 TEST(StringUtilsTest, to_stringDataLayoutTest) {
@@ -74,4 +81,8 @@ TEST(StringUtilsTest, to_stringTraversalOptionsTest) {
 
 TEST(StringUtilsTest, to_stringTuningStrategyOptionsTest) {
   testToString(autopas::allTuningStrategyOptions, {autopas::TuningStrategyOption(-1)});
+}
+
+TEST(StringUtilsTest, to_stringAcquisitionFunctionOptionsTest) {
+  testToString(autopas::allAcquisitionFunctionOptions, {autopas::AcquisitionFunctionOption(-1)});
 }
