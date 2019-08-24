@@ -9,7 +9,46 @@
  * and information prints in the yamlParser class
  * */
 
-class CubeGrid {
+class Object {
+ public:
+
+  /**Getter for Velocity
+   * @return velocity
+   * */
+  [[nodiscard]] const std::array<double, 3> &getVelocity() const { return velocity; }
+
+    /**Getter for typeId of Particles in Objet
+   * @return typeId
+   * */
+    [[nodiscard]] unsigned long getTypeId() const { return typeId; }
+
+  /**Getter for the smallest x,y,z coordinates for Object
+   * @return BoxMin of Cube
+   * */
+  virtual std::array<double, 3> getBoxMin() = 0;
+
+  /**Getter for the highest x,y,z coordinates for Object
+   * @return BoxMax of Cube
+   * */
+  virtual std::array<double, 3> getBoxMax() = 0;
+
+  /**Returns the total amount of Particles in the Object
+   * @return ParticlesTotal
+   * */
+  [[nodiscard]] virtual size_t getParticlesTotal() const = 0;
+
+ /**Prints the configuration of the Object to the
+  * */
+ virtual void printConfig() =0;
+
+  protected : std::array<double, 3> velocity{};
+  unsigned long typeId{};
+  double epsilon{};
+  double sigma{};
+  double mass{};
+};
+
+class CubeGrid : public Object {
  public:
   /**constructor for CubeGrid that is created in YamlParser and then included into the Simulation via the Generator
    * class
@@ -22,57 +61,55 @@ class CubeGrid {
    * @param sigma
    * @param mass
    * */
-  CubeGrid(const std::array<size_t, 3> &particlesPerDim, double particleSpacing, const std::array<double, 3> &velocity,
-           const std::array<double, 3> &bottomLeftCorner, const unsigned long &typeId, const double &epsilon,
-           const double &sigma, const double &mass)
+  CubeGrid(const std::array<size_t, 3> &particlesPerDim, double particleSpacing,
+           const std::array<double, 3> &bottomLeftCorner, const std::array<double, 3> &velocity_arg,
+           const unsigned long &typeId_arg, const double &epsilon_arg, const double &sigma_arg, const double &mass_arg)
       : particlesPerDim(particlesPerDim),
         particleSpacing(particleSpacing),
-        velocity(velocity),
         particlesTotal(particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]),
-        bottomLeftCorner(bottomLeftCorner),
-        typeId(typeId),
-        epsilon(epsilon),
-        sigma(sigma),
-        mass(mass){}
+        bottomLeftCorner(bottomLeftCorner) {
+    velocity = velocity_arg;
+    typeId = typeId_arg;
+    epsilon = epsilon_arg;
+    sigma = sigma_arg;
+    mass = mass_arg;
+  }
 
-                /**Getter for ParticlesPerDim
-                 * @return particlePerDim
-                 * */
-                [[nodiscard]] const std::array<size_t, 3> &
-            getParticlesPerDim() const {
-    return particlesPerDim;
-  }
-  /**GEtter for ParticleSpacing
-   * @return particleSpacing
+  /**Getter for ParticlesPerDim
+   * @return particlePerDim
    * */
-  [[nodiscard]] double getParticleSpacing() const { return particleSpacing; }
-      /**Getter for Velocity
-       * @return velocity
+  [[nodiscard]] const std::array<size_t, 3> &getParticlesPerDim() const { return particlesPerDim; }
+
+      /**Getter for ParticleSpacing
+       * @return particleSpacing
        * */
-      [[nodiscard]] const std::array<double, 3> &getVelocity() const {
-    return velocity;
+      [[nodiscard]] double getParticleSpacing() const {
+    return particleSpacing;
   }
+
   /**Getter for total number of Particles for object
    * @return particlesTotal
    * */
-  [[nodiscard]] int getParticlesTotal() const { return particlesTotal; }
+  [[nodiscard]] size_t getParticlesTotal() const override { return particlesTotal; }
+
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() {
+  std::array<double, 3> getBoxMin() override {
     return bottomLeftCorner;
   }
+
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  std::array<double, 3> getBoxMax() {
+  std::array<double, 3> getBoxMax() override {
     return {bottomLeftCorner[0] + (particlesPerDim[0]) * particleSpacing,
             bottomLeftCorner[1] + (particlesPerDim[1]) * particleSpacing,
             bottomLeftCorner[2] + (particlesPerDim[2]) * particleSpacing};
   }
   /**Prints the Configuration of the current Object
    * */
-  void printConfig() {
+  void printConfig() override{
     using namespace std;
 
     cout << std::setw(valueOffset) << left << "Particles per dimension"
@@ -95,24 +132,15 @@ class CubeGrid {
          << endl;
   }
 
-  /**Getter for typeId of Particles in Objet
-   * @return typeId
-   * */
-  [[nodiscard]] unsigned long getTypeId() const { return typeId; }
-
-  private : static constexpr size_t valueOffset = 32;
+ private:
+  static constexpr size_t valueOffset = 32;
   std::array<size_t, 3> particlesPerDim;
   double particleSpacing;
-  std::array<double, 3> velocity;
   size_t particlesTotal;
   std::array<double, 3> bottomLeftCorner;
-  unsigned long typeId;
-  double epsilon;
-  double sigma;
-  double mass;
 };
 
-class CubeGauss {
+class CubeGauss : public Object {
  public:
   /**constructor for CubeGauss that is created in YamlParser and then included into the Simulation via the Generator
    * class
@@ -128,57 +156,52 @@ class CubeGauss {
    * @param mass
    * */
   CubeGauss(size_t numParticles, const std::array<double, 3> &boxLength, double distributionMean,
-            double distributionStdDev, const std::array<double, 3> &velocity,
-            const std::array<double, 3> &bottomLeftCorner, const unsigned long &typeId, const double &epsilon,
-            const double &sigma, const double &mass)
+            double distributionStdDev, const std::array<double, 3> &bottomLeftCorner,
+            const std::array<double, 3> &velocity_arg, const unsigned long &typeId_arg, const double &epsilon_arg,
+            const double &sigma_arg, const double &mass_arg)
       : numParticles(numParticles),
         boxLength(boxLength),
         distributionMean(distributionMean),
         distributionStdDev(distributionStdDev),
-        velocity(velocity),
-        bottomLeftCorner(bottomLeftCorner),
-        typeId(typeId),
-        epsilon(epsilon),
-        sigma(sigma),
-        mass(mass){} /**Getter total number of Particles of Object
-                      * @return numParticles
-                      * */
-            [[nodiscard]] size_t getParticlesTotal() const {
-    return numParticles;
+        bottomLeftCorner(bottomLeftCorner) {
+    velocity = velocity_arg;
+    typeId = typeId_arg;
+    epsilon = epsilon_arg;
+    sigma = sigma_arg;
+    mass = mass_arg;
   }
-  /**Getter for typeId of Particles in Objet
-   * @return typeId
-   * */
-  unsigned long getTypeId() const { return typeId; }
 
-  /**Getter for distribution mean
-   * @return distributionMean
+  /**Getter total number of Particles of Object
+   * @return numParticles
    * */
-  double getDistributionMean() const { return distributionMean; }
+  [[nodiscard]] size_t getParticlesTotal() const override { return numParticles; }
+      /**Getter for distribution mean
+       * @return distributionMean
+       * */
+      [[nodiscard]] double getDistributionMean() const {
+    return distributionMean;
+  }
   /**Getter for distributionStdDev
    * @return distributionStdDev
    * */
   [[nodiscard]] double getDistributionStdDev() const { return distributionStdDev; }
-      /**Getter for velocities of the Particles generated
-       * @return velocity
-       * */
-      [[nodiscard]] const std::array<double, 3> &getVelocity() const {
-    return velocity;
-  }
+
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() { return bottomLeftCorner; }
+  std::array<double, 3> getBoxMin() override {
+    return bottomLeftCorner;
+  }
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  std::array<double, 3> getBoxMax() {
+  std::array<double, 3> getBoxMax() override {
     return {bottomLeftCorner[0] + boxLength[0], bottomLeftCorner[1] + boxLength[1], bottomLeftCorner[2] + boxLength[2]};
   }
 
   /**Prints the Configuration of the current Object
    * */
-  void printConfig() {
+  void printConfig() override{
     using namespace std;
 
     cout << std::setw(valueOffset) << left << "Distribution-Mean"
@@ -209,15 +232,9 @@ class CubeGauss {
   std::array<double, 3> boxLength;
   double distributionMean;
   double distributionStdDev;
-  std::array<double, 3> velocity;
   std::array<double, 3> bottomLeftCorner;
-  unsigned long typeId;
-  double epsilon;
-  double sigma;
-  double mass;
 };
-
-class CubeUniform {
+class CubeUniform : public Object {
  public:
   /**constructor for CubeUniform that is created in YamlParser and then included into the Simulation via the Generator
    * class
@@ -230,45 +247,36 @@ class CubeUniform {
    * @param sigma
    * @param mass*/
   CubeUniform(size_t numParticles, const std::array<double, 3> &boxLength, const std::array<double, 3> &velocity,
-              const std::array<double, 3> &center, const unsigned long &typeId, const double &epsilon,
-              const double &sigma, const double &mass)
-      : numParticles(numParticles),
-        boxLength(boxLength),
-        velocity(velocity),
-        bottomLeftCorner(center),
-        typeId(typeId),
-        epsilon(epsilon),
-        sigma(sigma),
-        mass(mass){}
-
-            /**Getter for total number of Particles in Object
-             * @return numParticles
-             * */
-            [[nodiscard]] size_t getParticlesTotal() const {
-    return numParticles;
+              const std::array<double, 3> &center, const unsigned long &typeId_arg, const double &epsilon_arg,
+              const double &sigma_arg, const double &mass_arg)
+      : numParticles(numParticles), boxLength(boxLength), velocity(velocity), bottomLeftCorner(center) {
+    typeId = typeId_arg;
+    epsilon = epsilon_arg;
+    sigma = sigma_arg;
+    mass = mass_arg;
   }
 
-  [[nodiscard]] const std::array<double, 3> &getVelocity() const { return velocity; }
+  /**Getter for total number of Particles in Object
+   * @return numParticles
+   * */
+  [[nodiscard]] size_t getParticlesTotal() const override { return numParticles; }
+
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() {
+  std::array<double, 3> getBoxMin() override {
     return bottomLeftCorner;
   }
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  std::array<double, 3> getBoxMax() {
+  std::array<double, 3> getBoxMax() override {
     return {bottomLeftCorner[0] + boxLength[0], bottomLeftCorner[1] + boxLength[1], bottomLeftCorner[2] + boxLength[2]};
   }
-  /**Getter for typeId of Particles in Objet
-   * @return typeId
-   * */
-  unsigned long getTypeId() const { return typeId; }
 
   /**Prints the Configuration of the current Object
    * */
-  void printConfig() {
+  void printConfig() override{
     using namespace std;
 
     cout << std::setw(valueOffset) << left << "Center"
@@ -302,7 +310,7 @@ class CubeUniform {
   double sigma;
   double mass;
 };
-class Sphere {
+class Sphere : public Object {
  public:
   /**constructor for Sphere that is created in YamlParser and then included into the Simulation via the Generator class
    * @param center
@@ -314,45 +322,35 @@ class Sphere {
    * @param sigma
    * @param mass*/
   Sphere(const std::array<double, 3> &center, int radius, double particleSpacing, const std::array<double, 3> &velocity,
-         const unsigned long &typeId, const double &epsilon, const double &sigma, const double &mass)
-      : center(center),
-        radius(radius),
-        particleSpacing(particleSpacing),
-        velocity(velocity),
-        typeId(typeId),
-        epsilon(epsilon),
-        sigma(sigma),
-        mass(mass){} /**Getter for center of Sphere
-                      * @return center
-                      * */
-                [[nodiscard]] const std::array<double, 3> &
-            getCenter() const {
-    return center;
+         const unsigned long &typeId_arg, const double &epsilon_arg, const double &sigma_arg, const double &mass_arg)
+      : center(center), radius(radius), particleSpacing(particleSpacing) {
+    typeId = typeId_arg;
+    epsilon = epsilon_arg;
+    sigma = sigma_arg;
+    mass = mass_arg;
   }
-  /**Getter for radius of Sphere
-   * @return radius
+
+  /**Getter for center of Sphere
+   * @return center
    * */
-  [[nodiscard]] int getRadius() const { return radius; }
-      /**Getter for particleSpacing
-       * @return particleSpacing
+  [[nodiscard]] const std::array<double, 3> &getCenter() const { return center; }
+
+      /**Getter for radius of Sphere
+       * @return radius
        * */
-      [[nodiscard]] double getParticleSpacing() const {
-    return particleSpacing;
+      [[nodiscard]] int getRadius() const {
+    return radius;
   }
-  /**Getter for typeId of Particles in Objet
-   * @return typeId
+
+  /**Getter for particleSpacing
+   * @return particleSpacing
    * */
-  [[nodiscard]] unsigned long getTypeId() const { return typeId; }
-      /**Getter for initial velocity of Particles
-       * @return velocity
-       * */
-      [[nodiscard]] const std::array<double, 3> &getVelocity() const {
-    return velocity;
-  }
+  [[nodiscard]] double getParticleSpacing() const { return particleSpacing; }
+
   /**Returns the number of particles that will be generated for this Object
    * @return totalNumberOfParticles
    * */
-  int getParticlesTotal() {
+  [[nodiscard]] size_t getParticlesTotal() const override{
     // this should look different if the generator for spheres changes
     int counter = 0;
     for (int z = 0; z <= radius; ++z) {
@@ -381,23 +379,26 @@ class Sphere {
     }
     return counter;
   }
+
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() {
+  std::array<double, 3> getBoxMin() override {
     return {center[0] - ((double)radius) * particleSpacing, center[1] - ((double)radius) * particleSpacing,
             center[2] - ((double)radius) * particleSpacing};
   }
+
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  std::array<double, 3> getBoxMax() {
+  std::array<double, 3> getBoxMax() override {
     return {center[0] + ((double)radius) * particleSpacing, center[1] + ((double)radius) * particleSpacing,
             center[2] + ((double)radius) * particleSpacing};
   }
+
   /**Prints the Configuration of the current Object
    * */
-  void printConfig() {
+  void printConfig() override{
     using namespace std;
     cout << std::setw(valueOffset) << left << "Center of Sphere"
          << ":  " << autopas::ArrayUtils::to_string(center) << endl;
@@ -426,9 +427,4 @@ class Sphere {
   std::array<double, 3> center;
   int radius;
   double particleSpacing;
-  std::array<double, 3> velocity;
-  unsigned long typeId;
-  double epsilon;
-  double sigma;
-  double mass;
 };

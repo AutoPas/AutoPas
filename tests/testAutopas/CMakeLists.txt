@@ -1,5 +1,5 @@
 file(
-    GLOB_RECURSE
+    GLOB
     MY_SRC
     "*.cpp"
     "*.h"
@@ -9,6 +9,7 @@ file(
         "../../examples/md-flexible/Objects.h"
         "../../examples/md-flexible/Generator.h"
         "../../examples/md-flexible/VTKWriter/*"
+        "./testingHelpers/*"
 )
 if (AUTOPAS_ENABLE_CUDA)
     file(
