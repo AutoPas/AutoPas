@@ -134,8 +134,6 @@ class YamlParser {
   void setVtkWriteFrequency(size_t vtkWriteFrequency);
   void setVtkFileName(const std::string &vtkFileName);
 
-  bool isPeriodic() const;
-
  private:
   static constexpr size_t valueOffset = 32;
   // defaults:

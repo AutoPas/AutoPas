@@ -6,12 +6,10 @@ file(
         "exampleTests/md-flexible/*"
         "../../examples/md-flexible/YamlParser.cpp"
         "../../examples/md-flexible/YamlParser.h"
-        "../../examples/md-flexible/Simulation.h"
-        "../../examples/md-flexible/Simulation.cpp"
         "../../examples/md-flexible/Objects.h"
         "../../examples/md-flexible/Generator.h"
-        "../../examples/md-flexible/BoundaryConditions.h"
-        "testingHelpers/*"
+        "../../examples/md-flexible/VTKWriter/*"
+        "./testingHelpers/*"
 )
 if (AUTOPAS_ENABLE_CUDA)
     file(
@@ -35,11 +33,12 @@ add_executable(runTests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
 include_directories(${PROJECT_SOURCE_DIR}/libs/yaml-cpp/include)
 
 target_link_libraries(
-    runTests
+    runTests    
     autopas
     libgtest
     libgmock
     ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a
+    xerces-c
 )
 
 # this cmake module was only introduced in 3.10

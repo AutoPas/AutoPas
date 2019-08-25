@@ -21,7 +21,7 @@ class ObjectsTest : public AutoPasTestBase {
  protected:
   std::array<double, 3> velocity = {0., 0., 0.};
   size_t numParticles = 100;
-  std::array<double, 3> center = {5., 5., 5.};
+  std::array<double, 3> center = {0., 0., 0.};
   std::array<double, 3> boxlength = {10., 10., 10.};
   std::array<size_t, 3> particlesPerDim = {10, 10, 10};
   CubeGrid _CGrid;

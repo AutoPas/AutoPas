@@ -28,7 +28,6 @@ bool YamlParser::parseInput(int argc, char **argv) {
                                          {"particles-per-dimension", required_argument, nullptr, 'n'},
                                          {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
-                                         {"periodic", required_argument, nullptr, 'p'},
                                          {"selector-strategy", required_argument, nullptr, 'y'},
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
@@ -295,10 +294,6 @@ bool YamlParser::parseInput(int argc, char **argv) {
         }
         break;
       }
-      case 'p': {
-        periodic = true;
-        break;
-      }
       case 'r': {
         try {
           verletSkinRadius = stod(strArg);
@@ -448,9 +443,6 @@ void YamlParser::parseYamlFile() {
     this->selectorStrategy =
         autopas::utils::StringUtils::parseSelectorStrategy(config["selector-strategy"].as<std::string>());
   }
-  if (config["periodic-boundaries"]) {
-    this->periodic = config["periodic-boundaries"].as<bool>();
-  }
   if (config["cutoff"]) {
     this->cutoff = config["cutoff"].as<double>();
   }
@@ -536,7 +528,7 @@ void YamlParser::parseYamlFile() {
     this->verletRebuildFrequency = config["verlet-rebuild-frequency"].as<unsigned int>();
   }
   if (config["verlet-skin-radius"]) {
-    this->verletSkinRadius = config["verlet-skin-raduis"].as<double>();
+    this->verletSkinRadius = config["verlet-skin-radius"].as<double>();
   }
   if (config["vtk-filename"]) {
     this->VTKFileName = config["vtk-filename"].as<std::string>();
@@ -553,10 +545,10 @@ void YamlParser::parseYamlFile() {
                       it->second["particles-per-Dim"][1].as<unsigned long>(),
                       it->second["particles-per-Dim"][2].as<unsigned long>()},
                      it->second["particleSpacing"].as<double>(),
-                     {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                      it->second["velocity"][2].as<double>()},
                      {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
                       it->second["bottomLeftCorner"][2].as<double>()},
+                     {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+                      it->second["velocity"][2].as<double>()},
                      it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
                      it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
           CubeGridObjects.emplace_back(C);
@@ -571,10 +563,10 @@ void YamlParser::parseYamlFile() {
                       {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
                        it->second["box-length"][2].as<double>()},
                       it->second["distribution-mean"].as<double>(), it->second["distribution-stddev"].as<double>(),
-                      {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                       it->second["velocity"][2].as<double>()},
                       {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
                        it->second["bottomLeftCorner"][2].as<double>()},
+                      {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+                       it->second["velocity"][2].as<double>()},
                       it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
                       it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
           CubeGaussObjects.emplace_back(C);
@@ -588,10 +580,11 @@ void YamlParser::parseYamlFile() {
           CubeUniform C(it->second["numberOfParticles"].as<size_t>(),
                         {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
                          it->second["box-length"][2].as<double>()},
-                        {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                         it->second["velocity"][2].as<double>()},
+
                         {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
                          it->second["bottomLeftCorner"][2].as<double>()},
+                        {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+                         it->second["velocity"][2].as<double>()},
                         it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
                         it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
           CubeUniformObjects.emplace_back(C);
@@ -871,5 +864,3 @@ size_t YamlParser::getVtkWriteFrequency() const { return vtkWriteFrequency; }
 void YamlParser::setVtkWriteFrequency(size_t vtkWriteFrequency) { YamlParser::vtkWriteFrequency = vtkWriteFrequency; }
 
 void YamlParser::setVtkFileName(const std::string &vtkFileName) { VTKFileName = vtkFileName; }
-
-bool YamlParser::isPeriodic() const { return periodic; }
