@@ -245,10 +245,13 @@ void Simulation<Particle, ParticleCell>::simulate() {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << iteration << std::endl;
     }
+    std::cout<<"iteration: " << iteration << "print Particle Number before P.boundaries: " << _autopas.getNumberOfParticles() << std::endl;
     if (_parser->isPeriodic()) {
       BoundaryConditions<Particle, ParticleCell>::applyPeriodic(_autopas);
     }
-    _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
+      std::cout<<"iteration: " << iteration << "print Particle Number after P.boundaries: " << _autopas.getNumberOfParticles() << std::endl;
+
+      _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
 
     switch (this->_parser->getFunctorOption()) {
       case YamlParser::FunctorOption::lj12_6: {
