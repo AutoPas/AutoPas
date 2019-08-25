@@ -5,22 +5,23 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
 
-/**Containes all Objects with their properties and functionalities for their generation in class Generator.h
+/**Contains all Objects with their properties and functionalities for their generation in class Generator.h
  * and information prints in the yamlParser class
  * */
 
 class Object {
  public:
-
   /**Getter for Velocity
    * @return velocity
    * */
   [[nodiscard]] const std::array<double, 3> &getVelocity() const { return velocity; }
 
-    /**Getter for typeId of Particles in Objet
-   * @return typeId
-   * */
-    [[nodiscard]] unsigned long getTypeId() const { return typeId; }
+      /**Getter for typeId of Particles in Objet
+       * @return typeId
+       * */
+      [[nodiscard]] unsigned long getTypeId() const {
+    return typeId;
+  }
 
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
@@ -37,11 +38,12 @@ class Object {
    * */
   [[nodiscard]] virtual size_t getParticlesTotal() const = 0;
 
- /**Prints the configuration of the Object to the
-  * */
- virtual void printConfig() =0;
+  /**Prints the configuration of the Object to the
+   * */
+  virtual void printConfig() = 0;
 
-  protected : std::array<double, 3> velocity{};
+ protected:
+  std::array<double, 3> velocity{};
   unsigned long typeId{};
   double epsilon{};
   double sigma{};
@@ -109,7 +111,7 @@ class CubeGrid : public Object {
   }
   /**Prints the Configuration of the current Object
    * */
-  void printConfig() override{
+  void printConfig() override {
     using namespace std;
 
     cout << std::setw(valueOffset) << left << "Particles per dimension"
@@ -201,7 +203,7 @@ class CubeGauss : public Object {
 
   /**Prints the Configuration of the current Object
    * */
-  void printConfig() override{
+  void printConfig() override {
     using namespace std;
 
     cout << std::setw(valueOffset) << left << "Distribution-Mean"
@@ -240,16 +242,18 @@ class CubeUniform : public Object {
    * class
    * @param numParticles
    * @param boxLength
-   * @param velocity
-   * @param center
+   * @param velocity_arg
+   * @param bottomLeftCorner
    * @param typeId
    * @param epsilon
    * @param sigma
    * @param mass*/
-  CubeUniform(size_t numParticles, const std::array<double, 3> &boxLength, const std::array<double, 3> &velocity,
-              const std::array<double, 3> &center, const unsigned long &typeId_arg, const double &epsilon_arg,
-              const double &sigma_arg, const double &mass_arg)
-      : numParticles(numParticles), boxLength(boxLength), velocity(velocity), bottomLeftCorner(center) {
+  CubeUniform(size_t numParticles, const std::array<double, 3> &boxLength,
+              const std::array<double, 3> &bottomLeftCorner, const std::array<double, 3> &velocity_arg,
+              const unsigned long &typeId_arg, const double &epsilon_arg, const double &sigma_arg,
+              const double &mass_arg)
+      : numParticles(numParticles), boxLength(boxLength), bottomLeftCorner(bottomLeftCorner) {
+    velocity = velocity_arg;
     typeId = typeId_arg;
     epsilon = epsilon_arg;
     sigma = sigma_arg;
@@ -276,7 +280,7 @@ class CubeUniform : public Object {
 
   /**Prints the Configuration of the current Object
    * */
-  void printConfig() override{
+  void printConfig() override {
     using namespace std;
 
     cout << std::setw(valueOffset) << left << "Center"
@@ -303,12 +307,7 @@ class CubeUniform : public Object {
   static constexpr size_t valueOffset = 32;
   size_t numParticles;
   std::array<double, 3> boxLength;
-  std::array<double, 3> velocity;
   std::array<double, 3> bottomLeftCorner;
-  unsigned long typeId;
-  double epsilon;
-  double sigma;
-  double mass;
 };
 class Sphere : public Object {
  public:
@@ -316,14 +315,16 @@ class Sphere : public Object {
    * @param center
    * @param radius
    * @param particleSpacing
-   * @param velocity
+   * @param velocity_arg
    * @param typeId
    * @param epsilon
    * @param sigma
    * @param mass*/
-  Sphere(const std::array<double, 3> &center, int radius, double particleSpacing, const std::array<double, 3> &velocity,
-         const unsigned long &typeId_arg, const double &epsilon_arg, const double &sigma_arg, const double &mass_arg)
+  Sphere(const std::array<double, 3> &center, int radius, double particleSpacing,
+         const std::array<double, 3> &velocity_arg, const unsigned long &typeId_arg, const double &epsilon_arg,
+         const double &sigma_arg, const double &mass_arg)
       : center(center), radius(radius), particleSpacing(particleSpacing) {
+    velocity = velocity_arg;
     typeId = typeId_arg;
     epsilon = epsilon_arg;
     sigma = sigma_arg;
@@ -335,7 +336,7 @@ class Sphere : public Object {
    * */
   [[nodiscard]] const std::array<double, 3> &getCenter() const { return center; }
 
-      /**Getter for radius of Sphere
+      /**Getter for radius in number of Particles of Sphere
        * @return radius
        * */
       [[nodiscard]] int getRadius() const {
@@ -347,10 +348,10 @@ class Sphere : public Object {
    * */
   [[nodiscard]] double getParticleSpacing() const { return particleSpacing; }
 
-  /**Returns the number of particles that will be generated for this Object
-   * @return totalNumberOfParticles
-   * */
-  [[nodiscard]] size_t getParticlesTotal() const override{
+      /**Returns the number of particles that will be generated for this Object
+       * @return totalNumberOfParticles
+       * */
+      [[nodiscard]] size_t getParticlesTotal() const override {
     // this should look different if the generator for spheres changes
     int counter = 0;
     for (int z = 0; z <= radius; ++z) {
@@ -398,7 +399,7 @@ class Sphere : public Object {
 
   /**Prints the Configuration of the current Object
    * */
-  void printConfig() override{
+  void printConfig() override {
     using namespace std;
     cout << std::setw(valueOffset) << left << "Center of Sphere"
          << ":  " << autopas::ArrayUtils::to_string(center) << endl;

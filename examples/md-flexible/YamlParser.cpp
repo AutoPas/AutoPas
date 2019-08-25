@@ -545,10 +545,10 @@ void YamlParser::parseYamlFile() {
                       it->second["particles-per-Dim"][1].as<unsigned long>(),
                       it->second["particles-per-Dim"][2].as<unsigned long>()},
                      it->second["particleSpacing"].as<double>(),
-                     {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                      it->second["velocity"][2].as<double>()},
                      {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
                       it->second["bottomLeftCorner"][2].as<double>()},
+                     {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+                      it->second["velocity"][2].as<double>()},
                      it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
                      it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
           CubeGridObjects.emplace_back(C);
@@ -563,10 +563,10 @@ void YamlParser::parseYamlFile() {
                       {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
                        it->second["box-length"][2].as<double>()},
                       it->second["distribution-mean"].as<double>(), it->second["distribution-stddev"].as<double>(),
-                      {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                       it->second["velocity"][2].as<double>()},
                       {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
                        it->second["bottomLeftCorner"][2].as<double>()},
+                      {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+                       it->second["velocity"][2].as<double>()},
                       it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
                       it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
           CubeGaussObjects.emplace_back(C);
@@ -580,10 +580,11 @@ void YamlParser::parseYamlFile() {
           CubeUniform C(it->second["numberOfParticles"].as<size_t>(),
                         {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
                          it->second["box-length"][2].as<double>()},
-                        {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                         it->second["velocity"][2].as<double>()},
+
                         {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
                          it->second["bottomLeftCorner"][2].as<double>()},
+                        {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+                         it->second["velocity"][2].as<double>()},
                         it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
                         it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
           CubeUniformObjects.emplace_back(C);
