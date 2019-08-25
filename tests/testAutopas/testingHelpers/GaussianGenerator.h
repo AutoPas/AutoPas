@@ -24,6 +24,7 @@ class GaussianGenerator {
    * @param defaultParticle inserted particle
    * @param distributionMean mean value / expected value
    * @param distributionStdDev standard deviation
+   * @param velocity
    */
   template <class Particle, class ParticleCell>
   static void fillWithParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas, size_t numParticles,

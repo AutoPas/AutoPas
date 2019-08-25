@@ -62,7 +62,6 @@ class GridGenerator {
    * @param defaultParticle
    * @param spacing Factor for distance between two particles along one dimension (default is 1).
    * @param offset Offset to move all particles.
-   * @param velocity, to initilize velocities of all Particles created
    */
   template <class Container, class Particle>
   static void fillWithParticles(Container &container, const std::array<size_t, 3> &particlesPerDim,
