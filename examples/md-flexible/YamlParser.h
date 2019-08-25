@@ -1,3 +1,8 @@
+/**
+ * @file YamlParser.h
+ * @author N. Fottner
+ * @date 15/7/19
+ */
 #pragma once
 
 #include <getopt.h>
@@ -134,6 +139,8 @@ class YamlParser {
   void setVtkWriteFrequency(size_t vtkWriteFrequency);
   void setVtkFileName(const std::string &vtkFileName);
 
+  [[nodiscard]] bool isPeriodic() const;
+
  private:
   static constexpr size_t valueOffset = 32;
   // defaults:
@@ -163,7 +170,7 @@ class YamlParser {
   double cutoff = 1.;
   FunctorOption functorOption = FunctorOption::lj12_6;
   size_t iterations = 10;
-  bool periodic = true;
+  bool periodic = false;
   bool measureFlops = true;
   double delta_t = 0.001;
   std::map<unsigned long, double> epsilonMap;
