@@ -199,7 +199,7 @@ TEST(GaussianProcessTest, 2dMax) {
 
   // try to find the max of -(i1 + 1)^2 - (i2 - 1)^2
   auto functor = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
-  double epsilon = 0.1;  // allowed error
+  double epsilon = 0.2;  // allowed error
   std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
                                              NumberInterval<double>(-2, 2)};  // domain of function
 
@@ -285,7 +285,7 @@ TEST(GaussianProcessTest, 2dMin) {
 
   // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
   auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
-  double epsilon = 0.1;  // allowed error
+  double epsilon = 0.2;  // allowed error
   std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
                                              NumberInterval<double>(-2, 2)};  // domain of function
 
@@ -294,7 +294,7 @@ TEST(GaussianProcessTest, 2dMin) {
   min << 1, 1;
   unsigned numEvidence = 10;      // number of samples allowed to make
   unsigned lhsNumSamples = 1000;  // number of sample to find min of acquisition function
-  AcquisitionFunctionOption af = AcquisitionFunctionOption::lowerConfidenceBound;
+  AcquisitionFunctionOption af = AcquisitionFunctionOption::expectedDecrease;
 
   GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
 
@@ -318,7 +318,7 @@ TEST(GaussianProcessTest, 2dMin) {
     }
 
     // sample min of acquisition function
-    Eigen::VectorXd am = gp.sampleAquisitionMin(af, lhsSamples);
+    Eigen::VectorXd am = gp.sampleAquisitionMax(af, lhsSamples);
     double amOut = functor(am[0], am[1]);
 
     // print acquisition map
@@ -331,7 +331,7 @@ TEST(GaussianProcessTest, 2dMin) {
         Eigen::VectorXd sample(2);
         sample << (x * xSpace - 2), (y * ySpace - 2);
         double val = gp.calcAcquisition(af, sample);
-        int color = static_cast<int>(val * 2 + 232);
+        int color = static_cast<int>(val * 5 + 232);
         color = std::clamp(color, 232, 255);
 
         std::cout << "\033[48;5;" << color << "m  ";
@@ -370,7 +370,7 @@ TEST(GaussianProcessTest, 2dMinGrid) {
 
   // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
   auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
-  double epsilon = 0.1;  // allowed error
+  double epsilon = 0.2;  // allowed error
 
   // domain of function
   int domHalf = 10;

@@ -30,6 +30,10 @@ class BayesianSearch : public TuningStrategyInterface {
    * The maximum number of attempts to sample an optimum.
    */
   constexpr static size_t maxAttempts = 10;
+  /**
+   *
+   */
+  constexpr static double secondsPerMicroseconds = 1. / 1000000.;
 
  public:
   /**
@@ -92,7 +96,9 @@ class BayesianSearch : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time) override { _gp.addEvidence(_currentConfig.oneHotEncode(), time); }
+  inline void addEvidence(long time) override {
+    _gp.addEvidence(_currentConfig.oneHotEncode(), time * secondsPerMicroseconds);
+  }
 
   inline void reset() override {
     _gp.clear();

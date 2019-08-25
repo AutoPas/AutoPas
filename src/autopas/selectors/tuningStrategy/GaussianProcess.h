@@ -349,6 +349,8 @@ class GaussianProcess {
       double thetaMax = std::pow(
           std::max({_evidenceMaxValue - _evidenceMinValue, std::abs(_evidenceMinValue), std::abs(_evidenceMaxValue)}),
           2);
+      // at least sigma
+      thetaMax = std::max(thetaMax, _sigma);
       NumberInterval<double> thetaRange(_sigma, thetaMax);
       // range of dimScale
       // Assuming most distances are greater equal 1.
