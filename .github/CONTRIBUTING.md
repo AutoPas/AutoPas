@@ -13,6 +13,7 @@ Please keep in mind the following notes while working.
 * `#include` of files from within AutoPas shall be given with the full path (starting with `autopas/`) and using `""`. 
 * `constexpr` instead of `#define`. Use it wherever possible.
 * `const` wherever possible. 
+* `nullptr` instead of `NULL`.
 * Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Descriptive error message")` instead.
 
 ### Code Style

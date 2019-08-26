@@ -16,7 +16,8 @@ namespace sph {
  * Class that defines the density functor.
  * It is used to calculate the density based on the given SPH kernel.
  */
-class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHParticle>> {
+class SPHCalcDensityFunctor
+    : public Functor<SPHParticle, FullParticleCell<SPHParticle>, SPHParticle::SoAArraysType, SPHCalcDensityFunctor> {
  public:
   /// particle type
   typedef SPHParticle Particle;
@@ -26,7 +27,8 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
   typedef FullParticleCell<Particle> ParticleCell;
 
   SPHCalcDensityFunctor()
-      : autopas::Functor<Particle, ParticleCell>(typename Particle::ParticleFloatingPointType(0.)){};
+      : autopas::Functor<Particle, ParticleCell, SoAArraysType, SPHCalcDensityFunctor>(
+            typename Particle::ParticleFloatingPointType(0.)){};
 
   bool isRelevantForTuning() override { return true; }
 
@@ -69,10 +71,10 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType>&, bool)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType>, bool)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -113,9 +115,9 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType>&, SoA<SoAArraysType>&, bool)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool)
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr1 = soa1.begin<Particle::AttributeNames::posX>();
@@ -168,10 +170,10 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoA<SoAArraysType>&, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &, size_t, size_t, bool)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType>, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &, size_t, size_t, bool)
    */
   // clang-format on
-  void SoAFunctor(SoA<SoAArraysType> &soa,
+  void SoAFunctor(SoAView<SoAArraysType> soa,
                   const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
                   size_t iTo, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
@@ -217,56 +219,29 @@ class SPHCalcDensityFunctor : public Functor<SPHParticle, FullParticleCell<SPHPa
   }
 
   /**
-   * SoALoader for SPHCalcDensityFunctor.
-   * Loads mass, position, smoothing length and density.
-   * @param cell
-   * @param soa
-   * @param offset
+   * @copydoc Functor::getNeededAttr()
    */
-  AUTOPAS_FUNCTOR_SOALOADER(cell, soa, offset, {
-    // @todo it is probably better to resize the soa only once, before calling
-    // SoALoader (verlet-list only)
-    soa.resizeArrays(offset + cell.numParticles());
-
-    if (cell.numParticles() == 0) return;
-
-    double *const __restrict__ massptr = soa.begin<Particle::AttributeNames::mass>();
-    double *const __restrict__ xptr = soa.begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.begin<Particle::AttributeNames::posZ>();
-    double *const __restrict__ smthptr = soa.begin<Particle::AttributeNames::smth>();
-    double *const __restrict__ densptr = soa.begin<Particle::AttributeNames::density>();
-
-    auto cellIter = cell.begin();
-    // load particles in SoAs
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-      massptr[i] = cellIter->getMass();
-      xptr[i] = cellIter->getR()[0];
-      yptr[i] = cellIter->getR()[1];
-      zptr[i] = cellIter->getR()[2];
-      smthptr[i] = cellIter->getSmoothingLength();
-      densptr[i] = cellIter->getDensity();
-    }
-  })
+  constexpr static const std::array<typename SPHParticle::AttributeNames, 6> getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 6>{
+        Particle::AttributeNames::mass, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ, Particle::AttributeNames::smth, Particle::AttributeNames::density};
+  }
 
   /**
-   * SoAExtractor for SPHCalcDensityFunctor.
-   * Extracts density.
-   * @param cell
-   * @param soa
-   * @param offset
+   * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  AUTOPAS_FUNCTOR_SOAEXTRACTOR(cell, soa, offset, {
-    // function body
-    if (cell.numParticles() == 0) return;
-    double *const __restrict__ densptr = soa.begin<Particle::AttributeNames::density>();
+  constexpr static const std::array<typename SPHParticle::AttributeNames, 5> getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 5>{
+        Particle::AttributeNames::mass, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ, Particle::AttributeNames::smth};
+  }
 
-    auto cellIter = cell.begin();
-    // load particles in SoAs
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
-      cellIter->setDensity(densptr[i]);
-    }
-  })
+  /**
+   * @copydoc Functor::getComputedAttr()
+   */
+  constexpr static const std::array<typename SPHParticle::AttributeNames, 1> getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 1>{Particle::AttributeNames::density};
+  }
 };
 }  // namespace sph
 }  // namespace autopas

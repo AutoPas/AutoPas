@@ -44,13 +44,17 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap),
-        _end(ArrayMath::subScalar(ArrayMath::static_cast_array<long>(this->_cellsPerDimension), 1l)) {
+        _end(ArrayMath::subScalar(ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {
     computeOffsets32Pack();
   }
 
-  void traverseCellPairs(std::vector<ParticleCell> &cells) override;
+  void traverseParticlePairs() override;
 
   TraversalOption getTraversalType() const override { return TraversalOption::c04; }
+
+  DataLayoutOption getDataLayout() const override { return DataLayout; }
+
+  bool getUseNewton3() const override { return useNewton3; }
 
   /**
    * C04 traversals are usable, if cellSizeFactor >= 1.0 and there are at least 3 cells for each dimension.
@@ -128,7 +132,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::proces
     std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex) {
   using utils::ThreeDimensionalMapping::threeToOneD;
   std::array<long, 3> index;
-  const std::array<long, 3> signedDims = ArrayMath::static_cast_array<long>(this->_cellsPerDimension);
+  const std::array<long, 3> signedDims = ArrayUtils::static_cast_array<long>(this->_cellsPerDimension);
 
   for (auto Offset32Pack : _cellOffsets32Pack) {
     // compute 3D index
@@ -146,8 +150,8 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::proces
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseCellPairs(
-    std::vector<ParticleCell> &cells) {
+void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
+  auto &cells = *(this->_cells);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif

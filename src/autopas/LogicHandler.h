@@ -34,14 +34,14 @@ class LogicHandler {
    * @param forced specifies whether an update of the container is enforced.
    */
   AUTOPAS_WARN_UNUSED_RESULT
-  std::vector<Particle> updateContainer(bool forced) {
+  std::pair<std::vector<Particle>, bool> updateContainer(bool forced) {
     if (not isContainerValid() or forced) {
       AutoPasLog(debug, "Initiating container update.");
       _containerIsValid = false;
-      return std::move(_autoTuner.getContainer()->updateContainer());
+      return std::make_pair(std::move(_autoTuner.getContainer()->updateContainer()), true);
     } else {
       AutoPasLog(debug, "Skipping container update.");
-      return std::vector<Particle>{};
+      return std::make_pair(std::vector<Particle>{}, false);
     }
   }
 
@@ -88,14 +88,14 @@ class LogicHandler {
           if (dangerous) {
             // throw exception, rebuild frequency not high enough / skin too small!
             utils::ExceptionHandler::exception(
-                "VerletListsLinkedBase::addHaloParticle: wasn't able to update halo particle that is too close to "
+                "LogicHandler::addHaloParticle: wasn't able to update halo particle that is too close to "
                 "domain (more than cutoff + skin/2). Rebuild frequency not high enough / skin too small!");
           }
         }
       } else {
         // throw exception, rebuild frequency not high enough / skin too small!
         utils::ExceptionHandler::exception(
-            "VerletListsLinkedBase::addHaloParticle: trying to update halo particle that is too far inside domain "
+            "LogicHandler::addHaloParticle: trying to update halo particle that is too far inside domain "
             "(more than skin/2). Rebuild frequency not high enough / skin too small!");
       }
     }

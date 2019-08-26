@@ -31,7 +31,7 @@ static const std::set<TraversalOption> &allDSCompatibleTraversals() {
 static const std::set<TraversalOption> &allLCCompatibleTraversals() {
   static const std::set<TraversalOption> s {
     TraversalOption::c01, TraversalOption::c08, TraversalOption::c18, TraversalOption::sliced,
-        TraversalOption::c01CombinedSoA, TraversalOption::c04
+        TraversalOption::c01CombinedSoA, TraversalOption::c04, TraversalOption::c04SoA
 #if defined(AUTOPAS_CUDA)
         ,
         TraversalOption::c01Cuda
@@ -41,12 +41,12 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
 }
 
 /**
- * Lists all traversal options applicable for the Verlet Lists container.
+ * Lists all traversal options applicable for the Verlet Cluster Lists container.
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
   // traversal not used but prevents usage of newton3
-  static const std::set<TraversalOption> s{TraversalOption::verletClusters};
+  static const std::set<TraversalOption> s{TraversalOption::verletClusters, TraversalOption::verletClustersColoring};
   return s;
 }
 
@@ -66,6 +66,15 @@ static const std::set<TraversalOption> &allVLCompatibleTraversals() {
 static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::slicedVerlet, TraversalOption::c18Verlet,
                                            TraversalOption::c01Verlet};
+  return s;
+}
+
+/**
+ * Lists all traversal options applicable for the Var Verlet Lists As Build container.
+ * @return set of all applicable traversal options.
+ */
+static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
+  static const std::set<TraversalOption> s{TraversalOption::varVerletTraversalAsBuild};
   return s;
 }
 
@@ -90,6 +99,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     }
     case ContainerOption::verletListsCells: {
       return allVLCCompatibleTraversals();
+    }
+    case ContainerOption::varVerletListsAsBuild: {
+      return allVarVLAsBuildCompatibleTraversals();
     }
   }
 
