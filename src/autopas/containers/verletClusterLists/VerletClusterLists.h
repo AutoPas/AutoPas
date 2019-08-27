@@ -95,6 +95,9 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::updateHaloParticle()
+   */
   bool updateHaloParticle(Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
 
   /**
