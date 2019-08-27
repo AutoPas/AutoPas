@@ -5,7 +5,7 @@
 newton3: enabled
 container: linkedcell
 #cell-size-factor:                  #string option
-log-level: debug
+#log-level: debug
 #tuning-interval:                   #int option
 #tuning-samples:                    #int option
 #tuning-max-evidence:               #int option
@@ -14,15 +14,15 @@ log-level: debug
 #no-flops:                          #boolean option
 #log-file:                          #string option
 vtk-filename:  MolSimBlatt2Task3
-vtk-write-frequency: 50              #size_t option
+vtk-write-frequency: 1              #size_t option
 
 ###Simulation Options=
 
 #functor:                           #string option
 delta_t: 0.0002                     #double option
-cutoff: 13                          #double option
-iterations: 3                    #in der MolSim Simulation waren hier 25000 iterationen, 8000 sind aber mehr als ausreichend
-periodic-boundaries: false          #boolean option
+cutoff: 1                          #double option
+iterations: 5                    #in der MolSim Simulation waren hier 25000 iterationen, 8000 sind aber mehr als ausreichend
+periodic-boundaries: true      #boolean option
 
 ###Objects generation Options
 Objects:
@@ -32,10 +32,28 @@ Objects:
       particle-epsilon: 5.
       particle-sigma: 1
       particle-mass: 1.
-      particles-per-Dim: [10,10,1]
-      particleSpacing: 1.1225
-      velocity: [0.,-10.,0.]
-      bottomLeftCorner: [0.,0.,0.]
+      particles-per-Dim: [1,1,1]
+      particleSpacing: 1.0
+      velocity: [0.,0.,0.]
+      bottomLeftCorner: [0.5,0.5,1.]
+    1:
+      particle-type: 0
+      particle-epsilon: 5.
+      particle-sigma: 1
+      particle-mass: 1.
+      particles-per-Dim: [1,1,1]
+      particleSpacing: 1.0
+      velocity: [0.,0.,0.]
+      bottomLeftCorner: [3.5,0.5,1.]
+    2:
+      particle-type: 0
+      particle-epsilon: 5.
+      particle-sigma: 1
+      particle-mass: 1.
+      particles-per-Dim: [1,1,1]
+      particleSpacing: 1.0
+      velocity: [0.,0.,0.]
+      bottomLeftCorner: [1.5,3.5,1.]
 #    1:
 #      particle-type: 0
 #      particle-epsilon: 5.

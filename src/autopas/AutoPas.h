@@ -107,7 +107,7 @@ class AutoPas {
    * Potentially updates the internal container.
    * On an update, halo particles are deleted, the particles are resorted into appropriate cells and particles that do
    * no longer belong into the container will be returned, the lists will be invalidated. If the internal container is
-   * still valid and a rebuild of the container is not forced, this will return an empty list of particles and nothing
+   * still valid and a rebuild of the container is not forced, t his will return an empty list of particles and nothing
    * else will happen.
    * @return A pair of a vector of invalid particles that do no belong in the current container and a bool that
    * specifies whether the container was updated. If the bool is false, the vector will be an empty vector. If the

@@ -240,18 +240,24 @@ void Simulation<Particle, ParticleCell>::simulate() {
   if ((not _parser->getVTKFileName().empty())) {
     this->plotVTK(0);
   }
+
+  for(auto iter=_autopas.begin();iter.isValid();++iter){
+      std::cout << iter->toString() << std::endl;
+  }
+
+
   // main simulation loop
   for (size_t iteration = 0; iteration < _parser->getIterations(); ++iteration) {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << iteration << std::endl;
     }
-    std::cout<<"iteration: " << iteration << "print Particle Number before P.boundaries: " << _autopas.getNumberOfParticles() << std::endl;
+    std::cout<<"iteration: " << iteration << "\n" << "print Particle Number before P.boundaries: " << _autopas.getNumberOfParticles() << std::endl;
     if (_parser->isPeriodic()) {
       BoundaryConditions<Particle, ParticleCell>::applyPeriodic(_autopas);
     }
-      std::cout<<"iteration: " << iteration << "print Particle Number after P.boundaries: " << _autopas.getNumberOfParticles() << std::endl;
+    std::cout << "print Particle Number after P.boundaries: " << _autopas.getNumberOfParticles() << std::endl;
 
-      _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
+    _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
 
     switch (this->_parser->getFunctorOption()) {
       case YamlParser::FunctorOption::lj12_6: {
