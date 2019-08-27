@@ -18,6 +18,7 @@
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
+#include "autopas/utils/ArrayUtils.h"
 
 namespace autopas {
 
@@ -138,13 +139,11 @@ class AutoTuner {
 
           // print config, times and reduced value
           if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-            std::stringstream ss;
+            std::ostringstream ss;
             // print all configs
-            ss << std::endl << _tuningStrategy->getCurrentConfiguration().toString() << " : [";
+            ss << std::endl << _tuningStrategy->getCurrentConfiguration().toString() << " : [ ";
             // print all timings
-            for (auto &sample : _samples) {
-              ss << " " << sample;
-            }
+            ss << ArrayUtils::to_string(_samples, " ");
             ss << " ] ";
             ss << "Reduced value: " << reducedValue;
             AutoPasLog(debug, "Collected times for  {}", ss.str());
