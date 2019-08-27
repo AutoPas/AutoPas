@@ -133,8 +133,8 @@ TEST(GaussianProcessTest, sine) {
 
   // create equidistant evidence over the domain
   double evidenceStep = (domainEnd - domainStart) / (numEvidence - 1);
-  for (unsigned i = 0; i < numEvidence; ++i) {
-    double input = domainStart + evidenceStep * i;
+  for (unsigned indexFirst = 0; indexFirst < numEvidence; ++indexFirst) {
+    double input = domainStart + evidenceStep * indexFirst;
     Eigen::VectorXd f(1);
     f << input;
     double output = functor(input);
@@ -144,8 +144,8 @@ TEST(GaussianProcessTest, sine) {
 
   // make equidistant prediction over the domain
   double predictStep = (domainEnd - domainStart) / (numPredictions - 1);
-  for (unsigned i = 0; i < numPredictions; ++i) {
-    double input = domainStart + predictStep * i;
+  for (unsigned indexFirst = 0; indexFirst < numPredictions; ++indexFirst) {
+    double input = domainStart + predictStep * indexFirst;
     Eigen::VectorXd f(1);
     f << input;
     double output = functor(input);
@@ -178,16 +178,16 @@ TEST(GaussianProcessTest, 2dMax) {
   first << 0, 0;
   gp.addEvidence(first, functor(0, 0));
 
-  for (unsigned i = 1; i < numEvidence; ++i) {
+  for (unsigned indexFirst = 1; indexFirst < numEvidence; ++indexFirst) {
     // create lhs samples
     std::vector<Eigen::VectorXd> lhsSamples;
     lhsSamples.reserve(lhsNumSamples);
 
     auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
     auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
-    for (size_t i = 0; i < lhsNumSamples; ++i) {
+    for (size_t indexFirst = 0; indexFirst < lhsNumSamples; ++indexFirst) {
       Eigen::VectorXd sample(2);
-      sample << xSamples[i], ySamples[i];
+      sample << xSamples[indexFirst], ySamples[indexFirst];
       lhsSamples.push_back(sample);
     }
 
@@ -203,9 +203,9 @@ TEST(GaussianProcessTest, 2dMax) {
   auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
   std::vector<Eigen::VectorXd> lhsSamples;
   lhsSamples.reserve(lhsNumSamples);
-  for (size_t i = 0; i < lhsNumSamples; ++i) {
+  for (size_t indexFirst = 0; indexFirst < lhsNumSamples; ++indexFirst) {
     Eigen::VectorXd sample(2);
-    sample << xSamples[i], ySamples[i];
+    sample << xSamples[indexFirst], ySamples[indexFirst];
     lhsSamples.push_back(sample);
   }
 
@@ -242,16 +242,16 @@ TEST(GaussianProcessTest, 2dMin) {
   first << 0, 0;
   gp.addEvidence(first, functor(0, 0));
 
-  for (unsigned i = 1; i < numEvidence; ++i) {
+  for (unsigned indexFirst = 1; indexFirst < numEvidence; ++indexFirst) {
     // create lhs samples
     std::vector<Eigen::VectorXd> lhsSamples;
     lhsSamples.reserve(lhsNumSamples);
 
     auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
     auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
-    for (size_t i = 0; i < lhsNumSamples; ++i) {
+    for (size_t indexFirst = 0; indexFirst < lhsNumSamples; ++indexFirst) {
       Eigen::VectorXd sample(2);
-      sample << xSamples[i], ySamples[i];
+      sample << xSamples[indexFirst], ySamples[indexFirst];
       lhsSamples.push_back(sample);
     }
 
@@ -267,9 +267,9 @@ TEST(GaussianProcessTest, 2dMin) {
   auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
   std::vector<Eigen::VectorXd> lhsSamples;
   lhsSamples.reserve(lhsNumSamples);
-  for (size_t i = 0; i < lhsNumSamples; ++i) {
+  for (size_t indexFirst = 0; indexFirst < lhsNumSamples; ++indexFirst) {
     Eigen::VectorXd sample(2);
-    sample << xSamples[i], ySamples[i];
+    sample << xSamples[indexFirst], ySamples[indexFirst];
     lhsSamples.push_back(sample);
   }
 

@@ -36,11 +36,11 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell_t> {
   MOCK_METHOD3_T(SoAFunctor, void(autopas::SoAView<typename Particle::SoAArraysType> soa,
                                   autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3));
 
-  // virtual void SoAFunctor(SoAView &soa, const std::vector<std::vector<size_t,
-  // AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
-  MOCK_METHOD5_T(SoAFunctor, void(autopas::SoAView<typename Particle::SoAArraysType> soa,
-                                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &, size_t,
-                                  size_t, bool newton3));
+  // virtual void SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  //                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+  MOCK_METHOD4_T(SoAFunctor,
+                 void(autopas::SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
+                      const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3));
 
   // virtual void SoALoader(ParticleCell &cell, autopas::SoA &soa, size_t
   // offset=0) {}

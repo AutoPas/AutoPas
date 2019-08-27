@@ -145,24 +145,16 @@ class Functor {
    * @brief Functor for structure of arrays (SoA) for neighbor lists
    *
    * This functor should calculate the forces or any other pair-wise interaction
-   * between the particles in the SoA that are marked by the verlet list
+   * between the particle in the SoA with index indexFirst and all particles with indices in the neighborList.
    * This should include a cutoff check if needed!
    *
-   * iFrom an iTo define the range inside of the neighborList that should be
-   * iterated over. The starting index is i = iFrom. The iteration will continue
-   * while i < iTo.
-   *
    * @param soa Structure of arrays
+   * @param indexFirst The index of the first particle for each interaction
    * @param neighborList The list of neighbors
-   * @param iFrom the starting index of the vector neighborList that should be
-   * iterated over
-   * @param iTo the first index that should not be iterated over. (Should be at
-   * least iFrom and less than soa.size())
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoAView<SoAArraysType> soa,
-                          const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
-                          size_t iFrom, size_t iTo, bool newton3) {
+  virtual void SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                          const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(verlet): not yet implemented");
   }
 

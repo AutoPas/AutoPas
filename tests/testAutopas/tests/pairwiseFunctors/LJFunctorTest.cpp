@@ -107,7 +107,8 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
       if (not newton3) {
         neighborList[1].push_back(0);
       }
-      functor.SoAFunctor(cell1._particleSoABuffer, neighborList, 0, 2, newton3);
+      functor.SoAFunctor(cell1._particleSoABuffer, 0, neighborList[0], newton3);
+      functor.SoAFunctor(cell1._particleSoABuffer, 1, neighborList[1], newton3);
   }
 
   // Extract the particles from the soa
@@ -354,7 +355,8 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
           neighborList[1].push_back(2 + i);
         }
       }
-      functor.SoAFunctor(cell1._particleSoABuffer, neighborList, 0, 2, newton3);
+      functor.SoAFunctor(cell1._particleSoABuffer, 0, neighborList[0], newton3);
+      functor.SoAFunctor(cell1._particleSoABuffer, 1, neighborList[1], newton3);
     } break;
     case InteractionType::own:
       functor.SoAFunctor(cell1._particleSoABuffer, newton3);

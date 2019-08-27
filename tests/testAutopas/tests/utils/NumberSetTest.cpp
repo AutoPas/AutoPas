@@ -26,8 +26,8 @@ TEST(NumberSetTest, testFiniteSet) {
   ASSERT_EQ(values.size(), a.size());
   ASSERT_EQ(set.size(), a.size());
   auto it = values.begin();
-  for (unsigned i = 0; i < a.size(); ++i, ++it) {
-    ASSERT_EQ(*it, a[i]);
+  for (unsigned indexFirst = 0; indexFirst < a.size(); ++indexFirst, ++it) {
+    ASSERT_EQ(*it, a[indexFirst]);
   }
 }
 
