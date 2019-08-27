@@ -47,23 +47,43 @@ class Simulation {
    */
   void writeVTKFile(unsigned int iteration) {
     std::string fileBaseName = _parser->getVTKFileName();
+    const auto numParticles = _autopas.getNumberOfParticles();
     std::ostringstream strstr;
     auto maxNumDigits = std::to_string(_parser->getIterations()).length();
-    strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtu";
+    strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtk";
     std::ofstream vtkFile;
     vtkFile.open(strstr.str());
 
     vtkFile << "# vtk DataFile Version 2.0" << std::endl;
     vtkFile << "Timestep" << std::endl;
     vtkFile << "ASCII" << std::endl;
+
+    // print positions
     vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
     vtkFile << "DIMENSIONS 1 1 1" << std::endl;
-    vtkFile << "POINTS " << _autopas.getNumberOfParticles() << " double" << std::endl;
-
+    vtkFile << "POINTS " << numParticles << " double" << std::endl;
     for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
       auto pos = iter->getR();
       vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
     }
+    vtkFile << std::endl;
+
+    vtkFile << "POINT_DATA " << numParticles << std::endl;
+    // print velocities
+    vtkFile << "VECTORS velocities double" << std::endl;
+    for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+      auto v = iter->getV();
+      vtkFile << v[0] << " " << v[1] << " " << v[2] << std::endl;
+    }
+    vtkFile << std::endl;
+
+    // print Forces
+    vtkFile << "VECTORS forces double" << std::endl;
+    for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+      auto f = iter->getF();
+      vtkFile << f[0] << " " << f[1] << " " << f[2] << std::endl;
+    }
+    vtkFile << std::endl;
 
     vtkFile.close();
   }
