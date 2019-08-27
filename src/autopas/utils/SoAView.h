@@ -23,6 +23,11 @@ template <class SoAArraysType>
 class SoAView {
  public:
   /**
+   * Default constructor of SoAView to allow storing it in containers.
+   */
+  SoAView() : _soa(nullptr), _startIndex(0), _endIndex(0) {}
+
+  /**
    * Constructs a view on \p soa that starts at \p startIndex (inclusive) and ends at \p endIndex (exclusive).
    *
    * \p startIndex and \p endIndex have to be between 0 (inclusive) and `soa->getNumParticles()` (inclusive). \p

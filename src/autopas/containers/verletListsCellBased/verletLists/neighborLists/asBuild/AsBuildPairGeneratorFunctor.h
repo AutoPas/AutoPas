@@ -148,7 +148,9 @@ class AsBuildPairGeneratorFunctor
    * @param offset
    */
   void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
-    assert(offset == 0);
+    if (offset != 0ul) {
+      utils::ExceptionHandler::exception("offset must be 0, is: {}", offset);
+    }
     soa.resizeArrays(cell.numParticles());
 
     if (cell.numParticles() == 0) return;

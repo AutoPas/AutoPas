@@ -12,7 +12,7 @@ template <autopas::DataLayoutOption dataLayout, bool useNewton3>
 void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, double rel_err_tolerance,
                                                    autopas::TraversalOption traversalOption,
                                                    std::array<double, 3> boxMax) {
-  Verlet _verletLists{getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 2};
+  Verlet _verletLists{getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 4};
   Linked _linkedCells{getBoxMin(), boxMax, getCutoff(), 1. /*cell size factor*/};
 
   RandomGenerator::fillWithParticles(_linkedCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
@@ -35,6 +35,7 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
 
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3> traversalLinkedLJ(
       _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+
   _verletLists.rebuildNeighborLists(verletTraversal.get());
   _verletLists.iteratePairwise(verletTraversal.get());
   _linkedCells.iteratePairwise(&traversalLinkedLJ);
@@ -158,6 +159,10 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTest100) {
                                                autopas::TraversalOption::verletClustersColoring, boxMax);
     test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
                                                 autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::soa, true>(numMolecules, rel_err_tolerance,
+                                               autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersColoring, boxMax);
   }
 }
 
@@ -174,6 +179,10 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTest1000) 
                                                autopas::TraversalOption::verletClustersColoring, boxMax);
     test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
                                                 autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::soa, true>(numMolecules, rel_err_tolerance,
+                                               autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersColoring, boxMax);
   }
 }
 
@@ -189,6 +198,10 @@ TEST_F(LinkedCellsVersusVerletClusterListsTest, verletClustersColoringTest2000) 
     test<autopas::DataLayoutOption::aos, true>(numMolecules, rel_err_tolerance,
                                                autopas::TraversalOption::verletClustersColoring, boxMax);
     test<autopas::DataLayoutOption::aos, false>(numMolecules, rel_err_tolerance,
+                                                autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::soa, true>(numMolecules, rel_err_tolerance,
+                                               autopas::TraversalOption::verletClustersColoring, boxMax);
+    test<autopas::DataLayoutOption::soa, false>(numMolecules, rel_err_tolerance,
                                                 autopas::TraversalOption::verletClustersColoring, boxMax);
   }
 }
