@@ -13,9 +13,8 @@
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "BoundaryConditions.h"
 #include "Generator.h"
-#include "PrintableMolecule.h"  // includes autopas.h
+#include "PrintableMolecule.h"
 #include "TimeDiscretization.h"
-#include "VTKWriter/VTKWriter.h"
 #include "YamlParser.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
@@ -40,16 +39,56 @@ class Simulation {
       _logFile.close();
     }
   }
-  /**Writes a VTK file for the current state of the AutoPas object
-   * code taken from the MolSim course
-   * @param iteration
-   * */
-  void plotVTK(int iteration) {
-    writer.initializeOutput(_autopas.getNumberOfParticles());
+
+  /**
+   * Writes a VTK file for the current state of the AutoPas object
+   * @tparam AutoPasTemplate Template for the templetized autopas type.
+   * @param filename
+   * @param numParticles
+   * @param autopas
+   */
+  void writeVTKFile(unsigned int iteration) {
+      //iterate only over owned Particles, otherwise Simulation explodes
+    std::string fileBaseName = _parser->getVTKFileName();
+    const auto numParticles = _autopas.getNumberOfParticles();
+    std::ostringstream strstr;
+    auto maxNumDigits = std::to_string(_parser->getIterations()).length();
+    strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtk";
+    std::ofstream vtkFile;
+    vtkFile.open(strstr.str());
+
+    vtkFile << "# vtk DataFile Version 2.0" << std::endl;
+    vtkFile << "Timestep" << std::endl;
+    vtkFile << "ASCII" << std::endl;
+
+    // print positions
+    vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
+    vtkFile << "DIMENSIONS 1 1 1" << std::endl;
+    vtkFile << "POINTS " << numParticles << " double" << std::endl;
     for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      writer.plotParticle(*iter);
+      auto pos = iter->getR();
+      vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
     }
-    writer.writeFile(_parser->getVTKFileName(), iteration);
+    vtkFile << std::endl;
+
+    vtkFile << "POINT_DATA " << numParticles << std::endl;
+    // print velocities
+    vtkFile << "VECTORS velocities double" << std::endl;
+    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      auto v = iter->getV();
+      vtkFile << v[0] << " " << v[1] << " " << v[2] << std::endl;
+    }
+    vtkFile << std::endl;
+
+    // print Forces
+    vtkFile << "VECTORS forces double" << std::endl;
+    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      auto f = iter->getF();
+      vtkFile << f[0] << " " << f[1] << " " << f[2] << std::endl;
+    }
+    vtkFile << std::endl;
+
+    vtkFile.close();
   }
 
   /**Initialized the ParticlePropertiesLibrary for usage in functor
@@ -105,7 +144,6 @@ class Simulation {
   const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
 
  private:
-  outputWriter::VTKWriter writer;
   autopas::AutoPas<Particle, ParticleCell> _autopas;
   std::shared_ptr<YamlParser> _parser;
   std::ofstream _logFile;
@@ -238,9 +276,8 @@ void Simulation<Particle, ParticleCell>::simulate() {
   startSim = std::chrono::high_resolution_clock::now();
   // writes initial state of simulation as vtkFile if filename is specified
   if ((not _parser->getVTKFileName().empty())) {
-    this->plotVTK(0);
+    this->writeVTKFile(0);
   }
-
   // main simulation loop
   for (size_t iteration = 0; iteration < _parser->getIterations(); ++iteration) {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
@@ -295,7 +332,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
 
     // only write vtk files periodically and if a filename is given
     if ((not _parser->getVTKFileName().empty()) and iteration % _parser->getVtkWriteFrequency() == 0) {
-      this->plotVTK(iteration + 1);
+      this->writeVTKFile(iteration + 1);
     }
   }
 
