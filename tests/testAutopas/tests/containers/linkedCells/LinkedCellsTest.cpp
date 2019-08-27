@@ -128,8 +128,8 @@ TEST_F(LinkedCellsTest, testIsContainerUpdateNeeded) {
 }
 
 TEST_F(LinkedCellsTest, testUpdateContainer) {
-  autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
-      {0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
+  autopas::LinkedCells<autopas::FullParticleCell<autopas::Particle>> linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0.,
+                                                                                 1.);
 
   autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
   autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
@@ -240,8 +240,8 @@ TEST_F(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
 }
 
 TEST_F(LinkedCellsTest, testUpdateContainerHalo) {
-  autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
-      {0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
+  autopas::LinkedCells<autopas::FullParticleCell<autopas::Particle>> linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0.,
+                                                                                 1.);
 
   autopas::Particle p({-0.5, -0.5, -0.5}, {0, 0, 0}, 42);
   linkedCells.addHaloParticle(p);

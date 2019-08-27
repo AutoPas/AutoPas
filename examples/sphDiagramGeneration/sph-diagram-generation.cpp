@@ -19,9 +19,8 @@ template <class Container, class Functor, class Traversal>
 void measureContainerTraversal(Container *cont, Functor *func, Traversal *traversal, int numParticles,
                                int numIterations);
 
-void addParticles(
-    autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &sph_system,
-    int numParticles) {
+void addParticles(autopas::LinkedCells<autopas::FullParticleCell<autopas::sph::SPHParticle>> &sph_system,
+                  int numParticles) {
   // Place SPH particles
 
   srand(42);  // fixed seedpoint
@@ -135,10 +134,10 @@ int main(int argc, char *argv[]) {
 
   std::cout << "rebuildFrequency " << rebuildFrequency << " currently unused!" << std::endl;
 
-  autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
-      boxMin, boxMax, cutoff, skin * cutoff);
-  autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
-      boxMin, boxMax, cutoff, skin * cutoff);
+  autopas::LinkedCells<autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(boxMin, boxMax, cutoff,
+                                                                                    skin * cutoff);
+  autopas::DirectSum<autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(boxMin, boxMax, cutoff,
+                                                                                   skin * cutoff);
   autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff);
   autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellCont(boxMin, boxMax, cutoff,
                                                                       autopas::TraversalOption::c08, skin * cutoff);

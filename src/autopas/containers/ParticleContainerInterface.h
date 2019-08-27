@@ -26,9 +26,19 @@ namespace autopas {
  *
  * @tparam Particle Class for particles
  */
-template <class Particle, class ParticleCell>
+template <class ParticleCell>
 class ParticleContainerInterface {
  public:
+  /**
+   *  Type of the Particle.
+   */
+  typedef typename ParticleCell::ParticleType ParticleType;
+
+  /**
+   * Type of the ParticleCell.
+   */
+  typedef ParticleCell ParticleCellType;
+
   /**
    * Default constructor
    */
@@ -64,20 +74,20 @@ class ParticleContainerInterface {
    * Adds a particle to the container.
    * @param p The particle to be added.
    */
-  virtual void addParticle(Particle &p) = 0;
+  virtual void addParticle(ParticleType &p) = 0;
 
   /**
    * Adds a particle to the container that lies in the halo region of the container.
    * @param haloParticle Particle to be added.
    */
-  virtual void addHaloParticle(Particle &haloParticle) = 0;
+  virtual void addHaloParticle(ParticleType &haloParticle) = 0;
 
   /**
    * Update a halo particle of the container with the given haloParticle.
    * @param haloParticle Particle to be updated.
    * @return Returns true if the particle was updated, false if no particle could be found.
    */
-  virtual bool updateHaloParticle(Particle &haloParticle) = 0;
+  virtual bool updateHaloParticle(ParticleType &haloParticle) = 0;
 
   /**
    * Rebuilds the neighbor lists.
@@ -108,7 +118,7 @@ class ParticleContainerInterface {
    * @return Iterator to the first particle.
    * @todo implement IteratorBehavior.
    */
-  virtual ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
+  virtual ParticleIteratorWrapper<ParticleType> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
 
   /**
    * Iterate over all particles in a specified region
@@ -118,7 +128,7 @@ class ParticleContainerInterface {
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
    * @return Iterator to iterate over all particles in a specific region.
    */
-  virtual ParticleIteratorWrapper<Particle> getRegionIterator(
+  virtual ParticleIteratorWrapper<ParticleType> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
 
@@ -189,7 +199,7 @@ class ParticleContainerInterface {
    * @return A vector of invalid particles that do not belong into the container.
    */
   AUTOPAS_WARN_UNUSED_RESULT
-  virtual std::vector<Particle> updateContainer() = 0;
+  virtual std::vector<ParticleType> updateContainer() = 0;
 
   /**
    * Check whether a container is valid, i.e. whether it is safe to use

@@ -54,7 +54,7 @@ class ContainerSelector {
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
    * @return Smartpointer to the optimal container.
    */
-  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getCurrentContainer();
+  std::shared_ptr<autopas::ParticleContainer<ParticleCell>> getCurrentContainer();
 
  private:
   /**
@@ -63,30 +63,28 @@ class ContainerSelector {
    * @param containerInfo additional parameter for the container
    * @return smartpointer to new container
    */
-  std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> generateContainer(
-      ContainerOption containerChoice, ContainerSelectorInfo containerInfo);
+  std::unique_ptr<autopas::ParticleContainer<ParticleCell>> generateContainer(ContainerOption containerChoice,
+                                                                              ContainerSelectorInfo containerInfo);
 
   std::array<double, 3> _boxMin, _boxMax;
   double _cutoff;
-  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _currentContainer;
+  std::shared_ptr<autopas::ParticleContainer<ParticleCell>> _currentContainer;
   ContainerSelectorInfo _currentInfo;
 };
 
 template <class Particle, class ParticleCell>
-std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
-ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption containerChoice,
-                                                             ContainerSelectorInfo containerInfo) {
-  std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> container;
+std::unique_ptr<autopas::ParticleContainer<ParticleCell>> ContainerSelector<Particle, ParticleCell>::generateContainer(
+    ContainerOption containerChoice, ContainerSelectorInfo containerInfo) {
+  std::unique_ptr<autopas::ParticleContainer<ParticleCell>> container;
 
   switch (containerChoice) {
     case directSum: {
-      container =
-          std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+      container = std::make_unique<DirectSum<ParticleCell>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
     case linkedCells: {
-      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.cellSizeFactor);
+      container = std::make_unique<LinkedCells<ParticleCell>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                              containerInfo.cellSizeFactor);
       break;
     }
     case verletLists: {
@@ -132,7 +130,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
 }
 
 template <class Particle, class ParticleCell>
-std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
+std::shared_ptr<autopas::ParticleContainer<ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::getCurrentContainer() {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(

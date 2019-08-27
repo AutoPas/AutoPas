@@ -15,9 +15,8 @@ template <class Container, class Traversal>
 void measureContainer(Container *cont, autopas::sph::SPHCalcDensityFunctor *func, Traversal *traversal,
                       int numParticles, int numIterations, bool useNewton3);
 
-void addParticles(
-    autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &sph_system,
-    int numParticles) {
+void addParticles(autopas::LinkedCells<autopas::FullParticleCell<autopas::sph::SPHParticle>> &sph_system,
+                  int numParticles) {
   // Place SPH particles
 
   srand(10032);  // fixed seedpoint
@@ -109,8 +108,8 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
 
-  autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
-      boxMin, boxMax, cutoff, skin * cutoff);
+  autopas::LinkedCells<autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(boxMin, boxMax, cutoff,
+                                                                                    skin * cutoff);
   autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellContc08(
       boxMin, boxMax, cutoff, autopas::TraversalOption::c08, skin * cutoff, rebuildFrequency);
   autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellContc18(

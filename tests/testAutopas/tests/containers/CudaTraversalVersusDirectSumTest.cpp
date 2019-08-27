@@ -27,7 +27,7 @@ std::array<double, 3> CudaTraversalVersusDirectSumTest::randomPosition(const std
 
 void CudaTraversalVersusDirectSumTest::fillContainerWithMolecules(
     unsigned long numMolecules,
-    autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const {
+    autopas::ParticleContainer<autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const {
   srand(42);  // fixed seedpoint
 
   std::array<double, 3> boxMin(cont.getBoxMin()), boxMax(cont.getBoxMax());
