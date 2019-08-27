@@ -90,3 +90,11 @@ TEST(ArrayMathTest, testNormalize) {
     ASSERT_DOUBLE_EQ(result[d], correctResult[d]);
   }
 }
+
+TEST(ArrayMathTest, testNormalizeNullVector) {
+  std::array<double, 3> a({0.0, 0.0, 0.0});
+  std::array<double, 3> result = ArrayMath::normalize(a);
+  for (int d = 0; d < 3; ++d) {
+    ASSERT_TRUE(std::isnan(result[d]));
+  }
+}
