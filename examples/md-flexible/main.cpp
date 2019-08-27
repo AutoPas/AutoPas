@@ -141,7 +141,9 @@ long calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
   }
   stopCalc = std::chrono::high_resolution_clock::now();
 
-  auto durationCalc = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
+  // TODO: SPEED MULTIPLIER for performance testing purposes ONLY
+  float mult = 1.5;
+  auto durationCalc = mult * std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
   return durationCalc;
 }
 
