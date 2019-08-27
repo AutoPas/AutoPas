@@ -117,7 +117,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param boxmin the lower corner (out)
    * @param boxmax the upper corner (out)
    */
-  void getCellBoundingBox(index_t index1d, std::array<double, 3> &boxmin, std::array<double, 3> &boxmax);
+  void getCellBoundingBox(index_t index1d, std::array<double, 3> &boxmin, std::array<double, 3> &boxmax) const;
 
   /**
    * Get the lower and upper corner of the cell at the 3d index index3d
@@ -126,7 +126,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param boxmax the upper corner (out)
    */
   void getCellBoundingBox(const std::array<index_t, 3> &index3d, std::array<double, 3> &boxmin,
-                          std::array<double, 3> &boxmax);
+                          std::array<double, 3> &boxmax) const;
 
   /**
    * get the 3d index of the cellblock for a given position
@@ -344,14 +344,14 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
 
 template <class ParticleCell>
 inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const index_t index1d, std::array<double, 3> &boxmin,
-                                                          std::array<double, 3> &boxmax) {
+                                                          std::array<double, 3> &boxmax) const {
   this->getCellBoundingBox(this->index3D(index1d), boxmin, boxmax);
 }
 
 template <class ParticleCell>
 inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const std::array<index_t, 3> &index3d,
                                                           std::array<double, 3> &boxmin,
-                                                          std::array<double, 3> &boxmax) {
+                                                          std::array<double, 3> &boxmax) const {
   for (int d = 0; d < 3; d++) {
     // defaults
     boxmin[d] = index3d[d] * this->_cellLength[d] + _haloBoxMin[d];
