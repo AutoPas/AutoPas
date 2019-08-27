@@ -17,10 +17,16 @@ class TimeDiscretization {
   using TimeDiscretizationFloatType = typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryFloatType;
   using TimeDiscretizationIntType = typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryIntType;
 
+  /**
+   * Constructor
+   * */
   explicit TimeDiscretization(TimeDiscretizationFloatType particleDeltaT,
                               ParticlePropertiesLibraryTemplate &particlePropertiesLibrary)
       : particle_delta_t(particleDeltaT), _particlePropertiesLibrary(particlePropertiesLibrary){};
 
+    /**
+     * Default Destructor
+     * */
   virtual ~TimeDiscretization() = default;
 
   /**
@@ -46,6 +52,9 @@ class TimeDiscretization {
    * Duration of a timestep
    */
   TimeDiscretizationFloatType particle_delta_t;
+  /**
+   * ParticlePropertiesLibrary to access Mass of Particles
+   * */
   ParticlePropertiesLibraryTemplate _particlePropertiesLibrary;
 };
 

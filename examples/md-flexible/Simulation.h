@@ -14,6 +14,7 @@
 #include "Generator.h"
 #include "PrintableMolecule.h"
 #include "TimeDiscretization.h"
+#include "Thermostat.h"
 #include "YamlParser.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
@@ -146,6 +147,8 @@ class Simulation {
   std::shared_ptr<YamlParser> _parser;
   std::ofstream _logFile;
   std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> _particlePropertiesLibrary;
+  std::unique_ptr<
+          Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>> _thermostat;
   std::unique_ptr<
       TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>
       _timeDiscretization;
