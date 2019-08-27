@@ -49,7 +49,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
 
-  ContainerOption getContainerType() override { return ContainerOption::linkedCells; }
+  ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
   void addParticle(Particle &p) override {
     bool inBox = autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());

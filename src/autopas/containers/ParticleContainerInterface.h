@@ -58,7 +58,7 @@ class ParticleContainerInterface {
    * Return a enum representing the name of the container class.
    * @return Enum representing the container.
    */
-  virtual ContainerOption getContainerType() = 0;
+  virtual ContainerOption getContainerType() const = 0;
 
   /**
    * Adds a particle to the container.
@@ -211,7 +211,7 @@ class ParticleContainerInterface {
    *
    * @return Vector of traversal options.
    */
-  std::set<TraversalOption> getAllTraversals() {
+  std::set<TraversalOption> getAllTraversals() const {
     return compatibleTraversals::allCompatibleTraversals(this->getContainerType());
   }
 };
