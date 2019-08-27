@@ -21,7 +21,7 @@ vtk-write-frequency: 1              #size_t option
 #functor:                           #string option
 delta_t: 0.0002                     #double option
 cutoff: 1                          #double option
-iterations: 5                    #in der MolSim Simulation waren hier 25000 iterationen, 8000 sind aber mehr als ausreichend
+iterations: 10                    #in der MolSim Simulation waren hier 25000 iterationen, 8000 sind aber mehr als ausreichend
 periodic-boundaries: true      #boolean option
 
 ###Objects generation Options

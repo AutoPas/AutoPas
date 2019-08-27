@@ -123,17 +123,17 @@ std::vector<Particle> BoundaryConditions<Particle, ParticleCell>::identifyAndSen
       }
     }
   }
-  std::cout << "HALO PARTICLES: " << std::endl;
-  std::cout << "halo particle.size()" << haloParticles.size() <<std::endl;
-  for(auto iter=haloParticles.begin();iter!=haloParticles.end();++iter){
-      int i=0;
-    if(autopas::utils::inBox(iter->getR(),autoPas.getBoxMin(),autoPas.getBoxMax())){
-        std::cout << iter->toString() << std::endl;
-        i++;
-    }
-      std::cout << "number of halo particles inBox:" << i << std::endl;
-  }
-  std::cout << "END" << std::endl;
+//  std::cout << "HALO PARTICLES: " << std::endl;
+//  std::cout << "halo particle.size()" << haloParticles.size() <<std::endl;
+//  for(auto iter=haloParticles.begin();iter!=haloParticles.end();++iter){
+//      int i=0;
+//    if(autopas::utils::inBox(iter->getR(),autoPas.getBoxMin(),autoPas.getBoxMax())){
+//        std::cout << iter->toString() << std::endl;
+//        i++;
+//    }
+//      std::cout << "number of halo particles inBox:" << i << std::endl;
+//  }
+//  std::cout << "END" << std::endl;
   return haloParticles;
 }
 

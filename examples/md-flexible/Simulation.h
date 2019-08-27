@@ -46,7 +46,7 @@ class Simulation {
    * */
   void plotVTK(int iteration) {
     writer.initializeOutput(_autopas.getNumberOfParticles());
-    for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       writer.plotParticle(*iter);
     }
     writer.writeFile(_parser->getVTKFileName(), iteration);
@@ -241,17 +241,36 @@ void Simulation<Particle, ParticleCell>::simulate() {
     this->plotVTK(0);
   }
 
-  for(auto iter=_autopas.begin();iter.isValid();++iter){
-      std::cout << iter->toString() << std::endl;
-  }
-
-
   // main simulation loop
   for (size_t iteration = 0; iteration < _parser->getIterations(); ++iteration) {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << iteration << std::endl;
     }
-    std::cout<<"iteration: " << iteration << "\n" << "print Particle Number before P.boundaries: " << _autopas.getNumberOfParticles() << std::endl;
+//      std::cout <<"Iteration: " << iteration << std::endl;
+//      std::cout << "XXXXXXX" << std::endl;
+//      std::cout << "numberOF all particles: " << std::endl;
+//      auto haloAndOwned=0;
+//      for(auto iter=_autopas.begin(autopas::IteratorBehavior::haloAndOwned);iter.isValid();++iter){
+//          haloAndOwned++;
+//      }
+//      std::cout << haloAndOwned << std::endl;
+//      haloAndOwned=0;
+//      std::cout << "XXXXXXX" << std::endl;
+//      std::cout << "numberOF owned particles: " <<std::endl;
+//      auto owned=0;
+//      for(auto iter=_autopas.begin(autopas::IteratorBehavior::ownedOnly);iter.isValid();++iter){
+//        owned++;
+//      }
+//      std::cout << owned << std::endl;
+//      std::cout << "XXXXXXX" << std::endl;
+//      std::cout << "numberOF halo particles: " << std::endl;
+//      auto halo=0;
+//      for(auto iter=_autopas.begin(autopas::IteratorBehavior::haloOnly);iter.isValid();++iter){
+//        halo++;
+//      }
+//      std::cout <<halo << std::endl;
+//      halo=0;
+//    std::cout<< "print Particle Number before P.boundaries: " << _autopas.getNumberOfParticles() << std::endl;
     if (_parser->isPeriodic()) {
       BoundaryConditions<Particle, ParticleCell>::applyPeriodic(_autopas);
     }
