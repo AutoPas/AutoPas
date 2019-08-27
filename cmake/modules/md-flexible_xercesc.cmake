@@ -8,14 +8,12 @@ ExternalProject_Add(
     xerces
     URL
         # xerces:
-        #https://www-eu.apache.org/dist//xerces/c/3/sources/xerces-c-3.2.2.zip
+        # https://www-eu.apache.org/dist//xerces/c/3/sources/xerces-c-3.2.2.zip
         # xerces-c-3.2.2:
         ${CMAKE_SOURCE_DIR}/libs/xerces-c-3.2.2.zip
-#        URL_HASH= 4d6936efedad787ab1719a9dcab273e7
-    UPDATE_COMMAND ""
-    UPDATE_DISCONNECTED true
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/xerces
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/xerces/src
+    # since we only unpack a header lib src =
+    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/xerces/
     CONFIGURE_COMMAND
     BUILD_COMMAND
     INSTALL_COMMAND
@@ -23,7 +21,12 @@ ExternalProject_Add(
 
 # Get GTest source and binary directories from CMake project
 ExternalProject_Get_Property(xerces source_dir)
-
 add_dependencies(md-flexible xerces)
 
+# add_library(libyaml ${CMAKE_CURRENT_BINARY_DIR}/yamlcpp/src/yamlcpp-build/libyaml-cpp.a)
+# add_library(libyaml ${CMAKE_CURRENT_BINARY_DIR}/yamlcpp/include)
+
 target_include_directories(md-flexible SYSTEM PUBLIC ${source_dir})
+# target_link_libraries(md-flexible ${source_dir}) target_link_libraries(md-flexible libyaml)
+
+# set(libyaml ${source_dir}/libyaml-cpp.a) target_link_libraries(md-flexible libyaml)
