@@ -53,6 +53,9 @@ class DirectSum : public ParticleContainer<ParticleCell> {
 
   ContainerOption getContainerType() const override { return ContainerOption::directSum; }
 
+  /**
+   * @copydoc ParticleContainerInterface::addParticle()
+   */
   void addParticle(ParticleType &p) override {
     if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       getCell().addParticle(p);
@@ -62,12 +65,18 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     }
   }
 
-  void addHaloParticle(ParticleType &p) override {
-    ParticleType p_copy = p;
+  /**
+   * @copydoc ParticleContainerInterface::addHaloParticle()
+   */
+  void addHaloParticle(ParticleType &haloParticle) override {
+    ParticleType p_copy = haloParticle;
     p_copy.setOwned(false);
     getHaloCell().addParticle(p_copy);
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::updateHaloParticle()
+   */
   bool updateHaloParticle(ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwned(false);
