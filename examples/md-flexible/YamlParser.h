@@ -14,6 +14,7 @@
 #include <limits>
 #include <string>
 #include "Objects.h"
+#include "Thermostat.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/utils/NumberSet.h"
 class YamlParser {
@@ -140,6 +141,20 @@ class YamlParser {
   void setVtkFileName(const std::string &vtkFileName);
 
   [[nodiscard]] bool isPeriodic() const;
+  
+  bool isThermostat() const;
+
+  double getInitTemperature() const;
+
+  size_t getNumberOfTimesteps() const;
+
+  double getTargetTemperature() const;
+
+  double getDeltaTemp() const;
+
+  bool isThermoTarget() const;
+
+  bool isInitializeThermostat() const;
 
  private:
   static constexpr size_t valueOffset = 32;
@@ -191,4 +206,13 @@ class YamlParser {
   std::vector<CubeGauss> CubeGaussObjects = {};
   std::vector<CubeUniform> CubeUniformObjects = {};
   std::vector<Sphere> SphereObjects = {};
+
+  // Thermostat Options default to false
+  bool thermostat = false;
+  bool initializeThermostat = false;
+  double initTemperature = 0.;
+  size_t numberOfTimesteps = 0.;
+  bool ThermoTarget = false;
+  double targetTemperature = 0.;
+  double delta_temp = 0.;
 };
