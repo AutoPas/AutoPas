@@ -264,6 +264,7 @@ void Simulation<Particle, ParticleCell>::calculateForces() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
   auto functor = FunctorType(_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary);
+  //@todo only iterate over owned particles, right?
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
@@ -283,31 +284,6 @@ void Simulation<Particle, ParticleCell>::simulate() {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << iteration << std::endl;
     }
-//      std::cout <<"Iteration: " << iteration << std::endl;
-//      std::cout << "XXXXXXX" << std::endl;
-//      std::cout << "numberOF all particles: " << std::endl;
-//      auto haloAndOwned=0;
-//      for(auto iter=_autopas.begin(autopas::IteratorBehavior::haloAndOwned);iter.isValid();++iter){
-//          haloAndOwned++;
-//      }
-//      std::cout << haloAndOwned << std::endl;
-//      haloAndOwned=0;
-//      std::cout << "XXXXXXX" << std::endl;
-//      std::cout << "numberOF owned particles: " <<std::endl;
-//      auto owned=0;
-//      for(auto iter=_autopas.begin(autopas::IteratorBehavior::ownedOnly);iter.isValid();++iter){
-//        owned++;
-//      }
-//      std::cout << owned << std::endl;
-//      std::cout << "XXXXXXX" << std::endl;
-//      std::cout << "numberOF halo particles: " << std::endl;
-//      auto halo=0;
-//      for(auto iter=_autopas.begin(autopas::IteratorBehavior::haloOnly);iter.isValid();++iter){
-//        halo++;
-//      }
-//      std::cout <<halo << std::endl;
-//      halo=0;
-//    std::cout<< "print Particle Number before P.boundaries: " << _autopas.getNumberOfParticles() << std::endl;
     if (_parser->isPeriodic()) {
       BoundaryConditions<Particle, ParticleCell>::applyPeriodic(_autopas);
     }
