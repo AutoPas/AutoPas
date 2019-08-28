@@ -386,6 +386,21 @@ inline std::array<double, 3> parseBoxOption(const std::string &boxOptionString) 
 }
 
 /**
+ * Converts a string to bool
+ *
+ * String format: on || off || enabled || disabled || true || false
+ * @param boolOption
+ * */
+inline bool parseBoolOption(const std::string &booleanOption) {
+  if (booleanOption.compare("on") || booleanOption.compare("true") || booleanOption.compare("enabled")) {
+    return true;
+  } else if (booleanOption.compare("off") || booleanOption.compare("false") || booleanOption.compare("disabled")) {
+    return false;
+  } else {
+    throw std::runtime_error("wrong boolean Option:" + booleanOption);
+  }
+}
+/**
  * Converts a string containing a selector strategy to an enum. The option is expected to be lower case.
  *
  * Possible options: absolute, mean, median
