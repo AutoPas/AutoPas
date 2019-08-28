@@ -74,7 +74,7 @@ class SPHKernels {
    */
   static inline std::array<double, 3> gradW(const std::array<double, 3> dr, const double h) {
     const double H = kernelSupportRadius * h;
-    const double drabs = sqrt(autopas::ArrayMath::dot(dr, dr));
+    const double drabs = autopas::ArrayMath::L2Norm(dr);
     const double s = drabs / H;  // sqrt(dr * dr) / H;
     const double s1 = (1.0 - s < 0) ? 0 : 1.0 - s;
     const double s2 = (0.5 - s < 0) ? 0 : 0.5 - s;

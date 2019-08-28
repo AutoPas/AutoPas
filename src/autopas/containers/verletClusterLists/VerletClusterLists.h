@@ -61,7 +61,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     rebuild(false);
   }
 
-  ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
+  ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));

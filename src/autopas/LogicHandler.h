@@ -168,7 +168,7 @@ class LogicHandler {
    * Specifies after how many pair-wise traversals the container and their neighbor lists (if they exist) are to be
    * rebuild.
    */
-  unsigned int _containerRebuildFrequency;
+  const unsigned int _containerRebuildFrequency;
 
   /**
    * Reference to the AutoTuner that owns the container, ...

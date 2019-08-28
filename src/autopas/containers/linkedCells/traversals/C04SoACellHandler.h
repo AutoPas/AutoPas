@@ -195,7 +195,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
   for (unsigned long slice = 0; slice < numSlices; slice++) {
     for (auto const &[offset1, interval] : _offsets[(slice + currentSlice) % numSlices]) {
       ParticleCell *cell1 = nullptr;
-      size_t cell1ViewStart;
+      size_t cell1ViewStart = 0;
       size_t cell1ViewEnd;
 
       // special cases (cell1 one is also stored in a combination slice)
@@ -208,7 +208,6 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
         // two cases intervall in current  stripe
         cell1 = &combinationSlice[currentSlice];
         auto stripeView = cell1->_particleSoABuffer.constructView(0, numParticlesBaseCell);
-        cell1ViewStart = 0;
         if (slice == currentSlice) {
           // process stripe with itself
           _pairwiseFunctor->SoAFunctor(stripeView, useNewton3);
@@ -235,12 +234,10 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
           continue;
         }
         cell1 = &combinationSlice[index];
-        cell1ViewStart = 0;
         cell1ViewEnd = combinationSlicesOffsets[index][1];
       } else {
         const unsigned long cellIndex1 = baseIndex + offset1;
         cell1 = &cells[cellIndex1];
-        cell1ViewStart = 0;
         cell1ViewEnd = cell1->_particleSoABuffer.getNumParticles();
       }
 

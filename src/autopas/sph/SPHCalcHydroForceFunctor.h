@@ -59,7 +59,7 @@ class SPHCalcHydroForceFunctor
     // const PS::F64vec dv = ep_i[i].vel - ep_j[j].vel;
 
     double dvdr = ArrayMath::dot(dv, dr);
-    const double w_ij = (dvdr < 0) ? dvdr / sqrt(ArrayMath::dot(dr, dr)) : 0;
+    const double w_ij = (dvdr < 0) ? dvdr / ArrayMath::L2Norm(dr) : 0;
     // const PS::F64 w_ij = (dv * dr < 0) ? dv * dr / sqrt(dr * dr) : 0;
 
     const double v_sig = i.getSoundSpeed() + j.getSoundSpeed() - 3.0 * w_ij;
