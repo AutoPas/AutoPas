@@ -153,15 +153,16 @@ void Thermostat<AutoPasTemplate,ParticlePropertiesLibraryTemplate>::initialize(A
         #ifdef AUTOPAS_OPENMP
         #pragma omp parallel
         #endif
-        for(auto iter=autopas.begin;iter.isValid();++iter) {
+        for(auto iter=autopas.begin();iter.isValid();++iter) {
             MaxwellBoltzmannDistribution(*iter, 0.1);
         }
     } else {
+        ThermostatFloatType currentTempMulKB = temperature(autopas) * kb;
         #ifdef AUTOPAS_OPENMP
         #pragma omp parallel
         #endif
-        for(auto iter=autopas.begin;iter.isValid();++iter) {
-            static ThermostatFloatType factor = pow(((this->temperature(autopas) * kb)/_particlePropertiesLibrary.getMass(iter->getID())), 0.5);
+        for(auto iter=autopas.begin();iter.isValid();++iter) {
+           ThermostatFloatType factor = pow((currentTempMulKB/_particlePropertiesLibrary.getMass(iter->getTypeId())), 0.5);
             MaxwellBoltzmannDistribution(*iter, factor);
         }
     }
@@ -169,7 +170,7 @@ void Thermostat<AutoPasTemplate,ParticlePropertiesLibraryTemplate>::initialize(A
 
 template<class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void Thermostat<AutoPasTemplate,ParticlePropertiesLibraryTemplate>::applyThermo(AutoPasTemplate &autopas) {
-    ThermostatFloatType temp = this->temperature(autopas);
+    ThermostatFloatType temp = temperature(autopas);
     //wir nehmen an, dass t_target=t_init, da die temperature ja konstant bleiben soll
     static ThermostatFloatType scaling;
     if (t_init == t_target) {
@@ -192,7 +193,7 @@ typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryFloatType T
     //@todo anpassen mit OpenMp
     for(auto iter=autopas.begin();iter.isValid();++iter) {
             auto vel =iter->getV();
-            kinetic += _particlePropertiesLibrary.getMass(iter->getID())* /*scalarProduct of Particles velocity:*/ (vel[0]*vel[0]+vel[1]*vel[1]+vel[2]*vel[2]) / 2;
+            kinetic += _particlePropertiesLibrary.getMass(iter->getTypeId())* /*scalarProduct of Particles velocity:*/ (vel[0]*vel[0]+vel[1]*vel[1]+vel[2]*vel[2]) / 2;
     }
     ThermostatFloatType temp = (2 * kinetic) / (autopas.getNumberOfParticles() * 3); //AutoPas works always on 3 dimensions
     return temp;

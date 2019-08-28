@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
-#include "../../../../examples/md-flexible/Simulation.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
 #include "../../../../src/autopas/utils/ArrayMath.h"
 #include "AutoPasTestBase.h"

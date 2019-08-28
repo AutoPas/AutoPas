@@ -1,13 +1,16 @@
 file(
-    GLOB_RECURSE
+    GLOB
     MY_SRC
     "*.cpp"
     "*.h"
+        "./exampleTests/md-flexible/*"
     "../../examples/md-flexible/YamlParser.cpp"
     "../../examples/md-flexible/YamlParser.h"
     "../../examples/md-flexible/Objects.h"
     "../../examples/md-flexible/Generator.h"
-    "../../examples/md-flexible/VTKWriter/*"
+        "../../examples/md-flexible/Thermostat.h"
+        "../../examples/md-flexible/TimeDiscretization.h"
+        "testingHelpers/*"
 )
 if (AUTOPAS_ENABLE_CUDA)
     file(
@@ -39,7 +42,6 @@ target_link_libraries(
     libgtest
     libgmock
     ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a
-    xerces-c
 )
 
 # this cmake module was only introduced in 3.10
