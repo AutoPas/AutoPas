@@ -16,7 +16,7 @@ TEST_F(ParticlePropertiesLibraryTest, ClassFunctions) {
   ASSERT_EQ(PPL.mixingSigmaSquare(p1.getTypeId(), p2.getTypeId()), mixingS(sigma, sigma2) * mixingS(sigma, sigma2));
 }
 
-//TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
+// TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
 //  Simulation<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> simulation;
 //  auto parser = YamlParser();  // parsing input
 //  std::string input = "multipleObjectsWithMultipleTypesTest.yaml";
@@ -43,7 +43,7 @@ TEST_F(ParticlePropertiesLibraryTest, ClassFunctions) {
 //  ASSERT_ANY_THROW(SimPpL.getMass(10));
 //}
 
-//TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitializationDefault) {
+// TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitializationDefault) {
 //  // tests ParticleProperties initialization with only one Type
 //  Simulation<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> simulation;
 //  auto parser = YamlParser();

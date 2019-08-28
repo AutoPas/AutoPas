@@ -13,8 +13,8 @@
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "Generator.h"
 #include "PrintableMolecule.h"
-#include "TimeDiscretization.h"
 #include "Thermostat.h"
+#include "TimeDiscretization.h"
 #include "YamlParser.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
@@ -147,8 +147,8 @@ class Simulation {
   std::shared_ptr<YamlParser> _parser;
   std::ofstream _logFile;
   std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> _particlePropertiesLibrary;
-  std::unique_ptr<
-          Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>> _thermostat;
+  std::unique_ptr<Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>
+      _thermostat;
   std::unique_ptr<
       TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>
       _timeDiscretization;
@@ -236,7 +236,7 @@ void Simulation<Particle, ParticleCell>::initialize(const std::shared_ptr<YamlPa
   _autopas.setBoxMin(_parser->getBoxMin());
   _autopas.init();
   size_t idcounter = 0;
-  //initializing Objects
+  // initializing Objects
   for (auto C : CubeGrid) {
     Generator::CubeGrid<Particle, ParticleCell>(_autopas, C.getTypeId(), idcounter, C.getBoxMin(),
                                                 C.getParticlesPerDim(), C.getParticleSpacing(), C.getVelocity());
@@ -253,24 +253,29 @@ void Simulation<Particle, ParticleCell>::initialize(const std::shared_ptr<YamlPa
                                                   C.getParticlesTotal(), C.getVelocity());
     idcounter = +C.getParticlesTotal();
   }
-  for (const auto& S : Sphere) {
+  for (const auto &S : Sphere) {
     Generator::Sphere<Particle, ParticleCell>(_autopas, S.getCenter(), S.getRadius(), S.getParticleSpacing(), idcounter,
                                               S.getTypeId(), S.getVelocity());
     idcounter = +S.getParticlesTotal();
   }
-  //initilizing Thermostat
-  if(_parser->isThermostat()) {
-      if (_parser->isThermoTarget()) {
-      _thermostat = std::make_unique<Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(_parser->getInitTemperature(),true,_parser->getTargetTemperature(),_parser->getDeltaTemp(), *_particlePropertiesLibrary);
-  }else{
-      _thermostat = std::make_unique<Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(_parser->getInitTemperature(),true, *_particlePropertiesLibrary);
+  // initilizing Thermostat
+  if (_parser->isThermostat()) {
+    if (_parser->isThermoTarget()) {
+      _thermostat = std::make_unique<
+          Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
+          _parser->getInitTemperature(), true, _parser->getTargetTemperature(), _parser->getDeltaTemp(),
+          *_particlePropertiesLibrary);
+    } else {
+      _thermostat = std::make_unique<
+          Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
+          _parser->getInitTemperature(), true, *_particlePropertiesLibrary);
+    }
   }
-  }
-//@todo muss ich vor der simulationLoop die kräfte auch initialisieren??
-//initializing velocites of Particles
-if(_parser->isThermostat() && _parser->isInitializeThermostat()){
+  //@todo muss ich vor der simulationLoop die kräfte auch initialisieren??
+  // initializing velocites of Particles
+  if (_parser->isThermostat() && _parser->isInitializeThermostat()) {
     _thermostat->initialize(_autopas);
-}
+  }
 }
 
 template <class Particle, class ParticleCell>
@@ -313,9 +318,9 @@ void Simulation<Particle, ParticleCell>::simulate() {
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
     _timers.durationVelocityUpdate += _timeDiscretization->CalculateV(_autopas);
-    //applying Velocity scaling with Thermostat:
-    if(_parser->isThermostat() && (iteration % _parser->getNumberOfTimesteps())==0 ){
-        _thermostat->applyThermo(_autopas);
+    // applying Velocity scaling with Thermostat:
+    if (_parser->isThermostat() && (iteration % _parser->getNumberOfTimesteps()) == 0) {
+      _thermostat->applyThermo(_autopas);
     }
     // only write vtk files periodically and if a filename is given
     if ((not _parser->getVTKFileName().empty()) and iteration % _parser->getVtkWriteFrequency() == 0) {

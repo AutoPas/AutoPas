@@ -24,9 +24,9 @@ class TimeDiscretization {
                               ParticlePropertiesLibraryTemplate &particlePropertiesLibrary)
       : particle_delta_t(particleDeltaT), _particlePropertiesLibrary(particlePropertiesLibrary){};
 
-    /**
-     * Default Destructor
-     * */
+  /**
+   * Default Destructor
+   * */
   virtual ~TimeDiscretization() = default;
 
   /**

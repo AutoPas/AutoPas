@@ -29,7 +29,7 @@ bool YamlParser::parseInput(int argc, char **argv) {
                                          {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
                                          {"selector-strategy", required_argument, nullptr, 'y'},
-                                         {"thermostat",required_argument,nullptr,'u'},
+                                         {"thermostat", required_argument, nullptr, 'u'},
                                          {"traversal", required_argument, nullptr, 't'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
@@ -344,10 +344,10 @@ bool YamlParser::parseInput(int argc, char **argv) {
         }
         break;
       }
-        case 'u': {
+      case 'u': {
         thermostat = autopas::utils::StringUtils::parseBoolOption(strArg);
         break;
-        }
+      }
       case 'v': {
         try {
           verletRebuildFrequency = (unsigned int)stoul(strArg);
@@ -615,22 +615,22 @@ void YamlParser::parseYamlFile() {
       }
     }
   }
-  if(config["Thermostat"]){
-      thermostat = true;
+  if (config["Thermostat"]) {
+    thermostat = true;
 
-      YAML::const_iterator it = config["Thermostat"].begin();
-      initializeThermostat = it->second.as<bool>();
+    YAML::const_iterator it = config["Thermostat"].begin();
+    initializeThermostat = it->second.as<bool>();
+    ++it;
+    initTemperature = it->second.as<double>();
+    ++it;
+    numberOfTimesteps = it->second.as<size_t>();
+    if (it != config["Thermostat"].end()) {  // if target value is specified
+      ThermoTarget = true;
       ++it;
-       initTemperature = it->second.as<double>();
-       ++it;
-       numberOfTimesteps = it->second.as<size_t>();
-        if(it!=config["Thermostat"].end()){ //if target value is specified
-            ThermoTarget = true;
-            ++it;
-            targetTemperature = it->second["targetTemperature"].as<double>();
-            delta_temp = it->second["delta_temp"].as<double>();
-        }
-      }
+      targetTemperature = it->second["targetTemperature"].as<double>();
+      delta_temp = it->second["delta_temp"].as<double>();
+    }
+  }
   this->calcAutopasBox();
 }
 template <class T>
@@ -729,35 +729,35 @@ void YamlParser::printConfig() {
     c.printConfig();
     i++;
   }
-  if(thermostat) {
-      cout << "\n" << setw(valueOffset) << left << "Thermostat:" << endl;
-      cout << setw(valueOffset) << left << "initializing velocites with MaxwellDistributio"
-           << ":  " << initTemperature << endl;
-      cout << setw(valueOffset) << left << "initial Temperature"
-           << ":  " << initTemperature << endl;
-      cout << setw(valueOffset) << left << "number of TimeSteps"
-           << ":  " << numberOfTimesteps << endl;
-      if(ThermoTarget){
-          cout << setw(valueOffset) << left << "target Temperature"
-               << ":  " << targetTemperature << endl;
-          cout << setw(valueOffset) << left << "delta_temp"
-               << ":  " << delta_temp << endl;
-      }
+  if (thermostat) {
+    cout << "\n" << setw(valueOffset) << left << "Thermostat:" << endl;
+    cout << setw(valueOffset) << left << "initializing velocites with MaxwellDistributio"
+         << ":  " << initTemperature << endl;
+    cout << setw(valueOffset) << left << "initial Temperature"
+         << ":  " << initTemperature << endl;
+    cout << setw(valueOffset) << left << "number of TimeSteps"
+         << ":  " << numberOfTimesteps << endl;
+    if (ThermoTarget) {
+      cout << setw(valueOffset) << left << "target Temperature"
+           << ":  " << targetTemperature << endl;
+      cout << setw(valueOffset) << left << "delta_temp"
+           << ":  " << delta_temp << endl;
+    }
   }
 }
 
 size_t YamlParser::particlesTotal() {
   size_t particlesTotal = 0;
-  for (const auto& Object : CubeGridObjects) {
+  for (const auto &Object : CubeGridObjects) {
     particlesTotal += Object.getParticlesTotal();
   }
-  for (const auto& Object : CubeGaussObjects) {
+  for (const auto &Object : CubeGaussObjects) {
     particlesTotal += Object.getParticlesTotal();
   }
-  for (const auto& Object : CubeUniformObjects) {
+  for (const auto &Object : CubeUniformObjects) {
     particlesTotal += Object.getParticlesTotal();
   }
-  for (const auto& sphereObject : SphereObjects) {
+  for (const auto &sphereObject : SphereObjects) {
     particlesTotal += sphereObject.getParticlesTotal();
   }
   return particlesTotal;
@@ -901,31 +901,16 @@ void YamlParser::setVtkWriteFrequency(size_t vtkWriteFrequency) { YamlParser::vt
 
 void YamlParser::setVtkFileName(const std::string &vtkFileName) { VTKFileName = vtkFileName; }
 
-bool YamlParser::isThermostat() const {
-    return thermostat;
-}
+bool YamlParser::isThermostat() const { return thermostat; }
 
-double YamlParser::getInitTemperature() const {
-    return initTemperature;
-}
+double YamlParser::getInitTemperature() const { return initTemperature; }
 
-size_t YamlParser::getNumberOfTimesteps() const {
-    return numberOfTimesteps;
-}
+size_t YamlParser::getNumberOfTimesteps() const { return numberOfTimesteps; }
 
-double YamlParser::getTargetTemperature() const {
-    return targetTemperature;
-}
+double YamlParser::getTargetTemperature() const { return targetTemperature; }
 
-double YamlParser::getDeltaTemp() const {
-    return delta_temp;
-}
+double YamlParser::getDeltaTemp() const { return delta_temp; }
 
-bool YamlParser::isThermoTarget() const {
-    return ThermoTarget;
-}
+bool YamlParser::isThermoTarget() const { return ThermoTarget; }
 
-bool YamlParser::isInitializeThermostat() const {
-    return initializeThermostat;
-}
-
+bool YamlParser::isInitializeThermostat() const { return initializeThermostat; }
