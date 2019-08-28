@@ -37,3 +37,11 @@ Objects:
       velocity: [0.,-20.,0.]
       bottomLeftCorner: [1.,1.,1.]
 
+###Thermostat
+Thermostat:
+  initializeThermostat: false           #boolean option
+  initTemperatur: 0.01                  #double option
+  numberOfTimesteps: 40                 #size_t option (application every n-th timestep)
+  target:
+    targetTemperature: 3.0              #double option
+    delta_temp: 0.001                   #double option

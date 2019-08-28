@@ -711,8 +711,9 @@ void YamlParser::printConfig() {
   cout << setw(valueOffset) << left << "delta_t"
        << ":  " << delta_t << endl;
   cout << setw(valueOffset) << left << "Iterations"  // iterations * delta_t = time_end;
-       << ":  " << iterations << endl
-       << endl;
+       << ":  " << iterations << endl;
+    cout << setw(valueOffset) << left << "periodic boundaries"
+         << ":  " << isPeriodic() << endl << endl;
 
   cout << setw(valueOffset) << left << "Object Generation:" << endl;
   int i = 1;
@@ -740,9 +741,10 @@ void YamlParser::printConfig() {
     i++;
   }
   if (thermostat) {
-    cout << "\n" << setw(valueOffset) << left << "Thermostat:" << endl;
-    cout << setw(valueOffset) << left << "initializing velocites with MaxwellDistributio"
+    cout << setw(valueOffset) << left << "Thermostat:" << endl;
+    cout << setw(valueOffset) << left << "initializing velocites"
          << ":  " << initTemperature << endl;
+    //@todo print usage of eather maxwellB or BM during initialization(after adding parsing options)
     cout << setw(valueOffset) << left << "initial Temperature"
          << ":  " << initTemperature << endl;
     cout << setw(valueOffset) << left << "number of TimeSteps"
