@@ -147,6 +147,8 @@ class YamlParser {
 
     bool isThermoTarget() const;
 
+    bool isInitializeThermostat() const;
+
 private:
   static constexpr size_t valueOffset = 32;
   // defaults:
@@ -200,6 +202,7 @@ private:
 
   //Thermostat Options default to false
   bool thermostat = false;
+  bool initializeThermostat = false;
   double initTemperature=0.;
   size_t numberOfTimesteps=0.;
   bool ThermoTarget = false;

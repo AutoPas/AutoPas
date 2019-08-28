@@ -619,6 +619,8 @@ void YamlParser::parseYamlFile() {
       thermostat = true;
 
       YAML::const_iterator it = config["Thermostat"].begin();
+      initializeThermostat = it->second.as<bool>();
+      ++it;
        initTemperature = it->second.as<double>();
        ++it;
        numberOfTimesteps = it->second.as<size_t>();
@@ -729,6 +731,8 @@ void YamlParser::printConfig() {
   }
   if(thermostat) {
       cout << "\n" << setw(valueOffset) << left << "Thermostat:" << endl;
+      cout << setw(valueOffset) << left << "initializing velocites with MaxwellDistributio"
+           << ":  " << initTemperature << endl;
       cout << setw(valueOffset) << left << "initial Temperature"
            << ":  " << initTemperature << endl;
       cout << setw(valueOffset) << left << "number of TimeSteps"
@@ -919,5 +923,9 @@ double YamlParser::getDeltaTemp() const {
 
 bool YamlParser::isThermoTarget() const {
     return ThermoTarget;
+}
+
+bool YamlParser::isInitializeThermostat() const {
+    return initializeThermostat;
 }
 

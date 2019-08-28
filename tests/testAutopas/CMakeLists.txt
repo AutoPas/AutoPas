@@ -1,16 +1,14 @@
 file(
-    GLOB
+    GLOB_RECURSe
     MY_SRC
     "*.cpp"
     "*.h"
-        "./exampleTests/md-flexible/*"
     "../../examples/md-flexible/YamlParser.cpp"
     "../../examples/md-flexible/YamlParser.h"
     "../../examples/md-flexible/Objects.h"
     "../../examples/md-flexible/Generator.h"
         "../../examples/md-flexible/Thermostat.h"
         "../../examples/md-flexible/TimeDiscretization.h"
-        "testingHelpers/*"
 )
 if (AUTOPAS_ENABLE_CUDA)
     file(

@@ -27,7 +27,7 @@ public:
      * @param delta_temp
      * @param ParticlePropertiesLibrary
      * */
-     //@todo FRAGE : always use Brownian Motion??
+    //@todo FRAGE : add Parsing option to switch beetween initBM on & off when initThermo is spezified as true
     Thermostat(ThermostatFloatType t_init, bool initBM, ThermostatFloatType t_target, ThermostatFloatType delta_temp, ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary);
 
     /**
@@ -190,7 +190,7 @@ void Thermostat<AutoPasTemplate,ParticlePropertiesLibraryTemplate>::applyThermo(
 template<class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryFloatType Thermostat<AutoPasTemplate,ParticlePropertiesLibraryTemplate>::temperature(AutoPasTemplate &autopas) {
     ThermostatFloatType kinetic = 0;
-    //@todo anpassen mit OpenMp
+    //@todo anpassen mit OpenMP
     for(auto iter=autopas.begin();iter.isValid();++iter) {
             auto vel =iter->getV();
             kinetic += _particlePropertiesLibrary.getMass(iter->getTypeId())* /*scalarProduct of Particles velocity:*/ (vel[0]*vel[0]+vel[1]*vel[1]+vel[2]*vel[2]) / 2;

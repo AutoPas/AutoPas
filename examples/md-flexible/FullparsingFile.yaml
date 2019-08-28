@@ -9,7 +9,7 @@
 #tuning-strategy:                   #string option
 #newton3:                           #string option
 #cell-size-factor:                  #string option
-log-level: debug                        #string option
+#log-level: debug                    #string option
 #tuning-interval:                   #int option
 #tuning-samples:                    #int option
 #tuning-max-evidence:               #int option
@@ -30,11 +30,12 @@ log-level: debug                        #string option
 ###Thermstat
 
 Thermostat:
+  initializeThermostat: false           #boolean option
   initTemperatur: 0.01                  #double option
-  numberOfTimesteps: 40               #size_t option
+  numberOfTimesteps: 40                 #size_t option (application every n-th timestep)
   target:
-    targetTemperature: 3.0                   #double option
-    delta_temp: 0.001                        #double option
+    targetTemperature: 3.0              #double option
+    delta_temp: 0.001                   #double option
 
 
 ###Objects generation Options

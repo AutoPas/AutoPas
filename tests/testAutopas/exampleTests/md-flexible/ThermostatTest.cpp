@@ -6,7 +6,7 @@
 
 #include "ThermostatTest.h"
 
-//@todo write real tests that assert something
+//@todo write real tests that assert something :) WIP
 
 void ThermostatTest::initFillWithParticles(std::array<size_t, 3> particlesPerDim, double particleSpacing, double cutoff) {
     //initializes
@@ -77,12 +77,3 @@ TEST_F(ThermostatTest, BasicTest_BM_OFF){
     }
     SUCCEED();
 }
-
-//TEST_F(ThermostatTest, applicationWithoutTargetTemperatur){
-//    SUCCEED();
-//}
-//
-//
-//TEST_F(ThermostatTest, applicationWithTargetTemperature){
-//    SUCCEED();
-//}

@@ -261,14 +261,14 @@ void Simulation<Particle, ParticleCell>::initialize(const std::shared_ptr<YamlPa
   //initilizing Thermostat
   if(_parser->isThermostat()) {
       if (_parser->isThermoTarget()) {
-      _thermostat = std::make_unique<Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>(_parser->getInitTemperature(),true,_parser->getTargetTemperature(),_parser->getDeltaTemp(), *_particlePropertiesLibrary)>;
+      _thermostat = std::make_unique<Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(_parser->getInitTemperature(),true,_parser->getTargetTemperature(),_parser->getDeltaTemp(), *_particlePropertiesLibrary);
   }else{
-      _thermostat = std::make_unique<Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>(_parser->getInitTemperature(),true, *_particlePropertiesLibrary)>;
+      _thermostat = std::make_unique<Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(_parser->getInitTemperature(),true, *_particlePropertiesLibrary);
   }
   }
 //@todo muss ich vor der simulationLoop die kräfte auch initialisieren??
 //initializing velocites of Particles
-if(_parser->isThermostat()){
+if(_parser->isThermostat() && _parser->isInitializeThermostat()){
     _thermostat->initialize(_autopas);
 }
 }
