@@ -50,7 +50,7 @@ class Simulation {
   void writeVTKFile(unsigned int iteration) {
     // iterate only over owned Particles, otherwise Simulation explodes
     std::string fileBaseName = _parser->getVTKFileName();
-    //as _autopas.getNumberOfParticles return number of haloAndOwned Particles, we need number of owned Particles
+    // as _autopas.getNumberOfParticles return number of haloAndOwned Particles, we need number of owned Particles
     const auto numParticles = this->getNumParticles();
     std::ostringstream strstr;
     auto maxNumDigits = std::to_string(_parser->getIterations()).length();
@@ -130,14 +130,15 @@ class Simulation {
    * @return
    */
   size_t getNumParticles() {
-      size_t numberOfParticles=0;
-        #ifdef AUTOPAS_OPENMP
-        #pragma omp parallel
-        #endif
-      for(auto iter=_autopas.begin(autopas::IteratorBehavior::ownedOnly);iter.isValid();++iter){
-            numberOfParticles++;
-      }
-      return numberOfParticles; }
+    size_t numberOfParticles = 0;
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      numberOfParticles++;
+    }
+    return numberOfParticles;
+  }
 
   /**
    * Prints statistics like duration of calculation etc of the Simulation.
