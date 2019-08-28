@@ -32,12 +32,12 @@ class ParticleContainerInterface {
   /**
    *  Type of the Particle.
    */
-  typedef typename ParticleCell::ParticleType ParticleType;
+  using ParticleType = typename ParticleCell::ParticleType;
 
   /**
    * Type of the ParticleCell.
    */
-  typedef ParticleCell ParticleCellType;
+  using ParticleCellType = ParticleCell;
 
   /**
    * Default constructor

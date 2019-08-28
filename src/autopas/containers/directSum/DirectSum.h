@@ -37,7 +37,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
   /**
    *  Type of the Particle.
    */
-  typedef typename ParticleCell::ParticleType ParticleType;
+  using ParticleType = typename ParticleContainer<ParticleCell>::ParticleType;
 
   /**
    * Constructor of the DirectSum class

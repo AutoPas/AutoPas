@@ -23,7 +23,7 @@ namespace autopas {
  */
 template <class Particle, class LinkedParticleCell, class LinkedSoAArraysType = typename Particle::SoAArraysType>
 class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle>> {
-  typedef FullParticleCell<Particle> ParticleCell;
+  using ParticleCell = FullParticleCell<Particle>;
 
  public:
   /**

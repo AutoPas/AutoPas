@@ -37,7 +37,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
   /**
    *  Type of the Particle.
    */
-  typedef typename ParticleCell::ParticleType ParticleType;
+  using ParticleType = typename ParticleContainer<ParticleCell>::ParticleType;
 
   /**
    * Constructor of the LinkedCells class
