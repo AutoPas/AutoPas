@@ -48,9 +48,10 @@ class Simulation {
    * @param autopas
    */
   void writeVTKFile(unsigned int iteration) {
-      //iterate only over owned Particles, otherwise Simulation explodes
+    // iterate only over owned Particles, otherwise Simulation explodes
     std::string fileBaseName = _parser->getVTKFileName();
-    const auto numParticles = _autopas.getNumberOfParticles();
+    //as _autopas.getNumberOfParticles return number of haloAndOwned Particles, we need number of owned Particles
+    const auto numParticles = this->getNumParticles();
     std::ostringstream strstr;
     auto maxNumDigits = std::to_string(_parser->getIterations()).length();
     strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtk";
@@ -125,10 +126,18 @@ class Simulation {
   autopas::AutoPas<Particle, ParticleCell> *getAutopas() const;
 
   /**
-   * Return the current number of Particles in the AutoPas Object.
+   * Return the current number of owned Particles in the AutoPas Object.
    * @return
    */
-  size_t getNumParticles() { return _autopas.getNumberOfParticles(); }
+  size_t getNumParticles() {
+      size_t numberOfParticles=0;
+        #ifdef AUTOPAS_OPENMP
+        #pragma omp parallel
+        #endif
+      for(auto iter=_autopas.begin(autopas::IteratorBehavior::ownedOnly);iter.isValid();++iter){
+            numberOfParticles++;
+      }
+      return numberOfParticles; }
 
   /**
    * Prints statistics like duration of calculation etc of the Simulation.
@@ -230,6 +239,7 @@ void Simulation<Particle, ParticleCell>::initialize(const std::shared_ptr<YamlPa
   _autopas.setAllowedNewton3Options(newton3Options);
   _autopas.setTuningStrategyOption(tuningStrategy);
   _autopas.setAllowedCellSizeFactors(cellSizeFactors);
+  _autopas.setVerletRebuildFrequency(_parser->getVerletRebuildFrequency());
   autopas::Logger::get()->set_level(logLevel);
   _autopas.setBoxMax(_parser->getBoxMax());
   _autopas.setBoxMin(_parser->getBoxMin());
@@ -287,8 +297,6 @@ void Simulation<Particle, ParticleCell>::simulate() {
     if (_parser->isPeriodic()) {
       BoundaryConditions<Particle, ParticleCell>::applyPeriodic(_autopas);
     }
-    std::cout << "print Particle Number after P.boundaries: " << _autopas.getNumberOfParticles() << std::endl;
-
     _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
 
     switch (this->_parser->getFunctorOption()) {
