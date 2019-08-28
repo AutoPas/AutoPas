@@ -9,7 +9,7 @@
 #tuning-strategy:                   #string option
 #newton3:                           #string option
 #cell-size-factor:                  #string option
-#log-level:                         #string option
+log-level: debug                        #string option
 #tuning-interval:                   #int option
 #tuning-samples:                    #int option
 #tuning-max-evidence:               #int option
@@ -27,19 +27,28 @@
 #iterations:                         #size_t option
 #cutoff:                            #double option
 
+###Thermstat
+
+Thermostat:
+  initTemperatur: 0.01                  #double option
+  numberOfTimesteps: 40               #size_t option
+  target:
+    targetTemperature: 3.0                   #double option
+    delta_temp: 0.001                        #double option
+
 
 ###Objects generation Options
-#Objects:
-#  CubeGrid:
-#    0:
-#      particle-type: 0
-#      particle-epsilon: 1.
-#      particle-sigma: 1.
-#      particle-mass: 1.
-#      particles-per-Dim: [10,10,10]
-#      particleSpacing: 0.5
-#      velocity: [10.,10.,10.]
-#      bottomLeftCorner: [5.,5.,5.]
+Objects:
+  CubeGrid:
+    0:
+      particle-type: 0
+      particle-epsilon: 1.
+      particle-sigma: 1.
+      particle-mass: 1.
+      particles-per-Dim: [10,10,10]
+      particleSpacing: 0.5
+      velocity: [10.,10.,10.]
+      bottomLeftCorner: [5.,5.,5.]
 #  CubeGauss:
 #    0:
 #      particle-type: 0

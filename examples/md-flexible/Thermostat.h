@@ -18,20 +18,43 @@ class Thermostat {
 public:
     using ThermostatFloatType = typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryFloatType;
     using ThermostatIntType = typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryIntType;
+
     /**
      * Constructor if target Temperature is specified
+     * @param t_init initialTemperature of System
+     * @param initBM initialization with BM or other Formula
+     * @param t_target target Temperature of System
+     * @param delta_temp
+     * @param ParticlePropertiesLibrary
      * */
-    Thermostat(const ThermostatFloatType &t_init,const bool &initBM,const ThermostatFloatType &t_target,const ThermostatFloatType &delta_temp,ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary);
+     //@todo FRAGE : always use Brownian Motion??
+    Thermostat(ThermostatFloatType t_init, bool initBM, ThermostatFloatType t_target, ThermostatFloatType delta_temp, ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary);
 
     /**
      * Constructor if only initial Temperature is specified
+     * @param t_init
+     * @param initBM
+     * @param ParticlePropertiesLibrary
      * */
-    Thermostat(const ThermostatFloatType &t_init, const bool &initBM,ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary);
+    Thermostat(ThermostatFloatType t_init, bool initBM,ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary);
 
     /**
      * Default Destructor
      * */
     ~Thermostat() =default;
+
+    /**
+     * Copy Constructor
+     * @param ThermostatCopy
+     * */
+    Thermostat(const Thermostat &ThermostatCopy) = default;
+
+    /**
+     * Copy Assignment Constructor
+     * @param thermo
+     * @return
+     * */
+    Thermostat &operator=(const Thermostat &thermo) = default;
 
     /**
      * Initializes the Simulation according to brownian movement.
@@ -51,6 +74,7 @@ public:
      * @return Temperature of system.
      */
     ThermostatFloatType temperature(AutoPasTemplate &autopas);
+
     /**
     * Add a random velocity according to the Maxwell-Boltzmann distribution to the
     * particles, with a given mean velocity.
@@ -62,6 +86,7 @@ public:
     void MaxwellBoltzmannDistribution(autopas::Particle &p,const ThermostatFloatType factor) {
         p.setV(autopas::ArrayMath::addScalar(p.getV(),factor*GaussDeviate()));
     }
+
     /**
      * helper function for MaxwellBoltzmannDistribution().
      * Generates a gauss deviate, i.e. values according to the normal distribution.
@@ -91,6 +116,7 @@ public:
     }
 
 private:
+
     /**
      * Initial temperature.
      */
@@ -112,8 +138,9 @@ private:
      * Temperature difference per thermostat application until t_target is reached.
      */
     ThermostatFloatType delta_temp;
+
     /**
-     * ParticlePropertiesLibrary to acces Mass of Particles
+     * ParticlePropertiesLibrary to access Mass of Particles
      * */
      ParticlePropertiesLibraryTemplate _particlePropertiesLibrary;
 
@@ -172,14 +199,14 @@ typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryFloatType T
 }
 
 template< class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-Thermostat<AutoPasTemplate,ParticlePropertiesLibraryTemplate>::Thermostat(const ThermostatFloatType &t_init,const bool &initBM,const ThermostatFloatType &t_target,const ThermostatFloatType &delta_temp,ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary) :
+Thermostat<AutoPasTemplate,ParticlePropertiesLibraryTemplate>::Thermostat(ThermostatFloatType t_init,bool initBM,ThermostatFloatType t_target,ThermostatFloatType delta_temp,ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary) :
                                                                                                   t_init(t_init),
                                                                                                   t_target(t_target),
                                                                                                   initBM(initBM),
                                                                                                   delta_temp(delta_temp),
                                                                                                   _particlePropertiesLibrary(ParticlePropertiesLibrary){}
 template<class AutoPasTemplate,class ParticlePropertiesLibraryTemplate>
-Thermostat<AutoPasTemplate,ParticlePropertiesLibraryTemplate>::Thermostat(const ThermostatFloatType &t_init,const bool &initBM,ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary) :  t_init(t_init), initBM(initBM), _particlePropertiesLibrary(ParticlePropertiesLibrary) {
+Thermostat<AutoPasTemplate,ParticlePropertiesLibraryTemplate>::Thermostat(ThermostatFloatType t_init,bool initBM,ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary) :  t_init(t_init), initBM(initBM), _particlePropertiesLibrary(ParticlePropertiesLibrary) {
     t_target = t_init;
     delta_temp = 1;
 }
