@@ -11,6 +11,7 @@
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
+#include "BoundaryConditions.h"
 #include "Generator.h"
 #include "PrintableMolecule.h"
 #include "Thermostat.h"
@@ -48,8 +49,10 @@ class Simulation {
    * @param autopas
    */
   void writeVTKFile(unsigned int iteration) {
+    // iterate only over owned Particles, otherwise Simulation explodes
     std::string fileBaseName = _parser->getVTKFileName();
-    const auto numParticles = _autopas.getNumberOfParticles();
+    // as _autopas.getNumberOfParticles return number of haloAndOwned Particles, we need number of owned Particles
+    const auto numParticles = this->getNumParticles();
     std::ostringstream strstr;
     auto maxNumDigits = std::to_string(_parser->getIterations()).length();
     strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtk";
@@ -64,7 +67,7 @@ class Simulation {
     vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
     vtkFile << "DIMENSIONS 1 1 1" << std::endl;
     vtkFile << "POINTS " << numParticles << " double" << std::endl;
-    for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       auto pos = iter->getR();
       vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
     }
@@ -73,7 +76,7 @@ class Simulation {
     vtkFile << "POINT_DATA " << numParticles << std::endl;
     // print velocities
     vtkFile << "VECTORS velocities double" << std::endl;
-    for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       auto v = iter->getV();
       vtkFile << v[0] << " " << v[1] << " " << v[2] << std::endl;
     }
@@ -81,7 +84,7 @@ class Simulation {
 
     // print Forces
     vtkFile << "VECTORS forces double" << std::endl;
-    for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
+    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       auto f = iter->getF();
       vtkFile << f[0] << " " << f[1] << " " << f[2] << std::endl;
     }
@@ -124,10 +127,19 @@ class Simulation {
   autopas::AutoPas<Particle, ParticleCell> *getAutopas() const;
 
   /**
-   * Return the current number of Particles in the AutoPas Object.
+   * Return the current number of owned Particles in the AutoPas Object.
    * @return
    */
-  size_t getNumParticles() { return _autopas.getNumberOfParticles(); }
+  size_t getNumParticles() {
+    size_t numberOfParticles = 0;
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      numberOfParticles++;
+    }
+    return numberOfParticles;
+  }
 
   /**
    * Prints statistics like duration of calculation etc of the Simulation.
@@ -231,6 +243,7 @@ void Simulation<Particle, ParticleCell>::initialize(const std::shared_ptr<YamlPa
   _autopas.setAllowedNewton3Options(newton3Options);
   _autopas.setTuningStrategyOption(tuningStrategy);
   _autopas.setAllowedCellSizeFactors(cellSizeFactors);
+  _autopas.setVerletRebuildFrequency(_parser->getVerletRebuildFrequency());
   autopas::Logger::get()->set_level(logLevel);
   _autopas.setBoxMax(_parser->getBoxMax());
   _autopas.setBoxMin(_parser->getBoxMin());
@@ -284,6 +297,7 @@ void Simulation<Particle, ParticleCell>::calculateForces() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
   auto functor = FunctorType(_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary);
+  //@todo only iterate over owned particles, right?
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
@@ -303,7 +317,11 @@ void Simulation<Particle, ParticleCell>::simulate() {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << iteration << std::endl;
     }
+    if (_parser->isPeriodic()) {
+      BoundaryConditions<Particle, ParticleCell>::applyPeriodic(_autopas);
+    }
     _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
+
     switch (this->_parser->getFunctorOption()) {
       case YamlParser::FunctorOption::lj12_6: {
         this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>>();

@@ -65,7 +65,7 @@ long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::Cal
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     auto v = iter->getV();
     auto m = _particlePropertiesLibrary.getMass(iter->getTypeId());
     auto f = iter->getF();
@@ -87,7 +87,7 @@ long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::Cal
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     auto m = _particlePropertiesLibrary.getMass(iter->getTypeId());
     auto force = iter->getF();
     auto old_force = iter->getOldf();

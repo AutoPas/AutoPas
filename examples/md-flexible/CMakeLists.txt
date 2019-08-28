@@ -15,6 +15,7 @@ target_link_libraries(
     autopas
     ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a
 )
+target_link_libraries(md-flexible autopas ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a)
 # --- copy script files to build dir ---
 file(
     GLOB_RECURSE SCRIPTS
