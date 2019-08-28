@@ -66,8 +66,8 @@ class ContainerSelector {
   std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> generateContainer(
       ContainerOption containerChoice, ContainerSelectorInfo containerInfo);
 
-  std::array<double, 3> _boxMin, _boxMax;
-  double _cutoff;
+  const std::array<double, 3> _boxMin, _boxMax;
+  const double _cutoff;
   std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _currentContainer;
   ContainerSelectorInfo _currentInfo;
 };

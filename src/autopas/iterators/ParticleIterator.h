@@ -221,6 +221,6 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * The behavior of the iterator.
    */
-  IteratorBehavior _behavior;
+  const IteratorBehavior _behavior;
 };
 }  // namespace autopas::internal

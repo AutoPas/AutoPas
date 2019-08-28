@@ -67,7 +67,7 @@ class VerletLists
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
 
-  ContainerOption getContainerType() override { return ContainerOption::verletLists; }
+  ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
