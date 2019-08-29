@@ -29,7 +29,7 @@ class VerletClustersTraversalInterface;
  * @tparam Particle
  */
 template <class Particle>
-class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<Particle>> {
+class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> {
   /**
    * the index type to access the particle cells
    */
@@ -49,7 +49,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, int clusterSize = 4)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
+      : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _clusterSize(clusterSize),
         _numClusters(0),
         _boxMin(boxMin),
@@ -95,6 +95,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::updateHaloParticle()
+   */
   bool updateHaloParticle(Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
 
   /**

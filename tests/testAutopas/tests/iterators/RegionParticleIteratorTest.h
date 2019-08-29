@@ -24,7 +24,7 @@ class TouchableParticle : public autopas::Particle {
 
 class RegionParticleIteratorTest : public AutoPasTestBase {
  public:
-  typedef autopas::LinkedCells<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> LCTouch;
+  typedef autopas::LinkedCells<autopas::FullParticleCell<TouchableParticle>> LCTouch;
 
   RegionParticleIteratorTest()
       : _boxMin{0., 0., 0.}, _boxMax{5., 5., 5.}, _regionMin{1., 1., 1.}, _regionMax{3., 3., 3.}, _cutoff{.9} {}

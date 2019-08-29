@@ -28,13 +28,17 @@ namespace autopas {
  * These cells dimensions are at least as large as the given cutoff radius,
  * therefore short-range interactions only need to be calculated between
  * particles in neighboring cells.
- * @tparam Particle type of the particles that need to be stored
  * @tparam ParticleCell type of the ParticleCells that are used to store the particles
  * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
-template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
-class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysType> {
+template <class ParticleCell, class SoAArraysType = typename ParticleCell::ParticleType::SoAArraysType>
+class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
  public:
+  /**
+   *  Type of the Particle.
+   */
+  using ParticleType = typename ParticleContainer<ParticleCell>::ParticleType;
+
   /**
    * Constructor of the LinkedCells class
    * @param boxMin
@@ -46,12 +50,15 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
    */
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const double cellSizeFactor = 1.0)
-      : ParticleContainer<Particle, ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
+      : ParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
 
   ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
-  void addParticle(Particle &p) override {
+  /**
+   * @copydoc ParticleContainerInterface::addParticle()
+   */
+  void addParticle(ParticleType &p) override {
     bool inBox = autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
     if (inBox) {
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
@@ -62,15 +69,21 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
     }
   }
 
-  void addHaloParticle(Particle &haloParticle) override {
-    Particle pCopy = haloParticle;
+  /**
+   * @copydoc ParticleContainerInterface::addHaloParticle()
+   */
+  void addHaloParticle(ParticleType &haloParticle) override {
+    ParticleType pCopy = haloParticle;
     pCopy.setOwned(false);
     ParticleCell &cell = _cellBlock.getContainingCell(pCopy.getR());
     cell.addParticle(pCopy);
   }
 
-  bool updateHaloParticle(Particle &haloParticle) override {
-    Particle pCopy = haloParticle;
+  /**
+   * @copydoc ParticleContainerInterface::updateHaloParticle()
+   */
+  bool updateHaloParticle(ParticleType &haloParticle) override {
+    ParticleType pCopy = haloParticle;
     pCopy.setOwned(false);
     auto cells = _cellBlock.getNearbyHaloCells(pCopy.getR(), this->getSkin());
     for (auto cellptr : cells) {
@@ -112,15 +125,15 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
   }
 
   AUTOPAS_WARN_UNUSED_RESULT
-  std::vector<Particle> updateContainer() override {
+  std::vector<ParticleType> updateContainer() override {
     this->deleteHaloParticles();
-    std::vector<Particle> invalidParticles;
+    std::vector<ParticleType> invalidParticles;
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif  // AUTOPAS_OPENMP
     {
       // private for each thread!
-      std::vector<Particle> myInvalidParticles, myInvalidNotOwnedParticles;
+      std::vector<ParticleType> myInvalidParticles, myInvalidNotOwnedParticles;
 #ifdef AUTOPAS_OPENMP
 #pragma omp for
 #endif  // AUTOPAS_OPENMP
@@ -195,12 +208,12 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
                                  this->getCellBlock().getCellLength());
   }
 
-  ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIteratorWrapper<Particle>(
-        new internal::ParticleIterator<Particle, ParticleCell>(&this->_cells, 0, &_cellBlock, behavior));
+  ParticleIteratorWrapper<ParticleType> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIteratorWrapper<ParticleType>(
+        new internal::ParticleIterator<ParticleType, ParticleCell>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(
+  ParticleIteratorWrapper<ParticleType> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     // We increase the search region by skin, as particles can move over cell borders.
@@ -221,7 +234,7 @@ class LinkedCells : public ParticleContainer<Particle, ParticleCell, SoAArraysTy
       }
     }
 
-    return ParticleIteratorWrapper<Particle>(new internal::RegionParticleIterator<Particle, ParticleCell>(
+    return ParticleIteratorWrapper<ParticleType>(new internal::RegionParticleIterator<ParticleType, ParticleCell>(
         &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior));
   }
 
