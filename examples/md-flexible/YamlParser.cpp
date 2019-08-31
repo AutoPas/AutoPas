@@ -712,8 +712,9 @@ void YamlParser::printConfig() {
        << ":  " << delta_t << endl;
   cout << setw(valueOffset) << left << "Iterations"  // iterations * delta_t = time_end;
        << ":  " << iterations << endl;
-    cout << setw(valueOffset) << left << "periodic boundaries"
-         << ":  " << isPeriodic() << endl << endl;
+  cout << setw(valueOffset) << left << "periodic boundaries"
+       << ":  " << isPeriodic() << endl
+       << endl;
 
   cout << setw(valueOffset) << left << "Object Generation:" << endl;
   int i = 1;

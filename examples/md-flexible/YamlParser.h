@@ -141,7 +141,7 @@ class YamlParser {
   void setVtkFileName(const std::string &vtkFileName);
 
   [[nodiscard]] bool isPeriodic() const;
-  
+
   bool isThermostat() const;
 
   double getInitTemperature() const;
