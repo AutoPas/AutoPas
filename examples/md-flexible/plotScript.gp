@@ -84,6 +84,9 @@ set title font "," . fontsize
 set xrange [] writeback
 set yrange [] writeback
 
+set format x '2^{%L}'
+set format y '2^{%L}'
+
 plot for [i=1:words(datafiles)] \
     word(datafiles, i) \
     index dataBlock \

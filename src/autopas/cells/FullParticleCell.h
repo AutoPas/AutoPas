@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <mutex>
 #include <vector>
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
@@ -69,14 +70,15 @@ class FullParticleCell : public ParticleCell<Particle> {
   void clear() override { _particles.clear(); }
 
   void deleteByIndex(size_t index) override {
-    particlesLock.lock();
-    assert(index < numParticles());
+    std::lock_guard<AutoPasLock> lock(particlesLock);
+    if (index >= numParticles()) {
+      utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
+    }
 
     if (index < numParticles() - 1) {
       std::swap(_particles[index], _particles[numParticles() - 1]);
     }
     _particles.pop_back();
-    particlesLock.unlock();
   }
 
   void setCellLength(std::array<double, 3> &cellLength) override { _cellLength = cellLength; }

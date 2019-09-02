@@ -124,9 +124,9 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     }
   }
 
-  std::array<double, 3> _startRegion;
-  std::array<double, 3> _endRegion;
-  std::vector<size_t> _indicesInRegion;
+  const std::array<double, 3> _startRegion;
+  const std::array<double, 3> _endRegion;
+  const std::vector<size_t> _indicesInRegion;
   size_t _currentRegionIndex;
 };
 }  // namespace autopas::internal

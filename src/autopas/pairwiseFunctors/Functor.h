@@ -286,7 +286,7 @@ class Functor {
    * Provides an interface for traversals to directly access Cuda Functions
    * @return Pointer to CudaWrapper of the Functor
    */
-  virtual CudaWrapperInterface<typename Particle::ParticleFloatingPointType> *getCudaWrapper() { return NULL; }
+  virtual CudaWrapperInterface<typename Particle::ParticleFloatingPointType> *getCudaWrapper() { return nullptr; }
 
   /**
    * Creates Cuda SoA object containing all the relevant pointers from the generic Cuda SoA

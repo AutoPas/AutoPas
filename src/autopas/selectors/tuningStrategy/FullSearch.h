@@ -50,7 +50,7 @@ class FullSearch : public TuningStrategyInterface {
     }
   }
 
-  inline const Configuration &getCurrentConfiguration() override { return *_currentConfig; }
+  inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
@@ -63,11 +63,11 @@ class FullSearch : public TuningStrategyInterface {
 
   inline bool tune(bool = false) override;
 
-  inline std::set<ContainerOption> getAllowedContainerOptions() override { return _containerOptions; }
+  inline std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptions; }
 
-  inline bool searchSpaceIsTrivial() override { return _searchSpace.size() == 1; }
+  inline bool searchSpaceIsTrivial() const override { return _searchSpace.size() == 1; }
 
-  inline bool searchSpaceIsEmpty() override { return _searchSpace.empty(); }
+  inline bool searchSpaceIsEmpty() const override { return _searchSpace.empty(); }
 
  private:
   /**
