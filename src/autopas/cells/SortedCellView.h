@@ -18,8 +18,9 @@
 namespace autopas {
 
 /**
- * This class defines a sorted view on a given ParticleCell. Particles are sorted along the normalized vector r. The
- * projected position of a particle as well as a pointer to the underlying particle are stored in a vector, which is
+ * This class defines a sorted view on a given ParticleCell. Particles are sorted along the normalized vector r.
+ * \image html SortingPrinciple.png "Projection of particles in 2D"
+ * The projected position of a particle as well as a pointer to the underlying particle are stored in a vector, which is
  * sorted by the projected positions.
  * @note Insertion, deletion and change of position of particles invalidates the view.
  * @tparam Particle
