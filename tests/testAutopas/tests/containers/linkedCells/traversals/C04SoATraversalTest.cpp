@@ -29,14 +29,14 @@ TEST_F(C04SoATraversalTest, testTraversal) {
   NumThreadGuard numThreadGuard(1);
 
   autopas::C04SoATraversal<FPCell, autopas::LJFunctor<autopas::Particle, FPCell>, autopas::DataLayoutOption::soa, true>
-      c04SoATraversal(edgeLength, &functor, 1);
+      c04SoATraversal(edgeLength, &functor, 1, {1., 1., 1.});
   c04SoATraversal.setCellsToTraverse(cells);
   c04SoATraversal.initTraversal();
   c04SoATraversal.traverseParticlePairs();
   c04SoATraversal.endTraversal();
 
   size_t num = 0;
-  for (auto cell : cells) {
+  for (auto &cell : cells) {
     num += cell.numParticles();
   }
   EXPECT_EQ(num, 2);

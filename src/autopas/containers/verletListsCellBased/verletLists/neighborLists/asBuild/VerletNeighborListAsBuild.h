@@ -46,7 +46,8 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     auto traversal = C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                                    internal::AsBuildPairGeneratorFunctor<Particle, callCheckInstead>,
                                                    dataLayout, useNewton3>(
-        _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor, this);
+        _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor,
+        _baseLinkedCells->getInteractionLength(), _baseLinkedCells->getCellBlock().getCellLength(), this);
     _baseLinkedCells->iteratePairwise(&traversal);
   }
 

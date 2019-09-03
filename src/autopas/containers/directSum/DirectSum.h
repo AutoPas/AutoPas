@@ -137,7 +137,10 @@ class DirectSum : public ParticleContainer<ParticleCell> {
 
   TraversalSelectorInfo getTraversalSelectorInfo() override {
     // direct sum technically consists of two cells (owned + halo)
-    return TraversalSelectorInfo({2, 0, 0});
+    return TraversalSelectorInfo(
+        {2, 0, 0},
+        this->getCutoff() /*intentionally use cutoff here, as the directsumtraversal should be using the cutoff.*/,
+        ArrayMath::sub(this->getBoxMax(), this->getBoxMin()));
   }
 
   ParticleIteratorWrapper<ParticleType> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

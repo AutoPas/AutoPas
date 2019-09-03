@@ -698,7 +698,8 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
 
   if (dataLayoutOption == autopas::DataLayoutOption::aos) {
     autopas::C08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType, autopas::DataLayoutOption::aos, true>
-        traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);
+        traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr,
+                    _linkedCells.getInteractionLength(), _linkedCells.getCellBlock().getCellLength());
 
     autopas::TraversalVerlet<autopas::FullParticleCell<SPHParticle>, FunctorType, autopas::DataLayoutOption::aos, true>
         traversalLJVerlet(&fnctr);
@@ -708,7 +709,8 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
     _linkedCells.iteratePairwise(&traversalLJ);
   } else {
     autopas::C08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType, autopas::DataLayoutOption::soa, true>
-        traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr);
+        traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr,
+                    _linkedCells.getInteractionLength(), _linkedCells.getCellBlock().getCellLength());
     autopas::TraversalVerlet<autopas::FullParticleCell<SPHParticle>, FunctorType, autopas::DataLayoutOption::soa, true>
         traversalLJVerlet(&fnctr);
 
