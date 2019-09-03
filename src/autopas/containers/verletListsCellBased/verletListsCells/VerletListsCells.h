@@ -143,6 +143,10 @@ class VerletListsCells
     this->_neighborListIsValid = true;
   }
 
+  /**
+   * Return the cell length of the underlying linked cells structure, normally needed only for unit tests.
+   * @return
+   */
   const std::array<double, 3> &getCellLength() { return this->_linkedCells.getCellBlock().getCellLength(); }
 
  private:

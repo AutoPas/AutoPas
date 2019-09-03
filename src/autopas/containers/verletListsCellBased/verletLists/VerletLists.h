@@ -157,7 +157,7 @@ class VerletLists
     /// @todo autotune traversal
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS: {
-        utils::withStaticBool(useNewton3, [&](auto theBool){
+        utils::withStaticBool(useNewton3, [&](auto theBool) {
           auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::aos, theBool>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
@@ -167,7 +167,7 @@ class VerletLists
         break;
       }
       case BuildVerletListType::VerletSoA: {
-        utils::withStaticBool(useNewton3, [&](auto theBool){
+        utils::withStaticBool(useNewton3, [&](auto theBool) {
           auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
                                         DataLayoutOption::soa, theBool>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
