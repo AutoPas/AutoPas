@@ -19,8 +19,10 @@ namespace autopas {
 /**
  * This class provides the c18 traversal.
  *
- * The traversal uses the c18 base step performed on every single cell. Since
- * these steps overlap a domain coloring with eighteen colors is applied.
+ * The traversal uses the c18 base step performed on every single cell.
+ * \image html C18.png "C18 base step in 2D. (dark blue cell = base cell)"
+ * Since these steps overlap a domain coloring with eighteen colors is applied.
+ * \image html C18_domain.png "C18 domain coloring in 2D. 6 colors are required."
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.

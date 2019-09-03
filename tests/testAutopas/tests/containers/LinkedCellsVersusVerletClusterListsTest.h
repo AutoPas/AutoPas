@@ -30,5 +30,5 @@ class LinkedCellsVersusVerletClusterListsTest : public AutoPasTestBase {
             std::array<double, 3> boxMax);
 
   using Verlet = autopas::VerletClusterLists<autopas::MoleculeLJ>;
-  using Linked = autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>;
+  using Linked = autopas::LinkedCells<autopas::FullParticleCell<autopas::MoleculeLJ>>;
 };

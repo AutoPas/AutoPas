@@ -16,8 +16,10 @@ namespace autopas {
 /**
  * This class provides the c08 traversal.
  *
- * The traversal uses the c08 base step performed on every single cell. Since
- * these steps overlap a domain coloring with eight colors is applied.
+ * The traversal uses the c08 base step performed on every single cell.
+ * \image html C08.png "C08 base step in 2D. (dark blue cell = base cell)"
+ * Since these steps overlap a domain coloring with eight colors is applied.
+ * \image html C08_domain.png "C08 domain coloring in 2D. 4 colors are required."
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.

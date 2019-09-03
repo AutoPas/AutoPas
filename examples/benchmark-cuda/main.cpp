@@ -72,8 +72,8 @@ int main(int argc, char **argv) {
   double epsilon = 2.0;
   double sigma = 0.4;
 
-  DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff, skin);
-  LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff, skin);
+  DirectSum<FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff, skin);
+  LinkedCells<FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff, skin);
 
   fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.8, numParticles);
   fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.8, numParticles);

@@ -7,7 +7,6 @@
 #pragma once
 
 #include <algorithm>
-#include <cassert>
 #include <initializer_list>
 #include <map>
 #include <tuple>

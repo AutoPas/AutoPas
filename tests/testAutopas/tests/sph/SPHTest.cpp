@@ -612,10 +612,9 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
   EXPECT_NEAR(sphParticle4.getDt(), sphParticle2.getDt(), 1e-10);
 }
 
-void densityCheck(
-    autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
-    autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &linkedCells,
-    size_t numMolecules, double rel_err_tolerance) {
+void densityCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
+                  autopas::LinkedCells<autopas::FullParticleCell<autopas::sph::SPHParticle>> &linkedCells,
+                  size_t numMolecules, double rel_err_tolerance) {
   std::vector<double> densityVerlet(numMolecules), densityLinked(numMolecules);
   /* get and sort by id, the */
   for (auto it = verletLists.begin(); it.isValid(); ++it) {
@@ -644,10 +643,9 @@ void hydroInit(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists) {
   }
 };
 
-void hydroCheck(
-    autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
-    autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &linkedCells,
-    size_t numMolecules, double rel_err_tolerance) {
+void hydroCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
+                autopas::LinkedCells<autopas::FullParticleCell<autopas::sph::SPHParticle>> &linkedCells,
+                size_t numMolecules, double rel_err_tolerance) {
   std::vector<double> vsigmaxVerlet(numMolecules), vsigmaxLinked(numMolecules);
   std::vector<double> engdotVerlet(numMolecules), engdotLinked(numMolecules);
   std::vector<std::array<double, 3>> accVerlet(numMolecules), accLinked(numMolecules);
@@ -683,8 +681,8 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
   using autopas::sph::SPHParticle;
 
   autopas::VerletLists<SPHParticle> _verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5);
-  autopas::LinkedCells<SPHParticle, autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.},
-                                                                                         cutoff, 0.5, 1.);
+  autopas::LinkedCells<autopas::FullParticleCell<SPHParticle>> _linkedCells({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5,
+                                                                            1.);
 
   autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 1, 2.5,
                                                cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);

@@ -21,22 +21,11 @@ namespace autopas {
 /**
  * The ParticleContainer class stores particles in some object and provides
  * methods to iterate over its particles.
- * @tparam Particle Class for particles
  * @tparam ParticleCell Class for the particle cells
  */
-template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
-class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCell> {
+template <class ParticleCell, class SoAArraysType = typename ParticleCell::ParticleType::SoAArraysType>
+class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
  public:
-  /**
-   *  Type of the Particle.
-   */
-  typedef Particle ParticleType;
-
-  /**
-   * Type of the ParticleCell.
-   */
-  typedef ParticleCell ParticleCellType;
-
   /**
    * Constructor of ParticleContainer
    * @param boxMin

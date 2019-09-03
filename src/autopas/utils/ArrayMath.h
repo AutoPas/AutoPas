@@ -127,11 +127,30 @@ template <class T, std::size_t SIZE>
  */
 template <class T, std::size_t SIZE>
 [[nodiscard]] constexpr T dot(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
-  auto result = static_cast<T>(0.0);
-  for (std::size_t d = 0; d < SIZE; ++d) {
-    result += a[d] * b[d];
-  }
-  return result;
+  return std::inner_product(a.cbegin(), a.cend(), b.cbegin(), static_cast<T>(0));
+}
+
+/**
+ * Computes the L2Norm / Euclidean norm.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input array
+ * @return L2Norm
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr T L2Norm(const std::array<T, SIZE> &a) {
+  return std::sqrt(dot(a, a));
+}
+
+/**
+ * Computes the product of all elements in a.
+ * @tparam T input array type, which fulfills the C++ container requirement
+ * @param a input array
+ * @return product
+ */
+template <class T>
+[[nodiscard]] constexpr typename T::value_type prod(const T &a) {
+  return std::accumulate(a.cbegin(), a.cend(), static_cast<typename T::value_type>(1), std::multiplies<>());
 }
 
 /**
@@ -143,8 +162,7 @@ template <class T, std::size_t SIZE>
  */
 template <class T, std::size_t SIZE>
 [[nodiscard]] constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
-  const T length = std::sqrt(dot(a, a));
-  return mulScalar(a, static_cast<T>(1) / length);
+  return mulScalar(a, static_cast<T>(1) / L2Norm(a));
 }
 
 }  // namespace autopas::ArrayMath

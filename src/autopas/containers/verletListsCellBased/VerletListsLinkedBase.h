@@ -22,8 +22,8 @@ namespace autopas {
  * @tparam LinkedSoAArraysType SoAArraysType used by the linked cells container
  */
 template <class Particle, class LinkedParticleCell, class LinkedSoAArraysType = typename Particle::SoAArraysType>
-class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCell<Particle>> {
-  typedef FullParticleCell<Particle> ParticleCell;
+class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle>> {
+  using ParticleCell = FullParticleCell<Particle>;
 
  public:
   /**
@@ -40,7 +40,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                         const double skin, const std::set<TraversalOption> &applicableTraversals,
                         const double cellSizeFactor)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
+      : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       AutoPasLog(debug, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
@@ -194,7 +194,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
 
  protected:
   /// internal linked cells storage, handles Particle storage and used to build verlet lists
-  LinkedCells<Particle, LinkedParticleCell, LinkedSoAArraysType> _linkedCells;
+  LinkedCells<LinkedParticleCell, LinkedSoAArraysType> _linkedCells;
 
   /// specifies if the neighbor list is currently valid
   bool _neighborListIsValid{false};

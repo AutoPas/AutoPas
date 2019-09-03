@@ -53,7 +53,7 @@ class VerletListsCells
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _buildTraversal(buildTraversal) {}
 
-  ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }
+  ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));

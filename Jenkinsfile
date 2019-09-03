@@ -48,30 +48,17 @@ pipeline{
                         }
                     },
                     "custom checks": {
+                        echo 'Testing src folder'
                         dir("src"){
-                            script{
-                                // check if all header files have a #pragma once
-                                try{
-                                    // if header files do not contain #pragma once, make build unstable
-                                    sh 'grep -L "#pragma once" -r . | grep -q "\\.h" && exit 2 || exit 0'
-                                } catch (Exception e) {
-                                    // change detected
-                                    echo 'all header include guards should be implemented using "#pragma once". Affected files:'
-                                    sh 'grep -L "#pragma once" -r . | grep "\\.h"'
-                                    sh "exit 1"
-                                }
-
-                                // check if all files are documented with @file or \file doxygen comments
-                                try{
-                                    // if .cpp or .h files do not contain a file comment, return 2
-                                    sh "grep '\\\\file\\|\\@file' -Lr . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
-                                } catch (Exception e) {
-                                    // change detected
-                                    echo 'all .h and .cpp files should be documented with doxygen comments (@file)". Affected files:'
-                                    sh "grep '\\\\file\\|\\@file' -Lr . | grep '\\.cpp\\|\\.h'"
-                                    sh "exit 1"
-                                }
-                            }
+                            checkCustom()
+                        }
+                        echo 'Testing tests folder'
+                        dir("tests"){
+                            checkCustom()
+                        }
+                        echo 'Testing examples folder'
+                        dir("examples"){
+                            checkCustom()
                         }
                     }
                 )
@@ -308,6 +295,43 @@ pipeline{
         }
         aborted {
             echo "aborted"
+        }
+    }
+}
+
+void checkCustom() {
+    script{
+        // check if all header files have a #pragma once
+        try{
+            // if header files do not contain #pragma once, make build unstable
+            sh 'grep -L "#pragma once" -r . | grep -q "\\.h" && exit 2 || exit 0'
+        } catch (Exception e) {
+            // change detected
+            echo 'all header include guards should be implemented using "#pragma once". Affected files:'
+            sh 'grep -L "#pragma once" -r . | grep "\\.h"'
+            sh "exit 1"
+        }
+
+        // check if all files are documented with @file or \file doxygen comments
+        try{
+            // if .cpp or .h files do not contain a file comment, return 2
+            sh "grep '\\\\file\\|\\@file' -Lr . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
+        } catch (Exception e) {
+            // change detected
+            echo 'all .h and .cpp files should be documented with doxygen comments (@file)". Affected files:'
+            sh "grep '\\\\file\\|\\@file' -Lr . | grep '\\.cpp\\|\\.h'"
+            sh "exit 1"
+        }
+
+        // check that no file contains NULL or assert
+        try{
+            // if .cpp or .h files contain NULL or assert, return 2
+            sh "grep -lrE '(NULL|[^_]assert)' . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
+        } catch (Exception e) {
+            // change detected
+            echo 'Usage of NULL and assert is prohibited. Affected files:'
+            sh "grep -lrE '(NULL|[^_]assert)' . | grep '\\.cpp\\|\\.h'"
+            sh "exit 1"
         }
     }
 }
