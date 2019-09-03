@@ -159,6 +159,8 @@ class VerletListsCells
     this->_neighborListIsValid = true;
   }
 
+  const std::array<double, 3> &getCellLength() { return this->_linkedCells.getCellBlock().getCellLength(); }
+
  private:
   /// verlet lists for each particle for each cell
   typename verlet_internal::VerletList_storage_type _neighborLists;

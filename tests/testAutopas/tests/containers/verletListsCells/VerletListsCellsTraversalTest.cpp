@@ -3,7 +3,6 @@
  * @author nguyen
  * @date 26.09.18
  */
-#define protected public
 #include "VerletListsCellsTraversalTest.h"
 #include "testingHelpers/NumThreadGuard.h"
 
@@ -26,19 +25,19 @@ std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells
 
   autopas::C01TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, false>
       traversalC01FLOPS(dim, &flopsC01, verletListsCells.getInteractionLength(),
-                        verletListsCells._linkedCells.getCellBlock().getCellLength());
+                        verletListsCells.getCellLength());
   autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, false>
       traversalC18FLOPS(dim, &flopsC18, verletListsCells.getInteractionLength(),
-                        verletListsCells._linkedCells.getCellBlock().getCellLength());
+                        verletListsCells.getCellLength());
   autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, false>
       traversalSliFLOPS(dim, &flopsSli, verletListsCells.getInteractionLength(),
-                        verletListsCells._linkedCells.getCellBlock().getCellLength());
+                        verletListsCells.getCellLength());
   autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, true>
       traversalC18N3FLOPS(dim, &flopsC18N3, verletListsCells.getInteractionLength(),
-                          verletListsCells._linkedCells.getCellBlock().getCellLength());
+                          verletListsCells.getCellLength());
   autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, true>
       traversalSliN3FLOPS(dim, &flopsSliN3, verletListsCells.getInteractionLength(),
-                          verletListsCells._linkedCells.getCellBlock().getCellLength());
+                          verletListsCells.getCellLength());
 
   verletListsCells.rebuildNeighborLists(&traversalC01FLOPS);
   verletListsCells.iteratePairwise(&traversalC01FLOPS);
