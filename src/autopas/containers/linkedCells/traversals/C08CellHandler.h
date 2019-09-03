@@ -35,6 +35,8 @@ class C08CellHandler {
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
+   * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
+   * in that case the interactionLength is needed!
    */
   explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
                           const double interactionLength, const std::array<double, 3> &cellLength,
