@@ -73,7 +73,10 @@ int main(int argc, char *argv[]) {
       containerOptions = autopas::utils::StringUtils::parseContainerOptions(argv[3]);
       numIterations = std::stoi(argv[2]);
       numParticles = std::stoi(argv[1]);
-      assert(containerOptions.size() == 1);
+      if (containerOptions.size() != 1) {
+        throw std::runtime_error(
+            "Currently choosing of multiple containers is not allowed, please select only one container!");
+      }
     } else {
       throw std::runtime_error("too few arguments");
     }
