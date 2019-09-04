@@ -26,19 +26,12 @@ void addParticles(
     auto id = static_cast<unsigned long>(i);
     autopas::sph::SPHParticle particle(RandomGenerator::randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75, 0.012,
                                        0.);
-    // autopas::sph::SPHParticle ith(randomPosition(boxMin, boxMax), {0, 0, 0},
-    // i++, 0.75, 0.012, 0. );
     sph_system.addParticle(particle);
   }
-
-  //	for (auto it = cont->begin(); it.isValid(); ++it) {
-  //		it->print();
-  //	}
 
   for (auto part = sph_system.begin(); part.isValid(); ++part) {
     part->setMass(part->getMass() * boxMax[0] * boxMax[1] * boxMax[2] / (double)(numParticles));
   }
-  // std::cout << "# of ptcls is... " << numParticles << std::endl;
 
   // Set the end time
 }
@@ -109,6 +102,7 @@ int main(int argc, char *argv[]) {
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
   autoPas.setVerletSkin(skin * cutoff);
+  autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setAllowedContainers(containerOptions);
   autoPas.setAllowedNewton3Options({useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled});
   autoPas.setAllowedDataLayouts({autopas::DataLayoutOption::aos});  // currently aos only!
@@ -160,15 +154,10 @@ template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations) {
   autopas::utils::Timer t;
 
-  // cont->iteratePairwiseAoS(&flopFunctor);
-  // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
-
   t.start();
   for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func);
 
   double elapsedTime = t.stop();
-
-  // double flops = flopsPerIteration * numIterations;
 
   double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-6;
 
@@ -177,17 +166,8 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
   elapsedTime = t.stop();
 
-  // double flops = flopsPerIteration * numIterations;
-
   double MFUPS_soa = numParticles * numIterations / elapsedTime * 1e-6;
 
   std::cout << numParticles << "\t" << numIterations << "\t" << MFUPS_aos << "\t" << MFUPS_soa;
-  // std::cout << numParticles << "\t" << numIterations << "\t" << elapsedTime / numIterations << "\t" << MFUPS;
-  // std::cout << "\t" << flops;
-  // std::cout << "\t" << flopFunctor.getHitRate();
-  // std::cout << "\t" << flops / elapsedTime * 1e-9 << std::endl;
-
-  // std::cout << "measuring done" << std::endl;
-
   std::cout << std::endl;
 }
