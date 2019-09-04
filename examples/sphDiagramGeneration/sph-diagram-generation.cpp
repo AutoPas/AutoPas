@@ -155,7 +155,6 @@ int main(int argc, char *argv[]) {
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations) {
-
   autopas::utils::Timer t;
 
   // cont->iteratePairwiseAoS(&flopFunctor);
