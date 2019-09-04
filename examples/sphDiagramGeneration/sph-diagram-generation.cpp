@@ -73,6 +73,7 @@ int main(int argc, char *argv[]) {
       containerOptions = autopas::utils::StringUtils::parseContainerOptions(argv[3]);
       numIterations = std::stoi(argv[2]);
       numParticles = std::stoi(argv[1]);
+      assert(containerOptions.size() == 1);
     } else {
       throw std::runtime_error("too few arguments");
     }
