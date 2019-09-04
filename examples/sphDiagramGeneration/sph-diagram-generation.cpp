@@ -62,32 +62,35 @@ int main(int argc, char *argv[]) {
   double skin = 0.;
   int rebuildFrequency = 10;
   bool useNewton3 = true;
-  if (argc >= 9) {
-    boxMax[0] = boxMax[1] = boxMax[2] = std::stod(argv[8]);
-  }
-  if (argc >= 8) {
-    useNewton3 = std::stoi(argv[7]);
-  }
-  if (argc >= 7) {
-    rebuildFrequency = std::stoi(argv[6]);
-    skin = std::stod(argv[5]);
-  }
-  if (argc >= 5) {
-    functorTypeInt = std::stoi(argv[4]);
-  }
-  if (argc >= 4) {
-    containerOptions = autopas::utils::StringUtils::parseContainerOptions(argv[3]);
-    numIterations = std::stoi(argv[2]);
-    numParticles = std::stoi(argv[1]);
-  } else {
+  try {
+    if (argc >= 9) {
+      boxMax[0] = boxMax[1] = boxMax[2] = std::stod(argv[8]);
+    }
+    if (argc >= 8) {
+      useNewton3 = std::stoi(argv[7]);
+    }
+    if (argc >= 7) {
+      rebuildFrequency = std::stoi(argv[6]);
+      skin = std::stod(argv[5]);
+    }
+    if (argc >= 5) {
+      functorTypeInt = std::stoi(argv[4]);
+    }
+    if (argc >= 4) {
+      containerOptions = autopas::utils::StringUtils::parseContainerOptions(argv[3]);
+      numIterations = std::stoi(argv[2]);
+      numParticles = std::stoi(argv[1]);
+    } else {
+      throw std::runtime_error("too few arguments");
+    }
+  } catch (const std::exception &e) {
     std::cerr
-        << "ERROR: wrong number of arguments given. " << std::endl
+        << "ERROR parsing the input arguments: " << e.what() << std::endl
         << "sph-diagram-generation requires the following arguments:" << std::endl
         << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3 [boxSize]]]]:"
         << std::endl
         << std::endl
-        << "containerType should be either 0 (linked-cells), 1 (direct sum), 2 (verlet lists) or 3 (verlet lists cells)"
-        << std::endl
+        << "containerType should be either linked-cells, direct sum, verlet lists or verlet lists cells" << std::endl
         << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
     exit(1);
   }
