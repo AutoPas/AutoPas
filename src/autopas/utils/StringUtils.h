@@ -22,6 +22,92 @@
 namespace autopas::utils::StringUtils {
 
 /**
+ * Calculates a similarity score of s1 and s2 based on the Needleman-Wunsch string alignment algorithm.
+ *
+ * @param s1
+ * @param s2
+ * @return Score in the lower right corner of the score matrix.
+ */
+inline int needlemanWunschScore(std::string s1, std::string s2) {
+  // these scores correspond to the number of edits needed to match s1 to s2
+  constexpr int scoreMatch = 1;
+  constexpr int scoreMismatch = -1;
+  constexpr int scoreGap = -1;
+
+  // |s1|+1 x |s2|+1 Matrix
+  std::vector<std::vector<int>> scoreMatrix(s1.length() + 1, std::vector<int>(s2.length() + 1, 0));
+
+  // initialize top and right border with cumulative gap penalties
+  for (size_t i = 0; i < scoreMatrix.size(); ++i) {
+    scoreMatrix[i][0] = i * scoreGap;
+  }
+  for (size_t j = 0; j < scoreMatrix[0].size(); ++j) {
+    scoreMatrix[0][j] = j * scoreGap;
+  }
+
+  // fill rest of matrix
+  for (size_t i = 1; i < scoreMatrix.size(); ++i) {
+    for (size_t j = 1; j < scoreMatrix[0].size(); ++j) {
+      auto matchValue = s1[i + 1] == s2[j + 1] ? scoreMatch : scoreMismatch;
+      auto scoreDiagonal = scoreMatrix[i - 1][j - 1] + matchValue;
+      auto scoreLeft = scoreMatrix[i - 1][j] + scoreGap;
+      auto scoreTop = scoreMatrix[i][j - 1] + scoreGap;
+
+      std::array<decltype(scoreDiagonal), 3> scores = {scoreDiagonal, scoreLeft, scoreTop};
+      auto scoreMax = std::max_element(scores.begin(), scores.end());
+
+      scoreMatrix[i][j] = *scoreMax;
+    }
+  }
+
+  // omit backtracking since we are not interested in the alignment but only in
+  // the score lower right corner contains similarity score
+  return scoreMatrix[scoreMatrix.size() - 1][scoreMatrix[scoreMatrix.size() - 1].size() - 1];
+}
+
+/**
+ * Finds best match of needle in haystack.
+ *
+ * Needle is compared to every option in haystack and the Needleman-Wunsch score calculated.
+ * If the result is unambiguous an exception is thrown.
+ *
+ * @param haystack Vector of string to match to.
+ * @param needle
+ * @return Best matching string.
+ */
+inline std::string matchStrings(const std::vector<std::string> &haystack, const std::string &needle) {
+  auto bestDistance = std::numeric_limits<int>::min();
+  std::vector<std::string> matchedStrings;
+  for (auto &s : haystack) {
+    auto distance = needlemanWunschScore(needle, s);
+    // if we find a better match throw out current matches
+    if (distance > bestDistance) {
+      matchedStrings.clear();
+      bestDistance = distance;
+    }
+    // save every match that is at least as good as the current one
+    if (distance >= bestDistance) {
+      matchedStrings.push_back(s);
+    }
+  }
+  if (matchedStrings.size() > 1) {
+    //    throw std::runtime_error("Given string is unambiguous! Which option do you mean: " +
+    //    arrayToString(matchedStrings));
+    utils::ExceptionHandler::exception("Given String ({}) is unambiguous! Which option do you mean: {}", needle,
+                                       [](auto arr) -> std::string {
+                                         std::ostringstream ss;
+                                         for (auto &a : arr) {
+                                           ss << a << ", ";
+                                         }
+                                         // deletes last comma
+                                         ss << "\b\b";
+                                         return ss.str();
+                                       }(matchedStrings));
+  }
+  return matchedStrings[0];
+}
+
+/**
  * Converts a Newton3Option to its respective string representation.
  * @param option
  * @return The string representation or "Unknown option (<IntValue>)".
