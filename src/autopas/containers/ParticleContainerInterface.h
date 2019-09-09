@@ -118,7 +118,15 @@ class ParticleContainerInterface {
    * @return Iterator to the first particle.
    * @todo implement IteratorBehavior.
    */
-  virtual ParticleIteratorWrapper<ParticleType> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
+  virtual ParticleIteratorWrapper<ParticleType, true> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
+
+  /**
+   * @copydoc begin()
+   * @note const version
+   */
+  virtual ParticleIteratorWrapper<ParticleType, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const = 0;
 
   /**
    * Iterate over all particles in a specified region
@@ -128,9 +136,17 @@ class ParticleContainerInterface {
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
    * @return Iterator to iterate over all particles in a specific region.
    */
-  virtual ParticleIteratorWrapper<ParticleType> getRegionIterator(
+  virtual ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
+
+  /**
+   * @copydoc getRegionIterator()
+   * @note const version
+   */
+  virtual ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const = 0;
 
   /**
    * Iterates over all particle pairs in the container.

@@ -180,7 +180,16 @@ class AutoPas {
    * particles, or both.
    * @return iterator to the first particle
    */
-  autopas::ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    return _logicHandler->begin(behavior);
+  }
+
+  /**
+   * @copydoc begin()
+   * @note const version
+   */
+  autopas::ParticleIteratorWrapper<Particle, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     return _logicHandler->begin(behavior);
   }
 
@@ -201,9 +210,19 @@ class AutoPas {
    * particles, or both.
    * @return iterator to iterate over all particles in a specific region
    */
-  autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
+  autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * @copydoc getRegionIterator()
+   * @note const version
+   */
+  autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 

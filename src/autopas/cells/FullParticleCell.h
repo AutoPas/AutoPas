@@ -45,8 +45,12 @@ class FullParticleCell : public ParticleCell<Particle> {
     particlesLock.unlock();
   }
 
-  SingleCellIteratorWrapper<Particle> begin() override {
-    return SingleCellIteratorWrapper<Particle>(new iterator_t(this));
+  SingleCellIteratorWrapper<Particle, true> begin() override {
+    return SingleCellIteratorWrapper<Particle, true>(new iterator_t(this));
+  }
+
+  SingleCellIteratorWrapper<Particle, false> begin() const override {
+    return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
   unsigned long numParticles() const override { return _particles.size(); }
@@ -124,7 +128,12 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Type of the internal iterator.
    */
-  typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>> iterator_t;
+  typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>, true> iterator_t;
+
+  /**
+   * Type of the internal const iterator.
+   */
+  typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>, false> const_iterator_t;
 
  private:
   AutoPasLock particlesLock;

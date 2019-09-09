@@ -23,16 +23,20 @@ enum IteratorBehavior {
  * The particles can be accessed using "iterator->" or "*iterator". The next
  * particle using the ++operator, e.g. "++iterator"
  * @tparam Particle type of the particle that is accessed
+ * @tparam modifiable Defines whether the ParticleIterator is modifiable or not. If it is false, it points to a const
+ * Particle.
  */
-template <class Particle>
+template <class Particle, bool modifiable>
 class ParticleIteratorInterface {
+  using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
+
  public:
   /**
    * Increment operator.
    * Used to jump to the next particle
    * @return next particle, usually ignored
    */
-  virtual ParticleIteratorInterface<Particle> &operator++() = 0;
+  virtual ParticleIteratorInterface<Particle, modifiable> &operator++() = 0;
 
   virtual ~ParticleIteratorInterface() = default;
 
@@ -41,7 +45,7 @@ class ParticleIteratorInterface {
    * this is the indirection operator
    * @return current particle
    */
-  virtual Particle &operator*() const = 0;
+  virtual ParticleType &operator*() const = 0;
 
   /**
    * access particle using iterator->
@@ -49,18 +53,28 @@ class ParticleIteratorInterface {
    * this is the member of pointer operator
    * @return current particle
    */
-  virtual inline Particle *operator->() const final { return &(this->operator*()); }
+  virtual inline ParticleType *operator->() const final { return &(this->operator*()); }
 
   /**
    * Deletes the current particle
+   * @return void
    */
-  virtual void deleteCurrentParticle() = 0;
+  template <typename Dummy = void>
+  inline std::enable_if_t<modifiable, Dummy> deleteCurrentParticle() {
+    deleteCurrentParticleImpl();
+  }
 
   /**
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
    */
   virtual bool isValid() const = 0;
+
+ protected:
+  /**
+   * Implementation of the deletion. The split is needed to disable it.
+   */
+  inline virtual void deleteCurrentParticleImpl() = 0;
 };
 
 namespace internal {
@@ -68,15 +82,16 @@ namespace internal {
  * All implementations of the interface should inherit from this class. It extends the interface just by the clone
  * method, which is needed by the Wrapper.
  * @tparam Particle
+ * @tparam modifiable
  */
-template <class Particle>
-class ParticleIteratorInterfaceImpl : public ParticleIteratorInterface<Particle> {
+template <class Particle, bool modifiable>
+class ParticleIteratorInterfaceImpl : public ParticleIteratorInterface<Particle, modifiable> {
  public:
   /**
    * Clones the current object, should allocate new object and return it.
    * @return the clone
    */
-  virtual ParticleIteratorInterfaceImpl<Particle> *clone() const = 0;
+  virtual ParticleIteratorInterfaceImpl<Particle, modifiable> *clone() const = 0;
 };
 
 }  // namespace internal

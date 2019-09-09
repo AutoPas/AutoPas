@@ -162,16 +162,33 @@ class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return _linkedCells.begin(behavior);
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::begin()
+   */
+  ParticleIteratorWrapper<Particle, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     return _linkedCells.begin(behavior);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  ParticleIteratorWrapper<Particle> getRegionIterator(
+  ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
+   */
+  ParticleIteratorWrapper<Particle, false> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
