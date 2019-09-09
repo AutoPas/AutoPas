@@ -12,9 +12,9 @@ namespace autopas {
  * Enum to specify the behavior of an iterator.
  */
 enum IteratorBehavior {
-  haloOnly,     /// iterate only over halo
-  ownedOnly,    /// iterate only over inner cells
-  haloAndOwned  /// iterate over both halo and inner cells
+  haloOnly,     /// iterate only over halo particles
+  ownedOnly,    /// iterate only over owned particles
+  haloAndOwned  /// iterate over both halo and owned particles
 };
 
 /**
