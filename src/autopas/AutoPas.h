@@ -185,6 +185,13 @@ class AutoPas {
   }
 
   /**
+   * End of the iterator.
+   * This returns a bool, which is false to allow range-based for loops.
+   * @return false
+   */
+  [[nodiscard]] constexpr bool end() const { return false; }
+
+  /**
    * iterate over all particles in a specified region
    * for(auto iter = container.getRegionIterator(lowCorner,
    * highCorner);iter.isValid();++iter)
