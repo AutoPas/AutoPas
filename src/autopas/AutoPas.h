@@ -178,7 +178,7 @@ class AutoPas {
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
    * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
    * particles, or both.
-   * @return iterator to the first particle
+   * @return iterator to the first particle_logicHandler
    */
   autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
     return _logicHandler->begin(behavior);
@@ -190,7 +190,7 @@ class AutoPas {
    */
   autopas::ParticleIteratorWrapper<Particle, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
-    return _logicHandler->begin(behavior);
+    return std::as_const(*_logicHandler).begin(behavior);
   }
 
   /**
