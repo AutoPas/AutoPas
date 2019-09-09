@@ -117,11 +117,11 @@ Once you have defined your particle you can start with functors;
 TODO
 #### Usage
 TODO
+
 ### Ownage
 An AutoPas container normally saves two different types of particles:
-- owned particles: Particles that belong to the container
-- halo particles: Particles that belong to another container, but are needed, to calculate 
-all force interactions. They are often also called ghost particles.
+* owned particles: Particles that belong to the container
+* halo particles: Particles that belong to another container, but are needed, to calculate all force interactions. They are often also called ghost particles.
 
 Note that not all owned particles necessarily have to lie within the boundaries of an AutoPas
 object, see also section Simulation Loop
