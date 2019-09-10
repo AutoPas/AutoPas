@@ -135,12 +135,12 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     return invalidParticles;
   }
 
-  bool isContainerUpdateNeeded() override {
+  bool isContainerUpdateNeeded() const override {
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.isContainerUpdateNeeded not yet implemented");
     return false;
   }
 
-  TraversalSelectorInfo getTraversalSelectorInfo() override {
+  TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(_cellsPerDim, this->getInteractionLength(), {0., 0., 0.});
   }
 
@@ -190,7 +190,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     }
   }
 
-  unsigned long getNumParticles() override {
+  unsigned long getNumParticles() const override {
     unsigned long sum = 0;
     for (size_t index = 0; index < _clusters.size(); index++) {
       sum += _clusters[index].numParticles();

@@ -176,7 +176,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
     return invalidParticles;
   }
 
-  bool isContainerUpdateNeeded() override {
+  bool isContainerUpdateNeeded() const override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
     // @todo: find a sensible value for magic number
@@ -203,7 +203,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
     return outlierFound;
   }
 
-  TraversalSelectorInfo getTraversalSelectorInfo() override {
+  TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getInteractionLength(),
                                  this->getCellBlock().getCellLength());
   }
@@ -279,10 +279,22 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
   internal::CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
 
   /**
-   * returns reference to the data of LinkedCells
+   * @copydoc getCellBlock()
+   * @note const version
+   */
+  const internal::CellBlock3D<ParticleCell> &getCellBlock() const { return _cellBlock; }
+
+  /**
+   * Returns reference to the data of LinkedCells
    * @return the data
    */
   std::vector<ParticleCell> &getCells() { return this->_cells; }
+
+  /**
+   * @copydoc getCells()
+   * @note const version
+   */
+  const std::vector<ParticleCell> &getCells() const { return this->_cells; }
 
  protected:
   /**

@@ -17,8 +17,7 @@
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/inBox.h"
 
-namespace autopas {
-namespace internal {
+namespace autopas::internal {
 /**
  * Class that manages a block of ParticleCells.
  * It is used to resize the cellblock and to handle the conversion of 3d to 1d
@@ -171,7 +170,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param allowedDistance the maximal distance to the position
    * @return a container of references to nearby halo cells
    */
-  std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) {
+  std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) const {
     auto index3d = get3DIndexOfPosition(position);
 
     std::vector<ParticleCell *> closeHaloCells;
@@ -446,5 +445,4 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
     }
   }
 }
-}  // namespace internal
-}  // namespace autopas
+}  // namespace autopas::internal

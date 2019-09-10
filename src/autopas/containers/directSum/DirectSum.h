@@ -121,7 +121,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     return invalidParticles;
   }
 
-  bool isContainerUpdateNeeded() override {
+  bool isContainerUpdateNeeded() const override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
     // @todo: find a sensible value for ???
@@ -135,7 +135,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     return outlierFound;
   }
 
-  TraversalSelectorInfo getTraversalSelectorInfo() override {
+  TraversalSelectorInfo getTraversalSelectorInfo() const override {
     // direct sum technically consists of two cells (owned + halo)
     return TraversalSelectorInfo(
         {2, 0, 0},

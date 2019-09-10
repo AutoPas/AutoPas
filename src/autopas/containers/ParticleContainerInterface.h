@@ -109,7 +109,7 @@ class ParticleContainerInterface {
    * Get the number of particles saved in the container.
    * @return Number of particles in the container.
    */
-  virtual unsigned long getNumParticles() = 0;
+  virtual unsigned long getNumParticles() const = 0;
 
   /**
    * Iterate over all particles using
@@ -222,13 +222,13 @@ class ParticleContainerInterface {
    * pair-wise interactions or the RegionParticleIteraor right now.
    * @return true if an update is needed, false otherwise
    */
-  virtual bool isContainerUpdateNeeded() = 0;
+  virtual bool isContainerUpdateNeeded() const = 0;
 
   /**
    * Generates a traversal selector info for this container.
    * @return Traversal selector info for this container.
    */
-  virtual TraversalSelectorInfo getTraversalSelectorInfo() = 0;
+  virtual TraversalSelectorInfo getTraversalSelectorInfo() const = 0;
 
   /**
    * Generates a list of all traversals that are theoretically applicable to this container.
