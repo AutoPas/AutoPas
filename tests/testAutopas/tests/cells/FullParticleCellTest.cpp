@@ -1,6 +1,8 @@
-//
-// Created by seckler on 10.09.19.
-//
+/**
+ * @file FullParticleCellTest.cpp
+ * @author seckler
+ * @date 10.09.19
+ */
 
 #include "FullParticleCellTest.h"
 #include "../../testingHelpers/commonTypedefs.h"

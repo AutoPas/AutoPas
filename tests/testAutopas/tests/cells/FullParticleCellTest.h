@@ -1,7 +1,7 @@
 /**
- * @file IteratorTest.h
+ * @file FullParticleCellTest.h
  * @author seckler
- * @date 22.07.19
+ * @date 10.09.19
  */
 
 #pragma once
@@ -10,6 +10,4 @@
 #include <tuple>
 #include "autopas/AutoPas.h"
 
-class FullParticleCellTest : public testing::Test {
-
-};
+class FullParticleCellTest : public testing::Test {};
