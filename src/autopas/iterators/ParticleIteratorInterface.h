@@ -41,22 +41,23 @@ class ParticleIteratorInterface {
   virtual ~ParticleIteratorInterface() = default;
 
   /**
-   * access the particle using *iterator
-   * this is the indirection operator
+   * Access the particle using *iterator
+   * This is the indirection operator
    * @return current particle
    */
   virtual ParticleType &operator*() const = 0;
 
   /**
-   * access particle using iterator->
+   * Access particle using iterator->
    *
-   * this is the member of pointer operator
+   * This is the member of pointer operator
    * @return current particle
    */
   virtual inline ParticleType *operator->() const final { return &(this->operator*()); }
 
   /**
-   * Deletes the current particle
+   * Deletes the current particle.
+   * @note This function is disabled for const iterators.
    * @return void
    */
   template <typename Dummy = void>
