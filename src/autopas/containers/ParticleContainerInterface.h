@@ -133,6 +133,15 @@ class ParticleContainerInterface {
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
 
   /**
+   * End expression for all containers, this simply returns false.
+   * Allows range-based for loops.
+   * @return false
+   */
+  constexpr bool end() {
+    return false;
+  }
+
+  /**
    * Iterates over all particle pairs in the container.
    * @param traversal The traversal to use for the iteration.
    */
