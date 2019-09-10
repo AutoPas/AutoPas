@@ -75,7 +75,7 @@ class ParticleIteratorInterface {
   /**
    * Implementation of the deletion. The split is needed to disable it.
    */
-  inline virtual void deleteCurrentParticleImpl() = 0;
+  virtual void deleteCurrentParticleImpl() = 0;
 };
 
 namespace internal {
