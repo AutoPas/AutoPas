@@ -129,6 +129,15 @@ class ParticleContainerInterface {
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const = 0;
 
   /**
+   * @copydoc begin()
+   * @note cbegin will guarantee to return a const_iterator.
+   */
+  virtual ParticleIteratorWrapper<ParticleType, false> cbegin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const final {
+    return begin(behavior);
+  };
+
+  /**
    * Iterate over all particles in a specified region
    * for(auto iter = container.getRegionIterator(lowCorner, highCorner);iter.isValid();++iter) .
    * @param lowerCorner Lower corner of the region

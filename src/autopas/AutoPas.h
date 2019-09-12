@@ -194,6 +194,15 @@ class AutoPas {
   }
 
   /**
+   * @copydoc begin()
+   * @note cbegin will guarantee to return a const_iterator.
+   */
+  autopas::ParticleIteratorWrapper<Particle, false> cbegin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+    return begin(behavior);
+  }
+
+  /**
    * End of the iterator.
    * This returns a bool, which is false to allow range-based for loops.
    * @return false
