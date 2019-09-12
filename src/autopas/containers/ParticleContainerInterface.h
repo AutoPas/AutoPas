@@ -137,7 +137,7 @@ class ParticleContainerInterface {
    * Allows range-based for loops.
    * @return false
    */
-  constexpr bool end() { return false; }
+  constexpr bool end() const { return false; }
 
   /**
    * Iterates over all particle pairs in the container.

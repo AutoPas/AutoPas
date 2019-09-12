@@ -50,7 +50,7 @@ class ParticleCell {
    * Allows range-based for loops.
    * @return false
    */
-  constexpr bool end() { return false; }
+  constexpr bool end() const { return false; }
 
   /**
    * Get the number of particles stored in this cell

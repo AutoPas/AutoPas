@@ -124,7 +124,7 @@ An AutoPas container normally saves two different types of particles:
 * halo particles: Particles that belong to another container, but are needed, to calculate all force interactions. They are often also called ghost particles.
 
 Note that not all owned particles necessarily have to lie within the boundaries of an AutoPas
-object, see also section Simulation Loop
+object, see also section Simulation Loop.
  
 ### Iterating Through Particles
 Iterators to iterate over particle are provided.
