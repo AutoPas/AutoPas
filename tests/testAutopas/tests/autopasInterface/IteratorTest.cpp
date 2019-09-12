@@ -47,9 +47,7 @@ void testAdditionAndIteration(testingTuple options) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
 
-  auto containerOption = std::get<0>(options);
-
-  auto cellSizeOption = std::get<1>(options);
+  auto [containerOption, cellSizeOption] = options;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
@@ -197,9 +195,7 @@ void testRangeBasedIterator(testingTuple options) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
 
-  auto containerOption = std::get<0>(options);
-
-  auto cellSizeOption = std::get<1>(options);
+  auto [containerOption, cellSizeOption] = options;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
