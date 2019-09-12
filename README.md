@@ -175,6 +175,9 @@ enum IteratorBehavior {
 ```
 The default parameter is `haloAndOwned`, which is also used for range-based for loops.
 
+Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a
+`const_iterator`.
+
 ### Simulation Loop
 One simulation loop should always consist of the following phases:
 
