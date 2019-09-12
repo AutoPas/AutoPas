@@ -121,7 +121,7 @@ TODO
 ### Ownage
 An AutoPas container normally saves two different types of particles:
 * owned particles: Particles that belong to the AutoPas instance
-* halo particles: Particles that do not belong to the current AutoPas instance. These can be ghost particles due to, e.g., periodic boundary conditions, or particles belonging to another neighboring AutoPas object (if you split the entire domain over multiple AutoPas objects) 
+* halo particles: Particles that do not belong to the current AutoPas instance. These can be ghost particles due to, e.g., periodic boundary conditions, or particles belonging to another neighboring AutoPas object (if you split the entire domain over multiple AutoPas objects). The halo particles are needed for the correct calculation of the pairwise forces. 
 
 Note that not all owned particles necessarily have to lie within the boundaries of an AutoPas
 object, see also section Simulation Loop.
