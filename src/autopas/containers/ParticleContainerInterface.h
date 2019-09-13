@@ -156,7 +156,7 @@ class ParticleContainerInterface {
   virtual ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const = 0;
-  
+
   /**
    * End expression for all containers, this simply returns false.
    * Allows range-based for loops.
