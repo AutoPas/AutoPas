@@ -72,8 +72,8 @@ int main(int argc, char **argv) {
   double epsilon = 2.0;
   double sigma = 0.4;
 
-  DirectSum<MyMolecule, FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff, skin);
-  LinkedCells<MyMolecule, FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff, skin);
+  DirectSum<FullParticleCell<MyMolecule>> dir(boxMin, boxMax, cutoff, skin);
+  LinkedCells<FullParticleCell<MyMolecule>> lc(boxMin, boxMax, cutoff, skin);
 
   fillSpaceWithGrid<>(dir, boxMin, boxMax, 0.8, numParticles);
   fillSpaceWithGrid<>(lc, boxMin, boxMax, 0.8, numParticles);
@@ -82,15 +82,15 @@ int main(int argc, char **argv) {
 
   Func func(cutoff, epsilon, sigma, 0.0);
 
-  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::aos, false> traversalAoS(&func);
-  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::soa, false> traversalSoA(&func);
-  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> traversalCuda(&func);
-  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalCudaN3(&func);
+  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::aos, false> traversalAoS(&func, cutoff);
+  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::soa, false> traversalSoA(&func, cutoff);
+  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> traversalCuda(&func, cutoff);
+  DirectSumTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalCudaN3(&func, cutoff);
 
   C08Traversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::soa, true> traversalc08N3(
-      lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+      lc.getCellBlock().getCellsPerDimensionWithHalo(), &func, cutoff + skin, lc.getCellBlock().getCellLength());
   C01Traversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> C01Cuda(
-      lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+      lc.getCellBlock().getCellsPerDimensionWithHalo(), &func, cutoff + skin, lc.getCellBlock().getCellLength());
   C01CudaTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, false> traversalLCcuda(
       lc.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   C01CudaTraversal<FullParticleCell<MyMolecule>, Func, DataLayoutOption::cuda, true> traversalLCcudaN3(

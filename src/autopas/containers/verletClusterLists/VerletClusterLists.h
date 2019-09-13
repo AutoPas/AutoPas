@@ -29,7 +29,7 @@ class VerletClustersTraversalInterface;
  * @tparam Particle
  */
 template <class Particle>
-class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<Particle>> {
+class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> {
   /**
    * the index type to access the particle cells
    */
@@ -49,7 +49,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, int clusterSize = 4)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
+      : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _clusterSize(clusterSize),
         _numClusters(0),
         _boxMin(boxMin),
@@ -61,7 +61,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     rebuild(false);
   }
 
-  ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
+  ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
@@ -95,6 +95,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::updateHaloParticle()
+   */
   bool updateHaloParticle(Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
 
   /**
@@ -137,7 +140,9 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return false;
   }
 
-  TraversalSelectorInfo getTraversalSelectorInfo() override { return TraversalSelectorInfo(_cellsPerDim); }
+  TraversalSelectorInfo getTraversalSelectorInfo() override {
+    return TraversalSelectorInfo(_cellsPerDim, this->getInteractionLength(), {0., 0., 0.});
+  }
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(

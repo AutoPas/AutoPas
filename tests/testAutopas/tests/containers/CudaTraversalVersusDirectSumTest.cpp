@@ -27,7 +27,7 @@ std::array<double, 3> CudaTraversalVersusDirectSumTest::randomPosition(const std
 
 void CudaTraversalVersusDirectSumTest::fillContainerWithMolecules(
     unsigned long numMolecules,
-    autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const {
+    autopas::ParticleContainer<autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const {
   srand(42);  // fixed seedpoint
 
   std::array<double, 3> boxMin(cont.getBoxMin()), boxMax(cont.getBoxMax());
@@ -58,7 +58,7 @@ void CudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double r
   autopas::C01CudaTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::cuda, useNewton3>
       traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
   autopas::DirectSumTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, useNewton3>
-      traversalDS(&func);
+      traversalDS(&func, _directSum.getCutoff());
   _directSum.iteratePairwise(&traversalDS);
   _linkedCells.iteratePairwise(&traversalLJ);
 

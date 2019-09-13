@@ -26,6 +26,6 @@ class LinkedCellsVersusDirectSumTest : public AutoPasTestBase {
  protected:
   void test(unsigned long numMolecules, double rel_err_tolerance);
 
-  autopas::DirectSum<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;
-  autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _linkedCells;
+  autopas::DirectSum<autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;
+  autopas::LinkedCells<autopas::FullParticleCell<autopas::MoleculeLJ>> _linkedCells;
 };

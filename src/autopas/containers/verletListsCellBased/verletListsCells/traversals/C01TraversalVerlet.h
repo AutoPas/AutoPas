@@ -31,10 +31,14 @@ class C01TraversalVerlet : public C01BasedTraversal<ParticleCell, PairwiseFuncto
    * Constructor of the c01 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
+   * @param interactionLength cutoff + skin
+   * @param cellLength length of the underlying cells
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit C01TraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor),
+  explicit C01TraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                              double interactionLength, const std::array<double, 3> &cellLength)
+      : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
+                                                                                 interactionLength, cellLength),
         _functor(pairwiseFunctor) {}
 
   void traverseParticlePairs() override;

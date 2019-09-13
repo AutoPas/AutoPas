@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <mutex>
 #include <vector>
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
@@ -33,7 +34,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    * Constructs a new FullParticleCell with the given cell side length.
    * @param cellLength cell side length
    */
-  FullParticleCell(std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
+  FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
 
   /**
    * @copydoc ParticleCell::addParticle()
@@ -69,7 +70,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   void clear() override { _particles.clear(); }
 
   void deleteByIndex(size_t index) override {
-    particlesLock.lock();
+    std::lock_guard<AutoPasLock> lock(particlesLock);
     if (index >= numParticles()) {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
     }
@@ -78,7 +79,6 @@ class FullParticleCell : public ParticleCell<Particle> {
       std::swap(_particles[index], _particles[numParticles() - 1]);
     }
     _particles.pop_back();
-    particlesLock.unlock();
   }
 
   void setCellLength(std::array<double, 3> &cellLength) override { _cellLength = cellLength; }

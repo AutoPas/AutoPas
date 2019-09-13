@@ -28,8 +28,7 @@ class TraversalVerlet
       public VerletTraversalInterface<
           typename VerletListHelpers<typename ParticleCell::ParticleType>::VerletListParticleCellType> {
   using Particle = typename ParticleCell::ParticleType;
-  typedef
-      typename VerletListHelpers<typename ParticleCell::ParticleType>::VerletListParticleCellType LinkedParticleCell;
+  using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:
   /**

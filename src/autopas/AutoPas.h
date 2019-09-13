@@ -185,6 +185,13 @@ class AutoPas {
   }
 
   /**
+   * End of the iterator.
+   * This returns a bool, which is false to allow range-based for loops.
+   * @return false
+   */
+  [[nodiscard]] constexpr bool end() const { return false; }
+
+  /**
    * iterate over all particles in a specified region
    * for(auto iter = container.getRegionIterator(lowCorner,
    * highCorner);iter.isValid();++iter)
@@ -204,7 +211,7 @@ class AutoPas {
    * Returns the number of particles in this container.
    * @return the number of particles in this container.
    */
-  unsigned long getNumberOfParticles() { return _autoTuner->getContainer()->getNumParticles(); }
+  unsigned long getNumberOfParticles() const { return _autoTuner->getContainer()->getNumParticles(); }
 
   /**
    * Returns the type of the currently used container.
@@ -216,13 +223,13 @@ class AutoPas {
    * Get the lower corner of the container.
    * @return lower corner of the container.
    */
-  std::array<double, 3> getBoxMin() { return _autoTuner->getContainer()->getBoxMin(); }
+  std::array<double, 3> getBoxMin() const { return _autoTuner->getContainer()->getBoxMin(); }
 
   /**
    * Get the upper corner of the container.
    * @return upper corner of the container.
    */
-  std::array<double, 3> getBoxMax() { return _autoTuner->getContainer()->getBoxMax(); }
+  std::array<double, 3> getBoxMax() const { return _autoTuner->getContainer()->getBoxMax(); }
 
   /**
    * Set coordinates of the lower corner of the domain.
