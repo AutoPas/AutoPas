@@ -47,9 +47,7 @@ void testAdditionAndIteration(testingTuple options) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
 
-  auto containerOption = std::get<0>(options);
-
-  auto cellSizeOption = std::get<1>(options);
+  auto [containerOption, cellSizeOption] = options;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
@@ -189,9 +187,71 @@ void testAdditionAndIteration(testingTuple options) {
   checkRegionIteratorForAllParticles(autoPas, autopas::IteratorBehavior::haloAndOwned);
 }
 
+/**
+ * Tests the equivalence of the range-based for loop with the normal for loop using isValid
+ * @param containerOption
+ */
+void testRangeBasedIterator(testingTuple options) {
+  // create AutoPas object
+  autopas::AutoPas<Molecule, FMCell> autoPas;
+
+  auto [containerOption, cellSizeOption] = options;
+
+  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
+
+  defaultInit(autoPas);
+
+  constexpr size_t numParticles1dTotal = 10;
+  auto getPossible1DPositions = [&](double min, double max) -> auto {
+    return std::array<double, numParticles1dTotal>{min - cutoff - skin + 1e-10,
+                                                   min - cutoff,
+                                                   min - skin / 4,
+                                                   min,
+                                                   min + skin / 4,
+                                                   max - skin / 4,
+                                                   max,
+                                                   max + skin / 4,
+                                                   max + cutoff,
+                                                   max + cutoff + skin - 1e-10};
+    // ensure that all particles are at most skin away from halo!
+  };
+
+  size_t id = 0;
+  for (auto x : getPossible1DPositions(boxMin[0], boxMax[0])) {
+    for (auto y : getPossible1DPositions(boxMin[1], boxMax[1])) {
+      for (auto z : getPossible1DPositions(boxMin[2], boxMax[2])) {
+        std::array<double, 3> pos{x, y, z};
+        Molecule p(pos, {0., 0., 0.}, id);
+        ++id;
+        // add the two particles!
+        if (autopas::utils::inBox(pos, boxMin, boxMax)) {
+          autoPas.addParticle(p);
+        } else {
+          autoPas.addOrUpdateHaloParticle(p);
+        }
+      }
+    }
+  }
+
+  for (Particle &particle : autoPas) {
+    particle.setF({42., 42., 42.});
+  }
+
+  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+    decltype(iter->getF()) comparison = {42., 42., 42};
+    ASSERT_EQ(iter->getF(), comparison);
+  }
+}
+
 TEST_P(IteratorTest, ParticleAdditionAndIteratorTestNormal) {
   auto options = GetParam();
   testAdditionAndIteration(options);
+}
+
+TEST_P(IteratorTest, RangeBasedIterator) {
+  auto options = GetParam();
+  testRangeBasedIterator(options);
 }
 
 using ::testing::Combine;

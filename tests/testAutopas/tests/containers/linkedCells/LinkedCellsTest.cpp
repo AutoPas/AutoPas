@@ -258,3 +258,25 @@ TEST_F(LinkedCellsTest, testUpdateContainerHalo) {
   auto iter = linkedCells.begin();
   EXPECT_FALSE(iter.isValid());
 }
+
+TEST_F(LinkedCellsTest, testRangeBasedLoop) {
+  EXPECT_EQ(_linkedCells.getNumParticles(), 0);
+
+  std::array<double, 3> r = {2, 2, 2};
+  Particle p(r, {0., 0., 0.}, 0);
+  _linkedCells.addParticle(p);
+
+  std::array<double, 3> r2 = {1.5, 2, 2};
+  Particle p2(r2, {0., 0., 0.}, 1);
+  _linkedCells.addParticle(p2);
+  EXPECT_EQ(_linkedCells.getNumParticles(), 2);
+
+  for (Particle &particle : _linkedCells) {
+    particle.setF({42., 42., 42.});
+  }
+
+  for (auto iter = _linkedCells.begin(); iter.isValid(); ++iter) {
+    decltype(iter->getF()) comparison = {42., 42., 42};
+    ASSERT_EQ(iter->getF(), comparison);
+  }
+}
