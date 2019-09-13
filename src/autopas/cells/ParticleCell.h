@@ -52,6 +52,13 @@ class ParticleCell {
   virtual SingleCellIteratorWrapper<Particle, false> begin() const = 0;
 
   /**
+   * End expression for all cells, this simply returns false.
+   * Allows range-based for loops.
+   * @return false
+   */
+  constexpr bool end() const { return false; }
+
+  /**
    * Get the number of particles stored in this cell
    * @return number of particles stored in this cell
    */

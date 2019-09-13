@@ -93,6 +93,22 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle, m
     }
   }
 
+  /**
+   * Equality operator that compares with a bool.
+   * Needed to be able to compare with AutoPas::end().
+   * @param input normally: AutoPas::end()
+   * @return true if isValid == input, false otherwise.
+   */
+  bool operator==(const bool &input) const { return isValid() == input; }
+
+  /**
+   * Inequality operator that compares with a bool.
+   * Needed to be able to compare with end().
+   * @param input normally: autoPas.end()
+   * @return true if isValid != input, false otherwise.
+   */
+  bool operator!=(const bool &input) const { return not(*this == input); }
+
  private:
   std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle, modifiable>> _particleIterator;
 };
