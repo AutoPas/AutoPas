@@ -68,7 +68,7 @@ class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle
   /**
    * @copydoc autopas::ParticleContainerInterface::getNumParticles()
    */
-  unsigned long getNumParticles() override { return _linkedCells.getNumParticles(); }
+  unsigned long getNumParticles() const override { return _linkedCells.getNumParticles(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::deleteHaloParticles
@@ -102,7 +102,7 @@ class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle
   /**
    * @copydoc autopas::ParticleContainerInterface::isContainerUpdateNeeded()
    */
-  bool isContainerUpdateNeeded() override {
+  bool isContainerUpdateNeeded() const override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
     // TODO: find a sensible value for ???
@@ -162,16 +162,33 @@ class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return _linkedCells.begin(behavior);
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::begin()
+   */
+  ParticleIteratorWrapper<Particle, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     return _linkedCells.begin(behavior);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  ParticleIteratorWrapper<Particle> getRegionIterator(
+  ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
+   */
+  ParticleIteratorWrapper<Particle, false> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
@@ -179,7 +196,7 @@ class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle
    * Get the dimension of the used cellblock including the haloboxes.
    * @return the dimensions of the used cellblock
    */
-  const std::array<std::size_t, 3> &getCellsPerDimension() {
+  const std::array<std::size_t, 3> &getCellsPerDimension() const {
     return _linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
   }
 
@@ -187,7 +204,7 @@ class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle
    * Generates a traversal selector info for this container.
    * @return Traversal selector info for this container.
    */
-  TraversalSelectorInfo getTraversalSelectorInfo() override {
+  TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                  this->getInteractionLength(), this->_linkedCells.getCellBlock().getCellLength());
   }

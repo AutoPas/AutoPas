@@ -56,6 +56,12 @@ class ContainerSelector {
    */
   std::shared_ptr<autopas::ParticleContainer<ParticleCell>> getCurrentContainer();
 
+  /**
+   * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
+   * @return Smartpointer to the optimal container.
+   */
+  std::shared_ptr<const autopas::ParticleContainer<ParticleCell>> getCurrentContainer() const;
+
  private:
   /**
    * Container factory that also copies all particles to the new container
@@ -132,6 +138,16 @@ std::unique_ptr<autopas::ParticleContainer<ParticleCell>> ContainerSelector<Part
 template <class Particle, class ParticleCell>
 std::shared_ptr<autopas::ParticleContainer<ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::getCurrentContainer() {
+  if (_currentContainer == nullptr) {
+    autopas::utils::ExceptionHandler::exception(
+        "ContainerSelector: getCurrentContainer() called before any container was selected!");
+  }
+  return _currentContainer;
+}
+
+template <class Particle, class ParticleCell>
+std::shared_ptr<const autopas::ParticleContainer<ParticleCell>>
+ContainerSelector<Particle, ParticleCell>::getCurrentContainer() const {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(
         "ContainerSelector: getCurrentContainer() called before any container was selected!");

@@ -82,6 +82,14 @@ class AutoTuner {
   }
 
   /**
+   * Getter for the current container.
+   * @return Smart pointer to the current container.
+   */
+  std::shared_ptr<const autopas::ParticleContainer<ParticleCell>> getContainer() const {
+    return _containerSelector.getCurrentContainer();
+  }
+
+  /**
    * Check if a configuration is applicable to the current domain with the given functor.
    * @tparam PairwiseFunctor
    * @param conf

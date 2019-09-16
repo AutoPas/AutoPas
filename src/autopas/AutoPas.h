@@ -178,10 +178,28 @@ class AutoPas {
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
    * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
    * particles, or both.
-   * @return iterator to the first particle
+   * @return iterator to the first particle.
    */
-  autopas::ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
     return _logicHandler->begin(behavior);
+  }
+
+  /**
+   * @copydoc begin()
+   * @note const version
+   */
+  autopas::ParticleIteratorWrapper<Particle, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+    return std::as_const(*_logicHandler).begin(behavior);
+  }
+
+  /**
+   * @copydoc begin()
+   * @note cbegin will guarantee to return a const_iterator.
+   */
+  autopas::ParticleIteratorWrapper<Particle, false> cbegin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+    return begin(behavior);
   }
 
   /**
@@ -201,9 +219,19 @@ class AutoPas {
    * particles, or both.
    * @return iterator to iterate over all particles in a specific region
    */
-  autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
+  autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * @copydoc getRegionIterator()
+   * @note const version
+   */
+  autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
