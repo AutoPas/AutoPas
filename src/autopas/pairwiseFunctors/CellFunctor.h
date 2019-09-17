@@ -42,8 +42,7 @@ class CellFunctor {
 
   /**
    * Process the interactions inside one cell.
-   * @param cell all pairwise interactions of particles inside this cell are
-   * calculated
+   * @param cell All pairwise interactions of particles inside this cell are calculated.
    */
   void processCell(ParticleCell &cell);
 
@@ -51,9 +50,10 @@ class CellFunctor {
    * Process the interactions between the particles of cell1 with particles of cell2.
    * @param cell1
    * @param cell2
-   * @param r Normalized vector connecting centers of cell1 and cell2. If no parameter is given, sorting will be disabled.
+   * @param sortingDirection Normalized vector connecting centers of cell1 and cell2. If no parameter is given, sorting will be
+   * disabled.
    */
-  void processCellPair(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r = {0., 0., 0.});
+  void processCellPair(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection = {0., 0., 0.});
 
  private:
   /**
@@ -74,18 +74,18 @@ class CellFunctor {
    * exploiting newtons third law of motion.
    * @param cell1
    * @param cell2
-   * @param r normalized vector connecting centers of cell1 and cell2
+   * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
-  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r);
+  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
 
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
    * without exploiting newtons third law of motion.
    * @param cell1
    * @param cell2
-   * @param r normalized vector connecting centers of cell1 and cell2
+   * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
-  void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r);
+  void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
 
   void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2);
 
@@ -147,7 +147,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPair(
 
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r) {
+    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   if ((DataLayout == DataLayoutOption::soa &&
        (cell1._particleSoABuffer.getNumParticles() == 0 || cell2._particleSoABuffer.getNumParticles() == 0)) ||
       (DataLayout == DataLayoutOption::aos && (cell1.numParticles() == 0 || cell2.numParticles() == 0))) {
@@ -157,9 +157,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   switch (DataLayout) {
     case DataLayoutOption::aos:
       if (useNewton3) {
-        processCellPairAoSN3(cell1, cell2, r);
+        processCellPairAoSN3(cell1, cell2, sortingDirection);
       } else {
-        processCellPairAoSNoN3(cell1, cell2, r);
+        processCellPairAoSNoN3(cell1, cell2, sortingDirection);
       }
       break;
     case DataLayoutOption::soa:
@@ -230,10 +230,11 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r) {
-  if (cell1.numParticles() + cell2.numParticles() > _startSorting) {
-    SortedCellView<Particle, ParticleCell> baseSorted(cell1, r);
-    SortedCellView<Particle, ParticleCell> outerSorted(cell2, r);
+    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
+  if (cell1.numParticles() + cell2.numParticles() > _startSorting and
+      sortingDirection != std::array<double, 3>{0., 0., 0.}) {
+    SortedCellView<Particle, ParticleCell> baseSorted(cell1, sortingDirection);
+    SortedCellView<Particle, ParticleCell> outerSorted(cell2, sortingDirection);
 
     for (auto &outer : baseSorted._particles) {
       Particle &p1 = *outer.second;
@@ -266,10 +267,11 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                  bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
-                                                        const std::array<double, 3> &r) {
-  if (cell1.numParticles() + cell2.numParticles() > _startSorting) {
-    SortedCellView<Particle, ParticleCell> baseSorted(cell1, r);
-    SortedCellView<Particle, ParticleCell> outerSorted(cell2, r);
+                                                        const std::array<double, 3> &sortingDirection) {
+  if (cell1.numParticles() + cell2.numParticles() > _startSorting and
+      sortingDirection != std::array<double, 3>{0., 0., 0.}) {
+    SortedCellView<Particle, ParticleCell> baseSorted(cell1, sortingDirection);
+    SortedCellView<Particle, ParticleCell> outerSorted(cell2, sortingDirection);
 
     for (auto &outer : baseSorted._particles) {
       Particle &p1 = *outer.second;
