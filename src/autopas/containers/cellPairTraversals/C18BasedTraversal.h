@@ -42,18 +42,20 @@ class C18BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
    * The main traversal of the C18Traversal.
    * @copydetails C01BasedTraversal::c01Traversal()
    */
-  template <typename LoopBody>
+  template <bool allCells = false, typename LoopBody>
   inline void c18Traversal(LoopBody &&loopBody);
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-template <typename LoopBody>
+template <bool allCells, typename LoopBody>
 inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::c18Traversal(
     LoopBody &&loopBody) {
   const std::array<unsigned long, 3> stride = {2ul * this->_overlap[0] + 1ul, 2ul * this->_overlap[1] + 1ul,
                                                this->_overlap[2] + 1ul};
   auto end(this->_cellsPerDimension);
-  end[2] -= this->_overlap[2];
+  if (not allCells) {
+    end[2] -= this->_overlap[2];
+  }
   this->cTraversal(std::forward<LoopBody>(loopBody), end, stride);
 }
 
