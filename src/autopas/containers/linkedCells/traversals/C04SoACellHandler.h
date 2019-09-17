@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <error.h>
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
@@ -139,10 +138,10 @@ class C04SoACellHandler {
    * @param bufferSlice Index of slice in combinationSlice (source)
    * @param cellSlice Index of slice in _baseOffsets (destination)
    */
-  void writeBufferIntoCell(std::vector<ParticleCell> &cells, const unsigned long baseIndex,
+  void writeBufferIntoCell(std::vector<ParticleCell> &cells, unsigned long baseIndex,
                            std::vector<ParticleCell> &combinationSlice,
                            std::vector<std::vector<unsigned long>> &combinationSlicesOffsets,
-                           const unsigned long bufferSlice, const unsigned long cellSlice);
+                           unsigned long bufferSlice, unsigned long cellSlice);
 
   /**
    * Writes cell content into buffer.
@@ -153,10 +152,10 @@ class C04SoACellHandler {
    * @param bufferSlice Index of slice in combinationSlice (destination)
    * @param cellSlice Index of slice in _baseOffsets (source)
    */
-  void writeCellIntoBuffer(const std::vector<ParticleCell> &cells, const unsigned long baseIndex,
+  void writeCellIntoBuffer(const std::vector<ParticleCell> &cells, unsigned long baseIndex,
                            std::vector<ParticleCell> &combinationSlice,
                            std::vector<std::vector<unsigned long>> &combinationSlicesOffsets,
-                           const unsigned int bufferSlice, const unsigned int cellSlice);
+                           unsigned int bufferSlice, unsigned int cellSlice);
 
   /**
    * Creates offset intervals (stored in offset) from cellPairOffsets
