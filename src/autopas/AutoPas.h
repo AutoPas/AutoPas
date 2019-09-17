@@ -40,13 +40,13 @@ class AutoPas {
    * Define the iterator_t for simple use, also from the outside.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using iterator_t = autopas::ParticleIteratorWrapper<Particle, true>;
+  using iterator_t = typename autopas::IteratorTraits<Particle>::iterator_t;
 
   /**
    * Define the const_iterator_t for simple use, also from the outside.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using const_iterator_t = autopas::ParticleIteratorWrapper<Particle, false>;
+  using const_iterator_t = typename autopas::IteratorTraits<Particle>::const_iterator_t;
 
   /**
    * Constructor for the autopas class.
