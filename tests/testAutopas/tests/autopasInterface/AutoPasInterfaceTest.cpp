@@ -224,7 +224,7 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas, Functor *functor,
 
   for (auto &mol : molecules) {
     EXPECT_NEAR(autopas::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144., 1.)
-        << "wrong force calculated.";  // this value should be correct already
+        << "wrong force calculated for particle: " << mol.toString();  // this value should be correct already
   }
 
   EXPECT_NEAR(functor->getUpot(), 16128.1 * numParticles / 2., 1e-5) << "wrong upot calculated";
