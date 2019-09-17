@@ -112,6 +112,9 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * The main traversal of the sliced traversal.
    * @copydetails C01BasedTraversal::c01Traversal()
+   * @tparam allCells Defines whether or not to iterate over all cells with the loop body given as argument. By default
+   * it will not iterate over all cells and instead skip the last few cells, because they will be covered by the base
+   * step.
    */
   template <bool allCells = false, typename LoopBody>
   inline void slicedTraversal(LoopBody &&loopBody);
