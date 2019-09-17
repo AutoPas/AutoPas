@@ -27,7 +27,7 @@ std::array<double, 3> VerletClusterCellsTraversalVersusDirectSumTest::randomPosi
 
 void VerletClusterCellsTraversalVersusDirectSumTest::fillContainerWithMolecules(
     unsigned long numMolecules,
-    autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const {
+    autopas::ParticleContainer<autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const {
   srand(42);  // fixed seedpoint
 
   std::array<double, 3> boxMin(cont.getBoxMin()), boxMax(cont.getBoxMax());
@@ -65,7 +65,7 @@ void VerletClusterCellsTraversalVersusDirectSumTest::test(unsigned long numMolec
   autopas::DirectSumTraversal<FMCell,
                               autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals>,
                               autopas::DataLayoutOption::aos, useNewton3>
-      traversalDS(&funcDS);
+      traversalDS(&funcDS, getCutoff());
 
   funcDS.initTraversal();
   _directSum.iteratePairwise(&traversalDS);

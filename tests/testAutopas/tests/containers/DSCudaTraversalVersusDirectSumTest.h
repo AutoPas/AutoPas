@@ -31,11 +31,11 @@ class DSCudaTraversalVersusDirectSumTest : public AutoPasTestBase {
 
   void fillContainerWithMolecules(
       unsigned long numMolecules,
-      autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const;
+      autopas::ParticleContainer<autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const;
 
   template <bool useNewton3, bool calculateGlobals = false>
   void test(unsigned long numMolecules, double rel_err_tolerance);
 
-  autopas::DirectSum<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;
-  autopas::DirectSum<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _directSumCuda;
+  autopas::DirectSum<autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;
+  autopas::DirectSum<autopas::FullParticleCell<autopas::MoleculeLJ>> _directSumCuda;
 };

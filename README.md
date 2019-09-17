@@ -114,8 +114,18 @@ class SPHParticle : public autopas::Particle {
 ### Functors
 Once you have defined your particle you can start with functors;
 #### Definition
+TODO
 #### Usage
+TODO
 
+### Ownage
+An AutoPas container normally saves two different types of particles:
+* owned particles: Particles that belong to the AutoPas instance
+* halo particles: Particles that do not belong to the current AutoPas instance. These can be ghost particles due to, e.g., periodic boundary conditions, or particles belonging to another neighboring AutoPas object (if you split the entire domain over multiple AutoPas objects). The halo particles are needed for the correct calculation of the pairwise forces. 
+
+Note that not all owned particles necessarily have to lie within the boundaries of an AutoPas
+object, see also section Simulation Loop.
+ 
 ### Iterating Through Particles
 Iterators to iterate over particle are provided.
 The particle can be accesses using `iter->` (`*iter` is also possible).
@@ -127,6 +137,47 @@ for(auto iter = autoPas.begin(); iter.isValid(); ++iter) {
   auto position = iter->getR();
 }
 ```
+For convenience the `end()` method is also implemented for the AutoPas class.
+```C++
+#pragma omp parallel
+for(auto iter = autoPas.begin(); iter != autoPas.end(); ++iter) {
+  // user code:
+  auto position = iter->getR();
+}
+```
+You might also use range-based for loops:
+```C++
+#pragma omp parallel
+for(auto& particle : autoPas) {
+  // user code:
+  auto position = particle.getR();
+}
+```
+
+To iterate over a subset of particles, the `getRegionIterator(lowCorner, highCorner)`
+method can be used:
+```C++
+#pragma omp parallel
+for(auto iter = autoPas.getRegionIterator(lowCorner, highCorner); iter != autoPas.end(); ++iter) {
+  // user code:
+  auto position = iter->getR();
+}
+```
+
+Both `begin()` and `getRegionIterator()` can also take the additional parameter `IteratorBehavior`,
+which indicates over which particles the iteration should be performed.
+```C++
+enum IteratorBehavior {
+  haloOnly,     /// iterate only over halo particles
+  ownedOnly,    /// iterate only over owned particles
+  haloAndOwned  /// iterate over both halo and owned particles
+};
+```
+The default parameter is `haloAndOwned`, which is also used for range-based for loops.
+
+Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a
+`const_iterator`.
+
 ### Simulation Loop
 One simulation loop should always consist of the following phases:
 

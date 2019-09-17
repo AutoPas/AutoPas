@@ -4,6 +4,8 @@
  * @date 14.04.2019
  */
 
+#pragma once
+
 #ifdef AUTOPAS_OPENMP
 #include <omp.h>
 #endif

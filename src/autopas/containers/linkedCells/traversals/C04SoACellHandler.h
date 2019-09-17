@@ -8,7 +8,6 @@
 
 #include <error.h>
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -39,7 +38,7 @@ class C04SoACellHandler {
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    */
   explicit C04SoACellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
-                             const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0},
+                             const double cutoff, const std::array<double, 3> &cellLength,
                              const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
       : _cutoff(cutoff),
         _cellLength(cellLength),
@@ -195,7 +194,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
   for (unsigned long slice = 0; slice < numSlices; slice++) {
     for (auto const &[offset1, interval] : _offsets[(slice + currentSlice) % numSlices]) {
       ParticleCell *cell1 = nullptr;
-      size_t cell1ViewStart;
+      size_t cell1ViewStart = 0;
       size_t cell1ViewEnd;
 
       // special cases (cell1 one is also stored in a combination slice)
@@ -208,7 +207,6 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
         // two cases intervall in current  stripe
         cell1 = &combinationSlice[currentSlice];
         auto stripeView = cell1->_particleSoABuffer.constructView(0, numParticlesBaseCell);
-        cell1ViewStart = 0;
         if (slice == currentSlice) {
           // process stripe with itself
           _pairwiseFunctor->SoAFunctor(stripeView, useNewton3);
@@ -235,12 +233,10 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
           continue;
         }
         cell1 = &combinationSlice[index];
-        cell1ViewStart = 0;
         cell1ViewEnd = combinationSlicesOffsets[index][1];
       } else {
         const unsigned long cellIndex1 = baseIndex + offset1;
         cell1 = &cells[cellIndex1];
-        cell1ViewStart = 0;
         cell1ViewEnd = cell1->_particleSoABuffer.getNumParticles();
       }
 

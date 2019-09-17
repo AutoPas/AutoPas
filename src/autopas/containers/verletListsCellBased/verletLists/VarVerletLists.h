@@ -40,7 +40,7 @@ class VarVerletLists
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
         _neighborList{} {}
 
-  ContainerOption getContainerType() override { return _neighborList.getContainerType(); }
+  ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));

@@ -127,17 +127,36 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::begin()
    */
-  autopas::ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return _autoTuner.getContainer()->begin(behavior);
   }
 
   /**
+   * @copydoc AutoPas::begin()
+   */
+  autopas::ParticleIteratorWrapper<Particle, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+    /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
+    return std::as_const(_autoTuner).getContainer()->begin(behavior);
+  }
+
+  /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
+  autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
+    return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * @copydoc AutoPas::getRegionIterator()
+   */
+  autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(
+      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
@@ -168,7 +187,7 @@ class LogicHandler {
    * Specifies after how many pair-wise traversals the container and their neighbor lists (if they exist) are to be
    * rebuild.
    */
-  unsigned int _containerRebuildFrequency;
+  const unsigned int _containerRebuildFrequency;
 
   /**
    * Reference to the AutoTuner that owns the container, ...

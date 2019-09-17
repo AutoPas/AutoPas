@@ -24,8 +24,8 @@ class TraversalSelectorInfo {
    * @param interactionLength Interaction length (cutoff radius + skin)
    * @param cellLength cell length.
    */
-  explicit TraversalSelectorInfo(const std::array<unsigned long, 3> &dims, const double interactionLength = 1.0,
-                                 const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+  explicit TraversalSelectorInfo(const std::array<unsigned long, 3> &dims, const double interactionLength,
+                                 const std::array<double, 3> &cellLength)
       : dims(dims), interactionLength(interactionLength), cellLength(cellLength) {}
 
   /**

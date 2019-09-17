@@ -117,7 +117,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   const auto [callsNewton3SC, callsNewton3Pair] = eval<true>(dataLayout, container, traversalOption);
   const auto [callsNonNewton3SC, callsNonNewton3Pair] = eval<false>(dataLayout, container, traversalOption);
 
-  if (autopas::DataLayoutOption::soa) {
+  if (dataLayout == autopas::DataLayoutOption::soa) {
     // within one cell no N3 optimization
     EXPECT_EQ(callsNewton3SC, callsNonNewton3SC) << "for containeroption: " << containerOption;
   }

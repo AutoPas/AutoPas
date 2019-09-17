@@ -135,7 +135,7 @@ class ParticleBase {
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
-  virtual std::string toString() {
+  virtual std::string toString() const {
     std::ostringstream text;
     // clang-format off
     text << "Particle"

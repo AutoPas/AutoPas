@@ -13,7 +13,7 @@
 namespace autopas {
 
 /**
- * lennard jones molecule class
+ * Lennard-Jones molecule class
  */
 template <typename floatType>
 class MoleculeLJBase : public ParticleBase<floatType, unsigned long> {
@@ -56,7 +56,7 @@ class MoleculeLJBase : public ParticleBase<floatType, unsigned long> {
   static void setSigma(double sigma);
 
  private:
-  static double EPSILON, SIGMA;
+  inline static double EPSILON, SIGMA;
 };
 
 /// Alias for double precision LJ Moleclue

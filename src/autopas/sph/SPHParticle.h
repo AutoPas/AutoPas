@@ -291,7 +291,7 @@ class SPHParticle : public autopas::Particle {
    * function to serialize an SPHParticle
    * @return serialized vector of bytes (char)
    */
-  std::vector<double> serialize() {
+  std::vector<double> serialize() const {
     std::vector<double> stream;
     for (int i = 0; i < 3; i++) {
       stream.push_back(this->getR()[i]);

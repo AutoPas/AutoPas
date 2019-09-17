@@ -38,7 +38,8 @@ void DirectSumTraversalTest::testTraversal(bool useSoA) {
   }
 
   if (useSoA) {
-    autopas::DirectSumTraversal<FPCell, MFunctor, autopas::DataLayoutOption::soa, true> traversal(&functor);
+    autopas::DirectSumTraversal<FPCell, MFunctor, autopas::DataLayoutOption::soa, true> traversal(
+        &functor, std::numeric_limits<double>::max());
     // domain SoA with itself
     EXPECT_CALL(functor, SoAFunctor(_, true)).Times(1);
     // domain SoA with halo
@@ -47,7 +48,8 @@ void DirectSumTraversalTest::testTraversal(bool useSoA) {
     traversal.setCellsToTraverse(cells);
     traversal.traverseParticlePairs();
   } else {
-    autopas::DirectSumTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(&functor);
+    autopas::DirectSumTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(
+        &functor, std::numeric_limits<double>::max());
     // interactions in main cell + interactions with halo.
     size_t expectedFunctorCalls = numParticles * (numParticles - 1) / 2 + numParticles * numHaloParticles;
     EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((int)expectedFunctorCalls);
@@ -79,7 +81,8 @@ TEST_F(DirectSumTraversalTest, testTraversalCuda) {
     }
   }
 
-  autopas::DirectSumTraversal<FPCell, MFunctor, autopas::DataLayoutOption::cuda, true> traversal(&functor);
+  autopas::DirectSumTraversal<FPCell, MFunctor, autopas::DataLayoutOption::cuda, true> traversal(
+      &functor, 100 /*big enough to contain both particles*/);
   // domain SoA with itself
   EXPECT_CALL(functor, CudaFunctor(_, true)).Times(1);
   // domain SoA with halo

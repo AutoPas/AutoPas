@@ -41,8 +41,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param cellLength cell length.
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                const double interactionLength = 1.0,
-                                const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+                                const double interactionLength, const std::array<double, 3> &cellLength)
       : CellPairTraversal<ParticleCell>(dims),
         _overlap{},
         _dimsPerLength{},

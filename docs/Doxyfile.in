@@ -39,3 +39,5 @@ WARN_NO_PARAMDOC       = YES # default NO
 # Macro expansion settings:
 MACRO_EXPANSION        = YES
 INCLUDE_PATH           = @PROJECT_SOURCE_DIR@/src
+
+IMAGE_PATH             = @PROJECT_SOURCE_DIR@/docs/graphics

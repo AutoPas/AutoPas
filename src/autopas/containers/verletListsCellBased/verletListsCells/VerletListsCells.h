@@ -53,7 +53,7 @@ class VerletListsCells
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _buildTraversal(buildTraversal) {}
 
-  ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }
+  ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
@@ -101,46 +101,36 @@ class VerletListsCells
       }
     }
 
-    typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap, this->getCutoff());
+    typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap,
+                                                           this->getCutoff() + this->getSkin());
 
     switch (_buildTraversal) {
       case c08: {
-        if (useNewton3) {
-          auto buildTraversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                             DataLayoutOption::aos, true>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-
+        autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
+          auto buildTraversal = C08Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&buildTraversal);
-        } else {
-          auto buildTraversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                             DataLayoutOption::aos, false>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&buildTraversal);
-        }
+        });
         break;
       }
       case c18: {
-        if (useNewton3) {
-          auto buildTraversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                             DataLayoutOption::aos, true>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+        autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
+          auto buildTraversal = C18Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&buildTraversal);
-        } else {
-          auto buildTraversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                             DataLayoutOption::aos, false>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&buildTraversal);
-        }
+        });
         break;
       }
       case c01: {
-        if (not useNewton3) {
-          auto buildTraversal = C01Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                             DataLayoutOption::aos, false>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&buildTraversal);
-        } else {
+        if (useNewton3) {
           utils::ExceptionHandler::exception("VerletListsCells::updateVerletLists(): c01 does not support newton3");
+        } else {
+          auto buildTraversal = C01Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, false>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength());
+          this->_linkedCells.iteratePairwise(&buildTraversal);
         }
         break;
       }
@@ -149,10 +139,15 @@ class VerletListsCells
                                            _buildTraversal);
         break;
     }
-
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
   }
+
+  /**
+   * Return the cell length of the underlying linked cells structure, normally needed only for unit tests.
+   * @return
+   */
+  const std::array<double, 3> &getCellLength() const { return this->_linkedCells.getCellBlock().getCellLength(); }
 
  private:
   /// verlet lists for each particle for each cell
