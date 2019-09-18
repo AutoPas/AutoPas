@@ -346,7 +346,9 @@ void testHaloCalculation(testingTuple options) {
   unsigned long id = 0;
   for (int x_diff : {-1, 0, 1}) {
     for (int y_diff : {-1, 0, 1}) {
+      //    for (int y_diff : {0}) {
       for (int z_diff : {-1, 0, 1}) {
+        //      for (int z_diff : {0}) {
         if (x_diff == 0 and y_diff == 0 and z_diff == 0) {
           continue;
         }
