@@ -328,7 +328,7 @@ void testSimulationLoop(testingTuple options) {
  * This test checks the correct calculation of an AutoPas container, where:
  * The container owns 26 particles, that lie with a distance of 0.25 away from the centers of the faces and edges, as
  * well as from the corners of the box. They always lie on a straight line `a` from these points to the center of the
- * box. In addition the container owns 26 halo particles that lie outside of the container on the same line `a` with a
+ * box. Additionally, the container owns 26 halo particles that lie outside of the container on the same line `a` with a
  * distance of 0.5 from the owned particle.
  * No additional halo exchange is simulated in this test.
  * @param options

@@ -352,7 +352,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
   int id = 0;
   for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
     for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
-      for (unsigned long z = 0ul; z <= _overlap[2]; ++z, ++id) {
+      for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
         const unsigned long offset = cellOffsets[ov1_squared * x + ov1 * y];
         // origin
         {
