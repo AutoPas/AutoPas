@@ -43,7 +43,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
     cellEnd = cellIter + getDummyStartbyIndex(0);
     --cellIter;
 
-    this->operator++();
+    operator++();
   }
 
   /**

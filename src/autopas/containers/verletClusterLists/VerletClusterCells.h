@@ -145,26 +145,22 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 
     int xt = (int)((pCopy.getR()[0] - _boxMinWithHalo[0]) * _gridSideLengthReciprocal);
     int yt = (int)((pCopy.getR()[1] - _boxMinWithHalo[1]) * _gridSideLengthReciprocal);
-    for (int x = -1; x <= 1; ++x) {
-      for (int y = -1; y <= 1; ++y) {
-        size_t index = xt + yt * _cellsPerDim[0];
-        if (0 <= index && index < this->_cells.size()) {
-          double zpos = pCopy.getR()[2];
-          zpos -= this->getSkin();
+    size_t index = xt + yt * _cellsPerDim[0];
+    if (index < this->_cells.size()) {
+      double zpos = pCopy.getR()[2];
+      zpos -= this->getSkin();
 
-          auto lower = std::lower_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(),
-                                        zpos, [](const Particle &a, const double &b) { return a.getR()[2] < b; });
+      auto lower = std::lower_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(), zpos,
+                                    [](const Particle &a, const double &b) { return a.getR()[2] < b; });
 
-          zpos += 2 * this->getSkin();
-          auto upper = std::upper_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(),
-                                        zpos, [](const double &a, const Particle &b) { return a < b.getR()[2]; });
+      zpos += 2 * this->getSkin();
+      auto upper = std::upper_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(), zpos,
+                                    [](const double &a, const Particle &b) { return a < b.getR()[2]; });
 
-          for (; lower != upper; ++lower) {
-            if (pCopy.getID() == lower->getID() and !lower->isOwned()) {
-              *lower = pCopy;
-              return true;
-            }
-          }
+      for (; lower != upper; ++lower) {
+        if (pCopy.getID() == lower->getID() and !lower->isOwned()) {
+          *lower = pCopy;
+          return true;
         }
       }
     }
@@ -284,6 +280,10 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    // Special iterator requires valid structure
+    if (not _isValid) {
+      rebuild();
+    }
     return ParticleIteratorWrapper<Particle, true>(
         new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>, true>(
             &this->_cells, &_dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior));
@@ -299,19 +299,23 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    // Special iterator requires valid structure
+    if (not _isValid) {
+      rebuild();
+    }
     int xmin = (int)((lowerCorner[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
     int ymin = (int)((lowerCorner[1] - _boxMinWithHalo[1] - this->getSkin()) * _gridSideLengthReciprocal);
 
-    int xlength =
-        ((int)((higherCorner[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
-    int ylength =
-        ((int)((higherCorner[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) + 1;
+    size_t xlength =
+        ((size_t)((higherCorner[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
+    size_t ylength =
+        ((size_t)((higherCorner[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) + 1;
 
     std::vector<size_t> cellsOfInterest(xlength * ylength);
 
     auto cellsOfInterestIterator = cellsOfInterest.begin();
     int start = xmin + ymin * _cellsPerDim[0];
-    for (int i = 0; i < ylength; ++i) {
+    for (size_t i = 0; i < ylength; ++i) {
       std::iota(cellsOfInterestIterator, cellsOfInterestIterator + xlength, start + i * _cellsPerDim[0]);
       cellsOfInterestIterator += xlength;
     }

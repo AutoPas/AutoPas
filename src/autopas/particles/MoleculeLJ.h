@@ -15,10 +15,9 @@ namespace autopas {
 /**
  * Lennard-Jones molecule class
  */
-template <typename floatType>
-class MoleculeLJBase : public ParticleBase<floatType, unsigned long> {
+class MoleculeLJ : public Particle {
  public:
-  MoleculeLJBase() = default;
+  MoleculeLJ() = default;
 
   /**
    * constructor of a lennard jones molecule
@@ -26,40 +25,36 @@ class MoleculeLJBase : public ParticleBase<floatType, unsigned long> {
    * @param v velocity of the molecule
    * @param id id of the molecule
    */
-  explicit MoleculeLJBase(std::array<double, 3> r, std::array<double, 3> v, unsigned long id)
-      : ParticleBase<floatType, unsigned long>(r, v, id) {}
+  explicit MoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {}
 
-  virtual ~MoleculeLJBase() = default;
+  ~MoleculeLJ() override = default;
 
   /**
    * get epsilon (characteristic energy of the lj potential)
    * @return epsilon
    */
-  static double getEpsilon();
+  static double getEpsilon() { return EPSILON; }
 
   /**
    * set epsilon (characteristic energy of the lj potential)
    * @param epsilon
    */
-  static void setEpsilon(double epsilon);
+  static void setEpsilon(double epsilon) { EPSILON = epsilon; }
 
   /**
    * get sigma (characteristic length of the lj potential)
    * @return sigma
    */
-  static double getSigma();
+  static double getSigma() { return SIGMA; }
 
   /**
    * set sigma (characteristic length of the lj potential)
    * @param sigma
    */
-  static void setSigma(double sigma);
+  static void setSigma(double sigma) { SIGMA = sigma; }
 
  private:
   inline static double EPSILON, SIGMA;
 };
-
-/// Alias for double precision LJ Moleclue
-typedef MoleculeLJBase<double> MoleculeLJ;
 
 }  // namespace autopas

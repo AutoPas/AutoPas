@@ -52,22 +52,22 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        verlet-c18                  (AoS, newton3 <=> noNewton3)         = 2
   //                        verlet-c01                  (AoS, noNewton3)                     = 1
   // VerletClusterLists:    verlet-clusters             (AoS <=> SoA, noNewton3)             = 2
-  //                        verlet-clusters-coloring    (AoS, newton3 <=> noNewton3)         = 2
+  //                        verlet-clusters-coloring    (AoS, newton3 <=> noNewton3)         = 4
   // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3) = 4
   // VerletClusterCells:    verlet-cluster-cells        (AoS , newton3 <=> noNewton3) 		 = 2
   //                                                                                    --------
-  //                                                                                          44
+  //                                                                                          46
   // Additional with cuda
   // Direct Sum:            directSum traversal         (Cuda, newton3 <=> noNewton3) 		 = 2
   // LinkedCells:           c01Cuda traversal           (Cuda, newton3 <=> noNewton3) 		 = 2
   // VerletClusterCells:    verlet-cluster-cells traversal (Cuda, newton3 <=> noNewton3)     = 2
   //                                                                                    --------
-  //                                                                                          50
+  //                                                                                          52
 
 #ifndef AUTOPAS_CUDA
-  const size_t expectedNumberOfIterations = 44 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 46 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 50 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 52 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;
@@ -78,12 +78,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       collectedSamples = 0;
       doRebuild = true;
     }
-
     stillTuning = autoTuner.iteratePairwise(&functor, doRebuild);
     doRebuild = false;
     ++iterations;
     ++collectedSamples;
     auto currentConfig = autoTuner.getCurrentConfig();
+
     if (stillTuning) {
       if (collectedSamples == 1) {
         EXPECT_NE(currentConfig, prevConfig)
