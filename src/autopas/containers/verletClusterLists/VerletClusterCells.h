@@ -291,9 +291,16 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 
   ParticleIteratorWrapper<Particle, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    return ParticleIteratorWrapper<Particle, false>(
-        new internal::ParticleIterator<Particle, FullParticleCell<Particle>, false>(&this->_cells, 0, nullptr,
-                                                                                    behavior));
+    // special iterator can only be used if valid
+    if (_isValid) {
+      return ParticleIteratorWrapper<Particle, false>(
+          new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>, false>(
+              &this->_cells, _dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior));
+    } else {
+      return ParticleIteratorWrapper<Particle, false>(
+          new internal::ParticleIterator<Particle, FullParticleCell<Particle>, false>(&this->_cells, 0, nullptr,
+                                                                                      behavior));
+    }
   }
 
   ParticleIteratorWrapper<Particle, true> getRegionIterator(
@@ -345,10 +352,16 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
       std::iota(cellsOfInterestIterator, cellsOfInterestIterator + xlength, start + i * _cellsPerDim[0]);
       cellsOfInterestIterator += xlength;
     }
-
-    return ParticleIteratorWrapper<Particle, false>(
-        new internal::RegionParticleIterator<Particle, FullParticleCell<Particle>, false>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, nullptr, behavior));
+    if (_isValid) {
+      return ParticleIteratorWrapper<Particle, false>(
+          new internal::VerletClusterCellsRegionParticleIterator<Particle, FullParticleCell<Particle>, false>(
+              &this->_cells, _dummyStarts, lowerCorner, higherCorner, cellsOfInterest,
+              _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior, this->getSkin()));
+    } else {
+      return ParticleIteratorWrapper<Particle, false>(
+          new internal::RegionParticleIterator<Particle, FullParticleCell<Particle>, false>(
+              &this->_cells, lowerCorner, higherCorner, cellsOfInterest, nullptr, behavior));
+    }
   }
 
   /**

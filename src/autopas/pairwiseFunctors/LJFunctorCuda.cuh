@@ -27,7 +27,7 @@ class LJFunctorCudaSoA : public FunctorCudaSoA<floatType> {
    * @posZ z positions of the particles
    */
   LJFunctorCudaSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ)
-      : _size(size), _posX(posX), _posY(posY), _posZ(posZ), _forceX(NULL), _forceY(NULL), _forceZ(NULL) {}
+      : _size(size), _posX(posX), _posY(posY), _posZ(posZ), _forceX(nullptr), _forceY(nullptr), _forceZ(nullptr) {}
 
   /**
    * Constructor for only positions

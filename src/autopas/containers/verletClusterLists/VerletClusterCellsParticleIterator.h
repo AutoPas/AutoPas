@@ -25,6 +25,8 @@ namespace internal {
 template <class Particle, class ParticleCell, bool modifiable>
 class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiable> {
   using CellVecType = std::conditional_t<modifiable, std::vector<ParticleCell>, const std::vector<ParticleCell>>;
+  using CellIteratorType = std::conditional_t<modifiable, typename std::vector<Particle>::iterator,
+                                              typename std::vector<Particle>::const_iterator>;
   using DummyStartsType = std::conditional_t<modifiable, std::vector<size_t> *, const std::vector<size_t>>;
   using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
 
@@ -116,6 +118,11 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
     return false;
   }
 
+  /**
+   * Returns dummy start for given cell
+   * @param index of cell
+   * @return first index with dummy particle
+   */
   size_t getDummyStartbyIndex(size_t index) {
     if constexpr (modifiable)
       return (*_dummyStarts)[index];
@@ -139,11 +146,11 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
   /**
    * Current iterator within a cell
    */
-  typename std::vector<Particle>::iterator cellIter;
+  CellIteratorType cellIter;
   /**
    * end for the current cell
    */
-  typename std::vector<Particle>::iterator cellEnd;
+  CellIteratorType cellEnd;
 
   /**
    * The behavior of the iterator.

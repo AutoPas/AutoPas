@@ -34,9 +34,9 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
         _posX(posX),
         _posY(posY),
         _posZ(posZ),
-        _forceX(NULL),
-        _forceY(NULL),
-        _forceZ(NULL),
+        _forceX(nullptr),
+        _forceY(nullptr),
+        _forceZ(nullptr),
         _owned(owned),
         _globals(globals) {}
 
