@@ -102,4 +102,22 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
   std::unique_ptr<autopas::internal::ParticleIteratorInterfaceImpl<Particle, modifiable>> _particleIterator;
 };
 
+/**
+ * Provides type aliases for iterator types, to provide a fixed interface that is not influenced by changes in the
+ * iterator classes.
+ * @tparam Particle The type of the particle.
+ */
+template <typename Particle>
+class IteratorTraits {
+ public:
+  /**
+   * Alias for normal (non-const) iterator.
+   */
+  using iterator_t = autopas::ParticleIteratorWrapper<Particle, true>;
+  /**
+   * Alias for const iterator.
+   */
+  using const_iterator_t = autopas::ParticleIteratorWrapper<Particle, false>;
+};
+
 }  // namespace autopas
