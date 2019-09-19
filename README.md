@@ -183,7 +183,7 @@ One simulation loop should always consist of the following phases:
 
 1. Updating the Container, which returns a vector of all invalid == leaving particles!
    ```C++
-   auto invalidParticles = autoPas.updateContainer();
+   auto [invalidParticles, updated] = autoPas.updateContainer();
    ```
 
 2. Handling the leaving particles
