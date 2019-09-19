@@ -209,7 +209,8 @@ One simulation loop should always consist of the following phases:
    autoPas.iteratePairwise(functor);
    ```
 
-In some iterations step 1. will return an empty list of invalid particles to benefit of not rebuilding the containers and the associated neighbor lists.
+In some iterations step 1. will return a pair of an empty list of invalid particles and false.
+In this case the container was not rebuild to benefit of not rebuilding the containers and the associated neighbor lists.
 
 ### Using multiple functors
 
