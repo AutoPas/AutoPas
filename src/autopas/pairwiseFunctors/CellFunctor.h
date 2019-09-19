@@ -50,8 +50,8 @@ class CellFunctor {
    * Process the interactions between the particles of cell1 with particles of cell2.
    * @param cell1
    * @param cell2
-   * @param sortingDirection Normalized vector connecting centers of cell1 and cell2. If no parameter or {0, 0, 0} is given, sorting
-   * will be disabled.
+   * @param sortingDirection Normalized vector connecting centers of cell1 and cell2. If no parameter or {0, 0, 0} is
+   * given, sorting will be disabled.
    */
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2,
                        const std::array<double, 3> &sortingDirection = {0., 0., 0.});
