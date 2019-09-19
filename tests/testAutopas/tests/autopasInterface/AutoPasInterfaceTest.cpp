@@ -394,8 +394,11 @@ TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
   }
 }
 
+/**
+ * This test checks the correct behavior of the AutoPas interface with respect to halo calculations, see also the
+ * comments of testHaloCalculation() for a more detailed description.
+ */
 TEST_P(AutoPasInterfaceTest, HaloCalculationTest) {
-  // this test checks the correct behavior of the autopas interface.
   auto options = GetParam();
   try {
     testHaloCalculation(options);
