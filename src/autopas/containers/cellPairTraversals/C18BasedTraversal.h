@@ -40,10 +40,15 @@ class C18BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
  protected:
   /**
    * The main traversal of the C18Traversal.
+   *
    * @copydetails C01BasedTraversal::c01Traversal()
+   *
    * @tparam allCells Defines whether or not to iterate over all cells with the loop body given as argument. By default
-   * it will not iterate over all cells and instead skip the last few cells, because they will be covered by the base
-   * step.
+   * (allCells=false) it will not iterate over all cells and instead skip the last few cells, because they will be
+   * covered by the base step. If you plan to use the default base step of the traversal on this function, use
+   * allCells=false, if you plan to just iterate over all cells, e.g., to iterate over verlet lists saved within the
+   * cells, use allCells=true. For the c18 step if allCells is false, iteration will not occur over the last layer of
+   * cells (for overlap=1) (in x, y and z direction).
    */
   template <bool allCells = false, typename LoopBody>
   inline void c18Traversal(LoopBody &&loopBody);
