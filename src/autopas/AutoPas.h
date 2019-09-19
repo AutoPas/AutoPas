@@ -37,6 +37,18 @@ template <class Particle, class ParticleCell>
 class AutoPas {
  public:
   /**
+   * Define the iterator_t for simple use, also from the outside.
+   * Helps to, e.g., wrap the AutoPas iterators
+   */
+  using iterator_t = typename autopas::IteratorTraits<Particle>::iterator_t;
+
+  /**
+   * Define the const_iterator_t for simple use, also from the outside.
+   * Helps to, e.g., wrap the AutoPas iterators
+   */
+  using const_iterator_t = typename autopas::IteratorTraits<Particle>::const_iterator_t;
+
+  /**
    * Constructor for the autopas class.
    * @param logOutputStream Stream where log output should go to. Default is std::out.
    */
@@ -180,7 +192,7 @@ class AutoPas {
    * particles, or both.
    * @return iterator to the first particle.
    */
-  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
     return _logicHandler->begin(behavior);
   }
 
@@ -188,8 +200,7 @@ class AutoPas {
    * @copydoc begin()
    * @note const version
    */
-  autopas::ParticleIteratorWrapper<Particle, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     return std::as_const(*_logicHandler).begin(behavior);
   }
 
@@ -197,10 +208,7 @@ class AutoPas {
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  autopas::ParticleIteratorWrapper<Particle, false> cbegin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
-    return begin(behavior);
-  }
+  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const { return begin(behavior); }
 
   /**
    * End of the iterator.
@@ -219,9 +227,8 @@ class AutoPas {
    * particles, or both.
    * @return iterator to iterate over all particles in a specific region
    */
-  autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+                               IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
     return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
@@ -229,9 +236,8 @@ class AutoPas {
    * @copydoc getRegionIterator()
    * @note const version
    */
-  autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+  const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+                                     IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
