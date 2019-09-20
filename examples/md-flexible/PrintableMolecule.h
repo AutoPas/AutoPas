@@ -56,6 +56,6 @@ class PrintableMoleculeBase : public autopas::MoleculeLJ {
    * Override the type for the soa storage.
    * empty if compiled without Cuda Support
    */
-  typedef typename autopas::utils::CudaSoAType<>::Type CudaDeviceArraysType;
+  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
 #endif
 };
