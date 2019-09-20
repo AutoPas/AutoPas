@@ -47,6 +47,6 @@ if (AUTOPAS_ENABLE_CUDA)
             -pg>
             -gencode
             arch=compute_${CUDA_COMPUTE_CAPABILITY},code=sm_${CUDA_COMPUTE_CAPABILITY}
-            $<$<BOOL:${OPENMP}>:-Xcompiler>>
+            $<$<BOOL:${AUTOPAS_OPENMP}>:-Xcompiler>>
     )
 endif ()
