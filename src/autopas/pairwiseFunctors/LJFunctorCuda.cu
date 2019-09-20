@@ -104,7 +104,7 @@ __device__ inline double getInfinity<double>() {
 
 /**
  * Calculates the lennard-jones interactions between two particles
- * @tparam floatType flaot number type used in this function
+ * @tparam floatType float number type used in this function
  * @param i position of particle i
  * @param j position of particle j
  * @param fi force of particle i
