@@ -21,7 +21,7 @@
 namespace autopas {
 
 /**
- * This Traversal is used to interact all clusters in VerletClusterCluster Container
+ * This Traversal is used to interact all clusters in VerletClusterCluster Container.
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
