@@ -103,7 +103,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         if (strArg.find("avx") != string::npos) {
           functorOption = lj12_6_AVX;
         } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
-          if (strArg.find("lobals") != string::npos) {
+          if (strArg.find("lobal") != string::npos) {
             functorOption = lj12_6_Globals;
           } else {
             functorOption = lj12_6;
