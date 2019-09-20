@@ -58,7 +58,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
       while (cellIter == cellEnd) {
         ++cellId;
 
-        if (not isValid()) {
+        if (not cellId < _vectorOfCells->size()) {
           return *this;
         }
         cellIter = (*_vectorOfCells)[cellId]._particles.begin();
@@ -158,7 +158,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
   IteratorBehavior _behavior;
 
   /**
-   * Offset to add to set particle aoutside domain
+   * Offset to add to set particle outside domain
    */
   double _offsetToDummy;
 };

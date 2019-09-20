@@ -71,7 +71,7 @@ static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
 
 /**
  * Lists all traversal options applicable for the Verlet Cluster Cells container.
- * @return set of all applicable traversal options.
+ * @return Set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVCCCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::verletClusterCellsTraversal};

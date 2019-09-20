@@ -19,7 +19,7 @@
 using namespace std;
 using namespace autopas;
 
-typedef PrintableMoleculeBase<double> PrintableMolecule;
+using PrintableMolecule = PrintableMoleculeBase<double>;
 
 /**
  * Prints position and forces of all particles in the autopas object.

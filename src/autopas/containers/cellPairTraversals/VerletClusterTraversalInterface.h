@@ -14,7 +14,7 @@ namespace autopas {
 /**
  * This Traversal is used to interact all clusters in VerletClusterCluster Container
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell The type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam DataLayout
  * @tparam useNewton3
@@ -25,7 +25,7 @@ class VerletClusterTraversalInterface {
 
  public:
   /**
-   * rebuilds the Traversal and creates the neighbor lists
+   * Rebuilds the Traversal and creates the neighbor lists.
    * @param dims dimension of the container
    * @param cells in the container
    * @param boundingBoxes of the cells
