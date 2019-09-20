@@ -45,7 +45,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
     cellEnd = cellIter + getDummyStartbyIndex(0);
     --cellIter;
 
-    operator++();
+    VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>::operator++();
   }
 
   /**
@@ -203,7 +203,7 @@ class VerletClusterCellsRegionParticleIterator
     this->cellIter = (*this->_vectorOfCells)[this->cellId]._particles.begin();
     this->cellEnd = this->cellIter + this->getDummyStartbyIndex(this->cellId);
     --this->cellIter;
-    operator++();
+    VerletClusterCellsRegionParticleIterator<Particle, ParticleCell, modifiable>::operator++();
   }
 
   /**

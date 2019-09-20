@@ -336,19 +336,19 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   ParticleIteratorWrapper<Particle, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    int xmin = (int)((lowerCorner[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
-    int ymin = (int)((lowerCorner[1] - _boxMinWithHalo[1] - this->getSkin()) * _gridSideLengthReciprocal);
+    size_t xmin = (int)((lowerCorner[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
+    size_t ymin = (int)((lowerCorner[1] - _boxMinWithHalo[1] - this->getSkin()) * _gridSideLengthReciprocal);
 
-    int xlength =
-        ((int)((higherCorner[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
-    int ylength =
-        ((int)((higherCorner[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) + 1;
+    size_t xlength =
+        (((higherCorner[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
+    size_t ylength =
+        (((higherCorner[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) + 1;
 
     std::vector<size_t> cellsOfInterest(xlength * ylength);
 
     auto cellsOfInterestIterator = cellsOfInterest.begin();
     int start = xmin + ymin * _cellsPerDim[0];
-    for (int i = 0; i < ylength; ++i) {
+    for (size_t i = 0; i < ylength; ++i) {
       std::iota(cellsOfInterestIterator, cellsOfInterestIterator + xlength, start + i * _cellsPerDim[0]);
       cellsOfInterestIterator += xlength;
     }
