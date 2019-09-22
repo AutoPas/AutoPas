@@ -83,12 +83,12 @@ class C08CellHandler {
   const double _interactionLength;
 
   /**
-   * cell length in CellBlock3D.
+   * Cell length in CellBlock3D.
    */
   const std::array<double, 3> _cellLength;
 
   /**
-   * overlap of interacting cells. Array allows asymmetric cell sizes.
+   * Overlap of interacting cells. Array allows asymmetric cell sizes.
    */
   const std::array<unsigned long, 3> _overlap;
 };
