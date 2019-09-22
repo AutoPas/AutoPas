@@ -22,7 +22,7 @@ namespace autopas {
  *
  * If a different Particle class should be used with AutoPas this class must be used as a base to build your own
  * Particle class.
- * @tparam floating point type to be used for the SoAs
+ * @tparam Floating point type to be used for the SoAs.
  */
 template <typename floatType, typename idType>
 class ParticleBase {
