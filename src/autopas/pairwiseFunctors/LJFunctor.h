@@ -267,8 +267,6 @@ class LJFunctor
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
     // Checks whether the cells are halo cells.
-    // This check cannot be done if _lowCornerSoA and _highCornerSoA are not set. So we do this only if calculateGlobals
-    // is defined. (as of 23.11.2018)
     if (calculateGlobals) {
       isHaloCell1 = ownedPtr1[0] ? false : true;
       isHaloCell2 = ownedPtr2[0] ? false : true;
@@ -629,7 +627,7 @@ class LJFunctor
    * Get the potential Energy
    * @return the potential Energy
    */
-  SoAFloatPrecision getUpot() {
+  double getUpot() {
     if (not calculateGlobals) {
       throw utils::ExceptionHandler::AutoPasException(
           "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
@@ -645,7 +643,7 @@ class LJFunctor
    * Get the virial
    * @return the virial
    */
-  SoAFloatPrecision getVirial() {
+  double getVirial() {
     if (not calculateGlobals) {
       throw utils::ExceptionHandler::AutoPasException(
           "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "

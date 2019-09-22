@@ -34,7 +34,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
  public:
   /**
    * Constructor of the VerletClusterLists class.
-   * The neighbor lists are build using a estimated density.
+   * The neighbor lists are build using an estimated density.
    * The box is divided into cuboids with roughly the
    * same side length. The rebuildFrequency should be chosen, s.t. the particles do
    * not move more than a distance of skin/2 between two rebuilds of the lists.
@@ -53,16 +53,6 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
         _isValid(false) {
     this->_cells.resize(1);
     _dummyStarts = {0};
-  }
-
-  /**
-   * Lists all traversal options applicable for the Verlet Lists container.
-   * @return Vector of all applicable traversal options.
-   */
-  static const std::vector<TraversalOption> &allVCLApplicableTraversals() {
-    // traversal not used but prevents usage of newton3
-    static const std::vector<TraversalOption> v{TraversalOption::verletClusterCellsTraversal};
-    return v;
   }
 
   ContainerOption getContainerType() const override { return ContainerOption::verletClusterCells; }
@@ -105,6 +95,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   void addParticle(Particle &p) override {
     if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
+      // removes dummy particles in first cell
       this->_cells[0].resize(_dummyStarts[0]);
       // add particle somewhere, because lists will be rebuild anyways
       this->_cells[0].addParticle(p);
@@ -122,6 +113,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     Particle p_copy = haloParticle;
     if (autopas::utils::notInBox(p_copy.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
+      // removes dummy particles in first cell
       this->_cells[0].resize(_dummyStarts[0]);
       p_copy.setOwned(false);
       // add particle somewhere, because lists will be rebuild anyways
@@ -213,16 +205,20 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
    * @copydoc VerletLists::deleteHaloParticles
    */
   void deleteHaloParticles() override {
+    _isValid = false;
     for (size_t i = 0; i < this->_cells.size(); ++i) {
       for (size_t j = 0; j < _dummyStarts[i];) {
         if (not this->_cells[i]._particles[j].isOwned()) {
-          // move to dummy particles
+          // set position outside the domain with other dummy particles
           auto pos = this->_cells[i]._particles[j].getR();
           pos[0] += _boxMaxWithHalo[2] + 8 * this->getInteractionLength();
           this->_cells[i]._particles[j].setR(pos);
+          // one more dummy particle
           --_dummyStarts[i];
+          // swap last non dummy particle with the halo particle to remove
           std::swap(this->_cells[i]._particles[j], this->_cells[i]._particles[_dummyStarts[i]]);
         } else {
+          // move on if no halo particle was removed
           ++j;
         }
       }
@@ -256,13 +252,14 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
       size_t pid = 0;
       const size_t end = (_boundingBoxes[i].size() > 0) ? _boundingBoxes[i].size() - 1 : 0;
 
-      for (size_t cid = 0; cid < end; ++cid)
+      for (size_t cid = 0; cid < end; ++cid) {
         for (unsigned int pic = 0; pic < _clusterSize; ++pic) {
           if (not particleInSkinOfBox(_boundingBoxes[i][cid], this->_cells[i][pid])) {
             return true;
           }
           ++pid;
         }
+      }
       for (unsigned int pic = 0; pic < _clusterSize && pid < _dummyStarts[i]; ++pic) {
         if (not particleInSkinOfBox(_boundingBoxes[i][_boundingBoxes[i].size() - 1], this->_cells[i][pid])) {
           return true;
@@ -280,38 +277,29 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    // Special iterator requires valid structure
-    if (not _isValid) {
-      rebuild();
-    }
     return ParticleIteratorWrapper<Particle, true>(
         new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>, true>(
-            &this->_cells, &_dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior));
+            &this->_cells, _dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior));
   }
 
   ParticleIteratorWrapper<Particle, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    // special iterator can only be used if valid
-    if (_isValid) {
-      return ParticleIteratorWrapper<Particle, false>(
-          new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>, false>(
-              &this->_cells, _dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior));
-    } else {
-      return ParticleIteratorWrapper<Particle, false>(
-          new internal::ParticleIterator<Particle, FullParticleCell<Particle>, false>(&this->_cells, 0, nullptr,
-                                                                                      behavior));
-    }
+    return ParticleIteratorWrapper<Particle, false>(
+        new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>, false>(
+            &this->_cells, _dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior));
   }
 
   ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    // Special iterator requires valid structure
+    // Special iterator requires sorted cells
     if (not _isValid) {
       rebuild();
     }
-    int xmin = (int)((lowerCorner[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
-    int ymin = (int)((lowerCorner[1] - _boxMinWithHalo[1] - this->getSkin()) * _gridSideLengthReciprocal);
+
+    // Find cells intersecting the search region
+    size_t xmin = (size_t)((lowerCorner[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
+    size_t ymin = (size_t)((lowerCorner[1] - _boxMinWithHalo[1] - this->getSkin()) * _gridSideLengthReciprocal);
 
     size_t xlength =
         ((size_t)((higherCorner[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
@@ -329,35 +317,43 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 
     return ParticleIteratorWrapper<Particle, true>(
         new internal::VerletClusterCellsRegionParticleIterator<Particle, FullParticleCell<Particle>, true>(
-            &this->_cells, &_dummyStarts, lowerCorner, higherCorner, cellsOfInterest,
+            &this->_cells, _dummyStarts, lowerCorner, higherCorner, cellsOfInterest,
             _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior, this->getSkin()));
   }
 
   ParticleIteratorWrapper<Particle, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    size_t xmin = (int)((lowerCorner[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
-    size_t ymin = (int)((lowerCorner[1] - _boxMinWithHalo[1] - this->getSkin()) * _gridSideLengthReciprocal);
-
-    size_t xlength =
-        (((higherCorner[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
-    size_t ylength =
-        (((higherCorner[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) + 1;
-
-    std::vector<size_t> cellsOfInterest(xlength * ylength);
-
-    auto cellsOfInterestIterator = cellsOfInterest.begin();
-    int start = xmin + ymin * _cellsPerDim[0];
-    for (size_t i = 0; i < ylength; ++i) {
-      std::iota(cellsOfInterestIterator, cellsOfInterestIterator + xlength, start + i * _cellsPerDim[0]);
-      cellsOfInterestIterator += xlength;
-    }
+    // Special iterator requires sorted cells.
+    // Otherwise all cells are traversed with the general Iterator.
     if (_isValid) {
+      // Find cells intersecting the search region
+      size_t xmin = (size_t)((lowerCorner[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
+      size_t ymin = (size_t)((lowerCorner[1] - _boxMinWithHalo[1] - this->getSkin()) * _gridSideLengthReciprocal);
+
+      size_t xlength =
+          (((higherCorner[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
+      size_t ylength =
+          (((higherCorner[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) + 1;
+
+      std::vector<size_t> cellsOfInterest(xlength * ylength);
+
+      auto cellsOfInterestIterator = cellsOfInterest.begin();
+      int start = xmin + ymin * _cellsPerDim[0];
+      for (size_t i = 0; i < ylength; ++i) {
+        std::iota(cellsOfInterestIterator, cellsOfInterestIterator + xlength, start + i * _cellsPerDim[0]);
+        cellsOfInterestIterator += xlength;
+      }
       return ParticleIteratorWrapper<Particle, false>(
           new internal::VerletClusterCellsRegionParticleIterator<Particle, FullParticleCell<Particle>, false>(
               &this->_cells, _dummyStarts, lowerCorner, higherCorner, cellsOfInterest,
               _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior, this->getSkin()));
     } else {
+      // check all cells
+      // As dummy particles are outside the domain they are only found if the search region is outside the domain.
+      std::vector<size_t> cellsOfInterest(this->_cells.size());
+      std::iota(cellsOfInterest.begin(), cellsOfInterest.end(), 0);
+
       return ParticleIteratorWrapper<Particle, false>(
           new internal::RegionParticleIterator<Particle, FullParticleCell<Particle>, false>(
               &this->_cells, lowerCorner, higherCorner, cellsOfInterest, nullptr, behavior));
@@ -410,6 +406,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
       }
       this->_cells[i].clear();
     }
+
     // estimate particle density
     double density = (std::max(1.0, (double)invalidParticles.size())) / volume;
 
@@ -426,22 +423,21 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     _cellsPerDim[2] = static_cast<size_t>(1);
 
     // resize to number of grids
-    if (this->_cells.size() < sizeGrid) {
-      this->_cells.resize(sizeGrid);
-    }
+    this->_cells.resize(sizeGrid);
+
     _dummyStarts.clear();
     _dummyStarts.resize(sizeGrid);
     _boundingBoxes.resize(sizeGrid);
 
     // put particles into grid cells
     for (size_t i = 0; i < invalidParticles.size(); ++i) {
-      int index =
-          (int)((invalidParticles[i].getR()[0] - _boxMinWithHalo[0]) * _gridSideLengthReciprocal) +
-          (int)((invalidParticles[i].getR()[1] - _boxMinWithHalo[1]) * _gridSideLengthReciprocal) * _cellsPerDim[0];
+      size_t index =
+          (size_t)((invalidParticles[i].getR()[0] - _boxMinWithHalo[0]) * _gridSideLengthReciprocal) +
+          (size_t)((invalidParticles[i].getR()[1] - _boxMinWithHalo[1]) * _gridSideLengthReciprocal) * _cellsPerDim[0];
       this->_cells[index].addParticle(invalidParticles[i]);
     }
 
-    // sort by last dimension
+    // sort by last dimension and add dummy particles
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel for schedule(guided)
 #endif
@@ -466,6 +462,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
       }
     }
 
+    // make bounding boxes
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel for schedule(guided)
 #endif
@@ -487,7 +484,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 
  private:
   /**
-   * Expands a bounding Box such the Particle is in it
+   * Expands a bounding Box such the Particle is in it.
    * @param box
    * @param p
    */
@@ -499,13 +496,13 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   /**
-   * Checks if particle is within skin of bounding box
+   * Checks if particle is within skin of bounding box.
    * @param box
    * @param p
-   *    */
+   */
   bool particleInSkinOfBox(const std::array<double, 6> &box, const Particle &p) const {
     for (int i = 0; i < 3; ++i) {
-      if (box[0 + i] - this->getSkin() > p.getR()[i] || box[3 + i] + this->getSkin() < p.getR()[i]) return false;
+      if (box[0 + i] - this->getSkin() > p.getR()[i] or box[3 + i] + this->getSkin() < p.getR()[i]) return false;
     }
     return true;
   }
@@ -517,7 +514,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   // number of particles in a cluster
   unsigned int _clusterSize;
 
-  // id of neighbor clusters of a clusters
+  // id of neighbor clusters of a clusters in the form [mycell][mycluster] pair(othercell, othercluster)
   std::vector<std::vector<std::vector<std::pair<size_t, size_t>>>> _neighborCellIds;
 
   size_t _neighborMatrixDim;

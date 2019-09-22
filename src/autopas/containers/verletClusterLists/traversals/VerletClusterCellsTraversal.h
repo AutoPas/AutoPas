@@ -88,23 +88,26 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
     _neighborCellIds->clear();
     _neighborCellIds->resize(cellsSize, {});
 
+    // iterate over all cells within interaction radius in xy plane
     for (size_t i = 0; i < cellsSize; ++i) {
       auto pos = utils::ThreeDimensionalMapping::oneToThreeD(i, this->_cellsPerDimension);
       for (int x = -interactionCellRadius; x <= interactionCellRadius; ++x) {
         if (0 <= (pos[0] + x) and (pos[0] + x) < this->_cellsPerDimension[0]) {
           for (int y = -interactionCellRadius; y <= interactionCellRadius; ++y) {
             if (0 <= (pos[1] + y) and (pos[1] + y) < this->_cellsPerDimension[1]) {
-              // add neighbors
+              // current neighbor cell
               auto other = utils::ThreeDimensionalMapping::threeToOneD(pos[0] + x, pos[1] + y, (unsigned long)0,
                                                                        this->_cellsPerDimension);
+              // only one way interaction when using newton3
               if (useNewton3 and other > i) {
                 continue;
               }
-              // own clusters
+              // iterate through clusters in own cell
               for (size_t ownClusterId = 0; ownClusterId < boundingBoxes[i].size(); ++ownClusterId) {
                 (*_neighborCellIds)[i].resize(boundingBoxes[i].size(), {});
                 const std::array<double, 6> ownBox = boundingBoxes[i][ownClusterId];
 
+                // find range of clusters in other cell within range of own cluster
                 auto start = std::find_if(boundingBoxes[other].begin(), boundingBoxes[other].end(),
                                           [this, ownBox, distance](const std::array<double, 6> &otherbox) {
                                             return getMinDist(ownBox, otherbox) < distance;
@@ -120,6 +123,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
                   (*_neighborCellIds)[i][ownClusterId].reserve(size);
                   auto indexStart = start - boundingBoxes[other].begin();
                   if (other == i) {
+                    // add clusters to neighbor list when within same cell
                     for (size_t k = 0; k < size; ++k) {
                       if (useNewton3) {
                         if (indexStart + k > ownClusterId) {
@@ -132,6 +136,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
                       }
                     }
                   } else {
+                    // add clusters to neighbor list in the form [mycell][mycluster] pair(othercell, othercluster)
                     for (size_t k = 0; k < size; ++k) {
                       (*_neighborCellIds)[i][ownClusterId].push_back(std::make_pair(other, indexStart + k));
                     }
@@ -143,7 +148,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         }
       }
     }
-
+    // Make neighbor matrix for GPU by linearizing _neighborCellIds
     if (DataLayout == DataLayoutOption::cuda) {
       size_t neighborMatrixDim = 0;
       for (auto &cell : *_neighborCellIds) {

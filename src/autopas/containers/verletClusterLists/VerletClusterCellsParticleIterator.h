@@ -27,7 +27,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
   using CellVecType = std::conditional_t<modifiable, std::vector<ParticleCell>, const std::vector<ParticleCell>>;
   using CellIteratorType = std::conditional_t<modifiable, typename std::vector<Particle>::iterator,
                                               typename std::vector<Particle>::const_iterator>;
-  using DummyStartsType = std::conditional_t<modifiable, std::vector<size_t> *, const std::vector<size_t>>;
+  using DummyStartsType = std::conditional_t<modifiable, std::vector<size_t>, const std::vector<size_t>>;
   using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
 
  public:
@@ -38,12 +38,16 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    * @param offsetToDummy offset to add to create dummy particle
    * @param behavior iterator behavior
    */
-  explicit VerletClusterCellsParticleIterator(CellVecType *cont, DummyStartsType dummyStarts, double offsetToDummy,
+  explicit VerletClusterCellsParticleIterator(CellVecType *cont, DummyStartsType &dummyStarts, double offsetToDummy,
                                               IteratorBehavior behavior = haloAndOwned)
-      : _vectorOfCells(cont), _dummyStarts(dummyStarts), cellId(0), _behavior(behavior), _offsetToDummy(offsetToDummy) {
-    cellIter = (*_vectorOfCells)[0]._particles.begin();
-    cellEnd = cellIter + getDummyStartbyIndex(0);
-    --cellIter;
+      : _vectorOfCells(cont),
+        _dummyStarts(dummyStarts),
+        _cellId(0),
+        _behavior(behavior),
+        _offsetToDummy(offsetToDummy) {
+    _cellIter = (*_vectorOfCells)[0]._particles.begin();
+    _cellEnd = _cellIter + getDummyStartbyIndex(0);
+    --_cellIter;
 
     VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>::operator++();
   }
@@ -53,18 +57,18 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    */
   inline VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
     do {
-      ++cellIter;
+      ++_cellIter;
 
-      while (cellIter == cellEnd) {
-        ++cellId;
+      while (_cellIter == _cellEnd) {
+        ++_cellId;
 
-        if (not cellId < _vectorOfCells->size()) {
+        if (not(_cellId < _vectorOfCells->size())) {
           return *this;
         }
-        cellIter = (*_vectorOfCells)[cellId]._particles.begin();
-        cellEnd = cellIter + getDummyStartbyIndex(cellId);
+        _cellIter = (*_vectorOfCells)[_cellId]._particles.begin();
+        _cellEnd = _cellIter + getDummyStartbyIndex(_cellId);
       }
-    } while (not fitsBehavior(*cellIter));
+    } while (not fitsBehavior(*_cellIter));
     return *this;
   }
 
@@ -73,26 +77,26 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    * this is the indirection operator
    * @return current particle
    */
-  ParticleType &operator*() const override { return *cellIter; }
+  ParticleType &operator*() const override { return *_cellIter; }
 
   /**
    * Check whether the iterator currently points to a valid particle.
    * @return returns whether the iterator is valid
    */
-  bool isValid() const override { return cellId < _vectorOfCells->size(); }
+  bool isValid() const override { return _cellId < _vectorOfCells->size(); }
 
   /**
    * @copydoc ParticleIteratorInterface::deleteCurrentParticle()
    */
   void deleteCurrentParticleImpl() override {
     if constexpr (modifiable) {
-      auto pos = cellIter->getR();
+      auto pos = _cellIter->getR();
       pos[0] += _offsetToDummy;
-      cellIter->setR(pos);
-      --(*_dummyStarts)[cellId];
-      --cellEnd;
-      std::iter_swap(cellIter, cellEnd);
-      --cellIter;
+      _cellIter->setR(pos);
+      --(_dummyStarts)[_cellId];
+      --_cellEnd;
+      std::iter_swap(_cellIter, _cellEnd);
+      --_cellIter;
     }
   }
 
@@ -102,7 +106,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
 
  protected:
   /**
-   * Checks if particle fits the selected behavior
+   * Checks if particle fits the selected behavior.
    * @param p particle
    * @return true if particle fits the behavior
    */
@@ -119,16 +123,11 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
   }
 
   /**
-   * Returns dummy start for given cell
+   * Returns dummy start for given cell.
    * @param index of cell
    * @return first index with dummy particle
    */
-  size_t getDummyStartbyIndex(size_t index) {
-    if constexpr (modifiable)
-      return (*_dummyStarts)[index];
-    else
-      return _dummyStarts[index];
-  }
+  size_t getDummyStartbyIndex(size_t index) { return _dummyStarts[index]; }
   /**
    * Pointer to the cell vector
    */
@@ -136,21 +135,21 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
   /**
    * Pointer to the vector with dummy indices
    */
-  DummyStartsType _dummyStarts;
+  DummyStartsType &_dummyStarts;
 
   /**
    * Current cellId
    */
-  size_t cellId;
+  size_t _cellId;
 
   /**
    * Current iterator within a cell
    */
-  CellIteratorType cellIter;
+  CellIteratorType _cellIter;
   /**
    * end for the current cell
    */
-  CellIteratorType cellEnd;
+  CellIteratorType _cellEnd;
 
   /**
    * The behavior of the iterator.
@@ -172,7 +171,7 @@ template <class Particle, class ParticleCell, bool modifiable>
 class VerletClusterCellsRegionParticleIterator
     : public VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable> {
   using CellVecType = std::conditional_t<modifiable, std::vector<ParticleCell>, const std::vector<ParticleCell>>;
-  using DummyStartsType = std::conditional_t<modifiable, std::vector<size_t> *, const std::vector<size_t>>;
+  using DummyStartsType = std::conditional_t<modifiable, std::vector<size_t>, const std::vector<size_t>>;
 
  public:
   /**
@@ -187,7 +186,7 @@ class VerletClusterCellsRegionParticleIterator
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    * @param skin skin to which extend serch window
    */
-  explicit VerletClusterCellsRegionParticleIterator(CellVecType *cont, DummyStartsType dummyStarts,
+  explicit VerletClusterCellsRegionParticleIterator(CellVecType *cont, DummyStartsType &dummyStarts,
                                                     std::array<double, 3> startRegion, std::array<double, 3> endRegion,
                                                     const std::vector<size_t> &indicesInRegion, double offsetToDummy,
                                                     IteratorBehavior behavior = haloAndOwned, double skin = 0.0)
@@ -199,10 +198,10 @@ class VerletClusterCellsRegionParticleIterator
         _currentRegionIndex(0),
         _skin(skin) {
     _indicesInRegion.push_back(this->_vectorOfCells->size() + 1);
-    this->cellId = _indicesInRegion[_currentRegionIndex];
-    this->cellIter = (*this->_vectorOfCells)[this->cellId]._particles.begin();
-    this->cellEnd = this->cellIter + this->getDummyStartbyIndex(this->cellId);
-    --this->cellIter;
+    this->_cellId = _indicesInRegion[_currentRegionIndex];
+    this->_cellIter = (*this->_vectorOfCells)[this->_cellId]._particles.begin();
+    this->_cellEnd = this->_cellIter + this->getDummyStartbyIndex(this->_cellId);
+    --this->_cellIter;
     VerletClusterCellsRegionParticleIterator<Particle, ParticleCell, modifiable>::operator++();
   }
 
@@ -211,25 +210,28 @@ class VerletClusterCellsRegionParticleIterator
    */
   inline VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
     do {
-      ++this->cellIter;
+      ++this->_cellIter;
 
-      while (this->cellIter == this->cellEnd) {
-        this->cellId = _indicesInRegion[++_currentRegionIndex];
-        if (not this->isValid()) {
+      while (this->_cellIter == this->_cellEnd) {
+        this->_cellId = _indicesInRegion[++_currentRegionIndex];
+        if (not(this->_cellId < this->_vectorOfCells->size())) {
           return *this;
         }
-        this->cellIter = std::lower_bound(
-            (*this->_vectorOfCells)[this->cellId]._particles.begin(),
-            (*this->_vectorOfCells)[this->cellId]._particles.begin() + this->getDummyStartbyIndex(this->cellId),
+        // Find lowest possible particle in the region.
+        // Sorting in the array is at most off by skin/2 as the container is rebuilt if a particle moves more.
+        // increasing the search area by skin guarantees particles in the region to be found.
+        this->_cellIter = std::lower_bound(
+            (*this->_vectorOfCells)[this->_cellId]._particles.begin(),
+            (*this->_vectorOfCells)[this->_cellId]._particles.begin() + this->getDummyStartbyIndex(this->_cellId),
             _startRegion[2] - _skin, [](const Particle &a, const double b) { return a.getR()[2] < b; });
-        this->cellEnd = std::upper_bound(
-            (*this->_vectorOfCells)[this->cellId]._particles.begin(),
-            (*this->_vectorOfCells)[this->cellId]._particles.begin() + this->getDummyStartbyIndex(this->cellId),
+        this->_cellEnd = std::upper_bound(
+            (*this->_vectorOfCells)[this->_cellId]._particles.begin(),
+            (*this->_vectorOfCells)[this->_cellId]._particles.begin() + this->getDummyStartbyIndex(this->_cellId),
             _endRegion[2] + _skin, [](const double b, const Particle &a) { return b < a.getR()[2]; });
       }
     } while (
-        (not VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>::fitsBehavior(*this->cellIter)) or
-        utils::notInBox(this->cellIter->getR(), _startRegion, _endRegion));
+        (not VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>::fitsBehavior(*this->_cellIter)) or
+        utils::notInBox(this->_cellIter->getR(), _startRegion, _endRegion));
     return *this;
   }
 

@@ -109,12 +109,21 @@ TEST_F(VerletClusterCellsTest, testVerletListIterator) {
   }
 
   verletLists.deleteHaloParticles();
-  EXPECT_FALSE(verletLists.begin(autopas::IteratorBehavior::haloOnly).isValid());
 
+  EXPECT_FALSE(verletLists.begin(autopas::IteratorBehavior::haloOnly).isValid());
+  std::cout << verletLists.getNumParticles() << std::endl;
+  // trigger rebuild
+  verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
+  std::cout << verletLists.getNumParticles() << std::endl;
+  std::vector<std::array<double, 3>> pos(500);
+
+  i = 0;
   for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
     EXPECT_TRUE(iter->getID() < 500);
     ++particlesBoth[iter->getID()];
+    ++i;
   }
+  EXPECT_EQ(i, 500);
   i = 0;
   for (; i < 50; ++i) {
     EXPECT_EQ(particlesBoth[i], 3) << "on index " << i << std::endl;
@@ -339,6 +348,9 @@ TEST_F(VerletClusterCellsTest, testDeleteAllParticles) {
 }
 
 TEST_F(VerletClusterCellsTest, testCheckUpdateContainerNeededNoMove) {
+  MockFunctor<Particle, FPCell> emptyFunctor;
+  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> dummyTraversal(
+      &emptyFunctor);
   {
     autopas::VerletClusterCells<Particle> verletClusterCells({0., 0., 0.}, {10., 10., 10.}, 1., 0.5, 32);
     int id = 1;
@@ -362,7 +374,7 @@ TEST_F(VerletClusterCellsTest, testCheckUpdateContainerNeededNoMove) {
     }
     verletClusterCells.updateContainer();
     // trigger rebuild
-    verletClusterCells.begin();
+    verletClusterCells.rebuildNeighborLists(&dummyTraversal);
     EXPECT_FALSE(verletClusterCells.isContainerUpdateNeeded());
   }
   {
@@ -388,7 +400,8 @@ TEST_F(VerletClusterCellsTest, testCheckUpdateContainerNeededNoMove) {
     }
     verletClusterCells.updateContainer();
     // trigger rebuild
-    verletClusterCells.begin();
+    verletClusterCells.rebuildNeighborLists(&dummyTraversal);
+
     EXPECT_FALSE(verletClusterCells.isContainerUpdateNeeded());
   }
 }
@@ -405,7 +418,10 @@ TEST_F(VerletClusterCellsTest, testIsContainerUpdateNeeded) {
   container.addParticle(p);
   container.updateContainer();
   // trigger rebuild
-  container.begin();
+  MockFunctor<Particle, FPCell> emptyFunctor;
+  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> dummyTraversal(
+      &emptyFunctor);
+  container.rebuildNeighborLists(&dummyTraversal);
 
   EXPECT_FALSE(container.isContainerUpdateNeeded());
 
@@ -419,8 +435,9 @@ TEST_F(VerletClusterCellsTest, testIsContainerUpdateNeeded) {
   EXPECT_TRUE(container.isContainerUpdateNeeded());
 
   container.updateContainer();
+
   // trigger rebuild
-  container.begin();
+  container.rebuildNeighborLists(&dummyTraversal);
   // Particle still in halo cell and container update called -> no update
   EXPECT_FALSE(container.isContainerUpdateNeeded());
 }
@@ -438,12 +455,6 @@ TEST_F(VerletClusterCellsTest, testVerletListRegionIterator) {
 
   std::vector<int> particlesOwn(500, 0);
   std::vector<int> particlesHalo(50, 0);
-
-  MockFunctor<Particle, FPCell> emptyFunctor;
-  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
-      verletClusterCellsTraversal(&emptyFunctor);
-  verletLists.updateContainer();
-  verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
 
   std::array<double, 3> minRegion = {3, 3, 3};
   std::array<double, 3> maxRegion = {7, 7, 5};
