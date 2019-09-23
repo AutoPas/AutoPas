@@ -96,7 +96,8 @@ class LogicHandler {
         // throw exception, rebuild frequency not high enough / skin too small!
         utils::ExceptionHandler::exception(
             "LogicHandler::addHaloParticle: trying to update halo particle that is too far inside domain "
-            "(more than skin/2). Rebuild frequency not high enough / skin too small!");
+            "(more than skin/2). Rebuild frequency not high enough / skin too small for particle \n" +
+            haloParticle.toString());
       }
     }
   }
