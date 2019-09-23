@@ -834,7 +834,7 @@ void LJFunctorCudaWrapper<float>::loadConstants(FunctorCudaConstants<float> *con
 }
 
 /**
- * double version to load constants to constant memory
+ * Double version to load constants to constant memory.
  * @param constants LJ FP64 constants
  */
 template <>
@@ -845,7 +845,7 @@ void LJFunctorCudaWrapper<double>::loadConstants(FunctorCudaConstants<double> *c
 }
 
 /**
- * constant loader for other data types throws exception
+ * Constant loader for other data types throws exception.
  * @param constants
  */
 template <typename T>
