@@ -14,13 +14,11 @@
 /**
  * Example for a custom particle type derived from a autopas molecule type.
  */
-template <typename floatType>
-class PrintableMoleculeBase : public autopas::MoleculeLJ {
+class PrintableMolecule : public autopas::MoleculeLJ {
  public:
-  PrintableMoleculeBase() : autopas::MoleculeLJ() {}
+  PrintableMolecule() : autopas::MoleculeLJ() {}
 
-  PrintableMoleculeBase(std::array<double, 3> r, std::array<double, 3> v, unsigned long i)
-      : autopas::MoleculeLJ(r, v, i) {}
+  PrintableMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i) : autopas::MoleculeLJ(r, v, i) {}
 
   /**
    * Print molecule properties to std out.
@@ -38,24 +36,4 @@ class PrintableMoleculeBase : public autopas::MoleculeLJ {
     std::cout << "ID: " << std::setw(5) << this->getID();
     std::cout << std::endl;
   }
-
-  /**
-   * Override the type for the soa storage.
-   */
-  typedef typename autopas::utils::SoAType<unsigned long, floatType, floatType, floatType, floatType, floatType,
-                                           floatType, floatType>::Type SoAArraysType;
-
-#if defined(AUTOPAS_CUDA)
-  /**
-   * Override the type for the soa storage.
-   */
-  typedef typename autopas::utils::CudaSoAType<unsigned long, floatType, floatType, floatType, floatType, floatType,
-                                               floatType, floatType>::Type CudaDeviceArraysType;
-#else
-  /**
-   * Override the type for the soa storage.
-   * empty if compiled without Cuda Support
-   */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
-#endif
 };

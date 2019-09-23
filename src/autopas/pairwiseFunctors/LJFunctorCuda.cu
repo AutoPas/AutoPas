@@ -307,10 +307,11 @@ __global__ void SoAFunctorN3(LJFunctorCudaSoA<floatType> cell1) {
 
     for (int j = 0; j < block_size; ++j) {
       unsigned int offset;
+      // use bitwise and if equivalent to modulo (for block_size = 2^n)
       if ((block_size & (block_size - 1)) == 0) {
         offset = (j + threadIdx.x) & mask;
       } else {
-        offset = (j + threadIdx.x) % mask;
+        offset = (j + threadIdx.x) % block_size;
       }
       myf = bodyBodyFN3<floatType>(myposition, cell1_pos_shared[offset], myf, cell1_forces_shared + offset);
     }
@@ -375,10 +376,11 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorCud
 
     for (int j = 0; j < block_size; ++j) {
       unsigned int offset;
+      // use bitwise and if equivalent to modulo (for block_size = 2^n)
       if ((block_size & (block_size - 1)) == 0) {
         offset = (j + threadIdx.x) & mask;
       } else {
-        offset = (j + threadIdx.x) % mask;
+        offset = (j + threadIdx.x) % block_size;
       }
       myf = bodyBodyFN3<floatType, true>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset);
     }

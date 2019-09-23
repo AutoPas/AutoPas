@@ -19,8 +19,6 @@
 using namespace std;
 using namespace autopas;
 
-using PrintableMolecule = PrintableMoleculeBase<double>;
-
 /**
  * Prints position and forces of all particles in the autopas object.
  * @tparam AutoPasTemplate Template for the templetized autopas type.
