@@ -16,25 +16,20 @@ class RandomGenerator {
  private:
   /**
    * Simple random function
-   * @tparam floatType
    * @param fMin
    * @param fMax
    * @return double between fMin and fMax
    */
-  template <typename floatType = double>
-  static floatType fRand(floatType fMin, floatType fMax);
+  static double fRand(double fMin, double fMax);
 
  public:
   /**
    * Generate a random position within a given box.
-   * @tparam floatType
    * @param boxMin
    * @param boxMax
    * @return 3D array with random values
    */
-  template <typename floatType = double>
-  static std::array<floatType, 3> randomPosition(const std::array<floatType, 3> &boxMin,
-                                                 const std::array<floatType, 3> &boxMax);
+  static std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
 
   /**
    * Fills the given container with randomly distributed particles between boxMin and boxMax.
@@ -113,7 +108,7 @@ void RandomGenerator::fillWithHaloParticles(Container &container, const Particle
   }
 
   for (unsigned long i = 0; i < numParticles; ++i) {
-    const auto pos = randomPosition<double>(haloBoxMax, haloBoxMax);
+    const auto pos = randomPosition(haloBoxMax, haloBoxMax);
     // we only want  to add particles not in the actual box
     if (autopas::utils::inBox(pos, container.getBoxMin(), container.getBoxMax())) continue;
     Particle particle(defaultParticle);

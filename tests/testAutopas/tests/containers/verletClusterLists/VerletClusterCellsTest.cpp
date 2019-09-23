@@ -111,10 +111,8 @@ TEST_F(VerletClusterCellsTest, testVerletListIterator) {
   verletLists.deleteHaloParticles();
 
   EXPECT_FALSE(verletLists.begin(autopas::IteratorBehavior::haloOnly).isValid());
-  std::cout << verletLists.getNumParticles() << std::endl;
   // trigger rebuild
   verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
-  std::cout << verletLists.getNumParticles() << std::endl;
   std::vector<std::array<double, 3>> pos(500);
 
   i = 0;
@@ -310,6 +308,43 @@ TEST_F(VerletClusterCellsTest, testParticleAdding) {
           EXPECT_ANY_THROW(verletClusterCells.addHaloParticle(p));  // inside, therefore not ok!
         }
       }
+    }
+  }
+}
+
+TEST_F(VerletClusterCellsTest, testUpdateHaloParticle) {
+  std::array<double, 3> min = {1, 1, 1};
+  std::array<double, 3> max = {3, 3, 3};
+  double cutoff = 1.;
+  double skin = 0.2;
+  int clusterSize = 64;
+  autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin, clusterSize);
+
+  RandomGenerator::fillWithParticles(verletLists, Particle(), 500);
+  RandomGenerator::fillWithHaloParticles(verletLists, Particle(), cutoff, 50);
+
+  std::vector<Particle> haloToUpdate;
+  for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
+    if (iter->getID() % 3 == 0) {
+      haloToUpdate.push_back(*iter);
+    }
+  }
+  for (auto &it : haloToUpdate) {
+    it.setF({1, 2, 3});
+  }
+  for (auto &it : haloToUpdate) {
+    EXPECT_TRUE(verletLists.updateHaloParticle(it));
+  }
+
+  for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
+    if (iter->getID() % 3 == 0) {
+      EXPECT_EQ(iter->getF()[0], 1);
+      EXPECT_EQ(iter->getF()[1], 2);
+      EXPECT_EQ(iter->getF()[2], 3);
+    } else {
+      EXPECT_EQ(iter->getF()[0], 0);
+      EXPECT_EQ(iter->getF()[1], 0);
+      EXPECT_EQ(iter->getF()[2], 0);
     }
   }
 }

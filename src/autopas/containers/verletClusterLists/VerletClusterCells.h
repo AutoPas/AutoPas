@@ -131,51 +131,18 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
    * @return Returns true if the particle was updated, false if no particle could be found.
    */
   bool updateHaloParticle(Particle &haloParticle) override {
-    // check proximity first
     Particle pCopy = haloParticle;
     pCopy.setOwned(false);
 
-    int xt = (int)((pCopy.getR()[0] - _boxMinWithHalo[0]) * _gridSideLengthReciprocal);
-    int yt = (int)((pCopy.getR()[1] - _boxMinWithHalo[1]) * _gridSideLengthReciprocal);
-    size_t index = xt + yt * _cellsPerDim[0];
-    if (index < this->_cells.size()) {
-      double zpos = pCopy.getR()[2];
-      zpos -= this->getSkin();
-
-      auto lower = std::lower_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(), zpos,
-                                    [](const Particle &a, const double &b) { return a.getR()[2] < b; });
-
-      zpos += 2 * this->getSkin();
-      auto upper = std::upper_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(), zpos,
-                                    [](const double &a, const Particle &b) { return a < b.getR()[2]; });
-
-      for (; lower != upper; ++lower) {
-        if (pCopy.getID() == lower->getID() and !lower->isOwned()) {
-          *lower = pCopy;
-          return true;
-        }
+    for (auto it =
+             getRegionIterator(ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
+                               ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2), IteratorBehavior::haloOnly);
+         it.isValid(); ++it) {
+      if (pCopy.getID() == it->getID()) {
+        *it = pCopy;
+        return true;
       }
     }
-    // check other cells
-    for (size_t index = 0; index < this->_cells.size(); ++index) {
-      double zpos = haloParticle.getR()[2];
-      zpos -= this->getSkin();
-
-      auto lower = std::lower_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(), zpos,
-                                    [](const Particle &a, const double &b) { return a.getR()[2] < b; });
-
-      zpos += 2 * this->getSkin();
-      auto upper = std::upper_bound(this->_cells[index]._particles.begin(), this->_cells[index]._particles.end(), zpos,
-                                    [](const double &a, const Particle &b) { return a < b.getR()[2]; });
-
-      for (; lower != upper; ++lower) {
-        if (haloParticle.getID() == lower->getID() and !lower->isOwned()) {
-          *lower = haloParticle;
-          return true;
-        }
-      }
-    }
-
     return false;
   }
 
