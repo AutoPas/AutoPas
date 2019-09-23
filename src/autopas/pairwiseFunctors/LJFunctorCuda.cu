@@ -191,7 +191,7 @@ __device__ inline typename vec3<floatType>::Type bodyBodyFN3(typename vec3<float
 }
 
 /**
- * Calculates all interactions within a single cell
+ * Calculates all interactions within a single cell.
  * @param cell1 particle storage
  */
 template <typename floatType, int block_size>
