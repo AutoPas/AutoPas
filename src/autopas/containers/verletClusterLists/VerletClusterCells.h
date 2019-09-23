@@ -264,14 +264,20 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
       rebuild();
     }
 
+    // restrict search area to the region where particles are
+    const auto lowerCornerInBounds = ArrayMath::max(lowerCorner, _boxMinWithHalo);
+    const auto upperCornerInBounds = ArrayMath::min(higherCorner, _boxMaxWithHalo);
+
     // Find cells intersecting the search region
-    size_t xmin = (size_t)((lowerCorner[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
-    size_t ymin = (size_t)((lowerCorner[1] - _boxMinWithHalo[1] - this->getSkin()) * _gridSideLengthReciprocal);
+    size_t xmin = (size_t)((lowerCornerInBounds[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
+    size_t ymin = (size_t)((lowerCornerInBounds[1] - _boxMinWithHalo[1] - this->getSkin()) * _gridSideLengthReciprocal);
 
     size_t xlength =
-        ((size_t)((higherCorner[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
+        ((size_t)((upperCornerInBounds[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) +
+        1;
     size_t ylength =
-        ((size_t)((higherCorner[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) + 1;
+        ((size_t)((upperCornerInBounds[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) +
+        1;
 
     std::vector<size_t> cellsOfInterest(xlength * ylength);
 
@@ -284,24 +290,30 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 
     return ParticleIteratorWrapper<Particle, true>(
         new internal::VerletClusterCellsRegionParticleIterator<Particle, FullParticleCell<Particle>, true>(
-            &this->_cells, _dummyStarts, lowerCorner, higherCorner, cellsOfInterest,
+            &this->_cells, _dummyStarts, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
             _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior, this->getSkin()));
   }
 
   ParticleIteratorWrapper<Particle, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+    // restrict search area to the region where particles are
+    const auto lowerCornerInBounds = ArrayMath::max(lowerCorner, _boxMinWithHalo);
+    const auto upperCornerInBounds = ArrayMath::min(higherCorner, _boxMaxWithHalo);
+
     // Special iterator requires sorted cells.
     // Otherwise all cells are traversed with the general Iterator.
     if (_isValid) {
       // Find cells intersecting the search region
-      size_t xmin = (size_t)((lowerCorner[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
-      size_t ymin = (size_t)((lowerCorner[1] - _boxMinWithHalo[1] - this->getSkin()) * _gridSideLengthReciprocal);
+      size_t xmin =
+          (size_t)((lowerCornerInBounds[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
+      size_t ymin =
+          (size_t)((lowerCornerInBounds[1] - _boxMinWithHalo[1] - this->getSkin()) * _gridSideLengthReciprocal);
 
       size_t xlength =
-          (((higherCorner[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
+          (((upperCornerInBounds[0] - _boxMinWithHalo[0] + this->getSkin()) * _gridSideLengthReciprocal) - xmin) + 1;
       size_t ylength =
-          (((higherCorner[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) + 1;
+          (((upperCornerInBounds[1] - _boxMinWithHalo[1] + this->getSkin()) * _gridSideLengthReciprocal) - ymin) + 1;
 
       std::vector<size_t> cellsOfInterest(xlength * ylength);
 
@@ -313,7 +325,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
       }
       return ParticleIteratorWrapper<Particle, false>(
           new internal::VerletClusterCellsRegionParticleIterator<Particle, FullParticleCell<Particle>, false>(
-              &this->_cells, _dummyStarts, lowerCorner, higherCorner, cellsOfInterest,
+              &this->_cells, _dummyStarts, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
               _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior, this->getSkin()));
     } else {
       // check all cells
@@ -323,7 +335,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 
       return ParticleIteratorWrapper<Particle, false>(
           new internal::RegionParticleIterator<Particle, FullParticleCell<Particle>, false>(
-              &this->_cells, lowerCorner, higherCorner, cellsOfInterest, nullptr, behavior));
+              &this->_cells, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest, nullptr, behavior));
     }
   }
 
