@@ -359,6 +359,15 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   /**
+   * Deletes all particles from the container.
+   */
+  void deleteAllParticles() override {
+    _isValid = false;
+    std::fill(_dummyStarts.begin(), _dummyStarts.end(), 0);
+    ParticleContainer<FullParticleCell<Particle>>::deleteAllParticles();
+  }
+
+  /**
    * Deletes all Dummy Particles in the container
    */
   void deleteDummyParticles() {

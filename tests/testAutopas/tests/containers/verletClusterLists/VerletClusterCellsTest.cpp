@@ -92,7 +92,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIterator) {
     ++numBoth;
   }
   EXPECT_EQ(numBoth, numOwn + numHalo);
-  EXPECT_GT(verletLists.getNumParticles(), 550);
+  EXPECT_EQ(verletLists.getNumParticles(), 550);
 
   for (auto &it : particlesOwn) {
     EXPECT_EQ(it, 1);
@@ -161,7 +161,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIteratorDelete) {
     ++numBoth;
   }
   EXPECT_EQ(numBoth, 550 / 2);
-  EXPECT_GT(verletLists.getNumParticles(), 549 / 2);
+  EXPECT_EQ(verletLists.getNumParticles(), 550 / 2);
 
   int i = 0;
   for (; i < 50; ++i) {
