@@ -11,7 +11,8 @@
 #include "autopas/utils/SoA.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class LJFunctorCudaTest : public AutoPasTestBase {
+class LJFunctorCudaTest : public AutoPasTestBase,
+                          public ::testing::WithParamInterface<std::tuple<bool, bool, int, int>> {
  public:
   LJFunctorCudaTest()
       : AutoPasTestBase(), _cutoff{1.}, _epsilon{2}, _sigma{0.05}, _lowCorner{0, 0, 0}, _highCorner{2, 1, 1} {}
