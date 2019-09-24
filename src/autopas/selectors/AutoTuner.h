@@ -145,7 +145,7 @@ class AutoTuner {
         // if this was the last sample:
         if (_samples.size() == _maxSamples) {
           auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
-          _tuningStrategy->addEvidence(time);
+          _tuningStrategy->addEvidence(reducedValue);
 
           // print config, times and reduced value
           if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
