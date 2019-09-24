@@ -22,30 +22,30 @@ std::array<double, 3> toSpherical(const std::array<double, 3> &cartesian) {
   double y = cartesian[1];
   double z = cartesian[2];
   double r = std::sqrt(x * x + y * y + z * z);
-  double alpha = 0;
-  double beta = 0;
+  double phi = 0;
+  double theta = 0;
   if (x != 0.0) {
-    alpha = std::atan(y / x);
+    phi = std::atan(y / x);
   } else {
     if (y > 0) {
-      alpha = M_PI_2;
+      phi = M_PI_2;
     } else {
-      alpha = -M_PI_2;
+      phi = -M_PI_2;
     }
   }
   if (r > 0) {
-    beta = std::acos(z / r);
+    theta = std::acos(z / r);
   }
 
-  if (__isnan(alpha)) {
-    std::cerr << "alpha is nan" << std::endl;
+  if (__isnan(phi)) {
+    std::cerr << "phi is nan" << std::endl;
   }
 
-  if (__isnan(beta)) {
-    std::cerr << "beta is nan" << std::endl;
+  if (__isnan(theta)) {
+    std::cerr << "theta is nan" << std::endl;
   }
 
-  return std::array<double, 3>({r, alpha, beta});
+  return std::array<double, 3>({r, theta /*alpha*/, phi /*beta*/});
 }
 
 /*std::array<double, 3> toCartesian(std::array<double, 3> spherical) {
@@ -59,7 +59,7 @@ std::array<double, 3> toSpherical(const std::array<double, 3> &cartesian) {
 }*/
 
 int doubleFactorialRec(int x) {
-  return (x <= 1) ? 1 : doubleFactorialRec(x - 2);
+  return (x <= 1) ? 1 : x * doubleFactorialRec(x - 2);
 }
 
 // Parameter is only checked at the first call.
@@ -71,7 +71,7 @@ int doubleFactorial(int x) {
 }
 
 int factorialRec(int x) {
-  return (x <= 1) ? 1 : factorialRec(x - 1);
+  return (x <= 1) ? 1 : x * factorialRec(x - 1);
 }
 
 // Parameter is only checked at the first call.
@@ -138,14 +138,14 @@ double associatedLegendrePolynomial(int m, int n, double x) {
  * Calculates the spherical harmonics (Y) using associated legendre polynomials.
  * @param m (superscript)
  * @param n (subscript)
- * @param alpha (first parameter)
- * @param beta (second parameter)
+ * @param theta (first parameter)
+ * @param phi (second parameter)
  * @return Result of the spherical harmonics as complex number.
  */
-std::complex<double> sphericalHarmonics(int m, int n, double alpha, double beta) {
+std::complex<double> sphericalHarmonics(int m, int n, double theta, double phi) {
 
   if (n < std::abs(m)) {
-    std::cerr << "sphericalHarmonics(" << m << "," << n << "," << alpha << "," << beta << ") is not defined for n < |m|"
+    std::cerr << "sphericalHarmonics(" << m << "," << n << "," << theta << "," << phi << ") is not defined for n < |m|"
               << std::endl;
   }
 
@@ -155,9 +155,9 @@ std::complex<double> sphericalHarmonics(int m, int n, double alpha, double beta)
   ret *= root;
 
   using namespace std::complex_literals;
-  ret *= std::exp(1i * double(m) * beta);
+  ret *= std::exp(1i * double(m) * phi);
 
-  ret *= associatedLegendrePolynomial(std::abs(m), n, std::cos(alpha));
+  ret *= associatedLegendrePolynomial(std::abs(m), n, std::cos(theta));
 
   return ret;
 }
