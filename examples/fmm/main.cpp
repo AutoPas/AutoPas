@@ -64,21 +64,11 @@ int main(int argc, char **argv) {
 
   auto corner2 = tree.getCell(tree.getHeight(), 3, 3, 3)->getContainer();
 
-  FmmParticle particle({1, 1, 1}, {0, 0, 0}, 0, 17.0);
+  FmmParticle particle({1.5, 1., 1.}, {0, 0, 0}, 0, 25.0);
   corner1->addParticle(particle);
 
-  particle = FmmParticle({0.5, 0.5, 0.5}, {0, 0, 0}, 0, 25.0);
-  corner1->addParticle(particle);
-  particle = FmmParticle({1.5, 1.5, 1.5}, {0, 0, 0}, 0, 25.0);
-  corner1->addParticle(particle);
-
-
-  particle = FmmParticle({7, 7, 7}, {0, 0, 0}, 1, 42.0);
-  corner2->addParticle(particle);
-
-
-  particle = FmmParticle({3, 3, 3}, {0, 0, 0}, 1, 1000);
-  cell3->addParticle(particle);
+  particle = FmmParticle({7., 1., 1.}, {0, 0, 0}, 1, 42.0);
+  tree.getCell(tree.getHeight(), 3, 0, 0)->getContainer()->addParticle(particle);
 
 
   upwardPass(&tree);
