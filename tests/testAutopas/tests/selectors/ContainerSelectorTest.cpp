@@ -71,6 +71,7 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
 
   autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff);
   autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin);
+
   // select container from which we want to convert from
   containerSelector.selectContainer(from, containerInfo);
 
@@ -103,12 +104,14 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
 
   std::vector<Particle> beforeListInner, beforeListHalo,
       beforeListHaloVerletOnly /*for particles only in verlet containers*/;
+
   getStatus(bBoxMin, bBoxMax, cutoff, containerSelector, beforeListInner, beforeListHalo, beforeListHaloVerletOnly);
 
   // select container to which we want to convert to
   containerSelector.selectContainer(to, containerInfo);
 
   std::vector<Particle> afterListInner, afterListHalo, afterListHaloVerletOnly;
+
   getStatus(bBoxMin, bBoxMax, cutoff, containerSelector, afterListInner, afterListHalo, afterListHaloVerletOnly);
 
   EXPECT_THAT(afterListInner, UnorderedElementsAreArray(beforeListInner));

@@ -69,7 +69,7 @@ class Functor {
    * Constructor
    * @param cutoff
    */
-  Functor(typename Particle::ParticleFloatingPointType cutoff) : _cutoff(cutoff){};
+  Functor(double cutoff) : _cutoff(cutoff){};
 
   virtual ~Functor() = default;
 
@@ -286,15 +286,15 @@ class Functor {
    * Provides an interface for traversals to directly access Cuda Functions
    * @return Pointer to CudaWrapper of the Functor
    */
-  virtual CudaWrapperInterface<typename Particle::ParticleFloatingPointType> *getCudaWrapper() { return nullptr; }
+  virtual CudaWrapperInterface<typename Particle::ParticleSoAFloatPrecision> *getCudaWrapper() { return nullptr; }
 
   /**
    * Creates Cuda SoA object containing all the relevant pointers from the generic Cuda SoA
    * @return unique pointer to the object
    */
-  virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>> createFunctorCudaSoA(
+  virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleSoAFloatPrecision>> createFunctorCudaSoA(
       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
-    return std::make_unique<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>>();
+    return std::make_unique<FunctorCudaSoA<typename Particle::ParticleSoAFloatPrecision>>();
   }
 #endif
 
@@ -302,7 +302,7 @@ class Functor {
    * Getter for the functor's cutoff
    * @return
    */
-  typename Particle::ParticleFloatingPointType getCutoff() const { return _cutoff; }
+  double getCutoff() const { return _cutoff; }
 
  private:
   /**
@@ -375,7 +375,7 @@ class Functor {
     }
   }
 
-  typename Particle::ParticleFloatingPointType _cutoff;
+  double _cutoff;
 };
 
 }  // namespace autopas

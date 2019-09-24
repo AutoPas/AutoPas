@@ -62,13 +62,7 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    */
   bool isApplicable() const override {
     if (DataLayout == DataLayoutOption::cuda) {
-      int nDevices = 0;
-#if defined(AUTOPAS_CUDA)
-      cudaGetDeviceCount(&nDevices);
-#endif
-      if (nDevices <= 0) {
-        return false;
-      }
+      return false;
     }
     const double minLength = *std::min_element(this->_cellLength.cbegin(), this->_cellLength.cend());
     const unsigned long minDim = *std::min_element(this->_cellsPerDimension.cbegin(), this->_cellsPerDimension.cend());

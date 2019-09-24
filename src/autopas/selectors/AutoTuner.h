@@ -40,20 +40,22 @@ class AutoTuner {
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
    * @param verletSkin Length added to the cutoff for the Verlet lists' skin.
+   * @param verletClusterSize Number of particles in a cluster to use in verlet list.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
-            std::unique_ptr<TuningStrategyInterface> tuningStrategy, SelectorStrategyOption selectorStrategy,
-            unsigned int tuningInterval, unsigned int maxSamples)
+            unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
+            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff),
         _verletSkin(verletSkin),
+        _verletClusterSize(verletClusterSize),
         _maxSamples(maxSamples),
         _samples(maxSamples) {
     if (_tuningStrategy->searchSpaceIsEmpty()) {
@@ -203,6 +205,7 @@ class AutoTuner {
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
   double _verletSkin;
+  unsigned int _verletClusterSize;
 
   /**
    * How many times each configuration should be tested.
@@ -218,7 +221,8 @@ class AutoTuner {
 template <class Particle, class ParticleCell>
 void AutoTuner<Particle, ParticleCell>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
-  _containerSelector.selectContainer(conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin));
+  _containerSelector.selectContainer(conf.container,
+                                     ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize));
 }
 
 template <class Particle, class ParticleCell>

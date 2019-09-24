@@ -59,15 +59,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @return true iff the traversal can be applied.
    */
   bool isApplicable() const override {
-    if (dataLayout == DataLayoutOption::cuda) {
-      int nDevices = 0;
-#if defined(AUTOPAS_CUDA)
-      cudaGetDeviceCount(&nDevices);
-#endif
-      return (this->_sliceThickness.size() > 0) && (nDevices > 0);
-    } else {
-      return this->_sliceThickness.size() > 0;
-    }
+    return not(dataLayout == DataLayoutOption::cuda) and this->_sliceThickness.size() > 0;
   }
 
   /**

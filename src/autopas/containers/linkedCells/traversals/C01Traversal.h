@@ -123,15 +123,8 @@ class C01Traversal
    * @return
    */
   bool isApplicable() const override {
-    int nDevices = 0;
-#if defined(AUTOPAS_CUDA)
-    cudaGetDeviceCount(&nDevices);
-#endif
-    if (DataLayout == DataLayoutOption::cuda) {
-      return (not useNewton3) and (nDevices > 0) and not combineSoA;
-    } else {
-      return not useNewton3 and not(combineSoA && DataLayout != DataLayoutOption::soa);
-    }
+    return not(DataLayout == DataLayoutOption::cuda) and not useNewton3 and
+           not(combineSoA && DataLayout != DataLayoutOption::soa);
   }
 
   TraversalOption getTraversalType() const override {

@@ -42,6 +42,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin, const std::array<double, 3> bMax,
               double interactionLength, double cellSizeFactor = 1.0) {
     rebuild(vec, bMin, bMax, interactionLength, cellSizeFactor);
+
     for (int i = 0; i < 3; ++i) {
       if (bMax[i] < bMin[i] + interactionLength) {
         AutoPasLog(error, "Interaction length too large is {}, bmin {}, bmax {}", interactionLength, bMin[i], bMax[i]);
@@ -272,7 +273,7 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
   std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
 
   for (size_t dim = 0; dim < 3; dim++) {
-    const long int value = (static_cast<long int>(floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
+    const long int value = (static_cast<long int>(std::floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
                            _cellsPerInteractionLength;
     const index_t nonNegativeValue = static_cast<index_t>(std::max(value, 0l));
     const index_t nonLargerValue = std::min(nonNegativeValue, _cellsPerDimensionWithHalo[dim] - 1);

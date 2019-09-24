@@ -40,7 +40,8 @@ INSTANTIATE_TEST_SUITE_P(
                 if (containerOption == autopas::ContainerOption::verletLists ||
                     containerOption == autopas::ContainerOption::verletListsCells ||
                     containerOption == autopas::ContainerOption::verletClusterLists ||
-                    containerOption == autopas::ContainerOption::varVerletListsAsBuild) {
+                    containerOption == autopas::ContainerOption::varVerletListsAsBuild ||
+                    containerOption == autopas::ContainerOption::verletClusterCells) {
                   continue;
                 }
 

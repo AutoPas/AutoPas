@@ -20,6 +20,7 @@
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VerletClusterCellsTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersColoringTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
@@ -138,6 +139,10 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     }
     case TraversalOption::verletClusters: {
       return std::make_unique<VerletClustersTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          &pairwiseFunctor);
+    }
+    case TraversalOption::verletClusterCellsTraversal: {
+      return std::make_unique<VerletClusterCellsTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor);
     }
     case TraversalOption::verletClustersColoring: {

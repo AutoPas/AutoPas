@@ -58,6 +58,7 @@ class AutoPas {
         _cutoff(1.),
         _verletSkin(0.2),
         _verletRebuildFrequency(20),
+        _verletClusterSize(64),
         _tuningInterval(5000),
         _numSamples(3),
         _maxEvidence(10),
@@ -109,8 +110,8 @@ class AutoPas {
    */
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
-        _boxMin, _boxMax, _cutoff, _verletSkin, std::move(generateTuningStrategy()), _selectorStrategy, _tuningInterval,
-        _numSamples);
+        _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize, std::move(generateTuningStrategy()),
+        _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
         std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
   }
@@ -352,6 +353,18 @@ class AutoPas {
   }
 
   /**
+   * Get Verlet cluster size.
+   * @return
+   */
+  unsigned int getVerletClusterSize() const { return _verletClusterSize; }
+
+  /**
+   * Set Verlet cluster size.
+   * @param verletClusterSize
+   */
+  void setVerletClusterSize(unsigned int verletClusterSize) { AutoPas::_verletClusterSize = verletClusterSize; }
+
+  /**
    * Get tuning interval.
    * @return
    */
@@ -529,6 +542,10 @@ class AutoPas {
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
   unsigned int _verletRebuildFrequency;
+  /**
+   * Specifies the size of clusters for verlet lists.
+   */
+  unsigned int _verletClusterSize;
   /**
    * Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */

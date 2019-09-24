@@ -1,13 +1,15 @@
 /**
  * @file LJFunctorCuda.cuh
  *
- * @date 14.12.2018
+ * @date 26.4.2019
  * @author jspahl
  */
 
 #pragma once
 
+#include <array>
 #include "autopas/pairwiseFunctors/FunctorCuda.cuh"
+#include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
 #include "cuda_runtime.h"
 
 namespace autopas {
@@ -17,7 +19,7 @@ namespace autopas {
  * @tparam floatType of all vectors
  */
 template <typename floatType>
-class LJFunctorCudaSoA : public FunctorCudaSoA<floatType> {
+class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
  public:
   /**
    * Constructor for only positions
@@ -26,8 +28,17 @@ class LJFunctorCudaSoA : public FunctorCudaSoA<floatType> {
    * @posY y positions of the particles
    * @posZ z positions of the particles
    */
-  LJFunctorCudaSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ)
-      : _size(size), _posX(posX), _posY(posY), _posZ(posZ), _forceX(nullptr), _forceY(nullptr), _forceZ(nullptr) {}
+  LJFunctorCudaGlobalsSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ, bool *owned,
+                          floatType *globals)
+      : _size(size),
+        _posX(posX),
+        _posY(posY),
+        _posZ(posZ),
+        _forceX(nullptr),
+        _forceY(nullptr),
+        _forceZ(nullptr),
+        _owned(owned),
+        _globals(globals) {}
 
   /**
    * Constructor for only positions
@@ -39,22 +50,32 @@ class LJFunctorCudaSoA : public FunctorCudaSoA<floatType> {
    * @forceY y forces of the particles
    * @forceZ z forces of the particles
    */
-  LJFunctorCudaSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ, floatType *forceX,
-                   floatType *forceY, floatType *forceZ)
-      : _size(size), _posX(posX), _posY(posY), _posZ(posZ), _forceX(forceX), _forceY(forceY), _forceZ(forceZ) {}
+  LJFunctorCudaGlobalsSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ, floatType *forceX,
+                          floatType *forceY, floatType *forceZ, floatType *owned, floatType *globals)
+      : _size(size),
+        _posX(posX),
+        _posY(posY),
+        _posZ(posZ),
+        _forceX(forceX),
+        _forceY(forceY),
+        _forceZ(forceZ),
+        _owned(owned),
+        _globals(globals) {}
 
   /**
    * CopyConstructor
    * @param obj other object
    */
-  LJFunctorCudaSoA(const LJFunctorCudaSoA &obj)
+  LJFunctorCudaGlobalsSoA(const LJFunctorCudaGlobalsSoA &obj)
       : _size(obj._size),
         _posX(obj._posX),
         _posY(obj._posY),
         _posZ(obj._posZ),
         _forceX(obj._forceX),
         _forceY(obj._forceY),
-        _forceZ(obj._forceZ) {}
+        _forceZ(obj._forceZ),
+        _owned(obj._owned),
+        _globals(obj._globals) {}
 
   unsigned int _size;
   floatType *_posX;
@@ -63,29 +84,15 @@ class LJFunctorCudaSoA : public FunctorCudaSoA<floatType> {
   floatType *_forceX;
   floatType *_forceY;
   floatType *_forceZ;
-};
-
-/**
- * Stores all constants needed for the calculation
- * @tparam floatType of constants
- */
-template <typename floatType>
-class LJFunctorConstants : public FunctorCudaConstants<floatType> {
- public:
-  LJFunctorConstants() {}
-  LJFunctorConstants(floatType csq, floatType ep24, floatType sqs, floatType sh6)
-      : cutoffsquare(csq), epsilon24(ep24), sigmasquare(sqs), shift6(sh6) {}
-  floatType cutoffsquare;
-  floatType epsilon24;
-  floatType sigmasquare;
-  floatType shift6;
+  floatType *_owned;
+  floatType *_globals;
 };
 
 template <typename floatType>
-class LJFunctorCudaWrapper : public CudaWrapperInterface<floatType> {
+class LJFunctorCudaGlobalsWrapper : public CudaWrapperInterface<floatType> {
  public:
-  LJFunctorCudaWrapper() { _num_threads = 64; }
-  virtual ~LJFunctorCudaWrapper() {}
+  LJFunctorCudaGlobalsWrapper() { _num_threads = 64; }
+  virtual ~LJFunctorCudaGlobalsWrapper() {}
 
   void setNumThreads(int num_threads) override { _num_threads = num_threads; }
 
