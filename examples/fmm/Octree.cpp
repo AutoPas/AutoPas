@@ -6,15 +6,13 @@
 
 #include "Octree.h"
 
-
 Octree::Octree(int size, double cellSize) {
-
   this->size = size;
   this->height = int(std::lround(std::log2(size)));
 
   // Init cellMatrix.
-  cellMatrix = CellMatrix4D(height + 1,
-                            CellMatrix3D(size, CellMatrix2D(size, std::vector<OctreeNode *>(size, nullptr))));
+  cellMatrix =
+      CellMatrix4D(height + 1, CellMatrix3D(size, CellMatrix2D(size, std::vector<OctreeNode *>(size, nullptr))));
 
   // Create tree.
   root = std::make_unique<OctreeNode>(0, 0, 0, size, cellSize, this, nullptr);
@@ -22,13 +20,9 @@ Octree::Octree(int size, double cellSize) {
   root->initInteractionList();
 }
 
-OctreeNode *Octree::getCell(int depth, int x, int y, int z) {
-  return cellMatrix[depth][x][y][z];
-}
+OctreeNode *Octree::getCell(int depth, int x, int y, int z) { return cellMatrix[depth][x][y][z]; }
 
-void Octree::setCell(int depth, int x, int y, int z, OctreeNode *leaf) {
-  cellMatrix[depth][x][y][z] = leaf;
-}
+void Octree::setCell(int depth, int x, int y, int z, OctreeNode *leaf) { cellMatrix[depth][x][y][z] = leaf; }
 
 OctreeNode::OctreeNode(int x, int y, int z, int size, double cellSize, Octree *tree, OctreeNode *parent) {
   this->x = x;
@@ -36,7 +30,7 @@ OctreeNode::OctreeNode(int x, int y, int z, int size, double cellSize, Octree *t
   this->z = z;
   this->tree = tree;
   this->size = size;
-  this->cellSize=cellSize;
+  this->cellSize = cellSize;
   this->parent = parent;
   if (parent == nullptr) {
     this->depth = 0;
@@ -46,7 +40,7 @@ OctreeNode::OctreeNode(int x, int y, int z, int size, double cellSize, Octree *t
     this->totalSize = parent->totalSize;
   }
 
-  child = std::vector<std::unique_ptr<OctreeNode >>(8);
+  child = std::vector<std::unique_ptr<OctreeNode>>(8);
 
   if (size > 1) {
     int newSize = size / 2;

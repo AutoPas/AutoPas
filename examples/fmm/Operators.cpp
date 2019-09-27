@@ -5,33 +5,21 @@
  */
 
 #include "Operators.h"
-#include "Math3D.h"
 
-void printVec(const std::array<double, 3> &vec) {
-  std::cout << "(" << vec[0] << "," << vec[1] << "," << vec[2] << ")";
-}
-
-double getA(int m, int n) {
-
-  if (n - m < 0 || n + m < 0) {
-    std::cerr << "getA(" << m << "," << n << ") is not defined for n - m < 0 or n + m < 0" << std::endl;
-  }
-  return std::pow(-1, n) / std::sqrt(factorial(n - m) * factorial(n + m));
-}
+void printVec(const std::array<double, 3> &vec) { std::cout << "(" << vec[0] << "," << vec[1] << "," << vec[2] << ")"; }
 
 void Operators::P2M(OctreeNode *leaf) {
-
   leaf->fmmM = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
 
   for (int n = 0; n <= orderOfExpansion; ++n) {
     for (int m = -n; m <= n; ++m) {
       Complex mmn = 0;
       for (auto iter = leaf->getContainer()->begin(); iter.isValid(); ++iter) {
-        auto sphericalPos = toSpherical(center(iter->getR(), leaf->getCenter()));
+        auto sphericalPos = toSpherical(subtract(iter->getR(), leaf->getCenter()));
 
-
-        mmn += iter->charge * std::pow(sphericalPos[0], n) *
-               sphericalHarmonics(-m, n, sphericalPos[1], sphericalPos[2]);
+        mmn +=
+            iter->charge * std::pow(sphericalPos[0], n) * sphericalHarmonics(-m, n, sphericalPos[1], sphericalPos[2]);
+        assert(!__isnan(mmn.real()) && !__isnan(mmn.imag()));
       }
 
       // Save the matrix defined in 5.16
@@ -40,9 +28,7 @@ void Operators::P2M(OctreeNode *leaf) {
   }
 }
 
-
 void Operators::M2M(OctreeNode *parent) {
-
   parent->fmmM = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
 
   for (int j = 0; j <= orderOfExpansion; ++j) {
@@ -53,14 +39,13 @@ void Operators::M2M(OctreeNode *parent) {
 
   for (int c = 0; c < 8; ++c) {
     auto child = parent->getChild(c);
-    if(child->getIsZeroM())
-    {
+    if (child->getIsZeroM()) {
       /*std::cout << "skip child with depth = " << child->getDepth() << " and center = ";
       printVec(child->getCenter());
       std::cout << std::endl;*/
       continue;
     }
-    auto cartesian = center(child->getCenter(), parent->getCenter());
+    auto cartesian = subtract(child->getCenter(), parent->getCenter());
     auto spherical = toSpherical(cartesian);
     double r = spherical[0];
     double alpha = spherical[1];
@@ -82,6 +67,7 @@ void Operators::M2M(OctreeNode *parent) {
             }
 
             mmn += product;
+            assert(!__isnan(mmn.real()) && !__isnan(mmn.imag()));
           }
         }
         // Add the matrix defined in 5.22
@@ -92,7 +78,6 @@ void Operators::M2M(OctreeNode *parent) {
 }
 
 void Operators::M2L(OctreeNode *node) {
-
   node->fmmL = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
 
   // No far field interactions.
@@ -101,13 +86,13 @@ void Operators::M2L(OctreeNode *node) {
   }
 
   for (auto inter : *node->getInteractionList()) {
-    if(inter->getIsZeroM()) {
+    if (inter->getIsZeroM()) {
       /*std::cout << "skip interactor with depth = " << inter->getDepth() << " and center = ";
       printVec(inter->getCenter());
       std::cout << std::endl;*/
       continue;
     }
-    auto cartesian = center(inter->getCenter(), node->getCenter());
+    auto cartesian = subtract(inter->getCenter(), node->getCenter());
     auto spherical = toSpherical(cartesian);
     double r = spherical[0];
     double alpha = spherical[1];
@@ -131,6 +116,13 @@ void Operators::M2L(OctreeNode *node) {
               }
             }
             lmn += product;
+
+            /*std::cout << interM << "*" << std::pow(1i, std::abs(k - m) - std::abs(k) - std::abs(m)) << "*" << getA(m,
+               n)
+                      << "*" << getA(k, j) << "*" << sphericalHarmonics(m - k, j + n, alpha, beta) << "/("
+                      << std::pow(-1, n) << "*" << getA(m - k, j + n) << "*" << std::pow(r, j + n + 1) << std::endl;
+            */
+            assert(!__isnan(lmn.real()) && !__isnan(lmn.imag()));
           }
         }
 
@@ -139,19 +131,18 @@ void Operators::M2L(OctreeNode *node) {
       }
     }
   }
-
 }
 
 void Operators::L2L(OctreeNode *node) {
   auto parent = node->getParent();
   if (parent != nullptr) {
-    if(parent->getIsZeroL()){
+    if (parent->getIsZeroL()) {
       /*std::cout << "skip parent with depth = " << parent->getDepth() << " and center = ";
       printVec(parent->getCenter());
       std::cout << std::endl;*/
-     return;
+      return;
     }
-    auto cartesian = center(parent->getCenter(), node->getCenter());
+    auto cartesian = subtract(parent->getCenter(), node->getCenter());
     auto spherical = toSpherical(cartesian);
     double r = spherical[0];
     double alpha = spherical[1];
@@ -169,19 +160,17 @@ void Operators::L2L(OctreeNode *node) {
 
             Complex product = parentL * complex;
             if (product != 0.0) {
-
               auto harmonics = sphericalHarmonics(m - k, n - j, alpha, beta);
-              product *= getA(m - k, n - j) * getA(k, j) * harmonics * std::pow(r, n - j) /
-                         (std::pow(-1, n + j) * getA(m, n));
+              product *=
+                  getA(m - k, n - j) * getA(k, j) * harmonics * std::pow(r, n - j) / (std::pow(-1, n + j) * getA(m, n));
             }
 
             lmn += product;
-
+            assert(!__isnan(lmn.real()) && !__isnan(lmn.imag()));
           }
         }
         // Add the matrix defined in 5.30
         node->setL(k, j, node->getL(k, j) + lmn);
-
       }
     }
   }
@@ -189,7 +178,7 @@ void Operators::L2L(OctreeNode *node) {
 
 void Operators::L2P(OctreeNode *leaf) {
   for (auto iter = leaf->getContainer()->begin(); iter.isValid(); ++iter) {
-    auto sphericalPos = toSpherical(center(iter->getR(), leaf->getCenter()));
+    auto sphericalPos = toSpherical(subtract(iter->getR(), leaf->getCenter()));
 
     double r = sphericalPos[0];
     double alpha = sphericalPos[1];
@@ -216,8 +205,9 @@ void Operators::L2P(OctreeNode *leaf) {
             product *= leaf->getL(m, n);
           }
         }
-        //std::cout << potential << "+" << product << "=" << potential + product << std::endl;
+        // std::cout << product.real() << std::endl;
         potential += product;
+        assert(!__isnan(potential.real()) && !__isnan(potential.imag()));
       }
     }
     if (std::abs(potential.imag()) > 0.00001) {
@@ -229,5 +219,3 @@ void Operators::L2P(OctreeNode *leaf) {
     std::cout << "result = " << iter->resultFMM << std::endl;
   }
 }
-
-

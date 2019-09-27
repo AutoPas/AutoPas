@@ -5,24 +5,24 @@
  */
 #pragma once
 
-#include <Octree.h>
-#include <iostream>
 #include <cmath>
 #include <complex>
-#include <FmmParticle.h>
+#include <iostream>
+#include "FmmParticle.h"
+#include "Math3D.h"
+#include "Octree.h"
 
 class Operators {
-public:
-    Operators() = default;
+ public:
+  Operators() = default;
 
-    static void P2M(OctreeNode *leaf);
+  static void P2M(OctreeNode *leaf);
 
-    static void M2M(OctreeNode *parent);
+  static void M2M(OctreeNode *parent);
 
-    static void M2L(OctreeNode *node);
+  static void M2L(OctreeNode *node);
 
-    static void L2L(OctreeNode *parent);
+  static void L2L(OctreeNode *parent);
 
-    static void L2P(OctreeNode *leaf);
+  static void L2P(OctreeNode *leaf);
 };
-
