@@ -6,50 +6,50 @@
 
 #include "Operators.h"
 
-void printVec(const std::array<double, 3> &vec) { std::cout << "(" << vec[0] << "," << vec[1] << "," << vec[2] << ")"; }
+Operators::Operators(int orderOfExpansion) {
+  this->orderOfExpansion = orderOfExpansion;
 
-void Operators::P2M(OctreeNode *leaf) {
-  leaf->fmmM = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
-
-  for (int n = 0; n <= orderOfExpansion; ++n) {
-    for (int m = -n; m <= n; ++m) {
-      Complex mmn = 0;
-      for (auto iter = leaf->getContainer()->begin(); iter.isValid(); ++iter) {
-        auto sphericalPos = toSpherical(subtract(iter->getR(), leaf->getCenter()));
-
-        mmn +=
-            iter->charge * std::pow(sphericalPos[0], n) * sphericalHarmonics(-m, n, sphericalPos[1], sphericalPos[2]);
-        assert(!__isnan(mmn.real()) && !__isnan(mmn.imag()));
-      }
-
-      // Save the matrix defined in 5.16
-      leaf->setM(m, n, mmn);
+  // The power i^(|k-m|-|k|-|m|) is needed frequently in the M2L operator.
+  this->powerM2L =
+      std::vector<std::vector<Complex>>(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion * 2 + 1));
+  for (int k = -orderOfExpansion; k <= orderOfExpansion; ++k) {
+    for (int m = -orderOfExpansion; m <= orderOfExpansion; ++m) {
+      using namespace std::complex_literals;
+      this->powerM2L[k + orderOfExpansion][m + orderOfExpansion] =
+          Math3D::powI(std::abs(k - m) - std::abs(k) - std::abs(m));
     }
   }
 }
 
-void Operators::M2M(OctreeNode *parent) {
-  parent->fmmM = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
+void Operators::P2M(OctreeNode &leaf) {
+  leaf.fmmM = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
 
-  for (int j = 0; j <= orderOfExpansion; ++j) {
-    for (int k = -j; k <= j; ++k) {
-      parent->setM(k, j, 0);
+  // Loop order changed, so the spherical harmonics cache is built less frequently.
+  for (auto iter = leaf.getContainer()->begin(); iter.isValid(); ++iter) {
+    auto spherical = Math3D::toSpherical(Math3D::subtract(iter->getR(), leaf.getCenter()));
+    for (int m = -orderOfExpansion; m <= orderOfExpansion; ++m) {
+      Math3D::sphericalHarmonicsBuildCache(-m, orderOfExpansion, spherical[1], spherical[2]);
+      for (int n = std::abs(m); n <= orderOfExpansion; n++) {
+        auto add = iter->charge * std::pow(spherical[0], n) *
+                   Math3D::sphericalHarmonicsCached(-m, n, spherical[1], spherical[2]);
+        leaf.setM(m, n, leaf.getM(m, n) + add);
+      }
     }
   }
+}
+
+void Operators::M2M(OctreeNode &parent) {
+  parent.fmmM = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
 
   for (int c = 0; c < 8; ++c) {
-    auto child = parent->getChild(c);
+    auto child = parent.getChild(c);
     if (child->getIsZeroM()) {
-      /*std::cout << "skip child with depth = " << child->getDepth() << " and center = ";
-      printVec(child->getCenter());
-      std::cout << std::endl;*/
       continue;
     }
-    auto cartesian = subtract(child->getCenter(), parent->getCenter());
-    auto spherical = toSpherical(cartesian);
+    auto spherical = Math3D::toSpherical(Math3D::subtract(child->getCenter(), parent.getCenter()));
     double r = spherical[0];
-    double alpha = spherical[1];
-    double beta = spherical[2];
+    double theta = spherical[1];
+    double phi = spherical[2];
     for (int j = 0; j <= orderOfExpansion; ++j) {
       for (int k = -j; k <= j; ++k) {
         Complex mmn = 0;
@@ -62,8 +62,8 @@ void Operators::M2M(OctreeNode *parent) {
             Complex product = childM * complex * std::pow(r, n);
 
             if (product != 0.0) {
-              auto harmonics = sphericalHarmonics(-m, n, alpha, beta);
-              product *= harmonics * getA(m, n) * getA(k - m, j - n) / getA(k, j);
+              auto harmonics = Math3D::sphericalHarmonics(-m, n, theta, phi);
+              product *= harmonics * Math3D::getA(m, n) * Math3D::getA(k - m, j - n) / Math3D::getA(k, j);
             }
 
             mmn += product;
@@ -71,82 +71,86 @@ void Operators::M2M(OctreeNode *parent) {
           }
         }
         // Add the matrix defined in 5.22
-        parent->setM(k, j, parent->getM(k, j) + mmn);
+        parent.setM(k, j, parent.getM(k, j) + mmn);
       }
     }
   }
 }
 
-void Operators::M2L(OctreeNode *node) {
-  node->fmmL = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
+// Most performance critical function. Over 90% of fmm is spent here.
+void Operators::M2L(OctreeNode &node) {
+  node.fmmL = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
 
   // No far field interactions.
-  if (node->getDepth() < 2) {
+  if (node.getDepth() < 2) {
     return;
   }
 
-  for (auto inter : *node->getInteractionList()) {
+  for (auto inter : *node.getInteractionList()) {
     if (inter->getIsZeroM()) {
-      /*std::cout << "skip interactor with depth = " << inter->getDepth() << " and center = ";
-      printVec(inter->getCenter());
-      std::cout << std::endl;*/
       continue;
     }
-    auto cartesian = subtract(inter->getCenter(), node->getCenter());
-    auto spherical = toSpherical(cartesian);
-    double r = spherical[0];
-    double alpha = spherical[1];
-    double beta = spherical[2];
-    for (int j = 0; j <= orderOfExpansion; ++j) {
-      for (int k = -j; k <= j; ++k) {
-        Complex lmn = 0;
-        for (int n = 0; n <= orderOfExpansion; ++n) {
-          for (int m = -n; m <= n; ++m) {
-            using namespace std::complex_literals;
-            auto interM = inter->getM(m, n);
+    auto spherical = Math3D::toSpherical(Math3D::subtract(inter->getCenter(), node.getCenter()));
+    double rho = spherical[0];
+    double theta = spherical[1];
+    double phi = spherical[2];
 
-            Complex product = interM;
+    // Loop order changed, so the spherical harmonics cache is built less frequently.
+    for (int k = -orderOfExpansion; k <= orderOfExpansion; ++k) {
+      int absK = std::abs(k);
+      for (int m = -orderOfExpansion; m <= orderOfExpansion; ++m) {
+        // rhoPower1 * rhoPower2 = std::pow(rho, n+j+1)
+        // Avoids std::pow in the innermost loop.
+        double rhoPower1 = std::pow(rho, absK + 1);
+        int absM = std::abs(m);
+        Math3D::sphericalHarmonicsBuildCache(m - k, 2 * orderOfExpansion, theta, phi);
+        for (int j = absK; j <= orderOfExpansion; ++j) {
+          // sign = (-1)^n
+          // sign has to be reset before after every n-loop, so it cannot be put outside the j-loop.
+          auto sign = absM % 2 == 1 ? 1 : -1;
+
+          double rhoPower2 = std::pow(rho, absM) * rhoPower1;
+
+          // complex = i^(|k-m|-|k|-|m|)
+          auto complex = this->powerM2L[k + orderOfExpansion][m + orderOfExpansion];
+
+          auto aKJ = Math3D::getA(k, j);
+
+          Complex sum = 0;
+          for (int n = absM; n <= orderOfExpansion; ++n) {
+            sign = -sign;
+            auto product = inter->getM(m, n);
             if (product != 0.0) {
-              auto complex = std::pow(1i, std::abs(k - m) - std::abs(k) - std::abs(m));
-              product *= complex * getA(m, n) * getA(k, j);
-              if (product != 0.0) {
-                auto harmonics = sphericalHarmonics(m - k, j + n, alpha, beta);
-                product *= harmonics;
-                product /= (std::pow(-1, n) * getA(m - k, j + n) * std::pow(r, j + n + 1));
-              }
+              product *=
+                  complex * Math3D::getA(m, n) * aKJ * Math3D::sphericalHarmonicsCached(m - k, j + n, theta, phi);
+              product /= sign * Math3D::getA(m - k, j + n) * rhoPower2;
             }
-            lmn += product;
 
-            /*std::cout << interM << "*" << std::pow(1i, std::abs(k - m) - std::abs(k) - std::abs(m)) << "*" << getA(m,
-               n)
-                      << "*" << getA(k, j) << "*" << sphericalHarmonics(m - k, j + n, alpha, beta) << "/("
-                      << std::pow(-1, n) << "*" << getA(m - k, j + n) << "*" << std::pow(r, j + n + 1) << std::endl;
-            */
-            assert(!__isnan(lmn.real()) && !__isnan(lmn.imag()));
+            sum += product;
+            // assert(!__isnan(sum.real()) && !__isnan(sum.imag()));
+
+            rhoPower2 *= rho;
           }
-        }
 
-        // Add the matrix defined in 5.26
-        node->setL(k, j, node->getL(k, j) + lmn);
+          node.setL(k, j, node.getL(k, j) + sum);
+          rhoPower1 *= rho;
+        }
       }
     }
   }
 }
 
-void Operators::L2L(OctreeNode *node) {
-  auto parent = node->getParent();
+void Operators::L2L(OctreeNode &node) {
+  auto parent = node.getParent();
   if (parent != nullptr) {
     if (parent->getIsZeroL()) {
-      /*std::cout << "skip parent with depth = " << parent->getDepth() << " and center = ";
-      printVec(parent->getCenter());
-      std::cout << std::endl;*/
       return;
     }
-    auto cartesian = subtract(parent->getCenter(), node->getCenter());
-    auto spherical = toSpherical(cartesian);
-    double r = spherical[0];
-    double alpha = spherical[1];
-    double beta = spherical[2];
+    auto cartesian = Math3D::subtract(parent->getCenter(), node.getCenter());
+    auto spherical = Math3D::toSpherical(cartesian);
+    double rho = spherical[0];
+    double theta = spherical[1];
+    double phi = spherical[2];
     for (int j = 0; j <= orderOfExpansion; ++j) {
       for (int k = -j; k <= j; ++k) {
         Complex lmn = 0;
@@ -160,9 +164,9 @@ void Operators::L2L(OctreeNode *node) {
 
             Complex product = parentL * complex;
             if (product != 0.0) {
-              auto harmonics = sphericalHarmonics(m - k, n - j, alpha, beta);
-              product *=
-                  getA(m - k, n - j) * getA(k, j) * harmonics * std::pow(r, n - j) / (std::pow(-1, n + j) * getA(m, n));
+              auto harmonics = Math3D::sphericalHarmonics(m - k, n - j, theta, phi);
+              product *= Math3D::getA(m - k, n - j) * Math3D::getA(k, j) * harmonics * std::pow(rho, n - j) /
+                         (std::pow(-1, n + j) * Math3D::getA(m, n));
             }
 
             lmn += product;
@@ -170,42 +174,32 @@ void Operators::L2L(OctreeNode *node) {
           }
         }
         // Add the matrix defined in 5.30
-        node->setL(k, j, node->getL(k, j) + lmn);
+        node.setL(k, j, node.getL(k, j) + lmn);
       }
     }
   }
 }
 
-void Operators::L2P(OctreeNode *leaf) {
-  for (auto iter = leaf->getContainer()->begin(); iter.isValid(); ++iter) {
-    auto sphericalPos = toSpherical(subtract(iter->getR(), leaf->getCenter()));
+void Operators::L2P(OctreeNode &leaf) {
+  for (auto iter = leaf.getContainer()->begin(); iter.isValid(); ++iter) {
+    auto sphericalPos = Math3D::toSpherical(Math3D::subtract(iter->getR(), leaf.getCenter()));
 
-    double r = sphericalPos[0];
-    double alpha = sphericalPos[1];
-    double beta = sphericalPos[2];
-
-    /*printVec(iter->getR());
-    std::cout << ", ";
-    printVec(leaf->getCenter());
-    std::cout << ", ";
-    printVec(center(iter->getR(), leaf->getCenter()));
-    std::cout << ", ";
-    printVec(sphericalPos);
-    std::cout << std::endl;*/
+    double rho = sphericalPos[0];
+    double theta = sphericalPos[1];
+    double phi = sphericalPos[2];
 
     // evaluate
     Complex potential = 0;
     for (int n = 0; n <= orderOfExpansion; ++n) {
       for (int m = -n; m <= n; m++) {
-        Complex product = std::pow(r, n);
+        Complex product = std::pow(rho, n);
 
         if (product != 0.0) {
-          product *= sphericalHarmonics(m, n, alpha, beta);
+          product *= Math3D::sphericalHarmonics(m, n, theta, phi);
           if (product != 0.0) {
-            product *= leaf->getL(m, n);
+            product *= leaf.getL(m, n);
           }
         }
-        // std::cout << product.real() << std::endl;
         potential += product;
         assert(!__isnan(potential.real()) && !__isnan(potential.imag()));
       }
@@ -215,7 +209,5 @@ void Operators::L2P(OctreeNode *leaf) {
     }
 
     iter->resultFMM = potential.real();
-
-    std::cout << "result = " << iter->resultFMM << std::endl;
   }
 }

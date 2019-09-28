@@ -13,8 +13,6 @@
 #include "FmmParticle.h"
 #include "autopas/AutoPas.h"
 
-constexpr int orderOfExpansion = 9;
-
 using AutoPasCont = autopas::AutoPas<FmmParticle, autopas::FullParticleCell<FmmParticle>>;
 using Complex = std::complex<double>;
 using ComplexMatrix = std::vector<std::vector<Complex>>;

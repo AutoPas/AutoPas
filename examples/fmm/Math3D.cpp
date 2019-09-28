@@ -6,46 +6,30 @@
 
 #include "Math3D.h"
 
-class MathOpt {
- public:
-  static std::vector<double> factorialValue;
-  static std::vector<double> doubleFactorialValue;
-};
+namespace Math3D {
+
 std::vector<double> MathOpt::factorialValue;
 std::vector<double> MathOpt::doubleFactorialValue;
+std::vector<double> MathOpt::legendreCache;
+std::complex<double> MathOpt::sphericalCache;
+std::vector<std::vector<double>> MathOpt::getAValue;
+int MathOpt::legendreLastM;
+std::vector<std::complex<double>> MathOpt::imaginaryPower;
 
 std::array<double, 3> toSpherical(const std::array<double, 3> &cartesian) {
   double x = cartesian[0];
   double y = cartesian[1];
   double z = cartesian[2];
-  double rho;
-  double phi;
   double theta;
 
-  rho = std::sqrt(x * x + y * y + z * z);
-  phi = std::atan2(y, x);
+  double rho = std::sqrt(x * x + y * y + z * z);
+  double phi = std::atan2(y, x);
   if (rho > 0) {
     theta = std::acos(z / rho);
   } else {
     theta = 0;
   }
 
-  /*double oldPhi = 0;
-  if (x != 0.0) {
-    oldPhi = std::atan(y / x);
-  } else {
-    if (y > 0) {
-      oldPhi = M_PI_2;
-    } else {
-      oldPhi = -M_PI_2;
-    }
-  }
-
-  if (phi != oldPhi) {
-    std::cerr << "toSpherical(" << x << "," << y << "," << z << ") phi = " << phi << ", oldPhi = " << oldPhi
-              << std::endl;
-  }*/
-
   if (__isnan(phi)) {
     std::cerr << "phi is nan" << std::endl;
   }
@@ -53,59 +37,8 @@ std::array<double, 3> toSpherical(const std::array<double, 3> &cartesian) {
   if (__isnan(theta)) {
     std::cerr << "theta is nan" << std::endl;
   }
-
-  /*double r = std::sqrt(x * x + y * y + z * z);
-  double phi = 0;
-  double theta = 0;
-  if (x != 0.0) {
-    phi = std::atan(y / x);
-  } else {
-    if (y > 0) {
-      phi = M_PI_2;
-    } else {
-      phi = -M_PI_2;
-    }
-  }
-  if (r > 0) {
-    theta = std::acos(z / r);
-  }
-
-  if (__isnan(phi)) {
-    std::cerr << "phi is nan" << std::endl;
-  }
-
-  if (__isnan(theta)) {
-    std::cerr << "theta is nan" << std::endl;
-  }*/
 
   return std::array<double, 3>({rho, theta /*alpha*/, phi /*beta*/});
-}
-
-/*std::array<double, 3> toCartesian(std::array<double, 3> spherical) {
-  double r = spherical[0];
-  double alpha = spherical[1];
-  double beta = spherical[2];
-  double x = r * std::sin(beta) * std::cos(alpha);
-  double y = r * std::sin(beta) * std::sin(alpha);
-  double z = r * std::cos(beta);
-  return std::array<double, 3>({x, y, z});
-}*/
-
-// Parameter is only checked at the first call.
-double doubleFactorial(int x) {
-  if (x < 0) {
-    std::cerr << "doubleFactorial(" << x << ") is not defined" << std::endl;
-  }
-  return MathOpt::doubleFactorialValue.at(x);
-}
-
-// Parameter is only checked at the first call.
-double factorial(int x) {
-  if (x < 0) {
-    std::cerr << "factorial(" << x << ") is not defined" << std::endl;
-  }
-  return MathOpt::factorialValue.at(x);
-  // return factorialRec(x);
 }
 
 // Recurrence relation from https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2634295/#APP1
@@ -156,17 +89,24 @@ double associatedLegendrePolynomial(int m, int n, double x) {
     return std::pow(-1, m) * factorial(n - m) / factorial(n + m) * associatedLegendrePolynomial(-m, n, x);
   }
   // build cache
-  std::vector<double> cache(n - m + 2);
-  cache[0] = associatedLegendrePolynomialRec(m, m, x);
-  cache[1] = associatedLegendrePolynomialRec(m, m + 1, x);
+  // The recurrence relation accesses associated legendre polynomials for degrees n-1 and n-2.
+  // To ensure every degree is only calculated once, the degrees are calculated here from m to n.
+
+  MathOpt::legendreCache = std::vector<double>(n - m + 2);
+
+  MathOpt::legendreCache[0] = associatedLegendrePolynomialRec(m, m, x);
+  MathOpt::legendreCache[1] = associatedLegendrePolynomialRec(m, m + 1, x);
 
   for (int i = 2; i <= n - m; ++i) {
     int cacheN = m + i;
-    cache[i] = (x * (2 * cacheN - 1) * cache[i - 1] - (cacheN + m - 1) * cache[i - 2]) / (cacheN - m);
+    MathOpt::legendreCache[i] =
+        (x * (2 * cacheN - 1) * MathOpt::legendreCache[i - 1] - (cacheN + m - 1) * MathOpt::legendreCache[i - 2]) /
+        (cacheN - m);
   }
+  MathOpt::legendreLastM = m;
 
   // return associatedLegendrePolynomialRec(m, n, x);
-  return cache[n - m];
+  return MathOpt::legendreCache[n - m];
 }
 
 std::complex<double> sphericalHarmonics(int m, int n, double theta, double phi) {
@@ -175,28 +115,23 @@ std::complex<double> sphericalHarmonics(int m, int n, double theta, double phi) 
               << std::endl;
   }
 
-  std::complex<double> ret = 1;
-  double root = std::sqrt(factorial(n - std::abs(m)) / factorial(n + std::abs(m)));
-
-  ret *= root;
-
   using namespace std::complex_literals;
-  ret *= std::exp(1i * double(m) * phi);
-
-  ret *= associatedLegendrePolynomial(std::abs(m), n, std::cos(theta));
-
-  return ret;
+  return std::exp(1i * double(m) * phi) * std::sqrt(factorial(n - std::abs(m)) / factorial(n + std::abs(m))) *
+         associatedLegendrePolynomial(std::abs(m), n, std::cos(theta));
 }
 
-double getA(int m, int n) {
+void sphericalHarmonicsBuildCache(int m, int n, double theta, double phi) {
+  associatedLegendrePolynomial(std::abs(m), n, std::cos(theta));
+  using namespace std::complex_literals;
+  MathOpt::sphericalCache = std::exp(1i * static_cast<double>(m) * phi);
+}
+
+double calculateA(int m, int n) {
   if (n - m < 0 || n + m < 0) {
     std::cerr << "getA(" << m << "," << n << ") is not defined for n - m < 0 or n + m < 0" << std::endl;
   }
 
   double result = std::pow(-1, n) / std::sqrt(factorial(n - m) * factorial(n + m));
-
-  /*std::cout << std::pow(-1, n) << "/"
-            << "sqrt(" << factorial(n - m) << "*" << factorial(n + m) << ")" << std::endl;*/
 
   assert(!__isnan(result));
 
@@ -209,17 +144,38 @@ std::array<double, 3> subtract(const std::array<double, 3> &a, const std::array<
 
 void initMath() {
   // factorial
-  MathOpt::factorialValue = std::vector<double>(100);
+  MathOpt::factorialValue = std::vector<double>(maxFactorialParameter + 1);
   MathOpt::factorialValue[0] = 1;
-  for (int i = 1; i < 100; ++i) {
+  for (int i = 1; i <= maxFactorialParameter; ++i) {
     MathOpt::factorialValue[i] = i * MathOpt::factorialValue[i - 1];
   }
 
   // double factorial
-  MathOpt::doubleFactorialValue = std::vector<double>(100);
+  MathOpt::doubleFactorialValue = std::vector<double>(maxFactorialParameter + 1);
   MathOpt::doubleFactorialValue[0] = 1;
   MathOpt::doubleFactorialValue[1] = 1;
-  for (int i = 2; i < 100; ++i) {
+  for (int i = 2; i <= maxFactorialParameter; ++i) {
     MathOpt::doubleFactorialValue[i] = i * MathOpt::doubleFactorialValue[i - 2];
   }
+
+  // getA
+  MathOpt::getAValue =
+      std::vector<std::vector<double>>(maxFactorialParameter + 1, std::vector<double>(maxFactorialParameter / 2 + 1));
+  for (int m = -maxFactorialParameter / 2; m <= maxFactorialParameter / 2; ++m) {
+    for (int n = std::abs(m); n <= maxFactorialParameter / 2; ++n) {
+      MathOpt::getAValue[maxFactorialParameter / 2 + m][n] = calculateA(m, n);
+    }
+  }
+
+  // powI
+  MathOpt::imaginaryPower = std::vector<std::complex<double>>(8);
+  using namespace std::complex_literals;
+  MathOpt::imaginaryPower[0] = 1;
+  MathOpt::imaginaryPower[1] = 1i;
+  MathOpt::imaginaryPower[2] = -1;
+  MathOpt::imaginaryPower[3] = -1i;
+  for (int i = 0; i < 4; ++i) {
+    MathOpt::imaginaryPower[i + 4] = MathOpt::imaginaryPower[i];
+  }
+}
 }

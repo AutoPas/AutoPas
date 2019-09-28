@@ -5,6 +5,7 @@
  */
 
 #include <cassert>
+#include <chrono>
 #include <complex>
 #include <iostream>
 #include <random>
@@ -14,48 +15,62 @@
 #include "Operators.h"
 #include "autopas/AutoPas.h"
 
-void upwardPassRec(OctreeNode *node) {
-  if (node->isLeaf()) {
-    Operators::P2M(node);
+std::chrono::steady_clock::time_point lastTimePoint = std::chrono::steady_clock::now();
+
+double measureTime() {
+  std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+  double diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTimePoint).count();
+  lastTimePoint = now;
+  return diff;
+}
+
+void upwardPassRec(OctreeNode &node, Operators &op) {
+  if (node.isLeaf()) {
+    op.P2M(node);
   } else {
     for (int i = 0; i < 8; ++i) {
-      auto child = node->getChild(i);
-      upwardPassRec(child);
+      auto child = node.getChild(i);
+      upwardPassRec(*child, op);
     }
-    Operators::M2M(node);
+    op.M2M(node);
   }
 }
 
-void upwardPass(Octree *tree) { upwardPassRec(tree->getRoot()); }
+void upwardPass(Octree &tree, Operators &op) {
+  upwardPassRec(*tree.getRoot(), op);
+  std::cout << "P2M and M2M took " << measureTime() << "ms" << std::endl;
+}
 
-void downwardPassRec1(OctreeNode *node) {
-  Operators::M2L(node);
-  if (!node->isLeaf()) {
+void downwardPassRec1(OctreeNode &node, Operators &op) {
+  op.M2L(node);
+  if (!node.isLeaf()) {
     for (int i = 0; i < 8; ++i) {
-      auto child = node->getChild(i);
-      downwardPassRec1(child);
+      auto child = node.getChild(i);
+      downwardPassRec1(*child, op);
     }
   }
 }
 
-void downwardPassRec2(OctreeNode *node) {
-  Operators::L2L(node);
-  if (!node->isLeaf()) {
+void downwardPassRec2(OctreeNode &node, Operators &op) {
+  op.L2L(node);
+  if (!node.isLeaf()) {
     for (int i = 0; i < 8; ++i) {
-      auto child = node->getChild(i);
-      downwardPassRec2(child);
+      auto child = node.getChild(i);
+      downwardPassRec2(*child, op);
     }
   } else {
-    Operators::L2P(node);
+    op.L2P(node);
   }
 }
 
-void downwardPass(Octree *tree) {
-  downwardPassRec1(tree->getRoot());
-  downwardPassRec2(tree->getRoot());
+void downwardPass(Octree &tree, Operators &op) {
+  downwardPassRec1(*tree.getRoot(), op);
+  std::cout << "M2L took " << measureTime() << "ms" << std::endl;
+  downwardPassRec2(*tree.getRoot(), op);
+  std::cout << "L2L and L2P took " << measureTime() << "ms" << std::endl;
 }
 
-void randomTest() {
+void randomTest(int orderOfExpansion) {
   Octree tree(4, 2.0);
 
   auto vec = tree.getCell(tree.getHeight(), 2, 1, 3)->getCenter();
@@ -97,16 +112,17 @@ void randomTest() {
   corner1->addParticle(particle1);
   corner2->addParticle(particle2);
 
-  double distance = toSpherical(subtract(particle1.getR(), particle2.getR()))[0];
+  double distance = Math3D::toSpherical(Math3D::subtract(particle1.getR(), particle2.getR()))[0];
   std::cout << "distance = " << distance << std::endl;
   std::cout << "exact = " << charge2 / distance << std::endl;
   std::cout << "exact = " << charge1 / distance << std::endl;
 
-  upwardPass(&tree);
-  downwardPass(&tree);
+  Operators op(orderOfExpansion);
+  upwardPass(tree, op);
+  downwardPass(tree, op);
 }
 
-bool almostEqual(double a, double b) { return std::abs(a - b) < 0.00001; }
+bool almostEqual(double a, double b) { return std::abs(a - b) < 0.01; }
 bool almostEqual(std::complex<double> a, std::complex<double> b) {
   return std::abs(a.real() - b.real()) < 0.00001 && std::abs(a.imag() - b.imag()) < 0.00001;
 }
@@ -115,21 +131,21 @@ double sphericalNormalization(int n) { return std::sqrt((2 * n + 1) / (4 * M_PI)
 
 void test3DMath() {
   // Factorial
-  assert(factorial(5) == 120);
-  assert(factorial(4) == 24);
+  assert(Math3D::factorial(5) == 120);
+  assert(Math3D::factorial(4) == 24);
 
   // Double Factorial
-  assert(doubleFactorial(9) == 945);
-  assert(doubleFactorial(4) == 8);
+  assert(Math3D::doubleFactorial(9) == 945);
+  assert(Math3D::doubleFactorial(4) == 8);
 
   // Associated Legendre Polynomials
-  assert(associatedLegendrePolynomial(0, 0, 0.7) == 1);
-  assert(associatedLegendrePolynomial(0, 1, 0.4) == 0.4);
-  assert(associatedLegendrePolynomial(2, 2, 0.3) == 2.73);
+  assert(Math3D::associatedLegendrePolynomial(0, 0, 0.7) == 1);
+  assert(Math3D::associatedLegendrePolynomial(0, 1, 0.4) == 0.4);
+  assert(Math3D::associatedLegendrePolynomial(2, 2, 0.3) == 2.73);
 
   // P3,4(0.2)
   std::cout << "P3,4(0.2)" << std::endl;
-  double result = associatedLegendrePolynomial(3, 4, 0.2);
+  double result = Math3D::associatedLegendrePolynomial(3, 4, 0.2);
   double exact = -105.0 * 0.2 * std::pow(1.0 - 0.2 * 0.2, 3.0 / 2.0);
   std::cout << "result=" << result << std::endl;
   std::cout << "exact=" << exact << std::endl;
@@ -137,7 +153,7 @@ void test3DMath() {
 
   // P1,3(0.6)
   std::cout << "P1,3(0.6)" << std::endl;
-  result = associatedLegendrePolynomial(1, 3, 0.6);
+  result = Math3D::associatedLegendrePolynomial(1, 3, 0.6);
   exact = -3.0 / 2.0 * (5.0 * 0.6 * 0.6 - 1.0) * std::pow(1 - 0.6 * 0.6, 0.5);
   std::cout << "result=" << result << std::endl;
   std::cout << "exact=" << exact << std::endl;
@@ -155,7 +171,7 @@ void test3DMath() {
 
   // Y0,0(theta, phi)
   std::cout << "Y0,0(" << theta << ", " << phi << ")" << std::endl;
-  cResult = sphericalHarmonics(0, 0, theta, phi);
+  cResult = Math3D::sphericalHarmonics(0, 0, theta, phi);
   cExact = 1.0 / 2.0 * std::sqrt(1.0 / M_PI) / sphericalNormalization(0);
   std::cout << "cResult=" << cResult << std::endl;
   std::cout << "cExact=" << cExact << std::endl;
@@ -163,7 +179,7 @@ void test3DMath() {
 
   // Y0,2(theta, phi)
   std::cout << "Y0,2(" << theta << ", " << phi << ")" << std::endl;
-  cResult = sphericalHarmonics(0, 2, theta, phi);
+  cResult = Math3D::sphericalHarmonics(0, 2, theta, phi);
   cExact = 1.0 / 4.0 * std::sqrt(5.0 / M_PI) * (3 * std::pow(std::cos(theta), 2) - 1) / sphericalNormalization(2);
   std::cout << "cResult=" << cResult << std::endl;
   std::cout << "cExact=" << cExact << std::endl;
@@ -171,7 +187,7 @@ void test3DMath() {
 
   // Y2,2(theta, phi)
   std::cout << "Y2,2(" << theta << ", " << phi << ")" << std::endl;
-  cResult = sphericalHarmonics(2, 2, theta, phi);
+  cResult = Math3D::sphericalHarmonics(2, 2, theta, phi);
   using namespace std::complex_literals;
   cExact = 1.0 / 4.0 * std::sqrt(7.5 / M_PI) * std::pow(std::sin(theta), 2) * std::exp(2.0 * 1i * phi) /
            sphericalNormalization(2);
@@ -181,7 +197,7 @@ void test3DMath() {
 
   // A2,5
   std::cout << "A2,5" << std::endl;
-  result = getA(2, 5);
+  result = Math3D::getA(2, 5);
   exact = -1.0 / std::sqrt(30240);
   std::cout << "result=" << result << std::endl;
   std::cout << "exact=" << exact << std::endl;
@@ -189,29 +205,36 @@ void test3DMath() {
 
   // A7,9
   std::cout << "A7,9" << std::endl;
-  result = getA(7, 9);
-  exact = -1.0 / std::sqrt(2 * factorial(16));
+  result = Math3D::getA(7, 9);
+  exact = -1.0 / std::sqrt(2 * Math3D::factorial(16));
   std::cout << "result=" << result << std::endl;
   std::cout << "exact=" << exact << std::endl;
   assert(almostEqual(result, exact));
 
   // subtract
   std::cout << "subtract" << std::endl;
-  auto vec = subtract({4, 3, 2}, {1, 4, 3});
+  auto vec = Math3D::subtract({4, 3, 2}, {1, 4, 3});
   assert(vec[0] == 3 && vec[1] == -1 && vec[2] == -1);
 }
 
 int main(int argc, char **argv) {
-  std::cout << "test" << std::endl;
+  int orderOfExpansion = 8;
 
-  initMath();
+  if (argc == 2) {
+    orderOfExpansion = static_cast<int>(std::strtol(argv[1], nullptr, 10));
+  }
+  std::cout << "orderOfExpansion = " << orderOfExpansion << std::endl;
 
-  test3DMath();
-  std::cout << "test 3DMath done" << std::endl << std::endl;
+  Math3D::initMath();
+
+  // test3DMath();
+  // std::cout << "test 3DMath done" << std::endl << std::endl;
 
   // std::cout << factorial(4) << std::endl;
 
-  // randomTest();
+  // randomTest(orderOfExpansion);
+
+  measureTime();
 
   Octree tree(4, 2.0);
 
@@ -220,20 +243,60 @@ int main(int argc, char **argv) {
 
   auto cell333 = tree.getCell(tree.getHeight(), 3, 3, 3)->getContainer();
 
-  FmmParticle particle;
-
   // particle1
-  particle = FmmParticle({0.5, 0.5, 0.5}, {0, 0, 0}, 1, 25.0);
-  cell000->addParticle(particle);
+  auto particle1 = FmmParticle({0.5, 0.5, 0.5}, {0, 0, 0}, 1, 25.0);
+  cell000->addParticle(particle1);
   // particle2
-  particle = FmmParticle({1.5, 0.5, 1.5}, {0, 0, 0}, 1, 50.0);
-  cell000->addParticle(particle);
+  auto particle2 = FmmParticle({1.5, 0.5, 1.5}, {0, 0, 0}, 1, 50.0);
+  cell000->addParticle(particle2);
   // particle3
-  particle = FmmParticle({2.5, 3.5, 3}, {0, 0, 0}, 1, 100.0);
-  cell111->addParticle(particle);
+  auto particle3 = FmmParticle({2.5, 3.5, 3}, {0, 0, 0}, 1, 100.0);
+  cell111->addParticle(particle3);
   // particle4
-  particle = FmmParticle({7.5, 6.5, 7}, {0, 0, 0}, 1, 500.0);
-  cell333->addParticle(particle);
+  auto particle4 = FmmParticle({7.5, 6.5, 7}, {0, 0, 0}, 1, 500.0);
+  cell333->addParticle(particle4);
+
+  std::cout << "Init took " << measureTime() << "ms" << std::endl;
+
+  Operators op(orderOfExpansion);
+  upwardPass(tree, op);
+  downwardPass(tree, op);
+
+  auto iter = cell000->begin();
+  particle1 = *iter;
+  ++iter;
+  particle2 = *iter;
+  iter = cell111->begin();
+  particle3 = *iter;
+  iter = cell333->begin();
+  particle4 = *iter;
+
+  std::cout << particle1.resultFMM << std::endl;
+  std::cout << particle2.resultFMM << std::endl;
+  std::cout << particle3.resultFMM << std::endl;
+  std::cout << particle4.resultFMM << std::endl;
+
+  assert(almostEqual(particle1.resultFMM, 44.32));
+  assert(almostEqual(particle2.resultFMM, 49.45));
+  assert(almostEqual(particle3.resultFMM, 70.71));
+  assert(almostEqual(particle4.resultFMM, 21.3));
+
+  /*std::cout << "fmm took " << measureTime() << "ms" << std::endl;
+
+  int testSize = 1000000;
+  Complex checksum = 0;
+  for(int j = -testSize; j <= testSize; j++) {
+    checksum += Math3D::powI(j) * static_cast<double>(j);
+  }
+  std::cout << checksum << std::endl;
+  std::cout << "powI took " << measureTime() << "ms" << std::endl;
+  checksum = 0;
+  for(int j = -testSize; j <= testSize; j++) {
+    using namespace std::complex_literals;
+    checksum += std::pow(1i, j) * static_cast<double>(j);
+  }
+  std::cout << checksum << std::endl;
+  std::cout << "std::pow took " << measureTime() << "ms" << std::endl;*/
 
   // particle1:
   // interacts with 4
@@ -259,36 +322,6 @@ int main(int argc, char **argv) {
   // dist = sqrt(50) = 7.07
   // exact = 14.14
   // sum = 21.3
-
-  upwardPass(&tree);
-  downwardPass(&tree);
-
-  // Printed Result:
-  // result = 4.04145
-  // result = 4.15036
-  // result = 5.06055
-  // result = 6.06218
-  // result = 150.369
-
-  // Expected Result:
-  // (1/1/1):
-  // p = 4.04       good
-  //
-  // (0.5/0.5/0.5)
-  // p = 3.73       off by 0.42
-  //
-  // (1.5/1.5/1.5)
-  // p = 4.41       off by 0.65
-  //
-  // (3,3,3)
-  // p = 6.06       good
-  //
-  // (7,7,7)
-  // p += 1.64
-  // p += 2.22
-  // p += 2.62
-  // p += 144.30
-  // p = 150.78     off by 0.41
 
   return EXIT_SUCCESS;
 }
