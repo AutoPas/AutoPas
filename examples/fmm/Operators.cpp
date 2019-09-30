@@ -162,10 +162,10 @@ void Operators::L2L(OctreeNode &node) {
 
             auto complex = std::pow(1i, std::abs(m) - std::abs(m - k) - std::abs(k));
 
-            Complex product = parentL * complex;
+            Complex product = parentL * complex * Math3D::getA(m - k, n - j);
             if (product != 0.0) {
               auto harmonics = Math3D::sphericalHarmonics(m - k, n - j, theta, phi);
-              product *= Math3D::getA(m - k, n - j) * Math3D::getA(k, j) * harmonics * std::pow(rho, n - j) /
+              product *= Math3D::getA(k, j) * harmonics * std::pow(rho, n - j) /
                          (std::pow(-1, n + j) * Math3D::getA(m, n));
             }
 
