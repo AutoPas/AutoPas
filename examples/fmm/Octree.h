@@ -34,12 +34,15 @@ class Octree {
   OctreeNode *getRoot() { return &(*root); }
 
   int getHeight() { return height; }
+  int getSize() {return size;}
+  double getCellSize() {return cellSize;}
 
  private:
   std::unique_ptr<OctreeNode> root;
   CellMatrix4D cellMatrix;
   int size;
   int height;
+  double cellSize;
 };
 
 class OctreeNode {

@@ -8,6 +8,7 @@
 
 Octree::Octree(int size, double cellSize) {
   this->size = size;
+  this->cellSize = cellSize;
   this->height = int(std::lround(std::log2(size)));
 
   // Init cellMatrix.
