@@ -26,7 +26,7 @@ foreach (TMP_PATH ${ALL_SOURCE_FILES})
     endif ()
 endforeach (TMP_PATH)
 
-find_program(CLANG_FORMAT NAMES clang-format clang-format-6.0)
+find_program(CLANG_FORMAT NAMES clang-format-9)
 
 if (CLANG_FORMAT)
     message(STATUS "clang format found, added clangformat target")
