@@ -6,14 +6,38 @@
 
 #include "Octree.h"
 
-Octree::Octree(int size, double cellSize) {
+Octree::Octree(int size, double cellSize, int contSize) {
   this->size = size;
   this->cellSize = cellSize;
   this->height = int(std::lround(std::log2(size)));
+  this->contSize = contSize;
+
+  int numContainers = size / contSize;
 
   // Init cellMatrix.
   cellMatrix =
       CellMatrix4D(height + 1, CellMatrix3D(size, CellMatrix2D(size, std::vector<OctreeNode *>(size, nullptr))));
+
+  contMatrix = std::vector<std::vector<std::vector<std::shared_ptr<AutoPasCont>>>>(
+      numContainers, std::vector<std::vector<std::shared_ptr<AutoPasCont>>>(
+                         numContainers, std::vector<std::shared_ptr<AutoPasCont>>(numContainers)));
+
+  double contCellSize = cellSize * contSize;
+  for (int i = 0; i < numContainers; ++i) {
+    for (int j = 0; j < numContainers; ++j) {
+      for (int k = 0; k < numContainers; ++k) {
+        contMatrix[i][j][k] = std::make_shared<AutoPasCont>();
+
+        contMatrix[i][j][k]->setAllowedContainers(
+            std::set<autopas::ContainerOption>{autopas::ContainerOption::directSum});
+
+        contMatrix[i][j][k]->setBoxMin({i * contCellSize, j * contCellSize, k * contCellSize});
+        contMatrix[i][j][k]->setBoxMax({(1.0 + i) * contCellSize, (1.0 + j) * contCellSize, (1.0 + k) * contCellSize});
+
+        contMatrix[i][j][k]->init();
+      }
+    }
+  }
 
   // Create tree.
   root = std::make_unique<OctreeNode>(0, 0, 0, size, cellSize, this, nullptr);
@@ -57,13 +81,18 @@ OctreeNode::OctreeNode(int x, int y, int z, int size, double cellSize, Octree *t
     child[7] = std::make_unique<OctreeNode>(x + newSize, y + newSize, z + newSize, newSize, cellSize, tree, this);
 
   } else {
+    // cont = tree->getAutoPasCont(x,y,z);
+    this->lowCorner = std::array<double, 3>({x * cellSize, y * cellSize, z * cellSize});
+    this->highCorner = std::array<double, 3>({(x + 1.0) * cellSize, (y + 1.0) * cellSize, (z + 1.0) * cellSize});
+    this->haloLowCorner = std::array<double, 3>({(x - 1.0) * cellSize, (y - 1.0) * cellSize, (z - 1.0) * cellSize});
+    this->haloHighCorner = std::array<double, 3>({(x + 2.0) * cellSize, (y + 2.0) * cellSize, (z + 2.0) * cellSize});
     // Create AutoPas object at leaf.
     cont = std::make_unique<AutoPasCont>();
 
     cont->setAllowedContainers(std::set<autopas::ContainerOption>{autopas::ContainerOption::directSum});
 
-    cont->setBoxMin({x * cellSize, y * cellSize, z * cellSize});
-    cont->setBoxMax({(1.0 + x) * cellSize, (1.0 + y) * cellSize, (1.0 + z) * cellSize});
+    cont->setBoxMin(lowCorner);
+    cont->setBoxMax(highCorner);
 
     cont->init();
   }

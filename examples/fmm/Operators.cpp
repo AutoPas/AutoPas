@@ -25,7 +25,7 @@ void Operators::P2M(OctreeNode &leaf) {
   leaf.fmmM = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
 
   // Loop order changed, so the spherical harmonics cache is built less frequently.
-  for (auto iter = leaf.getContainer()->begin(); iter.isValid(); ++iter) {
+  for (auto iter = leaf.getContainer()->getRegionIterator(leaf.getLowCorner(), leaf.getHighCorner()); iter.isValid(); ++iter) {
     auto spherical = Math3D::toSpherical(Math3D::subtract(iter->getR(), leaf.getCenter()));
     for (int m = -orderOfExpansion; m <= orderOfExpansion; ++m) {
       Math3D::sphericalHarmonicsBuildCache(-m, orderOfExpansion, spherical[1], spherical[2]);
@@ -165,8 +165,8 @@ void Operators::L2L(OctreeNode &node) {
             Complex product = parentL * complex * Math3D::getA(m - k, n - j);
             if (product != 0.0) {
               auto harmonics = Math3D::sphericalHarmonics(m - k, n - j, theta, phi);
-              product *= Math3D::getA(k, j) * harmonics * std::pow(rho, n - j) /
-                         (std::pow(-1, n + j) * Math3D::getA(m, n));
+              product *=
+                  Math3D::getA(k, j) * harmonics * std::pow(rho, n - j) / (std::pow(-1, n + j) * Math3D::getA(m, n));
             }
 
             lmn += product;
@@ -181,7 +181,7 @@ void Operators::L2L(OctreeNode &node) {
 }
 
 void Operators::L2P(OctreeNode &leaf) {
-  for (auto iter = leaf.getContainer()->begin(); iter.isValid(); ++iter) {
+  for (auto iter = leaf.getContainer()->getRegionIterator(leaf.getLowCorner(), leaf.getHighCorner()); iter.isValid(); ++iter) {
     auto sphericalPos = Math3D::toSpherical(Math3D::subtract(iter->getR(), leaf.getCenter()));
 
     double rho = sphericalPos[0];
@@ -207,7 +207,7 @@ void Operators::L2P(OctreeNode &leaf) {
     if (std::abs(potential.imag()) > 0.00001) {
       std::cerr << "Potential has non-zero imaginary part: " << potential << std::endl;
     }
-
+    iter->longRange = potential.real();
     iter->resultFMM = potential.real();
   }
 }

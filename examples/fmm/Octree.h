@@ -25,7 +25,11 @@ using CellMatrix4D = std::vector<CellMatrix3D>;
 
 class Octree {
  public:
-  explicit Octree(int size, double cellSize);
+  explicit Octree(int size, double cellSize, int contSize);
+
+  std::shared_ptr<AutoPasCont> getAutoPasCont(int x, int y, int z) {
+    return contMatrix[x / contSize][y / contSize][z / contSize];
+  }
 
   OctreeNode *getCell(int depth, int x, int y, int z);
 
@@ -34,14 +38,16 @@ class Octree {
   OctreeNode *getRoot() { return &(*root); }
 
   int getHeight() { return height; }
-  int getSize() {return size;}
-  double getCellSize() {return cellSize;}
+  int getSize() { return size; }
+  double getCellSize() { return cellSize; }
 
  private:
   std::unique_ptr<OctreeNode> root;
   CellMatrix4D cellMatrix;
+  std::vector<std::vector<std::vector<std::shared_ptr<AutoPasCont>>>> contMatrix;
   int size;
   int height;
+  int contSize;
   double cellSize;
 };
 
@@ -126,11 +132,16 @@ class OctreeNode {
 
   bool getIsZeroM() { return isZeroM; }
 
+  std::array<double, 3> getLowCorner() { return lowCorner; }
+  std::array<double, 3> getHighCorner() { return highCorner; }
+  std::array<double, 3> getHaloLowCorner() { return haloLowCorner; }
+  std::array<double, 3> getHaloHighCorner() { return haloHighCorner; }
+
  private:
   Octree *tree;
   std::vector<std::unique_ptr<OctreeNode>> child;
   OctreeNode *parent;
-  std::unique_ptr<AutoPasCont> cont;
+  std::shared_ptr<AutoPasCont> cont;
   int x, y, z;
   double cellSize;
   int size;
@@ -140,4 +151,8 @@ class OctreeNode {
   std::set<OctreeNode *> interactionList;
   bool isZeroL = true;
   bool isZeroM = true;
+  std::array<double, 3> lowCorner;
+  std::array<double, 3> highCorner;
+  std::array<double, 3> haloLowCorner;
+  std::array<double, 3> haloHighCorner;
 };

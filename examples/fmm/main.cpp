@@ -90,7 +90,9 @@ void addParticle(Octree &tree, const std::array<double, 3> &pos, double charge) 
 
 void generateParticleList(OctreeNode &node, std::vector<FmmParticle *> &particles) {
   if (node.isLeaf()) {
-    for (auto iter = node.getContainer()->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    for (auto iter = node.getContainer()->getRegionIterator(node.getLowCorner(), node.getHighCorner(),
+                                                            autopas::IteratorBehavior::ownedOnly);
+         iter.isValid(); ++iter) {
       particles.push_back(&*iter);
     }
   } else {
@@ -103,11 +105,14 @@ void generateParticleList(OctreeNode &node, std::vector<FmmParticle *> &particle
 void addParticlesFromNeighbours(OctreeNode &node) {
   if (node.isLeaf()) {
     // Check if cell contains particles.
-    if (node.getContainer()->begin(autopas::IteratorBehavior::ownedOnly).isValid()) {
+    if (node.getContainer()
+            ->getRegionIterator(node.getLowCorner(), node.getHighCorner(), autopas::IteratorBehavior::ownedOnly)
+            .isValid()) {
       for (auto neighbour : *node.getNeighbourList()) {
         if (&node != neighbour) {
-          for (auto iter = neighbour->getContainer()->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid();
-               ++iter) {
+          for (auto iter = neighbour->getContainer()->getRegionIterator(
+                   neighbour->getLowCorner(), neighbour->getHighCorner(), autopas::IteratorBehavior::ownedOnly);
+               iter.isValid(); ++iter) {
             node.getContainer()->addOrUpdateHaloParticle(*iter);
           }
         }
@@ -124,13 +129,17 @@ void calculateNearField(OctreeNode &node /*, NearFieldFunctor &functor*/) {
   if (node.isLeaf()) {
     // node.getContainer()->iteratePairwise(&functor);
 
-    for (auto part = node.getContainer()->begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
-      for (auto inter = node.getContainer()->begin(); inter.isValid(); ++inter) {
+    for (auto part = node.getContainer()->getRegionIterator(node.getLowCorner(), node.getHighCorner(),
+                                                            autopas::IteratorBehavior::ownedOnly);
+         part.isValid(); ++part) {
+      for (auto inter = node.getContainer()->getRegionIterator(node.getHaloLowCorner(), node.getHaloHighCorner());
+           inter.isValid(); ++inter) {
         if (part->getID() != inter->getID()) {
           auto distVec = Math3D::subtract(part->getR(), inter->getR());
           auto spherical = Math3D::toSpherical(distVec);
           auto dist = spherical[0];
           part->resultFMM += inter->charge / dist;
+          part->shortRange += inter->charge / dist;
           nearFieldCalculations++;
         }
       }
@@ -162,7 +171,7 @@ int main(int argc, char **argv) {
 
   measureTime();
 
-  Octree tree(treeSize, 2.0);
+  Octree tree(treeSize, 2.0, 1);
 
   std::random_device rd;
   std::mt19937 randomEngine(rd());
@@ -221,8 +230,10 @@ int main(int argc, char **argv) {
     if (error > errorTolerance) {
       std::cout << part->getR()[0] << ", " << part->getR()[1] << ", " << part->getR()[2]
                 << ", charge = " << part->charge << std::endl;
-      std::cout << part->resultFMM << std::endl;
-      std::cout << part->resultExact << std::endl;
+      std::cout << "long range " << part->longRange << std::endl;
+      std::cout << "short range " << part->shortRange << std::endl;
+      std::cout << "resultFMM " << part->resultFMM << std::endl;
+      std::cout << "resultExact " << part->resultExact << std::endl;
 
       assert(false);
     }
