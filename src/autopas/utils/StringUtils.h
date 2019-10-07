@@ -69,7 +69,7 @@ inline int needlemanWunschScore(std::string s1, std::string s2) {
  * Finds best match of needle in haystack.
  *
  * Needle is compared to every option in haystack and the Needleman-Wunsch score calculated.
- * If the result is unambiguous an exception is thrown.
+ * If the result is ambiguous an exception is thrown.
  *
  * @param haystack Vector of string to match to.
  * @param needle
@@ -91,9 +91,9 @@ inline std::string matchStrings(const std::vector<std::string> &haystack, const 
     }
   }
   if (matchedStrings.size() > 1) {
-    //    throw std::runtime_error("Given string is unambiguous! Which option do you mean: " +
+    //    throw std::runtime_error("Given string is ambiguous! Which option do you mean: " +
     //    arrayToString(matchedStrings));
-    utils::ExceptionHandler::exception("Given String ({}) is unambiguous! Which option do you mean: {}", needle,
+    utils::ExceptionHandler::exception("Given String ({}) is ambiguous! Which option do you mean: {}", needle,
                                        [](auto arr) -> std::string {
                                          std::ostringstream ss;
                                          for (auto &a : arr) {
