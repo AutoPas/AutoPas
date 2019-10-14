@@ -187,6 +187,7 @@ int main(int argc, char **argv) {
   auto tuningAcqFun(parser.getAcquisitionFunctionOption());
   auto verletRebuildFrequency(parser.getVerletRebuildFrequency());
   auto verletSkinRadius(parser.getVerletSkinRadius());
+  auto verletClusterSize(parser.getVerletClusterSize());
   auto vtkFilename(parser.getWriteVTK());
 
   parser.printConfig();
@@ -213,6 +214,7 @@ int main(int argc, char **argv) {
   autopas.setCutoff(cutoff);
   autopas.setVerletSkin(verletSkinRadius);
   autopas.setVerletRebuildFrequency(verletRebuildFrequency);
+  autopas.setVerletClusterSize(verletClusterSize);
   autopas.setTuningInterval(tuningInterval);
   autopas.setTuningStrategyOption(tuningStrategy);
   autopas.setNumSamples(tuningSamples);
@@ -276,6 +278,14 @@ int main(int argc, char **argv) {
                                                                                           numIterations);
       flopsPerKernelCall =
           LJFunctorAVX<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      break;
+    }
+    case MDFlexParser::FunctorOption::lj12_6_Globals: {
+      durationApply = calculate<
+          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both, true>>(
+          autopas, cutoff, numIterations);
+      flopsPerKernelCall =
+          LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
       break;
     }
   }

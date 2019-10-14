@@ -171,3 +171,24 @@ TEST_F(AutoPasTest, checkArgumentValidation) {
   EXPECT_ANY_THROW(autoPas.setCellSizeFactor(0.0));
   EXPECT_NO_THROW(autoPas.setCellSizeFactor(0.5));
 }
+
+template <typename AP>
+void testConstIterator(const AP &ap, int numParticles) {
+  int num = 0;
+  for (auto iter = ap.begin(); iter != ap.end(); ++iter) {
+    ++num;
+  }
+  EXPECT_EQ(num, numParticles);
+}
+
+TEST_F(AutoPasTest, checkConstIterator) {
+  // with 0 particles
+  testConstIterator(autoPas, autoPas.getNumberOfParticles());
+
+  Particle p1({1., 1., 1.}, {0., 0., 0.}, 0);
+  autoPas.addParticle(p1);
+  Particle p2({2., 2., 2.}, {0., 0., 0.}, 1);
+  autoPas.addParticle(p2);
+  // with 2 particles
+  testConstIterator(autoPas, autoPas.getNumberOfParticles());
+}

@@ -10,14 +10,15 @@ TEST(StringUtilsTest, parseTraversalOptionsTest) {
   testParseMultiple<autopas::TraversalOption>(
       autopas::allTraversalOptions,
       "c01, c04, c08, c18, c04s, direct, sliced v01, c18verlet, verlet-sliced, "
-      "cuda-c01, verlet-lists, c01-combined, verlet-clusters, var-verlet-lists-as-build, verlet-clusters-coloring",
+      "cuda-c01, verlet-lists, c01-combined, verlet-clusters, var-verlet-lists-as-build, verlet-clusters-coloring, "
+      "verlet-cluster-cells",
       autopas::utils::StringUtils::parseTraversalOptions);
 }
 
 TEST(StringUtilsTest, parseContainerOptionsTest) {
   testParseMultiple<autopas::ContainerOption>(
       autopas::allContainerOptions,
-      "directSum, linkedCells, verletLists, verlet-cells, vcluster, varVerletListsAsBuild",
+      "directSum, linkedCells, verletLists, verlet-cells, vcluster, varVerletListsAsBuild, vclustercells",
       autopas::utils::StringUtils::parseContainerOptions);
 }
 

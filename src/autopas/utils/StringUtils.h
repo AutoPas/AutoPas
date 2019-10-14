@@ -75,7 +75,7 @@ inline std::string to_string(const DataLayoutOption &option) {
       return "Structure-of-Arrays";
     }
     case autopas::DataLayoutOption::cuda: {
-      return "Structure-of-Arrays on Cuda capable device";
+      return "Structure-of-Arrays-on-Cuda-capable-device";
     }
   }
   // do not implement default case to provoke compiler warnings if new options are introduced.
@@ -103,6 +103,9 @@ inline std::string to_string(const ContainerOption &option) {
     }
     case autopas::ContainerOption::verletClusterLists: {
       return "VerletClusterLists";
+    }
+    case autopas::ContainerOption::verletClusterCells: {
+      return "VerletClusterCells";
     }
     case autopas::ContainerOption::varVerletListsAsBuild: {
       return "VarVerletListsAsBuild";
@@ -154,6 +157,9 @@ inline std::string to_string(const TraversalOption &option) {
     }
     case autopas::TraversalOption::verletTraversal: {
       return "verlet-lists";
+    }
+    case autopas::TraversalOption::verletClusterCellsTraversal: {
+      return "verlet-cluster-cells";
     }
     case autopas::TraversalOption::c01CombinedSoA: {
       return "c01-combined-SoA";
@@ -321,6 +327,9 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
       }
     } else if (word.find("verlet-lists") != std::string::npos) {
       traversalOptions.insert(autopas::TraversalOption::verletTraversal);
+
+    } else if (word.find("verlet-cluster-cells") != std::string::npos) {
+      traversalOptions.insert(autopas::TraversalOption::verletClusterCellsTraversal);
     } else if (word.find("01") != std::string::npos) {
       if (word.find("cuda") != std::string::npos) {
         traversalOptions.insert(autopas::TraversalOption::c01Cuda);
@@ -360,7 +369,7 @@ inline std::set<autopas::TraversalOption> parseTraversalOptions(const std::strin
  * Converts a string of options to a set of enums. The options are expected to be lower case.
  * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
  *
- * Possible options: directSum, linkedCells, verletLists, vcells, vcluster
+ * Possible options: directSum, linkedCells, verletLists, vcells, vcluster, vclustercells
  *
  * @param containerOptionsString String containing container options.
  * @param ignoreUnknownOptions If set to false, a 'autopas::ContainerOption(-1)' will be inserted in the return set
@@ -381,7 +390,10 @@ inline std::set<autopas::ContainerOption> parseContainerOptions(const std::strin
       containerOptions.insert(autopas::ContainerOption::linkedCells);
     } else if (word.find('v') != std::string::npos) {
       if (word.find("cl") != std::string::npos) {
-        containerOptions.insert(autopas::ContainerOption::verletClusterLists);
+        if (word.find("cell") != std::string::npos)
+          containerOptions.insert(autopas::ContainerOption::verletClusterCells);
+        else
+          containerOptions.insert(autopas::ContainerOption::verletClusterLists);
       } else if (word.find("cel") != std::string::npos) {
         containerOptions.insert(autopas::ContainerOption::verletListsCells);
       } else if (word.find("uild") != std::string::npos) {
@@ -429,7 +441,8 @@ inline autopas::SelectorStrategyOption parseSelectorStrategy(const std::string &
  * @param dataLayoutsSting String containing the data layout option.
  * @param ignoreUnknownOptions If set to false, a 'autopas::DataLayoutOption(-1)' will be inserted in the return set
  * for each not parsable word.
- * @return An enum representing the data layout. If no valid option was found and unknown options are ignored the empty
+ * @return An enum representing the data layout. If no valid option was found and unknown options are ignored the
+ empty
  * set is returned.
  */
 inline std::set<autopas::DataLayoutOption> parseDataLayout(const std::string &dataLayoutsSting,

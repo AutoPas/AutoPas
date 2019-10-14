@@ -31,9 +31,11 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
 
   autopas::C18TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
-      traversalVerletLJ(_verletListsCells->getCellsPerDimension(), &func);
+      traversalVerletLJ(_verletListsCells->getCellsPerDimension(), &func, getCutoff(),
+                        _linkedCells->getCellBlock().getCellLength());
   autopas::C18Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
-      traversalLinkedLJ(_linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
+      traversalLinkedLJ(_linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func, getCutoff(),
+                        _linkedCells->getCellBlock().getCellLength());
 
   _verletListsCells->rebuildNeighborLists(&traversalVerletLJ);
   _verletListsCells->iteratePairwise(&traversalVerletLJ);
@@ -64,9 +66,11 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
   autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
                               true>
-      traversalVerletFLOPS(_verletListsCells->getCellsPerDimension(), &flopsVerlet);
+      traversalVerletFLOPS(_verletListsCells->getCellsPerDimension(), &flopsVerlet, getCutoff(),
+                           _linkedCells->getCellBlock().getCellLength());
   autopas::C18Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
-      traversalLinkedFLOPS(_linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
+      traversalLinkedFLOPS(_linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked,
+                           _linkedCells->getInteractionLength(), _linkedCells->getCellBlock().getCellLength());
   _verletListsCells->iteratePairwise(&traversalVerletFLOPS);
   _linkedCells->iteratePairwise(&traversalLinkedFLOPS);
 

@@ -1,5 +1,5 @@
 /**
- * @file CudaTraversalVersusDirectSumTest.cpp
+ * @file DSCudaTraversalVersusDirectSumTest.h
  * @author jspahl
  * @date 11.03.19
  */
@@ -12,11 +12,11 @@
 #include "autopas/autopasIncludes.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class CudaTraversalVersusDirectSumTest : public AutoPasTestBase {
+class DSCudaTraversalVersusDirectSumTest : public AutoPasTestBase {
  public:
-  CudaTraversalVersusDirectSumTest();
+  DSCudaTraversalVersusDirectSumTest();
 
-  ~CudaTraversalVersusDirectSumTest() override = default;
+  ~DSCudaTraversalVersusDirectSumTest() override = default;
 
   std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }
 
@@ -31,11 +31,11 @@ class CudaTraversalVersusDirectSumTest : public AutoPasTestBase {
 
   void fillContainerWithMolecules(
       unsigned long numMolecules,
-      autopas::ParticleContainer<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const;
+      autopas::ParticleContainer<autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const;
 
-  template <bool useNewton3>
+  template <bool useNewton3, bool calculateGlobals = false>
   void test(unsigned long numMolecules, double rel_err_tolerance);
 
-  autopas::DirectSum<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;
-  autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> _linkedCells;
+  autopas::DirectSum<autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;
+  autopas::DirectSum<autopas::FullParticleCell<autopas::MoleculeLJ>> _directSumCuda;
 };

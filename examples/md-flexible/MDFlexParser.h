@@ -17,8 +17,9 @@ using namespace std;
 
 class MDFlexParser {
  public:
-  enum FunctorOption { lj12_6, lj12_6_AVX };
+  enum FunctorOption { lj12_6, lj12_6_AVX, lj12_6_Globals };
   enum GeneratorOption { grid, uniform, gaussian };
+  enum PrecisionOption { FP32, FP64 };
 
   MDFlexParser() = default;
 
@@ -32,6 +33,7 @@ class MDFlexParser {
   double getDistributionStdDev() const;
   FunctorOption getFunctorOption() const;
   GeneratorOption getGeneratorOption() const;
+  PrecisionOption getPrecisionOption() const;
   size_t getIterations() const;
   bool getMeasureFlops() const;
   std::set<autopas::Newton3Option> getNewton3Options() const;
@@ -48,6 +50,7 @@ class MDFlexParser {
   std::string getWriteVTK() const;
   const std::set<autopas::TraversalOption> &getTraversalOptions() const;
   unsigned int getVerletRebuildFrequency() const;
+  unsigned int getVerletClusterSize() const;
   double getVerletSkinRadius() const;
   bool parseInput(int argc, char **argv);
   void printConfig();
@@ -73,6 +76,7 @@ class MDFlexParser {
   double distributionStdDev = 2.;
   FunctorOption functorOption = FunctorOption::lj12_6;
   GeneratorOption generatorOption = GeneratorOption::grid;
+  PrecisionOption precisionOption = PrecisionOption::FP64;
   size_t iterations = 10;
   spdlog::level::level_enum logLevel = spdlog::level::info;
   bool measureFlops = true;
@@ -86,5 +90,6 @@ class MDFlexParser {
   std::string writeVTK = "";
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
+  unsigned int verletClusterSize = 64;
   double verletSkinRadius = .2;
 };

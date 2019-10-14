@@ -21,22 +21,11 @@ namespace autopas {
 /**
  * The ParticleContainer class stores particles in some object and provides
  * methods to iterate over its particles.
- * @tparam Particle Class for particles
  * @tparam ParticleCell Class for the particle cells
  */
-template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
-class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCell> {
+template <class ParticleCell, class SoAArraysType = typename ParticleCell::ParticleType::SoAArraysType>
+class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
  public:
-  /**
-   *  Type of the Particle.
-   */
-  typedef Particle ParticleType;
-
-  /**
-   * Type of the ParticleCell.
-   */
-  typedef ParticleCell ParticleCellType;
-
   /**
    * Constructor of ParticleContainer
    * @param boxMin
@@ -118,7 +107,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * @param traversalOptions
    * @return True iff traversalOptions is a subset of _applicableTraversals
    */
-  bool checkIfTraversalsAreApplicable(std::set<TraversalOption> traversalOptions) {
+  bool checkIfTraversalsAreApplicable(const std::set<TraversalOption> &traversalOptions) const {
     auto applicableTraversals = compatibleTraversals::allCompatibleTraversals(this->getContainerType());
     return std::includes(applicableTraversals.begin(), applicableTraversals.end(), traversalOptions.begin(),
                          traversalOptions.end());
@@ -144,7 +133,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * Get the number of particles saved in the container.
    * @return Number of particles in the container.
    */
-  unsigned long getNumParticles() override {
+  unsigned long getNumParticles() const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
     // @todo: find a sensible value for magic number

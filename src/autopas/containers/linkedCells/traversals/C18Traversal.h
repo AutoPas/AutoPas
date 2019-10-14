@@ -19,8 +19,10 @@ namespace autopas {
 /**
  * This class provides the c18 traversal.
  *
- * The traversal uses the c18 base step performed on every single cell. Since
- * these steps overlap a domain coloring with eighteen colors is applied.
+ * The traversal uses the c18 base step performed on every single cell.
+ * \image html C18.png "C18 base step in 2D. (dark blue cell = base cell)"
+ * Since these steps overlap a domain coloring with eighteen colors is applied.
+ * \image html C18_domain.png "C18 domain coloring in 2D. 6 colors are required."
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
@@ -38,12 +40,14 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
+   * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
+   * in that case the interactionLength is needed!
    */
   explicit C18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const double interactionLength = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+                        const double interactionLength, const std::array<double, 3> &cellLength)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
-        _cellFunctor(pairwiseFunctor, interactionLength) {
+        _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/) {
     computeOffsets();
   }
 
@@ -65,16 +69,7 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    * C18 traversal is always usable.
    * @return
    */
-  bool isApplicable() const override {
-    int nDevices = 0;
-#if defined(AUTOPAS_CUDA)
-    cudaGetDeviceCount(&nDevices);
-#endif
-    if (DataLayout == DataLayoutOption::cuda)
-      return nDevices > 0;
-    else
-      return true;
-  }
+  bool isApplicable() const override { return not(DataLayout == DataLayoutOption::cuda); }
 
   DataLayoutOption getDataLayout() const override { return DataLayout; }
 

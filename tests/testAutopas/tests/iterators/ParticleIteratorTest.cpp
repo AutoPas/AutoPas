@@ -38,7 +38,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF) {
 #pragma omp parallel reduction(vecMerge : foundParticles)
 #endif
   {
-    for (auto iter = ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>>(&data); iter.isValid(); ++iter) {
+    for (auto iter = ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>, true>(&data); iter.isValid(); ++iter) {
       auto particleID = iter->getID();
       foundParticles.push_back(particleID);
       for (int d = 0; d < 3; ++d) {
@@ -68,7 +68,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_FEFEEFFEFE) {
 #pragma omp parallel reduction(vecMerge : foundParticles)
 #endif
   {
-    for (auto iter = ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>>(&data); iter.isValid(); ++iter) {
+    for (auto iter = ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>, true>(&data); iter.isValid(); ++iter) {
       auto particleID = iter->getID();
       foundParticles.push_back(particleID);
       for (int d = 0; d < 3; ++d) {
@@ -97,7 +97,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
 #pragma omp parallel reduction(+ : numFoundParticles)
 #endif
   {
-    ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&data);
+    ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>, true> iter(&data);
     for (; iter.isValid(); ++iter, ++numFoundParticles) {
       iter.deleteCurrentParticle();
     }
@@ -109,7 +109,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
 #pragma omp parallel reduction(+ : numFoundParticles)
 #endif
   {
-    ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&data);
+    ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>, true> iter(&data);
     for (; iter.isValid(); ++iter) {
       ++numFoundParticles;
     }
@@ -129,7 +129,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_mutable) {
 #pragma omp parallel
 #endif
   {
-    ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&data);
+    ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>, true> iter(&data);
     for (; iter.isValid(); ++iter) {
       double newVel = iter->getID() + 1;
       std::array<double, 3> newVelArr = {newVel, newVel, newVel};
@@ -141,7 +141,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_mutable) {
 #pragma omp parallel
 #endif
   {
-    ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>> iter(&data);
+    ParticleIterator<MoleculeLJ, FullParticleCell<MoleculeLJ>, true> iter(&data);
     for (; iter.isValid(); ++iter) {
       double expectedVel = iter->getID() + 1;
       auto vel = iter->getV();
@@ -166,7 +166,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_EFEFFEEFEF) {
 #pragma omp parallel reduction(vecMerge : foundParticles)
 #endif
   {
-    for (auto iter = ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>>(&data); iter.isValid(); ++iter) {
+    for (auto iter = ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>, true>(&data); iter.isValid(); ++iter) {
       auto particleID = iter->getR()[0];
       foundParticles.push_back(particleID);
       for (int d = 1; d < 3; ++d) {
@@ -196,7 +196,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_FEFEEFFEFE) {
 #pragma omp parallel reduction(vecMerge : foundParticles)
 #endif
   {
-    for (auto iter = ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>>(&data); iter.isValid(); ++iter) {
+    for (auto iter = ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>, true>(&data); iter.isValid(); ++iter) {
       auto particleID = iter->getR()[0];
       foundParticles.push_back(particleID);
       for (int d = 1; d < 3; ++d) {
@@ -225,7 +225,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
 #pragma omp parallel reduction(+ : numFoundParticles)
 #endif
   {
-    ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
+    ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>, true> iter(&data);
     for (; iter.isValid(); ++iter, ++numFoundParticles) {
       iter.deleteCurrentParticle();
     }
@@ -237,7 +237,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
 #pragma omp parallel reduction(+ : numFoundParticles)
 #endif
   {
-    ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
+    ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>, true> iter(&data);
     for (; iter.isValid(); ++iter) {
       ++numFoundParticles;
     }
@@ -257,7 +257,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
 #pragma omp parallel
 #endif
   {
-    ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
+    ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>, true> iter(&data);
     for (; iter.isValid(); ++iter) {
       double newPos = (iter->getR()[0]) + 1;
       std::array<double, 3> newPosArr = {newPos, newPos, newPos};
@@ -271,7 +271,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
 #pragma omp parallel reduction(vecMerge : foundPositions)
 #endif
   {
-    ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>> iter(&data);
+    ParticleIterator<MoleculeLJ, RMMParticleCell<MoleculeLJ>, true> iter(&data);
     for (; iter.isValid(); ++iter) {
       auto pos = iter->getR();
       EXPECT_EQ(pos[1], pos[0]);
@@ -345,7 +345,7 @@ void testContainerIteratorBehavior(Container &container, Molecule &mol, Molecule
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
-  DirectSum<MoleculeLJ, FullParticleCell<MoleculeLJ>> ds({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
+  DirectSum<FullParticleCell<MoleculeLJ>> ds({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
   MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   ds.addParticle(mol);
   MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);
@@ -355,7 +355,7 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorLinkedCells) {
-  LinkedCells<MoleculeLJ, FullParticleCell<MoleculeLJ>> linkedCells({0., 0., 0.}, {10., 10., 10.}, 3, 0., 1.);
+  LinkedCells<FullParticleCell<MoleculeLJ>> linkedCells({0., 0., 0.}, {10., 10., 10.}, 3, 0., 1.);
   MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   linkedCells.addParticle(mol);
   MoleculeLJ haloMol({-1., 1., 1.}, {0., 0., 0.}, 2);

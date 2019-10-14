@@ -14,6 +14,7 @@ Please keep in mind the following notes while working.
 * `constexpr` instead of `#define`. Use it wherever possible.
 * `const` wherever possible. 
 * `nullptr` instead of `NULL`.
+* `using` instead of `typedef`.
 * Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Descriptive error message")` instead.
 
 ### Code Style

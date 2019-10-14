@@ -28,9 +28,10 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
   autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
 
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true> traversalLJ(
-      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func, _linkedCells.getInteractionLength(),
+      _linkedCells.getCellBlock().getCellLength());
   autopas::DirectSumTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
-      traversalDS(&func);
+      traversalDS(&func, getCutoff());
   _directSum.iteratePairwise(&traversalDS);
   _linkedCells.iteratePairwise(&traversalLJ);
 
@@ -61,10 +62,11 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsDirect(getCutoff()), flopsLinked(getCutoff());
   autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
-      traversalFLOPSLC(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
+      traversalFLOPSLC(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked,
+                       _linkedCells.getInteractionLength(), _linkedCells.getCellBlock().getCellLength());
   autopas::DirectSumTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
                               true>
-      traversalFLOPSDS(&flopsDirect);
+      traversalFLOPSDS(&flopsDirect, getCutoff());
   _directSum.iteratePairwise(&traversalFLOPSDS);
   _linkedCells.iteratePairwise(&traversalFLOPSLC);
 

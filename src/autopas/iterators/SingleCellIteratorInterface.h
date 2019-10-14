@@ -15,9 +15,11 @@ namespace autopas {
  * SingleCellIteratorInterface class to loop over particles of a single cell.
  *
  * @tparam Particle type of the Particles
+ * @tparam modifiable Defines whether the ParticleIterator is modifiable or not. If it is false, it points to a const
+ * Particle.
  */
-template <class Particle>
-class SingleCellIteratorInterface : public ParticleIteratorInterface<Particle> {
+template <class Particle, bool modifiable>
+class SingleCellIteratorInterface : public ParticleIteratorInterface<Particle, modifiable> {
  public:
   /**
    * default constructor of SingleCellIteratorInterface
@@ -36,7 +38,7 @@ class SingleCellIteratorInterface : public ParticleIteratorInterface<Particle> {
    * @param rhs
    * @return
    */
-  virtual bool operator==(const SingleCellIteratorInterface<Particle> &rhs) const = 0;
+  virtual bool operator==(const SingleCellIteratorInterface<Particle, modifiable> &rhs) const = 0;
 
   /**
    * inequality operator
@@ -44,7 +46,7 @@ class SingleCellIteratorInterface : public ParticleIteratorInterface<Particle> {
    * @param rhs
    * @return
    */
-  virtual bool operator!=(const SingleCellIteratorInterface<Particle> &rhs) const = 0;
+  virtual bool operator!=(const SingleCellIteratorInterface<Particle, modifiable> &rhs) const = 0;
 
   /**
    * Get the index of the particle in the cell
@@ -58,15 +60,16 @@ namespace internal {
  * All implementations of the interface should inherit from this class. It extends the interface just by the clone
  * method, which is needed by the Wrapper.
  * @tparam Particle
+ * @tparam modifiable
  */
-template <class Particle>
-class SingleCellIteratorInterfaceImpl : public SingleCellIteratorInterface<Particle> {
+template <class Particle, bool modifiable>
+class SingleCellIteratorInterfaceImpl : public SingleCellIteratorInterface<Particle, modifiable> {
  public:
   /**
    * Clones the current object, should allocate new object and return it.
    * @return the clone
    */
-  virtual SingleCellIteratorInterfaceImpl<Particle> *clone() const = 0;
+  virtual SingleCellIteratorInterfaceImpl *clone() const = 0;
 };
 }  // namespace internal
 }  // namespace autopas

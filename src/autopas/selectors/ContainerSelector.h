@@ -13,6 +13,7 @@
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletClusterLists/VerletClusterCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
@@ -54,7 +55,13 @@ class ContainerSelector {
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
    * @return Smartpointer to the optimal container.
    */
-  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> getCurrentContainer();
+  std::shared_ptr<autopas::ParticleContainer<ParticleCell>> getCurrentContainer();
+
+  /**
+   * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
+   * @return Smartpointer to the optimal container.
+   */
+  std::shared_ptr<const autopas::ParticleContainer<ParticleCell>> getCurrentContainer() const;
 
  private:
   /**
@@ -63,30 +70,28 @@ class ContainerSelector {
    * @param containerInfo additional parameter for the container
    * @return smartpointer to new container
    */
-  std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> generateContainer(
-      ContainerOption containerChoice, ContainerSelectorInfo containerInfo);
+  std::unique_ptr<autopas::ParticleContainer<ParticleCell>> generateContainer(ContainerOption containerChoice,
+                                                                              ContainerSelectorInfo containerInfo);
 
-  std::array<double, 3> _boxMin, _boxMax;
-  double _cutoff;
-  std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>> _currentContainer;
+  const std::array<double, 3> _boxMin, _boxMax;
+  const double _cutoff;
+  std::shared_ptr<autopas::ParticleContainer<ParticleCell>> _currentContainer;
   ContainerSelectorInfo _currentInfo;
 };
 
 template <class Particle, class ParticleCell>
-std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
-ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption containerChoice,
-                                                             ContainerSelectorInfo containerInfo) {
-  std::unique_ptr<autopas::ParticleContainer<Particle, ParticleCell>> container;
+std::unique_ptr<autopas::ParticleContainer<ParticleCell>> ContainerSelector<Particle, ParticleCell>::generateContainer(
+    ContainerOption containerChoice, ContainerSelectorInfo containerInfo) {
+  std::unique_ptr<autopas::ParticleContainer<ParticleCell>> container;
 
   switch (containerChoice) {
     case directSum: {
-      container =
-          std::make_unique<DirectSum<Particle, ParticleCell>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+      container = std::make_unique<DirectSum<ParticleCell>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
     case linkedCells: {
-      container = std::make_unique<LinkedCells<Particle, ParticleCell>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.cellSizeFactor);
+      container = std::make_unique<LinkedCells<ParticleCell>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                              containerInfo.cellSizeFactor);
       break;
     }
     case verletLists: {
@@ -102,6 +107,11 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
     }
     case verletClusterLists: {
       container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+      break;
+    }
+    case verletClusterCells: {
+      container = std::make_unique<VerletClusterCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                                 containerInfo.verletClusterSize);
       break;
     }
     case varVerletListsAsBuild: {
@@ -132,8 +142,18 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
 }
 
 template <class Particle, class ParticleCell>
-std::shared_ptr<autopas::ParticleContainer<Particle, ParticleCell>>
+std::shared_ptr<autopas::ParticleContainer<ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::getCurrentContainer() {
+  if (_currentContainer == nullptr) {
+    autopas::utils::ExceptionHandler::exception(
+        "ContainerSelector: getCurrentContainer() called before any container was selected!");
+  }
+  return _currentContainer;
+}
+
+template <class Particle, class ParticleCell>
+std::shared_ptr<const autopas::ParticleContainer<ParticleCell>>
+ContainerSelector<Particle, ParticleCell>::getCurrentContainer() const {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(
         "ContainerSelector: getCurrentContainer() called before any container was selected!");
