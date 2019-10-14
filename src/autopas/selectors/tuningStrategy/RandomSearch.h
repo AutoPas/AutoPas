@@ -46,7 +46,7 @@ class RandomSearch : public TuningStrategyInterface {
     tune();
   }
 
-  inline const Configuration &getCurrentConfiguration() override { return _currentConfig; }
+  inline const Configuration &getCurrentConfiguration() const override { return _currentConfig; }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
@@ -59,11 +59,11 @@ class RandomSearch : public TuningStrategyInterface {
 
   inline bool tune(bool currentInvalid = false) override;
 
-  inline std::set<ContainerOption> getAllowedContainerOptions() override { return _containerOptions; }
+  inline std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptions; }
 
-  inline bool searchSpaceIsTrivial() override;
+  inline bool searchSpaceIsTrivial() const override;
 
-  inline bool searchSpaceIsEmpty() override;
+  inline bool searchSpaceIsEmpty() const override;
 
  private:
   inline void selectOptimalConfiguration();
@@ -134,7 +134,7 @@ void RandomSearch::selectOptimalConfiguration() {
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
 }
 
-bool RandomSearch::searchSpaceIsTrivial() {
+bool RandomSearch::searchSpaceIsTrivial() const {
   if (searchSpaceIsEmpty()) {
     return false;
   }
@@ -143,7 +143,7 @@ bool RandomSearch::searchSpaceIsTrivial() {
          _traversalOptions.size() == 1 and _dataLayoutOptions.size() == 1 and _newton3Options.size() == 1;
 }
 
-bool RandomSearch::searchSpaceIsEmpty() {
+bool RandomSearch::searchSpaceIsEmpty() const {
   // if one enum is empty return true
   return _containerOptions.empty() or (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 0) or
          _traversalOptions.empty() or _dataLayoutOptions.empty() or _newton3Options.empty();
