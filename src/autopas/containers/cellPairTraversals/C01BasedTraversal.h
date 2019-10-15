@@ -50,7 +50,8 @@ class C01BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
   inline void c01Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, int collapseDepth>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          int collapseDepth>
 template <typename LoopBody>
 inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::c01Traversal(
     LoopBody &&loopBody) {

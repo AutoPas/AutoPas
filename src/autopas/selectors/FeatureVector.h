@@ -54,14 +54,9 @@ class FeatureVector : public Configuration {
    */
   Eigen::VectorXd operator-(const FeatureVector &other) const {
     Eigen::VectorXd result(featureSpaceDims);
+    result << cellSizeFactor, traversal == other.traversal ? 0. : 1., dataLayout == other.dataLayout ? 0. : 1.,
+        newton3 == other.newton3 ? 0. : 1.;
 
-//    ContainerOption co = ContainerOption((traversal == other.traversal) ? 0 : 1);
-    double cfs = (cellSizeFactor - other.cellSizeFactor);
-//    DataLayoutOption dlo = DataLayoutOption((dataLayout == other.dataLayout) ? 0 : 1);
-//    Newton3Option n3o = Newton3Option((newton3 == other.newton3) ? 0 : 1);
-
-    result << cfs, (traversal == other.traversal) ? 0.0 : 1.0, static_cast<double>(dataLayout),
-        static_cast<double>(newton3);
     return result;
   }
 

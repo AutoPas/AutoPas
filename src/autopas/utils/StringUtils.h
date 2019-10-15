@@ -150,8 +150,7 @@ inline std::set<double> parseDoubles(const std::string &doubleString) {
       double value = stod(word);
       doubles.insert(value);
     } catch (const std::exception &) {
-      autopas::utils::ExceptionHandler::exception(
-          "Failed to parse a double from: {}", word);
+      autopas::utils::ExceptionHandler::exception("Failed to parse a double from: {}", word);
     }
   }
   return doubles;

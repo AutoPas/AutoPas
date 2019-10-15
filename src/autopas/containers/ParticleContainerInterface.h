@@ -109,7 +109,7 @@ class ParticleContainerInterface {
    * Get the number of particles saved in the container.
    * @return Number of particles in the container.
    */
-  virtual unsigned long getNumParticles() = 0;
+  virtual unsigned long getNumParticles() const = 0;
 
   /**
    * Iterate over all particles using
@@ -118,7 +118,24 @@ class ParticleContainerInterface {
    * @return Iterator to the first particle.
    * @todo implement IteratorBehavior.
    */
-  virtual ParticleIteratorWrapper<ParticleType> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
+  virtual ParticleIteratorWrapper<ParticleType, true> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
+
+  /**
+   * @copydoc begin()
+   * @note const version
+   */
+  virtual ParticleIteratorWrapper<ParticleType, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const = 0;
+
+  /**
+   * @copydoc begin()
+   * @note cbegin will guarantee to return a const_iterator.
+   */
+  virtual ParticleIteratorWrapper<ParticleType, false> cbegin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const final {
+    return begin(behavior);
+  };
 
   /**
    * Iterate over all particles in a specified region
@@ -128,9 +145,24 @@ class ParticleContainerInterface {
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
    * @return Iterator to iterate over all particles in a specific region.
    */
-  virtual ParticleIteratorWrapper<ParticleType> getRegionIterator(
+  virtual ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
+
+  /**
+   * @copydoc getRegionIterator()
+   * @note const version
+   */
+  virtual ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const = 0;
+
+  /**
+   * End expression for all containers, this simply returns false.
+   * Allows range-based for loops.
+   * @return false
+   */
+  constexpr bool end() const { return false; }
 
   /**
    * Iterates over all particle pairs in the container.
@@ -206,13 +238,13 @@ class ParticleContainerInterface {
    * pair-wise interactions or the RegionParticleIteraor right now.
    * @return true if an update is needed, false otherwise
    */
-  virtual bool isContainerUpdateNeeded() = 0;
+  virtual bool isContainerUpdateNeeded() const = 0;
 
   /**
    * Generates a traversal selector info for this container.
    * @return Traversal selector info for this container.
    */
-  virtual TraversalSelectorInfo getTraversalSelectorInfo() = 0;
+  virtual TraversalSelectorInfo getTraversalSelectorInfo() const = 0;
 
   /**
    * Generates a list of all traversals that are theoretically applicable to this container.

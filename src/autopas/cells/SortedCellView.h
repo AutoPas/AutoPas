@@ -47,7 +47,9 @@ class SortedCellView : public ParticleCell<Particle> {
    */
   void addParticle(const Particle &p) override {}
 
-  SingleCellIteratorWrapper<Particle> begin() override { return _cell->begin(); }
+  SingleCellIteratorWrapper<Particle, true> begin() override { return _cell->begin(); }
+
+  SingleCellIteratorWrapper<Particle, false> begin() const override { return std::as_const(*_cell).begin(); }
 
   unsigned long numParticles() const override { return _particles.size(); }
 
@@ -70,11 +72,6 @@ class SortedCellView : public ParticleCell<Particle> {
   void setCellLength(std::array<double, 3> &cellLength) override { _cell->setCellLength(cellLength); }
 
   std::array<double, 3> getCellLength() const override { return _cell->getCellLength(); }
-
-  /**
-   * Type of the internal iterator.
-   */
-  typedef internal::SingleCellIterator<Particle, SortedCellView<Particle, ParticleCellType>> iterator_t;
 
   /**
    * Sorted vector of projected positions and particle pointers.

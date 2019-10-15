@@ -71,6 +71,7 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
 
   autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff);
   autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin);
+
   // select container from which we want to convert from
   containerSelector.selectContainer(from, containerInfo);
 
@@ -103,25 +104,27 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
 
   std::vector<Particle> beforeListInner, beforeListHalo,
       beforeListHaloVerletOnly /*for particles only in verlet containers*/;
+
   getStatus(bBoxMin, bBoxMax, cutoff, containerSelector, beforeListInner, beforeListHalo, beforeListHaloVerletOnly);
 
   // select container to which we want to convert to
   containerSelector.selectContainer(to, containerInfo);
 
   std::vector<Particle> afterListInner, afterListHalo, afterListHaloVerletOnly;
+
   getStatus(bBoxMin, bBoxMax, cutoff, containerSelector, afterListInner, afterListHalo, afterListHaloVerletOnly);
 
   EXPECT_THAT(afterListInner, UnorderedElementsAreArray(beforeListInner));
   EXPECT_THAT(afterListHalo, UnorderedElementsAreArray(beforeListHalo));
-  if (to.to_string().find("Verlet") != std::string::npos and
-      from.to_string().find("Verlet") != std::string::npos) {
+  if (to.to_string().find("Verlet") != std::string::npos and from.to_string().find("Verlet") != std::string::npos) {
     EXPECT_THAT(afterListHaloVerletOnly, UnorderedElementsAreArray(beforeListHaloVerletOnly));
   }
 }
 
 /// @todo: use this instead of below to enable testing of VerletClusterLists.
 // INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
-//                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()), ValuesIn(autopas::ContainerOption::getAllOptions())),
+//                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()),
+//                         ValuesIn(autopas::ContainerOption::getAllOptions())),
 //                         ContainerSelectorTest::PrintToStringParamName());
 
 INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,

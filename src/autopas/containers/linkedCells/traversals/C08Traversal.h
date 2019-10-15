@@ -56,16 +56,7 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
    * C08 traversals are always usable.
    * @return
    */
-  bool isApplicable() const override {
-    int nDevices = 0;
-#if defined(AUTOPAS_CUDA)
-    cudaGetDeviceCount(&nDevices);
-#endif
-    if (dataLayout == DataLayoutOption::cuda)
-      return nDevices > 0;
-    else
-      return true;
-  }
+  bool isApplicable() const override { return not(dataLayout == DataLayoutOption::cuda); }
 
  private:
   C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;

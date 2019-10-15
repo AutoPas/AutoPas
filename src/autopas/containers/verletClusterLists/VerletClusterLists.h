@@ -135,26 +135,40 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     return invalidParticles;
   }
 
-  bool isContainerUpdateNeeded() override {
+  bool isContainerUpdateNeeded() const override {
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.isContainerUpdateNeeded not yet implemented");
     return false;
   }
 
-  TraversalSelectorInfo getTraversalSelectorInfo() override {
+  TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(_cellsPerDim, this->getInteractionLength(), {0., 0., 0.});
   }
 
-  ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIteratorWrapper<Particle>(
-        new internal::ParticleIterator<Particle, FullParticleCell<Particle>>(&this->_clusters));
+  ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIteratorWrapper<Particle, true>(
+        new internal::ParticleIterator<Particle, FullParticleCell<Particle>, true>(&this->_clusters));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(
+  ParticleIteratorWrapper<Particle, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+    return ParticleIteratorWrapper<Particle, false>(
+        new internal::ParticleIterator<Particle, FullParticleCell<Particle>, false>(&this->_clusters));
+  }
+
+  ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     // @todo implement this if bounding boxes are here
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
-    return ParticleIteratorWrapper<Particle>();
+    return ParticleIteratorWrapper<Particle, true>();
+  }
+
+  ParticleIteratorWrapper<Particle, false> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+    // @todo implement this if bounding boxes are here
+    autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
+    return ParticleIteratorWrapper<Particle, false>();
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override { rebuild(traversal->getUseNewton3()); }
@@ -176,7 +190,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     }
   }
 
-  unsigned long getNumParticles() override {
+  unsigned long getNumParticles() const override {
     unsigned long sum = 0;
     for (size_t index = 0; index < _clusters.size(); index++) {
       sum += _clusters[index].numParticles();

@@ -107,7 +107,7 @@ class VerletListsCells
 
     // FIXME: Clang compiler bug makes this necessary
     switch (static_cast<TraversalOption>(_buildTraversal)) {
-//    switch (_buildTraversal) {
+        //    switch (_buildTraversal) {
       case TraversalOption::c08: {
         autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
           auto buildTraversal = C08Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
@@ -150,7 +150,7 @@ class VerletListsCells
    * Return the cell length of the underlying linked cells structure, normally needed only for unit tests.
    * @return
    */
-  const std::array<double, 3> &getCellLength() { return this->_linkedCells.getCellBlock().getCellLength(); }
+  const std::array<double, 3> &getCellLength() const { return this->_linkedCells.getCellBlock().getCellLength(); }
 
  private:
   /// verlet lists for each particle for each cell

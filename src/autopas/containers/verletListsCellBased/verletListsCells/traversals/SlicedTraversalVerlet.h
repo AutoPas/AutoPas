@@ -63,7 +63,7 @@ class SlicedTraversalVerlet : public SlicedBasedTraversal<ParticleCell, Pairwise
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
-  this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
+  this->template slicedTraversal</*allCells*/ true>([&](unsigned long x, unsigned long y, unsigned long z) {
     auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template iterateVerletListsCell<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
   });

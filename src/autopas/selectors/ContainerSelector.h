@@ -13,6 +13,7 @@
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletClusterLists/VerletClusterCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
@@ -55,6 +56,12 @@ class ContainerSelector {
    * @return Smartpointer to the optimal container.
    */
   std::shared_ptr<autopas::ParticleContainer<ParticleCell>> getCurrentContainer();
+
+  /**
+   * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
+   * @return Smartpointer to the optimal container.
+   */
+  std::shared_ptr<const autopas::ParticleContainer<ParticleCell>> getCurrentContainer() const;
 
  private:
   /**
@@ -102,6 +109,11 @@ std::unique_ptr<autopas::ParticleContainer<ParticleCell>> ContainerSelector<Part
       container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
+    case ContainerOption::verletClusterCells: {
+      container = std::make_unique<VerletClusterCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                                 containerInfo.verletClusterSize);
+      break;
+    }
     case ContainerOption::varVerletListsAsBuild: {
       container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
@@ -132,6 +144,16 @@ std::unique_ptr<autopas::ParticleContainer<ParticleCell>> ContainerSelector<Part
 template <class Particle, class ParticleCell>
 std::shared_ptr<autopas::ParticleContainer<ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::getCurrentContainer() {
+  if (_currentContainer == nullptr) {
+    autopas::utils::ExceptionHandler::exception(
+        "ContainerSelector: getCurrentContainer() called before any container was selected!");
+  }
+  return _currentContainer;
+}
+
+template <class Particle, class ParticleCell>
+std::shared_ptr<const autopas::ParticleContainer<ParticleCell>>
+ContainerSelector<Particle, ParticleCell>::getCurrentContainer() const {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(
         "ContainerSelector: getCurrentContainer() called before any container was selected!");

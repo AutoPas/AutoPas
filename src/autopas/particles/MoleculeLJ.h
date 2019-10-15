@@ -13,7 +13,7 @@
 namespace autopas {
 
 /**
- * lennard jones molecule class
+ * Lennard-Jones molecule class
  */
 class MoleculeLJ : public Particle {
  public:
@@ -54,7 +54,7 @@ class MoleculeLJ : public Particle {
   static void setSigma(double sigma) { SIGMA = sigma; }
 
  private:
-  static double EPSILON, SIGMA;
+  inline static double EPSILON, SIGMA;
 };
 
 }  // namespace autopas

@@ -134,8 +134,8 @@ int main(int argc, char *argv[]) {
       break;
     }
     default:
-      std::cerr << "Error: containerType " << containerOptions.begin()->to_string()
-                << " not yet supported." << std::endl;
+      std::cerr << "Error: containerType " << containerOptions.begin()->to_string() << " not yet supported."
+                << std::endl;
       exit(2);
   }
   autoPas.setAllowedTraversals({traversalType});

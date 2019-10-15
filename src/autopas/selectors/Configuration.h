@@ -9,8 +9,8 @@
 #include <tuple>
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/options/TraversalOption.h"
 #include "autopas/options/Newton3Option.h"
+#include "autopas/options/TraversalOption.h"
 #include "autopas/utils/StringUtils.h"
 
 namespace autopas {

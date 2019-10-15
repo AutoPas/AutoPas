@@ -4,25 +4,26 @@
  * @date 1/15/19
  */
 
-#include <autopas/options/TraversalOption.h>
+#include "StringUtilsTest.h"
 #include <autopas/options/ContainerOption.h>
 #include <autopas/options/DataLayoutOption.h>
 #include <autopas/options/SelectorStrategyOption.h>
+#include <autopas/options/TraversalOption.h>
 #include <autopas/options/TuningStrategyOption.h>
-#include "StringUtilsTest.h"
 
 TEST(StringUtilsTest, parseTraversalOptionsTest) {
   testParseMultiple<autopas::TraversalOption>(
       autopas::TraversalOption::getAllOptions(),
       "c01, c04, c08, c18, c04s, direct, sliced v01, c18verlet, verlet-sliced, "
-      "cuda-c01, verlet-lists, c01-combined, verlet-clusters, var-verlet-lists-as-build, verlet-clusters-coloring",
+      "cuda-c01, verlet-lists, c01-combined, verlet-clusters, var-verlet-lists-as-build, verlet-clusters-coloring, "
+      "verlet-cluster-cells",
       autopas::TraversalOption::parseOptions);
 }
 
 TEST(StringUtilsTest, parseContainerOptionsTest) {
   testParseMultiple<autopas::ContainerOption>(
       autopas::ContainerOption::getAllOptions(),
-      "directSum, linkedCells, verletLists, verlet-cells, vcluster, varVerletListsAsBuild",
+      "directSum, linkedCells, verletLists, verlet-cells, vcluster, varVerletListsAsBuild, vclustercells",
       autopas::ContainerOption::parseOptions);
 }
 
@@ -54,12 +55,14 @@ TEST(StringUtilsTest, parseNumberSetTest) {
 }
 
 TEST(StringUtilsTest, parseSelectorOptionsTest) {
-  testParseSingle<autopas::SelectorStrategyOption>(autopas::SelectorStrategyOption::getAllOptions(), {"absolute", "median", "mean"},
+  testParseSingle<autopas::SelectorStrategyOption>(autopas::SelectorStrategyOption::getAllOptions(),
+                                                   {"absolute", "median", "mean"},
                                                    autopas::SelectorStrategyOption::parseOptions);
 }
 
 TEST(StringUtilsTest, parseTuningStrategyOptionsTest) {
-  testParseSingle<autopas::TuningStrategyOption>(autopas::TuningStrategyOption::getAllOptions(), {"full-search", "bayesian-search"},
+  testParseSingle<autopas::TuningStrategyOption>(autopas::TuningStrategyOption::getAllOptions(),
+                                                 {"full-search", "bayesian-search"},
                                                  autopas::TuningStrategyOption::parseOptions);
 }
 

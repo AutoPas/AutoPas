@@ -70,6 +70,15 @@ static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
 }
 
 /**
+ * Lists all traversal options applicable for the Verlet Cluster Cells container.
+ * @return Set of all applicable traversal options.
+ */
+static const std::set<TraversalOption> &allVCCCompatibleTraversals() {
+  static const std::set<TraversalOption> s{TraversalOption::verletClusterCellsTraversal};
+  return s;
+}
+
+/**
  * Lists all traversal options applicable for the Var Verlet Lists As Build container.
  * @return set of all applicable traversal options.
  */
@@ -99,6 +108,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     }
     case ContainerOption::verletListsCells: {
       return allVLCCompatibleTraversals();
+    }
+    case ContainerOption::verletClusterCells: {
+      return allVCCCompatibleTraversals();
     }
     case ContainerOption::varVerletListsAsBuild: {
       return allVarVLAsBuildCompatibleTraversals();

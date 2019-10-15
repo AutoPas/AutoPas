@@ -27,6 +27,7 @@ class ContainerOption : public Option<ContainerOption> {
     verletListsCells = 3,
     verletClusterLists = 4,
     varVerletListsAsBuild = 5,
+    verletClusterCells = 6,
   };
 
   ContainerOption() = default;
@@ -35,7 +36,7 @@ class ContainerOption : public Option<ContainerOption> {
   explicit operator bool() = delete;
 
   /**
-   * Provides a way to iterate over the possible choices of TraversalOption.
+   * Provides a way to iterate over the possible choices of ContainerOption.
    */
   static std::map<ContainerOption, std::string> getOptionNames() {
     return {
@@ -45,6 +46,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::verletListsCells, "VerletListsCells"},
         {ContainerOption::verletClusterLists, "VerletClusterLists"},
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
+        {ContainerOption::verletClusterCells, "VerletClusterCells"},
     };
   };
 

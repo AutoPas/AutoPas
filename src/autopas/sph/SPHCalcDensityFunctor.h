@@ -26,9 +26,7 @@ class SPHCalcDensityFunctor
   /// particle cell type
   typedef FullParticleCell<Particle> ParticleCell;
 
-  SPHCalcDensityFunctor()
-      : autopas::Functor<Particle, ParticleCell, SoAArraysType, SPHCalcDensityFunctor>(
-            typename Particle::ParticleFloatingPointType(0.)){};
+  SPHCalcDensityFunctor() : autopas::Functor<Particle, ParticleCell, SoAArraysType, SPHCalcDensityFunctor>(0.){};
 
   bool isRelevantForTuning() override { return true; }
 

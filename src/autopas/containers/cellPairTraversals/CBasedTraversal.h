@@ -89,9 +89,9 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @tparam LoopBody type of the loop body
    * @param loopBody The body of the loop as a function. Normally a lambda function, that takes as as parameters
    * (x,y,z). If you need additional input from outside, please use captures (by reference).
-   * @param end 3D index until interactions are processed (exclusive)
-   * @param stride dimension of stride (depends on coloring)
-   * @param offset initial offset
+   * @param end 3D index until interactions are processed (exclusive).
+   * @param stride Distance (in cells) to the next cell of the same color.
+   * @param offset initial offset (in cells) in which cell to start the traversal.
    */
   template <typename LoopBody>
   inline void cTraversal(LoopBody &&loopBody, const std::array<unsigned long, 3> &end,
@@ -127,7 +127,8 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, int collapseDepth>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          int collapseDepth>
 template <typename LoopBody>
 inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::cTraversal(
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,

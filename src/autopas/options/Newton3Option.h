@@ -16,7 +16,6 @@ namespace autopas {
  * Class representing the choices for the Newton 3 optimization.
  */
 class Newton3Option : public Option<Newton3Option> {
-
  public:
   /**
    * Possible choices for the particle data layout. Values consistent with bool.

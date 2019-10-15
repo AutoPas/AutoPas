@@ -107,7 +107,7 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
    * @param traversalOptions
    * @return True iff traversalOptions is a subset of _applicableTraversals
    */
-  bool checkIfTraversalsAreApplicable(std::set<TraversalOption> traversalOptions) {
+  bool checkIfTraversalsAreApplicable(const std::set<TraversalOption> &traversalOptions) const {
     auto applicableTraversals = compatibleTraversals::allCompatibleTraversals(this->getContainerType());
     return std::includes(applicableTraversals.begin(), applicableTraversals.end(), traversalOptions.begin(),
                          traversalOptions.end());
@@ -133,7 +133,7 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
    * Get the number of particles saved in the container.
    * @return Number of particles in the container.
    */
-  unsigned long getNumParticles() override {
+  unsigned long getNumParticles() const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
     // @todo: find a sensible value for magic number

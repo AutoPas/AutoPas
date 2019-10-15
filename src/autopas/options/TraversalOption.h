@@ -15,7 +15,7 @@ namespace autopas {
 /**
  * Class representing the traversal choices.
  */
- class TraversalOption : public Option<TraversalOption> {
+class TraversalOption : public Option<TraversalOption> {
  public:
   /**
    * Possible choices for the cell pair traversal.
@@ -37,6 +37,7 @@ namespace autopas {
     varVerletTraversalAsBuild = 13,
     verletClustersColoring = 14,
     c04SoA = 15,
+    verletClusterCellsTraversal = 16,
   };
 
   TraversalOption() = default;
@@ -65,6 +66,7 @@ namespace autopas {
         {TraversalOption::varVerletTraversalAsBuild, "var-verlet-lists-as-build"},
         {TraversalOption::verletClustersColoring, "verlet-clusters-coloring"},
         {TraversalOption::c04SoA, "c04SoA"},
+        {TraversalOption::verletClusterCellsTraversal, "verlet-cluster-cells-traversal"},
     };
   };
 
