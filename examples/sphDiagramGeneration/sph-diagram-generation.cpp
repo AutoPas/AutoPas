@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
       functorTypeInt = std::stoi(argv[4]);
     }
     if (argc >= 4) {
-      containerOptions = autopas::utils::StringUtils::parseContainerOptions(argv[3]);
+      containerOptions = autopas::ContainerOption::parseOptions(argv[3]);
       numIterations = std::stoi(argv[2]);
       numParticles = std::stoi(argv[1]);
       if (containerOptions.size() != 1) {
@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
       break;
     }
     default:
-      std::cerr << "Error: containerType " << autopas::utils::StringUtils::to_string(*containerOptions.begin())
+      std::cerr << "Error: containerType " << containerOptions.begin()->to_string()
                 << " not yet supported." << std::endl;
       exit(2);
   }

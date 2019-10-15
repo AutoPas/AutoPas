@@ -22,8 +22,8 @@ class StringUtilsTest : public AutoPasTestBase {};
  */
 template <class T>
 void testParseMultiple(const std::set<T> &allOptions, const std::string &optionsString,
-                       std::function<std::set<T>(const std::string &, bool)> &&parseFun) {
-  auto parsedOptions = parseFun(optionsString, false);
+                       std::function<std::set<T>(const std::string &)> &&parseFun) {
+  auto parsedOptions = parseFun(optionsString);
 
   EXPECT_THAT(parsedOptions, ::testing::ElementsAreArray(allOptions));
 }
@@ -37,16 +37,18 @@ void testParseMultiple(const std::set<T> &allOptions, const std::string &options
  */
 template <class T>
 void testParseSingle(const std::set<T> &allOptions, const std::vector<std::string> &optionsStrings,
-                     std::function<T(const std::string &)> &&parseFun) {
+                     std::function<std::set<T>(const std::string &)> &&parseFun) {
   ASSERT_EQ(allOptions.size(), optionsStrings.size()) << "Not all options tested!";
 
-  std::set<T> parsedOptions;
+  std::set<T> allParsedOptions;
 
   for (auto &string : optionsStrings) {
-    parsedOptions.insert(parseFun(string));
+    auto parsedOptions = parseFun(string);
+    EXPECT_THAT(parsedOptions, ::testing::SizeIs(1));
+    allParsedOptions.insert(*parsedOptions.begin());
   }
 
-  ASSERT_THAT(parsedOptions, ::testing::ElementsAreArray(allOptions));
+  ASSERT_THAT(allParsedOptions, ::testing::ElementsAreArray(allOptions));
 }
 
 /**
@@ -58,11 +60,9 @@ void testParseSingle(const std::set<T> &allOptions, const std::vector<std::strin
 template <class T>
 void testToString(const std::set<T> &goodOptions, const std::set<T> &badOptions) {
   for (auto &op : goodOptions) {
-    std::string createdString = autopas::utils::StringUtils::to_string(op);
-    EXPECT_THAT(createdString, Not(::testing::HasSubstr("Unknown")));
+    EXPECT_THAT(op.to_string(), Not(::testing::HasSubstr("Unknown")));
   }
   for (auto &op : badOptions) {
-    std::string createdString = autopas::utils::StringUtils::to_string(op);
-    EXPECT_THAT(createdString, ::testing::HasSubstr("Unknown"));
+    EXPECT_THAT(op.to_string(), ::testing::HasSubstr("Unknown"));
   }
 }

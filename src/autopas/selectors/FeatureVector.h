@@ -52,13 +52,17 @@ class FeatureVector : public Configuration {
    * @param other
    * @return
    */
-  FeatureVector operator-(const FeatureVector &other) const {
-    ContainerOption co = ContainerOption((traversal == other.traversal) ? 0 : 1);
+  Eigen::VectorXd operator-(const FeatureVector &other) const {
+    Eigen::VectorXd result(featureSpaceDims);
+
+//    ContainerOption co = ContainerOption((traversal == other.traversal) ? 0 : 1);
     double cfs = (cellSizeFactor - other.cellSizeFactor);
-    TraversalOption to = TraversalOption((traversal == other.traversal) ? 0 : 1);
-    DataLayoutOption dlo = DataLayoutOption((dataLayout == other.dataLayout) ? 0 : 1);
-    Newton3Option n3o = Newton3Option((newton3 == other.newton3) ? 0 : 1);
-    return FeatureVector(co, cfs, to, dlo, n3o);
+//    DataLayoutOption dlo = DataLayoutOption((dataLayout == other.dataLayout) ? 0 : 1);
+//    Newton3Option n3o = Newton3Option((newton3 == other.newton3) ? 0 : 1);
+
+    result << cfs, (traversal == other.traversal) ? 0.0 : 1.0, static_cast<double>(dataLayout),
+        static_cast<double>(newton3);
+    return result;
   }
 
   /**
@@ -97,7 +101,7 @@ class FeatureVector : public Configuration {
 
     std::vector<FeatureVector> result;
     for (unsigned i = 0; i < n; ++i) {
-      result.emplace_back(ContainerOption(-1), csf[i], tr[i], dl[i], n3[i]);
+      result.emplace_back(ContainerOption(), csf[i], tr[i], dl[i], n3[i]);
     }
 
     return result;

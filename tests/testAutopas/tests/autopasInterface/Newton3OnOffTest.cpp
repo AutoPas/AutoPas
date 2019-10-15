@@ -19,9 +19,9 @@ TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
 
   transform(contTravStr.begin(), contTravStr.end(), contTravStr.begin(), ::tolower);
   transform(dataLayoutStr.begin(), dataLayoutStr.end(), dataLayoutStr.begin(), ::tolower);
-  auto containerOption = autopas::utils::StringUtils::parseContainerOptions(contTravStr).begin().operator*();
-  auto traversalOption = autopas::utils::StringUtils::parseTraversalOptions(contTravStr).begin().operator*();
-  auto dataLayoutOption = autopas::utils::StringUtils::parseDataLayout(dataLayoutStr).begin().operator*();
+  auto containerOption = autopas::ContainerOption::parseOptions(contTravStr).begin().operator*();
+  auto traversalOption = autopas::TraversalOption::parseOptions(contTravStr).begin().operator*();
+  auto dataLayoutOption = autopas::DataLayoutOption::parseOptions(dataLayoutStr).begin().operator*();
   countFunctorCalls(containerOption, traversalOption, dataLayoutOption);
 }
 
@@ -35,7 +35,7 @@ INSTANTIATE_TEST_SUITE_P(
 
               std::vector<std::string> ret;
 
-              for (auto containerOption : autopas::allContainerOptions) {
+              for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
                 // @TODO: let verlet lists support Newton 3
                 if (containerOption == autopas::ContainerOption::verletLists ||
                     containerOption == autopas::ContainerOption::verletListsCells ||
@@ -63,9 +63,9 @@ INSTANTIATE_TEST_SUITE_P(
                   }
                   std::stringstream name;
 
-                  name << autopas::utils::StringUtils::to_string(containerOption);
+                  name << containerOption.to_string();
                   name << "+";
-                  name << autopas::utils::StringUtils::to_string(traversalOption);
+                  name << traversalOption.to_string();
 
                   ret.push_back(name.str());
                 }
@@ -77,9 +77,9 @@ INSTANTIATE_TEST_SUITE_P(
             }()),
             ValuesIn([]() {
               std::vector<std::string> ret;
-              std::transform(
-                  autopas::allDataLayoutOptions.begin(), autopas::allDataLayoutOptions.end(), std::back_inserter(ret),
-                  [](autopas::DataLayoutOption d) -> std::string { return autopas::utils::StringUtils::to_string(d); });
+              std::transform(autopas::DataLayoutOption::getAllOptions().begin(),
+                             autopas::DataLayoutOption::getAllOptions().end(), std::back_inserter(ret),
+                             [](autopas::DataLayoutOption d) -> std::string { return d.to_string(); });
               return ret;
             }())));
 
@@ -105,7 +105,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   EXPECT_CALL(mockFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    // loader and extractor will be called, we don't care how often.
+    // loader and extractor will be called, we don't care how ofteautopas::utils::StringUtils::to_string(n.
     EXPECT_CALL(mockFunctor, SoALoader(_, _))
         .Times(testing::AtLeast(1))
         .WillRepeatedly(testing::WithArgs<0, 1>(
@@ -124,9 +124,9 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "for containeroption: " << containerOption;
 
   if (::testing::Test::HasFailure()) {
-    std::cerr << "Failures for Container: " << autopas::utils::StringUtils::to_string(containerOption)
-              << ", Traversal: " << autopas::utils::StringUtils::to_string(traversalOption)
-              << ", Data Layout: " << autopas::utils::StringUtils::to_string(dataLayout) << std::endl;
+    std::cerr << "Failures for Container: " << containerOption.to_string()
+              << ", Traversal: " << traversalOption.to_string() << ", Data Layout: " << dataLayout.to_string()
+              << std::endl;
   }
 }
 
@@ -197,8 +197,7 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
       break;
     }
     default:
-      ADD_FAILURE() << "This test does not support data layout : "
-                    << autopas::utils::StringUtils::to_string(dataLayout);
+      ADD_FAILURE() << "This test does not support data layout : " << dataLayout.to_string();
   }
 
   return std::make_pair(callsSC.load(), callsPair.load());

@@ -306,7 +306,7 @@ int main() {
                                                        autopas::ContainerOption::verletListsCells};
   sphSystem.setAllowedContainers(allowedContainers);
 
-  auto dataLayouts = autopas::allDataLayoutOptions;
+  auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
   if (dataLayouts.find(autopas::DataLayoutOption::cuda) != dataLayouts.end()) {
     dataLayouts.erase(dataLayouts.find(autopas::DataLayoutOption::cuda));
   }

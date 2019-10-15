@@ -4,6 +4,11 @@
  * @date 1/15/19
  */
 
+#include <autopas/options/TraversalOption.h>
+#include <autopas/options/ContainerOption.h>
+#include <autopas/options/DataLayoutOption.h>
+#include <autopas/options/SelectorStrategyOption.h>
+#include <autopas/options/TuningStrategyOption.h>
 #include "StringUtilsTest.h"
 
 TEST(StringUtilsTest, parseTraversalOptionsTest) {
@@ -11,24 +16,24 @@ TEST(StringUtilsTest, parseTraversalOptionsTest) {
       autopas::TraversalOption::getAllOptions(),
       "c01, c04, c08, c18, c04s, direct, sliced v01, c18verlet, verlet-sliced, "
       "cuda-c01, verlet-lists, c01-combined, verlet-clusters, var-verlet-lists-as-build, verlet-clusters-coloring",
-      autopas::utils::StringUtils::parseTraversalOptions);
+      autopas::TraversalOption::parseOptions);
 }
 
 TEST(StringUtilsTest, parseContainerOptionsTest) {
   testParseMultiple<autopas::ContainerOption>(
-      autopas::allContainerOptions,
+      autopas::ContainerOption::getAllOptions(),
       "directSum, linkedCells, verletLists, verlet-cells, vcluster, varVerletListsAsBuild",
-      autopas::utils::StringUtils::parseContainerOptions);
+      autopas::ContainerOption::parseOptions);
 }
 
 TEST(StringUtilsTest, parseDataLayoutOptionsTest) {
 #if defined(AUTOPAS_CUDA)
-  testParseMultiple<autopas::DataLayoutOption>(autopas::allDataLayoutOptions, "cuda, soa, aos",
-                                               autopas::utils::StringUtils::parseDataLayout);
+  auto options = "cuda, soa, aos";
 #else
-  testParseMultiple<autopas::DataLayoutOption>(autopas::allDataLayoutOptions, "soa, aos",
-                                               autopas::utils::StringUtils::parseDataLayout);
+  auto options = "soa, aos";
 #endif
+  testParseMultiple<autopas::DataLayoutOption>(autopas::DataLayoutOption::getAllOptions(), options,
+                                               autopas::DataLayoutOption::parseOptions);
 }
 
 TEST(StringUtilsTest, parseDoublesTest) {
@@ -49,25 +54,25 @@ TEST(StringUtilsTest, parseNumberSetTest) {
 }
 
 TEST(StringUtilsTest, parseSelectorOptionsTest) {
-  testParseSingle<autopas::SelectorStrategyOption>(autopas::allSelectorStrategies, {"absolute", "median", "mean"},
-                                                   autopas::utils::StringUtils::parseSelectorStrategy);
+  testParseSingle<autopas::SelectorStrategyOption>(autopas::SelectorStrategyOption::getAllOptions(), {"absolute", "median", "mean"},
+                                                   autopas::SelectorStrategyOption::parseOptions);
 }
 
 TEST(StringUtilsTest, parseTuningStrategyOptionsTest) {
-  testParseSingle<autopas::TuningStrategyOption>(autopas::allTuningStrategyOptions, {"full-search", "bayesian-search"},
-                                                 autopas::utils::StringUtils::parseTuningStrategyOption);
+  testParseSingle<autopas::TuningStrategyOption>(autopas::TuningStrategyOption::getAllOptions(), {"full-search", "bayesian-search"},
+                                                 autopas::TuningStrategyOption::parseOptions);
 }
 
 TEST(StringUtilsTest, to_stringDataLayoutTest) {
-  testToString(autopas::allDataLayoutOptions, {autopas::DataLayoutOption(-1)});
+  testToString(autopas::DataLayoutOption::getAllOptions(), {autopas::DataLayoutOption()});
 }
 
 TEST(StringUtilsTest, to_stringSelectorStrategiesTest) {
-  testToString(autopas::allSelectorStrategies, {autopas::SelectorStrategyOption(-1)});
+  testToString(autopas::SelectorStrategyOption::getAllOptions(), {autopas::SelectorStrategyOption()});
 }
 
 TEST(StringUtilsTest, to_stringContainerOptionsTest) {
-  testToString(autopas::allContainerOptions, {autopas::ContainerOption(-1)});
+  testToString(autopas::ContainerOption::getAllOptions(), {autopas::ContainerOption()});
 }
 
 TEST(StringUtilsTest, to_stringTraversalOptionsTest) {
@@ -76,5 +81,5 @@ TEST(StringUtilsTest, to_stringTraversalOptionsTest) {
 }
 
 TEST(StringUtilsTest, to_stringTuningStrategyOptionsTest) {
-  testToString(autopas::allTuningStrategyOptions, {autopas::TuningStrategyOption(-1)});
+  testToString(autopas::TuningStrategyOption::getAllOptions(), {autopas::TuningStrategyOption()});
 }

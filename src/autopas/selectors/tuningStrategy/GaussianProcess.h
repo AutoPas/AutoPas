@@ -114,13 +114,13 @@ class GaussianProcess {
    */
   inline double calcAcquisition(AcquisitionFunctionOption af, const Vector &feature) const {
     switch (af) {
-      case ucb: {
+      case AcquisitionFunctionOption::ucb: {
         return predictMean(feature) + std::sqrt(predictVar(feature));
       }
-      case lcb: {
+      case AcquisitionFunctionOption::lcb: {
         return predictMean(feature) - std::sqrt(predictVar(feature));
       }
-      case mean: {
+      case AcquisitionFunctionOption::mean: {
         return predictMean(feature);
       }
     }

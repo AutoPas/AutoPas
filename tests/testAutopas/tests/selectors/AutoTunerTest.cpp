@@ -21,8 +21,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
 
   autopas::LJFunctor<Particle, FPCell> functor(cutoff, 1., 1., 0.);
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
-      autopas::allContainerOptions, std::set<double>({cellSizeFactor}), autopas::TraversalOption::getAllOptions(),
-      autopas::allDataLayoutOptions, autopas::allNewton3Options);
+      autopas::ContainerOption::getAllOptions(), std::set<double>({cellSizeFactor}), autopas::TraversalOption::getAllOptions(),
+      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
   autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, std::move(tuningStrategy),
                                                  autopas::SelectorStrategyOption::fastestAbs, 100, maxSamples);
 

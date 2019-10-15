@@ -27,7 +27,7 @@ namespace internal {
  * @tparam bidirectional if no newton3 is used processCellPair(cell1, cell2) should also handle processCellPair(cell2,
  * cell1)
  */
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
           bool useNewton3 = true, bool bidirectional = true>
 class CellFunctor {
  public:
@@ -114,7 +114,7 @@ class CellFunctor {
   constexpr static unsigned long _startSorting = 8;
 };
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCell(
     ParticleCell &cell) {
@@ -144,7 +144,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPair(
 
@@ -180,7 +180,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 template <bool newton3>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoS(
@@ -228,7 +228,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &r) {
@@ -263,7 +263,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                  bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
@@ -300,14 +300,14 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairSoAN3(
     ParticleCell &cell1, ParticleCell &cell2) {
   _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                  bidirectional>::processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2) {
@@ -315,21 +315,21 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   if (bidirectional) _functor->SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellSoAN3(
     ParticleCell &cell) {
   _functor->SoAFunctor(cell._particleSoABuffer, true);
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellSoANoN3(
     ParticleCell &cell) {
   _functor->SoAFunctor(cell._particleSoABuffer, false);  // the functor has to enable this...
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                  bidirectional>::processCellPairCudaNoN3(ParticleCell &cell1, ParticleCell &cell2) {
@@ -337,21 +337,21 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   if (bidirectional) _functor->CudaFunctor(cell2._particleSoABufferDevice, cell1._particleSoABufferDevice, false);
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellCudaNoN3(
     ParticleCell &cell) {
   _functor->CudaFunctor(cell._particleSoABufferDevice, false);
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairCudaN3(
     ParticleCell &cell1, ParticleCell &cell2) {
   _functor->CudaFunctor(cell1._particleSoABufferDevice, cell2._particleSoABufferDevice, true);
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption DataLayout, bool useNewton3,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellCudaN3(
     ParticleCell &cell) {

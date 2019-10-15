@@ -26,7 +26,7 @@ class SPHTest : public AutoPasTestBase,
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       auto [dataLayoutOption, sphFunctorType] = static_cast<ParamType>(info.param);
-      std::string dataLayoutOptionStr(autopas::utils::StringUtils::to_string(dataLayoutOption));
+      std::string dataLayoutOptionStr(dataLayoutOption.to_string());
       std::string sphFunctorTypeStr(sphFunctorType == hydro ? "hydro" : "density");
       // replace all '-' with '_', otherwise the test name is invalid
       // std::replace(traversal.begin(), traversal.end(), '-', '_');
