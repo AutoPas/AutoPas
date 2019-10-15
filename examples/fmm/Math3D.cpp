@@ -141,6 +141,12 @@ double calculateA(int m, int n) {
 std::array<double, 3> subtract(const std::array<double, 3> &a, const std::array<double, 3> &b) {
   return std::array<double, 3>({a[0] - b[0], a[1] - b[1], a[2] - b[2]});
 }
+std::array<double, 3> add(const std::array<double, 3> &a, const std::array<double, 3> &b) {
+  return std::array<double, 3>({a[0] + b[0], a[1] + b[1], a[2] + b[2]});
+};
+std::array<double, 3> mul(const std::array<double, 3> &a, double scalar) {
+  return std::array<double, 3>({a[0] * scalar, a[1] * scalar, a[2] * scalar});
+};
 
 void initMath() {
   // factorial

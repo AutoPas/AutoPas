@@ -109,6 +109,8 @@ inline double getA(int m, int n) { return MathOpt::getAValue[maxFactorialParamet
  * @return The converted 3d vector in cartesian coordinates.
  */
 std::array<double, 3> subtract(const std::array<double, 3> &a, const std::array<double, 3> &b);
+std::array<double, 3> add(const std::array<double, 3> &a, const std::array<double, 3> &b);
+std::array<double, 3> mul(const std::array<double, 3> &a, double scalar);
 
 /**
  * Returns std::pow(1i, exponent), where 1i is the imaginary unit.
