@@ -21,12 +21,11 @@ Operators::Operators(int orderOfExpansion) {
   }
 }
 
-void Operators::P2M(OctreeNode &leaf) {
-  leaf.fmmM = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
-
+void Operators::P2M(AdaptiveOctreeNode &leaf) {
   // Loop order changed, so the spherical harmonics cache is built less frequently.
-  for (auto iter = leaf.getContainer()->getRegionIterator(leaf.getLowCorner(), leaf.getHighCorner()); iter.isValid(); ++iter) {
-    auto spherical = Math3D::toSpherical(Math3D::subtract(iter->getR(), leaf.getCenter()));
+  for (auto iter = leaf.getTree()->getDomain()->getRegionIterator(leaf.getNodeMinCorner(), leaf.getNodeMaxCorner());
+       iter.isValid(); ++iter) {
+    auto spherical = Math3D::toSpherical(Math3D::subtract(iter->getR(), leaf.getNodeCenter()));
     for (int m = -orderOfExpansion; m <= orderOfExpansion; ++m) {
       Math3D::sphericalHarmonicsBuildCache(-m, orderOfExpansion, spherical[1], spherical[2]);
       for (int n = std::abs(m); n <= orderOfExpansion; n++) {
@@ -38,15 +37,16 @@ void Operators::P2M(OctreeNode &leaf) {
   }
 }
 
-void Operators::M2M(OctreeNode &parent) {
-  parent.fmmM = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
-
+void Operators::M2M(AdaptiveOctreeNode &parent) {
+  if (parent.isLeaf()) {
+    return;
+  }
   for (int c = 0; c < 8; ++c) {
     auto child = parent.getChild(c);
-    if (child->getIsZeroM()) {
+    if (child->isZeroM()) {
       continue;
     }
-    auto spherical = Math3D::toSpherical(Math3D::subtract(child->getCenter(), parent.getCenter()));
+    auto spherical = Math3D::toSpherical(Math3D::subtract(child->getNodeCenter(), parent.getNodeCenter()));
     double r = spherical[0];
     double theta = spherical[1];
     double phi = spherical[2];
@@ -78,16 +78,67 @@ void Operators::M2M(OctreeNode &parent) {
 }
 
 // Most performance critical function. Over 90% of fmm is spent here.
-void Operators::M2L(OctreeNode &node) {
-  node.fmmL = ComplexMatrix(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion + 1, 0));
-
+void Operators::M2L(AdaptiveOctreeNode &node) {
   // No far field interactions.
-  if (node.getDepth() < 2) {
+  /*if (node.getDepth() < 2) {
+    return;
+  }*/
+  if (node.isZeroM()) {
     return;
   }
 
-  for (auto inter : *node.getInteractionList()) {
-    if (inter->getIsZeroM()) {
+  for (auto inter : node.getInteractionList()) {
+    auto spherical = Math3D::toSpherical(Math3D::subtract(node.getNodeCenter(), inter->getNodeCenter()));
+    double rho = spherical[0];
+    double theta = spherical[1];
+    double phi = spherical[2];
+
+    // Loop order changed, so the spherical harmonics cache is built less frequently.
+    for (int k = -orderOfExpansion; k <= orderOfExpansion; ++k) {
+      int absK = std::abs(k);
+      for (int m = -orderOfExpansion; m <= orderOfExpansion; ++m) {
+        // rhoPower1 * rhoPower2 = std::pow(rho, n+j+1)
+        // Avoids std::pow in the innermost loop.
+        double rhoPower1 = std::pow(rho, absK + 1);
+        int absM = std::abs(m);
+        Math3D::sphericalHarmonicsBuildCache(m - k, 2 * orderOfExpansion, theta, phi);
+        for (int j = absK; j <= orderOfExpansion; ++j) {
+          // sign = (-1)^n
+          // sign has to be reset before after every n-loop, so it cannot be put outside the j-loop.
+          auto sign = absM % 2 == 1 ? 1 : -1;
+
+          double rhoPower2 = std::pow(rho, absM) * rhoPower1;
+
+          // complex = i^(|k-m|-|k|-|m|)
+          auto complex = this->powerM2L[k + orderOfExpansion][m + orderOfExpansion];
+
+          auto aKJ = Math3D::getA(k, j);
+
+          Complex sum = 0;
+          for (int n = absM; n <= orderOfExpansion; ++n) {
+            sign = -sign;
+            auto product = node.getM(m, n);
+            if (product != 0.0) {
+              product *=
+                  complex * Math3D::getA(m, n) * aKJ * Math3D::sphericalHarmonicsCached(m - k, j + n, theta, phi);
+              product /= sign * Math3D::getA(m - k, j + n) * rhoPower2;
+            }
+
+            sum += product;
+            // assert(!__isnan(sum.real()) && !__isnan(sum.imag()));
+
+            rhoPower2 *= rho;
+          }
+
+          inter->setL(k, j, inter->getL(k, j) + sum);
+          rhoPower1 *= rho;
+        }
+      }
+    }
+  }
+
+  /*for (auto inter : node.getInteractionList()) {
+    if (inter->isZeroM()) {
       continue;
     }
     auto spherical = Math3D::toSpherical(Math3D::subtract(inter->getCenter(), node.getCenter()));
@@ -137,16 +188,16 @@ void Operators::M2L(OctreeNode &node) {
         }
       }
     }
-  }
+  }*/
 }
 
-void Operators::L2L(OctreeNode &node) {
+void Operators::L2L(AdaptiveOctreeNode &node) {
   auto parent = node.getParent();
   if (parent != nullptr) {
-    if (parent->getIsZeroL()) {
+    if (parent->isZeroL()) {
       return;
     }
-    auto cartesian = Math3D::subtract(parent->getCenter(), node.getCenter());
+    auto cartesian = Math3D::subtract(parent->getNodeCenter(), node.getNodeCenter());
     auto spherical = Math3D::toSpherical(cartesian);
     double rho = spherical[0];
     double theta = spherical[1];
@@ -180,9 +231,10 @@ void Operators::L2L(OctreeNode &node) {
   }
 }
 
-void Operators::L2P(OctreeNode &leaf) {
-  for (auto iter = leaf.getContainer()->getRegionIterator(leaf.getLowCorner(), leaf.getHighCorner()); iter.isValid(); ++iter) {
-    auto sphericalPos = Math3D::toSpherical(Math3D::subtract(iter->getR(), leaf.getCenter()));
+void Operators::L2P(AdaptiveOctreeNode &leaf) {
+  for (auto iter = leaf.getTree()->getDomain()->getRegionIterator(leaf.getNodeMinCorner(), leaf.getNodeMaxCorner());
+       iter.isValid(); ++iter) {
+    auto sphericalPos = Math3D::toSpherical(Math3D::subtract(iter->getR(), leaf.getNodeCenter()));
 
     double rho = sphericalPos[0];
     double theta = sphericalPos[1];

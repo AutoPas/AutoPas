@@ -36,6 +36,9 @@ AdaptiveOctreeNode::AdaptiveOctreeNode(AdaptiveOctree &tree, AdaptiveOctreeNode 
       nodeCenter(Math3D::mul(Math3D::add(minCorner, maxCorner), 0.5)),
       nodeMaxCorner(maxCorner),
       nodeSize(Math3D::subtract(maxCorner, minCorner)) {
+  fmmM = ComplexMatrix(tree.getOrderOfExpansion() * 2 + 1, std::vector<Complex>(tree.getOrderOfExpansion() + 1, 0));
+  fmmL = ComplexMatrix(tree.getOrderOfExpansion() * 2 + 1, std::vector<Complex>(tree.getOrderOfExpansion() + 1, 0));
+
   if (parent == nullptr) {
     depth = 0;
     name = "root";
@@ -51,16 +54,25 @@ AdaptiveOctreeNode::AdaptiveOctreeNode(AdaptiveOctree &tree, AdaptiveOctreeNode 
             << " containing " << particles << " particles. size = " << nodeSize[0] << ", " << nodeSize[1] << ", "
             << nodeSize[2] << std::endl;
 
+  if (particles <= tree.getMaxParticlesPerNode()) {
+    for (auto particle = getTree()->getDomain()->getRegionIterator(minCorner, maxCorner); particle.isValid();
+         ++particle) {
+      std::cout << particle->getR()[0] << ", " << particle->getR()[1] << ", " << particle->getR()[2]
+                << ", charge = " << particle->charge << std::endl;
+    }
+  }
+
   if (particles > tree.getMaxParticlesPerNode()) {
     _isLeaf = false;
     child = std::vector<std::unique_ptr<AdaptiveOctreeNode>>(8);
 
     // Divide node into 8 smaller nodes.
 
-    for (unsigned long i = 0; i < 8; ++i) {
-      bool xOffset = i & 0x1u;
-      bool yOffset = i & 0x2u;
-      bool zOffset = i & 0x4u;
+    for (int i = 0; i < 8; ++i) {
+      auto u = static_cast<unsigned>(i);
+      bool xOffset = u & 0x1u;
+      bool yOffset = u & 0x2u;
+      bool zOffset = u & 0x4u;
       std::array<double, 3> offset = std::array<double, 3>(
           {xOffset ? nodeSize[0] / 2 : 0, yOffset ? nodeSize[1] / 2 : 0, zOffset ? nodeSize[2] / 2 : 0});
       child[i] = std::make_unique<AdaptiveOctreeNode>(tree, this, i, Math3D::add(nodeMinCorner, offset),
@@ -103,8 +115,8 @@ AdaptiveOctreeNode *AdaptiveOctreeNode::findNeighbour(int x, int y, int z) const
   std::array<double, 3> offset = std::array<double, 3>({x * nodeSize[0], y * nodeSize[1], z * nodeSize[2]});
 
   auto neighbour = tree->getRoot()->findNode(Math3D::add(nodeCenter, offset), depth);
-  /*std::cout << "find = (" << nodeCenter[0] + offset[0] << ", " << nodeCenter[1] + offset[1] << ", "
-            << nodeCenter[2] + offset[2] << ") -> " << neighbour->name << std::endl;*/
+  // std::cout << "find = (" << nodeCenter[0] + offset[0] << ", " << nodeCenter[1] + offset[1] << ", "
+  //          << nodeCenter[2] + offset[2] << ") -> " << neighbour->name << std::endl;
 
   return neighbour;
 }
@@ -154,7 +166,6 @@ void AdaptiveOctreeNode::setL(int m, int n, Complex value) {
 }
 void AdaptiveOctreeNode::initNeighbourList() {
   neighbourList = std::set<AdaptiveOctreeNode *>();
-  std::cout << "center = (" << nodeCenter[0] << ", " << nodeCenter[1] << ", " << nodeCenter[2] << ")" << std::endl;
   neighbourList.insert(this);
   for (int x = -1; x <= 1; ++x) {
     for (int y = -1; y <= 1; ++y) {
@@ -177,14 +188,13 @@ void AdaptiveOctreeNode::initNeighbourList() {
   }
 }
 void AdaptiveOctreeNode::initInteractionList() {
-  std::cout << "[" << name << "] initInteractionList()" << std::endl;
   interactionList = std::set<AdaptiveOctreeNode *>();
   if (parent != nullptr) {
     for (AdaptiveOctreeNode *parentNeighbour : parent->getNeighbourList()) {
       for (int c = 0; c < 8; ++c) {
         AdaptiveOctreeNode *insert;
         if (!parentNeighbour->isLeaf()) {
-          insert = &parentNeighbour->getChild(c);
+          insert = parentNeighbour->getChild(c);
         } else {
           insert = parentNeighbour;
         }
