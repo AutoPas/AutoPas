@@ -21,7 +21,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
 
   autopas::LJFunctor<Particle, FPCell> functor(cutoff, 1., 1., 0.);
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
-      autopas::allContainerOptions, std::set<double>({cellSizeFactor}), autopas::allTraversalOptions,
+      autopas::allContainerOptions, std::set<double>({cellSizeFactor}), autopas::TraversalOption::getAllOptions(),
       autopas::allDataLayoutOptions, autopas::allNewton3Options);
   autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, std::move(tuningStrategy),
                                                  autopas::SelectorStrategyOption::fastestAbs, 100, maxSamples);
@@ -29,8 +29,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
-  auto prevConfig = autopas::Configuration(autopas::ContainerOption(-1), -1., autopas::TraversalOption(-1),
-                                           autopas::DataLayoutOption(-1), autopas::Newton3Option(-1));
+  //FIXME: make sure this can not equal current config in first iteration
+  auto prevConfig = autopas::Configuration();
 
   // total number of possible configurations * number of samples + last iteration after tuning
   // number of configs manually counted:

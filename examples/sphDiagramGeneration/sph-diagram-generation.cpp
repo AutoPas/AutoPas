@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
   autoPas.setAllowedNewton3Options({useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled});
   autoPas.setAllowedDataLayouts({autopas::DataLayoutOption::aos});  // currently aos only!
 
-  auto traversalType = autopas::TraversalOption(-1);
+  autopas::TraversalOption traversalType;
   switch (*containerOptions.begin()) {
     case autopas::ContainerOption::linkedCells: {
       traversalType = autopas::TraversalOption::c08;

@@ -8,7 +8,7 @@
 
 TEST(StringUtilsTest, parseTraversalOptionsTest) {
   testParseMultiple<autopas::TraversalOption>(
-      autopas::allTraversalOptions,
+      autopas::TraversalOption::getAllOptions(),
       "c01, c04, c08, c18, c04s, direct, sliced v01, c18verlet, verlet-sliced, "
       "cuda-c01, verlet-lists, c01-combined, verlet-clusters, var-verlet-lists-as-build, verlet-clusters-coloring",
       autopas::utils::StringUtils::parseTraversalOptions);
@@ -71,7 +71,8 @@ TEST(StringUtilsTest, to_stringContainerOptionsTest) {
 }
 
 TEST(StringUtilsTest, to_stringTraversalOptionsTest) {
-  testToString(autopas::allTraversalOptions, {autopas::TraversalOption(-1)});
+  // testing for bad options does not make sense anymore
+  testToString(autopas::TraversalOption::getAllOptions(), {});
 }
 
 TEST(StringUtilsTest, to_stringTuningStrategyOptionsTest) {

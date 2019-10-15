@@ -40,7 +40,7 @@ class Configuration {
    */
   Configuration()
       : container(ContainerOption(-1)),
-        traversal(TraversalOption(-1)),
+        traversal(),
         dataLayout(DataLayoutOption(-1)),
         newton3(Newton3Option(-1)),
         cellSizeFactor(-1.) {}

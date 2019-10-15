@@ -52,7 +52,7 @@ class AutoPas {
         _tuningStrategyOption(TuningStrategyOption::fullSearch),
         _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(allContainerOptions),
-        _allowedTraversals(allTraversalOptions),
+        _allowedTraversals(TraversalOption::getAllOptions()),
         _allowedDataLayouts(allDataLayoutOptions),
         _allowedNewton3Options(allNewton3Options),
         _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))) {

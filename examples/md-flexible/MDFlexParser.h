@@ -59,7 +59,7 @@ class MDFlexParser {
   std::set<autopas::ContainerOption> containerOptions = autopas::allContainerOptions;
   std::set<autopas::DataLayoutOption> dataLayoutOptions = autopas::allDataLayoutOptions;
   autopas::SelectorStrategyOption selectorStrategy = autopas::SelectorStrategyOption::fastestAbs;
-  std::set<autopas::TraversalOption> traversalOptions = autopas::allTraversalOptions;
+  std::set<autopas::TraversalOption> traversalOptions = autopas::TraversalOption::getAllOptions();
   autopas::TuningStrategyOption tuningStrategyOption = autopas::TuningStrategyOption::fullSearch;
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
   std::unique_ptr<autopas::NumberSet<double>> cellSizeFactors =
