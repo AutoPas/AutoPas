@@ -8,32 +8,50 @@
 
 #include <vector>
 
+#include "autopas/options/Option.h"
+
 namespace autopas {
 
 /**
- * Possible choices for the employed selectors.
+ * Class representing the choices for timing samples to be aggregated.
  */
-enum SelectorStrategyOption {
+class SelectorStrategyOption : public Option<SelectorStrategyOption> {
+ public:
   /**
-   * Fastest absolute value.
+   * Possible choices for the employed selectors.
    */
-  fastestAbs,
-  /**
-   * Fastest mean value.
-   */
-  fastestMean,
-  /**
-   * Fastest median value
-   */
-  fastestMedian
-};
+  enum Value {
+    /**
+     * Fastest absolute value.
+     */
+    fastestAbs,
+    /**
+     * Fastest mean value.
+     */
+    fastestMean,
+    /**
+     * Fastest median value
+     */
+    fastestMedian
+  };
 
-/**
- * Provides a way to iterate over the possible choices of selector strategies.
- */
-static const std::set<SelectorStrategyOption> allSelectorStrategies = {
-    SelectorStrategyOption::fastestAbs,
-    SelectorStrategyOption::fastestMean,
-    SelectorStrategyOption::fastestMedian,
+  SelectorStrategyOption() = default;
+  constexpr SelectorStrategyOption(Value option) : _value(option) {}
+  constexpr operator Value() const { return _value; }
+  explicit operator bool() = delete;
+
+  /**
+   * Provides a way to iterate over the possible choices of TraversalOption.
+   */
+  static std::map<SelectorStrategyOption, std::string> getOptionNames() {
+    return {
+        {SelectorStrategyOption::fastestAbs, "Fastest-Absolute-Value"},
+        {SelectorStrategyOption::fastestMean, "Fastest-Mean-Value"},
+        {SelectorStrategyOption::fastestMedian, "Fastest-Median-Value"},
+    };
+  };
+
+ private:
+  Value _value{Value(-1)};
 };
 }  // namespace autopas

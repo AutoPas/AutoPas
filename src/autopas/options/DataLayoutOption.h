@@ -8,21 +8,37 @@
 
 #include <set>
 
+#include "autopas/options/Option.h"
+
 namespace autopas {
-/**
- * Possible choices for the particle data layout.
- */
-enum DataLayoutOption { aos, soa, cuda };
 
 /**
- * Provides a way to iterate over the possible choices of data layouts.
+ * Class representing the traversal choices.
  */
-static const std::set<DataLayoutOption> allDataLayoutOptions = {
-    DataLayoutOption::aos,
-    DataLayoutOption::soa,
-#if defined(AUTOPAS_CUDA)
-    DataLayoutOption::cuda,
-#endif
+class DataLayoutOption : public Option<DataLayoutOption> {
+ public:
+  /**
+   * Possible choices for the particle data layout.
+   */
+  enum Value { aos, soa, cuda };
+
+  DataLayoutOption() = default;
+  constexpr DataLayoutOption(Value option) : _value(option) {}
+  constexpr operator Value() const { return _value; }
+  explicit operator bool() = delete;
+
+  /**
+   * Provides a way to iterate over the possible choices of TraversalOption.
+   */
+  static std::map<DataLayoutOption, std::string> getOptionNames() {
+    return {
+        {DataLayoutOption::aos, "Array-of-Structures"},
+        {DataLayoutOption::soa, "Structure-of-Arrays"},
+        {DataLayoutOption::cuda, "Structure-of-Arrays on CUDA capable device"},
+    };
+  };
+
+ private:
+  Value _value{Value(-1)};
 };
-
 }  // namespace autopas

@@ -7,13 +7,16 @@
 #pragma once
 
 #include <set>
+
 #include "autopas/options/Option.h"
 
 namespace autopas {
 
-class TraversalOption : public Option<TraversalOption> {
+/**
+ * Class representing the traversal choices.
+ */
+ class TraversalOption : public Option<TraversalOption> {
  public:
-
   /**
    * Possible choices for the cell pair traversal.
    */
@@ -36,7 +39,7 @@ class TraversalOption : public Option<TraversalOption> {
     c04SoA = 15,
   };
 
-  TraversalOption() =  default;
+  TraversalOption() = default;
   constexpr TraversalOption(Value option) : _value(option) {}
   constexpr operator Value() const { return _value; }
   explicit operator bool() = delete;
