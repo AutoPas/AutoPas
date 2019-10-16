@@ -23,7 +23,7 @@ TEST(StringUtilsTest, parseTraversalOptionsTest) {
 TEST(StringUtilsTest, parseContainerOptionsTest) {
   testParseMultiple<autopas::ContainerOption>(
       autopas::ContainerOption::getAllOptions(),
-      "directSum, linkedCells, verletLists, verlet-cells, vcluster, varVerletListsAsBuild, vclustercells",
+      "directSum, linkedCells, verletLists, verletLists-cells, vclusterlists, varVerletListsAsBuild, vclustercells",
       autopas::ContainerOption::parseOptions);
 }
 
