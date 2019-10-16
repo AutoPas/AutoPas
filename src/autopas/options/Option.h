@@ -8,6 +8,8 @@
 
 #include <map>
 #include <set>
+#include <string>
+
 #include "autopas/utils/StringUtils.h"
 
 namespace autopas {
@@ -23,7 +25,8 @@ class Option {
    */
   static std::set<actualOption> getAllOptions() {
     std::set<actualOption> retSet;
-    std::for_each(actualOption::getOptionNames().begin(), actualOption::getOptionNames().end(),
+    auto mapOptionNames = actualOption::getOptionNames();
+    std::for_each(mapOptionNames.begin(), mapOptionNames.end(),
                   [&retSet](auto pairOpStr) { retSet.insert(pairOpStr.first); });
     return retSet;
   };
@@ -34,8 +37,9 @@ class Option {
    */
   std::string to_string() const {
     auto &actualThis = *static_cast<const actualOption *>(this);
-    auto match = actualOption::getOptionNames().find(actualThis);
-    if (match == actualOption::getOptionNames().end()) {
+    auto mapOptNames = actualOption::getOptionNames(); // <- not copying the map destroys the strings
+    auto match = mapOptNames.find(actualThis);
+    if (match == mapOptNames.end()) {
       return "Unknown Option (" + std::to_string(actualThis) + ")";
     } else {
       return match->second;
@@ -58,10 +62,14 @@ class Option {
     std::set<actualOption> optionsSet;
 
     auto needles = autopas::utils::StringUtils::tokenize(optionsString, autopas::utils::StringUtils::delimiters);
+
     std::vector<std::string> haystack;
 
-    std::transform(actualOption::getAllOptions().begin(), actualOption::getAllOptions().end(),
-                   std::back_inserter(haystack), [](auto traversalOption) { return traversalOption.to_string(); });
+    for (auto &option : actualOption::getAllOptions()) {
+      auto s = option.to_string();
+      std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+      haystack.push_back(s);
+    }
 
     // assure all string representations are lower case
     std::map<actualOption, std::string> allOptionNames;
@@ -76,6 +84,7 @@ class Option {
       for (auto &pairEnumString : allOptionNames) {
         if (pairEnumString.second == matchingString) {
           optionsSet.insert(pairEnumString.first);
+          break;
         }
       }
     }
