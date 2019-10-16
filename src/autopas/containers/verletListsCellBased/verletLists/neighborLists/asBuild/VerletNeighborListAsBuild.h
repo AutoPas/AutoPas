@@ -42,7 +42,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   void startFunctor(double cutoff) {
     internal::AsBuildPairGeneratorFunctor<Particle, callCheckInstead> functor(*this, cutoff);
     // Use SoA traversal for generation and AoS traversal for validation check.
-    constexpr DataLayoutOption dataLayout = callCheckInstead ? DataLayoutOption::aos : DataLayoutOption::soa;
+    constexpr auto dataLayout = callCheckInstead ? DataLayoutOption::aos : DataLayoutOption::soa;
     auto traversal = C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                                    internal::AsBuildPairGeneratorFunctor<Particle, callCheckInstead>,
                                                    dataLayout, useNewton3>(
