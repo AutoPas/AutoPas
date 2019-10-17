@@ -78,8 +78,9 @@ INSTANTIATE_TEST_SUITE_P(
             }()),
             ValuesIn([]() {
               std::vector<std::string> ret;
-              std::transform(autopas::DataLayoutOption::getAllOptions().begin(),
-                             autopas::DataLayoutOption::getAllOptions().end(), std::back_inserter(ret),
+              auto allDataLayoutOptions = autopas::DataLayoutOption::getAllOptions();
+              std::transform(allDataLayoutOptions.begin(),
+                             allDataLayoutOptions.end(), std::back_inserter(ret),
                              [](autopas::DataLayoutOption d) -> std::string { return d.to_string(); });
               return ret;
             }())));
