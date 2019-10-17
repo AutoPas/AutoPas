@@ -66,7 +66,7 @@ class BayesianSearch : public TuningStrategyInterface {
         _cellSizeFactors(allowedCellSizeFactors.clone()),
         _traversalContainerMap(),
         _currentConfig(),
-        _gp(1., std::vector<double>(FeatureVector::featureSpaceDims, 1.), 0.001),
+        _gp(1., std::vector<double>(FeatureVector::_featureSpaceDims, 1.), 0.001),
         _invalidConfigs(),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
