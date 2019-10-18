@@ -37,7 +37,7 @@ class TraversalOption : public Option<TraversalOption> {
     varVerletTraversalAsBuild = 13,
     verletClustersColoring = 14,
     c04SoA = 15,
-    verletClusterCellsTraversal = 16,
+    verletClusterCells = 16,
   };
 
   TraversalOption() = default;
@@ -55,10 +55,10 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::c18, "c18"},
         {TraversalOption::c01, "c01"},
         {TraversalOption::directSumTraversal, "directSum"},
-        {TraversalOption::slicedVerlet, "slicedVerlet"},
+        {TraversalOption::slicedVerlet, "verlet-sliced"},
         {TraversalOption::c18Verlet, "verlet-c18"},
         {TraversalOption::c01Verlet, "verlet-c01"},
-        {TraversalOption::c01Cuda, "c01Cuda"},
+        {TraversalOption::c01Cuda, "cuda-c01"},
         {TraversalOption::verletTraversal, "verlet-lists"},
         {TraversalOption::c01CombinedSoA, "c01-combined-SoA"},
         {TraversalOption::verletClusters, "verlet-clusters"},
@@ -66,7 +66,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::varVerletTraversalAsBuild, "var-verlet-lists-as-build"},
         {TraversalOption::verletClustersColoring, "verlet-clusters-coloring"},
         {TraversalOption::c04SoA, "c04SoA"},
-        {TraversalOption::verletClusterCellsTraversal, "verlet-cluster-cells-traversal"},
+        {TraversalOption::verletClusterCells, "verlet-cluster-cells"},
     };
   };
 

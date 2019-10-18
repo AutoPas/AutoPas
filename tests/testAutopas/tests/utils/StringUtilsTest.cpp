@@ -14,8 +14,8 @@
 TEST(StringUtilsTest, parseTraversalOptionsTest) {
   testParseMultiple<autopas::TraversalOption>(
       autopas::TraversalOption::getAllOptions(),
-      "c01, c04, c08, c18, c04s, direct, sliced v01, c18verlet, verlet-sliced, "
-      "cuda-c01, verlet-lists, c01-combined, verlet-clusters, var-verlet-lists-as-build, verlet-clusters-coloring, "
+      "c01, c04, c08, c18, c04-soa, direct, slicedv01, verletc18, verlec01, verlet-sliced, "
+      "cudac01, verletlists, c01-combined, verlet-clusters, var-verlet-lists-as-build, verlet-clusters-coloring, "
       "verlet-cluster-cells",
       autopas::TraversalOption::parseOptions);
 }

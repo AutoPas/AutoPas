@@ -44,7 +44,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         _neighborMatrixDim(nullptr),
         _clusterSize(nullptr) {}
 
-  TraversalOption getTraversalType() const override { return TraversalOption::verletClusterCellsTraversal; }
+  TraversalOption getTraversalType() const override { return TraversalOption::verletClusterCells; }
 
   bool isApplicable() const override {
     // TODO enable when functors use owned pointers correctly for soas and global calculation
@@ -67,7 +67,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   DataLayoutOption getDataLayout() const override { return dataLayout; }
 
   std::tuple<TraversalOption, DataLayoutOption, bool> getSignature() override {
-    return std::make_tuple(TraversalOption::verletClusterCellsTraversal, dataLayout, useNewton3);
+    return std::make_tuple(TraversalOption::verletClusterCells, dataLayout, useNewton3);
   }
 
   void setVerletListPointer(unsigned int *clusterSize,
