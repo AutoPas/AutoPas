@@ -22,7 +22,6 @@ class Newton3Option : public Option<Newton3Option> {
    */
   enum Value { disabled = 0, enabled = 1 };
 
-
   /**
    * Constructor.
    */

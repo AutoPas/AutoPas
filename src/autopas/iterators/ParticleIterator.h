@@ -139,7 +139,8 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
 
  protected:
   /**
-   * @copydoc ParticleIteratorInterface::deleteCurrentParticle()
+   * Deletes the current particle.
+   * @note This function is disabled for const iterators.
    */
   inline void deleteCurrentParticleImpl() override {
     if (_iteratorWithinOneCell.isValid()) {

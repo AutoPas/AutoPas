@@ -86,7 +86,8 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
   bool isValid() const override { return _cellId < _vectorOfCells->size(); }
 
   /**
-   * @copydoc ParticleIteratorInterface::deleteCurrentParticle()
+   * Deletes the current particle.
+   * @note This function is disabled for const iterators.
    */
   void deleteCurrentParticleImpl() override {
     if constexpr (modifiable) {
