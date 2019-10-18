@@ -19,8 +19,9 @@ TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
 
   transform(contTravStr.begin(), contTravStr.end(), contTravStr.begin(), ::tolower);
   transform(dataLayoutStr.begin(), dataLayoutStr.end(), dataLayoutStr.begin(), ::tolower);
-  auto containerOption = autopas::ContainerOption::parseOptions(contTravStr).begin().operator*();
-  auto traversalOption = autopas::TraversalOption::parseOptions(contTravStr).begin().operator*();
+  auto contTravStrVector = autopas::utils::StringUtils::tokenize(contTravStr, "+");
+  auto containerOption = autopas::ContainerOption::parseOptions(contTravStrVector[0]).begin().operator*();
+  auto traversalOption = autopas::TraversalOption::parseOptions(contTravStrVector[1]).begin().operator*();
   auto dataLayoutOption = autopas::DataLayoutOption::parseOptions(dataLayoutStr).begin().operator*();
   countFunctorCalls(containerOption, traversalOption, dataLayoutOption);
 }
@@ -107,7 +108,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   EXPECT_CALL(mockFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    // loader and extractor will be called, we don't care how ofteautopas::utils::StringUtils::to_string(n.
+    // loader and extractor will be called, we don't care how often.
     EXPECT_CALL(mockFunctor, SoALoader(_, _))
         .Times(testing::AtLeast(1))
         .WillRepeatedly(testing::WithArgs<0, 1>(
