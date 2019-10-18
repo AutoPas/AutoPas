@@ -43,7 +43,7 @@ inline int needlemanWunschScore(std::string s1, std::string s2) {
   // fill rest of matrix
   for (size_t i = 1; i < scoreMatrix.size(); ++i) {
     for (size_t j = 1; j < scoreMatrix[0].size(); ++j) {
-      auto matchValue = s1[i + 1] == s2[j + 1] ? scoreMatch : scoreMismatch;
+      auto matchValue = s1[i - 1] == s2[j - 1] ? scoreMatch : scoreMismatch;
       auto scoreDiagonal = scoreMatrix[i - 1][j - 1] + matchValue;
       auto scoreLeft = scoreMatrix[i - 1][j] + scoreGap;
       auto scoreTop = scoreMatrix[i][j - 1] + scoreGap;
