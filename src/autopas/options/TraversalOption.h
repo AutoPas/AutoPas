@@ -40,13 +40,26 @@ class TraversalOption : public Option<TraversalOption> {
     verletClusterCells = 16,
   };
 
+  /**
+   * Constructor.
+   */
   TraversalOption() = default;
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
   constexpr TraversalOption(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
   constexpr operator Value() const { return _value; }
-  explicit operator bool() = delete;
 
   /**
    * Provides a way to iterate over the possible choices of TraversalOption.
+   * @return map option -> string representation
    */
   static std::map<TraversalOption, std::string> getOptionNames() {
     return {

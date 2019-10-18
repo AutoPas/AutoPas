@@ -32,13 +32,26 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
     bayesianSearch = 1
   };
 
+  /**
+   * Constructor.
+   */
   TuningStrategyOption() = default;
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
   constexpr TuningStrategyOption(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
   constexpr operator Value() const { return _value; }
-  explicit operator bool() = delete;
 
   /**
    * Provides a way to iterate over the possible choices of TraversalOption.
+   * @return map option -> string representation
    */
   static std::map<TuningStrategyOption, std::string> getOptionNames() {
     return {

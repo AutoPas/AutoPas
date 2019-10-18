@@ -35,13 +35,26 @@ class SelectorStrategyOption : public Option<SelectorStrategyOption> {
     fastestMedian
   };
 
+  /**
+   * Constructor.
+   */
   SelectorStrategyOption() = default;
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
   constexpr SelectorStrategyOption(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
   constexpr operator Value() const { return _value; }
-  explicit operator bool() = delete;
 
   /**
    * Provides a way to iterate over the possible choices of TraversalOption.
+   * @return map option -> string representation
    */
   static std::map<SelectorStrategyOption, std::string> getOptionNames() {
     return {

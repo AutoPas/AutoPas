@@ -22,13 +22,27 @@ class Newton3Option : public Option<Newton3Option> {
    */
   enum Value { disabled = 0, enabled = 1 };
 
+
+  /**
+   * Constructor.
+   */
   Newton3Option() = default;
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
   constexpr Newton3Option(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
   constexpr operator Value() const { return _value; }
-  explicit operator bool() = delete;
 
   /**
    * Provides a way to iterate over the possible choices of TraversalOption.
+   * @return map option -> string representation
    */
   static std::map<Newton3Option, std::string> getOptionNames() {
     return {

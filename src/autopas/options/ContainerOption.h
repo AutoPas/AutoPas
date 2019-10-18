@@ -30,13 +30,32 @@ class ContainerOption : public Option<ContainerOption> {
     verletClusterCells = 6,
   };
 
+  /**
+   * Constructor.
+   */
   ContainerOption() = default;
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
   constexpr ContainerOption(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
   constexpr operator Value() const { return _value; }
+
+  /**
+   * No cast to bool.
+   * @return
+   */
   explicit operator bool() = delete;
 
   /**
    * Provides a way to iterate over the possible choices of ContainerOption.
+   * @return map option -> string representation
    */
   static std::map<ContainerOption, std::string> getOptionNames() {
     return {

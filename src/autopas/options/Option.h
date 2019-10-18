@@ -14,10 +14,23 @@
 
 namespace autopas {
 
+/**
+ * Base class for autopas options.
+ * @tparam actualOption Curiously recurring template pattern.
+ */
 template <typename actualOption>
 class Option {
  public:
+  /**
+   * Constructor.
+   */
   constexpr Option() = default;
+
+  /**
+   * No cast to bool.
+   * @return
+   */
+  explicit operator bool() = delete;
 
   /**
    * Provides a way to iterate over the possible options.
@@ -37,7 +50,7 @@ class Option {
    */
   std::string to_string() const {
     auto &actualThis = *static_cast<const actualOption *>(this);
-    auto mapOptNames = actualOption::getOptionNames(); // <- not copying the map destroys the strings
+    auto mapOptNames = actualOption::getOptionNames();  // <- not copying the map destroys the strings
     auto match = mapOptNames.find(actualThis);
     if (match == mapOptNames.end()) {
       return "Unknown Option (" + std::to_string(actualThis) + ")";

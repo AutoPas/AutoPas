@@ -22,13 +22,26 @@ class DataLayoutOption : public Option<DataLayoutOption> {
    */
   enum Value { aos, soa, cuda };
 
+  /**
+   * Constructor.
+   */
   DataLayoutOption() = default;
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
   constexpr DataLayoutOption(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
   constexpr operator Value() const { return _value; }
-  explicit operator bool() = delete;
 
   /**
    * Provides a way to iterate over the possible choices of TraversalOption.
+   * @return map option -> string representation
    */
   static std::map<DataLayoutOption, std::string> getOptionNames() {
     return {

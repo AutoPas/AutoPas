@@ -35,13 +35,26 @@ class AcquisitionFunctionOption : public Option<AcquisitionFunctionOption> {
     mean
   };
 
+  /**
+   * Constructor.
+   */
   AcquisitionFunctionOption() = default;
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
   constexpr AcquisitionFunctionOption(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
   constexpr operator Value() const { return _value; }
-  explicit operator bool() = delete;
 
   /**
    * Provides a way to iterate over the possible choices of TraversalOption.
+   * @return map option -> string representation
    */
   static std::map<AcquisitionFunctionOption, std::string> getOptionNames() {
     return {

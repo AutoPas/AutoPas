@@ -135,10 +135,7 @@ inline std::vector<std::string> tokenize(const std::string &searchString, const 
 /**
  * Converts a string to a set of doubles.
  * @param doubleString String containing doubles.
- * @param ignoreUnknownOptions If set to false, 'nan' will be inserted in the return set
- * for each not parsable word.
- * @return Set of doubles. If no valid double was found and unknown options are ignored the empty
- * set is returned.
+ * @return Set of doubles. If no valid double was found the empty set is returned.
  */
 inline std::set<double> parseDoubles(const std::string &doubleString) {
   auto words = tokenize(doubleString, delimiters);
@@ -159,10 +156,7 @@ inline std::set<double> parseDoubles(const std::string &doubleString) {
 /**
  * Converts a string to a NumberSet<double>.
  * @param setString String containing the set.
- * @param ignoreUnknownOptions If set to false, 'nan' will be inserted in the return set
- * for each not parsable word.
- * @return NumberSet<double>. If no valid double was found and unknown options are ignored the empty
- * set is returned.
+ * @return NumberSet<double>. If no valid double was found the empty set is returned.
  */
 inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::string &setString) {
   // try to match an interval [x,y]
