@@ -32,9 +32,11 @@ class DataLayoutOption : public Option<DataLayoutOption> {
    */
   static std::map<DataLayoutOption, std::string> getOptionNames() {
     return {
-        {DataLayoutOption::aos, "Array-of-Structures"},
-        {DataLayoutOption::soa, "Structure-of-Arrays"},
-        {DataLayoutOption::cuda, "Structure-of-Arrays on CUDA capable device"},
+        {DataLayoutOption::aos, "AoS"},
+        {DataLayoutOption::soa, "SoA"},
+#ifdef AUTOPAS_CUDA
+        {DataLayoutOption::cuda, "CUDA"},
+#endif
     };
   };
 
