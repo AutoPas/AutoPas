@@ -1,0 +1,300 @@
+/**
+
+\mainpage Welcome
+Welcome to the Active Harmony User's Guide.  This manual is designed for users new to auto-tuning, and provides the information necessary for incorporating auto-tuning into a new project.  It describes in detail the terms and concepts involved in auto-tuning, how they are implemented in the Active Harmony framework, and how to incorporate them into your client application.
+
+
+
+\page intro Introduction
+Auto-tuning refers to the automated search for values to improve the performance of a target application.  In this case, performance is an abstract term used to represent a measurable quantity.  A common example of performance for auto-tuning is time, where the goal is to minimize execution time.  Other possible examples include minimizing power usage or maximizing floating-point operations per second.  In general, the Active Harmony framework seeks to minimize performance values and handles maximization via negation.
+
+In order for auto-tuning to be effective, a set of parameters must exist that affect the target application's performance.  A simple example is thread count for OpenMP applications, as changing the number of threads involved in executing a parallel program will certainly have an affect on run-time.  Target application parameters are represented within Active Harmony as **tuning variables**.
+
+\section intro_example Motivating Example
+As a motivating example, consider the study conducted by Tiwari et al.\ on optimizing scientific codes.  Applications written for scientific computing typically spend the bulk of their execution time in compute-heavy loops.  These loops are prime candidates for a compiler optimization known as loop unrolling and tiling.  Modifying the number of times a compiler unrolls or tiles a loop results in a distinct binary with different performance properties.  However, the optimal number of times to unroll or tile any given loop is virtually impossible to know at compile time since it is dependent on target architecture.  Compiling a priori with all possible unrolling and tiling values is prohibitively expensive, but using a sub-optimal binary also wastes valuable compute cycles.
+
+Tiwari solved this problem by allowing an auto-tuner to search for optimal loop unrolling and tiling values.  Using this approach, only a small fraction of the possible code variants are built, and an optimal (or near-optimal) version of the code is used for the majority of the execution.
+
+We refer to this example throughout the rest of this manual.
+
+\section intro_tunevar Tuning Variables
+Tuning variables in Active Harmony require a distinct name, and must be declared as one of the following three types:
+
+- `INT` (Integer numbers)\n
+  This value range is constrained by a minimum (`m`), maximum (`M`), and a stepping value (`s`) where `m<=M` and `s>0`.
+
+- `REAL` (Real numbers)\n
+  This value range is constrained by a minimum (`m`), maximum (`M`), and a stepping value (`s`) where `m<=M` and `s>0`.
+
+- `ENUM` (Enumerated strings)\n
+  This value range is constrained by an explicit list of valid values.
+
+\section intro_space Search Spaces
+Each tuning variable may be seen as a `1`-dimensional range of values that are valid for a given application parameter.  A collection of `N` tuning variables then creates an `N`-dimensional Euclidean space.  We refer to this in Active Harmony as the **search space**.  Points within the space represent a single possible configuration for the target application.  For instance, if the following search space is defined:
+
+Variable Name | Bounds
+------------- | ------
+tile          | `m=1, M=4,  s=1`
+unroll        | `m=2, M=16, s=2`
+compiler      | `list={"GCC", "Intel", "PGI"}`
+
+The search will then be conducted within a `3`-dimensional space, and `(4, 12, "Intel")` would be a valid point within that space.
+
+\section intro_feedback The Feedback Loop
+Active Harmony works in tandem with a target application by manipulating tuning variables and observing the resulting performance.  This creates a feedback loop where Active Harmony uses each incoming performance observation to further refine its search for optimal values.  In Active Harmony, the tuning element is called the **tuning session** and the target application is called the **client**.  They are connected in the following manner:
+
+-# The tuning session **generates** a new point.
+-# The client **fetches** the point, and operates for some period of time while measuring performance.
+-# The client **reports** the performance value back to the tuning session.
+-# The tuning session **analyzes** the report to guide its search for optimal points.
+-# Repeat until the search converges.
+
+\image html feedback.svg "The generalized auto-tuning feedback loop."
+\image latex feedback.pdf "The generalized auto-tuning feedback loop."
+
+\section intro_session Tuning Session
+Conceptually, the tuning session is responsible for generating candidate points.  Active Harmony divides this task into two key abstractions, the **search strategy** and the **processing layers**.
+
+The search strategy determines how new candidate points are selected from the search space.  For instance, one strategy might be to ignore all performance reports and simply return a random point.  Several search strategies come bundled with Active Harmony, each with different properties to support a wide range of client applications.  Note that search strategies operate purely at a numeric level by mapping search space points to reported performance values.  They have no awareness of how the point will be used by the client.
+
+The processing layers handle any additional tasks that must occur either before or after a point is generated.  A prime example is the post processing to convert a numeric candidate point into client usable parameters.  Consider the [compiler loop unrolling and tiling example](\ref intro_example) described earlier.  The client cannot directly use a numeric point such as `(3, 8, "Intel")` to execute a code variant.  These values must first be sent to a compiler that will produce a binary to be executed by the client.
+
+\image html session.svg "Detailed view of the Active Harmony tuning session."
+\image latex session.pdf "Detailed view of the Active Harmony tuning session."
+
+The search strategy sits at the core of the tuning session, surrounded by concentric rings that represent processing layers.  As points leave the search strategy, they must pass through the **generation** phase of each processing layer before it is made available to the client.  Similarly, as performance reports are returned, they must pass through the **analyze** phase of each processing layer before it is received by the search strategy.
+
+The processing layers are executed sequentially &mdash; in forward-order when leaving the search strategy, and backwards-order upon return.  An individual processing layer may implement the generate action analyze action independent of one another, or both together to support paired functionality.
+
+Finally, Active Harmony provides flexibility by implementing search strategies and processing layers as plug-ins that are loaded by the tuning session.  This structure allows Active Harmony to meet the needs of any auto-tuning application with minimal effort.  A specialized auto-tuner can effectively be built by parts.
+
+Active Harmony is distributed with a set of search strategies and processing layers.  Detailed information about these plug-ins can be found in the [Plug-Ins](\ref plugin) section.
+
+
+\page start Getting Started
+
+\page app Harmony Applications
+
+\latexonly \begin{comment} \endlatexonly
+- \subpage app_hinfo
+- \subpage app_hserver
+- \subpage app_tuna
+- \subpage app_example
+
+\latexonly \end{comment}
+\endlatexonly
+
+
+
+\page app_hserver Harmony Server
+For some advanced uses of auto-tuning, multiple clients need to communicate to a single tuning session.  For instance, if an MPI program is being tuned, all the constituent ranks may participate in parallel to expedite the search.  In this case, the Active Harmony Server must be used as a central multiplexing unit.
+
+\image html multi-client.svg "Supporting multiple clients within the feedback loop."
+\image latex multi-client.pdf "Supporting multiple clients within the feedback loop." width=5in
+
+## Usage Syntax ##
+
+    hserver [-p PORT] [-v]
+
+The server has no mandatory parameters, and can be started with a plain invocation.  This will launch a Harmony Server and bind it to port 1979.  An alternate port may be supplied on the command-line.
+
+## Client Modification ##
+Using the Active Harmony server is functionally equivalent to the stand-alone case.  Users need only change two environment variables on the client machines.
+
+Environment Variable | Description
+-------------------- | -----------
+HARMONY_HOST         | Hostname of the machine running the Harmony Server.
+HARMONY_PORT         | TCP/IP port allocated by Harmony Server.
+
+When defined, these environment variables instruct clients to connect to the specified hostname:port pair instead of spawning a local tuning session.  Multiple clients may then work together on a single search problem.
+
+## Web Server ##
+The Harmony Server also provides a built-in web server as an interface to the sessions it controls.  Use a Javascript-enabled web browser to connect to the host and port the server is running on.  For example, the URL for connecting to a locally-running server on the default port would be:
+
+    http://localhost:1979
+
+Replace the host or port to match the desired Harmony Server as necessary.  A screen similar to the following should appear:
+
+\image html hserver1.png "Session selection menu of the web interface."
+\image latex hserver1.png "Session selection menu of the web interface."
+
+Since the Harmony Server can manage more than one session at a time, there may be multiple lines in the table.  You can view detailed information regarding a specific session by clicking its name in the first column.  This should produce a screen similar to the following:
+
+\image html hserver2.png "Detailed view of a particular session."
+\image latex hserver2.png "Detailed view of a particular session."
+
+The detailed session view includes several ways to help you visualize the current session.  On the left, a table of the ten most recently reported point/performance pairs, as well as the best performing point found thus far.  The list can be extended to display as many as 50 entries.  On the right, a plot of the entire search is drawn with respect to performance value along the y-axis, and time along the x-axis.  Hovering the mouse pointer over any individual marker will produce details of the point/performance pair.
+
+\page app_tuna Tuna: The Command-line Tuning Shell
+Tuna is a tool for tuning the parameters of command-line applications.  Given a target application and a tuning specification, Tuna is able to perform a search for optimal parameter values automatically.
+
+## Usage Syntax ##
+
+    tuna <tunable_variables> [options] program [program_args]
+
+## Tunable Variable Declaration ##
+Flag Usage                     | Description
+------------------------------ | -----------
+`-i=<name>,<min>,<max>,<step>` | Declare an integer number variable called *name* where valid values fall between *min* and *max* with a stride of size *step*.
+`-r=<name>,<min>,<max>,<step>` | Declare a real number variable called *name* where valid values fall between *min* and *max* with a stride of size *step*.
+`-e=<name>,<val_1>,..,<val_n>` | Declare an enumerated variable called *name* whose values must be *val_1* or *val_2* or .. or *val_n*.
+
+Tuna provides three built-in methods for measuring the performance of a target application.  These include wall-time, user-time, or system-time used by the target application.  To support a wider range of possible performance metrics, a fourth method monitors output from the target application and parses a floating-point value from its final line as the performance value.  This allows virtually any measure of performance, so long as it can be collected by an external wrapper program and printed.
+
+## Additional Options ##
+Flag Usage    | Description
+------------- | -----------
+`-m=<metric>` | Specify how to measure the performance of the child process, where *metric* is:<br> **wall** for wall time (*default*),<br> **user** for user CPU time,<br> **sys** for system CPU time, or<br> **output** to parse a number from the final line of child output.
+`-q`          | Suppress client application output.
+`-v`          | Print additional informational output.
+`-n=<num>`    | Run child program at most *num* times.
+
+If the tunable variables cannot be supplied directly as arguments to the client application, then you must provide additional parameters to describe the format of the argument vector.  Each argument (starting with and including the program binary) may include a percent sign (%) followed by the name of a previously defined tunable variable.  This identifier may be optionally bracketed by curly-braces.  Values from the tuning session will then be used to complete a command-line instance.  A backslash (\\) may be used to produce a literal %.
+
+## Usage Example ##
+
+    ./tuna -i=tile,1,10,1 -i=unroll,2,12,2 -n=25 ./matrix_mult -t %tile -u %unroll
+
+The above usage example defines a parameter space with two integer variables via the `-i` flag.  The first variable (*tile*) is permitted to be between 1 and 10, inclusive.  The second variable (*unroll*) is permitted to be even numbers between 2 and 12, inclusive.  The tuning loop is limited to at most 25 iterations due to the optional `-n` flag.  The remaining parameters specify that the target application (`matrix_mult`) should be launched with Harmony-chosen values for *tile* and *unroll* as the second and fourth arguments, respectively.  Wall-time of each execution will be measured and reported, as it is the default performance metric.
+
+Tuna makes any command-line application that provides performance related parameters a viable target for auto-tuning.  As an example, the GCC compiler suite provides hundreds of command-line arguments to control various details of its compilation process.  Finding optimal values for these arguments is a natural task for Tuna.  A user need only specify which arguments are relevant for their optimization task and a method to measure the resulting performance.
+
+\page app_example Example Applications
+Active Harmony comes bundles with a number of example applications to demonstrate different aspects of the framework.
+
+\latexonly \begin{comment} \endlatexonly
+- \subpage app_example_synth
+
+\latexonly \end{comment}
+\endlatexonly
+
+\page cfg Configuring Active Harmony
+The Active Harmony Framework may be configured through two distinct, but similar systems.  The session-wide Harmony Configuration System, and general environment variables.
+
+\section cfg_sess Active Harmony Session Configuration System
+Each tuning session provides a centralized configuration environment.  Similar to shell environment variables, tuning session configuration directives take the form of simple key/value string pairs.  Key strings are case insensitive, and may only consist of alphanumeric characters or the underscore.  Value strings are stored as-is, and interpretation depends on the key.
+
+The backslash (\\) character may be used within the value string as a quoting mechanism.  A backslash preserves the literal value of the next character that follows.
+
+Configuration directives may also be read from a file containing one key/value pair per line.  The first equals sign (`=`) separates the key from the value string, and the value string extends until a newline (`\n`) or hash (`#`) which indicates comments.
+
+Each tuning session has a unique configuration environment.  All entities involved with a tuning session (clients, search strategies, processing layers, etc.) may query this system.  The configuration environment is initialized at session creation time through ah_def_cfg() function calls.  After a session has been launched, clients may query the configuration environment through ah_get_cfg() and ah_set_cfg() function calls.
+
+\note The Harmony Server is a special case.  It contains its own private configuration environment that is merged with any sessions that it manages.  If there is a key conflict between the server and session configuration environment, the session's key takes precedence.
+
+This manual documents configuration variables in tables with four columns.  The documentation for subsystems such as [Search Strategies](\ref strategies) and [Processing Layers](\ref layers) will contain an individual table that describes the specific configuration variables relevant to themselves.  The list will be organized in a table with the following columns:
+
+Column      | Description
+----------- | -----------
+Key         | Key string for configuration system.
+Type        | How the value string will be interpreted (Integer, Real, String, etc.)
+Default     | If unspecified, this value will be used instead.
+Description | Textual description of the directive's function.
+
+Additionally, there are several session-related configuration variables that are used to control sessions and how they are initialized.
+
+**Session-related Configuration Variables**
+Key          | Type    | Default | Description
+-------------| ------- | ------- | -----------
+STRATEGY     | String  | pro.so  | The search strategy to use for a particular session.
+LAYERS       | String  | [none]  | The processing layers to use for a particular session.
+CLIENT_COUNT | Integer | 1       | The number of expected clients.
+GEN_COUNT    | Integer | 1       | The number of testing points to prepare for each expected client.
+
+\section cfg_env Environment Variables
+Certain subsystems of the Active Harmony Framework may require additional information before it can connect to a session and, by extension, the session-wide configuration system.  When necessary, this information may be retrieved through the subsystem's environment.
+
+Here are a list of environment variables commonly used:
+
+Environment Variable | Description
+-------------------- | -----------
+HARMONY_HOME         | File path of the directory containing an Active Harmony installation.  This is effectively the value of PREFIX when Harmony was built from source.
+HARMONY_HOST         | If defined, tuning clients (using ah_connect()) will attempt to connect to a [Harmony Server](\ref app_hserver) on this host.
+HARMONY_PORT         | If defined (along with HARMONY_HOST), tuning clients will used this variable as the port when connecting to a running Harmony Server.
+
+\page plugin Plug-ins
+As described in the [Tuning Session](\ref intro_session) section, Active Harmony provides a modular interface for flexible functionality.  The session API functions ah_def_strategy() and ah_def_layers() specify which plug-in's will be loaded by the tuning session.  See their individual documentation page for details on their use.
+
+The Active Harmony framework currently allows for two types of plug-ins, [search strategies](\ref strategies) and [processing layers](\ref layers).
+
+\latexonly \begin{comment} \endlatexonly
+- \subpage strategies
+- \subpage layers
+
+\latexonly \end{comment}
+\endlatexonly
+
+\page strategies Search Strategies
+Search strategies encapsulate the core search logic of an Active Harmony tuning session.  Ultimately, it decides the next search space point to be tested.  While each search strategy may have radically different methods for selecting the next point, all strategies share the same interface.  This allows tuning sessions to easily switch from one strategy to another.
+
+See the [Tuning Session](\ref intro_session) section for an overview of the search strategy's role within the larger tuning session context.
+
+\latexonly \begin{comment} \endlatexonly
+- \subpage exhaustive
+- \subpage random
+- \subpage nm
+- \subpage pro
+
+\latexonly \end{comment}
+\endlatexonly
+
+\page layers Processing Layers
+Processing layers functionally surround the tuning session.  They allow for additional processing before a strategy receives a performance report, or before a strategy receives a performance report, or both.  Processing layers are stackable, which allow for an arbitrarily complex auto-tuner to be built by parts.
+
+See the [Tuning Session](\ref intro_session) section for an overview of the processing layer's role within the larger tuning session context.
+
+\latexonly \begin{comment} \endlatexonly
+- \subpage agg
+- \subpage cache
+- \subpage codesvr
+- \subpage group
+- \subpage logger
+- \subpage omega
+- \subpage TAUdb
+- \subpage xml
+
+\latexonly \end{comment}
+\endlatexonly
+
+
+
+\page example Coding Examples
+Active Harmony Client API enables the user to complete two distinct tasks: establishing tuning sessions and interacting with existing tuning sessions.  In the following sections, we provide examples for both of these tasks.
+
+\section example_session_connect Establishing Communication with a Tuning Session
+This example demonstrates how to use the session API to establish a connection with a Harmony search session.  It defines a function called `init_tuner()` which, similar to the MPI's `mpi_init()` routine, is designed to accept the *argc* and *argv* parameters from `main()`.
+
+Code similar to `init_tuner()` should exist in any Harmony client application.  The same set of API calls may be used to establish a connection with a local tuning process, or an existing tuning session through the [Harmony Server](\ref app_hserver).
+
+\note To increase clarity, return values of API calls are not checked in this example.  This is not recommended for production code.
+
+\snippet users_guide.c snippet_session_connect
+
+\section example_task_def Defining and Starting a New Search Task
+This example demonstrates how to use the session API to establish a session with four variables.  It defines a function called `new_search()` which takes a Harmony session descriptor, and returns a Harmony search task handle.  The task handle will be used in the [task interaction](\ref example_task_interact) example.
+
+\note To increase clarity, return values of API calls are not checked in this example.  This is not recommended for production code.
+
+\snippet users_guide.c snippet_task_def
+
+\section example_task_def_advanced Advanced Search Task Configuration
+This example demonstrates the ability to specify [session plug-ins](\ref intro_session), and how to [configure](\ref cfg) them.  Detailed descriptions of the valid configuration keys for each of the three plug-ins used in this example can be found in their respective manual pages:
+
+- [Parallel Rank Order Search Strategy](\ref pro)
+- [Point Logger Processing Layer](\ref logger)
+- [Aggregator Processing Layer](\ref agg)
+
+The following code snippet extends the search definition handle created in the prior example.  See the [search definition](\ref example_task_def) example to see how definition handles are created.
+
+\note To increase clarity, return values of API calls are not checked in this example.  This is not recommended for production code.
+
+\snippet users_guide.c snippet_task_def_advanced
+
+\section example_task_interact Interacting with a Search Task
+The example demonstrates how to use the client API to fetch from and report to the search task started in the [task definition and start](\ref example_task_def) example.
+
+\note To increase clarity, return values of API calls are not checked in this example.  This is not recommended for production code.
+
+\snippet users_guide.c snippet_task_interact
+
+*/

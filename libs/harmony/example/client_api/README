@@ -1,0 +1,36 @@
+Introduction
+============
+This directory contains sample applications that use Active Harmony's
+Client API to enable run-time auto-tuning support.  The same sample
+application is written in multiple languages to provide a specific
+example in each language we support.
+
+For now, only a C example is available.  We expect to add support for
+Fortran in the near future.
+
+Building
+========
+The build process will perform a check to ensure compilers exist
+before attempting to build an example for any given language.  So, the
+following command can be used to build all examples a system supports:
+
+    $ make all
+
+Running
+=======
+By default, these example programs will attempt to spawn a dedicated
+tuning process at launch time.  This requires the HARMONY_HOME
+environment variable to be set correctly.  It should contain the full
+path to where Active Harmony has been installed.
+
+If HARMONY_HOME is set correctly, simply invoking the program name
+will begin a simple tuning example.
+
+    $ ./minimal
+
+To run in server mode, you can use the HARMONY_HOST and HARMONY_PORT
+environment variables:
+
+    $ HARMONY_HOST=h.server.org HARMONY_PORT=2012 ./minimal
+
+See the top-level README file for details.

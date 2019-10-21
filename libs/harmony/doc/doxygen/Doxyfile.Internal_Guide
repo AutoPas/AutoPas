@@ -1,0 +1,12 @@
+@INCLUDE = doxygen/Doxyfile.base
+
+PROJECT_NAME = "Active Harmony Internal Developer's Guide"
+LATEX_OUTPUT = Internal_Guide.latex
+HTML_OUTPUT  = Internal_Guide.html
+
+RECURSIVE        = YES
+EXTRACT_ALL      = YES
+EXCLUDE_PATTERNS = *.d
+
+INPUT = doxygen/Internal_Guide.dox \
+        ../src

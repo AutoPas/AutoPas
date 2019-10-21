@@ -1,0 +1,41 @@
+Introduction
+============
+This example demonstrates the constraint processing layer.  This
+plug-in takes constraints from the user in the form of tuning variable
+interdependencies.  For example, if "x" and "y" are tuning variables
+for a given session, the following would be valid constraints:
+
+    x <= y
+    x + y < 5
+
+Prerequisites
+=============
+This processing layer requires The Omega Calculator.  It is part of
+the Omega Project, which can be downloaded at the following URL:
+
+    https://github.com/davewathaverford/the-omega-project/
+
+Building
+========
+
+This directory doesn't directly supply a testing binary.  Instead, it
+relies on the client_api example to be successfully built.  Then, the
+client_api binary is directed to load the constraint layer along with
+the provided constraint file (constraint.in).
+
+The supporting binary from the example/client_api directory can be
+built from the current directory (example/constraint) using the
+following command:
+
+	$ make all
+
+Running
+=======
+The constraint specification file provided for this example
+(constraint.in) references three of the six total tuning variables,
+(param_1, param_2, and param_3).  The example can be launched with the
+following command:
+
+        $ make test
+
+Modify the constraint file to see how it affects the tuning session!

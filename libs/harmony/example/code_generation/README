@@ -1,0 +1,67 @@
+Introduction
+============
+This example tunes a matrix multiplication kernel for optimal tiling
+and unrolling factors.  The naive O(n^3) matrix multiplication
+algorithm is outlined, and transformations of that code are tested for
+performance by the Harmony search algorithm.
+
+Prerequisites
+=============
+A number of components are used in conjunction with each other in this
+example.  Be sure you have access to the following before you begin:
+
+	- MPI C Compiler: Our build process relies on mpicc.  See your
+          distribution's documentation for which package provides this
+          binary.
+	- CHiLL (and dependent libraries): See http://ctop.cs.utah.edu
+          for details on setup and configuration.
+
+Building
+========
+This example uses the PRO algorithm in conjunction with CHiLL to
+demonstrate loop-level performance optimization.  It relies on
+multiple packages and subsystems, which include:
+
+	- Harmony Server: From this directory, use the following
+          command to build the Harmony Server:
+
+		$ make -C ../../src hserver
+
+	- Code Server: From this directory, use the following command
+	  to build the Code Server:
+
+		$ make -C ../../code-server all
+
+	- Gemm Application: Finally, the client application can be
+	  built using the following command:
+
+		$ make all
+
+Configuration
+=============
+Three distinct processes work together in this example: the Harmony
+Server, the Code Server, and the client application.  They are not
+required to be on separate hosts, but password-less authentication via
+SSH must be enabled between any hosts involved.
+
+The Harmony Server and Code Server must be instructed how to
+communicate with each other and the client application.  At a minimum,
+this can be accomplished by defining SERVER_URL and TARGET_URL Harmony
+configuration variables.  See the README file in ../../code-server for
+more details.
+
+Since the search sapce of this application has 5 dimensions, the
+Harmony configuration key SIMPLEX_SIZE should be at least 6 (eg. N+1).
+The PRO search strategy will correct the value if undefined or
+undervalued.  Of course, the search will be more efficient as
+SIMPLEX_SIZE increases.
+
+Running
+=======
+With the Harmony and Code Servers running successfully, launching the
+MPI application is the final step necessary to get this example
+running.  There are various methods to launch/submit an MPI job.
+Consult your system administrator for the details of your particular
+system.  One example might be:
+
+	$ mpirun -np 8 ./gemm <new_code_path>

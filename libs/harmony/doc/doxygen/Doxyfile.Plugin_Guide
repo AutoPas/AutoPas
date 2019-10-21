@@ -1,0 +1,10 @@
+@INCLUDE = doxygen/Doxyfile.base
+
+PROJECT_NAME = "Active Harmony Plug-in Writer's Guide"
+LATEX_OUTPUT = Plugin_Guide.latex
+HTML_OUTPUT  = Plugin_Guide.html
+
+INPUT = doxygen/Plugin_Guide.dox \
+        ../src/session-core.h \
+        ../src/plugins/strategies/strategy_skel.c \
+        ../src/plugins/layers/layer_skel.c

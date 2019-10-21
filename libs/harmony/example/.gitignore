@@ -1,0 +1,14 @@
+client_api/chapel
+client_api/fortran
+client_api/join
+client_api/loadfile
+client_api/minimal
+client_api/multi
+client_api/users_guide
+code_generation/gemm
+synth/synth
+unique_points.tuna.dat
+taudb/example
+xml/example
+xml/*.xml
+*.log
