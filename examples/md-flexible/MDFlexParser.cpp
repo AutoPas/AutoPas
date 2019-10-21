@@ -13,9 +13,9 @@ std::string iterableToString(T arr) {
   for (auto a : arr) {
     ss << a.to_string() << ", ";
   }
-  // deletes last comma
-  ss << "\b\b";
-  return ss.str();
+  // remove last comma by removing last two characters.
+  auto str = ss.str();
+  return arr.empty() ? "" : str.substr(0, str.size() - 2);
 }
 
 bool MDFlexParser::parseInput(int argc, char **argv) {
