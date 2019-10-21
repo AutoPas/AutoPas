@@ -87,6 +87,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   MDFlexConfig config;
   config.yamlFilename = "multipleObjectsWithMultipleTypesTest.yaml";
   parser.parseYamlFile(config);
+  config.calcSimulationBox();
   autoPas.setBoxMax(config.boxMax);
   autoPas.setBoxMin(config.boxMin);
   autoPas.init();

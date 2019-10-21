@@ -23,6 +23,7 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
   MDFlexConfig config;
   config.yamlFilename = "multipleObjectsWithMultipleTypesTest.yaml";
   parser.parseYamlFile(config);
+  config.calcSimulationBox();
   simulation.initialize(config);
   simulation.initializeParticlePropertiesLibrary();
   EXPECT_EQ(simulation.getPpl()->getMass(0), 1.0);
@@ -46,6 +47,7 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitializationDefault) {
   // tests ParticleProperties initialization with only one Type
   Simulation<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> simulation;
   MDFlexConfig config;
+  config.calcSimulationBox();
   simulation.initialize(config);
   simulation.initializeParticlePropertiesLibrary();
   // default values: epsilon=sigma=mass=1.0
