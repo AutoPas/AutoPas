@@ -201,4 +201,5 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
       config.deltaTemp = iterNode->second["deltaTemp"].as<double>();
     }
   }
+  return true;
 }
