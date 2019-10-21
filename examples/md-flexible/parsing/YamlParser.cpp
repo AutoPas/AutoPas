@@ -121,65 +121,81 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.cubeUniformObjects.clear();
     config.sphereObjects.clear();
 
-    for (YAML::const_iterator objectIterator = node["Objects"].begin(); objectIterator != node["Objects"].end(); ++objectIterator) {
+    for (YAML::const_iterator objectIterator = node["Objects"].begin(); objectIterator != node["Objects"].end();
+         ++objectIterator) {
       if (objectIterator->first.as<std::string>() == "CubeGrid") {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeGrid C({it->second["particles-per-Dim"][0].as<unsigned long>(),
-                      it->second["particles-per-Dim"][1].as<unsigned long>(),
-                      it->second["particles-per-Dim"][2].as<unsigned long>()},
-                     it->second["particleSpacing"].as<double>(),
-                     {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
-                      it->second["bottomLeftCorner"][2].as<double>()},
-                     {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                      it->second["velocity"][2].as<double>()},
-                     it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
-                     it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
-          config.cubeGridObjects.emplace_back(C);
+          CubeGrid cubeGrid(
+              {it->second["particles-per-Dim"][0].as<unsigned long>(),
+               it->second["particles-per-Dim"][1].as<unsigned long>(),
+               it->second["particles-per-Dim"][2].as<unsigned long>()},
+              it->second["particleSpacing"].as<double>(),
+              {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
+               it->second["bottomLeftCorner"][2].as<double>()},
+              {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+               it->second["velocity"][2].as<double>()},
+              it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+              it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
+          config.cubeGridObjects.emplace_back(cubeGrid);
+          config.addParticleType(it->second["particle-type"].as<unsigned long>(),
+                                 it->second["particle-epsilon"].as<double>(), it->second["particle-sigma"].as<double>(),
+                                 it->second["particle-mass"].as<double>());
         }
         continue;
       }
       if (objectIterator->first.as<std::string>() == "CubeGauss") {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeGauss C(it->second["numberOfParticles"].as<size_t>(),
-                      {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
-                       it->second["box-length"][2].as<double>()},
-                      it->second["distribution-mean"].as<double>(), it->second["distribution-stddev"].as<double>(),
-                      {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
-                       it->second["bottomLeftCorner"][2].as<double>()},
-                      {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                       it->second["velocity"][2].as<double>()},
-                      it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
-                      it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
-          config.cubeGaussObjects.emplace_back(C);
+          CubeGauss cubeGauss(
+              it->second["numberOfParticles"].as<size_t>(),
+              {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
+               it->second["box-length"][2].as<double>()},
+              it->second["distribution-mean"].as<double>(), it->second["distribution-stddev"].as<double>(),
+              {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
+               it->second["bottomLeftCorner"][2].as<double>()},
+              {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+               it->second["velocity"][2].as<double>()},
+              it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+              it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
+          config.cubeGaussObjects.emplace_back(cubeGauss);
+          config.addParticleType(it->second["particle-type"].as<unsigned long>(),
+                                 it->second["particle-epsilon"].as<double>(), it->second["particle-sigma"].as<double>(),
+                                 it->second["particle-mass"].as<double>());
         }
         continue;
       }
       if (objectIterator->first.as<std::string>() == "CubeUniform") {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeUniform C(it->second["numberOfParticles"].as<size_t>(),
-                        {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
-                         it->second["box-length"][2].as<double>()},
+          CubeUniform cubeUniform(
+              it->second["numberOfParticles"].as<size_t>(),
+              {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
+               it->second["box-length"][2].as<double>()},
 
-                        {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
-                         it->second["bottomLeftCorner"][2].as<double>()},
-                        {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                         it->second["velocity"][2].as<double>()},
-                        it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
-                        it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
-          config.cubeUniformObjects.emplace_back(C);
+              {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
+               it->second["bottomLeftCorner"][2].as<double>()},
+              {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+               it->second["velocity"][2].as<double>()},
+              it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+              it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
+          config.cubeUniformObjects.emplace_back(cubeUniform);
+          config.addParticleType(it->second["particle-type"].as<unsigned long>(),
+                                 it->second["particle-epsilon"].as<double>(), it->second["particle-sigma"].as<double>(),
+                                 it->second["particle-mass"].as<double>());
         }
         continue;
       }
       if (objectIterator->first.as<std::string>() == "Sphere") {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          Sphere S({it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
-                    it->second["center"][2].as<double>()},
-                   it->second["radius"].as<int>(), it->second["particleSpacing"].as<double>(),
-                   {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                    it->second["velocity"][2].as<double>()},
-                   it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
-                   it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
-          config.sphereObjects.emplace_back(S);
+          Sphere sphere({it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
+                         it->second["center"][2].as<double>()},
+                        it->second["radius"].as<int>(), it->second["particleSpacing"].as<double>(),
+                        {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
+                         it->second["velocity"][2].as<double>()},
+                        it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
+                        it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
+          config.sphereObjects.emplace_back(sphere);
+          config.addParticleType(it->second["particle-type"].as<unsigned long>(),
+                                 it->second["particle-epsilon"].as<double>(), it->second["particle-sigma"].as<double>(),
+                                 it->second["particle-mass"].as<double>());
         }
         continue;
       }
