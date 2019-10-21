@@ -18,7 +18,7 @@
 #include "TimeDiscretization.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
-#include "parsing/YamlParser.h"
+#include "parsing/MDFlexConfig.h"
 
 template <class Particle, class ParticleCell>
 class Simulation {
@@ -184,8 +184,7 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
   }
 
   _particlePropertiesLibrary = std::make_unique<std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>();
-  // all 3 maps are well initialized in parser(parser catches error and throws exception if something is going wrong)
-  for (auto eps : _config->epsilonMap) {
+  for (auto &eps : _config->epsilonMap) {
     _particlePropertiesLibrary->addType(eps.first, eps.second, _config->sigmaMap.at(eps.first),
                                         _config->massMap.at(eps.first));
   }
@@ -193,7 +192,7 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexConfig) {
-  _config = mdFlexConfig;
+  _config = std::make_shared<MDFlexConfig>(mdFlexConfig);
   initializeParticlePropertiesLibrary();
   _timeDiscretization = std::make_unique<
       TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
@@ -238,7 +237,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   _autopas.setAllowedDataLayouts(dataLayoutOptions);
   _autopas.setAllowedNewton3Options(newton3Options);
   _autopas.setTuningStrategyOption(tuningStrategy);
-  _autopas.setAllowedCellSizeFactors(cellSizeFactors);
+  _autopas.setAllowedCellSizeFactors(*cellSizeFactors);
   _autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency);
   autopas::Logger::get()->set_level(logLevel);
   _autopas.setBoxMax(_config->boxMax);
@@ -322,7 +321,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
     }
     _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
 
-    switch (this->_config->getFunctorOption()) {
+    switch (this->_config->functorOption) {
       case MDFlexConfig::FunctorOption::lj12_6: {
         this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>>();
         break;
