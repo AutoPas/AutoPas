@@ -45,13 +45,6 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {"vtk-write-frequency", required_argument, nullptr, 'z'},
                                          {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   string strArg;
-
-  // booleans needed to change autopas Box properties if specified in command line
-  bool setBoxMin = false;
-  bool setBoxMax = false;
-  std::array<double, 3> parsingBoxMin{};
-  std::array<double, 3> parsingBoxMax{};
-  optind = 1;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
