@@ -68,13 +68,13 @@ class MDFlexConfig {
   unsigned int tuningInterval = 100;
   unsigned int tuningSamples = 3;
   unsigned int tuningMaxEvidence = 10;
-  std::string VTKFileName = "";
+  std::string VTKFileName;
   size_t vtkWriteFrequency = 100;
-  std::string logFileName = "";
+  std::string logFileName;
   unsigned int verletRebuildFrequency = 20;
   double verletSkinRadius = .2;
-  std::array<double, 3> boxMin = {};
-  std::array<double, 3> boxMax = {};
+  std::array<double, 3> boxMin = {0,0,0};
+  std::array<double, 3> boxMax = {1,1,1};
 
   // Simulation Options:
   double cutoff = 1.;
@@ -83,9 +83,9 @@ class MDFlexConfig {
   bool periodic = false;
   bool measureFlops = true;
   double deltaT = 0.001;
-  std::map<unsigned long, double> epsilonMap;
-  std::map<unsigned long, double> sigmaMap;
-  std::map<unsigned long, double> massMap;
+  std::map<unsigned long, double> epsilonMap = {{0,1}};
+  std::map<unsigned long, double> sigmaMap = {{0,1}};
+  std::map<unsigned long, double> massMap = {{0,1}};
 
   // Options for additional Object Generation on command line
   double boxLength = 10;
