@@ -54,7 +54,7 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
 
   autoPas.init();
   GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, 0, 0, dummy, {1, 1, 1}, boxmin);
-//    std::string CubeGeneration = "FillGrid-BoxMin.vtu";
+//    std::string CubeGeneration = "FillGrid-boxMin.vtu";
 //      writeVTKFile<decltype(autoPas)>(CubeGeneration, autoPas.getNumberOfParticles(), autoPas);
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -86,7 +86,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   auto autoPas = autopas::AutoPas<autopas::MoleculeLJ<>, FMCell>(std::cout);
   std::string input = "multipleObjectsWithMultipleTypesTest.yaml";
   parser.setFilename(input);
-  parser.parseYamlFile();
+  parser.parseYamlFile(<#initializer#>);
   autoPas.setBoxMax(parser.getBoxMax());
   autoPas.setBoxMin(parser.getBoxMin());
   autoPas.init();

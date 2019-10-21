@@ -9,8 +9,9 @@
 #include <autopas/utils/MemoryProfiler.h>
 #include <yaml-cpp/yaml.h>
 #include <iostream>
+#include "parsing/MDFlexParser.h"
 #include "PrintableMolecule.h"
-#include "YamlParser.h"
+#include "parsing/YamlParser.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 
@@ -18,15 +19,21 @@ int main(int argc, char **argv) {
   // start simulation timer
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
   // Parsing
-  auto parser = std::make_shared<YamlParser>();
-  if (not parser->parseInput(argc, argv)) {
+  MDFlexConfig config;
+  MDFlexParser parser;
+
+  if (not parser.parseInput(argc, argv)) {
     exit(-1);
   }
-  parser->printConfig();
+  // make sure sim box is big enough
+  config.calcSimulationBox();
+
+  config.print();
+
   std::cout << std::endl;
 
   // Initialization
-  simulation.initialize(parser);
+  simulation.initialize(config);
   std::cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
 
   // Simulation

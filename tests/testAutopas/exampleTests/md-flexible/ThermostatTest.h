@@ -22,7 +22,7 @@ class ThermostatTest : public AutoPasTestBase {
         _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>()),
         _timeDiscretization(
             TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>(
-                0.002 /*delta_t*/, _particlePropertiesLibrary)) {
+                0.002 /*deltaT*/, _particlePropertiesLibrary)) {
     _particlePropertiesLibrary.addType(0, 1., 1., 1.); /*initializing the default particlePropertiesLibrary*/
   }
 

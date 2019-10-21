@@ -22,7 +22,7 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
   std::string input = "multipleObjectsWithMultipleTypesTest.yaml";
   // this test need to be adapted if the input file changes
   parser.setFilename(input);
-  parser.parseYamlFile();
+  parser.parseYamlFile(<#initializer#>);
   simulation.setParser(parser);
   simulation.initializeParticlePropertiesLibrary();
   auto SimPpL = *simulation.getPpl();

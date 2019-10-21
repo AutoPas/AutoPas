@@ -4,7 +4,7 @@ TEST_F(YamlParserTest, calcAutopasBox) {
   // tests the AutoBox calculation after Object initialization with multipleObjectsWithMultipleTypeTest
   std::string file = "multipleObjectsWithMultipleTypesTest.yaml";
   parser.setFilename(file);
-  parser.parseYamlFile();
+  parser.parseYamlFile(<#initializer#>);
   std::array<double, 3> compBoxMin = {0, -15, -15};
   std::array<double, 3> compBoxMax = {23, 10, 13};
   EXPECT_EQ(parser.getBoxMin(), compBoxMin);
@@ -30,13 +30,13 @@ TEST_F(YamlParserTest, addType) {
 TEST_F(YamlParserTest, wrongTypeParsingInput) {
   std::string file = "incorrectParsingFile.yaml";
   this->parser.setFilename(file);
-  ASSERT_ANY_THROW(this->parser.parseYamlFile());
+  ASSERT_ANY_THROW(this->parser.parseYamlFile(<#initializer#>));
 }
 
 TEST_F(YamlParserTest, multipleSameObjectParsing) {
   std::string file = "multipleSimilarObjects.yaml";
   parser.setFilename(file);
-  parser.parseYamlFile();
+  parser.parseYamlFile(<#initializer#>);
   ASSERT_EQ(parser.getCubeGrid().size(), 2);
   ASSERT_EQ(parser.getCubeGrid().at(0).getTypeId(), 0);
   ASSERT_EQ(parser.getCubeGrid().at(0).getParticleSpacing(), 0.5);

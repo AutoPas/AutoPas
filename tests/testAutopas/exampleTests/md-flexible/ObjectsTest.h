@@ -8,7 +8,7 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "testingHelpers/commonTypedefs.h"
 
-// testet die BoxMin und BoxMax funktionen für alle Objects
+// testet die boxMin und boxMax funktionen für alle Objects
 class ObjectsTest : public AutoPasTestBase {
  public:
   ObjectsTest()

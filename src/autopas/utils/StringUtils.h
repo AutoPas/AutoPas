@@ -194,6 +194,18 @@ inline std::string to_string(const TuningStrategyOption &option) {
  * @return The string representation.
  */
 inline std::string to_string(const double &value) { return std::to_string(value); }
+
+template <class T>
+inline std::string iterableToString(T arr) {
+  std::ostringstream ss;
+  for (auto a : arr) {
+    ss << autopas::utils::StringUtils::to_string(a) << ", ";
+  }
+  // deletes last comma
+  ss << "\b\b";
+  return ss.str();
+}
+
 /**
  * All accepted delimiters to split input strings.
  */

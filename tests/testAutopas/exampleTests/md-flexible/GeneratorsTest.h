@@ -6,7 +6,7 @@
 #include "../../../../examples/md-flexible/Objects.h"
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
-#include "../../../../examples/md-flexible/YamlParser.h"
+#include "../../../../examples/md-flexible/parsing/YamlParser.h"
 #include "../../../../src/autopas/utils/ArrayMath.h"
 #include "../../../../src/autopas/utils/ArrayUtils.h"
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
