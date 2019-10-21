@@ -10,64 +10,68 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
   using namespace autopas;
   YAML::Node node = YAML::LoadFile(config.yamlFilename);
 
-  if (node["container"]) {
-    config.containerOptions =
-        autopas::utils::StringUtils::parseContainerOptions(node["container"].as<std::string>(), false);
+  if (node[MDFlexConfig::containerOptionsStr]) {
+    config.containerOptions = autopas::utils::StringUtils::parseContainerOptions(
+        node[MDFlexConfig::containerOptionsStr].as<std::string>(), false);
   }
-  if (node["selector-strategy"]) {
+  if (node[MDFlexConfig::selectorStrategyStr]) {
     config.selectorStrategy =
-        autopas::utils::StringUtils::parseSelectorStrategy(node["selector-strategy"].as<std::string>());
+        autopas::utils::StringUtils::parseSelectorStrategy(node[MDFlexConfig::selectorStrategyStr].as<std::string>());
   }
-  if (node["periodic-boundaries"]) {
-    config.periodic = node["periodic-boundaries"].as<bool>();
+  if (node[MDFlexConfig::periodicStr]) {
+    config.periodic = node[MDFlexConfig::periodicStr].as<bool>();
   }
-  if (node["cutoff"]) {
-    config.cutoff = node["cutoff"].as<double>();
+  if (node[MDFlexConfig::cutoffStr]) {
+    config.cutoff = node[MDFlexConfig::cutoffStr].as<double>();
   }
-  if (node["cell-Size-Factor"]) {
-    config.cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(node["cell-Size-Factor"].as<std::string>());
+  if (node[MDFlexConfig::cellSizeFactorsStr]) {
+    config.cellSizeFactors =
+        autopas::utils::StringUtils::parseNumberSet(node[MDFlexConfig::cellSizeFactorsStr].as<std::string>());
   }
-  if (node["data-layout"]) {
-    config.dataLayoutOptions = autopas::utils::StringUtils::parseDataLayout(node["data-layout"].as<std::string>());
+  if (node[MDFlexConfig::dataLayoutOptionsStr]) {
+    config.dataLayoutOptions =
+        autopas::utils::StringUtils::parseDataLayout(node[MDFlexConfig::dataLayoutOptionsStr].as<std::string>());
   }
-  if (node["functor"]) {
-    auto strArg = node["functor"].as<std::string>();
+  if (node[MDFlexConfig::functorOptionStr]) {
+    auto strArg = node[MDFlexConfig::functorOptionStr].as<std::string>();
     if (strArg.find("avx") != std::string::npos) {
       config.functorOption = MDFlexConfig::FunctorOption::lj12_6_AVX;
     } else if (strArg.find("lj") != std::string::npos || strArg.find("lennard-jones") != std::string::npos) {
       config.functorOption = MDFlexConfig::FunctorOption::lj12_6;
     }
   }
-  if (node["iterations"]) {
-    config.iterations = node["iterations"].as<unsigned long>();
+  if (node[MDFlexConfig::iterationsStr]) {
+    config.iterations = node[MDFlexConfig::iterationsStr].as<unsigned long>();
   }
-  if (node["no-flops"]) {
-    config.measureFlops = node["iterations"].as<bool>();
+  if (node[MDFlexConfig::measureFlopsStr]) {
+    config.measureFlops = node[MDFlexConfig::measureFlopsStr].as<bool>();
   }
-  if (node["newton3"]) {
-    config.newton3Options = autopas::utils::StringUtils::parseNewton3Options(node["newton3"].as<std::string>());
+  if (node[MDFlexConfig::newton3OptionsStr]) {
+    config.newton3Options =
+        autopas::utils::StringUtils::parseNewton3Options(node[MDFlexConfig::newton3OptionsStr].as<std::string>());
   }
-  if (node["deltaT"]) {
-    config.deltaT = node["deltaT"].as<double>();
+  if (node[MDFlexConfig::deltaTStr]) {
+    config.deltaT = node[MDFlexConfig::deltaTStr].as<double>();
   }
-  if (node["traversal"]) {
-    config.traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(node["traversal"].as<std::string>());
+  if (node[MDFlexConfig::traversalOptionsStr]) {
+    config.traversalOptions =
+        autopas::utils::StringUtils::parseTraversalOptions(node[MDFlexConfig::traversalOptionsStr].as<std::string>());
   }
-  if (node["tuning-interval"]) {
-    config.tuningInterval = node["tuning-interval"].as<unsigned int>();
+  if (node[MDFlexConfig::tuningIntervalStr]) {
+    config.tuningInterval = node[MDFlexConfig::tuningIntervalStr].as<unsigned int>();
   }
-  if (node["tuning-samples"]) {
-    config.tuningSamples = node["tuning-samples"].as<unsigned int>();
+  if (node[MDFlexConfig::tuningSamplesStr]) {
+    config.tuningSamples = node[MDFlexConfig::tuningSamplesStr].as<unsigned int>();
   }
-  if (node["tuning-max-evidence"]) {
-    config.tuningMaxEvidence = node["tuning-max-evidence"].as<unsigned int>();
+  if (node[MDFlexConfig::tuningMaxEvidenceStr]) {
+    config.tuningMaxEvidence = node[MDFlexConfig::tuningMaxEvidenceStr].as<unsigned int>();
   }
-  if (node["tuning-strategy"]) {
-    config.tuningStrategyOption =
-        autopas::utils::StringUtils::parseTuningStrategyOption(node["tuning-strategy"].as<std::string>());
+  if (node[MDFlexConfig::tuningStrategyOptionsStr]) {
+    config.tuningStrategyOption = autopas::utils::StringUtils::parseTuningStrategyOption(
+        node[MDFlexConfig::tuningStrategyOptionsStr].as<std::string>());
   }
-  if (node["log-level"]) {
-    auto strArg = node["log-level"].as<std::string>();
+  if (node[MDFlexConfig::logLevelStr]) {
+    auto strArg = node[MDFlexConfig::logLevelStr].as<std::string>();
     switch (strArg[0]) {
       case 't': {
         config.logLevel = autopas::Logger::LogLevel::trace;
@@ -99,122 +103,142 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
       }
     }
   }
-  if (node["log-file"]) {
-    config.logFileName = node["log-file"].as<std::string>();
+  if (node[MDFlexConfig::logFileNameStr]) {
+    config.logFileName = node[MDFlexConfig::logFileNameStr].as<std::string>();
   }
-  if (node["verlet-rebuild-frequency"]) {
-    config.verletRebuildFrequency = node["verlet-rebuild-frequency"].as<unsigned int>();
+  if (node[MDFlexConfig::verletRebuildFrequencyStr]) {
+    config.verletRebuildFrequency = node[MDFlexConfig::verletRebuildFrequencyStr].as<unsigned int>();
   }
-  if (node["verlet-skin-radius"]) {
-    config.verletSkinRadius = node["verlet-skin-radius"].as<double>();
+  if (node[MDFlexConfig::verletSkinRadiusStr]) {
+    config.verletSkinRadius = node[MDFlexConfig::verletSkinRadiusStr].as<double>();
   }
-  if (node["vtk-filename"]) {
-    config.VTKFileName = node["vtk-filename"].as<std::string>();
+  if (node[MDFlexConfig::vtkFileNameStr]) {
+    config.vtkFileName = node[MDFlexConfig::vtkFileNameStr].as<std::string>();
   }
-  if (node["vtk-write-frequency"]) {
-    config.vtkWriteFrequency = node["vtk-write-frequency"].as<size_t>();
+  if (node[MDFlexConfig::vtkWriteFrequencyStr]) {
+    config.vtkWriteFrequency = node[MDFlexConfig::vtkWriteFrequencyStr].as<size_t>();
   }
-  if (node["Objects"]) {
+  if (node[MDFlexConfig::objectsStr]) {
     // remove default objects
     config.cubeGridObjects.clear();
     config.cubeGaussObjects.clear();
     config.cubeUniformObjects.clear();
     config.sphereObjects.clear();
 
-    for (YAML::const_iterator objectIterator = node["Objects"].begin(); objectIterator != node["Objects"].end();
-         ++objectIterator) {
-      if (objectIterator->first.as<std::string>() == "CubeGrid") {
+    for (YAML::const_iterator objectIterator = node[MDFlexConfig::objectsStr].begin();
+         objectIterator != node[MDFlexConfig::objectsStr].end(); ++objectIterator) {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGridObjectsStr) {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeGrid cubeGrid(
-              {it->second["particles-per-Dim"][0].as<unsigned long>(),
-               it->second["particles-per-Dim"][1].as<unsigned long>(),
-               it->second["particles-per-Dim"][2].as<unsigned long>()},
-              it->second["particleSpacing"].as<double>(),
-              {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
-               it->second["bottomLeftCorner"][2].as<double>()},
-              {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-               it->second["velocity"][2].as<double>()},
-              it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
-              it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
+          CubeGrid cubeGrid({it->second[MDFlexConfig::particlesPerDimStr][0].as<unsigned long>(),
+                             it->second[MDFlexConfig::particlesPerDimStr][1].as<unsigned long>(),
+                             it->second[MDFlexConfig::particlesPerDimStr][2].as<unsigned long>()},
+                            it->second[MDFlexConfig::particlesSpacingStr].as<double>(),
+                            {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
+                             it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
+                             it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()},
+                            {it->second[MDFlexConfig::velocityStr][0].as<double>(),
+                             it->second[MDFlexConfig::velocityStr][1].as<double>(),
+                             it->second[MDFlexConfig::velocityStr][2].as<double>()},
+                            it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+                            it->second[MDFlexConfig::epsilonStr].as<double>(),
+                            it->second[MDFlexConfig::sigmaStr].as<double>(),
+                            it->second[MDFlexConfig::massStr].as<double>());
           config.cubeGridObjects.emplace_back(cubeGrid);
-          config.addParticleType(it->second["particle-type"].as<unsigned long>(),
-                                 it->second["particle-epsilon"].as<double>(), it->second["particle-sigma"].as<double>(),
-                                 it->second["particle-mass"].as<double>());
+          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+                                 it->second[MDFlexConfig::epsilonStr].as<double>(),
+                                 it->second[MDFlexConfig::sigmaStr].as<double>(),
+                                 it->second[MDFlexConfig::massStr].as<double>());
         }
         continue;
       }
-      if (objectIterator->first.as<std::string>() == "CubeGauss") {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGaussObjectsStr) {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeGauss cubeGauss(
-              it->second["numberOfParticles"].as<size_t>(),
-              {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
-               it->second["box-length"][2].as<double>()},
-              it->second["distribution-mean"].as<double>(), it->second["distribution-stddev"].as<double>(),
-              {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
-               it->second["bottomLeftCorner"][2].as<double>()},
-              {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-               it->second["velocity"][2].as<double>()},
-              it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
-              it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
+          CubeGauss cubeGauss(it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
+                              {it->second[MDFlexConfig::boxLengthStr][0].as<double>(),
+                               it->second[MDFlexConfig::boxLengthStr][1].as<double>(),
+                               it->second[MDFlexConfig::boxLengthStr][2].as<double>()},
+                              it->second[MDFlexConfig::distributionMeanStr].as<double>(),
+                              it->second[MDFlexConfig::distributionStdDevStr].as<double>(),
+                              {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
+                               it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
+                               it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()},
+                              {it->second[MDFlexConfig::velocityStr][0].as<double>(),
+                               it->second[MDFlexConfig::velocityStr][1].as<double>(),
+                               it->second[MDFlexConfig::velocityStr][2].as<double>()},
+                              it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+                              it->second[MDFlexConfig::epsilonStr].as<double>(),
+                              it->second[MDFlexConfig::sigmaStr].as<double>(),
+                              it->second[MDFlexConfig::massStr].as<double>());
           config.cubeGaussObjects.emplace_back(cubeGauss);
-          config.addParticleType(it->second["particle-type"].as<unsigned long>(),
-                                 it->second["particle-epsilon"].as<double>(), it->second["particle-sigma"].as<double>(),
-                                 it->second["particle-mass"].as<double>());
+          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+                                 it->second[MDFlexConfig::epsilonStr].as<double>(),
+                                 it->second[MDFlexConfig::sigmaStr].as<double>(),
+                                 it->second[MDFlexConfig::massStr].as<double>());
         }
         continue;
       }
-      if (objectIterator->first.as<std::string>() == "CubeUniform") {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeUniformObjectsStr) {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeUniform cubeUniform(
-              it->second["numberOfParticles"].as<size_t>(),
-              {it->second["box-length"][0].as<double>(), it->second["box-length"][1].as<double>(),
-               it->second["box-length"][2].as<double>()},
-
-              {it->second["bottomLeftCorner"][0].as<double>(), it->second["bottomLeftCorner"][1].as<double>(),
-               it->second["bottomLeftCorner"][2].as<double>()},
-              {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-               it->second["velocity"][2].as<double>()},
-              it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
-              it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
+          CubeUniform cubeUniform(it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
+                                  {it->second[MDFlexConfig::boxLengthStr][0].as<double>(),
+                                   it->second[MDFlexConfig::boxLengthStr][1].as<double>(),
+                                   it->second[MDFlexConfig::boxLengthStr][2].as<double>()},
+                                  {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
+                                   it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
+                                   it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()},
+                                  {it->second[MDFlexConfig::velocityStr][0].as<double>(),
+                                   it->second[MDFlexConfig::velocityStr][1].as<double>(),
+                                   it->second[MDFlexConfig::velocityStr][2].as<double>()},
+                                  it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+                                  it->second[MDFlexConfig::epsilonStr].as<double>(),
+                                  it->second[MDFlexConfig::sigmaStr].as<double>(),
+                                  it->second[MDFlexConfig::massStr].as<double>());
           config.cubeUniformObjects.emplace_back(cubeUniform);
-          config.addParticleType(it->second["particle-type"].as<unsigned long>(),
-                                 it->second["particle-epsilon"].as<double>(), it->second["particle-sigma"].as<double>(),
-                                 it->second["particle-mass"].as<double>());
+          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+                                 it->second[MDFlexConfig::epsilonStr].as<double>(),
+                                 it->second[MDFlexConfig::sigmaStr].as<double>(),
+                                 it->second[MDFlexConfig::massStr].as<double>());
         }
         continue;
       }
-      if (objectIterator->first.as<std::string>() == "Sphere") {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::sphereObjectsStr) {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          Sphere sphere({it->second["center"][0].as<double>(), it->second["center"][1].as<double>(),
-                         it->second["center"][2].as<double>()},
-                        it->second["radius"].as<int>(), it->second["particleSpacing"].as<double>(),
-                        {it->second["velocity"][0].as<double>(), it->second["velocity"][1].as<double>(),
-                         it->second["velocity"][2].as<double>()},
-                        it->second["particle-type"].as<unsigned long>(), it->second["particle-epsilon"].as<double>(),
-                        it->second["particle-sigma"].as<double>(), it->second["particle-mass"].as<double>());
+          Sphere sphere({it->second[MDFlexConfig::sphereCenterStr][0].as<double>(),
+                         it->second[MDFlexConfig::sphereCenterStr][1].as<double>(),
+                         it->second[MDFlexConfig::sphereCenterStr][2].as<double>()},
+                        it->second[MDFlexConfig::sphereRadiusStr].as<int>(),
+                        it->second[MDFlexConfig::particlesSpacingStr].as<double>(),
+                        {it->second[MDFlexConfig::velocityStr][0].as<double>(),
+                         it->second[MDFlexConfig::velocityStr][1].as<double>(),
+                         it->second[MDFlexConfig::velocityStr][2].as<double>()},
+                        it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+                        it->second[MDFlexConfig::epsilonStr].as<double>(),
+                        it->second[MDFlexConfig::sigmaStr].as<double>(),
+                        it->second[MDFlexConfig::massStr].as<double>());
           config.sphereObjects.emplace_back(sphere);
-          config.addParticleType(it->second["particle-type"].as<unsigned long>(),
-                                 it->second["particle-epsilon"].as<double>(), it->second["particle-sigma"].as<double>(),
-                                 it->second["particle-mass"].as<double>());
+          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+                                 it->second[MDFlexConfig::epsilonStr].as<double>(),
+                                 it->second[MDFlexConfig::sigmaStr].as<double>(),
+                                 it->second[MDFlexConfig::massStr].as<double>());
         }
         continue;
       }
     }
   }
-  if (node["Thermostat"]) {
+  if (node[MDFlexConfig::thermostatStr]) {
     config.thermostat = true;
 
-    YAML::const_iterator iterNode = node["Thermostat"].begin();
+    YAML::const_iterator iterNode = node[MDFlexConfig::thermostatStr].begin();
     config.initializeThermostat = iterNode->second.as<bool>();
     ++iterNode;
     config.initTemperature = iterNode->second.as<double>();
     ++iterNode;
     config.numberOfTimesteps = iterNode->second.as<size_t>();
-    if (iterNode != node["Thermostat"].end()) {  // if target value is specified
+    if (iterNode != node[MDFlexConfig::thermostatStr].end()) {  // if target value is specified
       config.thermoTarget = true;
       ++iterNode;
-      config.targetTemperature = iterNode->second["targetTemperature"].as<double>();
-      config.deltaTemp = iterNode->second["deltaTemp"].as<double>();
+      config.targetTemperature = iterNode->second[MDFlexConfig::targetTemperatureStr].as<double>();
+      config.deltaTemp = iterNode->second[MDFlexConfig::deltaTempStr].as<double>();
     }
   }
   return true;

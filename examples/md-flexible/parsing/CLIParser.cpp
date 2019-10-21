@@ -10,39 +10,39 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
   bool displayHelp = false;
   int option, option_index;
-  static struct option long_options[] = {{"yaml-filename", required_argument, nullptr, 'Y'},
-                                         {"box-min", required_argument, nullptr, 'k'},
-                                         {"box-max", required_argument, nullptr, 'K'},
-                                         {"container", required_argument, nullptr, 'c'},
-                                         {"cutoff", required_argument, nullptr, 'C'},
-                                         {"cell-size-factor", required_argument, nullptr, 'a'},
-                                         {"data-layout", required_argument, nullptr, 'd'},
-                                         {"distribution-mean", required_argument, nullptr, 'm'},
-                                         {"distribution-stddeviation", required_argument, nullptr, 'z'},
-                                         {"deltaT", required_argument, nullptr, 'D'},
-                                         {"functor", required_argument, nullptr, 'f'},
+  static struct option long_options[] = {{MDFlexConfig::yamlFilenameStr, required_argument, nullptr, 'Y'},
+                                         {MDFlexConfig::boxMinStr, required_argument, nullptr, 'k'},
+                                         {MDFlexConfig::boxMaxStr, required_argument, nullptr, 'K'},
+                                         {MDFlexConfig::containerOptionsStr, required_argument, nullptr, 'c'},
+                                         {MDFlexConfig::cutoffStr, required_argument, nullptr, 'C'},
+                                         {MDFlexConfig::cellSizeFactorsStr, required_argument, nullptr, 'a'},
+                                         {MDFlexConfig::dataLayoutOptionsStr, required_argument, nullptr, 'd'},
+                                         {MDFlexConfig::distributionMeanStr, required_argument, nullptr, 'm'},
+                                         {MDFlexConfig::distributionStdDevStr, required_argument, nullptr, 'z'},
+                                         {MDFlexConfig::deltaTStr, required_argument, nullptr, 'D'},
+                                         {MDFlexConfig::functorOptionStr, required_argument, nullptr, 'f'},
                                          {"help", no_argument, nullptr, 'h'},
-                                         {"iterations", required_argument, nullptr, 'i'},
-                                         {"no-flops", no_argument, nullptr, 'F'},
-                                         {"newton3", required_argument, nullptr, '3'},
-                                         {"particles-generator", required_argument, nullptr, 'g'},
-                                         {"particles-per-dimension", required_argument, nullptr, 'n'},
-                                         {"particles-total", required_argument, nullptr, 'N'},
-                                         {"particle-spacing", required_argument, nullptr, 's'},
-                                         {"periodic", required_argument, nullptr, 'p'},
-                                         {"selector-strategy", required_argument, nullptr, 'y'},
-                                         {"thermostat", required_argument, nullptr, 'u'},
-                                         {"traversal", required_argument, nullptr, 't'},
-                                         {"tuning-interval", required_argument, nullptr, 'I'},
-                                         {"tuning-samples", required_argument, nullptr, 'S'},
-                                         {"tuning-max-evidence", required_argument, nullptr, 'E'},
-                                         {"tuning-strategy", required_argument, nullptr, 'T'},
-                                         {"log-level", required_argument, nullptr, 'l'},
-                                         {"log-file", required_argument, nullptr, 'L'},
-                                         {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
-                                         {"verlet-skin-radius", required_argument, nullptr, 'r'},
-                                         {"vtk-filename", required_argument, nullptr, 'w'},
-                                         {"vtk-write-frequency", required_argument, nullptr, 'Z'},
+                                         {MDFlexConfig::iterationsStr, required_argument, nullptr, 'i'},
+                                         {MDFlexConfig::measureFlopsStr, no_argument, nullptr, 'F'},
+                                         {MDFlexConfig::newton3OptionsStr, required_argument, nullptr, '3'},
+                                         {MDFlexConfig::generatorOptionStr, required_argument, nullptr, 'g'},
+                                         {MDFlexConfig::particlesPerDimStr, required_argument, nullptr, 'n'},
+                                         {"particles-total", required_argument, nullptr, 'N'},          // FIXME: unused
+                                         {MDFlexConfig::particlesSpacingStr, required_argument, nullptr, 's'},
+                                         {MDFlexConfig::periodicStr, required_argument, nullptr, 'p'},
+                                         {MDFlexConfig::selectorStrategyStr, required_argument, nullptr, 'y'},
+                                         {MDFlexConfig::thermostatStr, required_argument, nullptr, 'u'},
+                                         {MDFlexConfig::traversalOptionsStr, required_argument, nullptr, 't'},
+                                         {MDFlexConfig::tuningIntervalStr, required_argument, nullptr, 'I'},
+                                         {MDFlexConfig::tuningSamplesStr, required_argument, nullptr, 'S'},
+                                         {MDFlexConfig::tuningMaxEvidenceStr, required_argument, nullptr, 'E'},
+                                         {MDFlexConfig::tuningStrategyOptionsStr, required_argument, nullptr, 'T'},
+                                         {MDFlexConfig::logLevelStr, required_argument, nullptr, 'l'},
+                                         {MDFlexConfig::logFileNameStr, required_argument, nullptr, 'L'},
+                                         {MDFlexConfig::verletRebuildFrequencyStr, required_argument, nullptr, 'v'},
+                                         {MDFlexConfig::verletSkinRadiusStr, required_argument, nullptr, 'r'},
+                                         {MDFlexConfig::vtkFileNameStr, required_argument, nullptr, 'w'},
+                                         {MDFlexConfig::verletSkinRadiusStr, required_argument, nullptr, 'Z'},
                                          {nullptr, no_argument, nullptr, 0}};  // needed to signal the end of the array
   // reset getopt to scan from the start of argv
   optind = 1;
@@ -332,7 +332,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'w': {
-        config.VTKFileName = strArg;
+        config.vtkFileName = strArg;
         break;
       }
       case 'y': {
@@ -382,7 +382,7 @@ bool CLIParser::yamlFilePresent(int argc, char **argv, MDFlexConfig &config) {
   auto opterrBefore = opterr;
   std::vector<std::string> argvBefore(argv, argv + argc);
   opterr = 0;
-  static struct option longOptions[] = {{"yaml-filename", required_argument, nullptr, 'Y'},
+  static struct option longOptions[] = {{MDFlexConfig::yamlFilenameStr, required_argument, nullptr, 'Y'},
                                         {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   std::string strArg;
   // Yaml Parsing file parameter must be set before all other Options

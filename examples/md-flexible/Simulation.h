@@ -50,7 +50,7 @@ class Simulation {
    */
   void writeVTKFile(unsigned int iteration) {
     // iterate only over owned Particles, otherwise Simulation explodes
-    std::string fileBaseName = _config->VTKFileName;
+    std::string fileBaseName = _config->vtkFileName;
     // as _autopas.getNumberOfParticles return number of haloAndOwned Particles, we need number of owned Particles
     const auto numParticles = this->getNumParticles();
     std::ostringstream strstr;
@@ -308,7 +308,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
   std::chrono::high_resolution_clock::time_point startSim, stopSim;
   startSim = std::chrono::high_resolution_clock::now();
   // writes initial state of simulation as vtkFile if filename is specified
-  if ((not _config->VTKFileName.empty())) {
+  if ((not _config->vtkFileName.empty())) {
     this->writeVTKFile(0);
   }
   // main simulation loop
@@ -340,7 +340,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
       _thermostat->applyThermo(_autopas);
     }
     // only write vtk files periodically and if a filename is given
-    if ((not _config->VTKFileName.empty()) and iteration % _config->vtkWriteFrequency == 0) {
+    if ((not _config->vtkFileName.empty()) and iteration % _config->vtkWriteFrequency == 0) {
       this->writeVTKFile(iteration + 1);
     }
   }
