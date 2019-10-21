@@ -43,7 +43,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {"verlet-skin-radius", required_argument, nullptr, 'r'},
                                          {"vtk-filename", required_argument, nullptr, 'w'},
                                          {"vtk-write-frequency", required_argument, nullptr, 'z'},
-                                         {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
+                                         {nullptr, no_argument, nullptr, 0}};  // needed to signal the end of the array
   string strArg;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
     if (optarg != nullptr) strArg = optarg;
