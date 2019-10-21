@@ -3,6 +3,8 @@ file(
     MY_SRC
     "*.cpp"
     "*.h"
+    "../../examples/md-flexible/parsing/MDFlexConfig.cpp"
+    "../../examples/md-flexible/parsing/MDFlexConfig.h"
     "../../examples/md-flexible/parsing/YamlParser.cpp"
     "../../examples/md-flexible/parsing/YamlParser.h"
     "../../examples/md-flexible/Objects.h"
