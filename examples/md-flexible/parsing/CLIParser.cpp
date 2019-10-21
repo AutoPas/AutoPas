@@ -42,8 +42,10 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {"verlet-rebuild-frequency", required_argument, nullptr, 'v'},
                                          {"verlet-skin-radius", required_argument, nullptr, 'r'},
                                          {"vtk-filename", required_argument, nullptr, 'w'},
-                                         {"vtk-write-frequency", required_argument, nullptr, 'z'},
+                                         {"vtk-write-frequency", required_argument, nullptr, 'Z'},
                                          {nullptr, no_argument, nullptr, 0}};  // needed to signal the end of the array
+  // reset getopt to scan from the start of argv
+  optind = 1;
   string strArg;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
     if (optarg != nullptr) strArg = optarg;
@@ -376,6 +378,10 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
 
 bool CLIParser::yamlFilePresent(int argc, char **argv, MDFlexConfig &config) {
   int option, optionIndex;
+  // suppress error messages since we only want to look if the yaml option is there
+  auto opterrBefore = opterr;
+  std::vector<std::string> argvBefore(argv, argv + argc);
+  opterr = 0;
   static struct option longOptions[] = {{"yaml-filename", required_argument, nullptr, 'Y'},
                                         {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   std::string strArg;
@@ -387,5 +393,8 @@ bool CLIParser::yamlFilePresent(int argc, char **argv, MDFlexConfig &config) {
       return true;
     }
   }
+
+  opterr = opterrBefore;
   return false;
 }
+

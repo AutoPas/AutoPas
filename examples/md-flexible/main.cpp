@@ -7,13 +7,10 @@
 #include "Simulation.h"
 
 #include <autopas/utils/MemoryProfiler.h>
-#include <yaml-cpp/yaml.h>
 #include <iostream>
-#include "parsing/MDFlexParser.h"
 #include "PrintableMolecule.h"
-#include "parsing/YamlParser.h"
-#include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "parsing/MDFlexParser.h"
 
 int main(int argc, char **argv) {
   // start simulation timer
@@ -22,7 +19,7 @@ int main(int argc, char **argv) {
   MDFlexConfig config;
   MDFlexParser parser;
 
-  if (not parser.parseInput(argc, argv)) {
+  if (not parser.parseInput(argc, argv, config)) {
     exit(-1);
   }
   // make sure sim box is big enough

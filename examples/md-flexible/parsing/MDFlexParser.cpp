@@ -6,14 +6,29 @@
 
 #include "MDFlexParser.h"
 
-const MDFlexConfig &MDFlexParser::getConfig() const { return _config; }
+bool MDFlexParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
 
-bool MDFlexParser::parseInput(int argc, char **argv) {
-  if (_cliParser.yamlFilePresent(argc, argv, _config)) {
-    if (not _yamlParser.parseYamlFile(_config)){
+  // we need to copy argv because the call to getOpt in _cliParser.yamlFilePresent reorders it...
+  auto argvCopy = new char *[argc + 1];
+  for (int i = 0; i < argc; i++) {
+    auto len = strlen(argv[i]) + 1;
+    argvCopy[i] = new char[len];
+    strcpy(argvCopy[i], argv[i]);
+  }
+  argvCopy[argc] = nullptr;
+
+  if (_cliParser.yamlFilePresent(argc, argv, config)) {
+    if (not _yamlParser.parseYamlFile(config)) {
       return false;
     }
   }
 
-  return _cliParser.parseInput(argc, argv, _config);
+  auto parseSuccess = _cliParser.parseInput(argc, argvCopy, config);
+
+  for (int i = 0; i < argc; i++) {
+    delete[] argvCopy[i];
+  }
+  delete[] argvCopy;
+
+  return parseSuccess;
 }
