@@ -26,17 +26,17 @@ class Object {
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  virtual std::array<double, 3> getBoxMin() = 0;
+  virtual const std::array<double, 3> getBoxMin() const = 0;
 
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  virtual std::array<double, 3> getBoxMax() = 0;
+  virtual const std::array<double, 3> getBoxMax() const = 0;
 
   /**Returns the total amount of Particles in the Object
    * @return ParticlesTotal
    * */
-  [[nodiscard]] virtual size_t getParticlesTotal() const = 0;
+  [[nodiscard]] virtual const size_t getParticlesTotal() const = 0;
 
   /**Prints the configuration of the Object to the
    * */
@@ -92,19 +92,19 @@ class CubeGrid : public Object {
   /**Getter for total number of Particles for object
    * @return particlesTotal
    * */
-  [[nodiscard]] size_t getParticlesTotal() const override { return particlesTotal; }
+  [[nodiscard]] const size_t getParticlesTotal() const override { return particlesTotal; }
 
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() override {
+  const std::array<double, 3> getBoxMin() const override {
     return bottomLeftCorner;
   }
 
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  std::array<double, 3> getBoxMax() override {
+  const std::array<double, 3> getBoxMax() const override {
     return {bottomLeftCorner[0] + (particlesPerDim[0]) * particleSpacing,
             bottomLeftCorner[1] + (particlesPerDim[1]) * particleSpacing,
             bottomLeftCorner[2] + (particlesPerDim[2]) * particleSpacing};
@@ -176,7 +176,7 @@ class CubeGauss : public Object {
   /**Getter total number of Particles of Object
    * @return numParticles
    * */
-  [[nodiscard]] size_t getParticlesTotal() const override { return numParticles; }
+  [[nodiscard]] const size_t getParticlesTotal() const override { return numParticles; }
       /**Getter for distribution mean
        * @return distributionMean
        * */
@@ -191,13 +191,13 @@ class CubeGauss : public Object {
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() override {
+  const std::array<double, 3> getBoxMin() const override {
     return bottomLeftCorner;
   }
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  std::array<double, 3> getBoxMax() override {
+  const std::array<double, 3> getBoxMax() const override {
     return {bottomLeftCorner[0] + boxLength[0], bottomLeftCorner[1] + boxLength[1], bottomLeftCorner[2] + boxLength[2]};
   }
 
@@ -263,18 +263,18 @@ class CubeUniform : public Object {
   /**Getter for total number of Particles in Object
    * @return numParticles
    * */
-  [[nodiscard]] size_t getParticlesTotal() const override { return numParticles; }
+  [[nodiscard]] const size_t getParticlesTotal() const override { return numParticles; }
 
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() override {
+  const std::array<double, 3> getBoxMin() const override {
     return bottomLeftCorner;
   }
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  std::array<double, 3> getBoxMax() override {
+  const std::array<double, 3> getBoxMax() const override {
     return {bottomLeftCorner[0] + boxLength[0], bottomLeftCorner[1] + boxLength[1], bottomLeftCorner[2] + boxLength[2]};
   }
 
@@ -351,7 +351,7 @@ class Sphere : public Object {
       /**Returns the number of particles that will be generated for this Object
        * @return totalNumberOfParticles
        * */
-      [[nodiscard]] size_t getParticlesTotal() const override {
+      [[nodiscard]] const size_t getParticlesTotal() const override {
     // this should look different if the generator for spheres changes
     int counter = 0;
     for (int z = 0; z <= radius; ++z) {
@@ -384,7 +384,7 @@ class Sphere : public Object {
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() override {
+  const std::array<double, 3> getBoxMin() const override {
     return {center[0] - ((double)radius) * particleSpacing, center[1] - ((double)radius) * particleSpacing,
             center[2] - ((double)radius) * particleSpacing};
   }
@@ -392,7 +392,7 @@ class Sphere : public Object {
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  std::array<double, 3> getBoxMax() override {
+  const std::array<double, 3> getBoxMax() const override {
     return {center[0] + ((double)radius) * particleSpacing, center[1] + ((double)radius) * particleSpacing,
             center[2] + ((double)radius) * particleSpacing};
   }

@@ -30,7 +30,7 @@ class Generator {
    * */
   template <class Particle, class ParticleCell>
   static void CubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
-                       const std::array<double, 3> &BoxMin, std::array<size_t, 3> particlesPerDim,
+                       const std::array<double, 3> &BoxMin, const std::array<size_t, 3> &particlesPerDim,
                        double particleSpacing, const std::array<double, 3> &velocity);
 
   /**Fills Autopas Object with Particles with Gauss distribution
@@ -71,7 +71,7 @@ class Generator {
 
 template <class Particle, class ParticleCell>
 void Generator::CubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
-                         const std::array<double, 3> &BoxMin, std::array<size_t, 3> particlesPerDim,
+                         const std::array<double, 3> &BoxMin, const std::array<size_t, 3> &particlesPerDim,
                          double particleSpacing, const std::array<double, 3> &velocity) {
   Particle dummyParticle;
   dummyParticle.setV(velocity);
