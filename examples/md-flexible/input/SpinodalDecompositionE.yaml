@@ -1,4 +1,6 @@
-#YAML parsing FILE:
+#YAML parsing FILE for Spinodal Decomposition
+
+#__Equilibrum Phase__
 
 ###AutoPas Options=
 
@@ -23,8 +25,8 @@
 ###Simulation Options=
 
 #functor:                           #string option
-#delta_t:                           #double option
-#iterations:                         #size_t option
+#deltaT:                           #double option
+iterations:
 #cutoff:                            #double option
 
 ###Thermstat
@@ -34,52 +36,20 @@ Thermostat:
   initTemperatur: 0.01                  #double option
   numberOfTimesteps: 40                 #size_t option (application every n-th timestep)
   target:
-    targetTemperature: 3.0              #double option
+    targetTemperature: 0.7              #double option
     delta_temp: 0.001                   #double option
 
 
 ###Objects generation Options
 Objects:
-  CubeGrid:
-    0:
-      particle-type: 0
-      particle-epsilon: 1.
-      particle-sigma: 1.
-      particle-mass: 1.
-      particles-per-Dim: [10,10,10]
-      particleSpacing: 0.5
-      velocity: [10.,10.,10.]
-      bottomLeftCorner: [5.,5.,5.]
-#  CubeGauss:
-#    0:
-#      particle-type: 0
-#      particle-epsilon: 1.
-#      particle-sigma: 1.
-#      particle-mass: 1.
-#      numberOfParticles: 100
-#      box-length: [8.,8.,8.]
-#      distribution-mean: 2.0
-#      distribution-stddev: 5.0
-#      velocity: [0.,0.,0.]
-#      bottomLeftCorner: [5.,5.,5.]
-#  CubeUniform:
-#    0:
-#      particle-type: 0
-#      particle-epsilon: 1.
-#      particle-sigma: 1.
-#      particle-mass: 1.
-#      numberOfParticles: 100
-#      box-length: [10.,10.,10.]
-#      velocity: [0.,0.,0.]
-#      bottomLeftCorner: [5.,5.,5.]
-#  Sphere:
-#    0:
-#      particle-type: 0
-#      particle-epsilon: 1.
-#      particle-sigma: 1.
-#      particle-mass: 1.
-#      center: [0.,0.,0.]
-#      radius: 10
-#      particleSpacing: 0.5
-#      firstId: 0
-#      velocity: [5.,5.,5.]
+ CubeUniform:
+   0:
+     particle-type: 0
+     particle-epsilon: 1.
+     particle-sigma: 1.
+     particle-mass: 1.
+     numberOfParticles: 62500
+     box-length: [60.,60.,60.]
+     velocity: [0.,0.,0.]
+     bottomLeftCorner: [0.,0.,0.]
+
