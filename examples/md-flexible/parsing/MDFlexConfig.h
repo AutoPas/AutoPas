@@ -116,7 +116,7 @@ class MDFlexConfig {
   std::map<unsigned long, double> massMap = {{0,1}};
 
   // Options for additional Object Generation on command line
-  static inline const char *boxLengthStr = "box-length"; // FIXME: is this needed!?
+  static inline const char *boxLengthStr = "box-length";
   double boxLength = 10;
   static inline const char *distributionMeanStr = "distribution-mean";
   double distributionMean = 5.;
