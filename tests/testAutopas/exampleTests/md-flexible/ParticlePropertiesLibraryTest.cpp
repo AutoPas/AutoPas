@@ -21,7 +21,7 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
   auto parser = YamlParser();  // parsing input
   // this test need to be adapted if the input file changes
   MDFlexConfig config;
-  config.yamlFilename = "multipleObjectsWithMultipleTypesTest.yaml";
+  config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
   parser.parseYamlFile(config);
   config.calcSimulationBox();
   simulation.initialize(config);

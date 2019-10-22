@@ -3,7 +3,7 @@
 TEST_F(YamlParserTest, calcAutopasBox) {
   // tests the AutoBox calculation after Object initialization with multipleObjectsWithMultipleTypeTest
   MDFlexConfig config;
-  config.yamlFilename = "multipleObjectsWithMultipleTypesTest.yaml";
+  config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
   parser.parseYamlFile(config);
   config.calcSimulationBox();
   std::array<double, 3> compBoxMin = {0, -15, -15};
@@ -28,13 +28,13 @@ TEST_F(YamlParserTest, addType) {
 
 TEST_F(YamlParserTest, wrongTypeParsingInput) {
   MDFlexConfig config;
-  config.yamlFilename = "incorrectParsingFile.yaml";
+  config.yamlFilename = std::string(YAMLDIRECTORY) + "incorrectParsingFile.yaml";
   ASSERT_ANY_THROW(parser.parseYamlFile(config));
 }
 
 TEST_F(YamlParserTest, multipleSameObjectParsing) {
   MDFlexConfig config;
-  config.yamlFilename = "multipleSimilarObjects.yaml";
+  config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleSimilarObjects.yaml";
   parser.parseYamlFile(config);
   ASSERT_EQ(config.cubeGridObjects.size(), 2);
   ASSERT_EQ(config.cubeGridObjects.at(0).getTypeId(), 0);

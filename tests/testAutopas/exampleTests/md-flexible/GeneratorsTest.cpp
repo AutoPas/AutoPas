@@ -85,7 +85,7 @@ TEST_F(GeneratorsTest, Sphere) {
 TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   auto autoPas = autopas::AutoPas<autopas::MoleculeLJ<>, FMCell>(std::cout);
   MDFlexConfig config;
-  config.yamlFilename = "multipleObjectsWithMultipleTypesTest.yaml";
+  config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
   parser.parseYamlFile(config);
   config.calcSimulationBox();
   autoPas.setBoxMax(config.boxMax);
