@@ -32,8 +32,8 @@ Objects:
       particle-epsilon: 5.
       particle-sigma: 1
       particle-mass: 1.
-      particles-per-Dim: [8,8,1]
-      particleSpacing: 1.12
+      particles-per-dimension: [8,8,1]
+      particle-spacing: 1.12
       velocity: [0.,-10.,0.]
       bottomLeftCorner: [19.49,19.49,0.]
 #    1:
@@ -41,7 +41,7 @@ Objects:
 #      particle-epsilon: 5.
 #      particle-sigma: 1
 #      particle-mass: 1.
-#      particles-per-Dim: [40,8,1]
+#      particles-per-dimension: [40,8,1]
 #      particleSpacing: 1.12
 #      velocity: [0.,0.,0.]
 #      bottomLeftCorner: [22.45,4.49,0.]

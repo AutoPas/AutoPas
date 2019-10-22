@@ -11,7 +11,7 @@ Objects:
       particle-epsilon: 1.
       particle-sigma: 1.
       particle-mass: 1.
-      particles-per-Dim: [10,10,10]
-      particleSpacing: 0.5
+      particles-per-dimension: [10,10,10]
+      particle-spacing: 0.5
       velocity: [0.,0.,0.]
       bottomLeftCorner: [5.,5.,5.]
