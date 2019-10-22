@@ -4,6 +4,8 @@
  * @date 10/18/19
  */
 
+#pragma once
+
 #include "MDFlexConfig.h"
 #include "YamlParser.h"
 #include "CLIParser.h"
