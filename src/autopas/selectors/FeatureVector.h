@@ -49,7 +49,7 @@ class FeatureVector : public Configuration {
 
   /**
    * Distance between two FeatureVectors.
-   * Since there is no real ordering all discrete options are assumed to have a distance 
+   * Since there is no real ordering all discrete options are assumed to have a distance
    * of one to each other.
    * This function ignores the container dimension since it is encoded in the traversal.
    * @param other
