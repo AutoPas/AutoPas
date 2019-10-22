@@ -127,7 +127,7 @@ class MDFlexConfig {
   size_t defaultParticlesTotal = 1000;
   static inline const char *particlesSpacingStr = "particle-spacing";
   double particleSpacing = .5;
-  static inline const char *generatorOptionStr = "particles-generator";
+  static inline const char *generatorOptionStr = "particle-generator";
   GeneratorOption generatorOption = GeneratorOption::grid;
 
   // Object Generation:
