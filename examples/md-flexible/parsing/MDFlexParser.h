@@ -12,9 +12,5 @@
 
 class MDFlexParser {
  public:
-  bool parseInput(int argc, char **argv, MDFlexConfig &config);
-
- private:
-  CLIParser _cliParser;
-  YamlParser _yamlParser;
+  static bool parseInput(int argc, char **argv, MDFlexConfig &config);
 };

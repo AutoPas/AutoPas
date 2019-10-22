@@ -17,9 +17,8 @@ int main(int argc, char **argv) {
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
   // Parsing
   MDFlexConfig config;
-  MDFlexParser parser;
 
-  if (not parser.parseInput(argc, argv, config)) {
+  if (not MDFlexParser::parseInput(argc, argv, config)) {
     exit(-1);
   }
   // make sure sim box is big enough

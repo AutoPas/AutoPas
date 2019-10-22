@@ -23,7 +23,7 @@ class CLIParser {
    * @param config configuration where the input is stored.
    * @return true if a yaml file argument was found.
    */
-  bool yamlFilePresent(int argc, char **argv, MDFlexConfig &config);
+  static bool yamlFilePresent(int argc, char **argv, MDFlexConfig &config);
 
   /**
    * Parses the Input for the simulation from the command line.
@@ -32,5 +32,5 @@ class CLIParser {
    * @param config configuration where the input is stored.
    * @return false if any errors occurred during parsing.
    */
-  bool parseInput(int argc, char **argv, MDFlexConfig &config);
+  static bool parseInput(int argc, char **argv, MDFlexConfig &config);
 };

@@ -18,11 +18,10 @@ TEST_F(ParticlePropertiesLibraryTest, ClassFunctions) {
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
   Simulation<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> simulation;
-  auto parser = YamlParser();  // parsing input
   // this test need to be adapted if the input file changes
   MDFlexConfig config;
   config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
-  parser.parseYamlFile(config);
+  YamlParser::parseYamlFile(config);
   config.calcSimulationBox();
   simulation.initialize(config);
   simulation.initializeParticlePropertiesLibrary();

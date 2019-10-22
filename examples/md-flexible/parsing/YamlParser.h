@@ -29,10 +29,9 @@ class YamlParser {
    * @return false if any errors occurred during parsing.
    * @FIXME: at the moment false is never returned
    */
-  bool parseYamlFile(MDFlexConfig &config);
+  static bool parseYamlFile(MDFlexConfig &config);
 
  private:
-
   /**
    * Check if the passed file exists.
    * @param filename

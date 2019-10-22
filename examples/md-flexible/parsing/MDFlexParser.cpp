@@ -16,13 +16,13 @@ bool MDFlexParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   }
   argvCopy[argc] = nullptr;
 
-  if (_cliParser.yamlFilePresent(argc, argv, config)) {
-    if (not _yamlParser.parseYamlFile(config)) {
+  if (CLIParser::yamlFilePresent(argc, argv, config)) {
+    if (not YamlParser::parseYamlFile(config)) {
       return false;
     }
   }
 
-  auto parseSuccess = _cliParser.parseInput(argc, argvCopy, config);
+  auto parseSuccess = CLIParser::parseInput(argc, argvCopy, config);
 
   for (int i = 0; i < argc; i++) {
     delete[] argvCopy[i];

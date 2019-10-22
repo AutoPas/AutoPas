@@ -9,7 +9,7 @@
 
 bool YamlParser::checkFileExists(std::string filename) {
   struct stat buffer;
-  return (stat (filename.c_str(), &buffer) == 0);
+  return (stat(filename.c_str(), &buffer) == 0);
 }
 
 bool YamlParser::parseYamlFile(MDFlexConfig &config) {

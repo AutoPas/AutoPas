@@ -12,8 +12,5 @@
 
 class YamlParserTest : public AutoPasTestBase {
  public:
-  YamlParserTest() : AutoPasTestBase(), parser{YamlParser()} {}
-
- protected:
-  YamlParser parser;
+  YamlParserTest() : AutoPasTestBase() {}
 };
