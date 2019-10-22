@@ -20,7 +20,5 @@ class FmmParticle : public autopas::Particle {
     this->charge = charge;
   }
 
-  FmmParticle() : ParticleBase() {
-    this->charge = 1;
-  }
+  FmmParticle() : ParticleBase() { this->charge = 1; }
 };

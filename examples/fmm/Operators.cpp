@@ -83,7 +83,7 @@ void Operators::M2L(AdaptiveOctreeNode &node) {
   /*if (node.getDepth() < 2) {
     return;
   }*/
-  if (node.isZeroM()) {
+  /*if (node.isZeroM()) {
     return;
   }
 
@@ -135,13 +135,13 @@ void Operators::M2L(AdaptiveOctreeNode &node) {
         }
       }
     }
-  }
+  }*/
 
-  /*for (auto inter : node.getInteractionList()) {
+  for (auto inter : node.getInteractionList()) {
     if (inter->isZeroM()) {
       continue;
     }
-    auto spherical = Math3D::toSpherical(Math3D::subtract(inter->getCenter(), node.getCenter()));
+    auto spherical = Math3D::toSpherical(Math3D::subtract(inter->getNodeCenter(), node.getNodeCenter()));
     double rho = spherical[0];
     double theta = spherical[1];
     double phi = spherical[2];
@@ -188,7 +188,7 @@ void Operators::M2L(AdaptiveOctreeNode &node) {
         }
       }
     }
-  }*/
+  }
 }
 
 void Operators::L2L(AdaptiveOctreeNode &node) {

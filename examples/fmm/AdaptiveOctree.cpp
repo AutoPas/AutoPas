@@ -5,18 +5,19 @@
  */
 
 #include "AdaptiveOctree.h"
-AdaptiveOctree::AdaptiveOctree(AutoPasCont &domain, int maxParticlesPerNode, int orderOfExpansion)
+AdaptiveOctree::AdaptiveOctree(AutoPasCont &domain, int maxParticlesPerNode, int orderOfExpansion, int minDepth,
+                               int maxDepth)
     : domain(&domain),
       maxParticlesPerNode(maxParticlesPerNode),
       orderOfExpansion(orderOfExpansion),
       domainMinCorner(domain.getBoxMin()),
       domainMaxCorner(domain.getBoxMax()),
-      domainSize(Math3D::subtract(domainMaxCorner, domainMinCorner)) {
-  std::cout << "Creating Root:" << std::endl;
+      domainSize(Math3D::subtract(domainMaxCorner, domainMinCorner)),
+      minDepth(minDepth),
+      maxDepth(maxDepth) {
   root = std::make_unique<AdaptiveOctreeNode>(*this, nullptr, 0, domainMinCorner, domainMaxCorner);
-  std::cout << "root->initNeighbourList();" << std::endl;
   root->initNeighbourList();
-  std::cout << "root->initInteractionList();" << std::endl;
+  root->initNearFieldList();
   root->initInteractionList();
 }
 
@@ -36,9 +37,11 @@ AdaptiveOctreeNode::AdaptiveOctreeNode(AdaptiveOctree &tree, AdaptiveOctreeNode 
       nodeCenter(Math3D::mul(Math3D::add(minCorner, maxCorner), 0.5)),
       nodeMaxCorner(maxCorner),
       nodeSize(Math3D::subtract(maxCorner, minCorner)) {
+  // Initialize expansion coefficients to 0.
   fmmM = ComplexMatrix(tree.getOrderOfExpansion() * 2 + 1, std::vector<Complex>(tree.getOrderOfExpansion() + 1, 0));
   fmmL = ComplexMatrix(tree.getOrderOfExpansion() * 2 + 1, std::vector<Complex>(tree.getOrderOfExpansion() + 1, 0));
 
+  // Node name:
   if (parent == nullptr) {
     depth = 0;
     name = "root";
@@ -49,7 +52,8 @@ AdaptiveOctreeNode::AdaptiveOctreeNode(AdaptiveOctree &tree, AdaptiveOctreeNode 
 
   int particles = tree.getNumberOfParticlesInRegion(nodeMinCorner, nodeMaxCorner);
 
-  std::cout << "[" << name << "] node at (" << minCorner[0] << ", " << minCorner[1] << ", " << minCorner[2] << ") to ("
+  /*std::cout << "[" << name << "] node at (" << minCorner[0] << ", " << minCorner[1] << ", " << minCorner[2] << ") to
+  ("
             << maxCorner[0] << ", " << maxCorner[1] << ", " << maxCorner[2] << ") with depth " << depth
             << " containing " << particles << " particles. size = " << nodeSize[0] << ", " << nodeSize[1] << ", "
             << nodeSize[2] << std::endl;
@@ -60,15 +64,18 @@ AdaptiveOctreeNode::AdaptiveOctreeNode(AdaptiveOctree &tree, AdaptiveOctreeNode 
       std::cout << particle->getR()[0] << ", " << particle->getR()[1] << ", " << particle->getR()[2]
                 << ", charge = " << particle->charge << std::endl;
     }
-  }
+  }*/
 
-  if (particles > tree.getMaxParticlesPerNode()) {
+  // Only divide node, if depth < minDepth or (enough particles and depth < maxDepth)
+  if (depth < tree.getMinDepth() ||
+      ((particles > tree.getMaxParticlesPerNode()) && (depth < tree.getMaxDepth() || tree.getMaxDepth() == -1))) {
     _isLeaf = false;
+
     child = std::vector<std::unique_ptr<AdaptiveOctreeNode>>(8);
 
     // Divide node into 8 smaller nodes.
-
     for (int i = 0; i < 8; ++i) {
+      // Each bit defines whether it is in the first or second half of a dimension.
       auto u = static_cast<unsigned>(i);
       bool xOffset = u & 0x1u;
       bool yOffset = u & 0x2u;
@@ -80,10 +87,10 @@ AdaptiveOctreeNode::AdaptiveOctreeNode(AdaptiveOctree &tree, AdaptiveOctreeNode 
     }
   } else {
     _isLeaf = true;
+    tree.currentMaxDepth = std::max(tree.currentMaxDepth, depth);
+    tree.numberOfLeaves++;
   }
-}
-AdaptiveOctreeNode *AdaptiveOctreeNode::findLeaf(const std::array<double, 3> &position) const {
-  return findNode(position, -1);
+  tree.numberOfNodes++;
 }
 AdaptiveOctreeNode *AdaptiveOctreeNode::findNode(const std::array<double, 3> &position, int maxDepth) const {
   if (isLeaf() || depth == maxDepth) {
@@ -165,6 +172,7 @@ void AdaptiveOctreeNode::setL(int m, int n, Complex value) {
   }
 }
 void AdaptiveOctreeNode::initNeighbourList() {
+  // Neighbours are the smallest nodes that are not smaller than this node and are adjacent to it.
   neighbourList = std::set<AdaptiveOctreeNode *>();
   neighbourList.insert(this);
   for (int x = -1; x <= 1; ++x) {
@@ -174,12 +182,11 @@ void AdaptiveOctreeNode::initNeighbourList() {
       }
     }
   }
-
-  std::cout << "[" << name << "] neighbourList list: (";
+  neighbourListString = "[" + name + "] neighbourList: (";
   for (auto neighbour : neighbourList) {
-    std::cout << neighbour->name << ", ";
+    neighbourListString += neighbour->name + ", ";
   }
-  std::cout << ")" << std::endl;
+  neighbourListString += ")";
 
   if (!_isLeaf) {
     for (int c = 0; c < 8; ++c) {
@@ -187,29 +194,56 @@ void AdaptiveOctreeNode::initNeighbourList() {
     }
   }
 }
+void AdaptiveOctreeNode::initNearFieldList() {
+  nearFieldList = std::set<AdaptiveOctreeNode *>();
+  for (auto *neighbour : neighbourList) {
+    nearFieldList.insert(neighbour);
+  }
+  nearFieldListString = "[" + name + "] nearFieldList: (";
+  for (auto nearField : nearFieldList) {
+    nearFieldListString += nearField->name + ", ";
+    getTree()->totalNearFieldNodes++;
+  }
+
+  if (!_isLeaf) {
+    for (int c = 0; c < 8; ++c) {
+      child[c]->initNearFieldList();
+    }
+  }
+}
+
 void AdaptiveOctreeNode::initInteractionList() {
   interactionList = std::set<AdaptiveOctreeNode *>();
   if (parent != nullptr) {
     for (AdaptiveOctreeNode *parentNeighbour : parent->getNeighbourList()) {
-      for (int c = 0; c < 8; ++c) {
-        AdaptiveOctreeNode *insert;
-        if (!parentNeighbour->isLeaf()) {
+      if (!parentNeighbour->isLeaf() && parentNeighbour->depth == parent->depth) {
+        for (int c = 0; c < 8; ++c) {
+          AdaptiveOctreeNode *insert;
           insert = parentNeighbour->getChild(c);
-        } else {
-          insert = parentNeighbour;
+          if (neighbourList.find(insert) == neighbourList.end()) {
+            interactionList.insert(insert);
+          }
         }
-        if (neighbourList.find(insert) == neighbourList.end()) {
-          interactionList.insert(insert);
+      } else {
+        if (neighbourList.find(parentNeighbour) == neighbourList.end()) {
+          if (nearFieldList.find(parentNeighbour) == nearFieldList.end()) {
+            nearFieldList.insert(parentNeighbour);
+            nearFieldListString += parentNeighbour->name + ", ";
+            getTree()->totalNearFieldNodes++;
+          }
         }
       }
     }
   }
 
-  std::cout << "[" << name << "] interaction list: (";
+  nearFieldListString += ")";
+
+  interactionListString = "[" + name + "] interactionList: (";
   for (auto inter : interactionList) {
-    std::cout << inter->name << ", ";
+    interactionListString += inter->name + ", ";
+    getTree()->totalInteractionNodes++;
   }
-  std::cout << ")" << std::endl;
+  interactionListString += ")";
 
   if (!_isLeaf) {
     for (int c = 0; c < 8; ++c) {
