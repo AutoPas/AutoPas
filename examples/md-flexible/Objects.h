@@ -39,7 +39,7 @@ class Object {
   /**Returns the total amount of Particles in the Object
    * @return ParticlesTotal
    * */
-  [[nodiscard]] virtual const size_t getParticlesTotal() const = 0;
+  [[nodiscard]] virtual size_t getParticlesTotal() const = 0;
 
   /**Prints the configuration of the Object to the
    * */
@@ -95,7 +95,7 @@ class CubeGrid : public Object {
   /**Getter for total number of Particles for object
    * @return particlesTotal
    * */
-  [[nodiscard]] const size_t getParticlesTotal() const override { return particlesTotal; }
+  [[nodiscard]] size_t getParticlesTotal() const override { return particlesTotal; }
 
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
@@ -179,7 +179,7 @@ class CubeGauss : public Object {
   /**Getter total number of Particles of Object
    * @return numParticles
    * */
-  [[nodiscard]] const size_t getParticlesTotal() const override { return numParticles; }
+  [[nodiscard]] size_t getParticlesTotal() const override { return numParticles; }
       /**Getter for distribution mean
        * @return distributionMean
        * */
@@ -266,7 +266,7 @@ class CubeUniform : public Object {
   /**Getter for total number of Particles in Object
    * @return numParticles
    * */
-  [[nodiscard]] const size_t getParticlesTotal() const override { return numParticles; }
+  [[nodiscard]] size_t getParticlesTotal() const override { return numParticles; }
 
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
@@ -354,7 +354,7 @@ class Sphere : public Object {
       /**Returns the number of particles that will be generated for this Object
        * @return totalNumberOfParticles
        * */
-      [[nodiscard]] const size_t getParticlesTotal() const override {
+      [[nodiscard]] size_t getParticlesTotal() const override {
     // this should look different if the generator for spheres changes
     int counter = 0;
     for (int z = 0; z <= radius; ++z) {
