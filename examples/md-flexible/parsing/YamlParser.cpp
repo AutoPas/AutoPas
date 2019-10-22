@@ -5,9 +5,18 @@
  */
 
 #include "YamlParser.h"
+#include <sys/stat.h>
+
+bool YamlParser::checkFileExists(std::string filename) {
+  struct stat buffer;
+  return (stat (filename.c_str(), &buffer) == 0);
+}
 
 bool YamlParser::parseYamlFile(MDFlexConfig &config) {
-  using namespace autopas;
+  if (not checkFileExists(config.yamlFilename)) {
+    throw std::runtime_error("YamlParser::parseYamlFile: File " + config.yamlFilename + " not found!");
+  }
+
   YAML::Node node = YAML::LoadFile(config.yamlFilename);
 
   if (node[MDFlexConfig::containerOptionsStr]) {

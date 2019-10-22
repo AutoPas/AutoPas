@@ -30,4 +30,13 @@ class YamlParser {
    * @FIXME: at the moment false is never returned
    */
   bool parseYamlFile(MDFlexConfig &config);
+
+ private:
+
+  /**
+   * Check if the passed file exists.
+   * @param filename
+   * @return true iff the file is found.
+   */
+  static bool checkFileExists(std::string filename);
 };
