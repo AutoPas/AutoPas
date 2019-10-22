@@ -7,8 +7,8 @@
 #pragma once
 
 #include <getopt.h>
-#include "MDFlexConfig.h"
 #include <iostream>
+#include "MDFlexConfig.h"
 
 /**
  * Parser for input from the command line.
@@ -34,4 +34,3 @@ class CLIParser {
    */
   bool parseInput(int argc, char **argv, MDFlexConfig &config);
 };
-

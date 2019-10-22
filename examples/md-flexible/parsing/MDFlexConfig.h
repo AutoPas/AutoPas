@@ -23,7 +23,6 @@
  */
 class MDFlexConfig {
  public:
-
   /**
    * Print the content of the config to std::out.
    */
@@ -91,9 +90,9 @@ class MDFlexConfig {
   static inline const char *verletSkinRadiusStr = "verlet-skin-radius";
   double verletSkinRadius = .2;
   static inline const char *boxMinStr = "box-min";
-  std::array<double, 3> boxMin = {0,0,0};
+  std::array<double, 3> boxMin = {0, 0, 0};
   static inline const char *boxMaxStr = "box-max";
-  std::array<double, 3> boxMax = {1,1,1};
+  std::array<double, 3> boxMax = {1, 1, 1};
 
   // Simulation Options:
   static inline const char *cutoffStr = "cutoff";
@@ -109,11 +108,11 @@ class MDFlexConfig {
   static inline const char *deltaTStr = "deltaT";
   double deltaT = 0.001;
   static inline const char *epsilonStr = "particle-epsilon";
-  std::map<unsigned long, double> epsilonMap = {{0,1}};
+  std::map<unsigned long, double> epsilonMap = {{0, 1}};
   static inline const char *sigmaStr = "particle-sigma";
-  std::map<unsigned long, double> sigmaMap = {{0,1}};
+  std::map<unsigned long, double> sigmaMap = {{0, 1}};
   static inline const char *massStr = "particle-mass";
-  std::map<unsigned long, double> massMap = {{0,1}};
+  std::map<unsigned long, double> massMap = {{0, 1}};
 
   // Options for additional Object Generation on command line
   static inline const char *boxLengthStr = "box-length";

@@ -195,6 +195,12 @@ inline std::string to_string(const TuningStrategyOption &option) {
  */
 inline std::string to_string(const double &value) { return std::to_string(value); }
 
+/**
+ * Converts any iterable container of Option objects to it's string representation.
+ * @tparam T Container that can be used in range based for loops.
+ * @param arr
+ * @return
+ */
 template <class T>
 inline std::string iterableToString(T arr) {
   std::ostringstream ss;
@@ -401,7 +407,8 @@ inline std::array<double, 3> parseBoxOption(const std::string &boxOptionString) 
  * Converts a string to bool
  *
  * String format: on || off || enabled || disabled || true || false
- * @param boolOption
+ * @param booleanOption
+ * @return
  * */
 inline bool parseBoolOption(const std::string &booleanOption) {
   if (booleanOption.compare("on") || booleanOption.compare("true") || booleanOption.compare("enabled")) {

@@ -18,7 +18,6 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/utils/NumberSet.h"
 
-
 /**
  * Parser for input through YAML files.
  */

@@ -11,7 +11,6 @@
 
 class Object {
  public:
-
   virtual ~Object() = default;
 
   /**Getter for Velocity

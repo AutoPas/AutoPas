@@ -120,8 +120,8 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
                     idcounter, sphere.at(0).getTypeId(), sphere.at(0).getVelocity());
   idcounter += sphere.at(0).getParticlesTotal();
 
-//  EXPECT_EQ(config.particlesTotal(), autoPas.getNumberOfParticles());
-//  EXPECT_EQ(idcounter, config.particlesTotal());
+  //  EXPECT_EQ(config.particlesTotal(), autoPas.getNumberOfParticles());
+  //  EXPECT_EQ(idcounter, config.particlesTotal());
   // counters to checks if all particles types are well initialized for different Objects:
   int gridCounter = 0;
   int gaussCounter = 0;

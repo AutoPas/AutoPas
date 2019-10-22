@@ -7,7 +7,6 @@
 #include "MDFlexParser.h"
 
 bool MDFlexParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
-
   // we need to copy argv because the call to getOpt in _cliParser.yamlFilePresent reorders it...
   auto argvCopy = new char *[argc + 1];
   for (int i = 0; i < argc; i++) {

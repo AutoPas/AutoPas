@@ -27,7 +27,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {MDFlexConfig::newton3OptionsStr, required_argument, nullptr, '3'},
                                          {MDFlexConfig::generatorOptionStr, required_argument, nullptr, 'g'},
                                          {MDFlexConfig::particlesPerDimStr, required_argument, nullptr, 'n'},
-                                         {"particles-total", required_argument, nullptr, 'N'},          // FIXME: unused
+                                         {"particles-total", required_argument, nullptr, 'N'},  // FIXME: unused
                                          {MDFlexConfig::particlesSpacingStr, required_argument, nullptr, 's'},
                                          {MDFlexConfig::periodicStr, required_argument, nullptr, 'p'},
                                          {MDFlexConfig::selectorStrategyStr, required_argument, nullptr, 'y'},
@@ -397,4 +397,3 @@ bool CLIParser::yamlFilePresent(int argc, char **argv, MDFlexConfig &config) {
   opterr = opterrBefore;
   return false;
 }
-

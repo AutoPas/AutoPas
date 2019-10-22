@@ -6,18 +6,15 @@
 
 #pragma once
 
+#include "CLIParser.h"
 #include "MDFlexConfig.h"
 #include "YamlParser.h"
-#include "CLIParser.h"
 
 class MDFlexParser {
-
  public:
-
   bool parseInput(int argc, char **argv, MDFlexConfig &config);
 
  private:
-
   CLIParser _cliParser;
   YamlParser _yamlParser;
 };
