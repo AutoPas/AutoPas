@@ -159,12 +159,9 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   EXPECT_EQ(sphereCounter, sphere.at(0).getParticlesTotal());
   // check if during initialization, not 2 Particles were initialized with same id
   std::set<size_t> ids;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     if (ids.count(iter->getID()) != 0) {
-      FAIL();  // 2 Particles with same id
+      FAIL() << "Two particles have the same ID: " << iter->toString();  // 2 Particles with same id
     }
     ids.insert(iter->getID());
   }
