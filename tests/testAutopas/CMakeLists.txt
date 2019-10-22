@@ -25,9 +25,8 @@ add_executable(runTests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
 include_directories(${PROJECT_SOURCE_DIR}/libs/yaml-cpp/include)
 
 target_compile_definitions(
-        runTests
-        PRIVATE
-        YAMLDIRECTORY=\"${PROJECT_SOURCE_DIR}/tests/testAutopas/exampleTests/md-flexible/yamlTestFiles/\"
+    runTests PRIVATE
+    YAMLDIRECTORY=\"${PROJECT_SOURCE_DIR}/tests/testAutopas/exampleTests/md-flexible/yamlTestFiles/\"
 )
 
 target_link_libraries(
