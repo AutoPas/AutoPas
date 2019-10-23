@@ -68,7 +68,7 @@ class MDFlexConfig {
   autopas::TuningStrategyOption tuningStrategyOption = autopas::TuningStrategyOption::fullSearch;
   static inline const char *newton3OptionsStr = "newton3";
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
-  static inline const char *cellSizeFactorsStr = "cell-size-factor";
+  static inline const char *cellSizeFactorsStr = "cell-size";
   std::shared_ptr<autopas::NumberSet<double>> cellSizeFactors =
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
   static inline const char *logLevelStr = "log-level";

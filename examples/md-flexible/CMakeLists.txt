@@ -42,7 +42,7 @@ add_test(
         --data-layout soa
         --functor lj
         --iterations 10
-        --particles-generator gauss
+        --particle-generator gauss
         --particles-per-dimension 10
         --particle-spacing 0.4
         --traversal c08,sliced
