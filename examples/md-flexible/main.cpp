@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
       break;
     }
     case MDFlexParser::FunctorOption::lj12_6_Globals: {
-      durationApply = calculate<
+      std::tie(tuningIterations, tuningDuration, nonTuningDuration) = calculate<
           LJFunctor<PrintableMolecule, FullParticleCell<PrintableMolecule>, autopas::FunctorN3Modes::Both, true>>(
           autopas, cutoff, numIterations);
       flopsPerKernelCall =
