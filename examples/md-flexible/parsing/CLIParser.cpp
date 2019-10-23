@@ -11,8 +11,6 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   bool displayHelp = false;
   int option, option_index;
   static struct option long_options[] = {{MDFlexConfig::yamlFilenameStr, required_argument, nullptr, 'Y'},
-                                         {MDFlexConfig::boxMinStr, required_argument, nullptr, 'k'},
-                                         {MDFlexConfig::boxMaxStr, required_argument, nullptr, 'K'},
                                          {MDFlexConfig::containerOptionsStr, required_argument, nullptr, 'c'},
                                          {MDFlexConfig::cutoffStr, required_argument, nullptr, 'C'},
                                          {MDFlexConfig::cellSizeFactorsStr, required_argument, nullptr, 'a'},
@@ -174,24 +172,6 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
           }
         } catch (const exception &) {
           cerr << "Error parsing tuning interval: " << optarg << endl;
-          displayHelp = true;
-        }
-        break;
-      }
-      case 'k': {
-        try {
-          config.boxMin = autopas::utils::StringUtils::parseBoxOption(strArg);
-        } catch (const exception &) {
-          cerr << "Error parsing BoxMinOption: " << optarg << endl;
-          displayHelp = true;
-        }
-        break;
-      }
-      case 'K': {
-        try {
-          config.boxMax = autopas::utils::StringUtils::parseBoxOption(strArg);
-        } catch (const exception &) {
-          cerr << "Error parsing BoxMaxOption: " << optarg << endl;
           displayHelp = true;
         }
         break;
