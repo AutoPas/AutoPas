@@ -257,7 +257,12 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'p': {
-        config.periodic = true;
+        try {
+          config.periodic = autopas::utils::StringUtils::parseBoolOption(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing whether there should be periodic boundary conditions: " << strArg << endl;
+          displayHelp = true;
+        }
         break;
       }
       case 'r': {
