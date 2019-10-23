@@ -13,7 +13,7 @@ target_include_directories(autopas PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(md-flexible PUBLIC ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/include)
 
 target_link_libraries(md-flexible autopas ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a)
-target_link_libraries(md-flexible autopas ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a)
+
 # --- copy script files to build dir ---
 file(
     GLOB_RECURSE SCRIPTS
@@ -54,7 +54,7 @@ add_test(
 
 add_test(
     NAME md-flexMeasurePerf
-    COMMAND ${PROJECT_SOURCE_DIR}/examples/md-flexible/measurePerf.sh md-flexible -silent
+    COMMAND ${PROJECT_SOURCE_DIR}/examples/md-flexible/scrips/measurePerf.sh md-flexible -silent
     CONFIGURATIONS checkExamples
 )
 
