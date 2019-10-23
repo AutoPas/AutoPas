@@ -139,6 +139,8 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
           config.generatorOption = MDFlexConfig::GeneratorOption::uniform;
         } else if (strArg.find("gaus") != string::npos) {
           config.generatorOption = MDFlexConfig::GeneratorOption::gaussian;
+        } else if (strArg.find("sp") != string::npos) {
+          config.generatorOption = MDFlexConfig::GeneratorOption::sphere;
         } else {
           cerr << "Unknown generator: " << strArg << endl;
           cerr << "Please use 'Grid' or 'Gaussian'" << endl;
