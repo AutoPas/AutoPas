@@ -315,7 +315,7 @@ class Sphere : public Object {
  public:
   /**constructor for Sphere that is created in YamlParser and then included into the Simulation via the Generator class
    * @param center
-   * @param radius
+   * @param radius as number of particles
    * @param particleSpacing
    * @param velocity_arg
    * @param typeId
@@ -428,6 +428,7 @@ class Sphere : public Object {
  private:
   static constexpr size_t valueOffset = 32;
   std::array<double, 3> center;
+  // radius of the sphere in number of particles
   int radius;
   double particleSpacing;
 };
