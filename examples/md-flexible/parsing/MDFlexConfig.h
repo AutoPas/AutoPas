@@ -50,7 +50,7 @@ class MDFlexConfig {
   /**
    * Choice of the particle generators specified in the command line
    */
-  enum class GeneratorOption { empty, grid, uniform, gaussian };
+  enum class GeneratorOption { grid, uniform, gaussian, sphere };
 
   static inline const char *yamlFilenameStr = "yaml-filename";
   std::string yamlFilename;  // default configuration = CubeGrid
@@ -123,7 +123,8 @@ class MDFlexConfig {
   double distributionStdDev = 2.;
   static inline const char *particlesPerDimStr = "particles-per-dimension";
   size_t particlesPerDim = 10;
-  size_t defaultParticlesTotal = 1000;
+  static inline const char *particlesTotalStr = "particles-total";
+  size_t particlesTotal = 1000;
   static inline const char *particlesSpacingStr = "particle-spacing";
   double particleSpacing = .5;
   static inline const char *generatorOptionStr = "particle-generator";
@@ -136,8 +137,7 @@ class MDFlexConfig {
   static inline const char *particleTypeStr = "particle-type";
   static inline const char *particlesPerObjectStr = "numberOfParticles";
   static inline const char *cubeGridObjectsStr = "CubeGrid";
-  std::vector<CubeGrid> cubeGridObjects = {
-      {{particlesPerDim, particlesPerDim, particlesPerDim}, particleSpacing, {0., 0., 0.}, {0., 0., 0.}, 0, 1, 1, 1}};
+  std::vector<CubeGrid> cubeGridObjects = {};
   static inline const char *cubeGaussObjectsStr = "CubeGauss";
   std::vector<CubeGauss> cubeGaussObjects = {};
   static inline const char *cubeUniformObjectsStr = "CubeUniform";

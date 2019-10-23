@@ -27,7 +27,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {MDFlexConfig::newton3OptionsStr, required_argument, nullptr, '3'},
                                          {MDFlexConfig::generatorOptionStr, required_argument, nullptr, 'g'},
                                          {MDFlexConfig::particlesPerDimStr, required_argument, nullptr, 'n'},
-                                         {"particles-total", required_argument, nullptr, 'N'},  // FIXME: unused
+                                         {MDFlexConfig::particlesTotalStr, required_argument, nullptr, 'N'},
                                          {MDFlexConfig::particlesSpacingStr, required_argument, nullptr, 's'},
                                          {MDFlexConfig::periodicStr, required_argument, nullptr, 'p'},
                                          {MDFlexConfig::selectorStrategyStr, required_argument, nullptr, 'y'},
@@ -256,9 +256,18 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         }
         break;
       }
+      case 'N': {
+        try {
+          config.particlesTotal = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing total number of particles: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 'P': {
         try {
-          config.defaultParticlesTotal = stoul(strArg);
+          config.particlesTotal = stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing total number of particles: " << strArg << endl;
           displayHelp = true;
@@ -355,6 +364,38 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       default: {
         // error message handled by getopt
         displayHelp = true;
+      }
+    }
+  }
+
+  // only create objects if nothing was set by a yaml file
+  if (config.cubeGaussObjects.empty() and config.cubeGridObjects.empty() and config.cubeUniformObjects.empty() and
+      config.sphereObjects.empty()) {
+    switch (config.generatorOption) {
+      case MDFlexConfig::GeneratorOption::grid: {
+        CubeGrid grid({config.particlesPerDim, config.particlesPerDim, config.particlesPerDim}, config.particleSpacing,
+                      {0, 0, 0}, {0, 0, 0}, 0, 1, 1, 1);
+        config.cubeGridObjects.push_back(grid);
+        break;
+      }
+      case MDFlexConfig::GeneratorOption::gaussian: {
+        CubeGauss cubeGauss(config.particlesTotal, {config.boxLength, config.boxLength, config.boxLength},
+                            config.distributionMean, config.distributionStdDev, {0, 0, 0}, {0, 0, 0}, 0, 1, 1, 1);
+        config.cubeGaussObjects.push_back(cubeGauss);
+        break;
+      }
+      case MDFlexConfig::GeneratorOption::uniform: {
+        CubeUniform cubeUniform(config.particlesTotal, {config.boxLength, config.boxLength, config.boxLength},
+                                {0, 0, 0}, {0, 0, 0}, 0, 1, 1, 1);
+        config.cubeUniformObjects.push_back(cubeUniform);
+        break;
+      }
+      case MDFlexConfig::GeneratorOption::sphere: {
+        auto centerOfBox = config.particlesPerDim / 2.;
+        Sphere sphere({centerOfBox, centerOfBox, centerOfBox}, centerOfBox, config.particleSpacing, {0, 0, 0}, 0, 1, 1,
+                      1);
+        config.sphereObjects.push_back(sphere);
+        break;
       }
     }
   }
