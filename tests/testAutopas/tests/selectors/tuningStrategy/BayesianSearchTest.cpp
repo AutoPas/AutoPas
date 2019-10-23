@@ -90,7 +90,7 @@ TEST_F(BayesianSearchTest, testFindBest) {
   while (bayesSearch.tune()) {
     autopas::FeatureVector current(bayesSearch.getCurrentConfiguration());
 
-    Eigen::VectorXd diff = static_cast<Eigen::VectorXd>(best - current);
+    Eigen::VectorXd diff = best - current;
     double distanceSquared = diff.array().square().sum();
     long dummyTime = static_cast<long>(654321 * distanceSquared);
 
