@@ -411,12 +411,12 @@ inline std::array<double, 3> parseBoxOption(const std::string &boxOptionString) 
  * @return
  * */
 inline bool parseBoolOption(const std::string &booleanOption) {
-  if (booleanOption.compare("on") || booleanOption.compare("true") || booleanOption.compare("enabled")) {
+  if (booleanOption == "on" or booleanOption == "true" or booleanOption == "enabled") {
     return true;
-  } else if (booleanOption.compare("off") || booleanOption.compare("false") || booleanOption.compare("disabled")) {
+  } else if (booleanOption == "off" or booleanOption == "false" or booleanOption == "disabled") {
     return false;
   } else {
-    throw std::runtime_error("wrong boolean Option:" + booleanOption);
+    autopas::utils::ExceptionHandler::exception("Unknown boolean Option: {}", booleanOption);
   }
 }
 /**
