@@ -358,7 +358,12 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'z': {
-        config.vtkWriteFrequency = stoul(strArg);
+        try {
+          config.vtkWriteFrequency = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
+          displayHelp = true;
+        }
         break;
       }
       default: {
