@@ -23,4 +23,11 @@ double normalPDF(double x);
  */
 double normalCDF(double x);
 
+/**
+ * Sigmoid logistic function
+ * @param x
+ * @return S(x)
+ */
+double sigmoid(double x);
+
 }  // namespace autopas::Math

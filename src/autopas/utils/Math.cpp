@@ -27,4 +27,18 @@ double normalCDF(double x) {
   return std::erfc(factor * x) / 2.;
 }
 
+/**
+ * Sigmoid logistic function
+ * @param x
+ * @return S(x)
+ */
+double sigmoid(double x) {
+  if (x >= 0) {
+    return 1. / (1. + std::exp(-x));
+  } else {
+    double ex = std::exp(x);
+    return ex / (1. + ex);
+  }
+}
+
 }  // namespace autopas::Math

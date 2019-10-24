@@ -199,9 +199,8 @@ TEST(GaussianProcessTest, 2dMax) {
 
   // try to find the max of -(i1 + 1)^2 - (i2 - 1)^2
   auto functor = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
-  double epsilon = 0.2;  // allowed error
-  std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
-                                             NumberInterval<double>(-2, 2)};  // domain of function
+  double epsilon = 0.2;                                                            // allowed error
+  std::pair domain{NumberInterval<double>(-2, 2), NumberInterval<double>(-2, 2)};  // domain of function
 
   // max of function
   Eigen::VectorXd max(2);
@@ -223,8 +222,8 @@ TEST(GaussianProcessTest, 2dMax) {
     std::vector<Eigen::VectorXd> lhsSamples;
     lhsSamples.reserve(lhsNumSamples);
 
-    auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
-    auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
+    auto xSamples = domain.first.uniformSample(lhsNumSamples, rng);
+    auto ySamples = domain.second.uniformSample(lhsNumSamples, rng);
     for (size_t i = 0; i < lhsNumSamples; ++i) {
       Eigen::VectorXd sample(2);
       sample << xSamples[i], ySamples[i];
@@ -235,36 +234,7 @@ TEST(GaussianProcessTest, 2dMax) {
     Eigen::VectorXd am = gp.sampleAquisitionMax(af, lhsSamples);
     double amOut = functor(am[0], am[1]);
 
-    // print acquisition and mean map
-    int xChunks = 20;
-    int yChunks = 20;
-    double xSpace = 4. / (xChunks - 1);
-    double ySpace = 4. / (yChunks - 1);
-    for (int y = yChunks - 1; y >= 0; --y) {
-      // acquisition row
-      for (int x = 0; x < xChunks; ++x) {
-        Eigen::VectorXd sample(2);
-        sample << (x * xSpace - 2), (y * ySpace - 2);
-        double val = gp.calcAcquisition(af, sample);
-        int color = static_cast<int>(val * 2.5 + 250);
-        color = std::clamp(color, 232, 255);
-
-        std::cout << "\033[48;5;" << color << "m  ";
-      }
-      std::cout << "\033[0m ";
-
-      // mean row
-      for (int x = 0; x < xChunks; ++x) {
-        Eigen::VectorXd sample(2);
-        sample << (x * xSpace - 2), (y * ySpace - 2);
-        double val = gp.predictMean(sample);
-        int color = static_cast<int>(val * 2.5 + 250);
-        color = std::clamp(color, 232, 255);
-
-        std::cout << "\033[48;5;" << color << "m  ";
-      }
-      std::cout << "\033[0m" << std::endl;
-    }
+    printMap(20, 20, domain.first, domain.second, gp, af, -5);
     std::cout << "Acq max: " << std::endl << am << std::endl;
     std::cout << "Got: " << amOut << std::endl;
 
@@ -285,9 +255,8 @@ TEST(GaussianProcessTest, 2dMin) {
 
   // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
   auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
-  double epsilon = 0.2;  // allowed error
-  std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
-                                             NumberInterval<double>(-2, 2)};  // domain of function
+  double epsilon = 0.2;                                                            // allowed error
+  std::pair domain{NumberInterval<double>(-2, 2), NumberInterval<double>(-2, 2)};  // domain of function
 
   // min of function
   Eigen::VectorXd min(2);
@@ -309,11 +278,10 @@ TEST(GaussianProcessTest, 2dMin) {
     std::vector<Eigen::VectorXd> lhsSamples;
     lhsSamples.reserve(lhsNumSamples);
 
-    auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
-    auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
+    auto xSamples = domain.first.uniformSample(lhsNumSamples, rng);
+    auto ySamples = domain.second.uniformSample(lhsNumSamples, rng);
     for (size_t i = 0; i < lhsNumSamples; ++i) {
-      Eigen::VectorXd sample(2);
-      sample << xSamples[i], ySamples[i];
+      Eigen::Vector2d sample(xSamples[i], ySamples[i]);
       lhsSamples.push_back(sample);
     }
 
@@ -321,36 +289,8 @@ TEST(GaussianProcessTest, 2dMin) {
     Eigen::VectorXd am = gp.sampleAquisitionMax(af, lhsSamples);
     double amOut = functor(am[0], am[1]);
 
-    // print acquisition map
-    int xChunks = 20;
-    int yChunks = 20;
-    double xSpace = 4. / (xChunks - 1);
-    double ySpace = 4. / (yChunks - 1);
-    for (int y = yChunks - 1; y >= 0; --y) {
-      for (int x = 0; x < xChunks; ++x) {
-        Eigen::VectorXd sample(2);
-        sample << (x * xSpace - 2), (y * ySpace - 2);
-        double val = gp.calcAcquisition(af, sample);
-        int color = static_cast<int>(val * 5 + 232);
-        color = std::clamp(color, 232, 255);
-
-        std::cout << "\033[48;5;" << color << "m  ";
-      }
-      std::cout << "\033[0m ";
-
-      // mean row
-      for (int x = 0; x < xChunks; ++x) {
-        Eigen::VectorXd sample(2);
-        sample << (x * xSpace - 2), (y * ySpace - 2);
-        double val = gp.predictMean(sample);
-        int color = static_cast<int>(val * 2 + 232);
-        color = std::clamp(color, 232, 255);
-
-        std::cout << "\033[48;5;" << color << "m  ";
-      }
-      std::cout << "\033[0m" << std::endl;
-    }
-    std::cout << "Acq min: " << std::endl << am << std::endl;
+    printMap(20, 20, domain.first, domain.second, gp, af, 5);
+    std::cout << "Acq max: " << std::endl << am << std::endl;
     std::cout << "Got: " << amOut << std::endl;
 
     gp.addEvidence(am, amOut);
@@ -378,7 +318,7 @@ TEST(GaussianProcessTest, 2dMinGrid) {
   for (int i = -domHalf; i <= domHalf; ++i) {
     domSet.insert(i * 2. / domHalf);
   }
-  std::vector<NumberSetFinite<double>> domain{NumberSetFinite<double>(domSet), NumberSetFinite<double>(domSet)};
+  std::pair domain{NumberSetFinite<double>(domSet), NumberSetFinite<double>(domSet)};
 
   // min of function
   Eigen::VectorXd min(2);
@@ -400,11 +340,10 @@ TEST(GaussianProcessTest, 2dMinGrid) {
     std::vector<Eigen::VectorXd> lhsSamples;
     lhsSamples.reserve(lhsNumSamples);
 
-    auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
-    auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
+    auto xSamples = domain.first.uniformSample(lhsNumSamples, rng);
+    auto ySamples = domain.second.uniformSample(lhsNumSamples, rng);
     for (size_t i = 0; i < lhsNumSamples; ++i) {
-      Eigen::VectorXd sample(2);
-      sample << xSamples[i], ySamples[i];
+      Eigen::Vector2d sample(xSamples[i], ySamples[i]);
       lhsSamples.push_back(sample);
     }
 
@@ -412,37 +351,8 @@ TEST(GaussianProcessTest, 2dMinGrid) {
     Eigen::VectorXd am = gp.sampleAquisitionMin(af, lhsSamples);
     double amOut = functor(am[0], am[1]);
 
-    // print acquisition and mean map
-    int xChunks = 20;
-    int yChunks = 20;
-    double xSpace = 4. / (xChunks - 1);
-    double ySpace = 4. / (yChunks - 1);
-    for (int y = yChunks - 1; y >= 0; --y) {
-      // acquisition row
-      for (int x = 0; x < xChunks; ++x) {
-        Eigen::VectorXd sample(2);
-        sample << (x * xSpace - 2), (y * ySpace - 2);
-        double val = gp.calcAcquisition(af, sample);
-        int color = static_cast<int>(val * 2 + 232);
-        color = std::clamp(color, 232, 255);
-
-        std::cout << "\033[48;5;" << color << "m  ";
-      }
-      std::cout << "\033[0m ";
-
-      // mean row
-      for (int x = 0; x < xChunks; ++x) {
-        Eigen::VectorXd sample(2);
-        sample << (x * xSpace - 2), (y * ySpace - 2);
-        double val = gp.predictMean(sample);
-        int color = static_cast<int>(val * 2 + 232);
-        color = std::clamp(color, 232, 255);
-
-        std::cout << "\033[48;5;" << color << "m  ";
-      }
-      std::cout << "\033[0m" << std::endl;
-    }
-    std::cout << "Acq min: " << std::endl << am << std::endl;
+    printMap(20, 20, domain.first, domain.second, gp, af, 2);
+    std::cout << "Acq max: " << std::endl << am << std::endl;
     std::cout << "Got: " << amOut << std::endl;
 
     gp.addEvidence(am, amOut);
@@ -472,7 +382,7 @@ TEST(GaussianProcessTest, 2dMinGridBig) {
   for (int i = -domHalf; i <= domHalf; ++i) {
     domSet.insert(i * 2. / domHalf);
   }
-  std::vector<NumberSetFinite<double>> domain{NumberSetFinite<double>(domSet), NumberSetFinite<double>(domSet)};
+  std::pair domain{NumberSetFinite<double>(domSet), NumberSetFinite<double>(domSet)};
 
   // min of function
   Eigen::VectorXd min(2);
@@ -494,11 +404,10 @@ TEST(GaussianProcessTest, 2dMinGridBig) {
     std::vector<Eigen::VectorXd> lhsSamples;
     lhsSamples.reserve(lhsNumSamples);
 
-    auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
-    auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
+    auto xSamples = domain.first.uniformSample(lhsNumSamples, rng);
+    auto ySamples = domain.second.uniformSample(lhsNumSamples, rng);
     for (size_t i = 0; i < lhsNumSamples; ++i) {
-      Eigen::VectorXd sample(2);
-      sample << xSamples[i], ySamples[i];
+      Eigen::Vector2d sample(xSamples[i], ySamples[i]);
       lhsSamples.push_back(sample);
     }
 
@@ -506,37 +415,8 @@ TEST(GaussianProcessTest, 2dMinGridBig) {
     Eigen::VectorXd am = gp.sampleAquisitionMin(af, lhsSamples);
     double amOut = functor(am[0], am[1]);
 
-    // print acquisition map and mean map
-    int xChunks = 20;
-    int yChunks = 20;
-    double xSpace = 4. / (xChunks - 1);
-    double ySpace = 4. / (yChunks - 1);
-    for (int y = yChunks - 1; y >= 0; --y) {
-      // acqusition row
-      for (int x = 0; x < xChunks; ++x) {
-        Eigen::VectorXd sample(2);
-        sample << (x * xSpace - 2), (y * ySpace - 2);
-        double val = gp.calcAcquisition(af, sample);
-        int color = static_cast<int>(val / 100 + 232);
-        color = std::clamp(color, 232, 255);
-
-        std::cout << "\033[48;5;" << color << "m  ";
-      }
-      std::cout << "\033[0m ";
-
-      // mean row
-      for (int x = 0; x < xChunks; ++x) {
-        Eigen::VectorXd sample(2);
-        sample << (x * xSpace - 2), (y * ySpace - 2);
-        double val = gp.predictMean(sample);
-        int color = static_cast<int>(val / 100 + 232);
-        color = std::clamp(color, 232, 255);
-
-        std::cout << "\033[48;5;" << color << "m  ";
-      }
-      std::cout << "\033[0m" << std::endl;
-    }
-    std::cout << "Acq min: " << std::endl << am << std::endl;
+    printMap(20, 20, domain.first, domain.second, gp, af, 0.05);
+    std::cout << "Acq max: " << std::endl << am << std::endl;
     std::cout << "Got: " << amOut << std::endl;
 
     gp.addEvidence(am, amOut);
