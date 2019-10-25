@@ -84,8 +84,8 @@ class Thermostat {
    * @param p The particle to initialize.
    * @param factor
    */
-  void MaxwellBoltzmannDistribution(autopas::Particle &p, const ThermostatFloatType factor) {
-    p.setV(autopas::ArrayMath::addScalar(p.getV(), factor * GaussDeviate()));
+  void maxwellBoltzmannDistribution(autopas::Particle &p, const ThermostatFloatType factor) {
+    p.setV(autopas::ArrayMath::addScalar(p.getV(), factor * gaussDeviate()));
   }
 
   /**
@@ -94,7 +94,7 @@ class Thermostat {
    * code taken from:
    * Griebel et. al.: Numerical Simulation in Molecular Dynamics, p. 427
    */
-  static ThermostatFloatType GaussDeviate() {
+  static ThermostatFloatType gaussDeviate() {
     ThermostatFloatType a1, a2, s, r, b1;
     static bool iset = false;
     static ThermostatFloatType b2;
@@ -153,7 +153,7 @@ void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::initialize(
 #pragma omp parallel
 #endif
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      MaxwellBoltzmannDistribution(*iter, 0.1);
+      maxwellBoltzmannDistribution(*iter, 0.1);
     }
   } else {
     ThermostatFloatType currentTempMulKB = temperature(autopas) * kb;
@@ -162,7 +162,7 @@ void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::initialize(
 #endif
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       ThermostatFloatType factor = pow((currentTempMulKB / _particlePropertiesLibrary.getMass(iter->getTypeId())), 0.5);
-      MaxwellBoltzmannDistribution(*iter, factor);
+      maxwellBoltzmannDistribution(*iter, factor);
     }
   }
 }
@@ -210,6 +210,7 @@ Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::Thermostat(
       initBM(initBM),
       delta_temp(delta_temp),
       _particlePropertiesLibrary(ParticlePropertiesLibrary) {}
+
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::Thermostat(
     ThermostatFloatType t_init, bool initBM, ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary)
