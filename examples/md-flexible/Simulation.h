@@ -336,8 +336,8 @@ void Simulation<Particle, ParticleCell>::simulate() {
     }
     _timers.durationVelocityUpdate += _timeDiscretization->CalculateV(_autopas);
     // applying Velocity scaling with Thermostat:
-    if (_config->thermostat && (iteration % _config->numberOfTimesteps) == 0) {
-      _thermostat->applyThermo(_autopas);
+    if (_config->thermostat and (iteration % _config->numberOfTimesteps) == 0) {
+      _thermostat->apply(_autopas);
     }
     // only write vtk files periodically and if a filename is given
     if ((not _config->vtkFileName.empty()) and iteration % _config->vtkWriteFrequency == 0) {

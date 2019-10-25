@@ -21,23 +21,16 @@ class Thermostat {
 
   /**
    * Constructor if target Temperature is specified
-   * @param t_init initialTemperature of System
-   * @param initBM initialization with BM or other Formula
-   * @param t_target target Temperature of System
-   * @param delta_temp
-   * @param ParticlePropertiesLibrary
+   * @param tInit initialTemperature of System
+   * @param initBm initialization with BM or other Formula
+   * @param tTarget target Temperature of System
+   * @param deltaTemp
+   * @param particlePropertiesLibrary
    * */
-  //@todo FRAGE : add Parsing option to switch beetween initBM on & off when initThermo is spezified as true
-  Thermostat(ThermostatFloatType t_init, bool initBM, ThermostatFloatType t_target, ThermostatFloatType delta_temp,
-             ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary);
-
-  /**
-   * Constructor if only initial Temperature is specified
-   * @param t_init
-   * @param initBM
-   * @param ParticlePropertiesLibrary
-   * */
-  Thermostat(ThermostatFloatType t_init, bool initBM, ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary);
+  //@todo FRAGE : add Parsing option to switch beetween _initParticlesOnlyWithBrownianMotion on & off when initThermo is spezified as
+  // true
+  Thermostat(ThermostatFloatType tInit, bool initBm, ThermostatFloatType tTarget, ThermostatFloatType deltaTemp,
+             const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary);
 
   /**
    * Default Destructor
@@ -67,14 +60,14 @@ class Thermostat {
    * Scales velocity of particles to reach desired temperature.
    * @param ps Particle system
    */
-  void applyThermo(AutoPasTemplate &autopas);
+  void apply(AutoPasTemplate &autopas);
 
   /**
    * Calculates temperature of system.
    * @param c Particle System.
    * @return Temperature of system.
    */
-  ThermostatFloatType temperature(AutoPasTemplate &autopas);
+  ThermostatFloatType calcTemperature(AutoPasTemplate &autopas);
 
   /**
    * Add a random velocity according to the Maxwell-Boltzmann distribution to the
@@ -118,26 +111,24 @@ class Thermostat {
 
  private:
   /**
-   * Initial temperature.
+   * Initial temperature + deltaTemp * simstep / n_thermostat.
    */
-  ThermostatFloatType t_init;
+  ThermostatFloatType _tInit;
 
   /**
    * Target temperature.
    */
-  ThermostatFloatType t_target;
+  const ThermostatFloatType _tTarget;
 
   /**
-   * specifies, how the velocity values will be initialized, with Brownian Motion or the new Formula
-   *  initBM == true -> we use 0.1 as the factor in the MaxwellBoltzmannDistribution calculation
-   * */
-  bool initBM;
+   * Specifies, how the velocity values will be initialized: With Brownian Motion or according to the temperature
+   */
+  const bool _initParticlesOnlyWithBrownianMotion;
 
   /**
-   * DELTA T
    * Temperature difference per thermostat application until t_target is reached.
    */
-  ThermostatFloatType delta_temp;
+  const ThermostatFloatType _deltaTemp;
 
   /**
    * ParticlePropertiesLibrary to access Mass of Particles
@@ -146,8 +137,8 @@ class Thermostat {
 };
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::initialize(AutoPasTemplate &autopas) {
-  ThermostatFloatType kb = 1.38064852 * pow(10, -23);  // Boltzmann constant in J/K
-  if (initBM) {
+  constexpr ThermostatFloatType boltzmannConst = 1.38064852 * std::pow(10, -23);  // Boltzmann constant in J/K
+  if (_initParticlesOnlyWithBrownianMotion) {
 // we consider: "However, the initialization with the Brownian Motion should be optional." means factor=0.1
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -156,27 +147,31 @@ void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::initialize(
       maxwellBoltzmannDistribution(*iter, 0.1);
     }
   } else {
-    ThermostatFloatType currentTempMulKB = temperature(autopas) * kb;
+    ThermostatFloatType currentTempMulKB = calcTemperature(autopas) * boltzmannConst;
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      ThermostatFloatType factor = pow((currentTempMulKB / _particlePropertiesLibrary.getMass(iter->getTypeId())), 0.5);
+      ThermostatFloatType factor =
+          std::sqrt(currentTempMulKB / _particlePropertiesLibrary.getMass(iter->getTypeId()));
       maxwellBoltzmannDistribution(*iter, factor);
     }
   }
 }
 
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::applyThermo(AutoPasTemplate &autopas) {
-  ThermostatFloatType temp = temperature(autopas);
-  // wir nehmen an, dass t_target=t_init, da die temperature ja konstant bleiben soll
+void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::apply(AutoPasTemplate &autopas) {
+  ThermostatFloatType temp = calcTemperature(autopas);
   static ThermostatFloatType scaling;
-  if (t_init == t_target) {
-    scaling = pow((this->t_init / temp), 0.5);
+  if (_tInit == _tTarget) {
+    scaling = std::sqrt(_tTarget / temp);
   } else {
-    t_init = t_init + delta_temp;
-    scaling = pow((t_init / temp), 0.5);
+    if (std::abs(_tInit + _deltaTemp) > std::abs(_tTarget)) {
+      _tInit = _tTarget;
+    } else {
+      _tInit = _tInit + _deltaTemp;
+    }
+    scaling = std::sqrt(_tInit / temp);
   }
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -188,33 +183,25 @@ void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::applyThermo
 
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryFloatType
-Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::temperature(AutoPasTemplate &autopas) {
-  ThermostatFloatType kinetic = 0;
-  //@todo anpassen mit OpenMP
+Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calcTemperature(AutoPasTemplate &autopas) {
+  // kinetic energy times 2
+  ThermostatFloatType kineticEnergyMul2 = 0;
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel reduction(+ : kineticEnergyMul2)
+#endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto vel = iter->getV();
-    kinetic += _particlePropertiesLibrary.getMass(iter->getTypeId()) *
-               /*scalarProduct of Particles velocity:*/ (vel[0] * vel[0] + vel[1] * vel[1] + vel[2] * vel[2]) / 2;
+    kineticEnergyMul2 += _particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::ArrayMath::dot(vel, vel);
   }
-  ThermostatFloatType temp =
-      (2 * kinetic) / (autopas.getNumberOfParticles() * 3);  // AutoPas works always on 3 dimensions
-  return temp;
+  return kineticEnergyMul2 / (autopas.getNumberOfParticles() * 3);  // AutoPas works always on 3 dimensions
 }
 
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::Thermostat(
-    ThermostatFloatType t_init, bool initBM, ThermostatFloatType t_target, ThermostatFloatType delta_temp,
-    ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary)
-    : t_init(t_init),
-      t_target(t_target),
-      initBM(initBM),
-      delta_temp(delta_temp),
-      _particlePropertiesLibrary(ParticlePropertiesLibrary) {}
-
-template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::Thermostat(
-    ThermostatFloatType t_init, bool initBM, ParticlePropertiesLibraryTemplate &ParticlePropertiesLibrary)
-    : t_init(t_init), initBM(initBM), _particlePropertiesLibrary(ParticlePropertiesLibrary) {
-  t_target = t_init;
-  delta_temp = 1;
-}
+    ThermostatFloatType tInit, bool initBm, ThermostatFloatType tTarget, ThermostatFloatType deltaTemp,
+    const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary)
+    : _tInit(tInit),
+      _tTarget(tTarget),
+      _initParticlesOnlyWithBrownianMotion(initBm),
+      _deltaTemp(deltaTemp),
+      _particlePropertiesLibrary(particlePropertiesLibrary) {}

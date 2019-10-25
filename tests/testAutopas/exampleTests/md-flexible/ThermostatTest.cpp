@@ -38,17 +38,17 @@ TEST_F(ThermostatTest, BasicTest_BM_ON) {
   auto _thermostat = Thermostat<decltype(_autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>(
       init_temp, true, target_temp, delta_temp, _particlePropertiesLibrary);
   std::cout << "TEMPERATURE BEFORE INITIALIZATION:" << std::endl;
-  std::cout << _thermostat.temperature(_autopas) << std::endl;
+  std::cout << _thermostat.calcTemperature(_autopas) << std::endl;
   std::cout << "INITIALIZATION" << std::endl;
   _thermostat.initialize(_autopas);
   std::cout << "current temperature: " << std::endl;  // is output right?
-  std::cout << _thermostat.temperature(_autopas) << std::endl;
+  std::cout << _thermostat.calcTemperature(_autopas) << std::endl;
   std::cout << "APPLICATION" << std::endl;
   for (size_t i = 0; i < 2000; i++) {
-    _thermostat.applyThermo(_autopas);
+    _thermostat.apply(_autopas);
     if (i % 100 == 0) {
       std::cout << "Temperature at timeStep: " << i;
-      std::cout << "   is: " << _thermostat.temperature(_autopas) << std::endl << std::endl;
+      std::cout << "   is: " << _thermostat.calcTemperature(_autopas) << std::endl << std::endl;
     }
   }
   SUCCEED();
@@ -65,17 +65,17 @@ TEST_F(ThermostatTest, BasicTest_BM_OFF) {
   auto _thermostat = Thermostat<decltype(_autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>(
       init_temp, false, target_temp, delta_temp, _particlePropertiesLibrary);
   std::cout << "TEMPERATURE BEFORE INITIALIZATION:" << std::endl;
-  std::cout << _thermostat.temperature(_autopas) << std::endl;
+  std::cout << _thermostat.calcTemperature(_autopas) << std::endl;
   std::cout << "INITIALIZATION" << std::endl;
   _thermostat.initialize(_autopas);
   std::cout << "current temperature: " << std::endl;  // is output right?
-  std::cout << _thermostat.temperature(_autopas) << std::endl;
+  std::cout << _thermostat.calcTemperature(_autopas) << std::endl;
   std::cout << "APPLICATION" << std::endl;
   for (size_t i = 0; i < 2000; i++) {
-    _thermostat.applyThermo(_autopas);
+    _thermostat.apply(_autopas);
     if (i % 100 == 0) {
       std::cout << "Temperature at timeStep: " << i;
-      std::cout << "   is: " << _thermostat.temperature(_autopas) << std::endl << std::endl;
+      std::cout << "   is: " << _thermostat.calcTemperature(_autopas) << std::endl << std::endl;
     }
   }
   SUCCEED();
