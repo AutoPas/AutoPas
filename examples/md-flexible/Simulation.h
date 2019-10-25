@@ -271,21 +271,14 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   }
 
   // initilizing Thermostat
-  if (_config->thermostat) {
-    if (_config->thermoTarget) {
-      _thermostat = std::make_unique<
-          Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
-          _config->initTemperature, true, _config->targetTemperature, _config->deltaTemp, *_particlePropertiesLibrary);
-    } else {
-      _thermostat = std::make_unique<
-          Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
-          _config->initTemperature, true, *_particlePropertiesLibrary);
-    }
+  if (_config->useThermostat) {
+    _thermostat = std::make_unique<
+        Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
+        _config->initTemperature, _config->useCurrentTempForBrownianMotion, _config->targetTemperature, _config->deltaTemp, *_particlePropertiesLibrary);
   }
 
-  //@todo muss ich vor der simulationLoop die kräfte auch initialisieren??
   // initializing velocites of Particles
-  if (_config->thermostat && _config->initializeThermostat) {
+  if (_config->useThermostat) {
     _thermostat->initialize(_autopas);
   }
 }
@@ -336,7 +329,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
     }
     _timers.durationVelocityUpdate += _timeDiscretization->CalculateV(_autopas);
     // applying Velocity scaling with Thermostat:
-    if (_config->thermostat and (iteration % _config->numberOfTimesteps) == 0) {
+    if (_config->useThermostat and (iteration % _config->thermostatInterval) == 0) {
       _thermostat->apply(_autopas);
     }
     // only write vtk files periodically and if a filename is given

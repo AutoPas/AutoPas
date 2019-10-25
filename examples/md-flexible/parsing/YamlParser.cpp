@@ -235,20 +235,14 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
     }
   }
   if (node[MDFlexConfig::thermostatStr]) {
-    config.thermostat = true;
+    config.useThermostat = true;
 
-    YAML::const_iterator iterNode = node[MDFlexConfig::thermostatStr].begin();
-    config.initializeThermostat = iterNode->second.as<bool>();
-    ++iterNode;
-    config.initTemperature = iterNode->second.as<double>();
-    ++iterNode;
-    config.numberOfTimesteps = iterNode->second.as<size_t>();
-    if (iterNode != node[MDFlexConfig::thermostatStr].end()) {  // if target value is specified
-      config.thermoTarget = true;
-      ++iterNode;
-      config.targetTemperature = iterNode->second[MDFlexConfig::targetTemperatureStr].as<double>();
-      config.deltaTemp = iterNode->second[MDFlexConfig::deltaTempStr].as<double>();
-    }
+    config.initTemperature = node[MDFlexConfig::thermostatStr][MDFlexConfig::initTemperatureStr].as<double>();
+    config.thermostatInterval = node[MDFlexConfig::thermostatStr][MDFlexConfig::thermostatIntervalStr].as<size_t>();
+    config.targetTemperature = node[MDFlexConfig::thermostatStr][MDFlexConfig::targetTemperatureStr].as<double>();
+    config.deltaTemp = node[MDFlexConfig::thermostatStr][MDFlexConfig::deltaTempStr].as<double>();
+    config.useCurrentTempForBrownianMotion =
+        node[MDFlexConfig::thermostatStr][MDFlexConfig::useCurrentTempForBrownianMotionStr].as<bool>();
   }
   return true;
 }

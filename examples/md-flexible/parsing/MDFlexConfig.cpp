@@ -93,7 +93,7 @@ void MDFlexConfig::print() {
     c.printConfig();
     objectId++;
   }
-  if (thermostat) {
+  if (useThermostat) {
     cout << setw(valueOffset) << left << "Thermostat:" << endl;
     cout << setw(valueOffset) << left << "initializing velocites"
          << ":  " << initTemperature << endl;
@@ -101,13 +101,11 @@ void MDFlexConfig::print() {
     cout << setw(valueOffset) << left << "initial Temperature"
          << ":  " << initTemperature << endl;
     cout << setw(valueOffset) << left << "number of TimeSteps"
-         << ":  " << numberOfTimesteps << endl;
-    if (thermoTarget) {
-      cout << setw(valueOffset) << left << "target Temperature"
-           << ":  " << targetTemperature << endl;
-      cout << setw(valueOffset) << left << "deltaTemp"
-           << ":  " << deltaTemp << endl;
-    }
+         << ":  " << thermostatInterval << endl;
+    cout << setw(valueOffset) << left << "target Temperature"
+         << ":  " << targetTemperature << endl;
+    cout << setw(valueOffset) << left << "deltaTemp"
+         << ":  " << deltaTemp << endl;
   }
 }
 

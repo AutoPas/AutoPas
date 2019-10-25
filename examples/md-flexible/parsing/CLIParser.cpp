@@ -328,7 +328,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'u': {
-        config.thermostat = autopas::utils::StringUtils::parseBoolOption(strArg);
+        config.useThermostat = autopas::utils::StringUtils::parseBoolOption(strArg);
         break;
       }
       case 'v': {

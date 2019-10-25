@@ -418,6 +418,8 @@ inline bool parseBoolOption(const std::string &booleanOption) {
   } else {
     autopas::utils::ExceptionHandler::exception("Unknown boolean Option: {}", booleanOption);
   }
+  // should not be reached
+  return false;
 }
 /**
  * Converts a string containing a selector strategy to an enum. The option is expected to be lower case.

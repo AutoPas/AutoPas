@@ -27,7 +27,6 @@ class Thermostat {
    * @param deltaTemp
    * @param particlePropertiesLibrary
    * */
-  //@todo FRAGE : add Parsing option to switch beetween _initParticlesOnlyWithBrownianMotion on & off when initThermo is spezified as
   // true
   Thermostat(ThermostatFloatType tInit, bool initBm, ThermostatFloatType tTarget, ThermostatFloatType deltaTemp,
              const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary);
@@ -123,7 +122,7 @@ class Thermostat {
   /**
    * Specifies, how the velocity values will be initialized: With Brownian Motion or according to the temperature
    */
-  const bool _initParticlesOnlyWithBrownianMotion;
+  const bool _useCurrentTempForBrownianMotion;
 
   /**
    * Temperature difference per thermostat application until t_target is reached.
@@ -137,8 +136,8 @@ class Thermostat {
 };
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::initialize(AutoPasTemplate &autopas) {
-  constexpr ThermostatFloatType boltzmannConst = 1.38064852 * std::pow(10, -23);  // Boltzmann constant in J/K
-  if (_initParticlesOnlyWithBrownianMotion) {
+  constexpr ThermostatFloatType boltzmannConst = 1.38064852e-23;  // Boltzmann constant in J/K
+  if (_useCurrentTempForBrownianMotion) {
 // we consider: "However, the initialization with the Brownian Motion should be optional." means factor=0.1
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -202,6 +201,6 @@ Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::Thermostat(
     const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary)
     : _tInit(tInit),
       _tTarget(tTarget),
-      _initParticlesOnlyWithBrownianMotion(initBm),
+      _useCurrentTempForBrownianMotion(initBm),
       _deltaTemp(deltaTemp),
       _particlePropertiesLibrary(particlePropertiesLibrary) {}

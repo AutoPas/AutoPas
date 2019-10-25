@@ -147,17 +147,19 @@ class MDFlexConfig {
   static inline const char *sphereRadiusStr = "radius";
   std::vector<Sphere> sphereObjects = {};
 
-  // Thermostat Options default to false
+  // Thermostat Options
   static inline const char *thermostatStr = "thermostat";
-  bool thermostat = false;
-  bool initializeThermostat = false;
+  bool useThermostat = false;
+  static inline const char *initTemperatureStr = "initialTemperature";
   double initTemperature = 0.;
-  size_t numberOfTimesteps = 0.;
-  bool thermoTarget = false;
   static inline const char *targetTemperatureStr = "targetTemperature";
   double targetTemperature = 0.;
-  static inline const char *deltaTempStr = "deltaTemp";
+  static inline const char *deltaTempStr = "deltaTemperature";
   double deltaTemp = 0.;
+  static inline const char *thermostatIntervalStr = "thermostatInterval";
+  size_t thermostatInterval = 0.;
+  static inline const char *useCurrentTempForBrownianMotionStr = "useCurrentTempForBrownianMotion";
+  bool useCurrentTempForBrownianMotion = true;
 
   // used for cli-output alignment
   static constexpr size_t valueOffset = 32;
