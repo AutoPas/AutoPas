@@ -48,6 +48,7 @@ add_test(
         --traversal c08,sliced
         --verlet-rebuild-frequency 5
         --verlet-skin-radius 0
+        --periodic false
     CONFIGURATIONS checkExamples
 )
 # cmake-format: on

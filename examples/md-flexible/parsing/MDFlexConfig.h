@@ -119,7 +119,7 @@ class MDFlexConfig {
   double boxLength = 10;
   static inline const char *distributionMeanStr = "distribution-mean";
   double distributionMean = 5.;
-  static inline const char *distributionStdDevStr = "distribution-stddev";
+  static inline const char *distributionStdDevStr = "distribution-stddeviation";
   double distributionStdDev = 2.;
   static inline const char *particlesPerDimStr = "particles-per-dimension";
   size_t particlesPerDim = 10;
