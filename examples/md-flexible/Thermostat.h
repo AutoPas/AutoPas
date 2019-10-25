@@ -151,8 +151,7 @@ void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::initialize(
 #pragma omp parallel
 #endif
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      ThermostatFloatType factor =
-          std::sqrt(currentTempMulKB / _particlePropertiesLibrary.getMass(iter->getTypeId()));
+      ThermostatFloatType factor = std::sqrt(currentTempMulKB / _particlePropertiesLibrary.getMass(iter->getTypeId()));
       maxwellBoltzmannDistribution(*iter, factor);
     }
   }
