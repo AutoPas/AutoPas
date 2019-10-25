@@ -64,15 +64,17 @@ class MDFlexConfig {
   autopas::SelectorStrategyOption selectorStrategy = autopas::SelectorStrategyOption::fastestAbs;
   static inline const char *traversalOptionsStr = "traversal";
   std::set<autopas::TraversalOption> traversalOptions = autopas::allTraversalOptions;
-  static inline const char *tuningStrategyOptionsStr = "tuning-strategy";
-  autopas::TuningStrategyOption tuningStrategyOption = autopas::TuningStrategyOption::fullSearch;
   static inline const char *newton3OptionsStr = "newton3";
   std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
   static inline const char *cellSizeFactorsStr = "cell-size";
   std::shared_ptr<autopas::NumberSet<double>> cellSizeFactors =
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.});
+  static inline const char *logFileNameStr = "log-file";
+  std::string logFileName;
   static inline const char *logLevelStr = "log-level";
   spdlog::level::level_enum logLevel = spdlog::level::info;
+  static inline const char *tuningStrategyOptionsStr = "tuning-strategy";
+  autopas::TuningStrategyOption tuningStrategyOption = autopas::TuningStrategyOption::fullSearch;
   static inline const char *tuningIntervalStr = "tuning-interval";
   unsigned int tuningInterval = 100;
   static inline const char *tuningSamplesStr = "tuning-samples";
@@ -83,8 +85,6 @@ class MDFlexConfig {
   std::string vtkFileName;
   static inline const char *vtkWriteFrequencyStr = "vtk-write-frequency";
   size_t vtkWriteFrequency = 100;
-  static inline const char *logFileNameStr = "log-file";
-  std::string logFileName;
   static inline const char *verletRebuildFrequencyStr = "verlet-rebuild-frequency";
   unsigned int verletRebuildFrequency = 20;
   static inline const char *verletSkinRadiusStr = "verlet-skin-radius";

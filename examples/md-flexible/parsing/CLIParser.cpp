@@ -10,37 +10,38 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
   bool displayHelp = false;
   int option, option_index;
-  static struct option long_options[] = {{MDFlexConfig::yamlFilenameStr, required_argument, nullptr, 'Y'},
+  static struct option long_options[] = {{"help", no_argument, nullptr, 'h'},
+                                         {MDFlexConfig::boxLengthStr, required_argument, nullptr, 'b'},
+                                         {MDFlexConfig::cellSizeFactorsStr, required_argument, nullptr, 'a'},
                                          {MDFlexConfig::containerOptionsStr, required_argument, nullptr, 'c'},
                                          {MDFlexConfig::cutoffStr, required_argument, nullptr, 'C'},
-                                         {MDFlexConfig::cellSizeFactorsStr, required_argument, nullptr, 'a'},
                                          {MDFlexConfig::dataLayoutOptionsStr, required_argument, nullptr, 'd'},
+                                         {MDFlexConfig::deltaTStr, required_argument, nullptr, 'D'},
                                          {MDFlexConfig::distributionMeanStr, required_argument, nullptr, 'm'},
                                          {MDFlexConfig::distributionStdDevStr, required_argument, nullptr, 'z'},
-                                         {MDFlexConfig::deltaTStr, required_argument, nullptr, 'D'},
                                          {MDFlexConfig::functorOptionStr, required_argument, nullptr, 'f'},
-                                         {"help", no_argument, nullptr, 'h'},
+                                         {MDFlexConfig::generatorOptionStr, required_argument, nullptr, 'g'},
                                          {MDFlexConfig::iterationsStr, required_argument, nullptr, 'i'},
+                                         {MDFlexConfig::logFileNameStr, required_argument, nullptr, 'L'},
+                                         {MDFlexConfig::logLevelStr, required_argument, nullptr, 'l'},
                                          {MDFlexConfig::measureFlopsStr, no_argument, nullptr, 'F'},
                                          {MDFlexConfig::newton3OptionsStr, required_argument, nullptr, '3'},
-                                         {MDFlexConfig::generatorOptionStr, required_argument, nullptr, 'g'},
                                          {MDFlexConfig::particlesPerDimStr, required_argument, nullptr, 'n'},
-                                         {MDFlexConfig::particlesTotalStr, required_argument, nullptr, 'N'},
                                          {MDFlexConfig::particlesSpacingStr, required_argument, nullptr, 's'},
+                                         {MDFlexConfig::particlesTotalStr, required_argument, nullptr, 'N'},
                                          {MDFlexConfig::periodicStr, required_argument, nullptr, 'p'},
                                          {MDFlexConfig::selectorStrategyStr, required_argument, nullptr, 'y'},
                                          {MDFlexConfig::thermostatStr, required_argument, nullptr, 'u'},
                                          {MDFlexConfig::traversalOptionsStr, required_argument, nullptr, 't'},
                                          {MDFlexConfig::tuningIntervalStr, required_argument, nullptr, 'I'},
-                                         {MDFlexConfig::tuningSamplesStr, required_argument, nullptr, 'S'},
                                          {MDFlexConfig::tuningMaxEvidenceStr, required_argument, nullptr, 'E'},
+                                         {MDFlexConfig::tuningSamplesStr, required_argument, nullptr, 'S'},
                                          {MDFlexConfig::tuningStrategyOptionsStr, required_argument, nullptr, 'T'},
-                                         {MDFlexConfig::logLevelStr, required_argument, nullptr, 'l'},
-                                         {MDFlexConfig::logFileNameStr, required_argument, nullptr, 'L'},
                                          {MDFlexConfig::verletRebuildFrequencyStr, required_argument, nullptr, 'v'},
                                          {MDFlexConfig::verletSkinRadiusStr, required_argument, nullptr, 'r'},
                                          {MDFlexConfig::vtkFileNameStr, required_argument, nullptr, 'w'},
-                                         {MDFlexConfig::verletSkinRadiusStr, required_argument, nullptr, 'Z'},
+                                         {MDFlexConfig::vtkWriteFrequencyStr, required_argument, nullptr, 'W'},
+                                         {MDFlexConfig::yamlFilenameStr, required_argument, nullptr, 'Y'},
                                          {nullptr, no_argument, nullptr, 0}};  // needed to signal the end of the array
   // reset getopt to scan from the start of argv
   optind = 1;
@@ -65,6 +66,18 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
           displayHelp = true;
         }
         break;
+      }
+      case 'b': {
+        try {
+          config.boxLength = stod(strArg);
+          if (config.boxLength < 0) {
+            cerr << "Box length has to be a positive (floating point) number!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing number of the box length: " << optarg << endl;
+          displayHelp = true;
+        }
       }
       case 'c': {
         // overwrite default argument
@@ -331,6 +344,15 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         config.vtkFileName = strArg;
         break;
       }
+      case 'W': {
+        try {
+          config.vtkWriteFrequency = (size_t)stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing vtk write frequency: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 'y': {
         config.selectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
         if (config.selectorStrategy == autopas::SelectorStrategyOption(-1)) {
@@ -398,7 +420,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       if (o.name == nullptr) {
         continue;
       }
-      cout << "    --" << setw(config.valueOffset + 2) << left << o.name;
+      cout << "    --" << setw(MDFlexConfig::valueOffset + 2) << left << o.name;
       if (o.has_arg) {
         cout << "option";
       }
