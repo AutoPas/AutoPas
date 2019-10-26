@@ -74,7 +74,7 @@ static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
  * @return Set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVCCCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::verletClusterCellsTraversal};
+  static const std::set<TraversalOption> s{TraversalOption::verletClusterCells};
   return s;
 }
 
@@ -118,7 +118,7 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
   }
 
   autopas::utils::ExceptionHandler::exception("CompatibleTraversals: Unknown container option {}!",
-                                              autopas::utils::StringUtils::to_string(container));
+                                              container.to_string());
 
   static const std::set<TraversalOption> s{};
   return s;
@@ -132,7 +132,7 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
 static inline std::set<ContainerOption> allCompatibleContainers(TraversalOption traversal) {
   std::set<ContainerOption> result{};
 
-  for (const auto &container : allContainerOptions) {
+  for (const auto &container : ContainerOption::getAllOptions()) {
     auto allCompatible = compatibleTraversals::allCompatibleTraversals(container);
     if (allCompatible.find(traversal) != allCompatible.end()) {
       result.insert(container);

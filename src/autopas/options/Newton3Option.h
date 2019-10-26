@@ -8,18 +8,49 @@
 
 #include <set>
 
+#include "Option.h"
+
 namespace autopas {
-/**
- * Possible choices for the particle data layout. Values consistent with bool.
- */
-enum Newton3Option { disabled = 0, enabled = 1 };
 
 /**
- * Provides a way to iterate over the possible choices of data layouts.
+ * Class representing the choices for the Newton 3 optimization.
  */
-static const std::set<Newton3Option> allNewton3Options = {
-    Newton3Option::enabled,
-    Newton3Option::disabled,
+class Newton3Option : public Option<Newton3Option> {
+ public:
+  /**
+   * Possible choices for the particle data layout. Values consistent with bool.
+   */
+  enum Value { disabled = 0, enabled = 1 };
+
+  /**
+   * Constructor.
+   */
+  Newton3Option() = default;
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
+  constexpr Newton3Option(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
+  constexpr operator Value() const { return _value; }
+
+  /**
+   * Provides a way to iterate over the possible choices of TraversalOption.
+   * @return map option -> string representation
+   */
+  static std::map<Newton3Option, std::string> getOptionNames() {
+    return {
+        {Newton3Option::disabled, "disabled"},
+        {Newton3Option::enabled, "enabled"},
+    };
+  };
+
+ private:
+  Value _value{Value(-1)};
 };
-
 }  // namespace autopas

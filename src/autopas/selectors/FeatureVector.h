@@ -20,9 +20,9 @@ namespace autopas {
 class FeatureVector : public Configuration {
  public:
   /**
-   * Number of tuneable dimensions
+   * Number of tune-able dimensions.
    */
-  static constexpr size_t featureSpaceDims = 4;
+  static constexpr size_t _featureSpaceDims = 4;
 
   /**
    * Default constructor. Results in invalid vector.
@@ -31,42 +31,41 @@ class FeatureVector : public Configuration {
 
   /**
    * Constructor
-   * @param _container
-   * @param _traversal
-   * @param _dataLayout
-   * @param _newton3
-   * @param _cellSizeFactor
+   * @param container
+   * @param traversal
+   * @param dataLayout
+   * @param newton3
+   * @param cellSizeFactor
    */
-  FeatureVector(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                DataLayoutOption _dataLayout, Newton3Option _newton3)
-      : Configuration(_container, _cellSizeFactor, _traversal, _dataLayout, _newton3) {}
+  FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
+                DataLayoutOption dataLayout, Newton3Option newton3)
+      : Configuration(container, cellSizeFactor, traversal, dataLayout, newton3) {}
 
   /**
-   * Construct from Configuration
+   * Construct from Configuration.
    * @param conf
    */
   FeatureVector(Configuration conf) : Configuration(conf) {}
 
   /**
-   * Distance between two FeatureVectors
+   * Distance between two FeatureVectors.
    * @param other
    * @return
    */
-  FeatureVector operator-(const FeatureVector &other) const {
-    ContainerOption co = ContainerOption((traversal == other.traversal) ? 0 : 1);
-    double cfs = (cellSizeFactor - other.cellSizeFactor);
-    TraversalOption to = TraversalOption((traversal == other.traversal) ? 0 : 1);
-    DataLayoutOption dlo = DataLayoutOption((dataLayout == other.dataLayout) ? 0 : 1);
-    Newton3Option n3o = Newton3Option((newton3 == other.newton3) ? 0 : 1);
-    return FeatureVector(co, cfs, to, dlo, n3o);
+  Eigen::VectorXd operator-(const FeatureVector &other) const {
+    Eigen::VectorXd result(_featureSpaceDims);
+    result << cellSizeFactor - other.cellSizeFactor, traversal == other.traversal ? 0. : 1.,
+        dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1.;
+
+    return result;
   }
 
   /**
-   * Cast to Eigen::VectorXd ignoring ContainerOption
+   * Cast to Eigen::VectorXd ignoring ContainerOption.
    * @return
    */
   operator Eigen::VectorXd() const {
-    Eigen::VectorXd result(featureSpaceDims);
+    Eigen::VectorXd result(_featureSpaceDims);
     result << cellSizeFactor, static_cast<double>(traversal), static_cast<double>(dataLayout),
         static_cast<double>(newton3);
 
@@ -96,11 +95,22 @@ class FeatureVector : public Configuration {
     auto n3 = rng.uniformSample(newton3, n);
 
     std::vector<FeatureVector> result;
-    for (unsigned i = 0; i < n; ++i) {
-      result.emplace_back(ContainerOption(-1), csf[i], tr[i], dl[i], n3[i]);
+    for (size_t i = 0; i < n; ++i) {
+      result.emplace_back(ContainerOption(), csf[i], tr[i], dl[i], n3[i]);
     }
 
     return result;
   }
 };
+
+/**
+ * Stream insertion operator.
+ * @param os
+ * @param featureVector
+ * @return
+ */
+inline std::ostream &operator<<(std::ostream &os, const FeatureVector &featureVector) {
+  return os << featureVector.toString();
+}
+
 }  // namespace autopas

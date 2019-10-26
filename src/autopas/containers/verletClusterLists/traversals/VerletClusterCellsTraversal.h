@@ -28,7 +28,7 @@ namespace autopas {
  * @tparam DataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
                                     public VerletClusterTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
@@ -44,14 +44,14 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         _neighborMatrixDim(nullptr),
         _clusterSize(nullptr) {}
 
-  TraversalOption getTraversalType() const override { return TraversalOption::verletClusterCellsTraversal; }
+  TraversalOption getTraversalType() const override { return TraversalOption::verletClusterCells; }
 
   bool isApplicable() const override {
     // TODO enable when functors use owned pointers correctly for soas and global calculation
-    if (DataLayout == DataLayoutOption::soa) {
+    if (dataLayout == DataLayoutOption::soa) {
       return false;
     }
-    if (DataLayout == DataLayoutOption::cuda) {
+    if (dataLayout == DataLayoutOption::cuda) {
       int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
       cudaGetDeviceCount(&nDevices);
@@ -64,10 +64,10 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
 
   bool getUseNewton3() const override { return useNewton3; }
 
-  DataLayoutOption getDataLayout() const override { return DataLayout; }
+  DataLayoutOption getDataLayout() const override { return dataLayout; }
 
   std::tuple<TraversalOption, DataLayoutOption, bool> getSignature() override {
-    return std::make_tuple(TraversalOption::verletClusterCellsTraversal, DataLayout, useNewton3);
+    return std::make_tuple(TraversalOption::verletClusterCells, dataLayout, useNewton3);
   }
 
   void setVerletListPointer(unsigned int *clusterSize,
@@ -149,7 +149,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
       }
     }
     // Make neighbor matrix for GPU by linearizing _neighborCellIds
-    if (DataLayout == DataLayoutOption::cuda) {
+    if (dataLayout == DataLayoutOption::cuda) {
       size_t neighborMatrixDim = 0;
       for (auto &cell : *_neighborCellIds) {
         for (auto &cluster : cell) {
@@ -193,7 +193,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   }
 
   void initTraversal() override {
-    switch (DataLayout) {
+    switch (dataLayout) {
       case DataLayoutOption::aos: {
         return;
       }
@@ -220,7 +220,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   }
 
   void endTraversal() override {
-    switch (DataLayout) {
+    switch (dataLayout) {
       case DataLayoutOption::aos: {
         return;
       }
@@ -250,7 +250,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   }
 
   void traverseParticlePairs() override {
-    switch (DataLayout) {
+    switch (dataLayout) {
       case DataLayoutOption::aos: {
         traverseCellPairsAoS(this->_cells);
         return;

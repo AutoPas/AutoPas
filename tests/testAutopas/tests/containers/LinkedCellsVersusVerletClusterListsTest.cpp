@@ -8,7 +8,7 @@
 #include <autopas/selectors/TraversalSelector.h>
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
 
-template <autopas::DataLayoutOption dataLayout, bool useNewton3>
+template <autopas::DataLayoutOption::Value dataLayout, bool useNewton3>
 void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, double rel_err_tolerance,
                                                    autopas::TraversalOption traversalOption,
                                                    std::array<double, 3> boxMax) {
