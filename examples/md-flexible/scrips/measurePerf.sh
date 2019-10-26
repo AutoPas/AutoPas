@@ -136,6 +136,7 @@ do
                             --verlet-rebuild-frequency ${VLRebuild[$iVL]} \
                             --verlet-skin-radius ${VLSkin[$iVL]} \
                             --no-flops \
+                            --periodic false \
                             --newton3 ${newton3Opt}
                         )
 

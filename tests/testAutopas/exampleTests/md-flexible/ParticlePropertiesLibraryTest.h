@@ -7,7 +7,7 @@
 #include <gtest/gtest.h>
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/Simulation.h"
-#include "../../../../examples/md-flexible/YamlParser.h"
+#include "../../../../examples/md-flexible/parsing/YamlParser.h"
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"

@@ -54,7 +54,7 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
 
   autoPas.init();
   GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, 0, 0, dummy, {1, 1, 1}, boxmin);
-//    std::string CubeGeneration = "FillGrid-BoxMin.vtu";
+//    std::string CubeGeneration = "FillGrid-boxMin.vtu";
 //      writeVTKFile<decltype(autoPas)>(CubeGeneration, autoPas.getNumberOfParticles(), autoPas);
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -84,48 +84,44 @@ TEST_F(GeneratorsTest, Sphere) {
 
 TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   auto autoPas = autopas::AutoPas<autopas::MoleculeLJ<>, FMCell>(std::cout);
-  std::string input = "multipleObjectsWithMultipleTypesTest.yaml";
-  parser.setFilename(input);
-  parser.parseYamlFile();
-  autoPas.setBoxMax(parser.getBoxMax());
-  autoPas.setBoxMin(parser.getBoxMin());
+  MDFlexConfig config;
+  config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
+  YamlParser::parseYamlFile(config);
+  config.calcSimulationBox();
+  autoPas.setBoxMax(config.boxMax);
+  autoPas.setBoxMin(config.boxMin);
   autoPas.init();
   std::array<double, 3> velocity = {0., 0., 0.};
   // parses the multiple Objects input of "multipleObjectsWithMultipleTypesTest" and generates a VTK File from the Input
   // yaml input file with all 4 different Object types
-  auto CubeGrid(parser.getCubeGrid());
-  auto CubeGauss(parser.getCubeGauss());
-  auto CubeUniform(parser.getCubeUniform());
-  auto Sphere(parser.getSphere());
+  auto cubeGrid(config.cubeGridObjects);
+  auto cubeGauss(config.cubeGaussObjects);
+  auto cubeUniform(config.cubeUniformObjects);
+  auto sphere(config.sphereObjects);
   size_t idcounter = 0;  // to avoid multiple particles with the same ids
 
-  Generator::CubeGrid(autoPas, CubeGrid.at(0).getTypeId(), idcounter, CubeGrid.at(0).getBoxMin(),
-                      CubeGrid.at(0).getParticlesPerDim(), CubeGrid.at(0).getParticleSpacing(),
-                      CubeGrid.at(0).getVelocity());
-  idcounter += CubeGrid.at(0).getParticlesTotal();
+  Generator::CubeGrid(autoPas, cubeGrid.at(0).getTypeId(), idcounter, cubeGrid.at(0).getBoxMin(),
+                      cubeGrid.at(0).getParticlesPerDim(), cubeGrid.at(0).getParticleSpacing(),
+                      cubeGrid.at(0).getVelocity());
+  idcounter += cubeGrid.at(0).getParticlesTotal();
 
-  Generator::CubeGauss(autoPas, CubeGauss.at(0).getTypeId(), idcounter, CubeGauss.at(0).getBoxMin(),
-                       CubeGauss.at(0).getBoxMax(), CubeGauss.at(0).getParticlesTotal(),
-                       CubeGauss.at(0).getDistributionMean(), CubeGauss.at(0).getDistributionStdDev(),
-                       CubeGauss.at(0).getVelocity());
-  idcounter += CubeGauss.at(0).getParticlesTotal();
+  Generator::CubeGauss(autoPas, cubeGauss.at(0).getTypeId(), idcounter, cubeGauss.at(0).getBoxMin(),
+                       cubeGauss.at(0).getBoxMax(), cubeGauss.at(0).getParticlesTotal(),
+                       cubeGauss.at(0).getDistributionMean(), cubeGauss.at(0).getDistributionStdDev(),
+                       cubeGauss.at(0).getVelocity());
+  idcounter += cubeGauss.at(0).getParticlesTotal();
 
-  Generator::CubeRandom(autoPas, CubeUniform.at(0).getTypeId(), idcounter, CubeUniform.at(0).getBoxMin(),
-                        CubeUniform.at(0).getBoxMax(), CubeUniform.at(0).getParticlesTotal(),
-                        CubeUniform.at(0).getVelocity());
-  idcounter += CubeUniform.at(0).getParticlesTotal();
+  Generator::CubeRandom(autoPas, cubeUniform.at(0).getTypeId(), idcounter, cubeUniform.at(0).getBoxMin(),
+                        cubeUniform.at(0).getBoxMax(), cubeUniform.at(0).getParticlesTotal(),
+                        cubeUniform.at(0).getVelocity());
+  idcounter += cubeUniform.at(0).getParticlesTotal();
 
-  Generator::Sphere(autoPas, Sphere.at(0).getCenter(), Sphere.at(0).getRadius(), Sphere.at(0).getParticleSpacing(),
-                    idcounter, Sphere.at(0).getTypeId(), Sphere.at(0).getVelocity());
-  idcounter += Sphere.at(0).getParticlesTotal();
+  Generator::Sphere(autoPas, sphere.at(0).getCenter(), sphere.at(0).getRadius(), sphere.at(0).getParticleSpacing(),
+                    idcounter, sphere.at(0).getTypeId(), sphere.at(0).getVelocity());
+  idcounter += sphere.at(0).getParticlesTotal();
 
-  /** to see output:
-   *  std::string SphereGeneration = "MultipleGeneration.vtu";
-   *  writeVTKFile<decltype(autoPas)>(SphereGeneration, autoPas.getNumberOfParticles(), autoPas);
-   * checked VTK File
-   **/
-  EXPECT_EQ(parser.particlesTotal(), autoPas.getNumberOfParticles());
-  EXPECT_EQ(idcounter, parser.particlesTotal());
+  //  EXPECT_EQ(config.particlesTotal(), autoPas.getNumberOfParticles());
+  //  EXPECT_EQ(idcounter, config.particlesTotal());
   // counters to checks if all particles types are well initialized for different Objects:
   int gridCounter = 0;
   int gaussCounter = 0;
@@ -157,18 +153,15 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
       default: { throw std::runtime_error("something went wrong with the Types"); }
     }
   }
-  EXPECT_EQ(gridCounter, CubeGrid.at(0).getParticlesTotal());
-  EXPECT_EQ(gaussCounter, CubeGauss.at(0).getParticlesTotal());
-  EXPECT_EQ(uniformCounter, CubeUniform.at(0).getParticlesTotal());
-  EXPECT_EQ(sphereCounter, Sphere.at(0).getParticlesTotal());
+  EXPECT_EQ(gridCounter, cubeGrid.at(0).getParticlesTotal());
+  EXPECT_EQ(gaussCounter, cubeGauss.at(0).getParticlesTotal());
+  EXPECT_EQ(uniformCounter, cubeUniform.at(0).getParticlesTotal());
+  EXPECT_EQ(sphereCounter, sphere.at(0).getParticlesTotal());
   // check if during initialization, not 2 Particles were initialized with same id
   std::set<size_t> ids;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     if (ids.count(iter->getID()) != 0) {
-      FAIL();  // 2 Particles with same id
+      FAIL() << "Two particles have the same ID: " << iter->toString();  // 2 Particles with same id
     }
     ids.insert(iter->getID());
   }

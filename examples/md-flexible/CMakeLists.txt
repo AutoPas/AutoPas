@@ -8,10 +8,12 @@ file(
 
 add_executable(md-flexible ${MY_SRC})
 
-include_directories(${PROJECT_SOURCE_DIR}/libs/yaml-cpp/include)
+target_include_directories(autopas PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# FIXME: zip instead of sources
+target_include_directories(md-flexible PUBLIC ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/include)
 
 target_link_libraries(md-flexible autopas ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a)
-target_link_libraries(md-flexible autopas ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a)
+
 # --- copy script files to build dir ---
 file(
     GLOB_RECURSE SCRIPTS
@@ -40,19 +42,20 @@ add_test(
         --data-layout soa
         --functor lj
         --iterations 10
-        --particles-generator gauss
+        --particle-generator gauss
         --particles-per-dimension 10
         --particle-spacing 0.4
         --traversal c08,sliced
         --verlet-rebuild-frequency 5
         --verlet-skin-radius 0
+        --periodic false
     CONFIGURATIONS checkExamples
 )
 # cmake-format: on
 
 add_test(
     NAME md-flexMeasurePerf
-    COMMAND ${PROJECT_SOURCE_DIR}/examples/md-flexible/measurePerf.sh md-flexible -silent
+    COMMAND ${PROJECT_SOURCE_DIR}/examples/md-flexible/scrips/measurePerf.sh md-flexible -silent
     CONFIGURATIONS checkExamples
 )
 

@@ -6,7 +6,7 @@
 #include "../../../../examples/md-flexible/Objects.h"
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
-#include "../../../../examples/md-flexible/YamlParser.h"
+#include "../../../../examples/md-flexible/parsing/YamlParser.h"
 #include "../../../../src/autopas/utils/ArrayMath.h"
 #include "../../../../src/autopas/utils/ArrayUtils.h"
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
@@ -18,13 +18,7 @@
 class GeneratorsTest : public AutoPasTestBase {
  public:
   GeneratorsTest()
-      : AutoPasTestBase(),
-        epsilon{1.0},
-        sigma{1.0},
-        cutoff{1.},
-        boxmin{{0., 0., 0.}},
-        boxmax{{5., 5., 5.}},
-        parser{YamlParser()} {}
+      : AutoPasTestBase(), epsilon{1.0}, sigma{1.0}, cutoff{1.}, boxmin{{0., 0., 0.}}, boxmax{{5., 5., 5.}} {}
 
   template <class AutoPasTemplate>
   void writeVTKFile(std::string &vtkFilename, size_t numParticles, AutoPasTemplate &autopas) {
@@ -54,5 +48,4 @@ class GeneratorsTest : public AutoPasTestBase {
   double cutoff;
   std::array<double, 3> boxmin;
   std::array<double, 3> boxmax;
-  YamlParser parser;
 };

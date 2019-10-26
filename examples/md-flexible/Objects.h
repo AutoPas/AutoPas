@@ -11,6 +11,8 @@
 
 class Object {
  public:
+  virtual ~Object() = default;
+
   /**Getter for Velocity
    * @return velocity
    * */
@@ -26,12 +28,12 @@ class Object {
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  virtual std::array<double, 3> getBoxMin() = 0;
+  virtual const std::array<double, 3> getBoxMin() const = 0;
 
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  virtual std::array<double, 3> getBoxMax() = 0;
+  virtual const std::array<double, 3> getBoxMax() const = 0;
 
   /**Returns the total amount of Particles in the Object
    * @return ParticlesTotal
@@ -97,14 +99,14 @@ class CubeGrid : public Object {
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() override {
+  const std::array<double, 3> getBoxMin() const override {
     return bottomLeftCorner;
   }
 
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  std::array<double, 3> getBoxMax() override {
+  const std::array<double, 3> getBoxMax() const override {
     return {bottomLeftCorner[0] + (particlesPerDim[0]) * particleSpacing,
             bottomLeftCorner[1] + (particlesPerDim[1]) * particleSpacing,
             bottomLeftCorner[2] + (particlesPerDim[2]) * particleSpacing};
@@ -191,13 +193,13 @@ class CubeGauss : public Object {
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() override {
+  const std::array<double, 3> getBoxMin() const override {
     return bottomLeftCorner;
   }
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  std::array<double, 3> getBoxMax() override {
+  const std::array<double, 3> getBoxMax() const override {
     return {bottomLeftCorner[0] + boxLength[0], bottomLeftCorner[1] + boxLength[1], bottomLeftCorner[2] + boxLength[2]};
   }
 
@@ -268,13 +270,13 @@ class CubeUniform : public Object {
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() override {
+  const std::array<double, 3> getBoxMin() const override {
     return bottomLeftCorner;
   }
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  std::array<double, 3> getBoxMax() override {
+  const std::array<double, 3> getBoxMax() const override {
     return {bottomLeftCorner[0] + boxLength[0], bottomLeftCorner[1] + boxLength[1], bottomLeftCorner[2] + boxLength[2]};
   }
 
@@ -313,7 +315,7 @@ class Sphere : public Object {
  public:
   /**constructor for Sphere that is created in YamlParser and then included into the Simulation via the Generator class
    * @param center
-   * @param radius
+   * @param radius as number of particles
    * @param particleSpacing
    * @param velocity_arg
    * @param typeId
@@ -384,7 +386,7 @@ class Sphere : public Object {
   /**Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    * */
-  std::array<double, 3> getBoxMin() override {
+  const std::array<double, 3> getBoxMin() const override {
     return {center[0] - ((double)radius) * particleSpacing, center[1] - ((double)radius) * particleSpacing,
             center[2] - ((double)radius) * particleSpacing};
   }
@@ -392,7 +394,7 @@ class Sphere : public Object {
   /**Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    * */
-  std::array<double, 3> getBoxMax() override {
+  const std::array<double, 3> getBoxMax() const override {
     return {center[0] + ((double)radius) * particleSpacing, center[1] + ((double)radius) * particleSpacing,
             center[2] + ((double)radius) * particleSpacing};
   }
@@ -426,6 +428,7 @@ class Sphere : public Object {
  private:
   static constexpr size_t valueOffset = 32;
   std::array<double, 3> center;
+  // radius of the sphere in number of particles
   int radius;
   double particleSpacing;
 };

@@ -18,43 +18,39 @@ TEST_F(ParticlePropertiesLibraryTest, ClassFunctions) {
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
   Simulation<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> simulation;
-  auto parser = YamlParser();  // parsing input
-  std::string input = "multipleObjectsWithMultipleTypesTest.yaml";
   // this test need to be adapted if the input file changes
-  parser.setFilename(input);
-  parser.parseYamlFile();
-  simulation.setParser(parser);
+  MDFlexConfig config;
+  config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
+  YamlParser::parseYamlFile(config);
+  config.calcSimulationBox();
+  simulation.initialize(config);
   simulation.initializeParticlePropertiesLibrary();
-  auto SimPpL = *simulation.getPpl();
-  EXPECT_EQ(SimPpL.getMass(0), 1.0);
-  EXPECT_EQ(SimPpL.get24Epsilon(0), 24.0);
-  EXPECT_EQ(SimPpL.getSigmaSquare(0), 1.0);
-  EXPECT_EQ(SimPpL.getMass(1), 2.);
-  EXPECT_EQ(SimPpL.get24Epsilon(1), 48.0);
-  EXPECT_EQ(SimPpL.getSigmaSquare(1), 4.0);
-  EXPECT_EQ(SimPpL.getMass(2), 3.0);
-  EXPECT_EQ(SimPpL.get24Epsilon(2), 72.0);
-  EXPECT_EQ(SimPpL.getSigmaSquare(2), 9.0);
-  EXPECT_EQ(SimPpL.getMass(3), 4.0);
-  EXPECT_EQ(SimPpL.get24Epsilon(3), 96.0);
-  EXPECT_EQ(SimPpL.getSigmaSquare(3), 16.0);
-  ASSERT_ANY_THROW(SimPpL.get24Epsilon(10));
-  ASSERT_ANY_THROW(SimPpL.getSigmaSquare(10));
-  ASSERT_ANY_THROW(SimPpL.getMass(10));
+  EXPECT_EQ(simulation.getPpl()->getMass(0), 1.0);
+  EXPECT_EQ(simulation.getPpl()->get24Epsilon(0), 24.0);
+  EXPECT_EQ(simulation.getPpl()->getSigmaSquare(0), 1.0);
+  EXPECT_EQ(simulation.getPpl()->getMass(1), 2.);
+  EXPECT_EQ(simulation.getPpl()->get24Epsilon(1), 48.0);
+  EXPECT_EQ(simulation.getPpl()->getSigmaSquare(1), 4.0);
+  EXPECT_EQ(simulation.getPpl()->getMass(2), 3.0);
+  EXPECT_EQ(simulation.getPpl()->get24Epsilon(2), 72.0);
+  EXPECT_EQ(simulation.getPpl()->getSigmaSquare(2), 9.0);
+  EXPECT_EQ(simulation.getPpl()->getMass(3), 4.0);
+  EXPECT_EQ(simulation.getPpl()->get24Epsilon(3), 96.0);
+  EXPECT_EQ(simulation.getPpl()->getSigmaSquare(3), 16.0);
+  ASSERT_ANY_THROW(simulation.getPpl()->get24Epsilon(10));
+  ASSERT_ANY_THROW(simulation.getPpl()->getSigmaSquare(10));
+  ASSERT_ANY_THROW(simulation.getPpl()->getMass(10));
 }
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitializationDefault) {
   // tests ParticleProperties initialization with only one Type
   Simulation<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> simulation;
-  auto parser = YamlParser();
-  ASSERT_TRUE(parser.getSigmaMap().empty());
-  ASSERT_TRUE(parser.getEpsilonMap().empty());
-  ASSERT_TRUE(parser.getMassMap().empty());
-  simulation.setParser(parser);
+  MDFlexConfig config;
+  config.calcSimulationBox();
+  simulation.initialize(config);
   simulation.initializeParticlePropertiesLibrary();
-  auto SimPpL = *simulation.getPpl();
   // default values: epsilon=sigma=mass=1.0
-  EXPECT_EQ(SimPpL.getMass(0), 1.0);
-  EXPECT_EQ(SimPpL.get24Epsilon(0), 24.0);
-  EXPECT_EQ(SimPpL.getSigmaSquare(0), 1.0);
+  EXPECT_EQ(simulation.getPpl()->getMass(0), 1.0);
+  EXPECT_EQ(simulation.getPpl()->get24Epsilon(0), 24.0);
+  EXPECT_EQ(simulation.getPpl()->getSigmaSquare(0), 1.0);
 }

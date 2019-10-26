@@ -3,8 +3,10 @@ file(
     MY_SRC
     "*.cpp"
     "*.h"
-    "../../examples/md-flexible/YamlParser.cpp"
-    "../../examples/md-flexible/YamlParser.h"
+    "../../examples/md-flexible/parsing/MDFlexConfig.cpp"
+    "../../examples/md-flexible/parsing/MDFlexConfig.h"
+    "../../examples/md-flexible/parsing/YamlParser.cpp"
+    "../../examples/md-flexible/parsing/YamlParser.h"
     "../../examples/md-flexible/Objects.h"
     "../../examples/md-flexible/Generator.h"
     "../../examples/md-flexible/Thermostat.h"
@@ -19,20 +21,13 @@ if (AUTOPAS_ENABLE_CUDA)
     )
 endif ()
 
-file(
-    GLOB_RECURSE SCRIPTS
-    RELATIVE ${PROJECT_SOURCE_DIR}/tests/testAutopas/exampleTests/md-flexible/yamlTestFiles
-    "*.yaml"
-)
-foreach (script ${SCRIPTS})
-    configure_file(
-        ${PROJECT_SOURCE_DIR}/tests/testAutopas/exampleTests/md-flexible/yamlTestFiles/${script}
-        ${CMAKE_BINARY_DIR}/tests/testAutopas COPYONLY
-    )
-endforeach (script)
-
 add_executable(runTests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
 include_directories(${PROJECT_SOURCE_DIR}/libs/yaml-cpp/include)
+
+target_compile_definitions(
+    runTests PRIVATE
+    YAMLDIRECTORY=\"${PROJECT_SOURCE_DIR}/tests/testAutopas/exampleTests/md-flexible/yamlTestFiles/\"
+)
 
 target_link_libraries(
     runTests
