@@ -83,8 +83,8 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
                                    min - cutoff - verletSkin - 1e-3};
     };
     size_t id = 0;
-    // const auto haloBoxMin = autopas::ArrayMath::subScalar(bBoxMin, cutoff);
-    // const auto haloBoxMax = autopas::ArrayMath::addScalar(bBoxMax, cutoff);
+    // const auto haloBoxMin = autopas::utils::ArrayMath::subScalar(bBoxMin, cutoff);
+    // const auto haloBoxMax = autopas::utils::ArrayMath::addScalar(bBoxMax, cutoff);
 
     for (auto x : getPossible1DPositions(bBoxMin[0], bBoxMax[0])) {
       for (auto y : getPossible1DPositions(bBoxMin[1], bBoxMax[1])) {
