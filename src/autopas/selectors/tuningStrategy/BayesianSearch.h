@@ -44,7 +44,7 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
    * @param predAcqFunction acquisition function used for prediction while tuning.
-   * @param predNumSamples number of samples used for prediction while tuning.
+   * @param predNumLHSamples number of samples used for prediction while tuning.
    * @param maxEvidence stop tuning after given number of evidence provided.
    * @param seed seed of random number generator (should only be used for tests)
    */

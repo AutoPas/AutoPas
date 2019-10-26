@@ -26,7 +26,7 @@ class FeatureVector : public Configuration {
 
   /**
    * Dimensions of a one-hot-encoded vector
-   * = 1 (cellSizeFactor) + #traversals + #dataLayouts + #newton3
+   * = 1 (cellSizeFactor) + traversals + dataLayouts + newton3
    */
   inline static size_t oneHotDims =
       1 + allTraversalOptions.size() + allDataLayoutOptions.size() + allNewton3Options.size();
