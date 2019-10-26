@@ -28,7 +28,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
                                          {"traversal", required_argument, nullptr, 't'},
-                                         {"tuning-function", required_argument, nullptr, 'A'},
+                                         {"tuning-acquisition-function", required_argument, nullptr, 'A'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
                                          {"tuning-max-evidence", required_argument, nullptr, 'E'},

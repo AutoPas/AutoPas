@@ -30,7 +30,7 @@ class RandomSearch : public TuningStrategyInterface {
    * @param seed seed of random number generator (should only be used for tests)
    */
   RandomSearch(const std::set<ContainerOption> &allowedContainerOptions = allContainerOptions,
-               const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
+               const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1. / 3., 2.),
                const std::set<TraversalOption> &allowedTraversalOptions = allTraversalOptions,
                const std::set<DataLayoutOption> &allowedDataLayoutOptions = allDataLayoutOptions,
                const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options, size_t maxEvidence = 10,
@@ -91,7 +91,6 @@ bool RandomSearch::tune(bool) {
   if (_traversalTimes.size() >= _maxEvidence) {
     // select best config
     selectOptimalConfiguration();
-    AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
     return false;
   }
 

@@ -122,7 +122,7 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
   const unsigned long ov1_squared = ov1 * ov1;
   //////////////////////////////
 
-  std::array<unsigned long, 3> overlap_1 = ArrayMath::addScalar(_overlap, 1ul);
+  std::array<unsigned long, 3> overlap_1 = utils::ArrayMath::addScalar(_overlap, 1ul);
 
   std::vector<unsigned long> cellOffsets;
   cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
@@ -149,45 +149,45 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3
         // origin
         {
           // check whether cell is within interaction length
-          auto distVec =
-              ArrayMath::mul({std::max(zero, x - one), std::max(zero, y - one), std::max(zero, z - one)}, _cellLength);
-          const auto distSquare = ArrayMath::dot(distVec, distVec);
+          auto distVec = utils::ArrayMath::mul(
+              {std::max(zero, x - one), std::max(zero, y - one), std::max(zero, z - one)}, _cellLength);
+          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
-            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[z], offset, ArrayMath::normalize(distVec)));
+            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[z], offset, utils::ArrayMath::normalize(distVec)));
           }
         }
         // back left
         if (y != _overlap[1] and z != 0) {
           // check whether cell is within interaction length
-          auto distVec = ArrayMath::mul(
+          auto distVec = utils::ArrayMath::mul(
               {std::max(zero, x - one), std::max(zero, _overlap[1] - y - one), std::max(zero, z - one)}, _cellLength);
-          const auto distSquare = ArrayMath::dot(distVec, distVec);
+          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             _cellPairOffsets.push_back(
-                std::make_tuple(cellOffsets[ov1_squared - ov1 + z], offset, ArrayMath::normalize(distVec)));
+                std::make_tuple(cellOffsets[ov1_squared - ov1 + z], offset, utils::ArrayMath::normalize(distVec)));
           }
         }
         // front right
         if (x != _overlap[0] and (y != 0 or z != 0)) {
           // check whether cell is within interaction length
-          auto distVec = ArrayMath::mul(
+          auto distVec = utils::ArrayMath::mul(
               {std::max(zero, _overlap[0] - x - one), std::max(zero, y - one), std::max(zero, z - one)}, _cellLength);
-          const auto distSquare = ArrayMath::dot(distVec, distVec);
+          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
-            _cellPairOffsets.push_back(
-                std::make_tuple(cellOffsets[ov1_squared * _overlap[0] + z], offset, ArrayMath::normalize(distVec)));
+            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[ov1_squared * _overlap[0] + z], offset,
+                                                       utils::ArrayMath::normalize(distVec)));
           }
         }
         // back right
         if (y != _overlap[1] and x != _overlap[0] and z != 0) {
           // check whether cell is within interaction length
-          auto distVec = ArrayMath::mul(
+          auto distVec = utils::ArrayMath::mul(
               {std::max(zero, _overlap[0] - x - one), std::max(zero, _overlap[1] - y - one), std::max(zero, z - one)},
               _cellLength);
-          const auto distSquare = ArrayMath::dot(distVec, distVec);
+          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
-            _cellPairOffsets.push_back(
-                std::make_tuple(cellOffsets[ov1_squared * ov1 - ov1 + z], offset, ArrayMath::normalize(distVec)));
+            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[ov1_squared * ov1 - ov1 + z], offset,
+                                                       utils::ArrayMath::normalize(distVec)));
           }
         }
       }

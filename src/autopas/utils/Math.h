@@ -8,26 +8,26 @@
 
 #include <cmath>
 
-namespace autopas::Math {
+namespace autopas::utils::Math {
 /**
- * Probability density function PDF of the standard normal distribution
+ * Probability density function PDF of the standard normal distribution.
  * @param x
  * @return PDF(x)
  */
 double normalPDF(double x);
 
 /**
- * Cumulative distribution function CDF of the standard normal distribution
+ * Cumulative distribution function CDF of the standard normal distribution.
  * @param x
  * @return CDF(x)
  */
 double normalCDF(double x);
 
 /**
- * Sigmoid logistic function
+ * Sigmoid logistic function.
  * @param x
  * @return S(x)
  */
 double sigmoid(double x);
 
-}  // namespace autopas::Math
+}  // namespace autopas::utils::Math

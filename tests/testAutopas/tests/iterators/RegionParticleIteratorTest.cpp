@@ -33,11 +33,11 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorOw
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), 100);
 
-  TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
+  TouchableParticle part(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   lcContainer.addHaloParticle(part);
 
   // touch them using the regionIterator
-  auto testRegionMin = ArrayMath::addScalar(_boxMin, -_cutoff * 0.5);
+  auto testRegionMin = utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5);
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
@@ -93,10 +93,10 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHa
   // add a number of particles
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), 100);
 
-  TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
+  TouchableParticle part(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   lcContainer.addHaloParticle(part);
 
-  auto testRegionMin = ArrayMath::addScalar(_boxMin, -_cutoff * 0.5);
+  auto testRegionMin = utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5);
   // touch them using the regionIterator
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -384,14 +384,14 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorOw
   // add a number of particles
   RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), 100);
 
-  TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
+  TouchableParticle part(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   container.addHaloParticle(part);
 
   // touch them using the regionIterator
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iterator = container.getRegionIterator(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
+  for (auto iterator = container.getRegionIterator(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
                                                    autopas::IteratorBehavior::ownedOnly);
        iterator.isValid(); ++iterator) {
     iterator->touch();
@@ -415,14 +415,14 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorHa
   // add a number of particles
   RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), 100);
 
-  TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
+  TouchableParticle part(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   container.addHaloParticle(part);
 
   // touch them using the regionIterator
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iterator = container.getRegionIterator(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
+  for (auto iterator = container.getRegionIterator(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
                                                    autopas::IteratorBehavior::haloOnly);
        iterator.isValid(); ++iterator) {
     iterator->touch();
@@ -435,7 +435,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorHa
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    EXPECT_EQ(utils::inBox(iterator->getR(), ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
+    EXPECT_EQ(utils::inBox(iterator->getR(), utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
                   ? (utils::inBox(iterator->getR(), _boxMin, _regionMax) ? 0 : 1)
                   : 0,
               iterator->getNumTouched())

@@ -44,7 +44,7 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap),
-        _end(ArrayMath::subScalar(ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {
+        _end(utils::ArrayMath::subScalar(ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {
     computeOffsets32Pack();
   }
 

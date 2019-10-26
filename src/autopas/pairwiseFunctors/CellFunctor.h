@@ -186,7 +186,8 @@ template <bool newton3>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoS(
     ParticleCell &cell) {
   if (cell.numParticles() > _startSorting) {
-    SortedCellView<Particle, ParticleCell> cellSorted(cell, ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
+    SortedCellView<Particle, ParticleCell> cellSorted(
+        cell, utils::ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
     auto outer = cellSorted._particles.begin();
     for (; outer != cellSorted._particles.end(); ++outer) {

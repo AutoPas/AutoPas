@@ -61,8 +61,8 @@ class VerletListsCellsHelpers {
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-      auto dist = ArrayMath::sub(i.getR(), j.getR());
-      double distsquare = ArrayMath::dot(dist, dist);
+      auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+      double distsquare = utils::ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared) {
         // this is thread safe, only if particle i is accessed by only one
         // thread at a time. which is ensured, as particle i resides in a

@@ -17,7 +17,7 @@ namespace autopas {
 /**
  * Namespace to handle mathematical operations of std::array.
  */
-namespace ArrayMath {}
+namespace utils::ArrayMath {}
 
 /**
  * In this namespace some helper functions for std::array can be found.

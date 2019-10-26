@@ -53,9 +53,12 @@ class GaussianProcess {
     Eigen::VectorXd dimScales;
 
     /**
-     * Matrices used for predictions
+     * Covariance Matrix Inverse
      */
     Eigen::MatrixXd covMatInv;
+    /**
+     * Weights used for predictions
+     */
     Eigen::VectorXd weights;
 
     Hyperparameters()
@@ -253,13 +256,13 @@ class GaussianProcess {
         return predictVar(input);
       }
       case probabilityOfDecrease: {
-        return Math::normalCDF((_evidenceMinValue - predictMean(input)) / predictVar(input));
+        return utils::Math::normalCDF((_evidenceMinValue - predictMean(input)) / predictVar(input));
       }
       case expectedDecrease: {
         double mean = predictMean(input);
         double var = predictVar(input);
         double minNormed = (_evidenceMinValue - mean) / var;
-        return (_evidenceMinValue - mean) * Math::normalCDF(minNormed) + var * Math::normalPDF(minNormed);
+        return (_evidenceMinValue - mean) * utils::Math::normalCDF(minNormed) + var * utils::Math::normalPDF(minNormed);
       }
     }
 

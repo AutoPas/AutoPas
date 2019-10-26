@@ -203,7 +203,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
         pos[0] = std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0];
         pos[1] = std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1];
         pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
-        const double distSquare = ArrayMath::dot(pos, pos);
+        const double distSquare = utils::ArrayMath::dot(pos, pos);
         if (distSquare <= interactionLengthSquare) {
           const long currentOffset = utils::ThreeDimensionalMapping::threeToOneD(
               x, y, z, ArrayUtils::static_cast_array<long>(this->_cellsPerDimension));
@@ -220,9 +220,9 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 
             if (y == 0l and z == 0l) {
               // make sure center of slice is always at the beginning
               _cellOffsets[index].insert(_cellOffsets[index].cbegin(),
-                                         std::make_pair(offset, ArrayMath::normalize(pos)));
+                                         std::make_pair(offset, utils::ArrayMath::normalize(pos)));
             } else {
-              _cellOffsets[index].push_back(std::make_pair(offset, ArrayMath::normalize(pos)));
+              _cellOffsets[index].push_back(std::make_pair(offset, utils::ArrayMath::normalize(pos)));
             }
           }
         }

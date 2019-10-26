@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -331,7 +332,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
 
   _baseOffsets.resize(ov1);
 
-  std::array<unsigned long, 3> overlap_1 = ArrayMath::addScalar(_overlap, 1ul);
+  std::array<unsigned long, 3> overlap_1 = utils::ArrayMath::addScalar(_overlap, 1ul);
 
   std::vector<unsigned long> cellOffsets;
   cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
@@ -356,9 +357,9 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
         // origin
         {
           // check whether cell is within cutoff radius
-          auto distVec =
-              ArrayMath::mul({std::max(0.0, x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
-          const auto distSquare = ArrayMath::dot(distVec, distVec);
+          auto distVec = utils::ArrayMath::mul({std::max(0.0, x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)},
+                                               _cellLength);
+          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             cellPairOffsets[x].push_back(make_pair(cellOffsets[z], offset));
           }
@@ -366,9 +367,9 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
         // back left
         if (y != _overlap[1] and z != 0) {
           // check whether cell is within cutoff radius
-          auto distVec = ArrayMath::mul(
+          auto distVec = utils::ArrayMath::mul(
               {std::max(0.0, x - 1.0), std::max(0.0, _overlap[1] - y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
-          const auto distSquare = ArrayMath::dot(distVec, distVec);
+          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared - ov1 + z], offset));
           }
@@ -376,9 +377,9 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
         // front right
         if (x != _overlap[0] and (y != 0 or z != 0)) {
           // check whether cell is within cutoff radius
-          auto distVec = ArrayMath::mul(
+          auto distVec = utils::ArrayMath::mul(
               {std::max(0.0, _overlap[0] - x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
-          const auto distSquare = ArrayMath::dot(distVec, distVec);
+          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared * _overlap[0] + z], offset));
           }
@@ -386,10 +387,10 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
         // back right
         if (y != _overlap[1] and x != _overlap[0] and z != 0) {
           // check whether cell is within cutoff radius
-          auto distVec = ArrayMath::mul(
+          auto distVec = utils::ArrayMath::mul(
               {std::max(0.0, _overlap[0] - x - 1.0), std::max(0.0, _overlap[1] - y - 1.0), std::max(0.0, z - 1.0)},
               _cellLength);
-          const auto distSquare = ArrayMath::dot(distVec, distVec);
+          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared * ov1 - ov1 + z], offset));
           }

@@ -75,16 +75,17 @@ class LogicHandler {
     } else {
       // check if the halo particle is actually a halo particle, i.e., not too far (more than skin/2) inside of the
       // domain.
-      if (not utils::inBox(haloParticle.getR(), ArrayMath::addScalar(container->getBoxMin(), container->getSkin() / 2),
-                           ArrayMath::subScalar(container->getBoxMax(), container->getSkin() / 2))) {
+      if (not utils::inBox(haloParticle.getR(),
+                           utils::ArrayMath::addScalar(container->getBoxMin(), container->getSkin() / 2),
+                           utils::ArrayMath::subScalar(container->getBoxMax(), container->getSkin() / 2))) {
         bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
         if (not updated) {
           // a particle has to be updated if it is within cutoff + skin/2 of the bounding box
           double dangerousDistance = container->getCutoff() + container->getSkin() / 2;
 
           bool dangerous =
-              utils::inBox(haloParticle.getR(), ArrayMath::subScalar(container->getBoxMin(), dangerousDistance),
-                           ArrayMath::addScalar(container->getBoxMax(), dangerousDistance));
+              utils::inBox(haloParticle.getR(), utils::ArrayMath::subScalar(container->getBoxMin(), dangerousDistance),
+                           utils::ArrayMath::addScalar(container->getBoxMax(), dangerousDistance));
           if (dangerous) {
             // throw exception, rebuild frequency not high enough / skin too small!
             utils::ExceptionHandler::exception(

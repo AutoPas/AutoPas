@@ -48,8 +48,8 @@ void getStatus(const std::array<double, 3> &bBoxMin, const std::array<double, 3>
        ++iter) {
     ListInner.push_back(*iter);
   }
-  const auto haloBoxMin = autopas::ArrayMath::subScalar(bBoxMin, cutoff);
-  const auto haloBoxMax = autopas::ArrayMath::addScalar(bBoxMax, cutoff);
+  const auto haloBoxMin = autopas::utils::ArrayMath::subScalar(bBoxMin, cutoff);
+  const auto haloBoxMax = autopas::utils::ArrayMath::addScalar(bBoxMax, cutoff);
   for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::haloOnly); iter.isValid();
        ++iter) {
     if (autopas::utils::inBox(iter->getR(), haloBoxMin, haloBoxMax)) {

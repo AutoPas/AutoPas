@@ -72,8 +72,9 @@ class Random : public std::mt19937 {
   }
 
   /**
-   * Get a random object from given set
+   * Get a uniformly random object from the given set.
    * @param pool set
+   * @return random element
    */
   template <class T>
   T pickRandom(std::set<T> pool) {

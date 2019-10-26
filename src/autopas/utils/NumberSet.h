@@ -73,7 +73,7 @@ class NumberSet {
   virtual std::set<Number> getAll() const = 0;
 
   /**
-   * Get a random number in the set
+   * Get a random number in the set.
    * @param rng random number generator
    * @return
    */

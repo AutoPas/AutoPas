@@ -134,11 +134,11 @@ inline void C18Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>:
                 pos[1] = std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1];
                 pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
                 // calculate distance between base cell and other cell
-                const double distSquare = ArrayMath::dot(pos, pos);
+                const double distSquare = utils::ArrayMath::dot(pos, pos);
                 // only add cell offset if cell is within cutoff radius
                 if (distSquare <= interactionLengthSquare) {
                   _cellOffsets[yArray + _overlap_s[1]][xArray + _overlap_s[0]].push_back(
-                      std::make_pair(offset, ArrayMath::normalize(pos)));
+                      std::make_pair(offset, utils::ArrayMath::normalize(pos)));
                 }
               }
             }

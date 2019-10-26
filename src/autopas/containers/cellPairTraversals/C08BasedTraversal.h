@@ -51,8 +51,8 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout
 template <typename LoopBody>
 inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::c08Traversal(
     LoopBody &&loopBody) {
-  const auto end = ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
-  const auto stride = ArrayMath::addScalar(this->_overlap, 1ul);
+  const auto end = utils::ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
+  const auto stride = utils::ArrayMath::addScalar(this->_overlap, 1ul);
   this->cTraversal(std::forward<LoopBody>(loopBody), end, stride);
 }
 }  // namespace autopas

@@ -26,6 +26,7 @@ class FeatureVector : public Configuration {
 
   /**
    * Dimensions of a one-hot-encoded vector
+   * = 1 (cellSizeFactor) + #traversals + #dataLayouts + #newton3
    */
   inline static size_t oneHotDims =
       1 + allTraversalOptions.size() + allDataLayoutOptions.size() + allNewton3Options.size();
@@ -70,7 +71,7 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Cast to Eigen::VectorXd ignoring ContainerOption
+   * Cast to Eigen::VectorXd ignoring ContainerOption.
    * @return
    */
   operator Eigen::VectorXd() const {
@@ -82,7 +83,7 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Encode to Eigen::VectorXd ignoring ContainerOption using one-hot-encoding
+   * Encode to Eigen::VectorXd ignoring ContainerOption using one-hot-encoding.
    * @return one-hot-encoded vector
    */
   Eigen::VectorXd oneHotEncode() const {
@@ -104,7 +105,9 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Decode one-hot-encoded VectorXd to FeatureVector
+   * Decode one-hot-encoded VectorXd to FeatureVector.
+   * Encoding ignores ContainerOption and valid options are unknown.
+   * So this functions passes an invalid ContainerOption.
    * @param vec one-hot-encoded vector
    * @return decoded FeatureVector
    */
@@ -122,13 +125,16 @@ class FeatureVector : public Configuration {
     for (auto to : allTraversalOptions) {
       if (vec[pos++] == 1.) {
         if (traversal) {
-          utils::ExceptionHandler::exception("FeatureVector.oneHotDecode: More than one value for traversal equals 1.");
+          utils::ExceptionHandler::exception(
+              "FeatureVector.oneHotDecode: Vector encodes more than one traversal. (More than one value for traversal "
+              "equals 1.)");
         }
         traversal = to;
       }
     }
     if (not traversal) {
-      utils::ExceptionHandler::exception("FeatureVector.oneHotDecode: All values for traversal equal 0.");
+      utils::ExceptionHandler::exception(
+          "FeatureVector.oneHotDecode: Vector encodes no traversal. (All values for traversal equal 0.)");
     }
 
     // get data layout
@@ -137,13 +143,15 @@ class FeatureVector : public Configuration {
       if (vec[pos++] == 1.) {
         if (dataLayout) {
           utils::ExceptionHandler::exception(
-              "FeatureVector.oneHotDecode: More than one value for dataLayout equals 1.");
+              "FeatureVector.oneHotDecode: Vector encodes more than one data layout. (More than one value for "
+              "dataLayout equals 1.)");
         }
         dataLayout = dlo;
       }
     }
     if (not dataLayout) {
-      utils::ExceptionHandler::exception("FeatureVector.oneHotDecode: All values for dataLayout equal 0.");
+      utils::ExceptionHandler::exception(
+          "FeatureVector.oneHotDecode: Vector encodes no data layout. (All values for dataLayout equal 0.)");
     }
 
     // get newton3
@@ -151,13 +159,16 @@ class FeatureVector : public Configuration {
     for (auto n3o : allNewton3Options) {
       if (vec[pos++] == 1.) {
         if (newton3) {
-          utils::ExceptionHandler::exception("FeatureVector.oneHotDecode: More than one value for newton3 equals 1.");
+          utils::ExceptionHandler::exception(
+              "FeatureVector.oneHotDecode: Vector encodes more than one newton3. (More than one value for newton3 "
+              "equals 1.)");
         }
         newton3 = n3o;
       }
     }
     if (not newton3) {
-      utils::ExceptionHandler::exception("FeatureVector.oneHotDecode: All values for newton3 equal 0.");
+      utils::ExceptionHandler::exception(
+          "FeatureVector.oneHotDecode: Vector encodes no newton3. (All values for newton3 equal 0.)");
     }
 
     return FeatureVector(ContainerOption(-1), cellSizeFactor, *traversal, *dataLayout, *newton3);
