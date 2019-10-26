@@ -198,10 +198,6 @@ FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFu
           return acquisitions[f1] > acquisitions[f2];
         });
         break;
-      default:
-        utils::ExceptionHandler::exception("BayesianSearch: Sorting for acquisition function {} not implemented.",
-                                           utils::StringUtils::to_string(af));
-        break;
     }
 
     // find first valid configuration
