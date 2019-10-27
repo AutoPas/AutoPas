@@ -49,7 +49,6 @@ class Simulation {
    * @param autopas
    */
   void writeVTKFile(unsigned int iteration) {
-    // iterate only over owned Particles, otherwise Simulation explodes
     std::string fileBaseName = _config->vtkFileName;
     // as _autopas.getNumberOfParticles return number of haloAndOwned Particles, we need number of owned Particles
     const auto numParticles = this->getNumParticles();
@@ -184,9 +183,10 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
   }
 
   _particlePropertiesLibrary = std::make_unique<std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>();
-  for (auto &eps : _config->epsilonMap) {
-    _particlePropertiesLibrary->addType(eps.first, eps.second, _config->sigmaMap.at(eps.first),
-                                        _config->massMap.at(eps.first));
+
+  for (auto [type,epsilon] : _config->epsilonMap) {
+    _particlePropertiesLibrary->addType(type, epsilon, _config->sigmaMap.at(type),
+                                        _config->massMap.at(type));
   }
 }
 
