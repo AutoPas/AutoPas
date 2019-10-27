@@ -86,13 +86,13 @@ class MDFlexConfig {
   static inline const char *vtkWriteFrequencyStr = "vtk-write-frequency";
   size_t vtkWriteFrequency = 100;
   static inline const char *verletRebuildFrequencyStr = "verlet-rebuild-frequency";
-  unsigned int verletRebuildFrequency = 20;
+  unsigned int verletRebuildFrequency = 1;
   static inline const char *verletSkinRadiusStr = "verlet-skin-radius";
   double verletSkinRadius = .2;
   static inline const char *boxMinStr = "box-min";
   std::array<double, 3> boxMin = {0, 0, 0};
   static inline const char *boxMaxStr = "box-max";
-  std::array<double, 3> boxMax = {1, 1, 1};
+  std::array<double, 3> boxMax = {5, 5, 5};
 
   // Simulation Options:
   static inline const char *cutoffStr = "cutoff";
