@@ -290,7 +290,6 @@ void Simulation<Particle, ParticleCell>::calculateForces() {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
   auto functor = FunctorType(_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary);
-  //@todo only iterate over owned particles, right?
   _autopas.iteratePairwise(&functor);
   stopCalc = std::chrono::high_resolution_clock::now();
   auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
