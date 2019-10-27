@@ -124,6 +124,7 @@ void ActiveHarmony::reset() {
   }
   // tuning parameters
   // TODO check for valid container, traversal combination
+  /*
   if (ah_def_enum(hdef, "containerOption", nullptr) != 0) {
     utils::ExceptionHandler::exception("Error defining enum \"containerOption\"");
   }
@@ -177,7 +178,7 @@ void ActiveHarmony::reset() {
     if (ah_def_enum_value(hdef, "newton3Option", ss.str().c_str()) != 0) {
       utils::ExceptionHandler::exception("Error defining enum value for enum \"newton3Option\"");
     }
-  }
+  }*/
 
   // task configuration TODO
   ah_def_strategy(hdef, "pro.so");
