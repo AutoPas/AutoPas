@@ -83,7 +83,8 @@ INSTANTIATE_TEST_SUITE_P(
               std::transform(allDataLayoutOptions.begin(), allDataLayoutOptions.end(), std::back_inserter(ret),
                              [](autopas::DataLayoutOption d) -> std::string { return d.to_string(); });
               return ret;
-            }())));
+            }())),
+    Newton3OnOffTest::PrintToStringParamName());
 
 // Count number of Functor calls with and without newton 3 and compare
 void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
