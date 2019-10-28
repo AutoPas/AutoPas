@@ -6,77 +6,81 @@
 
 #include "ThermostatTest.h"
 
-//@todo write real tests that assert something :) WIP
-
-void ThermostatTest::initFillWithParticles(std::array<size_t, 3> particlesPerDim, double particleSpacing,
-                                           double cutoff) {
-  // initializes
+void ThermostatTest::initFillWithParticles(
+    std::array<size_t, 3> particlesPerDim, double particleSpacing, double cutoff,
+    autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas) {
   double minimalBoxLength = cutoff + 0.2 /*default skin value*/;
   std::array<double, 3> boxmax = {std::max(particlesPerDim[0] * particleSpacing, minimalBoxLength),
                                   std::max(particlesPerDim[1] * particleSpacing, minimalBoxLength),
                                   std::max(particlesPerDim[2] * particleSpacing, minimalBoxLength)};
   std::array<double, 3> boxmin = {0., 0., 0.};
-  _autopas.setBoxMin(boxmin);
-  _autopas.setBoxMax(boxmax);
-  _autopas.setCutoff(cutoff);
-  _autopas.init();
+  autopas.setBoxMin(boxmin);
+  autopas.setBoxMax(boxmax);
+  autopas.setCutoff(cutoff);
+  autopas.init();
   PrintableMolecule dummy;
-  GridGenerator::fillWithParticles(_autopas, particlesPerDim, 0, 0, dummy,
+  GridGenerator::fillWithParticles(autopas, particlesPerDim, 0, 0, dummy,
                                    {particleSpacing, particleSpacing, particleSpacing}, {0., 0., 0.});
 }
 
-TEST_F(ThermostatTest, BasicTest_BM_ON) {
-  // initializes 9 particles with velocity 0.
-  initFillWithParticles({2, 2, 2} /*particlesPerdim*/, 1. /*particleSpacing*/, 1.5 /*cutoff*/);
-  //    for(auto iter= _autopas.begin();iter.isValid();++iter){
-  //        std::cout << "Particle Nr: " << iter->getID() << " with velo: " <<
-  //        autopas::ArrayUtils::to_string(iter->getV()) <<std::endl;
-  //    }
-  double init_temp = 0.01;
-  double target_temp = 3.0;
-  double delta_temp = 0.001;
-  auto _thermostat = Thermostat<decltype(_autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>(
-      init_temp, true, target_temp, delta_temp, _particlePropertiesLibrary);
-  std::cout << "TEMPERATURE BEFORE INITIALIZATION:" << std::endl;
-  std::cout << _thermostat.calcTemperature(_autopas) << std::endl;
-  std::cout << "INITIALIZATION" << std::endl;
-  _thermostat.initialize(_autopas);
-  std::cout << "current temperature: " << std::endl;  // is output right?
-  std::cout << _thermostat.calcTemperature(_autopas) << std::endl;
-  std::cout << "APPLICATION" << std::endl;
-  for (size_t i = 0; i < 2000; i++) {
-    _thermostat.apply(_autopas);
-    if (i % 100 == 0) {
-      std::cout << "Temperature at timeStep: " << i;
-      std::cout << "   is: " << _thermostat.calcTemperature(_autopas) << std::endl << std::endl;
+void ThermostatTest::basicApplication(
+    double initT, double targetT, double deltaT, bool initBM,
+    autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas) {
+  double nrApplications = targetT / deltaT;
+  auto _thermostat = Thermostat<decltype(autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>(
+      initT, initBM, targetT, deltaT, _particlePropertiesLibrary);
+  if (initBM) {
+    _thermostat.initialize(autopas);
+  } else {
+    // initial velocity value of particles necessary otherwise zero divisions causing error
+    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+      iter->addV({0, 0.1, 0});
     }
+    _thermostat.initialize(autopas);
   }
-  SUCCEED();
+  _thermostat.apply(autopas);
+  for (size_t i = 1; i <= nrApplications; i++) {
+    EXPECT_NEAR(_thermostat.calcTemperature(autopas), (initT + (deltaT * i)) > targetT ? targetT : initT + (deltaT * i),
+                absDelta);
+    _thermostat.apply(autopas);
+  }
+  _thermostat.apply(autopas);
+  EXPECT_NEAR(_thermostat.calcTemperature(autopas), targetT, absDelta);
 }
-TEST_F(ThermostatTest, BasicTest_BM_OFF) {
-  // initializes 9 particles with velocity 0.
-  initFillWithParticles({2, 2, 2} /*particlesPerdim*/, 1. /*particleSpacing*/, 1.5 /*cutoff*/);
-  for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
-    iter->addV({0.5, 0.5, 0.5});
+
+void ThermostatTest::calcTemperature(size_t particlesPerDimension) {
+  auto autopas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
+  initFillWithParticles({particlesPerDimension, particlesPerDimension, particlesPerDimension} /*particlesPerdim*/,
+                        1. /*particleSpacing*/, 1.5 /*cutoff*/, autopas /*autopas Object*/);
+  auto _thermostat = Thermostat<decltype(autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>(
+      0.1 /*initT*/, true /*initBM*/, 5 /*targetT*/, 0.01 /*deltaT*/, _particlePropertiesLibrary);
+  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    iter->setV({0.1, 0.1, 0.2});
   }
-  double init_temp = 0.01;
-  double target_temp = 3.0;
-  double delta_temp = 0.001;
-  auto _thermostat = Thermostat<decltype(_autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>(
-      init_temp, false, target_temp, delta_temp, _particlePropertiesLibrary);
-  std::cout << "TEMPERATURE BEFORE INITIALIZATION:" << std::endl;
-  std::cout << _thermostat.calcTemperature(_autopas) << std::endl;
-  std::cout << "INITIALIZATION" << std::endl;
-  _thermostat.initialize(_autopas);
-  std::cout << "current temperature: " << std::endl;  // is output right?
-  std::cout << _thermostat.calcTemperature(_autopas) << std::endl;
-  std::cout << "APPLICATION" << std::endl;
-  for (size_t i = 0; i < 2000; i++) {
-    _thermostat.apply(_autopas);
-    if (i % 100 == 0) {
-      std::cout << "Temperature at timeStep: " << i;
-      std::cout << "   is: " << _thermostat.calcTemperature(_autopas) << std::endl << std::endl;
-    }
-  }
-  SUCCEED();
+  EXPECT_NEAR(_thermostat.calcTemperature(autopas), 0.02, absDelta);
+}
+
+TEST_F(ThermostatTest, Application) {
+  auto _autopas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
+  initFillWithParticles({2, 2, 2} /*particlesPerdim*/, 1. /*particleSpacing*/, 1.5 /*cutoff*/,
+                        _autopas /*autopas Object*/);
+  basicApplication(0.01, 3.0, 0.001, true, _autopas);
+  // reset _autopas
+  initFillWithParticles({2, 2, 2} /*particlesPerdim*/, 1. /*particleSpacing*/, 1.5 /*cutoff*/,
+                        _autopas /*autopas Object*/);
+  basicApplication(1.0, 7.0, 0.01, true, _autopas);
+  // dont use current Temp for Brownian Motion initialization
+  initFillWithParticles({2, 2, 2} /*particlesPerdim*/, 1. /*particleSpacing*/, 1.5 /*cutoff*/,
+                        _autopas /*autopas Object*/);
+  basicApplication(0.01, 3.0, 0.001, false, _autopas);
+  // reset _autopas
+  initFillWithParticles({2, 2, 2} /*particlesPerdim*/, 1. /*particleSpacing*/, 1.5 /*cutoff*/,
+                        _autopas /*autopas Object*/);
+  basicApplication(1.0, 7.0, 0.01, false, _autopas);
+}
+
+TEST_F(ThermostatTest, calcTemperature) {
+  calcTemperature(1);
+  calcTemperature(2);
+  calcTemperature(10);
 }

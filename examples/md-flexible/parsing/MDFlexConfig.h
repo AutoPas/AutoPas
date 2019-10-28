@@ -86,7 +86,7 @@ class MDFlexConfig {
   static inline const char *vtkWriteFrequencyStr = "vtk-write-frequency";
   size_t vtkWriteFrequency = 100;
   static inline const char *verletRebuildFrequencyStr = "verlet-rebuild-frequency";
-  unsigned int verletRebuildFrequency = 20;
+  unsigned int verletRebuildFrequency = 1;
   static inline const char *verletSkinRadiusStr = "verlet-skin-radius";
   double verletSkinRadius = .2;
   static inline const char *boxMinStr = "box-min";
