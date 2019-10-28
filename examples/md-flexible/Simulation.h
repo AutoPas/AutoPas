@@ -184,9 +184,8 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
 
   _particlePropertiesLibrary = std::make_unique<std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>();
 
-  for (auto [type,epsilon] : _config->epsilonMap) {
-    _particlePropertiesLibrary->addType(type, epsilon, _config->sigmaMap.at(type),
-                                        _config->massMap.at(type));
+  for (auto [type, epsilon] : _config->epsilonMap) {
+    _particlePropertiesLibrary->addType(type, epsilon, _config->sigmaMap.at(type), _config->massMap.at(type));
   }
 }
 

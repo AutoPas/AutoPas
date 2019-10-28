@@ -107,10 +107,10 @@ class CubeGrid : public Object {
    * @return BoxMax of Cube
    * */
   const std::array<double, 3> getBoxMax() const override {
-      std::array<double,3> dppD;
-      //copy for type conversion
-      std::copy(std::begin(particlesPerDim),std::end(particlesPerDim),std::begin(dppD));
-      return autopas::ArrayMath::add(bottomLeftCorner,(autopas::ArrayMath::mulScalar(dppD,particleSpacing)));
+    std::array<double, 3> dppD;
+    // copy for type conversion
+    std::copy(std::begin(particlesPerDim), std::end(particlesPerDim), std::begin(dppD));
+    return autopas::ArrayMath::add(bottomLeftCorner, (autopas::ArrayMath::mulScalar(dppD, particleSpacing)));
   }
   /**Prints the Configuration of the current Object
    * */
@@ -201,7 +201,7 @@ class CubeGauss : public Object {
    * @return BoxMax of Cube
    * */
   const std::array<double, 3> getBoxMax() const override {
-    return autopas::ArrayMath::add(bottomLeftCorner,boxLength);
+    return autopas::ArrayMath::add(bottomLeftCorner, boxLength);
   }
 
   /**Prints the Configuration of the current Object
@@ -278,7 +278,7 @@ class CubeUniform : public Object {
    * @return BoxMax of Cube
    * */
   const std::array<double, 3> getBoxMax() const override {
-      return autopas::ArrayMath::add(bottomLeftCorner,boxLength);
+    return autopas::ArrayMath::add(bottomLeftCorner, boxLength);
   }
 
   /**Prints the Configuration of the current Object

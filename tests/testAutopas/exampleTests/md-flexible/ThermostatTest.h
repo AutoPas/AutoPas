@@ -17,15 +17,16 @@
 class ThermostatTest : public AutoPasTestBase {
  public:
   ThermostatTest()
-      : AutoPasTestBase(),
-        _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>()),
-        absDelta(1e-7){
+      : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>()), absDelta(1e-7) {
     _particlePropertiesLibrary.addType(0, 1., 1., 1.); /*initializing the default particlePropertiesLibrary*/
   }
 
-  static void initFillWithParticles(std::array<unsigned long, 3> particlesPerDim, double particleSpacing, double cutoff,autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas);
+  static void initFillWithParticles(
+      std::array<unsigned long, 3> particlesPerDim, double particleSpacing, double cutoff,
+      autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas);
 
-  void basicApplication(double initT,double targetT,double deltaT,bool initBM,autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas);
+  void basicApplication(double initT, double targetT, double deltaT, bool initBM,
+                        autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas);
 
   void calcTemperature(size_t particlesPerDimension);
 

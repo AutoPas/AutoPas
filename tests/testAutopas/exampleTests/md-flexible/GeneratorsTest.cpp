@@ -160,7 +160,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   // check if during initialization, not 2 Particles were initialized with same id
   std::set<size_t> ids;
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-      ASSERT_EQ(ids.count(iter->getID()),0) << "Two particles have the same ID: " << iter->toString();
+    ASSERT_EQ(ids.count(iter->getID()), 0) << "Two particles have the same ID: " << iter->toString();
     ids.insert(iter->getID());
   }
   EXPECT_EQ(ids.size(), autoPas.getNumberOfParticles());
