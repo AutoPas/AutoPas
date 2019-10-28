@@ -10,6 +10,7 @@
 #include <memory>
 #include <set>
 #include <type_traits>
+#include <autopas/selectors/tuningStrategy/ActiveHarmony.h>
 #include "autopas/LogicHandler.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/options/TuningStrategyOption.h"
@@ -515,6 +516,10 @@ class AutoPas {
       case TuningStrategyOption::bayesianSearch: {
         return std::make_unique<BayesianSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
                                                 _allowedDataLayouts, _allowedNewton3Options, _maxEvidence);
+      }
+
+      case TuningStrategyOption::activeHarmony: {
+        return std::make_unique<ActiveHarmony>(_allowedCellSizeFactors->getAll(), _allowedTraversals, _allowedDataLayouts, _allowedNewton3Options);
       }
     }
 

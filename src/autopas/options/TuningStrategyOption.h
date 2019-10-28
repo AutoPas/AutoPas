@@ -29,7 +29,11 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * Predict the configuration which will yield the most
      * information if tested next.
      */
-    bayesianSearch = 1
+    bayesianSearch = 1,
+    /**
+     * ActiveHarmony implementation
+     */
+     activeHarmony = 2
   };
 
   /**
@@ -57,6 +61,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
     return {
         {TuningStrategyOption::fullSearch, "full-Search"},
         {TuningStrategyOption::bayesianSearch, "bayesian-Search"},
+        {TuningStrategyOption::activeHarmony, "active-harmony"}
     };
   };
 
