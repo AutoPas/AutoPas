@@ -42,12 +42,14 @@ if (AUTOPAS_ENABLE_CUDA)
     target_compile_options(
         autopas
         PUBLIC
-            # architecture flags and -Xcompiler to prepend to -fopenmp
+            # architecture flags
             $<$<COMPILE_LANGUAGE:CUDA>:
+              # specify host compiler
               -ccbin=${CMAKE_CXX_COMPILER}
+              # add debug flags
               $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:-lineinfo -pg>
+              # notify nvcc of compute capability 
               -gencode arch=compute_${CUDA_COMPUTE_CAPABILITY},code=sm_${CUDA_COMPUTE_CAPABILITY}
-              #$<$<BOOL:${AUTOPAS_OPENMP}>:-Xcompiler>
             >
     )
 
