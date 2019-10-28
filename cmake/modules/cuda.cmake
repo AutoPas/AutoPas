@@ -42,15 +42,13 @@ if (AUTOPAS_ENABLE_CUDA)
     target_compile_options(
         autopas
         PUBLIC
-            # architecture flags
-            $<$<COMPILE_LANGUAGE:CUDA>:
-              # specify host compiler
-              -ccbin=${CMAKE_CXX_COMPILER}
-              # add debug flags
-              $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:-lineinfo -pg>
-              # notify nvcc of compute capability 
-              -gencode arch=compute_${CUDA_COMPUTE_CAPABILITY},code=sm_${CUDA_COMPUTE_CAPABILITY}
-            >
+            # specify host compiler
+            $<$<COMPILE_LANGUAGE:CUDA>:-ccbin=${CMAKE_CXX_COMPILER}>
+            # add debug flags
+            $<$<COMPILE_LANGUAGE:CUDA>:$<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:-lineinfo -pg>>
+            # notify nvcc of compute capability
+            $<$<COMPILE_LANGUAGE:CUDA>:-gencode
+            arch=compute_${CUDA_COMPUTE_CAPABILITY},code=sm_${CUDA_COMPUTE_CAPABILITY}>
     )
 
 endif ()
