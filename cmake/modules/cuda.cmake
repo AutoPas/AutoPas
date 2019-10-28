@@ -43,10 +43,12 @@ if (AUTOPAS_ENABLE_CUDA)
         autopas
         PUBLIC
             # architecture flags and -Xcompiler to prepend to -fopenmp
-            $<$<COMPILE_LANGUAGE:CUDA>:$<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:-lineinfo
-            -pg>
-            -gencode
-            arch=compute_${CUDA_COMPUTE_CAPABILITY},code=sm_${CUDA_COMPUTE_CAPABILITY}
-            $<$<BOOL:${AUTOPAS_OPENMP}>:-Xcompiler>>
+            $<$<COMPILE_LANGUAGE:CUDA>:
+              -ccbin=${CMAKE_CXX_COMPILER}
+              $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:-lineinfo -pg>
+              -gencode arch=compute_${CUDA_COMPUTE_CAPABILITY},code=sm_${CUDA_COMPUTE_CAPABILITY}
+              #$<$<BOOL:${AUTOPAS_OPENMP}>:-Xcompiler>
+            >
     )
+
 endif ()
