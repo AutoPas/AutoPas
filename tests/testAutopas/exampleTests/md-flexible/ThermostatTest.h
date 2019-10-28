@@ -18,19 +18,18 @@ class ThermostatTest : public AutoPasTestBase {
  public:
   ThermostatTest()
       : AutoPasTestBase(),
-        _autopas(autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>()),
         _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>()),
-        _timeDiscretization(
-            TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>(
-                0.002 /*deltaT*/, _particlePropertiesLibrary)) {
+        absDelta(1e-7){
     _particlePropertiesLibrary.addType(0, 1., 1., 1.); /*initializing the default particlePropertiesLibrary*/
   }
 
-  void initFillWithParticles(std::array<unsigned long, 3> particlesPerDim, double particleSpacing, double cutoff);
+  static void initFillWithParticles(std::array<unsigned long, 3> particlesPerDim, double particleSpacing, double cutoff,autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas);
+
+  void basicApplication(double initT,double targetT,double deltaT,bool initBM,autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas);
+
+  void calcTemperature(size_t particlesPerDimension);
 
  protected:
-  autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> _autopas;
   ParticlePropertiesLibrary<double, size_t> _particlePropertiesLibrary;
-  TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>
-      _timeDiscretization;
+  double absDelta;
 };
