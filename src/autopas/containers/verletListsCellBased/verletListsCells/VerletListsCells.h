@@ -105,7 +105,7 @@ class VerletListsCells
     typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap,
                                                            this->getCutoff() + this->getSkin());
 
-    // FIXME: Clang compiler bug makes this necessary
+    // clang compiler bug requires static cast
     switch (static_cast<TraversalOption>(_buildTraversal)) {
         //    switch (_buildTraversal) {
       case TraversalOption::c08: {
