@@ -499,7 +499,7 @@ class AutoPas {
    * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
    */
   std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
-    // FIXME: clang compiler bug requires static cast
+    // clang compiler bug requires static cast
     switch (static_cast<TuningStrategyOption>(_tuningStrategyOption)) {
       case TuningStrategyOption::fullSearch: {
         if (not _allowedCellSizeFactors->isFinite()) {

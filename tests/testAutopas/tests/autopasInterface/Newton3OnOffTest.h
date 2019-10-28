@@ -56,4 +56,17 @@ class Newton3OnOffTest : public AutoPasTestBase,
    */
   template <bool useNewton3, class Container, class Traversal>
   std::pair<size_t, size_t> eval(autopas::DataLayoutOption dataLayout, Container &container, Traversal traversalOption);
+
+  struct PrintToStringParamName {
+    template <class ParamType>
+    std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
+      auto inputTuple = static_cast<ParamType>(info.param);
+      std::string containerPlusTraversal(std::get<0>(inputTuple));
+      auto contTrav = autopas::utils::StringUtils::tokenize(containerPlusTraversal, "+");
+      std::string dataLayout(std::get<1>(inputTuple));
+      // replace all '-' with '_', otherwise the test name is invalid
+      std::replace(dataLayout.begin(), dataLayout.end(), '-', '_');
+      return contTrav[0] + "_" + contTrav[1] + "_" + dataLayout;
+    }
+  };
 };

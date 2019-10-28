@@ -10,3 +10,4 @@ plugins:
     lint-no-multiple-toplevel-headings: false
     lint-no-file-name-irregular-characters: \\.a-zA-Z0-9-_
     lint-ordered-list-marker-value: ordered
+    lint-list-item-spacing: {checkBlanks: true} # lists can be tight even with sub items
