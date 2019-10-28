@@ -90,7 +90,7 @@ INSTANTIATE_TEST_SUITE_P(
 void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
-  if (traversalOption == autopas::TraversalOption::c04SoA and dataLayout == autopas::DataLayoutOption::aos) {
+  if (traversalOption == autopas::TraversalOption::c04SoA and not(dataLayout == autopas::DataLayoutOption::soa)) {
     return;
   }
 
@@ -107,13 +107,17 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   EXPECT_CALL(mockFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
 
-  if (dataLayout == autopas::DataLayoutOption::soa) {
+  if (dataLayout == autopas::DataLayoutOption::soa or dataLayout == autopas::DataLayoutOption::cuda) {
     // loader and extractor will be called, we don't care how often.
     EXPECT_CALL(mockFunctor, SoALoader(_, _))
         .Times(testing::AtLeast(1))
         .WillRepeatedly(testing::WithArgs<0, 1>(
             testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
     EXPECT_CALL(mockFunctor, SoAExtractor(_, _)).Times(testing::AtLeast(1));
+  }
+  if (dataLayout == autopas::DataLayoutOption::cuda) {
+    EXPECT_CALL(mockFunctor, deviceSoALoader(_, _)).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, deviceSoAExtractor(_, _)).Times(testing::AtLeast(1));
   }
 
   const auto [callsNewton3SC, callsNewton3Pair] = eval<true>(dataLayout, container, traversalOption);
@@ -189,8 +193,15 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
       break;
     }
     case autopas::DataLayoutOption::cuda: {
-      // supresses Warning
-      // TODO implement suitable test
+      EXPECT_CALL(mockFunctor, CudaFunctor(_, useNewton3))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsSC++; }));
+      EXPECT_CALL(mockFunctor, CudaFunctor(_, _, useNewton3))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsPair++; }));
+
+      EXPECT_CALL(mockFunctor, CudaFunctor(_, _, not useNewton3)).Times(0);
+
       iterate(
           container,
           autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
