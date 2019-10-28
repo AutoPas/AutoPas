@@ -56,8 +56,10 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
    * https://github.com/AutoPas/AutoPas/issues/354
    * @return
    */
-  bool isApplicable() const override { return dataLayout == DataLayoutOption::soa and
-        (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1); }
+  bool isApplicable() const override {
+    return dataLayout == DataLayoutOption::soa and
+           (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1);
+  }
 
  private:
   C04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
