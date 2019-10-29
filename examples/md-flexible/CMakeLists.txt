@@ -24,21 +24,10 @@ file(
     "*.yaml"
 )
 
-#file(
-#        GLOB_RECURSE YAML
-#        RELATIVE ${PROJECT_SOURCE_DIR}/examples/md-flexible/input
-#        "*.yaml"
-#)
-
-#foreach (yamlfile ${YAML})
-#    configure_file(${CMAKE_SOURCE_DIR}/${yamlfile} ${CMAKE_BINARY_DIR}/${yamlfile} COPYONLY)
-#endforeach (yamlfile)
 
 foreach (script ${SCRIPTS})
-    configure_file(${CMAKE_SOURCE_DIR}/${script} ${CMAKE_BINARY_DIR}/${script} COPYONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/${script} ${CMAKE_BINARY_DIR}/examples/md-flexible COPYONLY)
 endforeach (script)
-
-message(STATUS "testing ${CMAKE_SOURCE_DIR}")
 
 # -----------------test-----------------
 # add check for current target

@@ -1,10 +1,20 @@
 #YAML parsing FILE
 
 #
-#log-level: debug
-#iterations: 4
-#container: linkedcell
+log-level: debug
+iterations: 4
+container: linkedcell
 #newton3: enabled
-
+Objects:
+  CubeGrid:
+    0:
+      particle-type: 0
+      particle-epsilon: 1.
+      particle-sigma: 1.
+      particle-mass: 1.
+      particles-per-dimension: [8,8,8]
+      particle-spacing: 0.5
+      velocity: [10.,10.,10.]
+      bottomLeftCorner: [0.,0.,0.]
 
 
