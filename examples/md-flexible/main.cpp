@@ -122,7 +122,8 @@ void writeVTKFile(string &filename, size_t numParticles, AutoPasTemplate &autopa
  * @param autopas
  * @param cutoff
  * @param numIterations
- * @return number of iterations and time for all tuning & non-tuning iterations in microseconds.
+ * @return tuple(number of tuning-iterations, total time of tuning-iterations in us, total time of non-tuning iterations
+ * in us).
  */
 template <class FunctorChoice, class AutoPasTemplate>
 std::tuple<long, long, long> calculate(AutoPasTemplate &autopas, double cutoff, size_t numIterations) {
