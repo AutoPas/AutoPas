@@ -10,6 +10,10 @@
 #include <set>
 
 #include "Objects/Objects.h"
+#include "Objects/Sphere.h"
+#include "Objects/CubeGauss.h"
+#include "Objects/CubeGrid.h"
+#include "Objects/CubeUniform.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
@@ -80,7 +84,7 @@ class MDFlexConfig {
   static inline const char *tuningSamplesStr = "tuning-samples";
   unsigned int tuningSamples = 3;
   static inline const char *tuningMaxEvidenceStr = "tuning-max-evidence";
-  unsigned int tuningMaxEvidence = 10;
+  unsigned int tuningMaxEvidence =   10;
   static inline const char *vtkFileNameStr = "vtk-filename";
   std::string vtkFileName;
   static inline const char *vtkWriteFrequencyStr = "vtk-write-frequency";

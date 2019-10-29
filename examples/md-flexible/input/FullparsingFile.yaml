@@ -8,17 +8,17 @@
 #traversal:                         #string option
 #tuning-strategy:                   #string option
 #newton3:                           #string option
-#cell-size-factor:                  #string option
-#log-level: debug                    #string option
+#cell-size:                         #string option
+#log-level: debug                   #string option
+#log-file:                          #string option
 #tuning-interval:                   #int option
 #tuning-samples:                    #int option
 #tuning-max-evidence:               #int option
 #verlet-rebuild-frequency:          #int option
 #verlet-skin-radius                 #double option
 #no-flops:                          #boolean option
-#log-file:                          #string option
 #vtk-filename:                      #string option
-#vtk-write-frequency:                #size_t option
+#vtk-write-frequency:               #size_t option
 
 ###Simulation Options=
 

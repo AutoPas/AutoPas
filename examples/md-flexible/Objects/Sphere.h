@@ -66,7 +66,7 @@ public:
                                 std::array<double, 3> posVector = autopas::ArrayMath::add(
                                         center,
                                         autopas::ArrayMath::mulScalar(autopas::ArrayMath::mul(posDelta, multipliers), particleSpacing));
-                                double disCheck = Generator::L2Norm(autopas::ArrayMath::sub(posVector, center));
+                                double disCheck = autopas::ArrayMath::dot(autopas::ArrayMath::sub(posVector, center),autopas::ArrayMath::sub(posVector, center));
                                 if (disCheck <= (double)(radius + 1) * particleSpacing) {
                                     counter++;
                                 }

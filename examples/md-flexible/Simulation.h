@@ -311,7 +311,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
       std::cout << "Iteration " << iteration << std::endl;
     }
     if (_config->periodic) {
-      BoundaryConditions<Particle, ParticleCell>::applyPeriodic(_autopas);
+      BoundaryConditions<ParticleCell>::applyPeriodic(_autopas);
     }
     _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
 
