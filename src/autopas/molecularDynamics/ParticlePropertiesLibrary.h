@@ -10,8 +10,6 @@
 #include <vector>
 #include "autopas/particles/Particle.h"
 
-//@todo soon: add template parameter to support 32 or 64 bit values-> did resolve into undefined references
-
 /**
  * This class stores the (physical) properties of particle types.
  *
@@ -139,10 +137,10 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getMass(intType i) cons
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::get24Epsilon(intType i) const {
-  return _computedMixing24Epsilon[std::make_pair(i, i)];
+  return _computedMixing24Epsilon.at(std::make_pair(i, i));
 }
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquare(intType i) const {
-  return _computedMixingSigmaSquare[std::make_pair(i, i)];
+  return _computedMixingSigmaSquare.at(std::make_pair(i, i));
 }

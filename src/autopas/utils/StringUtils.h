@@ -194,6 +194,24 @@ inline std::string to_string(const TuningStrategyOption &option) {
  * @return The string representation.
  */
 inline std::string to_string(const double &value) { return std::to_string(value); }
+
+/**
+ * Converts any iterable container of Option objects to it's string representation.
+ * @tparam T Container that can be used in range based for loops.
+ * @param arr
+ * @return
+ */
+template <class T>
+inline std::string iterableToString(T arr) {
+  std::ostringstream ss;
+  for (auto a : arr) {
+    ss << autopas::utils::StringUtils::to_string(a) << ", ";
+  }
+  // deletes last comma
+  ss << "\b\b";
+  return ss.str();
+}
+
 /**
  * All accepted delimiters to split input strings.
  */
@@ -360,10 +378,53 @@ inline std::set<autopas::ContainerOption> parseContainerOptions(const std::strin
       containerOptions.insert(autopas::ContainerOption(-1));
     }
   }
-
   return containerOptions;
 }
 
+/**
+ * Converts a string to std::array<double,3>
+ * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
+ *
+ * String format: 3 doubles(or ints) separeted by delimiters (examples: 10.,10.,10.)
+ *
+ * @param boxOptionString
+ * @return autopas boxOption
+ */
+inline std::array<double, 3> parseBoxOption(const std::string &boxOptionString) {
+  std::array<double, 3> boxOption{};
+  auto doubles = tokenize(boxOptionString, delimiters);
+  auto size = doubles.size();
+  if (size > 3) {
+    throw std::runtime_error("wrong BoxOption: " + boxOptionString);
+  }
+  for (int i = 0; i < 3; i++) {
+    try {
+      boxOption[i] = std::stod(doubles.at(i));
+    } catch (const std::exception &e) {
+      std::cout << "BoxOption string: " << e.what() << "not convertable to doulbe" << std::endl;
+    }
+  }
+  return boxOption;
+}
+
+/**
+ * Converts a string to bool
+ *
+ * String format: on || off || enabled || disabled || true || false
+ * @param booleanOption
+ * @return
+ */
+inline bool parseBoolOption(const std::string &booleanOption) {
+  if (booleanOption == "on" or booleanOption == "true" or booleanOption == "enabled") {
+    return true;
+  } else if (booleanOption == "off" or booleanOption == "false" or booleanOption == "disabled") {
+    return false;
+  } else {
+    autopas::utils::ExceptionHandler::exception("Unknown boolean Option: {}", booleanOption);
+  }
+  // should not be reached
+  return false;
+}
 /**
  * Converts a string containing a selector strategy to an enum. The option is expected to be lower case.
  *

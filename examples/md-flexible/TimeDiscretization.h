@@ -17,10 +17,16 @@ class TimeDiscretization {
   using TimeDiscretizationFloatType = typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryFloatType;
   using TimeDiscretizationIntType = typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryIntType;
 
+  /**
+   * Constructor
+   * */
   explicit TimeDiscretization(TimeDiscretizationFloatType particleDeltaT,
                               ParticlePropertiesLibraryTemplate &particlePropertiesLibrary)
       : particle_delta_t(particleDeltaT), _particlePropertiesLibrary(particlePropertiesLibrary){};
 
+  /**
+   * Default Destructor
+   * */
   virtual ~TimeDiscretization() = default;
 
   /**
@@ -36,9 +42,10 @@ class TimeDiscretization {
    * @return time for the calculation in microseconds
    */
   long CalculateV(AutoPasTemplate &autopas);
-  /**Getter for particleDeltaT
+  /**
+   * Getter for particleDeltaT
    * @return particle_delta_t
-   * */
+   */
   TimeDiscretizationFloatType getParticleDeltaT() const;
 
  private:
@@ -46,6 +53,9 @@ class TimeDiscretization {
    * Duration of a timestep
    */
   TimeDiscretizationFloatType particle_delta_t;
+  /**
+   * ParticlePropertiesLibrary to access Mass of Particles
+   */
   ParticlePropertiesLibraryTemplate _particlePropertiesLibrary;
 };
 
@@ -56,11 +66,12 @@ long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::Cal
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     auto v = iter->getV();
     auto m = _particlePropertiesLibrary.getMass(iter->getTypeId());
     auto f = iter->getF();
     iter->setOldF(f);
+    iter->setF({0., 0., 0.});
     v = autopas::ArrayMath::mulScalar(v, particle_delta_t);
     f = autopas::ArrayMath::mulScalar(f, (particle_delta_t * particle_delta_t / (2 * m)));
     auto newR = autopas::ArrayMath::add(v, f);
@@ -77,7 +88,7 @@ long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::Cal
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     auto m = _particlePropertiesLibrary.getMass(iter->getTypeId());
     auto force = iter->getF();
     auto old_force = iter->getOldf();

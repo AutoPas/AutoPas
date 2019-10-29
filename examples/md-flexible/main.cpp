@@ -7,78 +7,35 @@
 #include "Simulation.h"
 
 #include <autopas/utils/MemoryProfiler.h>
-#include <chrono>
-#include <fstream>
 #include <iostream>
-#include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
-#include "MDFlexParser.h"
-#include "PrintableMolecule.h"  // includes autopas.h
-#include "autopas/AutoPas.h"
+#include "PrintableMolecule.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
-
-using namespace std;
-using namespace autopas;
-
-/**
- * Prints position and forces of all particles in the autopas object.
- * @tparam AutoPasTemplate Template for the templetized autopas type.
- * @param autopas
- */
-template <class AutoPasTemplate>
-void printMolecules(AutoPasTemplate &autopas) {
-  for (auto particleIterator = autopas.begin(); particleIterator.isValid(); ++particleIterator) {
-    particleIterator->print();
-  }
-}
-
-/** Writes a VTK file for the current state of the AutoPas object
- * @tparam AutoPasTemplate Template for the templetized autopas type.
- * @param filename
- * @param numParticles
- * @param autopas
- */
-template <class AutoPasTemplate>
-void writeVTKFile(string &filename, AutoPasTemplate &autopas) {
-  std::ofstream vtkFile;
-  vtkFile.open(filename);
-
-  vtkFile << "# vtk DataFile Version 2.0" << endl;
-  vtkFile << "Timestep" << endl;
-  vtkFile << "ASCII" << endl;
-  vtkFile << "DATASET STRUCTURED_GRID" << endl;
-  vtkFile << "DIMENSIONS 1 1 1" << endl;
-  vtkFile << "POINTS " << autopas.getNumberOfParticles() << " double" << endl;
-
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    auto pos = iter->getR();
-    vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << endl;
-  }
-
-  vtkFile.close();
-}
+#include "parsing/MDFlexParser.h"
 
 int main(int argc, char **argv) {
   // start simulation timer
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
-
   // Parsing
-  auto parser = std::make_shared<MDFlexParser>();
-  if (not parser->parseInput(argc, argv)) {
+  MDFlexConfig config;
+
+  if (not MDFlexParser::parseInput(argc, argv, config)) {
     exit(-1);
   }
-  parser->printConfig();
-  cout << endl;
+  // make sure sim box is big enough
+  config.calcSimulationBox();
+
+  config.print();
+
+  std::cout << std::endl;
 
   // Initialization
-  simulation.initialize(parser);
-  cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << endl;
+  simulation.initialize(config);
+  std::cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
 
   // Simulation
-  cout << "Starting simulation... " << endl;
+  std::cout << "Starting simulation... " << std::endl;
   simulation.simulate();
-  cout << "Simulation done!" << endl;
+  std::cout << "Simulation done!" << std::endl;
 
   simulation.printStatistics();
 

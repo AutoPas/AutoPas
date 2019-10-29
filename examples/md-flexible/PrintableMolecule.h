@@ -24,13 +24,14 @@ class PrintableMolecule
 
   /**
    * Constructor.
-   * @param r Position
+   * @param pos Position
    * @param v Veloctiy
-   * @param i Molecule ID
-   * @param typeID Molecule Type ID
+   * @param moleculeId Molecule ID
+   * @param typeId Molecule Type ID
    */
-  PrintableMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i, unsigned int typeID = 0)
-      : MoleculeLJ(r, v, i, typeID) {}
+  PrintableMolecule(std::array<double, 3> pos, std::array<double, 3> v, unsigned long moleculeId,
+                    unsigned int typeId = 0)
+      : MoleculeLJ(pos, v, moleculeId, typeId) {}
 
   /**
    * Print molecule properties to std out.

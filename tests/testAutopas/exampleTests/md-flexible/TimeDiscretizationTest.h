@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
-#include "../../../../examples/md-flexible/Simulation.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
 #include "../../../../src/autopas/utils/ArrayMath.h"
 #include "AutoPasTestBase.h"
@@ -33,7 +32,6 @@ class TimeDiscretizationTest : public AutoPasTestBase {
     functor.setParticleProperties(1., 1.);
     _particlePropertiesLibrary.addType(0, 1, 1, 1);
   }
-
   void globalForceTest(autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &auto1,
                        autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &auto2,
                        int iterations);

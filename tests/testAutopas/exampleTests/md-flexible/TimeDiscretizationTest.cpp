@@ -40,7 +40,7 @@ void TimeDiscretizationTest::initFillWithParticles(
   autopas.setBoxMax(boxmax);
   autopas.init();
   PrintableMolecule dummy;
-  GridGenerator::fillWithParticles(autopas, particlesPerDim, dummy, {1, 1, 1}, {0., 0., 0.});
+  GridGenerator::fillWithParticles(autopas, particlesPerDim, 0, 0, dummy, {1, 1, 1}, {0., 0., 0.});
 }
 
 std::array<double, 3> TimeDiscretizationTest::nextPosition(std::array<double, 3> position, std::array<double, 3> force,
@@ -71,9 +71,12 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
   double particleD = 0.01;
   TimeDiscretization<decltype(autopas), decltype(_particlePropertiesLibrary)> td1(particleD,
                                                                                   _particlePropertiesLibrary);
-  // initialize force and oldforce values:
-  autopas.iteratePairwise(&functor);
   td1.CalculateX(autopas);
+  autopas.iteratePairwise(&functor);
+  td1.CalculateV(autopas);
+  td1.CalculateX(autopas);
+  autopas.iteratePairwise(&functor);
+  td1.CalculateV(autopas);
 
   // comparing Position and Velocities values calculated in TimeDiscretization Class with calculated value using
   // nextPosition and nextVelocity that implement störmer-verlet algorithm
@@ -81,6 +84,8 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
   std::vector<std::array<double, 3>> oldPositionValues;
   std::vector<std::array<double, 3>> forces;
   std::vector<std::array<double, 3>> oldforces;
+  // nextVelocity is calculated with forces from current timeStep(velForces) and forces from last timeStep
+  std::vector<std::array<double, 3>> velForces;
   int i = 0;
   // testing for each time Step: forces are static
   // for each time step values used in the formula must be reset
@@ -88,12 +93,12 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
     oldVelocityValues.clear();
     oldPositionValues.clear();
     forces.clear();
-    oldforces.clear();
+    velForces.clear();
     i = 0;  // index to particleID to compare values in Vectors
     ASSERT_EQ(oldVelocityValues.size(), 0);
     ASSERT_EQ(oldPositionValues.size(), 0);
     ASSERT_EQ(forces.size(), 0);
-    ASSERT_EQ(oldforces.size(), 0);
+    ASSERT_EQ(velForces.size(), 0);
     // filling vectors with values of timeStep i
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -102,21 +107,25 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
       oldVelocityValues.emplace_back(iter->getV());
       oldPositionValues.emplace_back(iter->getR());
       forces.emplace_back(iter->getF());
-      oldforces.emplace_back(iter->getOldf());
     }
     td1.CalculateX(autopas);
+    autopas.iteratePairwise(&functor);
+    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+      velForces.emplace_back(iter->getF());
+    }
     td1.CalculateV(autopas);
+
     ASSERT_EQ(oldPositionValues.size(), autopas.getNumberOfParticles());
     ASSERT_EQ(oldVelocityValues.size(), autopas.getNumberOfParticles());
     ASSERT_EQ(forces.size(), autopas.getNumberOfParticles());
-    ASSERT_EQ(oldforces.size(), autopas.getNumberOfParticles());
+    ASSERT_EQ(velForces.size(), autopas.getNumberOfParticles());
     // checking for equality of values calculated for timeStep i+1
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       EXPECT_EQ(iter->getID(), i);
-      EXPECT_EQ(iter->getV(), nextVelocity(oldVelocityValues.at(i), forces.at(i), oldforces.at(i), particleD));
+      EXPECT_EQ(iter->getV(), nextVelocity(oldVelocityValues.at(i), velForces.at(i), forces.at(i), particleD));
       EXPECT_EQ(iter->getR(), nextPosition(oldPositionValues.at(i), forces.at(i), oldVelocityValues.at(i), particleD));
       i++;
     }

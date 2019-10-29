@@ -1,0 +1,55 @@
+#YAML parsing FILE for Spinodal Decomposition
+
+#__Equilibrum Phase__
+
+###AutoPas Options=
+
+#container:                         #string option
+#data-layout:                       #string option
+#selector-strategy:                 #string option
+#traversal:                         #string option
+#tuning-strategy:                   #string option
+#newton3:                           #string option
+#cell-size-factor:                  #string option
+#log-level: debug                    #string option
+#tuning-interval:                   #int option
+#tuning-samples:                    #int option
+#tuning-max-evidence:               #int option
+#verlet-rebuild-frequency:          #int option
+#verlet-skin-radius                 #double option
+#no-flops:                          #boolean option
+#log-file:                          #string option
+#vtk-filename:                      #string option
+#vtk-write-frequency:                #size_t option
+
+###Simulation Options=
+
+#functor:                           #string option
+#deltaT:                           #double option
+iterations:
+#cutoff:                            #double option
+
+###Thermstat
+
+Thermostat:
+  initializeThermostat: false           #boolean option
+  initTemperatur: 0.01                  #double option
+  numberOfTimesteps: 40                 #size_t option (application every n-th timestep)
+  target:
+    targetTemperature: 0.7              #double option
+    delta_temp: 0.001                   #double option
+
+
+###Objects generation Options
+Objects:
+ CubeUniform:
+   0:
+     particle-type: 0
+     particle-epsilon: 1.
+     particle-sigma: 1.
+     particle-mass: 1.
+     numberOfParticles: 62500
+     box-length: [60.,60.,60.]
+     velocity: [0.,0.,0.]
+     bottomLeftCorner: [0.,0.,0.]
+
