@@ -27,7 +27,7 @@
 #iterations:                         #size_t option
 #cutoff:                            #double option
 
-###Thermstat
+###Thermostat Options=
 
 #Thermostat:
 #  initializeThermostat: false           #boolean option
@@ -37,10 +37,12 @@
 #    targetTemperature: 3.0              #double option
 #    delta_temp: 0.001                   #double option
 
-###Checkpointing
-#checkpointFile=            
+###Checkpointing=
 
-###Objects generation Options
+#checkpointFile=                         #string option: fullPath of file
+
+###Objects generation Options=
+
 #Objects:
 #  CubeGrid:
 #    0:
