@@ -76,7 +76,6 @@ pipeline{
                             dir("build-cuda") {
                                 sh "cmake -DAUTOPAS_ENABLE_CUDA=ON .."
                                 sh "make -j 4 > buildlog-cuda.txt 2>&1 || (cat buildlog-cuda.txt && exit 1)"
-                                sh "cat buildlog-cuda.txt"
                                 sh "./tests/testAutopas/runTests"
                             }
                             dir('build-cuda/examples') {
@@ -87,6 +86,26 @@ pipeline{
                     post{
                         always{
                             warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog-cuda.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
+                        }
+                    }
+                }
+                stage('gpu cloud - clang') {
+                    agent { label 'openshift-autoscale-gpu' }
+                    steps{
+                        container('cuda-10') {
+                            dir("build-cuda") {
+                                sh "CC=clang CXX=clang++ cmake -DAUTOPAS_ENABLE_CUDA=ON .."
+                                sh "make -j 4 > buildlog-cuda-clang.txt 2>&1 || (cat buildlog-cuda-clang.txt && exit 1)"
+                                sh "./tests/testAutopas/runTests"
+                            }
+                            dir('build-cuda/examples') {
+                                sh "ctest -C checkExamples -j8 --verbose"
+                            }
+                        }
+                    }
+                    post{
+                        always{
+                            warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog-cuda-clang.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
                         }
                     }
                 }
