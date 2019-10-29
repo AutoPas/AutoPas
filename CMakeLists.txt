@@ -73,12 +73,14 @@ include(version.cmake)
 # autopas
 add_subdirectory(src)
 
+# libraries
+add_subdirectory(libs)
+
 # tests and examples
 add_subdirectory(examples)
 add_subdirectory(tests)
 
-# libraries
-add_subdirectory(libs)
+
 
 # modules needing targets:
 include(coloring)

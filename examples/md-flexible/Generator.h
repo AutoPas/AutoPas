@@ -12,18 +12,7 @@
  */
 class Generator {
  public:
-  /**
-   * Calculated the L2Norm of an array
-   * @param array
-   * @return L2Norm(std::array<double,3>)
-   */
-  static double L2Norm(std::array<double, 3> array) {
-    double square_sum = 0;
-    for (auto e : array) {
-      square_sum += (e * e);
-    }
-    return sqrt(square_sum);
-  }
+
 
   /**
    * Generates a Cube filled with Particles with dimensions: @param particlesPerDim
@@ -119,7 +108,7 @@ void Generator::Sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const 
               std::array<double, 3> posVector = autopas::ArrayMath::add(
                   center, autopas::ArrayMath::mulScalar(autopas::ArrayMath::mul(posDelta, multipliers),
                                                         particleSpacing));  // actual coordinates of new particle
-              double disCheck = L2Norm(autopas::ArrayMath::sub(posVector, center));
+              double disCheck = sqrt(autopas::ArrayMath::dot(autopas::ArrayMath::sub(posVector, center),autopas::ArrayMath::sub(posVector, center)));
               if (disCheck <= (double)(radius + 1) * particleSpacing) {
                 Particle p(posVector, velocity, id, typeId);
                 autopas.addParticle(p);

@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <math.h>
 #include <vector>
-#include "../../../../examples/md-flexible/Objects.h"
+#include "Objects/Objects.h"
 #include "../../../../examples/md-flexible/parsing/MDFlexConfig.h"
 #include "../../../../examples/md-flexible/parsing/YamlParser.h"
 #include "AutoPasTestBase.h"

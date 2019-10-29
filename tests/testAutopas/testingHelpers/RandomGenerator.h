@@ -49,24 +49,6 @@ class RandomGenerator {
 
   /**
    * Fills the given container with randomly distributed particles between boxMin and boxMax.
-   * Adapted for md-flexible for initializing domain on specific Particle ID and Particle Type
-   * @tparam Container
-   * @tparam Particle Type of particle to be generated (got to inherite of MoleculeLJ)
-   * @param container
-   * @param typeId
-   * @param id
-   * @param defaultParticle inserted particle
-   * @param boxMin min. position
-   * @param boxMax max. position
-   * @param numParticles number of particles
-   */
-  template <class Container, class Particle>
-  static void fillWithParticles(Container &container, size_t typeId, size_t id, const Particle &defaultParticle,
-                                const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                unsigned long numParticles = 100ul);
-
-  /**
-   * Fills the given container with randomly distributed particles between boxMin and boxMax.
    * @tparam Container
    * @tparam Particle Type of particle to be generated
    * @param container
@@ -103,21 +85,6 @@ void RandomGenerator::fillWithParticles(Container &container, const Particle &de
                                      numParticles, seed);
 }
 
-template <class Container, class Particle>
-void RandomGenerator::fillWithParticles(Container &container, size_t typeId, size_t id, const Particle &defaultParticle,
-                                        const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                        unsigned long numParticles) {
-  srand(42);  // fixed seedpoint
-
-  for (unsigned long i = 0; i < numParticles; ++i) {
-    Particle particle(defaultParticle);
-    particle.setR(randomPosition(boxMin, boxMax));
-    particle.setID(id);
-    particle.setTypeId(typeId);
-    container.addParticle(particle);
-    id++;
-  }
-}
 
 template <class Container, class Particle>
 void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,

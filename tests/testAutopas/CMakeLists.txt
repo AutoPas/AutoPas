@@ -7,7 +7,7 @@ file(
     "../../examples/md-flexible/parsing/MDFlexConfig.h"
     "../../examples/md-flexible/parsing/YamlParser.cpp"
     "../../examples/md-flexible/parsing/YamlParser.h"
-    "../../examples/md-flexible/Objects.h"
+    "../../examples/md-flexible/Objects/Objects.h"
     "../../examples/md-flexible/Generator.h"
     "../../examples/md-flexible/Thermostat.h"
     "../../examples/md-flexible/TimeDiscretization.h"

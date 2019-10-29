@@ -11,7 +11,6 @@
 
 /**
  * Thermostat to adjust the Temperature of the Simulation
- * WIP
  */
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 class Thermostat {

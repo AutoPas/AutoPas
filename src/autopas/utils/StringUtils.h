@@ -389,7 +389,7 @@ inline std::set<autopas::ContainerOption> parseContainerOptions(const std::strin
  *
  * @param boxOptionString
  * @return autopas boxOption
- * */
+ */
 inline std::array<double, 3> parseBoxOption(const std::string &boxOptionString) {
   std::array<double, 3> boxOption{};
   auto doubles = tokenize(boxOptionString, delimiters);
@@ -398,8 +398,12 @@ inline std::array<double, 3> parseBoxOption(const std::string &boxOptionString) 
     throw std::runtime_error("wrong BoxOption: " + boxOptionString);
   }
   for (int i = 0; i < 3; i++) {
-    boxOption[i] = std::stod(doubles.at(i));
-  }
+      try {
+          boxOption[i] = std::stod(doubles.at(i));
+      }catch (const std::exception &e) {
+          std::cout << "BoxOption string: " << e.what() << "not convertable to doulbe" <<std::endl;
+          }
+      }
   return boxOption;
 }
 
@@ -409,7 +413,7 @@ inline std::array<double, 3> parseBoxOption(const std::string &boxOptionString) 
  * String format: on || off || enabled || disabled || true || false
  * @param booleanOption
  * @return
- * */
+ */
 inline bool parseBoolOption(const std::string &booleanOption) {
   if (booleanOption == "on" or booleanOption == "true" or booleanOption == "enabled") {
     return true;

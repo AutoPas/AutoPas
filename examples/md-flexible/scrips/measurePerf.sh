@@ -130,6 +130,8 @@ do
                             --data-layout ${dataLayout} \
                             --cutoff 1 \
                             --cell-size ${cellSizeFactor} \
+                            --box-length 10 \
+                            --particles-generator uniform \
                             --particles-total ${Mols[$i]} \
                             --iterations ${thisReps} \
                             --tuning-interval $(( ${thisReps} + 1 )) \

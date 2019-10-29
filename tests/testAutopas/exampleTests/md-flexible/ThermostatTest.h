@@ -5,7 +5,7 @@
  */
 #pragma once
 #include "../../../../examples/md-flexible/Generator.h"
-#include "../../../../examples/md-flexible/Objects.h"
+#include "Objects/Objects.h"
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/Thermostat.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
