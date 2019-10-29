@@ -13,6 +13,7 @@
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "BoundaryConditions.h"
 #include "Generator.h"
+#include "Checkpoint.h"
 #include "PrintableMolecule.h"
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
@@ -246,31 +247,35 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   _autopas.init();
   size_t particleIDCounter = 0;
 
-  // initializing Objects
-  for (const auto &grid : cubesGrid) {
-    Generator::CubeGrid<Particle, ParticleCell>(_autopas, grid.getTypeId(), particleIDCounter, grid.getBoxMin(),
-                                                grid.getParticlesPerDim(), grid.getParticleSpacing(),
-                                                grid.getVelocity());
-    particleIDCounter += grid.getParticlesTotal();
+  if(_config->checkpointfile != "") {
+      Checkpoint<decltype(_autopas),Particle>::initDomain(_autopas,_config->checkpointfile);
+  }else {
+      // initializing Objects
+      for (const auto &grid : cubesGrid) {
+          Generator::CubeGrid<Particle, ParticleCell>(_autopas, grid.getTypeId(), particleIDCounter, grid.getBoxMin(),
+                                                      grid.getParticlesPerDim(), grid.getParticleSpacing(),
+                                                      grid.getVelocity());
+          particleIDCounter += grid.getParticlesTotal();
+      }
+      for (const auto &cube : cubesGauss) {
+          Generator::CubeGauss<Particle, ParticleCell>(_autopas, cube.getTypeId(), particleIDCounter, cube.getBoxMin(),
+                                                       cube.getBoxMax(), cube.getParticlesTotal(),
+                                                       cube.getDistributionMean(),
+                                                       cube.getDistributionStdDev(), cube.getVelocity());
+          particleIDCounter += cube.getParticlesTotal();
+      }
+      for (const auto &cube : cubesUniform) {
+          Generator::CubeRandom<Particle, ParticleCell>(_autopas, cube.getTypeId(), particleIDCounter, cube.getBoxMin(),
+                                                        cube.getBoxMax(), cube.getParticlesTotal(), cube.getVelocity());
+          particleIDCounter += cube.getParticlesTotal();
+      }
+      for (const auto &sphere : spheres) {
+          Generator::Sphere<Particle, ParticleCell>(_autopas, sphere.getCenter(), sphere.getRadius(),
+                                                    sphere.getParticleSpacing(), particleIDCounter, sphere.getTypeId(),
+                                                    sphere.getVelocity());
+          particleIDCounter += sphere.getParticlesTotal();
+      }
   }
-  for (const auto &cube : cubesGauss) {
-    Generator::CubeGauss<Particle, ParticleCell>(_autopas, cube.getTypeId(), particleIDCounter, cube.getBoxMin(),
-                                                 cube.getBoxMax(), cube.getParticlesTotal(), cube.getDistributionMean(),
-                                                 cube.getDistributionStdDev(), cube.getVelocity());
-    particleIDCounter += cube.getParticlesTotal();
-  }
-  for (const auto &cube : cubesUniform) {
-    Generator::CubeRandom<Particle, ParticleCell>(_autopas, cube.getTypeId(), particleIDCounter, cube.getBoxMin(),
-                                                  cube.getBoxMax(), cube.getParticlesTotal(), cube.getVelocity());
-    particleIDCounter += cube.getParticlesTotal();
-  }
-  for (const auto &sphere : spheres) {
-    Generator::Sphere<Particle, ParticleCell>(_autopas, sphere.getCenter(), sphere.getRadius(),
-                                              sphere.getParticleSpacing(), particleIDCounter, sphere.getTypeId(),
-                                              sphere.getVelocity());
-    particleIDCounter += sphere.getParticlesTotal();
-  }
-
   // initilizing Thermostat
   if (_config->useThermostat) {
     _thermostat = std::make_unique<
@@ -278,7 +283,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
         _config->initTemperature, _config->useCurrentTempForBrownianMotion, _config->targetTemperature,
         _config->deltaTemp, *_particlePropertiesLibrary);
   }
-
+//    Checkpoint<decltype(_autopas),Particle>::initDomain(_autopas,_parser->getCheckpointFile());
   // initializing velocites of Particles
   if (_config->useThermostat) {
     _thermostat->initialize(_autopas);

@@ -37,6 +37,8 @@
 #    targetTemperature: 3.0              #double option
 #    delta_temp: 0.001                   #double option
 
+###Checkpointing
+#checkpointFile=            
 
 ###Objects generation Options
 #Objects:
