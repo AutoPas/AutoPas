@@ -112,9 +112,9 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
       }
     }
   }
-    if (config["checkpointFile"]) {
-        this->checkpointFile = config["checkpointFile"].as<std::string>();
-    }
+  if (config["checkpointFile"]) {
+    this->checkpointFile = config["checkpointFile"].as<std::string>();
+  }
   if (node[MDFlexConfig::logFileNameStr]) {
     config.logFileName = node[MDFlexConfig::logFileNameStr].as<std::string>();
   }
