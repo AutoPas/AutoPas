@@ -24,7 +24,6 @@ file(
     "*.yaml"
 )
 
-
 foreach (script ${SCRIPTS})
     configure_file(${CMAKE_SOURCE_DIR}/${script} ${CMAKE_BINARY_DIR}/examples/md-flexible COPYONLY)
 endforeach (script)

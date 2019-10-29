@@ -80,8 +80,6 @@ add_subdirectory(libs)
 add_subdirectory(examples)
 add_subdirectory(tests)
 
-
-
 # modules needing targets:
 include(coloring)
 include(logging)
