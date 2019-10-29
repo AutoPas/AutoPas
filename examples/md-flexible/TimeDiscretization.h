@@ -42,9 +42,10 @@ class TimeDiscretization {
    * @return time for the calculation in microseconds
    */
   long CalculateV(AutoPasTemplate &autopas);
-  /**Getter for particleDeltaT
+  /**
+   * Getter for particleDeltaT
    * @return particle_delta_t
-   * */
+   */
   TimeDiscretizationFloatType getParticleDeltaT() const;
 
  private:
@@ -54,7 +55,7 @@ class TimeDiscretization {
   TimeDiscretizationFloatType particle_delta_t;
   /**
    * ParticlePropertiesLibrary to access Mass of Particles
-   * */
+   */
   ParticlePropertiesLibraryTemplate _particlePropertiesLibrary;
 };
 

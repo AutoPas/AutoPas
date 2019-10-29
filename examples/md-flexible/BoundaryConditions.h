@@ -12,9 +12,10 @@
 typedef autopas::MoleculeLJ<> Molecule;
 typedef autopas::FullParticleCell<Molecule> FMCell;
 
-/**This Class implements the Periodic Boudaries for an AutoPas Object
+/**
+ * This Class implements the Periodic Boudaries for an AutoPas Object
  * The implementation was taken from "AutoPasInterfaceTest.cpp"
- * */
+ */
 template <typename Particle, typename ParticleCell>
 class BoundaryConditions {
  public:
@@ -42,23 +43,26 @@ class BoundaryConditions {
    */
   static std::vector<Particle> identifyAndSendHaloParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas);
 
-  /**Adds entering Particles to the Autopas Object
+  /**
+   * Adds entering Particles to the Autopas Object
    * @param autoPas
    * @param enteringParticles
    * @return number of Particles Added
-   * */
+   */
   static size_t addEnteringParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas,
                                      std::vector<Particle> enteringParticles);
 
-  /**Adds Halo Particles to the AutoPas Object
+  /**
+   * Adds Halo Particles to the AutoPas Object
    * @param autoPas
    * @param haloParticles
-   * */
+   */
   static void addHaloParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas, std::vector<Particle> haloParticles);
 
-  /**Realizes periodic Boundaries for the simulation
+  /**
+   * Realizes periodic Boundaries for the simulation
    * By handling halo particles and updating the container
-   * */
+   */
   static void applyPeriodic(autopas::AutoPas<Particle, ParticleCell> &autoPas);
 };
 template <typename Particle, typename ParticleCell>

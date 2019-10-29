@@ -7,14 +7,16 @@
 #include "PrintableMolecule.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
-/**Class for contructing a container and generating Objects and Shapes filled with Particles
- * */
+/**
+ * Class for contructing a container and generating Objects and Shapes filled with Particles
+ */
 class Generator {
  public:
-  /**Calculated the L2Norm of an array
+  /**
+   * Calculated the L2Norm of an array
    * @param array
    * @return L2Norm(std::array<double,3>)
-   * */
+   */
   static double L2Norm(std::array<double, 3> array) {
     double square_sum = 0;
     for (auto e : array) {
@@ -23,46 +25,50 @@ class Generator {
     return sqrt(square_sum);
   }
 
-  /**Generates a Cube filled with Particles with dimensions: @param particlesPerDim
+  /**
+   * Generates a Cube filled with Particles with dimensions: @param particlesPerDim
    * @param autopas
    * @param particlesPerDim
    * @param particleSpacing
-   * */
+   */
   template <class Particle, class ParticleCell>
   static void CubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
                        const std::array<double, 3> &BoxMin, const std::array<size_t, 3> &particlesPerDim,
                        double particleSpacing, const std::array<double, 3> &velocity);
 
-  /**Fills Autopas Object with Particles with Gauss distribution
+  /**
+   * Fills Autopas Object with Particles with Gauss distribution
    * @param autopas
    * @param boxLength
    * @param numParticles
    * @param distributionMean
    * @param distributionStdDev
-   * */
+   */
   template <class Particle, class ParticleCell>
   static void CubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
                         const std::array<double, 3> &BoxMin, const std::array<double, 3> &BoxMax, size_t numParticles,
                         double distributionMean, double distributionStdDev, const std::array<double, 3> &velocity);
 
-  /**Fills Autopas Object randomly with Particles
+  /**
+   * Fills Autopas Object randomly with Particles
    * @param autopas
    * @param boxLength
    * @param numParticles
-   * */
+   */
   template <class Particle, class ParticleCell>
   static void CubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
                          const std::array<double, 3> &BoxMin, const std::array<double, 3> &BoxMax, size_t numParticles,
                          const std::array<double, 3> &velocity);
 
-  /**Generates a Sphere with @param radius number of Particles with initial @param velocity
+  /**
+   * Generates a Sphere with @param radius number of Particles with initial @param velocity
    * @param Autopas
    * @param center
    * @param radius
    * @param velocity
    * @param particleSpacing
    * @param id
-   * */
+   */
   template <class Particle, class ParticleCell>
   static void Sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const std::array<double, 3> &center, int radius,
                      double particleSpacing, unsigned long id, unsigned long typeId,

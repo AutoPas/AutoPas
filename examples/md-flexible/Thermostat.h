@@ -26,27 +26,27 @@ class Thermostat {
    * @param tTarget target Temperature of System
    * @param deltaTemp
    * @param particlePropertiesLibrary
-   * */
+   */
   // true
   Thermostat(ThermostatFloatType tInit, bool initBm, ThermostatFloatType tTarget, ThermostatFloatType deltaTemp,
              const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary);
 
   /**
    * Default Destructor
-   * */
+   */
   ~Thermostat() = default;
 
   /**
    * Copy Constructor
    * @param ThermostatCopy
-   * */
+   */
   Thermostat(const Thermostat &ThermostatCopy) = default;
 
   /**
    * Copy Assignment Constructor
    * @param thermo
    * @return
-   * */
+   */
   Thermostat &operator=(const Thermostat &thermo) = default;
 
   /**
@@ -131,7 +131,7 @@ class Thermostat {
 
   /**
    * ParticlePropertiesLibrary to access Mass of Particles
-   * */
+   */
   ParticlePropertiesLibraryTemplate _particlePropertiesLibrary;
 };
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>

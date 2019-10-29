@@ -92,10 +92,11 @@ class Simulation {
     vtkFile.close();
   }
 
-  /**Initialized the ParticlePropertiesLibrary for usage in functor
+  /**
+   * Initialized the ParticlePropertiesLibrary for usage in functor
    * during Simualtion::initialize call
    * with the parsed values in the yamlParser
-   * */
+   */
   void initializeParticlePropertiesLibrary();
 
   /** @brief This function
@@ -145,9 +146,10 @@ class Simulation {
    */
   void printStatistics();
 
-  /**Getter for ParticlePropertiesLibrary of Simulation
+  /**
+   * Getter for ParticlePropertiesLibrary of Simulation
    * @return unique_prt(ParticlePropertiesLibrary)
-   * */
+   */
   const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
 
  private:

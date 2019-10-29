@@ -37,5 +37,5 @@ class YamlParser {
    * @param filename
    * @return true iff the file is found.
    */
-  static bool checkFileExists(std::string filename);
+static bool checkFileExists(const std::string& filename);
 };
