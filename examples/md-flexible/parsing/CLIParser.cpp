@@ -440,7 +440,6 @@ bool CLIParser::yamlFilePresent(int argc, char **argv, MDFlexConfig &config) {
   int option, optionIndex;
   // suppress error messages since we only want to look if the yaml option is there
   auto opterrBefore = opterr;
-  std::vector<std::string> argvBefore(argv, argv + argc);
   opterr = 0;
   static struct option longOptions[] = {{MDFlexConfig::yamlFilenameStr, required_argument, nullptr, 'Y'},
                                         {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
