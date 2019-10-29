@@ -221,9 +221,9 @@ TEST_P(LJFunctorCudaTest, testLJFunctorVSLJFunctorCuda) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(Generated, LJFunctorCudaTest,
-                        ::testing::Combine(::testing::Bool(), ::testing::Bool(),
-                                           ::testing::ValuesIn({1, 2, 4, 16, 31, 32, 33, 55, 64, 65}),
-                                           ::testing::ValuesIn({-1, 1, 4, 16, 31, 32, 33, 55, 64, 65})));
+INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorCudaTest,
+                         ::testing::Combine(::testing::Bool(), ::testing::Bool(),
+                                            ::testing::ValuesIn({1, 2, 4, 16, 31, 32, 33, 55, 64, 65}),
+                                            ::testing::ValuesIn({-1, 1, 4, 16, 31, 32, 33, 55, 64, 65})));
 
 #endif  // AUTOPAS_CUDA
