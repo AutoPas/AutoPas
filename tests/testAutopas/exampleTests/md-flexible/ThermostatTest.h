@@ -5,11 +5,11 @@
  */
 #pragma once
 #include "../../../../examples/md-flexible/Generator.h"
-#include "Objects/Objects.h"
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/Thermostat.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
 #include "AutoPasTestBase.h"
+#include "Objects/Objects.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/utils/ArrayUtils.h"

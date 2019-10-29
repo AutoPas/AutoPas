@@ -3,7 +3,6 @@
 #include <cmath>
 #include <vector>
 #include "../../../../examples/md-flexible/Generator.h"
-#include "Objects/Objects.h"
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
 #include "../../../../examples/md-flexible/parsing/YamlParser.h"
@@ -13,6 +12,7 @@
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "AutoPasTestBase.h"
+#include "Objects/Objects.h"
 #include "autopas/AutoPas.h"
 #include "testingHelpers/commonTypedefs.h"
 class GeneratorsTest : public AutoPasTestBase {

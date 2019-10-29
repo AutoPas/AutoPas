@@ -398,12 +398,12 @@ inline std::array<double, 3> parseBoxOption(const std::string &boxOptionString) 
     throw std::runtime_error("wrong BoxOption: " + boxOptionString);
   }
   for (int i = 0; i < 3; i++) {
-      try {
-          boxOption[i] = std::stod(doubles.at(i));
-      }catch (const std::exception &e) {
-          std::cout << "BoxOption string: " << e.what() << "not convertable to doulbe" <<std::endl;
-          }
-      }
+    try {
+      boxOption[i] = std::stod(doubles.at(i));
+    } catch (const std::exception &e) {
+      std::cout << "BoxOption string: " << e.what() << "not convertable to doulbe" << std::endl;
+    }
+  }
   return boxOption;
 }
 

@@ -38,6 +38,8 @@ foreach (script ${SCRIPTS})
     configure_file(${CMAKE_SOURCE_DIR}/${script} ${CMAKE_BINARY_DIR}/${script} COPYONLY)
 endforeach (script)
 
+message(STATUS "testing ${CMAKE_SOURCE_DIR}")
+
 # -----------------test-----------------
 # add check for current target
 # cmake-format: off

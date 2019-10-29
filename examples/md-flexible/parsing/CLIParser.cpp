@@ -440,9 +440,9 @@ bool CLIParser::yamlFilePresent(int argc, char **argv, MDFlexConfig &config) {
   static struct option longOptions[] = {{MDFlexConfig::yamlFilenameStr, required_argument, nullptr, 'Y'},
                                         {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   std::string strArg;
-    optind =1;
-    // Yaml Parsing file parameter must be set before all other Options
-//  option = getopt_long(argc, argv, "", longOptions, &optionIndex);
+  optind = 1;
+  // Yaml Parsing file parameter must be set before all other Options
+  //  option = getopt_long(argc, argv, "", longOptions, &optionIndex);
   while ((option = getopt_long(argc, argv, "", longOptions, &optionIndex)) != -1) {
     if (option == 'Y') {
       config.yamlFilename = optarg;

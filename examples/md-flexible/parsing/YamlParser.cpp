@@ -7,7 +7,7 @@
 #include "YamlParser.h"
 #include <sys/stat.h>
 
-bool YamlParser::checkFileExists(const std::string& filename) {
+bool YamlParser::checkFileExists(const std::string &filename) {
   struct stat buffer;
   return (stat(filename.c_str(), &buffer) == 0);
 }
@@ -142,7 +142,7 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
                              it->second[MDFlexConfig::particlesPerDimStr][1].as<unsigned long>(),
                              it->second[MDFlexConfig::particlesPerDimStr][2].as<unsigned long>()},
                             it->second[MDFlexConfig::particlesSpacingStr].as<double>(),
-//                            {0.,0.,0.},
+                            //                            {0.,0.,0.},
                             {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
                              it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
                              it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()},
