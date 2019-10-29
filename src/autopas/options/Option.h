@@ -104,5 +104,30 @@ class Option {
 
     return optionsSet;
   }
+
+  /**
+   * Converts a string to an enum.
+   *
+   * This function works faster than parseOptions, however, the given string needs to match exactly an option.
+   *
+   * @tparam lowercase if set to true all option names are transformed to lower case.
+   * @param optionString
+   * @return Option enum.
+   */
+  template <bool lowercase = false>
+  static actualOption parseOptionExact(const std::string &optionString) {
+    for (auto [optionEnum, optionName] : actualOption::getOptionNames()) {
+      if (lowercase) {
+        std::transform(std::begin(optionName), std::end(optionName), std::begin(optionName), ::tolower);
+      }
+      if (optionString == optionName) {
+        return optionEnum;
+      }
+    }
+
+    // the end of the function should not be reached
+    utils::ExceptionHandler::exception("Option::parseOptionExact() no match found for: {}", optionString);
+    return actualOption();
+  }
 };
 }  // namespace autopas

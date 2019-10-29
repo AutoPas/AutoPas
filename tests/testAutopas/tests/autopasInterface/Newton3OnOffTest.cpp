@@ -17,12 +17,10 @@ TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
   auto contTravStr = std::get<0>(GetParam());
   auto dataLayoutStr = std::get<1>(GetParam());
 
-  transform(contTravStr.begin(), contTravStr.end(), contTravStr.begin(), ::tolower);
-  transform(dataLayoutStr.begin(), dataLayoutStr.end(), dataLayoutStr.begin(), ::tolower);
   auto contTravStrVector = autopas::utils::StringUtils::tokenize(contTravStr, "+");
-  auto containerOption = autopas::ContainerOption::parseOptions(contTravStrVector[0]).begin().operator*();
-  auto traversalOption = autopas::TraversalOption::parseOptions(contTravStrVector[1]).begin().operator*();
-  auto dataLayoutOption = autopas::DataLayoutOption::parseOptions(dataLayoutStr).begin().operator*();
+  auto containerOption = autopas::ContainerOption::parseOptionExact(contTravStrVector[0]);
+  auto traversalOption = autopas::TraversalOption::parseOptionExact(contTravStrVector[1]);
+  auto dataLayoutOption = autopas::DataLayoutOption::parseOptionExact(dataLayoutStr);
   countFunctorCalls(containerOption, traversalOption, dataLayoutOption);
 }
 
