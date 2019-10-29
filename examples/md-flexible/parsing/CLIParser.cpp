@@ -13,6 +13,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   static struct option long_options[] = {{"help", no_argument, nullptr, 'h'},
                                          {MDFlexConfig::boxLengthStr, required_argument, nullptr, 'b'},
                                          {MDFlexConfig::cellSizeFactorsStr, required_argument, nullptr, 'a'},
+                                         {MDFlexConfig::checkpointfileStr, required_argument, nullptr, '4'},
                                          {MDFlexConfig::containerOptionsStr, required_argument, nullptr, 'c'},
                                          {MDFlexConfig::cutoffStr, required_argument, nullptr, 'C'},
                                          {MDFlexConfig::dataLayoutOptionsStr, required_argument, nullptr, 'd'},
@@ -57,6 +58,10 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
           cerr << "Please use 'enabled' or 'disabled'!" << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case '4': {
+        config.checkpointfile = strArg;
         break;
       }
       case 'a': {

@@ -166,6 +166,7 @@ class MDFlexConfig {
   bool useCurrentTempForBrownianMotion = true;
 
   // Checkpoint Options
+  static inline const char *checkpointfileStr = "checkpointFile";
   std::string checkpointfile = "";
 
   // used for cli-output alignment
