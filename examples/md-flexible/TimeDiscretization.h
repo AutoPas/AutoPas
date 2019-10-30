@@ -19,14 +19,14 @@ class TimeDiscretization {
 
   /**
    * Constructor
-   * */
+   */
   explicit TimeDiscretization(TimeDiscretizationFloatType particleDeltaT,
                               ParticlePropertiesLibraryTemplate &particlePropertiesLibrary)
       : particle_delta_t(particleDeltaT), _particlePropertiesLibrary(particlePropertiesLibrary){};
 
   /**
    * Default Destructor
-   * */
+   */
   virtual ~TimeDiscretization() = default;
 
   /**

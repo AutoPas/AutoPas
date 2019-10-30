@@ -35,9 +35,10 @@ class Sphere : public Object {
    */
   [[nodiscard]] const std::array<double, 3> &getCenter() const { return center; }
 
-      /**Getter for radius in number of Particles of Sphere
+      /**
+       * Getter for radius in number of Particles of Sphere
        * @return radius
-       * */
+       */
       [[nodiscard]] int getRadius() const {
     return radius;
   }

@@ -86,7 +86,7 @@ class ParticlePropertiesLibrary {
    * @param  i typeId index of particle one.
    * @param  j typeId index of particle two.
    * @return 24*epsilon_ij
-   * */
+   */
   inline floatType mixing24Epsilon(intType i, intType j) const {
     auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
     return _computedMixing24Epsilon.at(key);

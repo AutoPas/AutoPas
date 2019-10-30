@@ -43,9 +43,10 @@ class CubeGauss : public Object {
    * @return numParticles
    */
   [[nodiscard]] size_t getParticlesTotal() const override { return numParticles; }
-      /**Getter for distribution mean
+      /**
+       * Getter for distribution mean
        * @return distributionMean
-       * */
+       */
       [[nodiscard]] double getDistributionMean() const {
     return distributionMean;
   }

@@ -139,7 +139,7 @@ class MoleculeLJ : public Particle {
   /**
    * Set the type id of the Molecule.
    * @param typeId
-   * */
+   */
   void setTypeId(size_t typeId) {
     _typeId = typeId;
   }
