@@ -22,4 +22,3 @@ TEST(StringUtilsTest, parseNumberSetTest) {
     EXPECT_EQ(numberInterval->getMax(), 2e1);
   }
 }
-

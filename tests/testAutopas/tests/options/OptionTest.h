@@ -49,7 +49,7 @@ void testParseSingle(const std::set<T> &allOptions, const std::vector<std::strin
  */
 template <class T>
 void testParseExact(const std::set<T> &allOptions, const std::vector<std::string> &optionsStrings,
-                     std::function<T(const std::string &)> &&parseFun) {
+                    std::function<T(const std::string &)> &&parseFun) {
   ASSERT_EQ(allOptions.size(), optionsStrings.size()) << "Not all options tested!";
 
   std::set<T> allParsedOptions;

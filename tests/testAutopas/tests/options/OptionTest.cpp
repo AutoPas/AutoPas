@@ -71,9 +71,7 @@ TYPED_TEST_P(OptionTest, parseExactOptionsTest) {
 }
 
 // to_string tests
-TYPED_TEST_P(OptionTest, to_stringTest) {
-  testToString(TypeParam::getAllOptions(), {TypeParam()});
-}
+TYPED_TEST_P(OptionTest, to_stringTest) { testToString(TypeParam::getAllOptions(), {TypeParam()}); }
 
 REGISTER_TYPED_TEST_SUITE_P(OptionTest, parseExactOptionsTest, to_stringTest);
 
