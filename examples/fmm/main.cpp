@@ -4,7 +4,6 @@
  * @author Joachim Marin
  */
 
-#include <chrono>
 #include <iostream>
 #include <random>
 #include "AdaptiveOctree.h"
@@ -12,18 +11,19 @@
 #include "Math3D.h"
 #include "Operators.h"
 #include "autopas/AutoPas.h"
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/Timer.h"
 
-std::chrono::steady_clock::time_point lastTimePoint = std::chrono::steady_clock::now();
-int particleId = 42;
+autopas::utils::Timer timer = autopas::utils::Timer();
+int particleId = 0;
 
 unsigned long long nearFieldCalculations = 0;
 unsigned long long exactCalculations = 0;
 
 double measureTime() {
-  std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-  double diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTimePoint).count();
-  lastTimePoint = now;
-  return diff;
+  double ret = timer.stop();
+  timer.start();
+  return ret;
 }
 
 // P2M + M2M
@@ -41,9 +41,8 @@ void upwardPassRec(AdaptiveOctreeNode &node, Operators &op) {
 
 void upwardPass(AdaptiveOctree &tree, Operators &op) {
   upwardPassRec(*tree.getRoot(), op);
-  std::cout << "P2M and M2M took " << measureTime() << "ms" << std::endl;
+  std::cout << "P2M and M2M took " << measureTime() << "s" << std::endl;
 }
-
 
 // M2L
 void downwardPassRec1(AdaptiveOctreeNode &node, Operators &op) {
@@ -55,7 +54,6 @@ void downwardPassRec1(AdaptiveOctreeNode &node, Operators &op) {
     }
   }
 }
-
 
 // L2L + L2P
 void downwardPassRec2(AdaptiveOctreeNode &node, Operators &op) {
@@ -72,10 +70,112 @@ void downwardPassRec2(AdaptiveOctreeNode &node, Operators &op) {
 
 void downwardPass(AdaptiveOctree &tree, Operators &op) {
   downwardPassRec1(*tree.getRoot(), op);
-  std::cout << "M2L took " << measureTime() << "ms" << std::endl;
+  std::cout << "M2L took " << measureTime() << "s" << std::endl;
   downwardPassRec2(*tree.getRoot(), op);
-  std::cout << "L2L and L2P took " << measureTime() << "ms" << std::endl;
+  std::cout << "L2L and L2P took " << measureTime() << "s" << std::endl;
 }
+
+// old
+
+void upwardPassRec_Old(OctreeNode &node, Operators &op) {
+  if (node.isLeaf()) {
+    op.P2M_Old(node);
+  } else {
+    for (int i = 0; i < 8; ++i) {
+      auto child = node.getChild(i);
+      upwardPassRec_Old(*child, op);
+    }
+    op.M2M_Old(node);
+  }
+}
+
+void upwardPass_Old(Octree &tree, Operators &op) {
+  upwardPassRec_Old(*tree.getRoot(), op);
+  std::cout << "P2M and M2M took " << measureTime() << "s" << std::endl;
+}
+
+// M2L
+void downwardPassRec1_Old(OctreeNode &node, Operators &op) {
+  op.M2L_Old(node);
+  if (!node.isLeaf()) {
+    for (int i = 0; i < 8; ++i) {
+      auto child = node.getChild(i);
+      downwardPassRec1_Old(*child, op);
+    }
+  }
+}
+
+// L2L + L2P
+void downwardPassRec2_Old(OctreeNode &node, Operators &op) {
+  op.L2L_Old(node);
+  if (!node.isLeaf()) {
+    for (int i = 0; i < 8; ++i) {
+      auto child = node.getChild(i);
+      downwardPassRec2_Old(*child, op);
+    }
+  } else {
+    op.L2P_Old(node);
+  }
+}
+
+void downwardPass_Old(Octree &tree, Operators &op) {
+  downwardPassRec1_Old(*tree.getRoot(), op);
+  std::cout << "M2L took " << measureTime() << "s" << std::endl;
+  downwardPassRec2_Old(*tree.getRoot(), op);
+  std::cout << "L2L and L2P took " << measureTime() << "s" << std::endl;
+}
+
+void addParticlesFromNeighbours(OctreeNode &node) {
+  if (node.isLeaf()) {
+    // Check if cell contains particles.
+    if (node.getContainer()
+            ->getRegionIterator(node.getLowCorner(), node.getHighCorner(), autopas::IteratorBehavior::ownedOnly)
+            .isValid()) {
+      for (auto neighbour : *node.getNeighbourList()) {
+        if (&node != neighbour) {
+          for (auto iter = neighbour->getContainer()->getRegionIterator(
+                   neighbour->getLowCorner(), neighbour->getHighCorner(), autopas::IteratorBehavior::ownedOnly);
+               iter.isValid(); ++iter) {
+            node.getContainer()->addOrUpdateHaloParticle(*iter);
+          }
+        }
+      }
+    }
+  } else {
+    for (int i = 0; i < 8; ++i) {
+      addParticlesFromNeighbours(*node.getChild(i));
+    }
+  }
+}
+
+void calculateNearField_Old(OctreeNode &node /*, NearFieldFunctor &functor*/) {
+  if (node.isLeaf()) {
+    // node.getContainer()->iteratePairwise(&functor);
+
+    for (auto part = node.getContainer()->getRegionIterator(node.getLowCorner(), node.getHighCorner(),
+                                                            autopas::IteratorBehavior::ownedOnly);
+         part.isValid(); ++part) {
+      for (auto inter = node.getContainer()->getRegionIterator(node.getHaloLowCorner(), node.getHaloHighCorner());
+           inter.isValid(); ++inter) {
+        if (part->getID() != inter->getID()) {
+          auto distVec = autopas::ArrayMath::sub(part->getR(), inter->getR());
+          auto spherical = Math3D::toSpherical(distVec);
+          auto dist = spherical[0];
+          part->resultFMM_Old += inter->charge / dist;
+          part->shortRange_Old += inter->charge / dist;
+          nearFieldCalculations++;
+        }
+      }
+    }
+
+  } else {
+    for (int i = 0; i < 8; ++i) {
+      calculateNearField_Old(*node.getChild(i) /*, functor*/);
+    }
+  }
+}
+
+// end old
 
 void calculateNearField(AdaptiveOctreeNode &node) {
   if (node.isLeaf()) {
@@ -110,19 +210,42 @@ void calculateNearField(AdaptiveOctreeNode &node) {
   }
 }
 
-void addParticleToCont(AutoPasCont &cont, double x, double y, double z, double charge) {
+void addParticleToCont(AutoPasCont &cont, Octree &treeOld, double x, double y, double z, double charge) {
   FmmParticle particle({x, y, z}, {0, 0, 0}, particleId, charge);
   particleId++;
   cont.addParticle(particle);
+
+  int cellX = static_cast<int>(x / treeOld.getCellSize());
+  int cellY = static_cast<int>(y / treeOld.getCellSize());
+  int cellZ = static_cast<int>(z / treeOld.getCellSize());
+
+  // treeOld.getAutoPasCont(cellX, cellY, cellZ)->addParticle(particle);
+  treeOld.getCell(treeOld.getHeight(), cellX, cellY, cellZ)->getContainer()->addParticle(particle);
+}
+
+void generateParticleList(OctreeNode &node, std::vector<FmmParticle *> &particles) {
+  if (node.isLeaf()) {
+    for (auto iter = node.getContainer()->getRegionIterator(node.getLowCorner(), node.getHighCorner(),
+                                                            autopas::IteratorBehavior::ownedOnly);
+         iter.isValid(); ++iter) {
+      particles.push_back(&*iter);
+    }
+  } else {
+    for (int i = 0; i < 8; ++i) {
+      generateParticleList(*node.getChild(i), particles);
+    }
+  }
 }
 
 int main(int argc, char **argv) {
-  int orderOfExpansion = 8;
+  int orderOfExpansion = 9;
   int maxParticlesPerNode = 16;
-  int numberOfParticles = 200;
-  double errorTolerance = 0.002;
-  int minDepth = 0;
-  int maxDepth = -1;
+  int numberOfParticles = 500;
+  double errorTolerance = 0.000001;
+  int minDepth = 2;
+  int maxDepth = 2;
+
+  timer.start();
 
   if (argc == 6) {
     orderOfExpansion = static_cast<int>(std::strtol(argv[1], nullptr, 10));
@@ -141,9 +264,9 @@ int main(int argc, char **argv) {
 
   // Setup AutoPas object.
   std::array<double, 3> lowCorner({0, 0, 0});
-  std::array<double, 3> highCorner({8, 6, 4});
+  std::array<double, 3> highCorner({8, 8, 8});
   AutoPasCont cont = AutoPasCont();
-  cont.setAllowedContainers(std::set<autopas::ContainerOption>{autopas::ContainerOption::directSum});
+  cont.setAllowedContainers(std::set<autopas::ContainerOption>{autopas::ContainerOption::linkedCells});
   cont.setBoxMin(lowCorner);
   cont.setBoxMax(highCorner);
   cont.init();
@@ -152,16 +275,33 @@ int main(int argc, char **argv) {
   std::mt19937 randomEngine(rd());
   std::uniform_real_distribution<double> random(0.0, 1.0);
 
+  Octree treeOld = Octree(4, 2.0, 2);
+
   // Add particles at random positions.
   for (int i = 0; i < numberOfParticles; ++i) {
     double x = random(randomEngine) * (highCorner[0] - lowCorner[0]) + lowCorner[0];
     double y = random(randomEngine) * (highCorner[1] - lowCorner[1]) + lowCorner[1];
     double z = random(randomEngine) * (highCorner[2] - lowCorner[2]) + lowCorner[2];
     double charge = random(randomEngine) * 1.0;
-    addParticleToCont(cont, x, y, z, charge);
+    addParticleToCont(cont, treeOld, x, y, z, charge);
   }
 
   AdaptiveOctree tree = AdaptiveOctree(cont, maxParticlesPerNode, orderOfExpansion, minDepth, maxDepth);
+
+  // create particle vector
+
+  std::vector<FmmParticle *> particles(0);
+  generateParticleList(*treeOld.getRoot(), particles);
+
+  auto newList = std::vector<FmmParticle *>(particleId);
+  auto oldList = std::vector<FmmParticle *>(particleId);
+
+  for (auto particle : particles) {
+    oldList[particle->getID()] = particle;
+  }
+  for (auto particle = cont.begin(); particle.isValid(); ++particle) {
+    newList[particle->getID()] = &*particle;
+  }
 
   std::cout << "currentMaxDepth = " << tree.currentMaxDepth << std::endl;
   std::cout << "numberOfNodes = " << tree.numberOfNodes << std::endl;
@@ -171,7 +311,7 @@ int main(int argc, char **argv) {
   std::cout << "interaction nodes = " << tree.totalInteractionNodes << " (total), "
             << (1.0 * tree.totalInteractionNodes / tree.numberOfNodes) << " (average)" << std::endl;
 
-  std::cout << "Init took " << measureTime() << "ms" << std::endl;
+  std::cout << "Init took " << measureTime() << "s" << std::endl;
 
   // FMM
   Operators op(orderOfExpansion);
@@ -181,10 +321,24 @@ int main(int argc, char **argv) {
   downwardPass(tree, op);
   std::cout << "DownwardPass done" << std::endl;
 
+  // FMM Old
+  std::cout << "[Old] Init Operators done" << std::endl;
+  upwardPass_Old(treeOld, op);
+  std::cout << "[Old] UpwardPass done" << std::endl;
+  downwardPass_Old(treeOld, op);
+  std::cout << "[Old] DownwardPass done" << std::endl;
+
   // Near field:
   calculateNearField(*tree.getRoot());
 
-  std::cout << "Near field calculation took " << measureTime() << "ms" << std::endl;
+  std::cout << "Near field calculation took " << measureTime() << "s" << std::endl;
+
+  // Near field old
+
+  addParticlesFromNeighbours(*treeOld.getRoot());
+  calculateNearField_Old(*treeOld.getRoot() /*, functor*/);
+
+  std::cout << "[Old] Near field calculation took " << measureTime() << "s" << std::endl;
 
   // Calculate exact result by calculating all interactions directly.
   for (auto particle = cont.begin(); particle.isValid(); ++particle) {
@@ -200,23 +354,31 @@ int main(int argc, char **argv) {
     }
   }
 
-  std::cout << "exact took " << measureTime() << "ms" << std::endl;
+  std::cout << "exact took " << measureTime() << "s" << std::endl;
 
   std::cout << "nearFieldCalculations = " << nearFieldCalculations << std::endl;
   std::cout << "exactCalculations = " << exactCalculations << std::endl;
 
   // Check results.
-  for (auto particle = cont.begin(); particle.isValid(); ++particle) {
+  for (auto particle : newList) {
     if (particle->resultExact != 0) {
-      double error = std::abs(particle->resultFMM / particle->resultExact);
+      int id = particle->getID();
+      // double error = std::abs(particle->resultFMM / particle->resultExact);
+      double error = std::abs(particle->resultFMM / oldList[id]->resultFMM_Old);
 
       if (std::abs(error - 1.0) > errorTolerance) {
-        std::cout << particle->getR()[0] << ", " << particle->getR()[1] << ", " << particle->getR()[2]
-                  << ", charge = " << particle->charge << std::endl;
+        std::cout << "\tAbsolute error = " << std::abs(particle->resultFMM - oldList[id]->resultFMM_Old) << std::endl;
+        std::cout << "\tRelative error = " << error << std::endl;
+        std::cout << "[ID=" << id << "] " << particle->getR()[0] << ", " << particle->getR()[1] << ", "
+                  << particle->getR()[2] << ", charge = " << particle->charge << std::endl;
         std::cout << "long range " << particle->longRange << std::endl;
         std::cout << "short range " << particle->shortRange << std::endl;
         std::cout << "resultFMM " << particle->resultFMM << std::endl;
         std::cout << "resultExact " << particle->resultExact << std::endl;
+
+        std::cout << "[Old] long range " << oldList[id]->longRange_Old << std::endl;
+        std::cout << "[Old] short range " << oldList[id]->shortRange_Old << std::endl;
+        std::cout << "[Old] resultFMM " << oldList[id]->resultFMM_Old << std::endl;
       }
     }
   }

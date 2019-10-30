@@ -10,10 +10,7 @@ namespace Math3D {
 
 std::vector<double> MathOpt::factorialValue;
 std::vector<double> MathOpt::doubleFactorialValue;
-std::vector<double> MathOpt::legendreCache;
-std::complex<double> MathOpt::sphericalCache;
 std::vector<std::vector<double>> MathOpt::getAValue;
-int MathOpt::legendreLastM;
 std::vector<std::complex<double>> MathOpt::imaginaryPower;
 
 std::array<double, 3> toSpherical(const std::array<double, 3> &cartesian) {
@@ -53,7 +50,7 @@ double associatedLegendrePolynomialRec(int m, int n, double x) {
     if (n % 2 == 1) {
       ret = -1;
     }
-    ret *= doubleFactorial(2 * m - 1);
+    ret *= MathOpt::doubleFactorial(2 * m - 1);
     ret *= std::pow(1.0 - x * x, 0.5 * m);
     return ret;
   }
@@ -67,7 +64,7 @@ double associatedLegendrePolynomialRec(int m, int n, double x) {
   return ret;
 }
 
-double associatedLegendrePolynomial(int m, int n, double x) {
+double MathOpt::associatedLegendrePolynomial(int m, int n, double x) {
   if (m > n) {
     std::cerr << "associatedLegendrePolynomial(" << m << "," << n << "," << x << ") is not defined for m > n"
               << std::endl;
@@ -86,44 +83,44 @@ double associatedLegendrePolynomial(int m, int n, double x) {
   // Here this function is used, to check for the updated parameters again.
   // Then associatedLegendrePolynomial will only ever be called with correct parameters.
   if (m < 0) {
-    return std::pow(-1, m) * factorial(n - m) / factorial(n + m) * associatedLegendrePolynomial(-m, n, x);
+    return std::pow(-1, m) * MathOpt::factorial(n - m) / MathOpt::factorial(n + m) * associatedLegendrePolynomial(-m, n, x);
   }
   // build cache
   // The recurrence relation accesses associated legendre polynomials for degrees n-1 and n-2.
   // To ensure every degree is only calculated once, the degrees are calculated here from m to n.
 
-  MathOpt::legendreCache = std::vector<double>(n - m + 2);
+  legendreCache = std::vector<double>(n - m + 2);
 
-  MathOpt::legendreCache[0] = associatedLegendrePolynomialRec(m, m, x);
-  MathOpt::legendreCache[1] = associatedLegendrePolynomialRec(m, m + 1, x);
+  legendreCache[0] = associatedLegendrePolynomialRec(m, m, x);
+  legendreCache[1] = associatedLegendrePolynomialRec(m, m + 1, x);
 
   for (int i = 2; i <= n - m; ++i) {
     int cacheN = m + i;
-    MathOpt::legendreCache[i] =
-        (x * (2 * cacheN - 1) * MathOpt::legendreCache[i - 1] - (cacheN + m - 1) * MathOpt::legendreCache[i - 2]) /
+    legendreCache[i] =
+        (x * (2 * cacheN - 1) * legendreCache[i - 1] - (cacheN + m - 1) * legendreCache[i - 2]) /
         (cacheN - m);
   }
-  MathOpt::legendreLastM = m;
+  legendreLastM = m;
 
   // return associatedLegendrePolynomialRec(m, n, x);
-  return MathOpt::legendreCache[n - m];
+  return legendreCache[n - m];
 }
 
-std::complex<double> sphericalHarmonics(int m, int n, double theta, double phi) {
+std::complex<double> MathOpt::sphericalHarmonics(int m, int n, double theta, double phi) {
   if (n < std::abs(m)) {
     std::cerr << "sphericalHarmonics(" << m << "," << n << "," << theta << "," << phi << ") is not defined for n < |m|"
               << std::endl;
   }
 
   using namespace std::complex_literals;
-  return std::exp(1i * double(m) * phi) * std::sqrt(factorial(n - std::abs(m)) / factorial(n + std::abs(m))) *
+  return std::exp(1i * double(m) * phi) * std::sqrt(MathOpt::factorial(n - std::abs(m)) / MathOpt::factorial(n + std::abs(m))) *
          associatedLegendrePolynomial(std::abs(m), n, std::cos(theta));
 }
 
-void sphericalHarmonicsBuildCache(int m, int n, double theta, double phi) {
+void MathOpt::sphericalHarmonicsBuildCache(int m, int n, double theta, double phi) {
   associatedLegendrePolynomial(std::abs(m), n, std::cos(theta));
   using namespace std::complex_literals;
-  MathOpt::sphericalCache = std::exp(1i * static_cast<double>(m) * phi);
+  sphericalCache = std::exp(1i * static_cast<double>(m) * phi);
 }
 
 double calculateA(int m, int n) {
@@ -131,22 +128,12 @@ double calculateA(int m, int n) {
     std::cerr << "getA(" << m << "," << n << ") is not defined for n - m < 0 or n + m < 0" << std::endl;
   }
 
-  double result = std::pow(-1, n) / std::sqrt(factorial(n - m) * factorial(n + m));
+  double result = std::pow(-1, n) / std::sqrt(MathOpt::factorial(n - m) * MathOpt::factorial(n + m));
 
   assert(!__isnan(result));
 
   return result;
 }
-
-std::array<double, 3> subtract(const std::array<double, 3> &a, const std::array<double, 3> &b) {
-  return std::array<double, 3>({a[0] - b[0], a[1] - b[1], a[2] - b[2]});
-}
-std::array<double, 3> add(const std::array<double, 3> &a, const std::array<double, 3> &b) {
-  return std::array<double, 3>({a[0] + b[0], a[1] + b[1], a[2] + b[2]});
-};
-std::array<double, 3> mul(const std::array<double, 3> &a, double scalar) {
-  return std::array<double, 3>({a[0] * scalar, a[1] * scalar, a[2] * scalar});
-};
 
 void initMath() {
   // factorial

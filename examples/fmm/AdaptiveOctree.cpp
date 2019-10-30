@@ -12,7 +12,7 @@ AdaptiveOctree::AdaptiveOctree(AutoPasCont &domain, int maxParticlesPerNode, int
       orderOfExpansion(orderOfExpansion),
       domainMinCorner(domain.getBoxMin()),
       domainMaxCorner(domain.getBoxMax()),
-      domainSize(Math3D::subtract(domainMaxCorner, domainMinCorner)),
+      domainSize(autopas::ArrayMath::sub(domainMaxCorner, domainMinCorner)),
       minDepth(minDepth),
       maxDepth(maxDepth) {
   root = std::make_unique<AdaptiveOctreeNode>(*this, nullptr, 0, domainMinCorner, domainMaxCorner);
@@ -34,9 +34,9 @@ AdaptiveOctreeNode::AdaptiveOctreeNode(AdaptiveOctree &tree, AdaptiveOctreeNode 
     : tree(&tree),
       parent(parent),
       nodeMinCorner(minCorner),
-      nodeCenter(Math3D::mul(Math3D::add(minCorner, maxCorner), 0.5)),
+      nodeCenter(autopas::ArrayMath::mulScalar(autopas::ArrayMath::add(minCorner, maxCorner), 0.5)),
       nodeMaxCorner(maxCorner),
-      nodeSize(Math3D::subtract(maxCorner, minCorner)) {
+      nodeSize(autopas::ArrayMath::sub(maxCorner, minCorner)) {
   // Initialize expansion coefficients to 0.
   fmmM = ComplexMatrix(tree.getOrderOfExpansion() * 2 + 1, std::vector<Complex>(tree.getOrderOfExpansion() + 1, 0));
   fmmL = ComplexMatrix(tree.getOrderOfExpansion() * 2 + 1, std::vector<Complex>(tree.getOrderOfExpansion() + 1, 0));
@@ -82,8 +82,8 @@ AdaptiveOctreeNode::AdaptiveOctreeNode(AdaptiveOctree &tree, AdaptiveOctreeNode 
       bool zOffset = u & 0x4u;
       std::array<double, 3> offset = std::array<double, 3>(
           {xOffset ? nodeSize[0] / 2 : 0, yOffset ? nodeSize[1] / 2 : 0, zOffset ? nodeSize[2] / 2 : 0});
-      child[i] = std::make_unique<AdaptiveOctreeNode>(tree, this, i, Math3D::add(nodeMinCorner, offset),
-                                                      Math3D::add(nodeCenter, offset));
+      child[i] = std::make_unique<AdaptiveOctreeNode>(tree, this, i, autopas::ArrayMath::add(nodeMinCorner, offset),
+                                                      autopas::ArrayMath::add(nodeCenter, offset));
     }
   } else {
     _isLeaf = true;
@@ -121,7 +121,7 @@ AdaptiveOctreeNode *AdaptiveOctreeNode::findNeighbour(int x, int y, int z) const
 
   std::array<double, 3> offset = std::array<double, 3>({x * nodeSize[0], y * nodeSize[1], z * nodeSize[2]});
 
-  auto neighbour = tree->getRoot()->findNode(Math3D::add(nodeCenter, offset), depth);
+  auto neighbour = tree->getRoot()->findNode(autopas::ArrayMath::add(nodeCenter, offset), depth);
   // std::cout << "find = (" << nodeCenter[0] + offset[0] << ", " << nodeCenter[1] + offset[1] << ", "
   //          << nodeCenter[2] + offset[2] << ") -> " << neighbour->name << std::endl;
 

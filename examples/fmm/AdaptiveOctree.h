@@ -13,6 +13,7 @@
 #include "FmmParticle.h"
 #include "Math3D.h"
 #include "autopas/AutoPas.h"
+#include "autopas/utils/ArrayMath.h"
 
 using AutoPasCont = autopas::AutoPas<FmmParticle, autopas::FullParticleCell<FmmParticle>>;
 using Complex = std::complex<double>;
