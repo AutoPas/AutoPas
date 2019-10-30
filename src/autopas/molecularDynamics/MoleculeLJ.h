@@ -150,7 +150,6 @@ class MoleculeLJ : public Particle {
    */
   size_t _typeId = 0;
 
- private:
   /**
    * Old Force of the particle experiences as 3D vector.
    */
