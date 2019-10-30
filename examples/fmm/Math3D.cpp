@@ -6,14 +6,13 @@
 
 #include "Math3D.h"
 
-namespace Math3D {
+std::vector<double> Math3D::factorialValue;
+std::vector<double> Math3D::doubleFactorialValue;
+std::vector<std::vector<double>> Math3D::getAValue;
+std::vector<Complex> Math3D::imaginaryPower;
+bool Math3D::initialized = false;
 
-std::vector<double> MathOpt::factorialValue;
-std::vector<double> MathOpt::doubleFactorialValue;
-std::vector<std::vector<double>> MathOpt::getAValue;
-std::vector<std::complex<double>> MathOpt::imaginaryPower;
-
-std::array<double, 3> toSpherical(const std::array<double, 3> &cartesian) {
+std::array<double, 3> Math3D::toSpherical(const std::array<double, 3> &cartesian) {
   double x = cartesian[0];
   double y = cartesian[1];
   double z = cartesian[2];
@@ -50,7 +49,7 @@ double associatedLegendrePolynomialRec(int m, int n, double x) {
     if (n % 2 == 1) {
       ret = -1;
     }
-    ret *= MathOpt::doubleFactorial(2 * m - 1);
+    ret *= Math3D::doubleFactorial(2 * m - 1);
     ret *= std::pow(1.0 - x * x, 0.5 * m);
     return ret;
   }
@@ -64,7 +63,7 @@ double associatedLegendrePolynomialRec(int m, int n, double x) {
   return ret;
 }
 
-double MathOpt::associatedLegendrePolynomial(int m, int n, double x) {
+double Math3D::associatedLegendrePolynomial(int m, int n, double x) {
   if (m > n) {
     std::cerr << "associatedLegendrePolynomial(" << m << "," << n << "," << x << ") is not defined for m > n"
               << std::endl;
@@ -83,7 +82,8 @@ double MathOpt::associatedLegendrePolynomial(int m, int n, double x) {
   // Here this function is used, to check for the updated parameters again.
   // Then associatedLegendrePolynomial will only ever be called with correct parameters.
   if (m < 0) {
-    return std::pow(-1, m) * MathOpt::factorial(n - m) / MathOpt::factorial(n + m) * associatedLegendrePolynomial(-m, n, x);
+    return std::pow(-1, m) * Math3D::factorial(n - m) / Math3D::factorial(n + m) *
+           associatedLegendrePolynomial(-m, n, x);
   }
   // build cache
   // The recurrence relation accesses associated legendre polynomials for degrees n-1 and n-2.
@@ -97,8 +97,7 @@ double MathOpt::associatedLegendrePolynomial(int m, int n, double x) {
   for (int i = 2; i <= n - m; ++i) {
     int cacheN = m + i;
     legendreCache[i] =
-        (x * (2 * cacheN - 1) * legendreCache[i - 1] - (cacheN + m - 1) * legendreCache[i - 2]) /
-        (cacheN - m);
+        (x * (2 * cacheN - 1) * legendreCache[i - 1] - (cacheN + m - 1) * legendreCache[i - 2]) / (cacheN - m);
   }
   legendreLastM = m;
 
@@ -106,18 +105,19 @@ double MathOpt::associatedLegendrePolynomial(int m, int n, double x) {
   return legendreCache[n - m];
 }
 
-std::complex<double> MathOpt::sphericalHarmonics(int m, int n, double theta, double phi) {
+Complex Math3D::sphericalHarmonics(int m, int n, double theta, double phi) {
   if (n < std::abs(m)) {
     std::cerr << "sphericalHarmonics(" << m << "," << n << "," << theta << "," << phi << ") is not defined for n < |m|"
               << std::endl;
   }
 
   using namespace std::complex_literals;
-  return std::exp(1i * double(m) * phi) * std::sqrt(MathOpt::factorial(n - std::abs(m)) / MathOpt::factorial(n + std::abs(m))) *
+  return std::exp(1i * double(m) * phi) *
+         std::sqrt(Math3D::factorial(n - std::abs(m)) / Math3D::factorial(n + std::abs(m))) *
          associatedLegendrePolynomial(std::abs(m), n, std::cos(theta));
 }
 
-void MathOpt::sphericalHarmonicsBuildCache(int m, int n, double theta, double phi) {
+void Math3D::sphericalHarmonicsBuildCache(int m, int n, double theta, double phi) {
   associatedLegendrePolynomial(std::abs(m), n, std::cos(theta));
   using namespace std::complex_literals;
   sphericalCache = std::exp(1i * static_cast<double>(m) * phi);
@@ -128,47 +128,52 @@ double calculateA(int m, int n) {
     std::cerr << "getA(" << m << "," << n << ") is not defined for n - m < 0 or n + m < 0" << std::endl;
   }
 
-  double result = std::pow(-1, n) / std::sqrt(MathOpt::factorial(n - m) * MathOpt::factorial(n + m));
+  double result = std::pow(-1, n) / std::sqrt(Math3D::factorial(n - m) * Math3D::factorial(n + m));
 
   assert(!__isnan(result));
 
   return result;
 }
 
-void initMath() {
+void Math3D::initialize() {
+  if (Math3D::initialized) {
+    return;
+  }
+
   // factorial
-  MathOpt::factorialValue = std::vector<double>(maxFactorialParameter + 1);
-  MathOpt::factorialValue[0] = 1;
+  Math3D::factorialValue = std::vector<double>(maxFactorialParameter + 1);
+  Math3D::factorialValue[0] = 1;
   for (int i = 1; i <= maxFactorialParameter; ++i) {
-    MathOpt::factorialValue[i] = i * MathOpt::factorialValue[i - 1];
+    Math3D::factorialValue[i] = i * Math3D::factorialValue[i - 1];
   }
 
   // double factorial
-  MathOpt::doubleFactorialValue = std::vector<double>(maxFactorialParameter + 1);
-  MathOpt::doubleFactorialValue[0] = 1;
-  MathOpt::doubleFactorialValue[1] = 1;
+  Math3D::doubleFactorialValue = std::vector<double>(maxFactorialParameter + 1);
+  Math3D::doubleFactorialValue[0] = 1;
+  Math3D::doubleFactorialValue[1] = 1;
   for (int i = 2; i <= maxFactorialParameter; ++i) {
-    MathOpt::doubleFactorialValue[i] = i * MathOpt::doubleFactorialValue[i - 2];
+    Math3D::doubleFactorialValue[i] = i * Math3D::doubleFactorialValue[i - 2];
   }
 
   // getA
-  MathOpt::getAValue =
+  Math3D::getAValue =
       std::vector<std::vector<double>>(maxFactorialParameter + 1, std::vector<double>(maxFactorialParameter / 2 + 1));
   for (int m = -maxFactorialParameter / 2; m <= maxFactorialParameter / 2; ++m) {
     for (int n = std::abs(m); n <= maxFactorialParameter / 2; ++n) {
-      MathOpt::getAValue[maxFactorialParameter / 2 + m][n] = calculateA(m, n);
+      Math3D::getAValue[maxFactorialParameter / 2 + m][n] = calculateA(m, n);
     }
   }
 
   // powI
-  MathOpt::imaginaryPower = std::vector<std::complex<double>>(8);
+  Math3D::imaginaryPower = std::vector<Complex>(8);
   using namespace std::complex_literals;
-  MathOpt::imaginaryPower[0] = 1;
-  MathOpt::imaginaryPower[1] = 1i;
-  MathOpt::imaginaryPower[2] = -1;
-  MathOpt::imaginaryPower[3] = -1i;
+  Math3D::imaginaryPower[0] = 1;
+  Math3D::imaginaryPower[1] = 1i;
+  Math3D::imaginaryPower[2] = -1;
+  Math3D::imaginaryPower[3] = -1i;
   for (int i = 0; i < 4; ++i) {
-    MathOpt::imaginaryPower[i + 4] = MathOpt::imaginaryPower[i];
+    Math3D::imaginaryPower[i + 4] = Math3D::imaginaryPower[i];
   }
-}
+
+  Math3D::initialized = true;
 }

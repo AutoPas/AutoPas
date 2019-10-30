@@ -64,5 +64,5 @@ class Operators {
   int orderOfExpansion;
   // i^(|k-m|-|k|-|m|)
   std::vector<std::vector<Complex>> powerM2L;
-  Math3D::MathOpt mathOpt;
+  Math3D math3D;
 };

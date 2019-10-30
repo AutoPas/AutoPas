@@ -8,7 +8,7 @@
 
 Operators::Operators(int orderOfExpansion) {
   this->orderOfExpansion = orderOfExpansion;
-  this->mathOpt = Math3D::MathOpt();
+  this->math3D = Math3D();
 
   // The power i^(|k-m|-|k|-|m|) is needed frequently in the M2L operator.
   this->powerM2L =
@@ -17,7 +17,7 @@ Operators::Operators(int orderOfExpansion) {
     for (int m = -orderOfExpansion; m <= orderOfExpansion; ++m) {
       using namespace std::complex_literals;
       this->powerM2L[k + orderOfExpansion][m + orderOfExpansion] =
-          Math3D::MathOpt::powI(std::abs(k - m) - std::abs(k) - std::abs(m));
+          Math3D::powI(std::abs(k - m) - std::abs(k) - std::abs(m));
     }
   }
 }
@@ -28,10 +28,10 @@ void Operators::P2M(AdaptiveOctreeNode &leaf) {
        iter.isValid(); ++iter) {
     auto spherical = Math3D::toSpherical(autopas::ArrayMath::sub(iter->getR(), leaf.getNodeCenter()));
     for (int m = -orderOfExpansion; m <= orderOfExpansion; ++m) {
-      mathOpt.sphericalHarmonicsBuildCache(-m, orderOfExpansion, spherical[1], spherical[2]);
+      math3D.sphericalHarmonicsBuildCache(-m, orderOfExpansion, spherical[1], spherical[2]);
       for (int n = std::abs(m); n <= orderOfExpansion; n++) {
         auto add = iter->charge * std::pow(spherical[0], n) *
-            mathOpt.sphericalHarmonicsCached(-m, n, spherical[1], spherical[2]);
+                   math3D.sphericalHarmonicsCached(-m, n, spherical[1], spherical[2]);
         leaf.setM(m, n, leaf.getM(m, n) + add);
       }
     }
@@ -63,8 +63,8 @@ void Operators::M2M(AdaptiveOctreeNode &parent) {
             Complex product = childM * complex * std::pow(r, n);
 
             if (product != 0.0) {
-              auto harmonics = mathOpt.sphericalHarmonics(-m, n, theta, phi);
-              product *= harmonics * Math3D::MathOpt::getA(m, n) * Math3D::MathOpt::getA(k - m, j - n) / Math3D::MathOpt::getA(k, j);
+              auto harmonics = math3D.sphericalHarmonics(-m, n, theta, phi);
+              product *= harmonics * Math3D::getA(m, n) * Math3D::getA(k - m, j - n) / Math3D::getA(k, j);
             }
 
             mmn += product;
@@ -98,7 +98,7 @@ void Operators::M2L(AdaptiveOctreeNode &node) {
         // Avoids std::pow in the innermost loop.
         double rhoPower1 = std::pow(rho, absK + 1);
         int absM = std::abs(m);
-        mathOpt.sphericalHarmonicsBuildCache(m - k, 2 * orderOfExpansion, theta, phi);
+        math3D.sphericalHarmonicsBuildCache(m - k, 2 * orderOfExpansion, theta, phi);
         for (int j = absK; j <= orderOfExpansion; ++j) {
           // sign = (-1)^n
           // sign has to be reset before after every n-loop, so it cannot be put outside the j-loop.
@@ -109,7 +109,7 @@ void Operators::M2L(AdaptiveOctreeNode &node) {
           // complex = i^(|k-m|-|k|-|m|)
           auto complex = this->powerM2L[k + orderOfExpansion][m + orderOfExpansion];
 
-          auto aKJ = Math3D::MathOpt::getA(k, j);
+          auto aKJ = Math3D::getA(k, j);
 
           Complex sum = 0;
           for (int n = absM; n <= orderOfExpansion; ++n) {
@@ -117,8 +117,9 @@ void Operators::M2L(AdaptiveOctreeNode &node) {
             auto product = inter->getM(m, n);
             if (product != 0.0) {
               product *=
-                  complex * Math3D::MathOpt::getA(m, n) * aKJ * mathOpt.sphericalHarmonicsCached(m - k, j + n, theta, phi);
-              product /= sign * Math3D::MathOpt::getA(m - k, j + n) * rhoPower2;
+                  complex * Math3D::getA(m, n) * aKJ *
+                         math3D.sphericalHarmonicsCached(m - k, j + n, theta, phi);
+              product /= sign * Math3D::getA(m - k, j + n) * rhoPower2;
             }
 
             sum += product;
@@ -157,11 +158,11 @@ void Operators::L2L(AdaptiveOctreeNode &node) {
 
             auto complex = std::pow(1i, std::abs(m) - std::abs(m - k) - std::abs(k));
 
-            Complex product = parentL * complex * Math3D::MathOpt::getA(m - k, n - j);
+            Complex product = parentL * complex * Math3D::getA(m - k, n - j);
             if (product != 0.0) {
-              auto harmonics = mathOpt.sphericalHarmonics(m - k, n - j, theta, phi);
+              auto harmonics = math3D.sphericalHarmonics(m - k, n - j, theta, phi);
               product *=
-                  Math3D::MathOpt::getA(k, j) * harmonics * std::pow(rho, n - j) / (std::pow(-1, n + j) * Math3D::MathOpt::getA(m, n));
+                  Math3D::getA(k, j) * harmonics * std::pow(rho, n - j) / (std::pow(-1, n + j) * Math3D::getA(m, n));
             }
 
             lmn += product;
@@ -191,7 +192,7 @@ void Operators::L2P(AdaptiveOctreeNode &leaf) {
         Complex product = std::pow(rho, n);
 
         if (product != 0.0) {
-          product *= mathOpt.sphericalHarmonics(m, n, theta, phi);
+          product *= math3D.sphericalHarmonics(m, n, theta, phi);
           if (product != 0.0) {
             product *= leaf.getL(m, n);
           }
@@ -224,10 +225,10 @@ void Operators::P2M_Old(OctreeNode &leaf) {
        ++iter) {
     auto spherical = Math3D::toSpherical(autopas::ArrayMath::sub(iter->getR(), leaf.getCenter()));
     for (int m = -orderOfExpansion; m <= orderOfExpansion; ++m) {
-      mathOpt.sphericalHarmonicsBuildCache(-m, orderOfExpansion, spherical[1], spherical[2]);
+      math3D.sphericalHarmonicsBuildCache(-m, orderOfExpansion, spherical[1], spherical[2]);
       for (int n = std::abs(m); n <= orderOfExpansion; n++) {
         auto add = iter->charge * std::pow(spherical[0], n) *
-            mathOpt.sphericalHarmonicsCached(-m, n, spherical[1], spherical[2]);
+                   math3D.sphericalHarmonicsCached(-m, n, spherical[1], spherical[2]);
         leaf.setM(m, n, leaf.getM(m, n) + add);
       }
     }
@@ -258,8 +259,8 @@ void Operators::M2M_Old(OctreeNode &parent) {
             Complex product = childM * complex * std::pow(r, n);
 
             if (product != 0.0) {
-              auto harmonics = mathOpt.sphericalHarmonics(-m, n, theta, phi);
-              product *= harmonics * Math3D::MathOpt::getA(m, n) * Math3D::MathOpt::getA(k - m, j - n) / Math3D::MathOpt::getA(k, j);
+              auto harmonics = math3D.sphericalHarmonics(-m, n, theta, phi);
+              product *= harmonics * Math3D::getA(m, n) * Math3D::getA(k - m, j - n) / Math3D::getA(k, j);
             }
 
             mmn += product;
@@ -299,7 +300,7 @@ void Operators::M2L_Old(OctreeNode &node) {
         // Avoids std::pow in the innermost loop.
         double rhoPower1 = std::pow(rho, absK + 1);
         int absM = std::abs(m);
-        mathOpt.sphericalHarmonicsBuildCache(m - k, 2 * orderOfExpansion, theta, phi);
+        math3D.sphericalHarmonicsBuildCache(m - k, 2 * orderOfExpansion, theta, phi);
         for (int j = absK; j <= orderOfExpansion; ++j) {
           // sign = (-1)^n
           // sign has to be reset before after every n-loop, so it cannot be put outside the j-loop.
@@ -310,7 +311,7 @@ void Operators::M2L_Old(OctreeNode &node) {
           // complex = i^(|k-m|-|k|-|m|)
           auto complex = this->powerM2L[k + orderOfExpansion][m + orderOfExpansion];
 
-          auto aKJ = Math3D::MathOpt::getA(k, j);
+          auto aKJ = Math3D::getA(k, j);
 
           Complex sum = 0;
           for (int n = absM; n <= orderOfExpansion; ++n) {
@@ -318,8 +319,9 @@ void Operators::M2L_Old(OctreeNode &node) {
             auto product = inter->getM(m, n);
             if (product != 0.0) {
               product *=
-                  complex * Math3D::MathOpt::getA(m, n) * aKJ * mathOpt.sphericalHarmonicsCached(m - k, j + n, theta, phi);
-              product /= sign * Math3D::MathOpt::getA(m - k, j + n) * rhoPower2;
+                  complex * Math3D::getA(m, n) * aKJ *
+                         math3D.sphericalHarmonicsCached(m - k, j + n, theta, phi);
+              product /= sign * Math3D::getA(m - k, j + n) * rhoPower2;
             }
 
             sum += product;
@@ -358,11 +360,11 @@ void Operators::L2L_Old(OctreeNode &node) {
 
             auto complex = std::pow(1i, std::abs(m) - std::abs(m - k) - std::abs(k));
 
-            Complex product = parentL * complex * Math3D::MathOpt::getA(m - k, n - j);
+            Complex product = parentL * complex * Math3D::getA(m - k, n - j);
             if (product != 0.0) {
-              auto harmonics = mathOpt.sphericalHarmonics(m - k, n - j, theta, phi);
+              auto harmonics = math3D.sphericalHarmonics(m - k, n - j, theta, phi);
               product *=
-                  Math3D::MathOpt::getA(k, j) * harmonics * std::pow(rho, n - j) / (std::pow(-1, n + j) * Math3D::MathOpt::getA(m, n));
+                  Math3D::getA(k, j) * harmonics * std::pow(rho, n - j) / (std::pow(-1, n + j) * Math3D::getA(m, n));
             }
 
             lmn += product;
@@ -392,7 +394,7 @@ void Operators::L2P_Old(OctreeNode &leaf) {
         Complex product = std::pow(rho, n);
 
         if (product != 0.0) {
-          product *= mathOpt.sphericalHarmonics(m, n, theta, phi);
+          product *= math3D.sphericalHarmonics(m, n, theta, phi);
           if (product != 0.0) {
             product *= leaf.getL(m, n);
           }

@@ -258,7 +258,7 @@ int main(int argc, char **argv) {
   std::cout << "maxParticlesPerNode = " << maxParticlesPerNode << std::endl;
   std::cout << "numberOfParticles = " << numberOfParticles << std::endl;
 
-  Math3D::initMath();
+  Math3D::initialize();
 
   measureTime();
 

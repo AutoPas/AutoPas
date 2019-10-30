@@ -14,31 +14,32 @@
 #include <memory>
 #include <vector>
 
-namespace Math3D {
+using Complex = std::complex<double>;
 
 constexpr auto maxFactorialParameter = 128;
 
 /**
  * Must be called before using functions from Math3D.h.
  */
-void initMath();
 
-class MathOpt {
+class Math3D {
  public:
-  static std::vector<double> factorialValue;
-  static std::vector<double> doubleFactorialValue;
-  static std::vector<std::vector<double>> getAValue;
-  static std::vector<std::complex<double>> imaginaryPower;
+  Math3D() {
+    Math3D::initialize();
+  }
 
-  int legendreLastM = 0;
-  std::complex<double> sphericalCache;
-  std::vector<double> legendreCache;
+  void static initialize();
 
-  MathOpt() = default;
+  /**
+   * Returns a copy of a 3d vector in cartesian coordinates using spherical coordinates.
+   * @param 3d vector in cartesian coordinates
+   * @return copied 3d vector in spherical coordinates
+   */
+  std::array<double, 3> static toSpherical(const std::array<double, 3> &cartesian);
 
-  inline double static doubleFactorial(int x) { return MathOpt::doubleFactorialValue.at(x); }
+  inline double static doubleFactorial(int x) { return doubleFactorialValue.at(x); }
 
-  inline double static factorial(int x) { return MathOpt::factorialValue.at(x); }
+  inline double static factorial(int x) { return factorialValue.at(x); }
 
   /**
    * Calculates the associated Legendre polynomial of order m and degree n at x.
@@ -65,7 +66,7 @@ class MathOpt {
    * @param phi (second parameter)
    * @return Result of the spherical harmonics as complex number.
    */
-  std::complex<double> sphericalHarmonics(int m, int n, double theta, double phi);
+  Complex sphericalHarmonics(int m, int n, double theta, double phi);
 
   /**
    * If multiple spherical harmonics are evaluated for the same m and theta in a row. It is faster to first call
@@ -84,9 +85,8 @@ class MathOpt {
    * @param phi (second parameter)
    * @return Result of the spherical harmonics as complex number.
    */
-  inline std::complex<double> sphericalHarmonicsCached(int m, int n, double theta, double phi) {
-    return MathOpt::sphericalCache * std::sqrt(factorial(n - std::abs(m)) / factorial(n + std::abs(m))) *
-           getLegendreCache(n);
+  inline Complex sphericalHarmonicsCached(int m, int n, double theta, double phi) {
+    return sphericalCache * std::sqrt(factorial(n - std::abs(m)) / factorial(n + std::abs(m))) * getLegendreCache(n);
   }
 
   /**
@@ -95,21 +95,23 @@ class MathOpt {
    * @param n (subscript)
    * @return A(m,n)
    */
-  inline double static getA(int m, int n) { return MathOpt::getAValue[maxFactorialParameter / 2 + m][n]; }
+  static inline double getA(int m, int n) { return getAValue[maxFactorialParameter / 2 + m][n]; }
 
   /**
    * Returns std::pow(1i, exponent), where 1i is the imaginary unit.
    * @param exponent Exponent as integer.
    * @return
    */
-  inline std::complex<double> static powI(int exponent) { return MathOpt::imaginaryPower[exponent % 4 + 4]; }
+  static inline Complex powI(int exponent) { return imaginaryPower[exponent % 4 + 4]; }
+
+ private:
+  static bool initialized;
+  static std::vector<double> factorialValue;
+  static std::vector<double> doubleFactorialValue;
+  static std::vector<std::vector<double>> getAValue;
+  static std::vector<Complex> imaginaryPower;
+
+  int legendreLastM = 0;
+  std::complex<double> sphericalCache;
+  std::vector<double> legendreCache;
 };
-
-/**
- * Returns a copy of a 3d vector in cartesian coordinates using spherical coordinates.
- * @param 3d vector in cartesian coordinates
- * @return copied 3d vector in spherical coordinates
- */
-std::array<double, 3> toSpherical(const std::array<double, 3> &cartesian);
-
-}
