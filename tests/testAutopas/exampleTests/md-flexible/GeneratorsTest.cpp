@@ -73,9 +73,6 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   int uniformCounter = 0;
   int sphereCounter = 0;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     EXPECT_EQ(velocity, iter->getV());  // velocity set to {0.,0.,0.} in parsingFile
     switch (iter->getTypeId()) {
