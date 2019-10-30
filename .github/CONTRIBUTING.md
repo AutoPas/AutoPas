@@ -13,6 +13,8 @@ Please keep in mind the following notes while working.
 * `#include` of files from within AutoPas shall be given with the full path (starting with `autopas/`) and using `""`. 
 * `constexpr` instead of `#define`. Use it wherever possible.
 * `const` wherever possible. 
+* `nullptr` instead of `NULL`.
+* `using` instead of `typedef`.
 * Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Descriptive error message")` instead.
 
 ### Code Style
@@ -21,8 +23,10 @@ Please keep in mind the following notes while working.
 * Class names start with a capital letter.
 * Use camelCase over snake_case.
 * Google code style is enforced by the CI server.
-* Clang format version 6.0 (Other versions might format slightly differently).
+* Clang format version 6.0 is enforced (Other versions might format slightly differently).
 * Use `make clangformat` before submitting a PR.
+* [cmake format](https://github.com/cheshirekow/cmake_format/tree/master/cmake_format) is enforced.
+* Use `make cmakeformat` before submitting a PR.
 
 ### Comment Style
 * Please write full sentences starting with a capital letter and ending with a period.

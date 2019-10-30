@@ -20,7 +20,7 @@ class Generator {
    */
   template <class Particle, class ParticleCell>
   static void CubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
-                       const std::array<double, 3> &BoxMin, const std::array<size_t, 3> &particlesPerDim,
+                       const std::array<double, 3> &boxMin, const std::array<size_t, 3> &particlesPerDim,
                        double particleSpacing, const std::array<double, 3> &velocity);
 
   /**
@@ -33,7 +33,7 @@ class Generator {
    */
   template <class Particle, class ParticleCell>
   static void CubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
-                        const std::array<double, 3> &BoxMin, const std::array<double, 3> &BoxMax, size_t numParticles,
+                        const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, size_t numParticles,
                         double distributionMean, double distributionStdDev, const std::array<double, 3> &velocity);
 
   /**
@@ -44,7 +44,7 @@ class Generator {
    */
   template <class Particle, class ParticleCell>
   static void CubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
-                         const std::array<double, 3> &BoxMin, const std::array<double, 3> &BoxMax, size_t numParticles,
+                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, size_t numParticles,
                          const std::array<double, 3> &velocity);
 
   /**
@@ -64,32 +64,37 @@ class Generator {
 
 template <class Particle, class ParticleCell>
 void Generator::CubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
-                         const std::array<double, 3> &BoxMin, const std::array<size_t, 3> &particlesPerDim,
+                         const std::array<double, 3> &boxMin, const std::array<size_t, 3> &particlesPerDim,
                          double particleSpacing, const std::array<double, 3> &velocity) {
   Particle dummyParticle;
   dummyParticle.setV(velocity);
-  GridGenerator::fillWithParticles(autopas, particlesPerDim, typeId, id, dummyParticle,
-                                   {particleSpacing, particleSpacing, particleSpacing}, BoxMin);
+  dummyParticle.setID(id);
+  dummyParticle.setTypeId(typeId);
+  GridGenerator::fillWithParticles(autopas, particlesPerDim, dummyParticle,
+                                   {particleSpacing, particleSpacing, particleSpacing}, boxMin);
 }
 
 template <class Particle, class ParticleCell>
 void Generator::CubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
-                          const std::array<double, 3> &BoxMin, const std::array<double, 3> &BoxMax, size_t numParticles,
+                          const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, size_t numParticles,
                           double distributionMean, double distributionStdDev, const std::array<double, 3> &velocity) {
   Particle dummyParticle;
+  dummyParticle.setV(velocity);
+  dummyParticle.setID(id);
   dummyParticle.setTypeId(typeId);
-  GaussianGenerator::fillWithParticles(autopas, id, BoxMin, BoxMax, numParticles, dummyParticle, distributionMean,
+  GaussianGenerator::fillWithParticles(autopas, boxMin, boxMax, numParticles, dummyParticle, distributionMean,
                                        distributionStdDev);
 }
 
 template <class Particle, class ParticleCell>
 void Generator::CubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas, size_t typeId, size_t id,
-                           const std::array<double, 3> &BoxMin, const std::array<double, 3> &BoxMax,
+                           const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                            size_t numParticles, const std::array<double, 3> &velocity) {
   Particle dummyParticle;
   dummyParticle.setV(velocity);
   dummyParticle.setTypeId(typeId);
-  RandomGenerator::fillWithParticles(autopas, id, dummyParticle, BoxMin, BoxMax, numParticles);
+  dummyParticle.setID(id);
+  RandomGenerator::fillWithParticles(autopas, dummyParticle, boxMin, boxMax, numParticles);
 }
 
 template <class Particle, class ParticleCell>

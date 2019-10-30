@@ -38,6 +38,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {MDFlexConfig::tuningMaxEvidenceStr, required_argument, nullptr, 'E'},
                                          {MDFlexConfig::tuningSamplesStr, required_argument, nullptr, 'S'},
                                          {MDFlexConfig::tuningStrategyOptionsStr, required_argument, nullptr, 'T'},
+                                         {MDFlexConfig::verletClusterSizeStr, required_argument, nullptr, 'q'},
                                          {MDFlexConfig::verletRebuildFrequencyStr, required_argument, nullptr, 'v'},
                                          {MDFlexConfig::verletSkinRadiusStr, required_argument, nullptr, 'r'},
                                          {MDFlexConfig::vtkFileNameStr, required_argument, nullptr, 'w'},
@@ -137,11 +138,13 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       case 'f': {
         if (strArg.find("avx") != string::npos) {
           config.functorOption = MDFlexConfig::FunctorOption::lj12_6_AVX;
+        } else if (strArg.find("glob") != string::npos) {
+          config.functorOption = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
           config.functorOption = MDFlexConfig::FunctorOption::lj12_6;
         } else {
           cerr << "Unknown functor: " << strArg << endl;
-          cerr << "Please use 'Lennard-Jones' or 'Lennard-Jones-AVX'" << endl;
+          cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals' or 'Lennard-Jones-AVX'" << endl;
           displayHelp = true;
         }
         break;
@@ -279,6 +282,15 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
           config.periodic = autopas::utils::StringUtils::parseBoolOption(strArg);
         } catch (const exception &) {
           cerr << "Error parsing whether there should be periodic boundary conditions: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'q': {
+        try {
+          config.verletClusterSize = (unsigned int)stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing verlet cluster size: " << optarg << endl;
           displayHelp = true;
         }
         break;

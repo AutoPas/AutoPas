@@ -49,7 +49,7 @@ class MDFlexConfig {
   /**
    * Choice of the functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX };
+  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_Globals };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -89,6 +89,8 @@ class MDFlexConfig {
   std::string vtkFileName;
   static inline const char *vtkWriteFrequencyStr = "vtk-write-frequency";
   size_t vtkWriteFrequency = 100;
+  static inline const char *verletClusterSizeStr = "verlet-cluster-size";
+  unsigned int verletClusterSize = 4;
   static inline const char *verletRebuildFrequencyStr = "verlet-rebuild-frequency";
   unsigned int verletRebuildFrequency = 1;
   static inline const char *verletSkinRadiusStr = "verlet-skin-radius";

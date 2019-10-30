@@ -6,3 +6,4 @@ venv/
 *.timestamp
 CMakeLists.txt.user
 cmake.check_cache
+*.synctex.gz

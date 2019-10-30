@@ -17,7 +17,7 @@ constexpr size_t PARTICLES_PER_DIM = 16;
  * @brief Generates a reproducible set of particles
  * @param particles Vector where particles will be stored.
  */
-void AoSvsCudaTest::generateParticles(std::vector<autopas::MoleculeLJ<>> *particles) {
+void AoSvsCudaTest::generateParticles(std::vector<Molecule> *particles) {
   particles->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {

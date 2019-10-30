@@ -40,7 +40,7 @@ void TimeDiscretizationTest::initFillWithParticles(
   autopas.setBoxMax(boxmax);
   autopas.init();
   PrintableMolecule dummy;
-  GridGenerator::fillWithParticles(autopas, particlesPerDim, 0, 0, dummy, {1, 1, 1}, {0., 0., 0.});
+  GridGenerator::fillWithParticles(autopas, particlesPerDim, dummy, {1, 1, 1}, {0., 0., 0.});
 }
 
 std::array<double, 3> TimeDiscretizationTest::nextPosition(std::array<double, 3> position, std::array<double, 3> force,
@@ -67,7 +67,7 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
   autopas.setBoxMin(boxmin);
   autopas.setBoxMax(boxmax);
   autopas.init();
-  RandomGenerator::fillWithParticles(autopas, dummy, numberOfParticles);
+  RandomGenerator::fillWithParticles(autopas, dummy, autopas.getBoxMin(), autopas.getBoxMax(), numberOfParticles);
   double particleD = 0.01;
   TimeDiscretization<decltype(autopas), decltype(_particlePropertiesLibrary)> td1(particleD,
                                                                                   _particlePropertiesLibrary);

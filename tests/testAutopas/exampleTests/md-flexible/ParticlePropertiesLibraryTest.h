@@ -12,7 +12,6 @@
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
-using namespace std;
 
 class ParticlePropertiesLibraryTest : public AutoPasTestBase {
  public:

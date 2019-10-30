@@ -12,10 +12,11 @@ using namespace autopas;
 /********************************** Linked Cells Tests **********************************/
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
+  LinkedCells<FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
-  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0));
+  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), lcContainer.getBoxMin(),
+                                     lcContainer.getBoxMax(), 100);
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
@@ -28,10 +29,11 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
 }
 
 void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorOwned() {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
+  LinkedCells<FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
-  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), 100);
+  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), lcContainer.getBoxMin(),
+                                     lcContainer.getBoxMax(), 100);
 
   TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   lcContainer.addHaloParticle(part);
@@ -88,10 +90,11 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
 #endif
 
 void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHalo() {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
+  LinkedCells<FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
-  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), 100);
+  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), lcContainer.getBoxMin(),
+                                     lcContainer.getBoxMax(), 100);
 
   TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   lcContainer.addHaloParticle(part);
@@ -162,7 +165,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorBehavior
 #endif
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorEmpty) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
+  LinkedCells<FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add no particles
 
@@ -182,10 +185,11 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorEmpty) {
 }
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyConstructor) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
+  LinkedCells<FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
-  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0));
+  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), lcContainer.getBoxMin(),
+                                     lcContainer.getBoxMax(), 100);
 
   auto iterator = lcContainer.getRegionIterator(_regionMin, _regionMax);
   auto iterator2 = iterator;
@@ -208,10 +212,11 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyCons
 }
 
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyAssignment) {
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
+  LinkedCells<FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
-  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0));
+  RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), lcContainer.getBoxMin(),
+                                     lcContainer.getBoxMax(), 100);
 
   auto iterator2 = lcContainer.getRegionIterator(_regionMin, _regionMax);
   // touch them using the regionIterator
@@ -248,7 +253,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyAssi
  */
 TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorSparseDomain) {
   // box goes from {0,0,0} to {5,5,5} + one halo layer
-  LinkedCells<TouchableParticle, FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
+  LinkedCells<FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   size_t idShouldTouch = 0;
   TouchableParticle p({0, 0, 0}, idShouldTouch);
@@ -302,7 +307,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorSparseDo
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorSparseDomain) {
   // box goes from {0,0,0} to {5,5,5} + one halo layer
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> dsContainer(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<FullParticleCell<TouchableParticle>> dsContainer(_boxMin, _boxMax, _cutoff, 0.);
 
   size_t idShouldTouch = 0;
   TouchableParticle p({0, 0, 0}, idShouldTouch);
@@ -352,10 +357,11 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorSparseDoma
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIterator) {
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
-  RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0));
+  RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), container.getBoxMin(),
+                                     container.getBoxMax(), 100);
 
   // touch them using the regionIterator
 #ifdef AUTOPAS_OPENMP
@@ -379,10 +385,11 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIterator) {
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorOwned) {
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
-  RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), 100);
+  RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), container.getBoxMin(),
+                                     container.getBoxMax(), 100);
 
   TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   container.addHaloParticle(part);
@@ -410,10 +417,11 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorOw
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorHalo) {
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
-  RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), 100);
+  RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), container.getBoxMin(),
+                                     container.getBoxMax(), 100);
 
   TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   container.addHaloParticle(part);
@@ -444,7 +452,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorHa
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorEmpty) {
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add no particles
 
@@ -473,10 +481,11 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorEmpty) {
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyConstructor) {
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
-  RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0));
+  RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), container.getBoxMin(),
+                                     container.getBoxMax(), 100);
 
   auto iterator = container.getRegionIterator(_regionMin, _regionMax);
   auto iterator2 = iterator;
@@ -499,10 +508,11 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyConstr
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyAssignment) {
-  DirectSum<TouchableParticle, FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
-  RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0));
+  RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), container.getBoxMin(),
+                                     container.getBoxMax(), 100);
 
   auto iterator2 = container.getRegionIterator(_regionMin, _regionMax);
   // touch them using the regionIterator

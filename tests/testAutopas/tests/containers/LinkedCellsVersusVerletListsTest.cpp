@@ -16,7 +16,8 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   _verletLists = std::make_unique<vltype>(getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff());
 
   // fill containers
-  RandomGenerator::fillWithParticles(*_verletLists, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0), numMolecules);
+  RandomGenerator::fillWithParticles(*_verletLists, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0),
+                                     _verletLists->getBoxMin(), _verletLists->getBoxMax(), numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new and different particles
   for (auto it = _verletLists->begin(); it.isValid(); ++it) {
@@ -29,7 +30,8 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   autopas::TraversalVerlet<FMCell, decltype(func), dataLayoutOption, useNewton3> traversalLJV(&func);
 
   autopas::C08Traversal<FMCell, decltype(func), dataLayoutOption, useNewton3> traversalLJ(
-      _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func);
+      _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func, 1.1 * getCutoff(),
+      _linkedCells->getCellBlock().getCellLength());
 
   _verletLists->rebuildNeighborLists(&traversalLJV);
   _verletLists->iteratePairwise(&traversalLJV);
@@ -61,7 +63,8 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
 
   autopas::C08Traversal<FMCell, decltype(flopsLinked), dataLayoutOption, useNewton3> traversalFLOPSLC(
-      _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
+      _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked, _linkedCells->getInteractionLength(),
+      _linkedCells->getCellBlock().getCellLength());
 
   autopas::TraversalVerlet<FMCell, decltype(flopsLinked), dataLayoutOption, useNewton3> traversalFLOPSVerlet(
       &flopsVerlet);

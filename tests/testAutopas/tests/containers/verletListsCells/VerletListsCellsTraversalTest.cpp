@@ -3,7 +3,6 @@
  * @author nguyen
  * @date 26.09.18
  */
-
 #include "VerletListsCellsTraversalTest.h"
 #include "testingHelpers/NumThreadGuard.h"
 
@@ -20,15 +19,15 @@ std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsC18N3(cutoff), flopsSliN3(cutoff);
 
   autopas::C01TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, false>
-      traversalC01FLOPS(dim, &flopsC01);
+      traversalC01FLOPS(dim, &flopsC01, verletListsCells.getInteractionLength(), verletListsCells.getCellLength());
   autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, false>
-      traversalC18FLOPS(dim, &flopsC18);
+      traversalC18FLOPS(dim, &flopsC18, verletListsCells.getInteractionLength(), verletListsCells.getCellLength());
   autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, false>
-      traversalSliFLOPS(dim, &flopsSli);
+      traversalSliFLOPS(dim, &flopsSli, verletListsCells.getInteractionLength(), verletListsCells.getCellLength());
   autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, true>
-      traversalC18N3FLOPS(dim, &flopsC18N3);
+      traversalC18N3FLOPS(dim, &flopsC18N3, verletListsCells.getInteractionLength(), verletListsCells.getCellLength());
   autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, true>
-      traversalSliN3FLOPS(dim, &flopsSliN3);
+      traversalSliN3FLOPS(dim, &flopsSliN3, verletListsCells.getInteractionLength(), verletListsCells.getCellLength());
 
   verletListsCells.rebuildNeighborLists(&traversalC01FLOPS);
   verletListsCells.iteratePairwise(&traversalC01FLOPS);
@@ -58,8 +57,11 @@ std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells
 void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
   NumThreadGuard numThreadGuard(1);
 
-  RandomGenerator::fillWithParticles(_verletListsCells, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0), numMolecules);
-  RandomGenerator::fillWithParticles(_verletListsCells_cs2, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0), numMolecules);
+  RandomGenerator::fillWithParticles(_verletListsCells, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0),
+                                     _verletListsCells.getBoxMin(), _verletListsCells.getBoxMax(), numMolecules);
+  RandomGenerator::fillWithParticles(_verletListsCells_cs2, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0),
+                                     _verletListsCells_cs2.getBoxMin(), _verletListsCells_cs2.getBoxMax(),
+                                     numMolecules);
 
   auto kCVerlet = getKernelCallsAllTraversals(_verletListsCells, getCutoff());
   auto kCVerlet_cs2 = getKernelCallsAllTraversals(_verletListsCells_cs2, getCutoff());

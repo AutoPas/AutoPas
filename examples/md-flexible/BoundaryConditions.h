@@ -9,9 +9,6 @@
 #include <vector>
 #include "autopas/AutoPas.h"
 
-typedef autopas::MoleculeLJ<> Molecule;
-typedef autopas::FullParticleCell<Molecule> FMCell;
-
 /**
  * This Class implements the Periodic Boudaries for an AutoPas Object
  * The implementation was taken from "AutoPasInterfaceTest.cpp"

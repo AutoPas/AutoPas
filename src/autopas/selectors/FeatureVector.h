@@ -48,17 +48,19 @@ class FeatureVector : public Configuration {
   FeatureVector(Configuration conf) : Configuration(conf) {}
 
   /**
-   * Distance between two FeatureVectors
+   * Distance between two FeatureVectors.
+   * Since there is no real ordering all discrete options are assumed to have a distance
+   * of one to each other.
+   * This function ignores the container dimension since it is encoded in the traversal.
    * @param other
    * @return
    */
-  FeatureVector operator-(const FeatureVector &other) const {
-    ContainerOption co = ContainerOption((traversal == other.traversal) ? 0 : 1);
-    double cfs = (cellSizeFactor - other.cellSizeFactor);
-    TraversalOption to = TraversalOption((traversal == other.traversal) ? 0 : 1);
-    DataLayoutOption dlo = DataLayoutOption((dataLayout == other.dataLayout) ? 0 : 1);
-    Newton3Option n3o = Newton3Option((newton3 == other.newton3) ? 0 : 1);
-    return FeatureVector(co, cfs, to, dlo, n3o);
+  Eigen::VectorXd operator-(const FeatureVector &other) const {
+    Eigen::VectorXd result(featureSpaceDims);
+    result << cellSizeFactor - other.cellSizeFactor, traversal == other.traversal ? 0. : 1.,
+        dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1.;
+
+    return result;
   }
 
   /**

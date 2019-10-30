@@ -27,7 +27,7 @@ class LJFunctorCudaSoA : public FunctorCudaSoA<floatType> {
    * @posZ z positions of the particles
    */
   LJFunctorCudaSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ)
-      : _size(size), _posX(posX), _posY(posY), _posZ(posZ), _forceX(NULL), _forceY(NULL), _forceZ(NULL) {}
+      : _size(size), _posX(posX), _posY(posY), _posZ(posZ), _forceX(nullptr), _forceY(nullptr), _forceZ(nullptr) {}
 
   /**
    * Constructor for only positions
@@ -81,27 +81,10 @@ class LJFunctorConstants : public FunctorCudaConstants<floatType> {
   floatType shift6;
 };
 
-/**
- * Wraps vectors of size 3 with the required precision
- * @tparam T floating point Type
- */
-template <typename T>
-struct vec3 {
-  typedef T Type;
-};
-template <>
-struct vec3<float> {
-  typedef float3 Type;
-};
-template <>
-struct vec3<double> {
-  typedef double3 Type;
-};
-
 template <typename floatType>
 class LJFunctorCudaWrapper : public CudaWrapperInterface<floatType> {
  public:
-  LJFunctorCudaWrapper() { _num_threads = 32; }
+  LJFunctorCudaWrapper() { _num_threads = 64; }
   virtual ~LJFunctorCudaWrapper() {}
 
   void setNumThreads(int num_threads) override { _num_threads = num_threads; }
@@ -118,13 +101,20 @@ class LJFunctorCudaWrapper : public CudaWrapperInterface<floatType> {
 
   void LinkedCellsTraversalNoN3Wrapper(FunctorCudaSoA<floatType> *cell1Base, unsigned int reqThreads,
                                        unsigned int cids_size, unsigned int *cids, unsigned int cellSizes_size,
-                                       size_t *cellSizes, unsigned int offsets_size, int *offsets,
-                                       cudaStream_t stream) override;
+                                       size_t *cellSizes, cudaStream_t stream) override;
 
   void LinkedCellsTraversalN3Wrapper(FunctorCudaSoA<floatType> *cell1Base, unsigned int reqThreads,
                                      unsigned int cids_size, unsigned int *cids, unsigned int cellSizes_size,
-                                     size_t *cellSizes, unsigned int offsets_size, int *offsets,
-                                     cudaStream_t stream) override;
+                                     size_t *cellSizes, cudaStream_t stream) override;
+
+  void CellVerletTraversalNoN3Wrapper(FunctorCudaSoA<floatType> *cell1Base, unsigned int ncells,
+                                      unsigned int clusterSize, unsigned int others_size, unsigned int *other_ids,
+                                      cudaStream_t stream) override;
+
+  void CellVerletTraversalN3Wrapper(FunctorCudaSoA<floatType> *cell1Base, unsigned int ncells, unsigned int clusterSize,
+                                    unsigned int others_size, unsigned int *other_ids, cudaStream_t stream) override;
+
+  void loadLinkedCellsOffsets(unsigned int offsets_size, int *offsets) override;
 
  private:
   int numRequiredBlocks(int n) { return ((n - 1) / _num_threads) + 1; }

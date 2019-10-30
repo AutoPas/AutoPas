@@ -48,6 +48,10 @@ void MDFlexConfig::print() {
       cout << "Lennard-Jones (12-6) AVX intrinsics" << endl;
       break;
     }
+    case FunctorOption::lj12_6_Globals: {
+      cout << "Lennard-Jones (12-6) with globals" << endl;
+      break;
+    }
   }
   cout << setw(valueOffset) << left << "Newton3"
        << ":  " << autopas::utils::StringUtils::iterableToString(newton3Options) << endl;

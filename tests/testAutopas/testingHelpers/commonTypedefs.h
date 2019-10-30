@@ -27,7 +27,7 @@ typedef autopas::MoleculeLJ<> Molecule;
 /**
  * Short for the Full Particle Cell with the single center Lennard-Jones molecule
  */
-typedef autopas::FullParticleCell<autopas::MoleculeLJ<>> FMCell;
+typedef autopas::FullParticleCell<Molecule> FMCell;
 
 // M prefix for mocks
 /**

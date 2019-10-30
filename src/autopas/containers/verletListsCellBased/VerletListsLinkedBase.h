@@ -22,8 +22,8 @@ namespace autopas {
  * @tparam LinkedSoAArraysType SoAArraysType used by the linked cells container
  */
 template <class Particle, class LinkedParticleCell, class LinkedSoAArraysType = typename Particle::SoAArraysType>
-class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCell<Particle>> {
-  typedef FullParticleCell<Particle> ParticleCell;
+class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle>> {
+  using ParticleCell = FullParticleCell<Particle>;
 
  public:
   /**
@@ -40,7 +40,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                         const double skin, const std::set<TraversalOption> &applicableTraversals,
                         const double cellSizeFactor)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
+      : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       AutoPasLog(debug, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
@@ -68,7 +68,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   /**
    * @copydoc autopas::ParticleContainerInterface::getNumParticles()
    */
-  unsigned long getNumParticles() override { return _linkedCells.getNumParticles(); }
+  unsigned long getNumParticles() const override { return _linkedCells.getNumParticles(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::deleteHaloParticles
@@ -102,7 +102,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   /**
    * @copydoc autopas::ParticleContainerInterface::isContainerUpdateNeeded()
    */
-  bool isContainerUpdateNeeded() override {
+  bool isContainerUpdateNeeded() const override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
     // TODO: find a sensible value for ???
@@ -162,16 +162,33 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return _linkedCells.begin(behavior);
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::begin()
+   */
+  ParticleIteratorWrapper<Particle, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     return _linkedCells.begin(behavior);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  ParticleIteratorWrapper<Particle> getRegionIterator(
+  ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
+   */
+  ParticleIteratorWrapper<Particle, false> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
@@ -179,7 +196,7 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * Get the dimension of the used cellblock including the haloboxes.
    * @return the dimensions of the used cellblock
    */
-  const std::array<std::size_t, 3> &getCellsPerDimension() {
+  const std::array<std::size_t, 3> &getCellsPerDimension() const {
     return _linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
   }
 
@@ -187,13 +204,14 @@ class VerletListsLinkedBase : public ParticleContainer<Particle, FullParticleCel
    * Generates a traversal selector info for this container.
    * @return Traversal selector info for this container.
    */
-  TraversalSelectorInfo getTraversalSelectorInfo() override {
-    return TraversalSelectorInfo(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
+  TraversalSelectorInfo getTraversalSelectorInfo() const override {
+    return TraversalSelectorInfo(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
+                                 this->getInteractionLength(), this->_linkedCells.getCellBlock().getCellLength());
   }
 
  protected:
   /// internal linked cells storage, handles Particle storage and used to build verlet lists
-  LinkedCells<Particle, LinkedParticleCell, LinkedSoAArraysType> _linkedCells;
+  LinkedCells<LinkedParticleCell, LinkedSoAArraysType> _linkedCells;
 
   /// specifies if the neighbor list is currently valid
   bool _neighborListIsValid{false};

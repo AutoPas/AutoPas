@@ -1,0 +1,51 @@
+% file: C01_combined_legend.tex
+% author: C. Menges
+
+\documentclass[tikz]{standalone}
+
+\usepackage{pgfplots}
+
+% code adapted from:
+% https://tex.stackexchange.com/questions/101576/how-to-draw-horizontalrow-legend-without-the-surronding-rectangle/101578
+
+% argument #1: any options
+\makeatletter
+\newenvironment{customlegend}[1][]{%
+    \begingroup
+    % inits/clears the lists (which might be populated from previous
+    % axes):
+    \pgfplots@init@cleared@structures
+    \pgfplotsset{#1}%
+}{%
+    % draws the legend:
+    \pgfplots@createlegend
+    \endgroup
+}%
+
+% makes \addlegendimage available (typically only available within an
+% axis environment):
+\def\addlegendimage{\pgfplots@addlegendimage}
+\makeatother
+
+\begin{document}
+\pgfdeclareplotmark{sliceMarker}
+{%
+	\path[draw=black, line width=0.5mm] (-\pgfplotmarksize,-\pgfplotmarksize) -- (-\pgfplotmarksize,\pgfplotmarksize);
+	\path[draw=black, line width=0.5mm] (\pgfplotmarksize,-\pgfplotmarksize) -- (\pgfplotmarksize,\pgfplotmarksize);
+}
+
+\begin{tikzpicture}
+    \begin{customlegend}[
+    legend columns=-1,
+    legend style={draw=none,column sep=1ex},
+    legend entries={interacting cell, base cell,insertions,deletions,slices},
+    marker/.style={only marks, mark options={scale=4}}
+    ]
+    \addlegendimage{marker, mark=square*,color=blue!10}
+    \addlegendimage{marker, mark=square*,color=blue!50}
+    \addlegendimage{marker, mark=square*,color=green!25}
+    \addlegendimage{marker, mark=square*,color=red!20}
+    \addlegendimage{marker, mark=sliceMarker}
+    \end{customlegend}
+\end{tikzpicture}
+\end{document}

@@ -27,7 +27,7 @@ class TuningStrategyInterface {
    * Returns the currently selected configuration object.
    * @return
    */
-  virtual const Configuration &getCurrentConfiguration() = 0;
+  virtual const Configuration &getCurrentConfiguration() const = 0;
 
   /**
    * Selects the next configuration to test or the optimum.
@@ -51,7 +51,7 @@ class TuningStrategyInterface {
    * Returns all container options the strategy might choose.
    * @return
    */
-  virtual std::set<ContainerOption> getAllowedContainerOptions() = 0;
+  virtual std::set<ContainerOption> getAllowedContainerOptions() const = 0;
 
   /**
    * Removes all configurations with the given newton 3 option from the search space.
@@ -64,12 +64,12 @@ class TuningStrategyInterface {
    * Indicate whether the search space collapsed to only one option.
    * @return
    */
-  virtual bool searchSpaceIsTrivial() = 0;
+  virtual bool searchSpaceIsTrivial() const = 0;
 
   /**
    * Indicate whether the search space collapsed to be empty.
    * @return
    */
-  virtual bool searchSpaceIsEmpty() = 0;
+  virtual bool searchSpaceIsEmpty() const = 0;
 };
 }  // namespace autopas

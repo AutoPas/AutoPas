@@ -30,6 +30,7 @@ enum TraversalOption {
   varVerletTraversalAsBuild = 13,
   verletClustersColoring = 14,
   c04SoA = 15,
+  verletClusterCellsTraversal = 16,
 };
 
 /**
@@ -46,6 +47,7 @@ static const std::set<TraversalOption> allTraversalOptions = {
     TraversalOption::c01Verlet,
     TraversalOption::c01Cuda,
     TraversalOption::verletTraversal,
+    TraversalOption::verletClusterCellsTraversal,
     TraversalOption::c01CombinedSoA,
     TraversalOption::verletClusters,
     TraversalOption::c04,

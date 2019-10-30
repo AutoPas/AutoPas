@@ -45,6 +45,8 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto strArg = node[MDFlexConfig::functorOptionStr].as<std::string>();
     if (strArg.find("avx") != std::string::npos) {
       config.functorOption = MDFlexConfig::FunctorOption::lj12_6_AVX;
+    } else if (strArg.find("glob") != std::string::npos) {
+      config.functorOption = MDFlexConfig::FunctorOption::lj12_6_Globals;
     } else if (strArg.find("lj") != std::string::npos || strArg.find("lennard-jones") != std::string::npos) {
       config.functorOption = MDFlexConfig::FunctorOption::lj12_6;
     }
@@ -123,6 +125,9 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
   }
   if (node[MDFlexConfig::verletSkinRadiusStr]) {
     config.verletSkinRadius = node[MDFlexConfig::verletSkinRadiusStr].as<double>();
+  }
+  if (node[MDFlexConfig::verletClusterSizeStr]) {
+    config.verletClusterSize = node[MDFlexConfig::verletClusterSizeStr].as<unsigned int>();
   }
   if (node[MDFlexConfig::vtkFileNameStr]) {
     config.vtkFileName = node[MDFlexConfig::vtkFileNameStr].as<std::string>();

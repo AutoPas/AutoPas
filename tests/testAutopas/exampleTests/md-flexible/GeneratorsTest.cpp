@@ -10,7 +10,7 @@
 // all ParticleVelocities = {0.,0.,0.}
 
 TEST_F(GeneratorsTest, GridFillwithBoxMin) {
-  auto autoPas = autopas::AutoPas<autopas::MoleculeLJ<>, FMCell>(std::cout);
+  auto autoPas = autopas::AutoPas<Molecule, FMCell>(std::cout);
   std::array<double, 3> boxmin = {5., 5., 5.};
   std::array<double, 3> boxmax = {10., 10., 10.};
   autoPas.setBoxMax(boxmax);
@@ -18,7 +18,7 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
   Molecule dummy;
 
   autoPas.init();
-  GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, 0, 0, dummy, {1, 1, 1}, boxmin);
+  GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, dummy, {1, 1, 1}, boxmin);
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
@@ -28,7 +28,7 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
 }
 
 TEST_F(GeneratorsTest, MultipleObjectGeneration) {
-  auto autoPas = autopas::AutoPas<autopas::MoleculeLJ<>, FMCell>(std::cout);
+  auto autoPas = autopas::AutoPas<Molecule, FMCell>(std::cout);
   MDFlexConfig config;
   config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
   YamlParser::parseYamlFile(config);
@@ -49,21 +49,25 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
                       cubeGrid.at(0).getParticlesPerDim(), cubeGrid.at(0).getParticleSpacing(),
                       cubeGrid.at(0).getVelocity());
   idcounter += cubeGrid.at(0).getParticlesTotal();
+  EXPECT_EQ(autoPas.getNumberOfParticles(), idcounter) << "CubeGrid generator added a wrong number of particles!";
 
   Generator::CubeGauss(autoPas, cubeGauss.at(0).getTypeId(), idcounter, cubeGauss.at(0).getBoxMin(),
                        cubeGauss.at(0).getBoxMax(), cubeGauss.at(0).getParticlesTotal(),
                        cubeGauss.at(0).getDistributionMean(), cubeGauss.at(0).getDistributionStdDev(),
                        cubeGauss.at(0).getVelocity());
   idcounter += cubeGauss.at(0).getParticlesTotal();
+  EXPECT_EQ(autoPas.getNumberOfParticles(), idcounter) << "CubeGauss generator added a wrong number of particles!";
 
   Generator::CubeRandom(autoPas, cubeUniform.at(0).getTypeId(), idcounter, cubeUniform.at(0).getBoxMin(),
                         cubeUniform.at(0).getBoxMax(), cubeUniform.at(0).getParticlesTotal(),
                         cubeUniform.at(0).getVelocity());
   idcounter += cubeUniform.at(0).getParticlesTotal();
+  EXPECT_EQ(autoPas.getNumberOfParticles(), idcounter) << "CubeRandom generator added a wrong number of particles!";
 
   Generator::Sphere(autoPas, sphere.at(0).getCenter(), sphere.at(0).getRadius(), sphere.at(0).getParticleSpacing(),
                     idcounter, sphere.at(0).getTypeId(), sphere.at(0).getVelocity());
   idcounter += sphere.at(0).getParticlesTotal();
+  ASSERT_EQ(autoPas.getNumberOfParticles(), idcounter) << "Sphere generator added a wrong number of particles!";
 
   //  EXPECT_EQ(config.particlesTotal(), autoPas.getNumberOfParticles());
   //  EXPECT_EQ(idcounter, config.particlesTotal());

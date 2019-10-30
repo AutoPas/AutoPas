@@ -48,30 +48,17 @@ pipeline{
                         }
                     },
                     "custom checks": {
+                        echo 'Testing src folder'
                         dir("src"){
-                            script{
-                                // check if all header files have a #pragma once
-                                try{
-                                    // if header files do not contain #pragma once, make build unstable
-                                    sh 'grep -L "#pragma once" -r . | grep -q "\\.h" && exit 2 || exit 0'
-                                } catch (Exception e) {
-                                    // change detected
-                                    echo 'all header include guards should be implemented using "#pragma once". Affected files:'
-                                    sh 'grep -L "#pragma once" -r . | grep "\\.h"'
-                                    sh "exit 1"
-                                }
-
-                                // check if all files are documented with @file or \file doxygen comments
-                                try{
-                                    // if .cpp or .h files do not contain a file comment, return 2
-                                    sh "grep '\\\\file\\|\\@file' -Lr . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
-                                } catch (Exception e) {
-                                    // change detected
-                                    echo 'all .h and .cpp files should be documented with doxygen comments (@file)". Affected files:'
-                                    sh "grep '\\\\file\\|\\@file' -Lr . | grep '\\.cpp\\|\\.h'"
-                                    sh "exit 1"
-                                }
-                            }
+                            checkCustom()
+                        }
+                        echo 'Testing tests folder'
+                        dir("tests"){
+                            checkCustom()
+                        }
+                        echo 'Testing examples folder'
+                        dir("examples"){
+                            checkCustom()
                         }
                     }
                 )
@@ -89,7 +76,6 @@ pipeline{
                             dir("build-cuda") {
                                 sh "cmake -DAUTOPAS_ENABLE_CUDA=ON .."
                                 sh "make -j 4 > buildlog-cuda.txt 2>&1 || (cat buildlog-cuda.txt && exit 1)"
-                                sh "cat buildlog-cuda.txt"
                                 sh "./tests/testAutopas/runTests"
                             }
                             dir('build-cuda/examples') {
@@ -100,6 +86,26 @@ pipeline{
                     post{
                         always{
                             warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog-cuda.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
+                        }
+                    }
+                }
+                stage('gpu cloud - clang') {
+                    agent { label 'openshift-autoscale-gpu' }
+                    steps{
+                        container('cuda-10') {
+                            dir("build-cuda") {
+                                sh "CC=clang CXX=clang++ cmake -DAUTOPAS_ENABLE_CUDA=ON .."
+                                sh "make -j 4 > buildlog-cuda-clang.txt 2>&1 || (cat buildlog-cuda-clang.txt && exit 1)"
+                                sh "./tests/testAutopas/runTests"
+                            }
+                            dir('build-cuda/examples') {
+                                sh "ctest -C checkExamples -j8 --verbose"
+                            }
+                        }
+                    }
+                    post{
+                        always{
+                            warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog-cuda-clang.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
                         }
                     }
                 }
@@ -308,6 +314,43 @@ pipeline{
         }
         aborted {
             echo "aborted"
+        }
+    }
+}
+
+void checkCustom() {
+    script{
+        // check if all header files have a #pragma once
+        try{
+            // if header files do not contain #pragma once, make build unstable
+            sh 'grep -L "#pragma once" -r . | grep -q "\\.h" && exit 2 || exit 0'
+        } catch (Exception e) {
+            // change detected
+            echo 'all header include guards should be implemented using "#pragma once". Affected files:'
+            sh 'grep -L "#pragma once" -r . | grep "\\.h"'
+            sh "exit 1"
+        }
+
+        // check if all files are documented with @file or \file doxygen comments
+        try{
+            // if .cpp or .h files do not contain a file comment, return 2
+            sh "grep '\\\\file\\|\\@file' -Lr . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
+        } catch (Exception e) {
+            // change detected
+            echo 'all .h and .cpp files should be documented with doxygen comments (@file)". Affected files:'
+            sh "grep '\\\\file\\|\\@file' -Lr . | grep '\\.cpp\\|\\.h'"
+            sh "exit 1"
+        }
+
+        // check that no file contains NULL or assert
+        try{
+            // if .cpp or .h files contain NULL or assert, return 2
+            sh "grep -lrE '(NULL|[^_]assert)' . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
+        } catch (Exception e) {
+            // change detected
+            echo 'Usage of NULL and assert is prohibited. Affected files:'
+            sh "grep -lrE '(NULL|[^_]assert)' . | grep '\\.cpp\\|\\.h'"
+            sh "exit 1"
         }
     }
 }

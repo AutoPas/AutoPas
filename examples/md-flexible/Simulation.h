@@ -101,9 +101,9 @@ class Simulation {
    */
   void initializeParticlePropertiesLibrary();
 
-  /** @brief This function
-   * -initializes the autopas Object with all member speizified in the YamlParser
-   * -initializes the simulation domain with the Object Generators
+  /**
+   * Initializes the AutoPas Object with the given config and initializes the simulation domain with the Object
+   * Generators.
    */
   void initialize(const MDFlexConfig &mdFlexConfig);
 
@@ -229,22 +229,23 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
     streamBuf = _logFile.rdbuf();
   }
   std::ostream outputStream(streamBuf);
-  _autopas.setCutoff(cutoff);
-  _autopas.setVerletSkin(verletSkinRadius);
-  _autopas.setVerletRebuildFrequency(verletRebuildFrequency);
-  _autopas.setTuningInterval(tuningInterval);
-  _autopas.setNumSamples(tuningSamples);
-  _autopas.setSelectorStrategy(selectorStrategy);
+  _autopas.setAllowedCellSizeFactors(*cellSizeFactors);
   _autopas.setAllowedContainers(containerChoice);
-  _autopas.setAllowedTraversals(traversalOptions);
   _autopas.setAllowedDataLayouts(dataLayoutOptions);
   _autopas.setAllowedNewton3Options(newton3Options);
-  _autopas.setTuningStrategyOption(tuningStrategy);
-  _autopas.setAllowedCellSizeFactors(*cellSizeFactors);
-  _autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency);
-  autopas::Logger::get()->set_level(logLevel);
+  _autopas.setAllowedTraversals(traversalOptions);
   _autopas.setBoxMax(_config->boxMax);
   _autopas.setBoxMin(_config->boxMin);
+  _autopas.setCutoff(cutoff);
+  _autopas.setNumSamples(tuningSamples);
+  _autopas.setSelectorStrategy(selectorStrategy);
+  _autopas.setTuningInterval(tuningInterval);
+  _autopas.setTuningStrategyOption(tuningStrategy);
+  _autopas.setVerletClusterSize(_config->verletClusterSize);
+  _autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency);
+  _autopas.setVerletRebuildFrequency(verletRebuildFrequency);
+  _autopas.setVerletSkin(verletSkinRadius);
+  autopas::Logger::get()->set_level(logLevel);
   _autopas.init();
   size_t particleIDCounter = 0;
 
@@ -325,6 +326,11 @@ void Simulation<Particle, ParticleCell>::simulate() {
         this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>>();
         break;
       }
+      case MDFlexConfig::FunctorOption::lj12_6_Globals: {
+        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true,
+                                                 autopas::FunctorN3Modes::Both, /* globals */ true>>();
+        break;
+      }
       case MDFlexConfig::FunctorOption::lj12_6_AVX: {
         this->calculateForces<autopas::LJFunctorAVX<Particle, ParticleCell, /* mixing */ true>>();
         break;
@@ -355,14 +361,16 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
 
   switch (_config->functorOption) {
     case MDFlexConfig::FunctorOption ::lj12_6: {
-      flopsPerKernelCall = autopas::LJFunctor<PrintableMolecule,
-                                              autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      flopsPerKernelCall = autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>::getNumFlopsPerKernelCall();
+      break;
+    }
+    case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
+      flopsPerKernelCall = autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true, autopas::FunctorN3Modes::Both,
+                                              /* globals */ true>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
-      flopsPerKernelCall =
-          autopas::LJFunctorAVX<PrintableMolecule,
-                                autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      flopsPerKernelCall = autopas::LJFunctorAVX<Particle, ParticleCell, /* mixing */ true>::getNumFlopsPerKernelCall();
       break;
     }
     default:
@@ -382,12 +390,12 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   cout << endl << "Measurements:" << endl;
   cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
   cout << "Duration of Physics Calculations: " << endl;
-  cout << "Force:   " << _timers.durationForceUpdate << " \u03bcs (" << _timers.durationForceUpdate * 1e-6 << "s)"
+  cout << "Force   : " << _timers.durationForceUpdate << " \u03bcs (" << _timers.durationForceUpdate * 1e-6 << "s)"
        << endl;
-  cout << "Postion: " << _timers.durationPositionUpdate << " \u03bcs (" << _timers.durationPositionUpdate * 1e-6 << "s)"
-       << endl;
-  cout << "Velocity " << _timers.durationVelocityUpdate << " \u03bcs (" << _timers.durationVelocityUpdate * 1e-6 << "s)"
-       << endl;
+  cout << "Position : " << _timers.durationPositionUpdate << " \u03bcs (" << _timers.durationPositionUpdate * 1e-6
+       << "s)" << endl;
+  cout << "Velocity: " << _timers.durationVelocityUpdate << " \u03bcs (" << _timers.durationVelocityUpdate * 1e-6
+       << "s)" << endl;
 
   auto numIterations = _config->iterations;
 

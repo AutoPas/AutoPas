@@ -19,8 +19,8 @@ void ThermostatTest::initFillWithParticles(
   autopas.setCutoff(cutoff);
   autopas.init();
   PrintableMolecule dummy;
-  GridGenerator::fillWithParticles(autopas, particlesPerDim, 0, 0, dummy,
-                                   {particleSpacing, particleSpacing, particleSpacing}, {0., 0., 0.});
+  GridGenerator::fillWithParticles(autopas, particlesPerDim, dummy, {particleSpacing, particleSpacing, particleSpacing},
+                                   {0., 0., 0.});
 }
 
 void ThermostatTest::basicApplication(
