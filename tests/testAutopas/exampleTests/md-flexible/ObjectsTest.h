@@ -1,4 +1,8 @@
 #pragma once
+#include <Objects/CubeGauss.h>
+#include <Objects/CubeGrid.h>
+#include <Objects/CubeUniform.h>
+#include <Objects/Sphere.h>
 #include <gtest/gtest.h>
 #include <cmath>
 #include <vector>
