@@ -60,6 +60,9 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
 
 TYPED_TEST_SUITE_P(OptionTest);
 
+/**
+ * tests parseOptionExact against the strings from getAllOptionNames.
+ */
 TYPED_TEST_P(OptionTest, parseExactOptionsTest) {
   std::vector<std::string> allOptionNames;
   allOptionNames.reserve(TypeParam::getAllOptions().size());
@@ -67,11 +70,33 @@ TYPED_TEST_P(OptionTest, parseExactOptionsTest) {
   for (auto [_, optionName] : TypeParam::getOptionNames()) {
     allOptionNames.push_back(optionName);
   }
-  testParseExact<TypeParam>(TypeParam::getAllOptions(), allOptionNames, TypeParam::parseOptionExact);
+  ASSERT_EQ(TypeParam::getAllOptions().size(), allOptionNames.size()) << "Not all options tested!";
+
+  std::set<TypeParam> allParsedOptions;
+
+  for (auto &string : allOptionNames) {
+    auto parsedOption = TypeParam::parseOptionExact(string);
+    allParsedOptions.insert(parsedOption);
+  }
+
+  ASSERT_THAT(allParsedOptions, ::testing::ElementsAreArray(TypeParam::getAllOptions()));
 }
 
 // to_string tests
-TYPED_TEST_P(OptionTest, to_stringTest) { testToString(TypeParam::getAllOptions(), {TypeParam()}); }
+/**
+ * Test to to_string function for a given list of options
+ */
+TYPED_TEST_P(OptionTest, to_stringTest) {
+  // good options
+  for (auto &op : TypeParam::getAllOptions()) {
+    EXPECT_THAT(op.to_string(), Not(::testing::HasSubstr("Unknown")));
+  }
+
+  // bad Options
+  for (auto &op : {TypeParam()}) {
+    EXPECT_THAT(op.to_string(), ::testing::HasSubstr("Unknown"));
+  }
+}
 
 REGISTER_TYPED_TEST_SUITE_P(OptionTest, parseExactOptionsTest, to_stringTest);
 
