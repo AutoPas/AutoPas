@@ -5,7 +5,6 @@
  */
 
 #include "utils/Timer.h"
-#include <iostream>
 
 using namespace std::chrono;
 

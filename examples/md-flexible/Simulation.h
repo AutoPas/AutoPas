@@ -4,7 +4,7 @@
  * @date 12/05/19
  */
 #pragma once
-#include <autopas/utils/MemoryProfiler.h>
+
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -19,6 +19,7 @@
 #include "TimeDiscretization.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "autopas/utils/MemoryProfiler.h"
 #include "parsing/MDFlexConfig.h"
 
 template <class Particle, class ParticleCell>
