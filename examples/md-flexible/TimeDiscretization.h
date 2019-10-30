@@ -60,7 +60,8 @@ class TimeDiscretization {
 };
 
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calculatePositions(AutoPasTemplate &autopas) {
+long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calculatePositions(
+    AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
 #ifdef AUTOPAS_OPENMP
@@ -82,7 +83,8 @@ long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::cal
 }
 
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calculateVelocities(AutoPasTemplate &autopas) {
+long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calculateVelocities(
+    AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
 #ifdef AUTOPAS_OPENMP
