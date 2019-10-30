@@ -34,11 +34,12 @@ class RandomGenerator {
   /**
    * Fills any container (also AutoPas object) with randomly uniformly distributed particles.
    * Particle properties will be used from the default particle. Particle IDs start from the default particle.
-   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle(). (Particle musst
-   * inherite of MoleculeLJ)
+   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
    * @tparam Particle Type of the default particle.
    * @param container
    * @param defaultParticle
+   * @param boxMin
+   * @param boxMax
    * @param numParticles
    * @param seed
    */
