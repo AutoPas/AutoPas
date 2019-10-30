@@ -73,7 +73,7 @@ class LJFunctor
         _aosThreadData(),
         _duplicatedCalculations{duplicatedCalculation},
         _postProcessed{false} {
-    //@TODO: assert that this constructor is only called with mixing == false
+    //@TODO: make sure that this constructor is only called with mixing == false
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
     }
