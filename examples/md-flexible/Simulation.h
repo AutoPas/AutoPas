@@ -318,7 +318,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
     if (_config->periodic) {
       BoundaryConditions<ParticleCell>::applyPeriodic(_autopas);
     }
-    _timers.durationPositionUpdate += _timeDiscretization->CalculateX(_autopas);
+    _timers.durationPositionUpdate += _timeDiscretization->calculatePositions(_autopas);
 
     switch (this->_config->functorOption) {
       case MDFlexConfig::FunctorOption::lj12_6: {
@@ -333,7 +333,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
-    _timers.durationVelocityUpdate += _timeDiscretization->CalculateV(_autopas);
+    _timers.durationVelocityUpdate += _timeDiscretization->calculateVelocities(_autopas);
     // applying Velocity scaling with Thermostat:
     if (_config->useThermostat and (iteration % _config->thermostatInterval) == 0) {
       _thermostat->apply(_autopas);

@@ -15,7 +15,7 @@ void TimeDiscretizationTest::globalForceTest(
   double particleD = 0.01;
   TimeDiscretization<decltype(auto1), decltype(_particlePropertiesLibrary)> td1(particleD, _particlePropertiesLibrary);
   // to compare OldForce entry of auto2 Particles with Force entries of auto1, perform one more iteration on auto2
-  td1.CalculateX(auto2);
+  td1.calculatePositions(auto2);
   auto2.iteratePairwise(&functor);
   ASSERT_EQ(auto1.getNumberOfParticles(), auto2.getNumberOfParticles());
   for (int i = 0; i < iterations; i++) {
@@ -26,9 +26,9 @@ void TimeDiscretizationTest::globalForceTest(
       ++iter1;
       ++iter2;
     }
-    td1.CalculateX(auto1);
+    td1.calculatePositions(auto1);
     auto1.iteratePairwise(&functor);
-    td1.CalculateX(auto2);
+    td1.calculatePositions(auto2);
     auto2.iteratePairwise(&functor);
   }
 }
@@ -71,12 +71,12 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
   double particleD = 0.01;
   TimeDiscretization<decltype(autopas), decltype(_particlePropertiesLibrary)> td1(particleD,
                                                                                   _particlePropertiesLibrary);
-  td1.CalculateX(autopas);
+  td1.calculatePositions(autopas);
   autopas.iteratePairwise(&functor);
-  td1.CalculateV(autopas);
-  td1.CalculateX(autopas);
+  td1.calculateVelocities(autopas);
+  td1.calculatePositions(autopas);
   autopas.iteratePairwise(&functor);
-  td1.CalculateV(autopas);
+  td1.calculateVelocities(autopas);
 
   // comparing Position and Velocities values calculated in TimeDiscretization Class with calculated value using
   // nextPosition and nextVelocity that implement störmer-verlet algorithm
@@ -108,12 +108,12 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
       oldPositionValues.emplace_back(iter->getR());
       forces.emplace_back(iter->getF());
     }
-    td1.CalculateX(autopas);
+    td1.calculatePositions(autopas);
     autopas.iteratePairwise(&functor);
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       velForces.emplace_back(iter->getF());
     }
-    td1.CalculateV(autopas);
+    td1.calculateVelocities(autopas);
 
     ASSERT_EQ(oldPositionValues.size(), autopas.getNumberOfParticles());
     ASSERT_EQ(oldVelocityValues.size(), autopas.getNumberOfParticles());

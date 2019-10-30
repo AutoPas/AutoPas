@@ -34,14 +34,14 @@ class TimeDiscretization {
    * @param autopas
    * @return time for the calculation in microseconds
    */
-  long CalculateX(AutoPasTemplate &autopas);
+  long calculatePositions(AutoPasTemplate &autopas);
 
   /**
    * Calculate the new Velocity for every Praticle using the Iterator and the Störmer-Verlet Algorithm
    * @param autopas
    * @return time for the calculation in microseconds
    */
-  long CalculateV(AutoPasTemplate &autopas);
+  long calculateVelocities(AutoPasTemplate &autopas);
   /**
    * Getter for particleDeltaT
    * @return particle_delta_t
@@ -60,7 +60,7 @@ class TimeDiscretization {
 };
 
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::CalculateX(AutoPasTemplate &autopas) {
+long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calculatePositions(AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
 #ifdef AUTOPAS_OPENMP
@@ -82,7 +82,7 @@ long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::Cal
 }
 
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::CalculateV(AutoPasTemplate &autopas) {
+long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calculateVelocities(AutoPasTemplate &autopas) {
   std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
   startCalc = std::chrono::high_resolution_clock::now();
 #ifdef AUTOPAS_OPENMP
