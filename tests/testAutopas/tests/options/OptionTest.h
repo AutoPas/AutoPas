@@ -10,6 +10,11 @@
 
 #include "AutoPasTestBase.h"
 
+/**
+ * Tests for all Options derived from autopas::Option.
+ * @tparam T Template needed for Type-Parameterized Tests
+ */
+template <typename T>
 class OptionTest : public AutoPasTestBase {};
 
 /**

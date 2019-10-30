@@ -5,6 +5,8 @@
  */
 
 #include "OptionTest.h"
+#include <autopas/options/AcquisitionFunctionOption.h>
+#include <autopas/options/Newton3Option.h>
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/SelectorStrategyOption.h"
@@ -13,6 +15,7 @@
 #include "tests/utils/StringUtilsTest.h"
 
 // parseOptions tests
+// these tests shall not (yet :) be generated since we here want to pass strings that do not match exactly.
 
 TEST(OptionTest, parseTraversalOptionsTest) {
   testParseMultiple<autopas::TraversalOption>(
@@ -40,79 +43,43 @@ TEST(OptionTest, parseDataLayoutOptionsTest) {
                                                autopas::DataLayoutOption::parseOptions);
 }
 
-TEST(StringUtilsTest, parseSelectorOptionsTest) {
+TEST(OptionTest, parseSelectorOptionsTest) {
   testParseSingle<autopas::SelectorStrategyOption>(autopas::SelectorStrategyOption::getAllOptions(),
                                                    {"absolute", "median", "mean"},
                                                    autopas::SelectorStrategyOption::parseOptions);
 }
 
-TEST(StringUtilsTest, parseTuningStrategyOptionsTest) {
+TEST(OptionTest, parseTuningStrategyOptionsTest) {
   testParseSingle<autopas::TuningStrategyOption>(autopas::TuningStrategyOption::getAllOptions(),
                                                  {"full-search", "bayesian-search"},
                                                  autopas::TuningStrategyOption::parseOptions);
 }
 
+// Generated tests for all option types
 // parseOptionExact tests
 
-TEST(OptionTest, parseExactTraversalOptionsTest) {
-  std::vector<std::string> allOptionNames;
-  allOptionNames.reserve(autopas::TraversalOption::getAllOptions().size());
+TYPED_TEST_SUITE_P(OptionTest);
 
-  for (auto [_, optionName] : autopas::TraversalOption::getOptionNames()) {
+TYPED_TEST_P(OptionTest, parseExactOptionsTest) {
+  std::vector<std::string> allOptionNames;
+  allOptionNames.reserve(TypeParam::getAllOptions().size());
+
+  for (auto [_, optionName] : TypeParam::getOptionNames()) {
     allOptionNames.push_back(optionName);
   }
-  testParseExact<autopas::TraversalOption>(autopas::TraversalOption::getAllOptions(), allOptionNames,
-                                           autopas::TraversalOption::parseOptionExact<false>);
+  testParseExact<TypeParam>(TypeParam::getAllOptions(), allOptionNames, TypeParam::parseOptionExact);
 }
-
-// TEST(OptionTest, parseContainerOptionsTest) {
-//  testParseMultiple<autopas::ContainerOption>(
-//      autopas::ContainerOption::getAllOptions(),
-//      "directSum, linkedCells, verletLists, verletLists-cells, vclusterlists, varVerletListsAsBuild, vclustercells",
-//      autopas::ContainerOption::parseOptions);
-//}
-//
-// TEST(OptionTest, parseDataLayoutOptionsTest) {
-//#if defined(AUTOPAS_CUDA)
-//  auto options = "cuda, soa, aos";
-//#else
-//  auto options = "soa, aos";
-//#endif
-//  testParseMultiple<autopas::DataLayoutOption>(autopas::DataLayoutOption::getAllOptions(), options,
-//                                               autopas::DataLayoutOption::parseOptions);
-//}
-//
-// TEST(StringUtilsTest, parseSelectorOptionsTest) {
-//  testParseSingle<autopas::SelectorStrategyOption>(autopas::SelectorStrategyOption::getAllOptions(),
-//                                                   {"absolute", "median", "mean"},
-//                                                   autopas::SelectorStrategyOption::parseOptions);
-//}
-//
-// TEST(StringUtilsTest, parseTuningStrategyOptionsTest) {
-//  testParseSingle<autopas::TuningStrategyOption>(autopas::TuningStrategyOption::getAllOptions(),
-//                                                 {"full-search", "bayesian-search"},
-//                                                 autopas::TuningStrategyOption::parseOptions);
-//}
 
 // to_string tests
-
-TEST(StringUtilsTest, to_stringDataLayoutTest) {
-  testToString(autopas::DataLayoutOption::getAllOptions(), {autopas::DataLayoutOption()});
+TYPED_TEST_P(OptionTest, to_stringTest) {
+  testToString(TypeParam::getAllOptions(), {TypeParam()});
 }
 
-TEST(StringUtilsTest, to_stringSelectorStrategiesTest) {
-  testToString(autopas::SelectorStrategyOption::getAllOptions(), {autopas::SelectorStrategyOption()});
-}
+REGISTER_TYPED_TEST_SUITE_P(OptionTest, parseExactOptionsTest, to_stringTest);
 
-TEST(StringUtilsTest, to_stringContainerOptionsTest) {
-  testToString(autopas::ContainerOption::getAllOptions(), {autopas::ContainerOption()});
-}
-
-TEST(StringUtilsTest, to_stringTraversalOptionsTest) {
-  // testing for bad options does not make sense anymore
-  testToString(autopas::TraversalOption::getAllOptions(), {});
-}
-
-TEST(StringUtilsTest, to_stringTuningStrategyOptionsTest) {
-  testToString(autopas::TuningStrategyOption::getAllOptions(), {autopas::TuningStrategyOption()});
-}
+// instantiate tests for all option types
+typedef ::testing::Types<autopas::AcquisitionFunctionOption, autopas::ContainerOption, autopas::DataLayoutOption,
+                         autopas::Newton3Option, autopas::SelectorStrategyOption, autopas::TraversalOption,
+                         autopas::TuningStrategyOption>
+    OptionTypes;
+INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, OptionTest, OptionTypes);

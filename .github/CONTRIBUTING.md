@@ -125,4 +125,4 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Check that the new option is added to the md-flexible example. Parser and main.
 * Global options, which are represented by an enum, should be defined in an additional file in `src/autopas/options`.
 * Inherit from `src/autopas/options/Option.h`. This will also generate functions for conversion from and to strings.
-* Add new unit tests for your option.
+* Add new unit tests for your option, mainly in `tests/testAutopas/tests/options/OptionTest.cpp`.
