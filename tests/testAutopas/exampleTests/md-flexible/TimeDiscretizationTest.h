@@ -11,11 +11,11 @@
 
 #include "../../../../examples/md-flexible/PrintableMolecule.h"
 #include "../../../../examples/md-flexible/TimeDiscretization.h"
-#include "../../../../src/autopas/utils/ArrayMath.h"
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "autopas/utils/ArrayMath.h"
 #include "testingHelpers/GridGenerator.h"
 #include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
