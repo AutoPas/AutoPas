@@ -1,6 +1,6 @@
 #pragma once
 #include <gtest/gtest.h>
-#include <math.h>
+#include <cmath>
 #include <vector>
 #include "AutoPasTestBase.h"
 #include "Objects/Objects.h"

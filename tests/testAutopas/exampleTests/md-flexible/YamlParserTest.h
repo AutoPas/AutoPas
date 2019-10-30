@@ -1,6 +1,6 @@
 #pragma once
 #include <gtest/gtest.h>
-#include <math.h>
+#include <cmath>
 #include <vector>
 #include "../../../../examples/md-flexible/parsing/MDFlexConfig.h"
 #include "../../../../examples/md-flexible/parsing/YamlParser.h"
