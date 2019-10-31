@@ -17,10 +17,10 @@ class ObjectsTest : public AutoPasTestBase {
  public:
   ObjectsTest()
       : AutoPasTestBase(),
-        _CGrid{CubeGrid(particlesPerDim, 1., velocity, center, 0, 1.0, 1.0, 1.0)},
-        _CGauss{CubeGauss(numParticles, boxlength, 5., 2., velocity, center, 0, 1.0, 1.0, 1.0)},
-        _CUniform{CubeUniform(numParticles, boxlength, velocity, center, 0, 1.0, 1.0, 1.0)},
-        _Sphere{(Sphere(center, 5, 1., velocity, 0, 1.0, 1.0, 1.0))} {}
+        _CGrid{velocity, 0, 1., 1., 1., particlesPerDim, 1, center},
+        _CGauss{velocity, 0, 1., 1., 1., numParticles, boxlength, 5., 2., center},
+        _CUniform{velocity, 0, 1., 1., 1., numParticles, boxlength, center},
+        _Sphere{velocity, 0, 1., 1., 1., center, 5, 1.} {}
 
  protected:
   std::array<double, 3> velocity = {0., 0., 0.};

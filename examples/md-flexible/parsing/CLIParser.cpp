@@ -402,29 +402,39 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   // only create objects if nothing was set by a yaml file
   if (config.cubeGaussObjects.empty() and config.cubeGridObjects.empty() and config.cubeUniformObjects.empty() and
       config.sphereObjects.empty()) {
+    // common settings for any object type:
+    unsigned int typeID = 0;
+    double epsilon = 1.;
+    double sigma = 1.;
+    double mass = 1.;
+    std::array<double, 3> bottomLeftCorner = {0, 0, 0};
+    std::array<double, 3> velocity = {0, 0, 0};
+
     switch (config.generatorOption) {
       case MDFlexConfig::GeneratorOption::grid: {
-        CubeGrid grid({config.particlesPerDim, config.particlesPerDim, config.particlesPerDim}, config.particleSpacing,
-                      {0, 0, 0}, {0, 0, 0}, 0, 1, 1, 1);
+        CubeGrid grid(velocity, typeID, epsilon, sigma, mass,
+                      {config.particlesPerDim, config.particlesPerDim, config.particlesPerDim}, config.particleSpacing,
+                      bottomLeftCorner);
         config.cubeGridObjects.push_back(grid);
         break;
       }
       case MDFlexConfig::GeneratorOption::gaussian: {
-        CubeGauss cubeGauss(config.particlesTotal, {config.boxLength, config.boxLength, config.boxLength},
-                            config.distributionMean, config.distributionStdDev, {0, 0, 0}, {0, 0, 0}, 0, 1, 1, 1);
+        CubeGauss cubeGauss(velocity, typeID, epsilon, sigma, mass, config.particlesTotal,
+                            {config.boxLength, config.boxLength, config.boxLength}, config.distributionMean,
+                            config.distributionStdDev, bottomLeftCorner);
         config.cubeGaussObjects.push_back(cubeGauss);
         break;
       }
       case MDFlexConfig::GeneratorOption::uniform: {
-        CubeUniform cubeUniform(config.particlesTotal, {config.boxLength, config.boxLength, config.boxLength},
-                                {0, 0, 0}, {0, 0, 0}, 0, 1, 1, 1);
+        CubeUniform cubeUniform(velocity, typeID, epsilon, sigma, mass, config.particlesTotal,
+                                {config.boxLength, config.boxLength, config.boxLength}, bottomLeftCorner);
         config.cubeUniformObjects.push_back(cubeUniform);
         break;
       }
       case MDFlexConfig::GeneratorOption::sphere: {
         auto centerOfBox = config.particlesPerDim / 2.;
-        Sphere sphere({centerOfBox, centerOfBox, centerOfBox}, centerOfBox, config.particleSpacing, {0, 0, 0}, 0, 1, 1,
-                      1);
+        Sphere sphere(velocity, typeID, epsilon, sigma, mass, {centerOfBox, centerOfBox, centerOfBox}, centerOfBox,
+                      config.particleSpacing);
         config.sphereObjects.push_back(sphere);
         break;
       }

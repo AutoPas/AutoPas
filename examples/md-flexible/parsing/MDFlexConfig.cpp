@@ -76,25 +76,25 @@ void MDFlexConfig::print() {
   int objectId = 1;
   for (auto c : cubeGridObjects) {
     cout << "-Cube Grid Nr " << objectId << ":  " << endl;
-    c.printConfig();
+    cout << c.to_string() << endl;
     objectId++;
   }
   objectId = 1;
   for (auto c : cubeGaussObjects) {
     cout << "-Cube Gauss Nr" << objectId << ":  " << endl;
-    c.printConfig();
+    cout << c.to_string() << endl;
     objectId++;
   }
   objectId = 1;
   for (auto c : cubeUniformObjects) {
     cout << "-Cube Uniform Nr " << objectId << ":  " << endl;
-    c.printConfig();
+    cout << c.to_string() << endl;
     objectId++;
   }
   objectId = 1;
   for (auto c : sphereObjects) {
     cout << "-Sphere Nr " << objectId << ":  " << endl;
-    c.printConfig();
+    cout << c.to_string() << endl;
     objectId++;
   }
   if (useThermostat) {
