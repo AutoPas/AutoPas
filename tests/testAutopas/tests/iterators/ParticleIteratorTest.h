@@ -10,6 +10,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class ParticleIteratorTest : public AutoPasTestBase {
  public:
