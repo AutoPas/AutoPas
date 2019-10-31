@@ -92,35 +92,9 @@ void Generator::cubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas, co
 template <class Particle, class ParticleCell>
 void Generator::sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const Sphere &object) {
   Particle dummyParticle({0, 0, 0}, object.getVelocity(), autopas.getNumberOfParticles(), object.getTypeId());
-  for (int z = 0; z <= object.getRadius(); ++z) {      // generate circles along the z-axis; uses symmetry of sphere
-    for (int y = 0; y <= object.getRadius(); ++y) {    // generate lines among the y-axis
-      for (int x = 0; x <= object.getRadius(); ++x) {  // generate particles among the x-axis
-        std::array<double, 3> posDelta = {(double)x, (double)y, (double)z};           // offset of center as array
-        for (int i = -1; i <= 1; i += 2) {                                            // mirror x-coordinate
-          for (int k = -1; k <= 1; k += 2) {                                          // mirror y-coordinate
-            for (int l = -1; l <= 1; l += 2) {                                        // mirror z-coordinate
-              std::array<double, 3> multipliers = {(double)i, (double)k, (double)l};  // multipliers for mirroring
-              std::array<double, 3> posVector = autopas::ArrayMath::add(
-                  object.getCenter(),
-                  autopas::ArrayMath::mulScalar(autopas::ArrayMath::mul(posDelta, multipliers),
-                                                object.getParticleSpacing()));  // actual coordinates of new particle
-              double disCheck = sqrt(autopas::ArrayMath::dot(autopas::ArrayMath::sub(posVector, object.getCenter()),
-                                                             autopas::ArrayMath::sub(posVector, object.getCenter())));
-              if (disCheck <= (double)(object.getRadius() + 1) * object.getParticleSpacing()) {
-                dummyParticle.setR(posVector);
-                autopas.addParticle(dummyParticle);
-                dummyParticle.setID(dummyParticle.getID() + 1);
-              }
-              if (z == 0)  // prevent duplicates
-                break;
-            }
-            if (y == 0)  // prevent duplicates
-              break;
-          }
-          if (x == 0)  // prevent duplicates
-            break;
-        }
-      }
-    }
-  }
+  object.iteratePositions([&](auto pos) {
+    dummyParticle.setR(pos);
+    autopas.addParticle(dummyParticle);
+    dummyParticle.setID(dummyParticle.getID() + 1);
+  });
 }

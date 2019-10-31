@@ -54,25 +54,36 @@ class Sphere : public Object {
     return particleSpacing;
   }
 
-  [[nodiscard]] size_t getParticlesTotal() const override {
-    // this should look different if the generator for spheres changes
-    int counter = 0;
+  /**
+   * Call f for every point on the sphere where a particle should be.
+   * @param f Function called for every point.
+   */
+  void iteratePositions(const std::function<void(std::array<double, 3>)> &f) const {
+    // generate regular grid for 1/8th of the sphere
     for (int z = 0; z <= radius; ++z) {
       for (int y = 0; y <= radius; ++y) {
         for (int x = 0; x <= radius; ++x) {
-          std::array<double, 3> posDelta = {(double)x, (double)y, (double)z};
+          // position relative to the center
+          std::array<double, 3> relativePos = {(double)x, (double)y, (double)z};
+          // mirror to rest of sphere
           for (int i = -1; i <= 1; i += 2) {
             for (int k = -1; k <= 1; k += 2) {
               for (int l = -1; l <= 1; l += 2) {
-                std::array<double, 3> multipliers = {(double)i, (double)k, (double)l};
+                std::array<double, 3> mirrorMultipliers = {(double)i, (double)k, (double)l};
+                // position mirrored, scaled and absolute
                 std::array<double, 3> posVector = autopas::ArrayMath::add(
-                    center,
-                    autopas::ArrayMath::mulScalar(autopas::ArrayMath::mul(posDelta, multipliers), particleSpacing));
-                double disCheck = autopas::ArrayMath::dot(autopas::ArrayMath::sub(posVector, center),
-                                                          autopas::ArrayMath::sub(posVector, center));
-                if (disCheck <= (double)(radius + 1) * particleSpacing) {
-                  counter++;
+                    center, autopas::ArrayMath::mulScalar(autopas::ArrayMath::mul(relativePos, mirrorMultipliers),
+                                                          particleSpacing));
+
+                double distFromCentersSquare = autopas::ArrayMath::dot(autopas::ArrayMath::sub(posVector, center),
+                                                                       autopas::ArrayMath::sub(posVector, center));
+                const auto r = (radius + 1) * particleSpacing;
+                const auto rSquare = r * r;
+                // since the loops create a cubic grid only apply f for positions inside the sphere
+                if (distFromCentersSquare <= rSquare) {
+                  f(posVector);
                 }
+                // avoid duplicates
                 if (z == 0) break;
               }
               if (y == 0) break;
@@ -82,6 +93,12 @@ class Sphere : public Object {
         }
       }
     }
+  }
+
+  [[nodiscard]] size_t getParticlesTotal() const override {
+    // this should look different if the generator for spheres changes
+    int counter = 0;
+    iteratePositions([&](auto pos) { ++counter; });
     return counter;
   }
 
