@@ -1,8 +1,8 @@
 #pragma once
 
 #include <array>
-#include <iosfwd>
 #include <iomanip>
+#include <iosfwd>
 #include <vector>
 #include "autopas/utils/ArrayUtils.h"
 

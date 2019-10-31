@@ -67,8 +67,6 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   idcounter += sphere.at(0).getParticlesTotal();
   ASSERT_EQ(autoPas.getNumberOfParticles(), idcounter) << "Sphere generator added a wrong number of particles!";
 
-  //  EXPECT_EQ(config.particlesTotal(), autoPas.getNumberOfParticles());
-  //  EXPECT_EQ(idcounter, config.particlesTotal());
   // counters to checks if all particles types are well initialized for different Objects:
   int gridCounter = 0;
   int gaussCounter = 0;
