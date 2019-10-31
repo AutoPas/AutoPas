@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <omp.h>
 #include <Eigen/Dense>
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -61,6 +62,9 @@ class GaussianProcess {
      */
     Eigen::VectorXd weights;
 
+    /**
+     * Default Constructor
+     */
     Hyperparameters()
         : mean(0.),
           theta(1.),
@@ -68,9 +72,22 @@ class GaussianProcess {
           covMatInv(Eigen::MatrixXd::Ones(1, 1)),
           weights(Eigen::VectorXd::Ones(1)) {}
 
-    Hyperparameters(double mean, double theta, const Eigen::VectorXd &dimScales, double sigma,
-                    const std::vector<Vector> &inputs, const Eigen::VectorXd &outputs)
-        : mean(mean), theta(theta), dimScales(dimScales) {
+    /**
+     * Contructor
+     * @param mean prior mean of Gaussian process
+     * @param theta prior variance
+     * @param dimScales scale for each input dimension
+     */
+    Hyperparameters(double mean, double theta, const Eigen::VectorXd &dimScales)
+        : mean(mean), theta(theta), dimScales(dimScales) {}
+
+    /**
+     * Precalculate matrices needed for predictions
+     * @param sigma assumed noise
+     * @param inputs evidence input
+     * @param outputs evidence output
+     */
+    void precalculate(double sigma, const std::vector<Vector> &inputs, const Eigen::VectorXd &outputs) {
       size_t size = outputs.size();
       // mean of output shifted to zero
       Eigen::VectorXd outputCentered = outputs - mean * Eigen::VectorXd::Ones(size);
@@ -340,8 +357,8 @@ class GaussianProcess {
 
     if (newSize == 1) {
       // default values for one evidence
-      _hypers.emplace_back(_outputs[0], _outputs[0] * _outputs[0], Eigen::VectorXd::Ones(_dims), _sigma, _inputs,
-                           _outputs);
+      _hypers.emplace_back(_outputs[0], _outputs[0] * _outputs[0], Eigen::VectorXd::Ones(_dims));
+      _hypers[0].precalculate(_sigma, _inputs, _outputs);
     } else {
       // range of mean
       // inside bounds of evidence outputs
@@ -384,11 +401,20 @@ class GaussianProcess {
         sample_dimScales.push_back(std::move(dimScale));
       }
 
-      // evaluate all hyperparameter samples
+      // initialize hyperparameter samples
       _hypers.reserve(hp_sample_size);
-      // @TODO parallelize?
       for (size_t t = 0; t < hp_sample_size; ++t) {
-        _hypers.emplace_back(sample_means[t], sample_thetas[t], sample_dimScales[t], _sigma, _inputs, _outputs);
+        _hypers.emplace_back(sample_means[t], sample_thetas[t], sample_dimScales[t]);
+      }
+
+      // precalculate matrices for all hyperparameters
+      // @TODO find sensible chunkSize
+#ifdef AUTOPAS_OPENMP
+      const size_t chunkSize = std::max(hp_sample_size / (omp_get_max_threads() * 10), 1ul);
+#pragma omp parallel for schedule(dynamic, chunkSize)
+#endif
+      for (size_t t = 0; t < hp_sample_size; ++t) {
+        _hypers[t].precalculate(_sigma, _inputs, _outputs);
       }
 
       // sort by score
