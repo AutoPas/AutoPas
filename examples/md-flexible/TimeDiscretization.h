@@ -32,16 +32,15 @@ class TimeDiscretization {
   /**
    * Calculate the new Position for every Praticle using the Iterator and the Störmer-Verlet Algorithm
    * @param autopas
-   * @return time for the calculation in microseconds
    */
-  long calculatePositions(AutoPasTemplate &autopas);
+  void calculatePositions(AutoPasTemplate &autopas);
 
   /**
    * Calculate the new Velocity for every Praticle using the Iterator and the Störmer-Verlet Algorithm
    * @param autopas
    * @return time for the calculation in microseconds
    */
-  long calculateVelocities(AutoPasTemplate &autopas);
+  void calculateVelocities(AutoPasTemplate &autopas);
   /**
    * Getter for particleDeltaT
    * @return particle_delta_t
@@ -60,10 +59,8 @@ class TimeDiscretization {
 };
 
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calculatePositions(
+void TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calculatePositions(
     AutoPasTemplate &autopas) {
-  std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
-  startCalc = std::chrono::high_resolution_clock::now();
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
@@ -78,15 +75,11 @@ long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::cal
     auto newR = autopas::ArrayMath::add(v, f);
     iter->addR(newR);
   }
-  stopCalc = std::chrono::high_resolution_clock::now();
-  return std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
 }
 
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calculateVelocities(
+void TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calculateVelocities(
     AutoPasTemplate &autopas) {
-  std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
-  startCalc = std::chrono::high_resolution_clock::now();
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
@@ -97,8 +90,6 @@ long TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::cal
     auto newV = autopas::ArrayMath::mulScalar((autopas::ArrayMath::add(force, old_force)), particle_delta_t / (2 * m));
     iter->addV(newV);
   }
-  stopCalc = std::chrono::high_resolution_clock::now();
-  return std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
 }
 
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
