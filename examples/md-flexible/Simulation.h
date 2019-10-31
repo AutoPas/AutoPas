@@ -247,34 +247,22 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   _autopas.setVerletSkin(verletSkinRadius);
   autopas::Logger::get()->set_level(logLevel);
   _autopas.init();
-  size_t particleIDCounter = 0;
 
   if (_config->checkpointfile != "") {
     Checkpoint<decltype(_autopas), Particle>::initDomain(_autopas, _config->checkpointfile);
   } else {
     // initializing Objects
     for (const auto &grid : cubesGrid) {
-      Generator::CubeGrid<Particle, ParticleCell>(_autopas, grid.getTypeId(), particleIDCounter, grid.getBoxMin(),
-                                                  grid.getParticlesPerDim(), grid.getParticleSpacing(),
-                                                  grid.getVelocity());
-      particleIDCounter += grid.getParticlesTotal();
+      Generator::cubeGrid<Particle, ParticleCell>(_autopas, grid);
     }
     for (const auto &cube : cubesGauss) {
-      Generator::CubeGauss<Particle, ParticleCell>(
-          _autopas, cube.getTypeId(), particleIDCounter, cube.getBoxMin(), cube.getBoxMax(), cube.getParticlesTotal(),
-          cube.getDistributionMean(), cube.getDistributionStdDev(), cube.getVelocity());
-      particleIDCounter += cube.getParticlesTotal();
+      Generator::cubeGauss<Particle, ParticleCell>(_autopas, cube);
     }
     for (const auto &cube : cubesUniform) {
-      Generator::CubeRandom<Particle, ParticleCell>(_autopas, cube.getTypeId(), particleIDCounter, cube.getBoxMin(),
-                                                    cube.getBoxMax(), cube.getParticlesTotal(), cube.getVelocity());
-      particleIDCounter += cube.getParticlesTotal();
+      Generator::cubeRandom<Particle, ParticleCell>(_autopas, cube);
     }
     for (const auto &sphere : spheres) {
-      Generator::Sphere<Particle, ParticleCell>(_autopas, sphere.getCenter(), sphere.getRadius(),
-                                                sphere.getParticleSpacing(), particleIDCounter, sphere.getTypeId(),
-                                                sphere.getVelocity());
-      particleIDCounter += sphere.getParticlesTotal();
+      Generator::sphere<Particle, ParticleCell>(_autopas, sphere);
     }
   }
   // initilizing Thermostat

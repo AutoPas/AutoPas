@@ -43,29 +43,27 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   auto cubeGauss(config.cubeGaussObjects);
   auto cubeUniform(config.cubeUniformObjects);
   auto sphere(config.sphereObjects);
+
+  EXPECT_THAT(cubeGrid, ::testing::SizeIs(1));
+  EXPECT_THAT(cubeGauss, ::testing::SizeIs(1));
+  EXPECT_THAT(cubeUniform, ::testing::SizeIs(1));
+  EXPECT_THAT(sphere, ::testing::SizeIs(1));
+
   size_t idcounter = 0;  // to avoid multiple particles with the same ids
 
-  Generator::CubeGrid(autoPas, cubeGrid.at(0).getTypeId(), idcounter, cubeGrid.at(0).getBoxMin(),
-                      cubeGrid.at(0).getParticlesPerDim(), cubeGrid.at(0).getParticleSpacing(),
-                      cubeGrid.at(0).getVelocity());
+  Generator::cubeGrid(autoPas, cubeGrid[0]);
   idcounter += cubeGrid.at(0).getParticlesTotal();
   EXPECT_EQ(autoPas.getNumberOfParticles(), idcounter) << "CubeGrid generator added a wrong number of particles!";
 
-  Generator::CubeGauss(autoPas, cubeGauss.at(0).getTypeId(), idcounter, cubeGauss.at(0).getBoxMin(),
-                       cubeGauss.at(0).getBoxMax(), cubeGauss.at(0).getParticlesTotal(),
-                       cubeGauss.at(0).getDistributionMean(), cubeGauss.at(0).getDistributionStdDev(),
-                       cubeGauss.at(0).getVelocity());
+  Generator::cubeGauss(autoPas, cubeGauss[0]);
   idcounter += cubeGauss.at(0).getParticlesTotal();
   EXPECT_EQ(autoPas.getNumberOfParticles(), idcounter) << "CubeGauss generator added a wrong number of particles!";
 
-  Generator::CubeRandom(autoPas, cubeUniform.at(0).getTypeId(), idcounter, cubeUniform.at(0).getBoxMin(),
-                        cubeUniform.at(0).getBoxMax(), cubeUniform.at(0).getParticlesTotal(),
-                        cubeUniform.at(0).getVelocity());
+  Generator::cubeRandom(autoPas, cubeUniform[0]);
   idcounter += cubeUniform.at(0).getParticlesTotal();
   EXPECT_EQ(autoPas.getNumberOfParticles(), idcounter) << "CubeRandom generator added a wrong number of particles!";
 
-  Generator::Sphere(autoPas, sphere.at(0).getCenter(), sphere.at(0).getRadius(), sphere.at(0).getParticleSpacing(),
-                    idcounter, sphere.at(0).getTypeId(), sphere.at(0).getVelocity());
+  Generator::sphere(autoPas, sphere[0]);
   idcounter += sphere.at(0).getParticlesTotal();
   ASSERT_EQ(autoPas.getNumberOfParticles(), idcounter) << "Sphere generator added a wrong number of particles!";
 
