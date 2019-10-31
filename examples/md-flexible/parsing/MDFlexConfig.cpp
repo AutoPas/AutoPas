@@ -163,6 +163,10 @@ void MDFlexConfig::calcSimulationBox() {
   }
   // needed for 2D Simulation, that BoxLength >= interactionLength for all Dimensions
   for (int i = 0; i < 3; i++) {
+    // pad domain such that periodic boundaries can work.
+    boxMin[i] -= particleSpacing / 2;
+    boxMax[i] += particleSpacing / 2;
+
     if (boxMax[i] - boxMin[i] < interactionLength) {
       std::cout << "WARNING: Simulation box in dimension " << i
                 << " is shorter than interaction length and will be increased." << std::endl;
