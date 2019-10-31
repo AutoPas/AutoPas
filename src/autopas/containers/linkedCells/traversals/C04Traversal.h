@@ -11,6 +11,7 @@
 #include "autopas/containers/linkedCells/traversals/C08CellHandler.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -44,7 +45,7 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap),
-        _end(utils::ArrayMath::subScalar(ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {
+        _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {
     computeOffsets32Pack();
   }
 
@@ -126,7 +127,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::proces
     std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex) {
   using utils::ThreeDimensionalMapping::threeToOneD;
   std::array<long, 3> index;
-  const std::array<long, 3> signedDims = ArrayUtils::static_cast_array<long>(this->_cellsPerDimension);
+  const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension);
 
   for (auto Offset32Pack : _cellOffsets32Pack) {
     // compute 3D index
