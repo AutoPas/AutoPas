@@ -7,6 +7,9 @@
 
 #include "Objects.h"
 
+/**
+ * Class describing a regular 3D particle grid object.
+ */
 class CubeGrid : public Object {
  public:
   /**
@@ -29,48 +32,33 @@ class CubeGrid : public Object {
         particleSpacing(particleSpacing),
         bottomLeftCorner(bottomLeftCorner){}
 
-                /**
-                 * Getter for ParticlesPerDim
-                 * @return particlePerDim
-                 */
-                [[nodiscard]] const std::array<size_t, 3> &
-            getParticlesPerDim() const {
-    return particlesPerDim;
+            /**
+             * Getter for ParticleSpacing
+             * @return particleSpacing
+             */
+            [[nodiscard]] double getParticleSpacing() const {
+    return particleSpacing;
   }
 
   /**
-   * Getter for ParticleSpacing
-   * @return particleSpacing
+   * Getter for ParticlesPerDim
+   * @return particlePerDim
    */
-  [[nodiscard]] double getParticleSpacing() const { return particleSpacing; }
+  [[nodiscard]] const std::array<size_t, 3> &getParticlesPerDim() const { return particlesPerDim; }
 
-      /**
-       * Getter for total number of Particles for object
-       * @return particlesTotal
-       */
       [[nodiscard]] size_t getParticlesTotal() const override {
     return std::accumulate(std::begin(particlesPerDim), std::end(particlesPerDim), 1, std::multiplies<double>());
   }
 
-  /**
-   * Getter for the smallest x,y,z coordinates for Object
-   * @return BoxMin of Cube
-   */
   const std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
 
-  /**
-   * Getter for the highest x,y,z coordinates for Object
-   * @return BoxMax of Cube
-   */
   const std::array<double, 3> getBoxMax() const override {
     std::array<double, 3> dppD;
     // copy for type conversion
     std::copy(std::begin(particlesPerDim), std::end(particlesPerDim), std::begin(dppD));
     return autopas::ArrayMath::add(bottomLeftCorner, (autopas::ArrayMath::mulScalar(dppD, particleSpacing)));
   }
-  /**
-   * Prints the Configuration of the current Object
-   */
+
   std::string to_string() const override {
     std::ostringstream output;
 

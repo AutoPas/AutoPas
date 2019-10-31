@@ -1,16 +1,16 @@
 #pragma once
+
 #include <array>
 #include <ostream>
 #include <vector>
+#include <parsing/MDFlexConfig.h>
 #include "Generator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
 
 /**
- * Contains all Objects with their properties and functionalities for their generation in class Generator.h
- * and information prints in the yamlParser class
+ * Base class for describing objects made of particles.
  */
-
 class Object {
  public:
   /**
@@ -59,7 +59,8 @@ class Object {
   [[nodiscard]] virtual size_t getParticlesTotal() const = 0;
 
   /**
-   * Prints the configuration of the Object
+   * String description string of the object.
+   * @return multiline std::string
    */
   virtual std::string to_string() const {
     std::ostringstream output;
@@ -67,8 +68,7 @@ class Object {
            << ":  " << autopas::ArrayUtils::to_string(_velocity) << std::endl;
     output << std::setw(_valueOffset) << std::left << "TypeID"
            << ":  " << _typeId << std::endl;
-    // FIXME: use MDFlexParser strings and _valueOffset here
-    output << std::setw(_valueOffset) << std::left << "epsilon"
+    output << std::setw(_valueOffset) << std::left << "Epsilon"
            << ":  " << _epsilon << std::endl;
     output << std::setw(_valueOffset) << std::left << "Sigma"
            << ":  " << _sigma << std::endl;

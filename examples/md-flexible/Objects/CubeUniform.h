@@ -7,6 +7,9 @@
 
 #include "Objects.h"
 
+/**
+ * Class describing an cuboid object filled with uniformly randomly distributed particles.
+ */
 class CubeUniform : public Object {
  public:
   /**
@@ -28,30 +31,16 @@ class CubeUniform : public Object {
         boxLength(boxLength),
         bottomLeftCorner(bottomLeftCorner){}
 
-            /**
-             * Getter for total number of Particles in Object
-             * @return numParticles
-             */
             [[nodiscard]] size_t getParticlesTotal() const override {
     return numParticles;
   }
 
-  /**
-   * Getter for the smallest x,y,z coordinates for Object
-   * @return BoxMin of Cube
-   */
   const std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
-  /**
-   * Getter for the highest x,y,z coordinates for Object
-   * @return BoxMax of Cube
-   */
+
   const std::array<double, 3> getBoxMax() const override {
     return autopas::ArrayMath::add(bottomLeftCorner, boxLength);
   }
 
-  /**
-   * Prints the Configuration of the current Object
-   */
   std::string to_string() const override {
     std::ostringstream output;
 

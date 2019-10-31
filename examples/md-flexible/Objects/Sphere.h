@@ -7,6 +7,9 @@
 
 #include "Objects.h"
 
+/**
+ * Class describing a regular 3D spherical particle grid object.
+ */
 class Sphere : public Object {
  public:
   /**
@@ -50,10 +53,6 @@ class Sphere : public Object {
     return particleSpacing;
   }
 
-  /**
-   * Returns the number of particles that will be generated for this Object
-   * @return totalNumberOfParticles
-   */
   [[nodiscard]] size_t getParticlesTotal() const override {
     // this should look different if the generator for spheres changes
     int counter = 0;
@@ -85,27 +84,16 @@ class Sphere : public Object {
     return counter;
   }
 
-  /**
-   * Getter for the smallest x,y,z coordinates for Object
-   * @return BoxMin of Cube
-   */
   const std::array<double, 3> getBoxMin() const override {
     return {center[0] - ((double)radius) * particleSpacing, center[1] - ((double)radius) * particleSpacing,
             center[2] - ((double)radius) * particleSpacing};
   }
 
-  /**
-   * Getter for the highest x,y,z coordinates for Object
-   * @return BoxMax of Cube
-   */
   const std::array<double, 3> getBoxMax() const override {
     return {center[0] + ((double)radius) * particleSpacing, center[1] + ((double)radius) * particleSpacing,
             center[2] + ((double)radius) * particleSpacing};
   }
 
-  /**
-   * Prints the Configuration of the current Object
-   */
   std::string to_string() const override {
     std::ostringstream output;
 

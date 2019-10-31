@@ -7,6 +7,9 @@
 
 #include "Objects.h"
 
+/**
+ * Class describing an cuboid object filled with gaussian randomly distributed particles.
+ */
 class CubeGauss : public Object {
  public:
   /**
@@ -33,41 +36,28 @@ class CubeGauss : public Object {
         bottomLeftCorner(bottomLeftCorner){}
 
             /**
-             * Getter total number of Particles of Object
-             * @return numParticles
+             * Getter for distribution mean
+             * @return distributionMean
              */
-            [[nodiscard]] size_t getParticlesTotal() const override {
+            [[nodiscard]] double getDistributionMean() const {
+    return distributionMean;
+  }
+  /**
+   * Getter for distributionStdDev
+   * @return distributionStdDev
+   */
+  [[nodiscard]] double getDistributionStdDev() const { return distributionStdDev; }
+
+      [[nodiscard]] size_t getParticlesTotal() const override {
     return numParticles;
   }
-  /**
-   * Getter for distribution mean
-   * @return distributionMean
-   */
-  [[nodiscard]] double getDistributionMean() const { return distributionMean; }
-      /**
-       * Getter for distributionStdDev
-       * @return distributionStdDev
-       */
-      [[nodiscard]] double getDistributionStdDev() const {
-    return distributionStdDev;
-  }
 
-  /**
-   * Getter for the smallest x,y,z coordinates for Object
-   * @return BoxMin of Cube
-   */
   const std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
-  /**
-   * Getter for the highest x,y,z coordinates for Object
-   * @return BoxMax of Cube
-   */
+
   const std::array<double, 3> getBoxMax() const override {
     return autopas::ArrayMath::add(bottomLeftCorner, boxLength);
   }
 
-  /**
-   * Prints the Configuration of the current Object
-   */
   std::string to_string() const override {
     std::ostringstream output;
 
