@@ -295,15 +295,19 @@ template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate() {
   std::chrono::high_resolution_clock::time_point startSim, stopSim;
   startSim = std::chrono::high_resolution_clock::now();
-  // writes initial state of simulation as vtkFile if filename is specified
-  if ((not _config->vtkFileName.empty())) {
-    this->writeVTKFile(0);
-  }
+
   // main simulation loop
   for (size_t iteration = 0; iteration < _config->iterations; ++iteration) {
+
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << iteration << std::endl;
     }
+
+    // only write vtk files periodically and if a filename is given
+    if ((not _config->vtkFileName.empty()) and iteration % _config->vtkWriteFrequency == 0) {
+      this->writeVTKFile(iteration);
+    }
+
     if (_config->periodic) {
       BoundaryConditions<ParticleCell>::applyPeriodic(_autopas);
     }
@@ -332,10 +336,11 @@ void Simulation<Particle, ParticleCell>::simulate() {
     if (_config->useThermostat and (iteration % _config->thermostatInterval) == 0) {
       _thermostat->apply(_autopas);
     }
-    // only write vtk files periodically and if a filename is given
-    if ((not _config->vtkFileName.empty()) and iteration % _config->vtkWriteFrequency == 0) {
-      this->writeVTKFile(iteration + 1);
-    }
+  }
+
+  // writes final state of the simulation
+  if ((not _config->vtkFileName.empty())) {
+    this->writeVTKFile(_config->iterations);
   }
 
   stopSim = std::chrono::high_resolution_clock::now();
