@@ -244,7 +244,8 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'm': {
         try {
-          config.distributionMean = stod(strArg);
+          auto mean = stod(strArg);
+          config.distributionMean = {mean, mean, mean};
         } catch (const exception &) {
           cerr << "Error parsing distribution mean: " << strArg << endl;
           displayHelp = true;
@@ -386,9 +387,10 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'z': {
         try {
-          config.vtkWriteFrequency = stoul(strArg);
+          auto stdDev = stod(strArg);
+          config.distributionStdDev = {stdDev, stdDev, stdDev};
         } catch (const exception &) {
-          cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
+          cerr << "Error parsing distribution standard deviation: " << optarg << endl;
           displayHelp = true;
         }
         break;

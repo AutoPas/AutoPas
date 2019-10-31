@@ -123,9 +123,9 @@ class MDFlexConfig {
   static inline const char *boxLengthStr = "box-length";
   double boxLength = 10;
   static inline const char *distributionMeanStr = "distribution-mean";
-  double distributionMean = 5.;
+  std::array<double, 3> distributionMean = {5., 5., 5.};
   static inline const char *distributionStdDevStr = "distribution-stddeviation";
-  double distributionStdDev = 2.;
+  std::array<double, 3> distributionStdDev = {2., 2., 2.};
   static inline const char *particlesPerDimStr = "particles-per-dimension";
   size_t particlesPerDim = 10;
   static inline const char *particlesTotalStr = "particles-total";

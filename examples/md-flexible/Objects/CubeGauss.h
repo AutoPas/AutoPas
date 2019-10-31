@@ -27,8 +27,8 @@ class CubeGauss : public Object {
    * @param bottomLeftCorner
    */
   CubeGauss(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
-            size_t numParticles, const std::array<double, 3> &boxLength, double distributionMean,
-            double distributionStdDev, const std::array<double, 3> &bottomLeftCorner)
+            size_t numParticles, const std::array<double, 3> &boxLength, const std::array<double, 3> &distributionMean,
+            const std::array<double, 3> &distributionStdDev, const std::array<double, 3> &bottomLeftCorner)
       : Object(velocity, typeId, epsilon, sigma, mass),
         numParticles(numParticles),
         boxLength(boxLength),
@@ -36,18 +36,20 @@ class CubeGauss : public Object {
         distributionStdDev(distributionStdDev),
         bottomLeftCorner(bottomLeftCorner){}
 
-            /**
-             * Getter for distribution mean
-             * @return distributionMean
-             */
-            [[nodiscard]] double getDistributionMean() const {
+                /**
+                 * Getter for distribution mean
+                 * @return distributionMean
+                 */
+                [[nodiscard]] const std::array<double, 3> &
+            getDistributionMean() const {
     return distributionMean;
   }
+
   /**
    * Getter for distributionStdDev
    * @return distributionStdDev
    */
-  [[nodiscard]] double getDistributionStdDev() const { return distributionStdDev; }
+  [[nodiscard]] const std::array<double, 3> &getDistributionStdDev() const { return distributionStdDev; }
 
       [[nodiscard]] size_t getParticlesTotal() const override {
     return numParticles;
@@ -63,9 +65,9 @@ class CubeGauss : public Object {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "Distribution-Mean"
-           << ":  " << distributionMean << std::endl;
+           << ":  " << autopas::ArrayUtils::to_string(distributionMean) << std::endl;
     output << std::setw(_valueOffset) << std::left << "Distribution-StdDev"
-           << ":  " << distributionStdDev << std::endl;
+           << ":  " << autopas::ArrayUtils::to_string(distributionStdDev) << std::endl;
     output << std::setw(_valueOffset) << std::left << "NumberOfParticles"
            << ":  " << numParticles << std::endl;
     output << std::setw(_valueOffset) << std::left << "BoxLength"
@@ -77,7 +79,7 @@ class CubeGauss : public Object {
  private:
   size_t numParticles;
   std::array<double, 3> boxLength;
-  double distributionMean;
-  double distributionStdDev;
+  std::array<double, 3> distributionMean;
+  std::array<double, 3> distributionStdDev;
   std::array<double, 3> bottomLeftCorner;
 };

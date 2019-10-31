@@ -18,7 +18,7 @@ class ObjectsTest : public AutoPasTestBase {
   ObjectsTest()
       : AutoPasTestBase(),
         _CGrid{velocity, 0, 1., 1., 1., particlesPerDim, 1, center},
-        _CGauss{velocity, 0, 1., 1., 1., numParticles, boxlength, 5., 2., center},
+        _CGauss{velocity, 0, 1., 1., 1., numParticles, boxlength, {5., 5., 5.}, {2., 2., 2.}, center},
         _CUniform{velocity, 0, 1., 1., 1., numParticles, boxlength, center},
         _Sphere{velocity, 0, 1., 1., 1., center, 5, 1.} {}
 
