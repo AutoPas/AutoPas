@@ -5,7 +5,10 @@
  */
 #pragma once
 
+#include <functional>
+#include <numeric>
 #include "Objects.h"
+#include "autopas/utils/ArrayMath.h"
 
 /**
  * Class describing a regular 3D particle grid object.

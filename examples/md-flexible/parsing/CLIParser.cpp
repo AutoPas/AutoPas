@@ -5,6 +5,7 @@
  */
 
 #include "CLIParser.h"
+#include "autopas/utils/StringUtils.h"
 
 bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;

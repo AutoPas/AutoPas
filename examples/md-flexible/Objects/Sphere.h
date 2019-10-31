@@ -6,6 +6,7 @@
 #pragma once
 
 #include "Objects.h"
+#include "autopas/utils/ArrayMath.h"
 
 /**
  * Class describing a regular 3D spherical particle grid object.

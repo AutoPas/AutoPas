@@ -6,6 +6,7 @@
 #pragma once
 
 #include "Objects.h"
+#include "autopas/utils/ArrayMath.h"
 
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.

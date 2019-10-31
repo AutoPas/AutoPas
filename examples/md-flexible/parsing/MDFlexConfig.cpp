@@ -5,6 +5,7 @@
  */
 
 #include "MDFlexConfig.h"
+#include "autopas/utils/StringUtils.h"
 
 void MDFlexConfig::print() {
   using namespace std;

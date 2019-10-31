@@ -1,11 +1,9 @@
 #pragma once
 
 #include <array>
-#include <ostream>
+#include <iosfwd>
+#include <iomanip>
 #include <vector>
-#include <parsing/MDFlexConfig.h>
-#include "Generator.h"
-#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
 
 /**
