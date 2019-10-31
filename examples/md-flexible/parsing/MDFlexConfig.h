@@ -12,7 +12,6 @@
 #include "Objects/CubeGauss.h"
 #include "Objects/CubeGrid.h"
 #include "Objects/CubeUniform.h"
-#include "Objects/Objects.h"
 #include "Objects/Sphere.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
