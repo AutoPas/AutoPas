@@ -21,10 +21,6 @@ namespace autopas {
 template <typename actualOption>
 class Option {
  public:
-  /**
-   * Constructor.
-   */
-  constexpr Option() = default;
 
   /**
    * No cast to bool.
