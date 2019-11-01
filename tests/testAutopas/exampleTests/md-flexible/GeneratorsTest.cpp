@@ -1,5 +1,5 @@
 /**
- * @file GeneratorsTest.h
+ * @file GeneratorsTest.cpp
  * @author N. Fottner
  * @date 3/8/19
  */

@@ -1,3 +1,8 @@
+/**
+ * @file YamlParserTest.cpp
+ * @author N. Fottner
+ * @date 02/08/19
+ */
 #include "YamlParserTest.h"
 
 TEST_F(YamlParserTest, calcAutopasBox) {

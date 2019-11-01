@@ -1,4 +1,8 @@
-
+/**
+ * @file ParticlePropertiesLibraryTest.cpp
+ * @author N. Fottner
+ * @date 02/08/19
+ */
 #include "ParticlePropertiesLibraryTest.h"
 using namespace std;
 

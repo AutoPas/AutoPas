@@ -1,4 +1,8 @@
-
+/**
+ * @file ObjectsTest.cpp
+ * @author N. Fottner
+ * @date 02/08/19
+ */
 #include "ObjectsTest.h"
 
 TEST_F(ObjectsTest, BoxMin_Max) {

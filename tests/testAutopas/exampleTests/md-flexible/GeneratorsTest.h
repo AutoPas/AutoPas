@@ -1,3 +1,8 @@
+/**
+ * @file GeneratorsTest.h
+ * @author N. Fottner
+ * @date 02/08/19
+ */
 #pragma once
 #include <gtest/gtest.h>
 #include <cmath>

@@ -1,3 +1,8 @@
+/**
+ * @file ObjectsTest.h
+ * @author N. Fottner
+ * @date 02/08/19
+ */
 #pragma once
 #include <Objects/CubeGauss.h>
 #include <Objects/CubeGrid.h>
