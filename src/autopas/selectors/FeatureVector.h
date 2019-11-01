@@ -22,7 +22,7 @@ class FeatureVector : public Configuration {
   /**
    * Number of tune-able dimensions.
    */
-  static constexpr size_t _featureSpaceDims = 4;
+  static constexpr size_t featureSpaceDims = 4;
 
   /**
    * Default constructor. Results in invalid vector.
@@ -56,7 +56,7 @@ class FeatureVector : public Configuration {
    * @return
    */
   Eigen::VectorXd operator-(const FeatureVector &other) const {
-    Eigen::VectorXd result(_featureSpaceDims);
+    Eigen::VectorXd result(featureSpaceDims);
     result << cellSizeFactor - other.cellSizeFactor, traversal == other.traversal ? 0. : 1.,
         dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1.;
 
@@ -68,7 +68,7 @@ class FeatureVector : public Configuration {
    * @return
    */
   operator Eigen::VectorXd() const {
-    Eigen::VectorXd result(_featureSpaceDims);
+    Eigen::VectorXd result(featureSpaceDims);
     result << cellSizeFactor, static_cast<double>(traversal), static_cast<double>(dataLayout),
         static_cast<double>(newton3);
 
