@@ -1,3 +1,9 @@
+/**
+ * @file Generator.h
+ * @author N. Fottner
+ * @date 1/8/19
+ */
+
 #pragma once
 
 #include <vector>
