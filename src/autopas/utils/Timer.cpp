@@ -29,7 +29,7 @@ double autopas::utils::Timer::stop() {
   }
   _currentlyRunning = false;
 
-  const auto diff = duration_cast<duration<double>>(time - _startTime).count();
+  const auto diff = duration_cast<microseconds>(time - _startTime).count();
 
   _totalTime += diff;
 

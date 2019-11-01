@@ -405,22 +405,23 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   // Statistics
   cout << fixed << setprecision(_floatPrecision);
   cout << endl << "Measurements:" << endl;
-  cout << timerToString("Time total   ", durationTotal, digitsTimeTotalMuS) << endl;
-  cout << timerToString("  Force      ", _timers.forceUpdate.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
-  cout << timerToString("  Position   ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalMuS, durationTotal)
+  cout << timerToString("Time total      ", durationTotal, digitsTimeTotalMuS) << endl;
+  cout << timerToString("  Force         ", _timers.forceUpdate.getTotalTime(), digitsTimeTotalMuS, durationTotal)
        << endl;
-  cout << timerToString("  Velocity   ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalMuS, durationTotal)
+  cout << timerToString("  Position      ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalMuS, durationTotal)
        << endl;
-  cout << timerToString("  VTK        ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
+  cout << timerToString("  Velocity      ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalMuS, durationTotal)
+       << endl;
+  cout << timerToString("  VTK           ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
   cout << timerToString("  Initialization", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
   if (_config->useThermostat) {
-    cout << timerToString("  Thermostat ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
+    cout << timerToString("  Thermostat    ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
   }
 
   auto numIterations = _config->iterations;
 
   if (numIterations > 0) {
-    cout << timerToString("One iteration", _timers.simulate.getTotalTime() / numIterations, digitsTimeTotalMuS,
+    cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / numIterations, digitsTimeTotalMuS,
                           durationTotal)
          << endl;
   }

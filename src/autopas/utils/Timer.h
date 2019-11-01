@@ -52,6 +52,6 @@ class Timer {
   /**
    * Indicator if this timer currently is measuring.
    */
-   bool _currentlyRunning = false;
+  bool _currentlyRunning = false;
 };
 }  // namespace autopas::utils
