@@ -23,14 +23,14 @@ class Option {
  public:
 
   /**
-   * No cast to bool.
+   * Prevents cast to bool by deleting the conversion operator.
    * @return
    */
   explicit operator bool() = delete;
 
   /**
    * Provides a way to iterate over the possible options.
-   * @return set of all possible values of this option type.
+   * @return Set of all possible values of this option type.
    */
   static std::set<actualOption> getAllOptions() {
     std::set<actualOption> retSet;
@@ -62,7 +62,7 @@ class Option {
    * Possible options can be found in getAllOptions().
    *
    * This function uses the Needleman-Wunsch algorithm to find the closest matching options.
-   * If an option is ambiguous an execption is thrown.
+   * If an option is ambiguous an exception is thrown.
    *
    * @param optionsString String containing traversal options.
    * @return Set of option enums. If no valid option was found the empty set is returned.
