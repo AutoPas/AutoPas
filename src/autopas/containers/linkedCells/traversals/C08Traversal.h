@@ -9,7 +9,6 @@
 #include "C08CellHandler.h"
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -17,8 +16,10 @@ namespace autopas {
 /**
  * This class provides the c08 traversal.
  *
- * The traversal uses the c08 base step performed on every single cell. Since
- * these steps overlap a domain coloring with eight colors is applied.
+ * The traversal uses the c08 base step performed on every single cell.
+ * \image html C08.png "C08 base step in 2D. (dark blue cell = base cell)"
+ * Since these steps overlap a domain coloring with eight colors is applied.
+ * \image html C08_domain.png "C08 domain coloring in 2D. 4 colors are required."
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
@@ -38,7 +39,7 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
    * @param cellLength cell length.
    */
   explicit C08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const double interactionLength = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+                        const double interactionLength, const std::array<double, 3> &cellLength)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
@@ -55,16 +56,7 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
    * C08 traversals are always usable.
    * @return
    */
-  bool isApplicable() const override {
-    int nDevices = 0;
-#if defined(AUTOPAS_CUDA)
-    cudaGetDeviceCount(&nDevices);
-#endif
-    if (dataLayout == DataLayoutOption::cuda)
-      return nDevices > 0;
-    else
-      return true;
-  }
+  bool isApplicable() const override { return not(dataLayout == DataLayoutOption::cuda); }
 
  private:
   C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;

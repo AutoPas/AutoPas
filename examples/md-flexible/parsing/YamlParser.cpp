@@ -45,6 +45,8 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto strArg = node[MDFlexConfig::functorOptionStr].as<std::string>();
     if (strArg.find("avx") != std::string::npos) {
       config.functorOption = MDFlexConfig::FunctorOption::lj12_6_AVX;
+    } else if (strArg.find("glob") != std::string::npos) {
+      config.functorOption = MDFlexConfig::FunctorOption::lj12_6_Globals;
     } else if (strArg.find("lj") != std::string::npos || strArg.find("lennard-jones") != std::string::npos) {
       config.functorOption = MDFlexConfig::FunctorOption::lj12_6;
     }
@@ -124,6 +126,9 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[MDFlexConfig::verletSkinRadiusStr]) {
     config.verletSkinRadius = node[MDFlexConfig::verletSkinRadiusStr].as<double>();
   }
+  if (node[MDFlexConfig::verletClusterSizeStr]) {
+    config.verletClusterSize = node[MDFlexConfig::verletClusterSizeStr].as<unsigned int>();
+  }
   if (node[MDFlexConfig::vtkFileNameStr]) {
     config.vtkFileName = node[MDFlexConfig::vtkFileNameStr].as<std::string>();
   }
@@ -141,21 +146,20 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
          objectIterator != node[MDFlexConfig::objectsStr].end(); ++objectIterator) {
       if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGridObjectsStr) {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeGrid cubeGrid({it->second[MDFlexConfig::particlesPerDimStr][0].as<unsigned long>(),
-                             it->second[MDFlexConfig::particlesPerDimStr][1].as<unsigned long>(),
-                             it->second[MDFlexConfig::particlesPerDimStr][2].as<unsigned long>()},
-                            it->second[MDFlexConfig::particlesSpacingStr].as<double>(),
-                            //                            {0.,0.,0.},
-                            {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
-                             it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
-                             it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()},
-                            {it->second[MDFlexConfig::velocityStr][0].as<double>(),
+          CubeGrid cubeGrid({it->second[MDFlexConfig::velocityStr][0].as<double>(),
                              it->second[MDFlexConfig::velocityStr][1].as<double>(),
                              it->second[MDFlexConfig::velocityStr][2].as<double>()},
                             it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
                             it->second[MDFlexConfig::epsilonStr].as<double>(),
                             it->second[MDFlexConfig::sigmaStr].as<double>(),
-                            it->second[MDFlexConfig::massStr].as<double>());
+                            it->second[MDFlexConfig::massStr].as<double>(),
+                            {it->second[MDFlexConfig::particlesPerDimStr][0].as<unsigned long>(),
+                             it->second[MDFlexConfig::particlesPerDimStr][1].as<unsigned long>(),
+                             it->second[MDFlexConfig::particlesPerDimStr][2].as<unsigned long>()},
+                            it->second[MDFlexConfig::particlesSpacingStr].as<double>(),
+                            {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
+                             it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
+                             it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
 
           config.cubeGridObjects.emplace_back(cubeGrid);
           config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
@@ -167,22 +171,26 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
       }
       if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGaussObjectsStr) {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeGauss cubeGauss(it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
-                              {it->second[MDFlexConfig::boxLengthStr][0].as<double>(),
-                               it->second[MDFlexConfig::boxLengthStr][1].as<double>(),
-                               it->second[MDFlexConfig::boxLengthStr][2].as<double>()},
-                              it->second[MDFlexConfig::distributionMeanStr].as<double>(),
-                              it->second[MDFlexConfig::distributionStdDevStr].as<double>(),
-                              {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
-                               it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
-                               it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()},
-                              {it->second[MDFlexConfig::velocityStr][0].as<double>(),
+          CubeGauss cubeGauss({it->second[MDFlexConfig::velocityStr][0].as<double>(),
                                it->second[MDFlexConfig::velocityStr][1].as<double>(),
                                it->second[MDFlexConfig::velocityStr][2].as<double>()},
                               it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
                               it->second[MDFlexConfig::epsilonStr].as<double>(),
                               it->second[MDFlexConfig::sigmaStr].as<double>(),
-                              it->second[MDFlexConfig::massStr].as<double>());
+                              it->second[MDFlexConfig::massStr].as<double>(),
+                              it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
+                              {it->second[MDFlexConfig::boxLengthStr][0].as<double>(),
+                               it->second[MDFlexConfig::boxLengthStr][1].as<double>(),
+                               it->second[MDFlexConfig::boxLengthStr][2].as<double>()},
+                              {it->second[MDFlexConfig::distributionMeanStr][0].as<double>(),
+                               it->second[MDFlexConfig::distributionMeanStr][1].as<double>(),
+                               it->second[MDFlexConfig::distributionMeanStr][2].as<double>()},
+                              {it->second[MDFlexConfig::distributionStdDevStr][0].as<double>(),
+                               it->second[MDFlexConfig::distributionStdDevStr][1].as<double>(),
+                               it->second[MDFlexConfig::distributionStdDevStr][2].as<double>()},
+                              {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
+                               it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
+                               it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
           config.cubeGaussObjects.emplace_back(cubeGauss);
           config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
                                  it->second[MDFlexConfig::epsilonStr].as<double>(),
@@ -193,20 +201,20 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
       }
       if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeUniformObjectsStr) {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeUniform cubeUniform(it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
-                                  {it->second[MDFlexConfig::boxLengthStr][0].as<double>(),
-                                   it->second[MDFlexConfig::boxLengthStr][1].as<double>(),
-                                   it->second[MDFlexConfig::boxLengthStr][2].as<double>()},
-                                  {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
-                                   it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
-                                   it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()},
-                                  {it->second[MDFlexConfig::velocityStr][0].as<double>(),
+          CubeUniform cubeUniform({it->second[MDFlexConfig::velocityStr][0].as<double>(),
                                    it->second[MDFlexConfig::velocityStr][1].as<double>(),
                                    it->second[MDFlexConfig::velocityStr][2].as<double>()},
                                   it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
                                   it->second[MDFlexConfig::epsilonStr].as<double>(),
                                   it->second[MDFlexConfig::sigmaStr].as<double>(),
-                                  it->second[MDFlexConfig::massStr].as<double>());
+                                  it->second[MDFlexConfig::massStr].as<double>(),
+                                  it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
+                                  {it->second[MDFlexConfig::boxLengthStr][0].as<double>(),
+                                   it->second[MDFlexConfig::boxLengthStr][1].as<double>(),
+                                   it->second[MDFlexConfig::boxLengthStr][2].as<double>()},
+                                  {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
+                                   it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
+                                   it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
           config.cubeUniformObjects.emplace_back(cubeUniform);
           config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
                                  it->second[MDFlexConfig::epsilonStr].as<double>(),
@@ -217,18 +225,17 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
       }
       if (objectIterator->first.as<std::string>() == MDFlexConfig::sphereObjectsStr) {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          Sphere sphere({it->second[MDFlexConfig::sphereCenterStr][0].as<double>(),
-                         it->second[MDFlexConfig::sphereCenterStr][1].as<double>(),
-                         it->second[MDFlexConfig::sphereCenterStr][2].as<double>()},
-                        it->second[MDFlexConfig::sphereRadiusStr].as<int>(),
-                        it->second[MDFlexConfig::particlesSpacingStr].as<double>(),
-                        {it->second[MDFlexConfig::velocityStr][0].as<double>(),
+          Sphere sphere({it->second[MDFlexConfig::velocityStr][0].as<double>(),
                          it->second[MDFlexConfig::velocityStr][1].as<double>(),
                          it->second[MDFlexConfig::velocityStr][2].as<double>()},
                         it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
                         it->second[MDFlexConfig::epsilonStr].as<double>(),
-                        it->second[MDFlexConfig::sigmaStr].as<double>(),
-                        it->second[MDFlexConfig::massStr].as<double>());
+                        it->second[MDFlexConfig::sigmaStr].as<double>(), it->second[MDFlexConfig::massStr].as<double>(),
+                        {it->second[MDFlexConfig::sphereCenterStr][0].as<double>(),
+                         it->second[MDFlexConfig::sphereCenterStr][1].as<double>(),
+                         it->second[MDFlexConfig::sphereCenterStr][2].as<double>()},
+                        it->second[MDFlexConfig::sphereRadiusStr].as<int>(),
+                        it->second[MDFlexConfig::particlesSpacingStr].as<double>());
           config.sphereObjects.emplace_back(sphere);
           config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
                                  it->second[MDFlexConfig::epsilonStr].as<double>(),

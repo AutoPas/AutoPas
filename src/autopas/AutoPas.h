@@ -37,6 +37,18 @@ template <class Particle, class ParticleCell>
 class AutoPas {
  public:
   /**
+   * Define the iterator_t for simple use, also from the outside.
+   * Helps to, e.g., wrap the AutoPas iterators
+   */
+  using iterator_t = typename autopas::IteratorTraits<Particle>::iterator_t;
+
+  /**
+   * Define the const_iterator_t for simple use, also from the outside.
+   * Helps to, e.g., wrap the AutoPas iterators
+   */
+  using const_iterator_t = typename autopas::IteratorTraits<Particle>::const_iterator_t;
+
+  /**
    * Constructor for the autopas class.
    * @param logOutputStream Stream where log output should go to. Default is std::out.
    */
@@ -46,6 +58,7 @@ class AutoPas {
         _cutoff(1.),
         _verletSkin(0.2),
         _verletRebuildFrequency(20),
+        _verletClusterSize(64),
         _tuningInterval(5000),
         _numSamples(3),
         _maxEvidence(10),
@@ -97,8 +110,8 @@ class AutoPas {
    */
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
-        _boxMin, _boxMax, _cutoff, _verletSkin, std::move(generateTuningStrategy()), _selectorStrategy, _tuningInterval,
-        _numSamples);
+        _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize, std::move(generateTuningStrategy()),
+        _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
         std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
   }
@@ -178,11 +191,32 @@ class AutoPas {
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
    * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
    * particles, or both.
-   * @return iterator to the first particle
+   * @return iterator to the first particle.
    */
-  autopas::ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
     return _logicHandler->begin(behavior);
   }
+
+  /**
+   * @copydoc begin()
+   * @note const version
+   */
+  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+    return std::as_const(*_logicHandler).begin(behavior);
+  }
+
+  /**
+   * @copydoc begin()
+   * @note cbegin will guarantee to return a const_iterator.
+   */
+  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const { return begin(behavior); }
+
+  /**
+   * End of the iterator.
+   * This returns a bool, which is false to allow range-based for loops.
+   * @return false
+   */
+  [[nodiscard]] constexpr bool end() const { return false; }
 
   /**
    * iterate over all particles in a specified region
@@ -194,9 +228,17 @@ class AutoPas {
    * particles, or both.
    * @return iterator to iterate over all particles in a specific region
    */
-  autopas::ParticleIteratorWrapper<Particle> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+                               IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * @copydoc getRegionIterator()
+   * @note const version
+   */
+  const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+                                     IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
@@ -204,7 +246,7 @@ class AutoPas {
    * Returns the number of particles in this container.
    * @return the number of particles in this container.
    */
-  unsigned long getNumberOfParticles() { return _autoTuner->getContainer()->getNumParticles(); }
+  unsigned long getNumberOfParticles() const { return _autoTuner->getContainer()->getNumParticles(); }
 
   /**
    * Returns the type of the currently used container.
@@ -216,13 +258,13 @@ class AutoPas {
    * Get the lower corner of the container.
    * @return lower corner of the container.
    */
-  std::array<double, 3> getBoxMin() { return _autoTuner->getContainer()->getBoxMin(); }
+  std::array<double, 3> getBoxMin() const { return _autoTuner->getContainer()->getBoxMin(); }
 
   /**
    * Get the upper corner of the container.
    * @return upper corner of the container.
    */
-  std::array<double, 3> getBoxMax() { return _autoTuner->getContainer()->getBoxMax(); }
+  std::array<double, 3> getBoxMax() const { return _autoTuner->getContainer()->getBoxMax(); }
 
   /**
    * Set coordinates of the lower corner of the domain.
@@ -309,6 +351,18 @@ class AutoPas {
   void setVerletRebuildFrequency(unsigned int verletRebuildFrequency) {
     AutoPas::_verletRebuildFrequency = verletRebuildFrequency;
   }
+
+  /**
+   * Get Verlet cluster size.
+   * @return
+   */
+  unsigned int getVerletClusterSize() const { return _verletClusterSize; }
+
+  /**
+   * Set Verlet cluster size.
+   * @param verletClusterSize
+   */
+  void setVerletClusterSize(unsigned int verletClusterSize) { AutoPas::_verletClusterSize = verletClusterSize; }
 
   /**
    * Get tuning interval.
@@ -488,6 +542,10 @@ class AutoPas {
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
   unsigned int _verletRebuildFrequency;
+  /**
+   * Specifies the size of clusters for verlet lists.
+   */
+  unsigned int _verletClusterSize;
   /**
    * Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */

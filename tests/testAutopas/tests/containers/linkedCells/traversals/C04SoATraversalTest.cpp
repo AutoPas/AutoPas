@@ -29,7 +29,7 @@ TEST_F(C04SoATraversalTest, testTraversal) {
   NumThreadGuard numThreadGuard(1);
 
   autopas::C04SoATraversal<FMCell, decltype(functor), autopas::DataLayoutOption::soa, true> c04SoATraversal(
-      edgeLength, &functor, 1);
+      edgeLength, &functor, 1, {1., 1., 1.});
   c04SoATraversal.setCellsToTraverse(cells);
   c04SoATraversal.initTraversal();
   c04SoATraversal.traverseParticlePairs();

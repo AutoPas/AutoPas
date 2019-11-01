@@ -26,7 +26,7 @@
 // cells
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ParticleCell.h"
-#include "autopas/cells/RMMParticleCell2T.h"
+#include "autopas/cells/RMMParticleCell3T.h"
 #include "autopas/containers/directSum/DirectSum.h"
 
 // iterators

@@ -12,7 +12,6 @@
 #include "Objects/CubeGauss.h"
 #include "Objects/CubeGrid.h"
 #include "Objects/CubeUniform.h"
-#include "Objects/Objects.h"
 #include "Objects/Sphere.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -49,7 +48,7 @@ class MDFlexConfig {
   /**
    * Choice of the functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX };
+  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_Globals };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -89,6 +88,8 @@ class MDFlexConfig {
   std::string vtkFileName;
   static inline const char *vtkWriteFrequencyStr = "vtk-write-frequency";
   size_t vtkWriteFrequency = 100;
+  static inline const char *verletClusterSizeStr = "verlet-cluster-size";
+  unsigned int verletClusterSize = 4;
   static inline const char *verletRebuildFrequencyStr = "verlet-rebuild-frequency";
   unsigned int verletRebuildFrequency = 1;
   static inline const char *verletSkinRadiusStr = "verlet-skin-radius";
@@ -122,9 +123,9 @@ class MDFlexConfig {
   static inline const char *boxLengthStr = "box-length";
   double boxLength = 10;
   static inline const char *distributionMeanStr = "distribution-mean";
-  double distributionMean = 5.;
+  std::array<double, 3> distributionMean = {5., 5., 5.};
   static inline const char *distributionStdDevStr = "distribution-stddeviation";
-  double distributionStdDev = 2.;
+  std::array<double, 3> distributionStdDev = {2., 2., 2.};
   static inline const char *particlesPerDimStr = "particles-per-dimension";
   size_t particlesPerDim = 10;
   static inline const char *particlesTotalStr = "particles-total";

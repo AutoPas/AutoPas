@@ -24,7 +24,7 @@ void SingleCellIteratorTest::SetUp() {
 void SingleCellIteratorTest::TearDown() {}
 
 TEST_F(SingleCellIteratorTest, testFullParticleCell) {
-  FullParticleCell<MoleculeLJ<>> fpc;
+  FMCell fpc;
 
   fillWithParticles(&fpc);
 

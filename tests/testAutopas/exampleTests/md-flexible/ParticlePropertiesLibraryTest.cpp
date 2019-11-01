@@ -4,7 +4,6 @@
  * @date 02/08/19
  */
 #include "ParticlePropertiesLibraryTest.h"
-using namespace std;
 
 double ParticlePropertiesLibraryTest::mixingE(double e1, double e2) { return std::sqrt(e1 * e2); }
 double ParticlePropertiesLibraryTest::mixingS(double s1, double s2) { return ((s1 + s2) / 2); }
@@ -21,7 +20,7 @@ TEST_F(ParticlePropertiesLibraryTest, ClassFunctions) {
 }
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
-  Simulation<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> simulation;
+  Simulation<Molecule, FMCell> simulation;
   // this test need to be adapted if the input file changes
   MDFlexConfig config;
   config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
@@ -48,7 +47,7 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitializationDefault) {
   // tests ParticleProperties initialization with only one Type
-  Simulation<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>> simulation;
+  Simulation<Molecule, FMCell> simulation;
   MDFlexConfig config;
   config.calcSimulationBox();
   simulation.initialize(config);

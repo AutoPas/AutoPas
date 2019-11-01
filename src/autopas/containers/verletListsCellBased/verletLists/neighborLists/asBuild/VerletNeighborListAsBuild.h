@@ -46,7 +46,8 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     auto traversal = C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                                    internal::AsBuildPairGeneratorFunctor<Particle, callCheckInstead>,
                                                    dataLayout, useNewton3>(
-        _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor, this);
+        _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor,
+        _baseLinkedCells->getInteractionLength(), _baseLinkedCells->getCellBlock().getCellLength(), this);
     _baseLinkedCells->iteratePairwise(&traversal);
   }
 
@@ -82,7 +83,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    * It executes C08 on the passed LinkedCells container and saves the resulting pairs in the neighbor list, remembering
    * the thread and current color for each pair.
    */
-  void buildNeighborList(LinkedCells<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
+  void buildNeighborList(LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                      typename VerletListHelpers<Particle>::SoAArraysType> &linkedCells,
                          bool useNewton3) override {
     _soaListIsValid = false;
@@ -277,7 +278,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * The LinkedCells object this neighbor list should use to build.
    */
-  LinkedCells<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
+  LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
               typename VerletListHelpers<Particle>::SoAArraysType> *_baseLinkedCells;
 
   /**

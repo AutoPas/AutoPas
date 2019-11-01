@@ -40,7 +40,8 @@ INSTANTIATE_TEST_SUITE_P(
                 if (containerOption == autopas::ContainerOption::verletLists ||
                     containerOption == autopas::ContainerOption::verletListsCells ||
                     containerOption == autopas::ContainerOption::verletClusterLists ||
-                    containerOption == autopas::ContainerOption::varVerletListsAsBuild) {
+                    containerOption == autopas::ContainerOption::varVerletListsAsBuild ||
+                    containerOption == autopas::ContainerOption::verletClusterCells) {
                   continue;
                 }
 
@@ -98,8 +99,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   auto container = containerSelector.getCurrentContainer();
 
-  autopas::MoleculeLJ<> defaultParticle;
-  RandomGenerator::fillWithParticles(*container, defaultParticle, 100);
+  Molecule defaultParticle;
+  RandomGenerator::fillWithParticles(*container, defaultParticle, container->getBoxMin(), container->getBoxMax(), 100);
   RandomGenerator::fillWithHaloParticles(*container, defaultParticle, container->getCutoff(), 10);
 
   EXPECT_CALL(mockFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
@@ -116,7 +117,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   const auto [callsNewton3SC, callsNewton3Pair] = eval<true>(dataLayout, container, traversalOption);
   const auto [callsNonNewton3SC, callsNonNewton3Pair] = eval<false>(dataLayout, container, traversalOption);
 
-  if (autopas::DataLayoutOption::soa) {
+  if (dataLayout == autopas::DataLayoutOption::soa) {
     // within one cell no N3 optimization
     EXPECT_EQ(callsNewton3SC, callsNonNewton3SC) << "for containeroption: " << containerOption;
   }

@@ -5,6 +5,7 @@
  */
 
 #include "ParticleIteratorTest.h"
+#include <testingHelpers/commonTypedefs.h>
 
 using namespace autopas;
 using namespace autopas::internal;
@@ -26,7 +27,7 @@ void ParticleIteratorTest::TearDown() {}
 
 TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF) {
   // Empty Full Empty Full Full Empty Empty Full Empty Full
-  std::vector<FullParticleCell<MoleculeLJ<>>> data(10);
+  std::vector<FMCell> data(10);
 
   for (auto i : {1ul, 3ul, 4ul, 7ul, 9ul}) {
     fillWithParticles(&data.at(i));
@@ -38,7 +39,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF) {
 #pragma omp parallel reduction(vecMerge : foundParticles)
 #endif
   {
-    for (auto iter = ParticleIterator<MoleculeLJ<>, FullParticleCell<MoleculeLJ<>>>(&data); iter.isValid(); ++iter) {
+    for (auto iter = ParticleIterator<Molecule, FMCell, true>(&data); iter.isValid(); ++iter) {
       auto particleID = iter->getID();
       foundParticles.push_back(particleID);
       for (int d = 0; d < 3; ++d) {
@@ -56,7 +57,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF) {
 
 TEST_F(ParticleIteratorTest, testFullIterator_FEFEEFFEFE) {
   // Full Empty Full Empty Empty Full Full Empty Full Empty
-  std::vector<FullParticleCell<MoleculeLJ<>>> data(10);
+  std::vector<FMCell> data(10);
 
   for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
     fillWithParticles(&data.at(i));
@@ -68,7 +69,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_FEFEEFFEFE) {
 #pragma omp parallel reduction(vecMerge : foundParticles)
 #endif
   {
-    for (auto iter = ParticleIterator<MoleculeLJ<>, FullParticleCell<MoleculeLJ<>>>(&data); iter.isValid(); ++iter) {
+    for (auto iter = ParticleIterator<Molecule, FMCell, true>(&data); iter.isValid(); ++iter) {
       auto particleID = iter->getID();
       foundParticles.push_back(particleID);
       for (int d = 0; d < 3; ++d) {
@@ -86,7 +87,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_FEFEEFFEFE) {
 
 TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
   // Full Empty Full Empty Empty Full Full Empty Full Empty
-  std::vector<FullParticleCell<MoleculeLJ<>>> data(10);
+  std::vector<FMCell> data(10);
 
   for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
     fillWithParticles(&data.at(i));
@@ -97,7 +98,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
 #pragma omp parallel reduction(+ : numFoundParticles)
 #endif
   {
-    ParticleIterator<MoleculeLJ<>, FullParticleCell<MoleculeLJ<>>> iter(&data);
+    ParticleIterator<Molecule, FMCell, true> iter(&data);
     for (; iter.isValid(); ++iter, ++numFoundParticles) {
       iter.deleteCurrentParticle();
     }
@@ -109,7 +110,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
 #pragma omp parallel reduction(+ : numFoundParticles)
 #endif
   {
-    ParticleIterator<MoleculeLJ<>, FullParticleCell<MoleculeLJ<>>> iter(&data);
+    ParticleIterator<Molecule, FMCell, true> iter(&data);
     for (; iter.isValid(); ++iter) {
       ++numFoundParticles;
     }
@@ -119,7 +120,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
 
 TEST_F(ParticleIteratorTest, testFullIterator_mutable) {
   // Full Empty Full Empty Empty Full Full Empty Full Empty
-  std::vector<FullParticleCell<MoleculeLJ<>>> data(10);
+  std::vector<FMCell> data(10);
 
   for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
     fillWithParticles(&data.at(i));
@@ -129,7 +130,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_mutable) {
 #pragma omp parallel
 #endif
   {
-    ParticleIterator<MoleculeLJ<>, FullParticleCell<MoleculeLJ<>>> iter(&data);
+    ParticleIterator<Molecule, FMCell, true> iter(&data);
     for (; iter.isValid(); ++iter) {
       double newVel = iter->getID() + 1;
       std::array<double, 3> newVelArr = {newVel, newVel, newVel};
@@ -141,7 +142,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_mutable) {
 #pragma omp parallel
 #endif
   {
-    ParticleIterator<MoleculeLJ<>, FullParticleCell<MoleculeLJ<>>> iter(&data);
+    ParticleIterator<Molecule, FMCell, true> iter(&data);
     for (; iter.isValid(); ++iter) {
       double expectedVel = iter->getID() + 1;
       auto vel = iter->getV();
@@ -166,7 +167,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_EFEFFEEFEF) {
 #pragma omp parallel reduction(vecMerge : foundParticles)
 #endif
   {
-    for (auto iter = ParticleIterator<MoleculeLJ<>, RMMParticleCell<MoleculeLJ<>>>(&data); iter.isValid(); ++iter) {
+    for (auto iter = ParticleIterator<Molecule, RMMParticleCell<Molecule>, true>(&data); iter.isValid(); ++iter) {
       auto particleID = iter->getR()[0];
       foundParticles.push_back(particleID);
       for (int d = 1; d < 3; ++d) {
@@ -196,7 +197,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_FEFEEFFEFE) {
 #pragma omp parallel reduction(vecMerge : foundParticles)
 #endif
   {
-    for (auto iter = ParticleIterator<MoleculeLJ<>, RMMParticleCell<MoleculeLJ<>>>(&data); iter.isValid(); ++iter) {
+    for (auto iter = ParticleIterator<Molecule, RMMParticleCell<Molecule>, true>(&data); iter.isValid(); ++iter) {
       auto particleID = iter->getR()[0];
       foundParticles.push_back(particleID);
       for (int d = 1; d < 3; ++d) {
@@ -226,7 +227,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
 #pragma omp parallel reduction(+ : numFoundParticles)
 #endif
   {
-    ParticleIterator<Particle, RMMParticleCell<Particle>> iter(&data);
+    ParticleIterator<Particle, RMMParticleCell<Particle>, true> iter(&data);
     for (; iter.isValid(); ++iter, ++numFoundParticles) {
       iter.deleteCurrentParticle();
     }
@@ -238,7 +239,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
 #pragma omp parallel reduction(+ : numFoundParticles)
 #endif
   {
-    ParticleIterator<Particle, RMMParticleCell<Particle>> iter(&data);
+    ParticleIterator<Particle, RMMParticleCell<Particle>, true> iter(&data);
     for (; iter.isValid(); ++iter) {
       ++numFoundParticles;
     }
@@ -258,7 +259,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
 #pragma omp parallel
 #endif
   {
-    ParticleIterator<MoleculeLJ<>, RMMParticleCell<MoleculeLJ<>>> iter(&data);
+    ParticleIterator<Molecule, RMMParticleCell<Molecule>, true> iter(&data);
     for (; iter.isValid(); ++iter) {
       double newPos = (iter->getR()[0]) + 1;
       std::array<double, 3> newPosArr = {newPos, newPos, newPos};
@@ -272,7 +273,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
 #pragma omp parallel reduction(vecMerge : foundPositions)
 #endif
   {
-    ParticleIterator<MoleculeLJ<>, RMMParticleCell<MoleculeLJ<>>> iter(&data);
+    ParticleIterator<Molecule, RMMParticleCell<Molecule>, true> iter(&data);
     for (; iter.isValid(); ++iter) {
       auto pos = iter->getR();
       EXPECT_EQ(pos[1], pos[0]);
@@ -346,8 +347,8 @@ void testContainerIteratorBehavior(Container &container, Molecule &mol, Molecule
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
-  DirectSum<MoleculeLJ<>, FullParticleCell<MoleculeLJ<>>> ds({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
-  MoleculeLJ<> mol({1., 1., 1.}, {0., 0., 0.}, 1, 0);
+  DirectSum<FMCell> ds({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
+  MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   ds.addParticle(mol);
   MoleculeLJ<> haloMol({-1., 1., 1.}, {0., 0., 0.}, 2, 0);
   ds.addHaloParticle(haloMol);
@@ -356,8 +357,8 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorLinkedCells) {
-  LinkedCells<MoleculeLJ<>, FullParticleCell<MoleculeLJ<>>> linkedCells({0., 0., 0.}, {10., 10., 10.}, 3, 0., 1.);
-  MoleculeLJ<> mol({1., 1., 1.}, {0., 0., 0.}, 1, 0);
+  LinkedCells<FMCell> linkedCells({0., 0., 0.}, {10., 10., 10.}, 3, 0., 1.);
+  MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
   linkedCells.addParticle(mol);
   MoleculeLJ<> haloMol({-1., 1., 1.}, {0., 0., 0.}, 2, 0);
   linkedCells.addHaloParticle(haloMol);

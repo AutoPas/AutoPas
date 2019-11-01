@@ -31,8 +31,8 @@ class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
   template <bool useNewton3, autopas::DataLayoutOption dataLayoutOption>
   void test(unsigned long numMolecules, double rel_err_tolerance, std::array<double, 3> boxMax);
 
-  using vltype = autopas::VerletLists<autopas::MoleculeLJ<>>;
-  using lctype = autopas::LinkedCells<autopas::MoleculeLJ<>, autopas::FullParticleCell<autopas::MoleculeLJ<>>>;
+  using vltype = autopas::VerletLists<Molecule>;
+  using lctype = autopas::LinkedCells<FMCell>;
   std::unique_ptr<vltype> _verletLists;
   std::unique_ptr<lctype> _linkedCells;
 };

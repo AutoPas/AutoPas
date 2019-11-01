@@ -26,8 +26,6 @@ int main(int argc, char **argv) {
 
   config.print();
 
-  std::cout << std::endl;
-
   // Initialization
   simulation.initialize(config);
   std::cout << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
@@ -35,7 +33,7 @@ int main(int argc, char **argv) {
   // Simulation
   std::cout << "Starting simulation... " << std::endl;
   simulation.simulate();
-  std::cout << "Simulation done!" << std::endl;
+  std::cout << "Simulation done!" << std::endl << std::endl;
 
   simulation.printStatistics();
 

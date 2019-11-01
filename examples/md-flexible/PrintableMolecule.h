@@ -20,7 +20,7 @@ class PrintableMolecule
   /**
    * Empty Constructor.
    */
-  PrintableMolecule() : MoleculeLJ() {}
+  PrintableMolecule() : autopas::MoleculeLJ<>() {}
 
   /**
    * Constructor.
@@ -31,10 +31,22 @@ class PrintableMolecule
    */
   PrintableMolecule(std::array<double, 3> pos, std::array<double, 3> v, unsigned long moleculeId,
                     unsigned int typeId = 0)
-      : MoleculeLJ(pos, v, moleculeId, typeId) {}
+      : autopas::MoleculeLJ<>(pos, v, moleculeId, typeId) {}
 
   /**
    * Print molecule properties to std out.
    */
-  void print();
+  void print() {
+    std::cout << "Molecule with position: ";
+    for (auto &r : this->getR()) {
+      std::cout << std::setw(10) << r << ", ";
+    }
+    std::cout << "and force: ";
+
+    for (auto &f : this->getF()) {
+      std::cout << std::setw(15) << f << ", ";
+    }
+    std::cout << "ID: " << std::setw(5) << this->getID();
+    std::cout << std::endl;
+  }
 };

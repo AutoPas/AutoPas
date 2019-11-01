@@ -5,6 +5,7 @@
  */
 
 #include "utils/Timer.h"
+#include "ExceptionHandler.h"
 
 using namespace std::chrono;
 
@@ -12,12 +13,25 @@ autopas::utils::Timer::Timer() : _startTime{} {}
 
 autopas::utils::Timer::~Timer() = default;
 
-void autopas::utils::Timer::start() noexcept { _startTime = high_resolution_clock::now(); }
+void autopas::utils::Timer::start() noexcept {
+  if (_currentlyRunning) {
+    autopas::utils::ExceptionHandler::exception("Trying to start a timer that is already started!");
+  }
+  _currentlyRunning = true;
+  _startTime = high_resolution_clock::now();
+}
 
 double autopas::utils::Timer::stop() {
-  const high_resolution_clock::time_point time(high_resolution_clock::now());
+  const auto time(high_resolution_clock::now());
 
-  const duration<double> diff = duration_cast<duration<double>>(time - _startTime);
+  if (not _currentlyRunning) {
+    autopas::utils::ExceptionHandler::exception("Trying to stop a timer that was not started!");
+  }
+  _currentlyRunning = false;
 
-  return diff.count();
+  const auto diff = duration_cast<microseconds>(time - _startTime).count();
+
+  _totalTime += diff;
+
+  return diff;
 }

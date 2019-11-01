@@ -5,6 +5,7 @@
  */
 
 #include "CLIParser.h"
+#include "autopas/utils/StringUtils.h"
 
 bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
@@ -38,6 +39,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {MDFlexConfig::tuningMaxEvidenceStr, required_argument, nullptr, 'E'},
                                          {MDFlexConfig::tuningSamplesStr, required_argument, nullptr, 'S'},
                                          {MDFlexConfig::tuningStrategyOptionsStr, required_argument, nullptr, 'T'},
+                                         {MDFlexConfig::verletClusterSizeStr, required_argument, nullptr, 'q'},
                                          {MDFlexConfig::verletRebuildFrequencyStr, required_argument, nullptr, 'v'},
                                          {MDFlexConfig::verletSkinRadiusStr, required_argument, nullptr, 'r'},
                                          {MDFlexConfig::vtkFileNameStr, required_argument, nullptr, 'w'},
@@ -137,11 +139,13 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       case 'f': {
         if (strArg.find("avx") != string::npos) {
           config.functorOption = MDFlexConfig::FunctorOption::lj12_6_AVX;
+        } else if (strArg.find("glob") != string::npos) {
+          config.functorOption = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
           config.functorOption = MDFlexConfig::FunctorOption::lj12_6;
         } else {
           cerr << "Unknown functor: " << strArg << endl;
-          cerr << "Please use 'Lennard-Jones' or 'Lennard-Jones-AVX'" << endl;
+          cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals' or 'Lennard-Jones-AVX'" << endl;
           displayHelp = true;
         }
         break;
@@ -240,7 +244,8 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'm': {
         try {
-          config.distributionMean = stod(strArg);
+          auto mean = stod(strArg);
+          config.distributionMean = {mean, mean, mean};
         } catch (const exception &) {
           cerr << "Error parsing distribution mean: " << strArg << endl;
           displayHelp = true;
@@ -279,6 +284,15 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
           config.periodic = autopas::utils::StringUtils::parseBoolOption(strArg);
         } catch (const exception &) {
           cerr << "Error parsing whether there should be periodic boundary conditions: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'q': {
+        try {
+          config.verletClusterSize = (unsigned int)stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing verlet cluster size: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -373,9 +387,10 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'z': {
         try {
-          config.vtkWriteFrequency = stoul(strArg);
+          auto stdDev = stod(strArg);
+          config.distributionStdDev = {stdDev, stdDev, stdDev};
         } catch (const exception &) {
-          cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
+          cerr << "Error parsing distribution standard deviation: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -390,29 +405,39 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   // only create objects if nothing was set by a yaml file
   if (config.cubeGaussObjects.empty() and config.cubeGridObjects.empty() and config.cubeUniformObjects.empty() and
       config.sphereObjects.empty()) {
+    // common settings for any object type:
+    unsigned int typeID = 0;
+    double epsilon = 1.;
+    double sigma = 1.;
+    double mass = 1.;
+    std::array<double, 3> bottomLeftCorner = {0, 0, 0};
+    std::array<double, 3> velocity = {0, 0, 0};
+
     switch (config.generatorOption) {
       case MDFlexConfig::GeneratorOption::grid: {
-        CubeGrid grid({config.particlesPerDim, config.particlesPerDim, config.particlesPerDim}, config.particleSpacing,
-                      {0, 0, 0}, {0, 0, 0}, 0, 1, 1, 1);
+        CubeGrid grid(velocity, typeID, epsilon, sigma, mass,
+                      {config.particlesPerDim, config.particlesPerDim, config.particlesPerDim}, config.particleSpacing,
+                      bottomLeftCorner);
         config.cubeGridObjects.push_back(grid);
         break;
       }
       case MDFlexConfig::GeneratorOption::gaussian: {
-        CubeGauss cubeGauss(config.particlesTotal, {config.boxLength, config.boxLength, config.boxLength},
-                            config.distributionMean, config.distributionStdDev, {0, 0, 0}, {0, 0, 0}, 0, 1, 1, 1);
+        CubeGauss cubeGauss(velocity, typeID, epsilon, sigma, mass, config.particlesTotal,
+                            {config.boxLength, config.boxLength, config.boxLength}, config.distributionMean,
+                            config.distributionStdDev, bottomLeftCorner);
         config.cubeGaussObjects.push_back(cubeGauss);
         break;
       }
       case MDFlexConfig::GeneratorOption::uniform: {
-        CubeUniform cubeUniform(config.particlesTotal, {config.boxLength, config.boxLength, config.boxLength},
-                                {0, 0, 0}, {0, 0, 0}, 0, 1, 1, 1);
+        CubeUniform cubeUniform(velocity, typeID, epsilon, sigma, mass, config.particlesTotal,
+                                {config.boxLength, config.boxLength, config.boxLength}, bottomLeftCorner);
         config.cubeUniformObjects.push_back(cubeUniform);
         break;
       }
       case MDFlexConfig::GeneratorOption::sphere: {
         auto centerOfBox = config.particlesPerDim / 2.;
-        Sphere sphere({centerOfBox, centerOfBox, centerOfBox}, centerOfBox, config.particleSpacing, {0, 0, 0}, 0, 1, 1,
-                      1);
+        Sphere sphere(velocity, typeID, epsilon, sigma, mass, {centerOfBox, centerOfBox, centerOfBox}, centerOfBox,
+                      config.particleSpacing);
         config.sphereObjects.push_back(sphere);
         break;
       }

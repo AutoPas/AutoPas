@@ -9,7 +9,6 @@
 #include "C04SoACellHandler.h"
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/C04BasedTraversal.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -38,7 +37,7 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
    * @param cellLength cell length.
    */
   explicit C04SoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                           const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+                           const double cutoff, const std::array<double, 3> &cellLength)
       : C04BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 2>(dims, pairwiseFunctor, cutoff,
                                                                                     cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}
@@ -53,9 +52,14 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
 
   /**
    * c04SoA traversals are only usable with DataLayout SoA.
+   * @note Currently there is a bug when cellsize factor is smaller than 1:
+   * https://github.com/AutoPas/AutoPas/issues/354
    * @return
    */
-  bool isApplicable() const override { return DataLayout == DataLayoutOption::soa; }
+  bool isApplicable() const override {
+    return DataLayout == DataLayoutOption::soa and
+           (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1);
+  }
 
  private:
   C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellHandler;

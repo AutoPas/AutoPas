@@ -1,0 +1,26 @@
+% file: C08.tex
+% author: C. Menges
+
+\documentclass{standalone}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\begin{document}
+\begin{tikzpicture}[shorten >=-3pt,shorten <=-3pt]
+  % cutoff
+  \fill [rounded corners=1cm, blue!10] (-1.5,-1.5) rectangle (1.5,1.5);
+
+  % base cell
+  \fill [blue!50] (-0.5,-0.5) rectangle (0.5,0.5);
+
+  % grid
+  \draw[step=1.0,black,thin,shift={(-2.5,-2.5)}] (0,0) grid (5,5);
+
+  \draw[blue, ultra thick] (-0.5,-0.5) rectangle (1.5,1.5);
+
+  % interactions
+  \draw [thick, *-*] (0,0) -- (1,0);
+  \draw [thick, *-*] (0,0) -- (0,1);
+  \draw [thick, *-*] (0,0) -- (1,1);
+  \draw [thick, *-*] (0,1) -- (1,0);
+\end{tikzpicture}
+\end{document}

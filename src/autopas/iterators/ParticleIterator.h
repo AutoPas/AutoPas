@@ -22,9 +22,16 @@ namespace autopas::internal {
  * particle using the ++operator, e.g. "++iterator".
  * @tparam Particle Type of the particle that is accessed.
  * @tparam ParticleCell Type of the cell of the underlying data structure of the container.
+ * @tparam modifiable Defines whether the ParticleIterator is modifiable or not. If it is false, it points to a const
+ * Particle.
  */
-template <class Particle, class ParticleCell>
-class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
+template <class Particle, class ParticleCell, bool modifiable>
+class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiable> {
+  using CellVecType = std::conditional_t<modifiable, std::vector<ParticleCell>, const std::vector<ParticleCell>>;
+  using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
+  using CellBorderAndFlagManagerType =
+      std::conditional_t<modifiable, internal::CellBorderAndFlagManager, const internal::CellBorderAndFlagManager>;
+
  protected:
   /**
    * Simple constructor without major calculation overhead for internal use.
@@ -35,8 +42,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * Can be nullptr if the behavior is haloAndOwned.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    */
-  explicit ParticleIterator(std::vector<ParticleCell> *cont, internal::CellBorderAndFlagManager *flagManager,
-                            IteratorBehavior behavior)
+  explicit ParticleIterator(CellVecType *cont, CellBorderAndFlagManagerType *flagManager, IteratorBehavior behavior)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
         _iteratorWithinOneCell(cont->begin()->begin()),
@@ -57,8 +63,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
    * Can be nullptr if the behavior is haloAndOwned.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    */
-  explicit ParticleIterator(std::vector<ParticleCell> *cont, size_t offset = 0,
-                            internal::CellBorderAndFlagManager *flagManager = nullptr,
+  explicit ParticleIterator(CellVecType *cont, size_t offset = 0, CellBorderAndFlagManagerType *flagManager = nullptr,
                             IteratorBehavior behavior = haloAndOwned)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
@@ -99,7 +104,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * @copydoc ParticleIteratorInterface::operator++()
    */
-  inline ParticleIterator<Particle, ParticleCell> &operator++() override {
+  inline ParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
     // this iteration is done until a proper particle is found. i.e. one that satisfies the owning state.
     do {
       if (_iteratorWithinOneCell.isValid()) {
@@ -117,18 +122,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * @copydoc ParticleIteratorInterface::operator*()
    */
-  inline Particle &operator*() const override { return _iteratorWithinOneCell.operator*(); }
-
-  /**
-   * @copydoc ParticleIteratorInterface::deleteCurrentParticle()
-   */
-  void deleteCurrentParticle() override {
-    if (_iteratorWithinOneCell.isValid()) {
-      _iteratorWithinOneCell.deleteCurrentParticle();
-    } else {
-      utils::ExceptionHandler::exception("ParticleIterator: deleting invalid particle");
-    }
-  }
+  inline ParticleType &operator*() const override { return _iteratorWithinOneCell.operator*(); }
 
   /**
    * Check whether the iterator currently points to a valid particle.
@@ -139,11 +133,27 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
            _iteratorWithinOneCell.isValid() and particleHasCorrectOwnedState();
   }
 
-  ParticleIteratorInterfaceImpl<Particle> *clone() const override {
-    return new ParticleIterator<Particle, ParticleCell>(*this);
+  ParticleIteratorInterfaceImpl<Particle, modifiable> *clone() const override {
+    return new ParticleIterator<Particle, ParticleCell, modifiable>(*this);
   }
 
  protected:
+  /**
+   * Deletes the current particle.
+   * @note This function is disabled for const iterators.
+   */
+  inline void deleteCurrentParticleImpl() override {
+    if (_iteratorWithinOneCell.isValid()) {
+      if constexpr (modifiable) {
+        _iteratorWithinOneCell.deleteCurrentParticle();
+      } else {
+        utils::ExceptionHandler::exception("Error: Trying to delete a particle through a const iterator.");
+      }
+    } else {
+      utils::ExceptionHandler::exception("ParticleIterator: deleting invalid particle");
+    }
+  }
+
   /**
    * Moves the iterator to the next non-empty cell with respect to the stride.
    */
@@ -203,24 +213,27 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle> {
   /**
    * Pointer to the cell vector.
    */
-  std::vector<ParticleCell> *_vectorOfCells;
+  CellVecType *_vectorOfCells;
+
   /**
    * Iterator for traversing the cell vector.
    */
-  typename std::vector<ParticleCell>::iterator _iteratorAcrossCells;
+  std::conditional_t<modifiable, typename CellVecType::iterator, typename CellVecType::const_iterator>
+      _iteratorAcrossCells;
+
   /**
    * Particle iterator for a single cell.
    */
-  SingleCellIteratorWrapper<Particle> _iteratorWithinOneCell;
+  SingleCellIteratorWrapper<Particle, modifiable> _iteratorWithinOneCell;
 
   /**
    * Manager providing info if cell is in halo.
    */
-  internal::CellBorderAndFlagManager *_flagManager;
+  CellBorderAndFlagManagerType *_flagManager;
 
   /**
    * The behavior of the iterator.
    */
-  IteratorBehavior _behavior;
+  const IteratorBehavior _behavior;
 };
 }  // namespace autopas::internal

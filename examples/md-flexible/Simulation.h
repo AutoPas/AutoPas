@@ -5,7 +5,6 @@
  */
 #pragma once
 
-#include <chrono>
 #include <fstream>
 #include <iostream>
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
@@ -30,7 +29,7 @@ class Simulation {
    *
    * This starts the timer for total simulation time.
    */
-  explicit Simulation() { _timers.startTotal = std::chrono::high_resolution_clock::now(); };
+  explicit Simulation() { _timers.total.start(); };
 
   /**
    * Destructor.
@@ -51,6 +50,8 @@ class Simulation {
    * @param autopas
    */
   void writeVTKFile(unsigned int iteration) {
+    _timers.vtk.start();
+
     std::string fileBaseName = _config->vtkFileName;
     // as _autopas.getNumberOfParticles return number of haloAndOwned Particles, we need number of owned Particles
     const auto numParticles = this->getNumParticles();
@@ -92,6 +93,8 @@ class Simulation {
     vtkFile << std::endl;
 
     vtkFile.close();
+
+    _timers.vtk.stop();
   }
 
   /**
@@ -101,9 +104,9 @@ class Simulation {
    */
   void initializeParticlePropertiesLibrary();
 
-  /** @brief This function
-   * -initializes the autopas Object with all member speizified in the YamlParser
-   * -initializes the simulation domain with the Object Generators
+  /**
+   * Initializes the AutoPas Object with the given config and initializes the simulation domain with the Object
+   * Generators.
    */
   void initialize(const MDFlexConfig &mdFlexConfig);
 
@@ -166,9 +169,23 @@ class Simulation {
       _timeDiscretization;
 
   struct timers {
-    long durationPositionUpdate = 0, durationForceUpdate = 0, durationVelocityUpdate = 0, durationSimulate = 0;
-    std::chrono::system_clock::time_point startTotal, stopTotal;
+    autopas::utils::Timer positionUpdate, forceUpdate, velocityUpdate, simulate, vtk, init, total, thermostat;
   } _timers;
+
+  /**
+   * Precision of floating point numbers printed.
+   */
+  constexpr static auto _floatPrecision = 3;
+
+  /**
+   * Convert a time and a name to a propperly formatted string.
+   * @param name incl. offset.
+   * @param timeMS in microseconds.
+   * @param numberWidth Width to which the time should be offset.
+   * @param maxTime if passed the percentage of timeMS of maxTime is appended.
+   * @return formatted std::string
+   */
+  std::string timerToString(std::string name, long timeMS, size_t numberWidth = 0, long maxTime = 0);
 };
 
 template <class Particle, class ParticleCell>
@@ -195,6 +212,8 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexConfig) {
+  _timers.init.start();
+
   _config = std::make_shared<MDFlexConfig>(mdFlexConfig);
   initializeParticlePropertiesLibrary();
   _timeDiscretization = std::make_unique<
@@ -229,51 +248,40 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
     streamBuf = _logFile.rdbuf();
   }
   std::ostream outputStream(streamBuf);
-  _autopas.setCutoff(cutoff);
-  _autopas.setVerletSkin(verletSkinRadius);
-  _autopas.setVerletRebuildFrequency(verletRebuildFrequency);
-  _autopas.setTuningInterval(tuningInterval);
-  _autopas.setNumSamples(tuningSamples);
-  _autopas.setSelectorStrategy(selectorStrategy);
+  _autopas.setAllowedCellSizeFactors(*cellSizeFactors);
   _autopas.setAllowedContainers(containerChoice);
-  _autopas.setAllowedTraversals(traversalOptions);
   _autopas.setAllowedDataLayouts(dataLayoutOptions);
   _autopas.setAllowedNewton3Options(newton3Options);
-  _autopas.setTuningStrategyOption(tuningStrategy);
-  _autopas.setAllowedCellSizeFactors(*cellSizeFactors);
-  _autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency);
-  autopas::Logger::get()->set_level(logLevel);
+  _autopas.setAllowedTraversals(traversalOptions);
   _autopas.setBoxMax(_config->boxMax);
   _autopas.setBoxMin(_config->boxMin);
+  _autopas.setCutoff(cutoff);
+  _autopas.setNumSamples(tuningSamples);
+  _autopas.setSelectorStrategy(selectorStrategy);
+  _autopas.setTuningInterval(tuningInterval);
+  _autopas.setTuningStrategyOption(tuningStrategy);
+  _autopas.setVerletClusterSize(_config->verletClusterSize);
+  _autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency);
+  _autopas.setVerletRebuildFrequency(verletRebuildFrequency);
+  _autopas.setVerletSkin(verletSkinRadius);
+  autopas::Logger::get()->set_level(logLevel);
   _autopas.init();
-  size_t particleIDCounter = 0;
 
   if (_config->checkpointfile != "") {
     Checkpoint<decltype(_autopas), Particle>::initDomain(_autopas, _config->checkpointfile);
   } else {
     // initializing Objects
     for (const auto &grid : cubesGrid) {
-      Generator::CubeGrid<Particle, ParticleCell>(_autopas, grid.getTypeId(), particleIDCounter, grid.getBoxMin(),
-                                                  grid.getParticlesPerDim(), grid.getParticleSpacing(),
-                                                  grid.getVelocity());
-      particleIDCounter += grid.getParticlesTotal();
+      Generator::cubeGrid<Particle, ParticleCell>(_autopas, grid);
     }
     for (const auto &cube : cubesGauss) {
-      Generator::CubeGauss<Particle, ParticleCell>(
-          _autopas, cube.getTypeId(), particleIDCounter, cube.getBoxMin(), cube.getBoxMax(), cube.getParticlesTotal(),
-          cube.getDistributionMean(), cube.getDistributionStdDev(), cube.getVelocity());
-      particleIDCounter += cube.getParticlesTotal();
+      Generator::cubeGauss<Particle, ParticleCell>(_autopas, cube);
     }
     for (const auto &cube : cubesUniform) {
-      Generator::CubeRandom<Particle, ParticleCell>(_autopas, cube.getTypeId(), particleIDCounter, cube.getBoxMin(),
-                                                    cube.getBoxMax(), cube.getParticlesTotal(), cube.getVelocity());
-      particleIDCounter += cube.getParticlesTotal();
+      Generator::cubeRandom<Particle, ParticleCell>(_autopas, cube);
     }
     for (const auto &sphere : spheres) {
-      Generator::Sphere<Particle, ParticleCell>(_autopas, sphere.getCenter(), sphere.getRadius(),
-                                                sphere.getParticleSpacing(), particleIDCounter, sphere.getTypeId(),
-                                                sphere.getVelocity());
-      particleIDCounter += sphere.getParticlesTotal();
+      Generator::sphere<Particle, ParticleCell>(_autopas, sphere);
     }
   }
   // initilizing Thermostat
@@ -288,41 +296,51 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   if (_config->useThermostat) {
     _thermostat->initialize(_autopas);
   }
+
+  _timers.init.stop();
 }
 
 template <class Particle, class ParticleCell>
 template <class FunctorType>
 void Simulation<Particle, ParticleCell>::calculateForces() {
-  std::chrono::high_resolution_clock::time_point startCalc, stopCalc;
-  startCalc = std::chrono::high_resolution_clock::now();
+  _timers.forceUpdate.start();
+
   auto functor = FunctorType(_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary);
   _autopas.iteratePairwise(&functor);
-  stopCalc = std::chrono::high_resolution_clock::now();
-  auto durationCalcF = std::chrono::duration_cast<std::chrono::microseconds>(stopCalc - startCalc).count();
-  _timers.durationForceUpdate += durationCalcF;
+
+  _timers.forceUpdate.stop();
 }
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate() {
-  std::chrono::high_resolution_clock::time_point startSim, stopSim;
-  startSim = std::chrono::high_resolution_clock::now();
-  // writes initial state of simulation as vtkFile if filename is specified
-  if ((not _config->vtkFileName.empty())) {
-    this->writeVTKFile(0);
-  }
+  _timers.simulate.start();
+
   // main simulation loop
   for (size_t iteration = 0; iteration < _config->iterations; ++iteration) {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << iteration << std::endl;
     }
+
+    // only write vtk files periodically and if a filename is given
+    if ((not _config->vtkFileName.empty()) and iteration % _config->vtkWriteFrequency == 0) {
+      this->writeVTKFile(iteration);
+    }
+
     if (_config->periodic) {
       BoundaryConditions<ParticleCell>::applyPeriodic(_autopas);
     }
-    _timers.durationPositionUpdate += _timeDiscretization->calculatePositions(_autopas);
+    _timers.positionUpdate.start();
+    _timeDiscretization->calculatePositions(_autopas);
+    _timers.positionUpdate.stop();
 
     switch (this->_config->functorOption) {
       case MDFlexConfig::FunctorOption::lj12_6: {
         this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>>();
+        break;
+      }
+      case MDFlexConfig::FunctorOption::lj12_6_Globals: {
+        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true,
+                                                 autopas::FunctorN3Modes::Both, /* globals */ true>>();
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_AVX: {
@@ -333,19 +351,24 @@ void Simulation<Particle, ParticleCell>::simulate() {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
-    _timers.durationVelocityUpdate += _timeDiscretization->calculateVelocities(_autopas);
+    _timers.velocityUpdate.start();
+    _timeDiscretization->calculateVelocities(_autopas);
+    _timers.velocityUpdate.stop();
+
     // applying Velocity scaling with Thermostat:
     if (_config->useThermostat and (iteration % _config->thermostatInterval) == 0) {
+      _timers.thermostat.start();
       _thermostat->apply(_autopas);
-    }
-    // only write vtk files periodically and if a filename is given
-    if ((not _config->vtkFileName.empty()) and iteration % _config->vtkWriteFrequency == 0) {
-      this->writeVTKFile(iteration + 1);
+      _timers.thermostat.stop();
     }
   }
 
-  stopSim = std::chrono::high_resolution_clock::now();
-  _timers.durationSimulate = std::chrono::duration_cast<std::chrono::microseconds>(stopSim - startSim).count();
+  // writes final state of the simulation
+  if ((not _config->vtkFileName.empty())) {
+    this->writeVTKFile(_config->iterations);
+  }
+
+  _timers.simulate.stop();
 }
 
 template <class Particle, class ParticleCell>
@@ -355,45 +378,52 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
 
   switch (_config->functorOption) {
     case MDFlexConfig::FunctorOption ::lj12_6: {
-      flopsPerKernelCall = autopas::LJFunctor<PrintableMolecule,
-                                              autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      flopsPerKernelCall = autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>::getNumFlopsPerKernelCall();
+      break;
+    }
+    case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
+      flopsPerKernelCall = autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true, autopas::FunctorN3Modes::Both,
+                                              /* globals */ true>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
-      flopsPerKernelCall =
-          autopas::LJFunctorAVX<PrintableMolecule,
-                                autopas::FullParticleCell<PrintableMolecule>>::getNumFlopsPerKernelCall();
+      flopsPerKernelCall = autopas::LJFunctorAVX<Particle, ParticleCell, /* mixing */ true>::getNumFlopsPerKernelCall();
       break;
     }
     default:
       throw std::runtime_error("Invalid Functor choice");
   }
 
-  _timers.stopTotal = std::chrono::high_resolution_clock::now();
-  auto durationTotal =
-      std::chrono::duration_cast<std::chrono::microseconds>(_timers.stopTotal - _timers.startTotal).count();
-  auto durationTotalSec = durationTotal * 1e-6;
-  auto durationSimulateSec = _timers.durationSimulate * 1e-6;
+  auto durationTotal = _timers.total.stop();
+  auto durationSimulateSec = _timers.simulate.getTotalTime() * 1e-6;
+
+  // take total time as base for formatting since this should be the longest
+  auto digitsTimeTotalMuS = std::to_string(durationTotal).length();
 
   // time statistics
-  cout << "Simulation duration without initilization: " << _timers.durationSimulate << " \u03bcs" << endl;
+  //  cout << "Simulation duration without initilization: " << _timers.durationSimulate << " \u03bcs" << endl;
   // Statistics
-  cout << fixed << setprecision(3);
+  cout << fixed << setprecision(_floatPrecision);
   cout << endl << "Measurements:" << endl;
-  cout << "Time total   : " << durationTotal << " \u03bcs (" << durationTotalSec << "s)" << endl;
-  cout << "Duration of Physics Calculations: " << endl;
-  cout << "Force:   " << _timers.durationForceUpdate << " \u03bcs (" << _timers.durationForceUpdate * 1e-6 << "s)"
+  cout << timerToString("Time total      ", durationTotal, digitsTimeTotalMuS) << endl;
+  cout << timerToString("  Force         ", _timers.forceUpdate.getTotalTime(), digitsTimeTotalMuS, durationTotal)
        << endl;
-  cout << "Postion: " << _timers.durationPositionUpdate << " \u03bcs (" << _timers.durationPositionUpdate * 1e-6 << "s)"
+  cout << timerToString("  Position      ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalMuS, durationTotal)
        << endl;
-  cout << "Velocity " << _timers.durationVelocityUpdate << " \u03bcs (" << _timers.durationVelocityUpdate * 1e-6 << "s)"
+  cout << timerToString("  Velocity      ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalMuS, durationTotal)
        << endl;
+  cout << timerToString("  VTK           ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
+  cout << timerToString("  Initialization", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
+  if (_config->useThermostat) {
+    cout << timerToString("  Thermostat    ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
+  }
 
   auto numIterations = _config->iterations;
 
   if (numIterations > 0) {
-    cout << "One iteration: " << _timers.durationSimulate / numIterations << " \u03bcs ("
-         << durationSimulateSec / numIterations << "s)" << endl;
+    cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / numIterations, digitsTimeTotalMuS,
+                          durationTotal)
+         << endl;
   }
   auto mfups = _autopas.getNumberOfParticles() * numIterations / durationSimulateSec * 1e-6;
   cout << "MFUPs/sec    : " << mfups << endl;
@@ -421,4 +451,17 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
 template <class Particle, class ParticleCell>
 const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &Simulation<Particle, ParticleCell>::getPpl() const {
   return _particlePropertiesLibrary;
+}
+template <class Particle, class ParticleCell>
+
+std::string Simulation<Particle, ParticleCell>::timerToString(std::string name, long timeMS, size_t numberWidth,
+                                                              long maxTime) {
+  std::ostringstream ss;
+  ss << std::fixed << std::setprecision(_floatPrecision);
+  ss << name << " : " << std::setw(numberWidth) << std::right << timeMS << " \u03bcs (" << ((double)timeMS * 1e-6)
+     << "s)";
+  if (maxTime != 0) {
+    ss << " =" << std::setw(7) << std::right << ((double)timeMS / (double)maxTime * 100) << "%";
+  }
+  return ss.str();
 }

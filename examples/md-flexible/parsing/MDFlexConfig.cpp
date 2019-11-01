@@ -5,6 +5,7 @@
  */
 
 #include "MDFlexConfig.h"
+#include "autopas/utils/StringUtils.h"
 
 void MDFlexConfig::print() {
   using namespace std;
@@ -48,6 +49,10 @@ void MDFlexConfig::print() {
       cout << "Lennard-Jones (12-6) AVX intrinsics" << endl;
       break;
     }
+    case FunctorOption::lj12_6_Globals: {
+      cout << "Lennard-Jones (12-6) with globals" << endl;
+      break;
+    }
   }
   cout << setw(valueOffset) << left << "Newton3"
        << ":  " << autopas::utils::StringUtils::iterableToString(newton3Options) << endl;
@@ -72,25 +77,25 @@ void MDFlexConfig::print() {
   int objectId = 1;
   for (auto c : cubeGridObjects) {
     cout << "-Cube Grid Nr " << objectId << ":  " << endl;
-    c.printConfig();
+    cout << c << endl;
     objectId++;
   }
   objectId = 1;
   for (auto c : cubeGaussObjects) {
     cout << "-Cube Gauss Nr" << objectId << ":  " << endl;
-    c.printConfig();
+    cout << c << endl;
     objectId++;
   }
   objectId = 1;
   for (auto c : cubeUniformObjects) {
     cout << "-Cube Uniform Nr " << objectId << ":  " << endl;
-    c.printConfig();
+    cout << c << endl;
     objectId++;
   }
   objectId = 1;
   for (auto c : sphereObjects) {
     cout << "-Sphere Nr " << objectId << ":  " << endl;
-    c.printConfig();
+    cout << c << endl;
     objectId++;
   }
   if (useThermostat) {
@@ -158,6 +163,10 @@ void MDFlexConfig::calcSimulationBox() {
   }
   // needed for 2D Simulation, that BoxLength >= interactionLength for all Dimensions
   for (int i = 0; i < 3; i++) {
+    // pad domain such that periodic boundaries can work.
+    boxMin[i] -= particleSpacing / 2;
+    boxMax[i] += particleSpacing / 2;
+
     if (boxMax[i] - boxMin[i] < interactionLength) {
       std::cout << "WARNING: Simulation box in dimension " << i
                 << " is shorter than interaction length and will be increased." << std::endl;

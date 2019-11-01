@@ -15,7 +15,7 @@
 
 class AoSvsCudaTest : public AutoPasTestBase {
  public:
-  void generateParticles(std::vector<autopas::MoleculeLJ<>> *particles);
+  void generateParticles(std::vector<Molecule> *particles);
 };
 
 #endif  // AUTOPAS_CUDA

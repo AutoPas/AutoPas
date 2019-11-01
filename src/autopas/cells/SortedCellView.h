@@ -18,8 +18,9 @@
 namespace autopas {
 
 /**
- * This class defines a sorted view on a given ParticleCell. Particles are sorted along the normalized vector r. The
- * projected position of a particle as well as a pointer to the underlying particle are stored in a vector, which is
+ * This class defines a sorted view on a given ParticleCell. Particles are sorted along the normalized vector r.
+ * \image html SortingPrinciple.png "Projection of particles in 2D"
+ * The projected position of a particle as well as a pointer to the underlying particle are stored in a vector, which is
  * sorted by the projected positions.
  * @note Insertion, deletion and change of position of particles invalidates the view.
  * @tparam Particle
@@ -46,7 +47,9 @@ class SortedCellView : public ParticleCell<Particle> {
    */
   void addParticle(const Particle &p) override {}
 
-  SingleCellIteratorWrapper<Particle> begin() override { return _cell->begin(); }
+  SingleCellIteratorWrapper<Particle, true> begin() override { return _cell->begin(); }
+
+  SingleCellIteratorWrapper<Particle, false> begin() const override { return std::as_const(*_cell).begin(); }
 
   unsigned long numParticles() const override { return _particles.size(); }
 
@@ -69,11 +72,6 @@ class SortedCellView : public ParticleCell<Particle> {
   void setCellLength(std::array<double, 3> &cellLength) override { _cell->setCellLength(cellLength); }
 
   std::array<double, 3> getCellLength() const override { return _cell->getCellLength(); }
-
-  /**
-   * Type of the internal iterator.
-   */
-  typedef internal::SingleCellIterator<Particle, SortedCellView<Particle, ParticleCellType>> iterator_t;
 
   /**
    * Sorted vector of projected positions and particle pointers.

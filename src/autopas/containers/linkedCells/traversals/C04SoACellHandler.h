@@ -6,9 +6,7 @@
 
 #pragma once
 
-#include <error.h>
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -22,7 +20,7 @@ namespace autopas {
  * After executing the base step on all cells all pairwise interactions for
  * all cells are done.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell the type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam useSoA
  * @tparam useNewton3
@@ -34,14 +32,14 @@ class C04SoACellHandler {
    * Constructor of the c04 traversal with combined SoA buffers.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cellsPerDimension The number of cells per dimension.
-   * @param cutoff Cutoff radius.
+   * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    */
   explicit C04SoACellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
-                             const double cutoff = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0},
+                             const double interactionLength, const std::array<double, 3> &cellLength,
                              const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
-      : _cutoff(cutoff),
+      : _interactionLength(interactionLength),
         _cellLength(cellLength),
         _overlap(overlap),
         _cellsPerDimension(cellsPerDimension),
@@ -75,12 +73,12 @@ class C04SoACellHandler {
   void computeOffsets(std::array<unsigned long, 3> cellsPerDimension);
 
   /**
-   * cutoff radius.
+   * Interaction Length (cutoff + skin).
    */
-  const double _cutoff;
+  const double _interactionLength;
 
   /**
-   * cell length in CellBlock3D.
+   * Cell length in CellBlock3D.
    */
   const std::array<double, 3> _cellLength;
 
@@ -92,17 +90,17 @@ class C04SoACellHandler {
   const std::array<unsigned long, 3> _cellsPerDimension;
 
   /**
-   * Cells containing combined SoA buffers
+   * Cells containing combined SoA buffers.
    */
   std::vector<std::vector<ParticleCell>> _combinationSlices;
 
   /**
-   * Current position in circular buffer for each thread
+   * Current position in circular buffer for each thread.
    */
   std::vector<unsigned int> _currentSlices;
 
   /**
-   * cell offsets of "base plate"
+   * Cell offsets of "base plate".
    */
   std::vector<std::vector<unsigned long>> _baseOffsets;
 
@@ -112,12 +110,12 @@ class C04SoACellHandler {
   using interval_t = std::pair<unsigned long, unsigned long>;
 
   /**
-   * Interactions cell <-> baseplate intervall
+   * Interactions cell <-> baseplate interval.
    */
   std::vector<std::vector<std::pair<unsigned long, interval_t>>> _offsets;
 
   /**
-   * Partial sums of sizes of combined buffers to determine start and end quickly
+   * Partial sums of sizes of combined buffers to determine start and end quickly.
    */
   std::vector<std::vector<std::vector<unsigned long>>> _combinationSlicesOffsets;
 
@@ -140,10 +138,10 @@ class C04SoACellHandler {
    * @param bufferSlice Index of slice in combinationSlice (source)
    * @param cellSlice Index of slice in _baseOffsets (destination)
    */
-  void writeBufferIntoCell(std::vector<ParticleCell> &cells, const unsigned long baseIndex,
+  void writeBufferIntoCell(std::vector<ParticleCell> &cells, unsigned long baseIndex,
                            std::vector<ParticleCell> &combinationSlice,
-                           std::vector<std::vector<unsigned long>> &combinationSlicesOffsets,
-                           const unsigned long bufferSlice, const unsigned long cellSlice);
+                           std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, unsigned long bufferSlice,
+                           unsigned long cellSlice);
 
   /**
    * Writes cell content into buffer.
@@ -154,13 +152,13 @@ class C04SoACellHandler {
    * @param bufferSlice Index of slice in combinationSlice (destination)
    * @param cellSlice Index of slice in _baseOffsets (source)
    */
-  void writeCellIntoBuffer(const std::vector<ParticleCell> &cells, const unsigned long baseIndex,
+  void writeCellIntoBuffer(const std::vector<ParticleCell> &cells, unsigned long baseIndex,
                            std::vector<ParticleCell> &combinationSlice,
-                           std::vector<std::vector<unsigned long>> &combinationSlicesOffsets,
-                           const unsigned int bufferSlice, const unsigned int cellSlice);
+                           std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, unsigned int bufferSlice,
+                           unsigned int cellSlice);
 
   /**
-   * Creates offset intervals (stored in offset) from cellPairOffsets
+   * Creates offset intervals (stored in offset) from cellPairOffsets.
    * @param cellPairOffsets Source for interval creation.
    */
   void setupIntervals(std::vector<std::vector<std::pair<unsigned long, unsigned long>>> &cellPairOffsets);
@@ -195,7 +193,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
   for (unsigned long slice = 0; slice < numSlices; slice++) {
     for (auto const &[offset1, interval] : _offsets[(slice + currentSlice) % numSlices]) {
       ParticleCell *cell1 = nullptr;
-      size_t cell1ViewStart;
+      size_t cell1ViewStart = 0;
       size_t cell1ViewEnd;
 
       // special cases (cell1 one is also stored in a combination slice)
@@ -205,10 +203,9 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
         if (numParticlesBaseCell == 0) {
           continue;
         }
-        // two cases intervall in current  stripe
+        // two cases interval in current  stripe
         cell1 = &combinationSlice[currentSlice];
         auto stripeView = cell1->_particleSoABuffer.constructView(0, numParticlesBaseCell);
-        cell1ViewStart = 0;
         if (slice == currentSlice) {
           // process stripe with itself
           _pairwiseFunctor->SoAFunctor(stripeView, useNewton3);
@@ -235,12 +232,10 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
           continue;
         }
         cell1 = &combinationSlice[index];
-        cell1ViewStart = 0;
         cell1ViewEnd = combinationSlicesOffsets[index][1];
       } else {
         const unsigned long cellIndex1 = baseIndex + offset1;
         cell1 = &cells[cellIndex1];
-        cell1ViewStart = 0;
         cell1ViewEnd = cell1->_particleSoABuffer.getNumParticles();
       }
 
@@ -344,7 +339,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
   cellPairOffsets.clear();
   cellPairOffsets.resize(overlap_1[0]);
 
-  const auto cutoffSquare(this->_cutoff * this->_cutoff);
+  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
 
   for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
     for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
@@ -364,7 +359,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
           auto distVec =
               ArrayMath::mul({std::max(0.0, x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
           const auto distSquare = ArrayMath::dot(distVec, distVec);
-          if (distSquare <= cutoffSquare) {
+          if (distSquare <= interactionLengthSquare) {
             cellPairOffsets[x].push_back(make_pair(cellOffsets[z], offset));
           }
         }
@@ -374,7 +369,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
           auto distVec = ArrayMath::mul(
               {std::max(0.0, x - 1.0), std::max(0.0, _overlap[1] - y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
           const auto distSquare = ArrayMath::dot(distVec, distVec);
-          if (distSquare <= cutoffSquare) {
+          if (distSquare <= interactionLengthSquare) {
             cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared - ov1 + z], offset));
           }
         }
@@ -384,7 +379,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
           auto distVec = ArrayMath::mul(
               {std::max(0.0, _overlap[0] - x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
           const auto distSquare = ArrayMath::dot(distVec, distVec);
-          if (distSquare <= cutoffSquare) {
+          if (distSquare <= interactionLengthSquare) {
             cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared * _overlap[0] + z], offset));
           }
         }
@@ -395,7 +390,7 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewt
               {std::max(0.0, _overlap[0] - x - 1.0), std::max(0.0, _overlap[1] - y - 1.0), std::max(0.0, z - 1.0)},
               _cellLength);
           const auto distSquare = ArrayMath::dot(distVec, distVec);
-          if (distSquare <= cutoffSquare) {
+          if (distSquare <= interactionLengthSquare) {
             cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared * ov1 - ov1 + z], offset));
           }
         }

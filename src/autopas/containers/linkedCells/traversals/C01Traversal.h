@@ -20,9 +20,55 @@ namespace autopas {
  * This class provides the c01 traversal and the c01 traversal with combined SoA buffers.
  *
  * The traversal uses the c01 base step performed on every single cell.
+ * \image html C01.png "C01 base step in 2D. (dark blue cell = base cell)"
  * newton3 cannot be applied!
- * If combineSoA equals true, SoA buffers are combined slice-wise. Each slice is constructed as FIFO buffer and slices
+ * If combineSoA equals true, SoA buffers are combined slice-wise, as described below.
+ *
+ * Each slice is constructed as FIFO buffer and slices
  * are stored in circular buffer (_combinationSlices).
+ *
+ * <b>Combination Principle</b>
+ *
+ * The sphere of interacting cells is divided into slices along the y-axis, as seen in Figure 1. Each
+slice represents a combined SoA buffer. We assume that the creation of combined SoA buffers starts at the
+first evaluated cell of an axis. Since there is no previously evaluated cell on the beginning of the axis, the whole
+buffer is initially filled by copying the data from the cells. The combined SoA buffers are stored in a circular/ring
+buffer (_combinationSlices), shown in Figure 2. To keep track of the position of the first slice inside the circular
+buffer, an additional variable for the start index (_currentSlices) is necessary which is initialized to zero. Inside
+the combined SoA buffer, the particles are ordered according their insertion. Note, that the base cell (dark blue)
+always represents the first cell in the slice buffer.
+
+Now, all interactions can be calculated by iterating over all slices and compute the interactions with the current base
+cell. Since information in the buffers is not persistent, it is important to use the SoA buffer of the base cell
+and not the copy inside of the combined buffer. If the current base cell interacts with the slice which contains a copy
+of the base cell, it is necessary to exclude the copy from the calculations. Otherwise, particles would interact with
+themselves. It is not possible to remove the copy from the buffer slice, since the current base cell is an interacting
+cell of the next base cell. Therefore, the SoA data structure defines a custom view on
+the underlying data structure. Since the copy of the current base cell is the first cell in the buffer slice, it is
+possible to set the start of the view to the first particle after the base cell.
+
+In the next step, the sphere of interactions moves one cell further. Figure 1 shows that most of the new
+and old interaction cells are the same. To reduce the number of copies, we'll keep the combined SoA buffers from
+the previous step and only apply an update to them. Here, the symmetry of interactions can be exploited. Each combined
+SoA buffer is a LIFO (Last In, First Out) buffer, meaning that they are demolished in the reverse order of their
+construction. This effect can be seen as well in the circular buffer (Figure 2). The former leftmost slice goes
+completely out of scope and can be deleted from the circular buffer. The position of this slice inside the circular
+buffer is represented by the start index inside the buffer. At the same time, a new SoA buffer is created to represent
+the rightmost slice, which has just entered the interaction sphere. This slice is written on the same index inside the
+SoA buffer as the former leftmost slice. Since the first slice has moved inside the circular buffer, the start index is
+incremented. Due to the circular characteristics, an additional modulo operation is applied to the start index to jump
+back to the first slice in the ring buffer if the end is reached. At this point, the buffer is fully updated and all
+interactions can be evaluated. This procedure is repeated until the end of the axis is reached.
+
+Since the offsets of the interacting cells relative to the base cell do not change during the traversal, they can be
+computed beforehand. All offsets are stored in a 2D-array (_cellOffsets) where the first dimension represents the
+individual slices of the interaction sphere and the second dimension represents the cell offsets inside the slice. The
+cell offsets are sorted to resemble the order of growth/destruction of the combined SoA buffers. This is important since
+the initialized buffer must show the same behavior as a buffer which was updated multiple times.
+ *
+ * \image html C01_combined.png "Figure 1: Movement of the interaction sphere in 2D. (dark blue cell = base cell)"
+ * \image html C01_combined_cache.png "Figure 2: Evolution of the circular buffer."
+ * \image html C01_combined_legend.png
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
@@ -43,14 +89,16 @@ class C01Traversal
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length in CellBlock3D
+   * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
+   * in that case the interactionLength is needed!
    */
   explicit C01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                        const double interactionLength = 1.0, const std::array<double, 3> &cellLength = {1.0, 1.0, 1.0})
+                        const double interactionLength, const std::array<double, 3> &cellLength)
       : C01BasedTraversal < ParticleCell,
       PairwiseFunctor, DataLayout, useNewton3,
       (combineSoA) ? 2 : 3 > (dims, pairwiseFunctor, interactionLength, cellLength),
-      _cellFunctor(pairwiseFunctor, interactionLength), _pairwiseFunctor(pairwiseFunctor),
-      _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
+      _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
+      _pairwiseFunctor(pairwiseFunctor), _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
     computeOffsets();
   }
 
@@ -75,15 +123,8 @@ class C01Traversal
    * @return
    */
   bool isApplicable() const override {
-    int nDevices = 0;
-#if defined(AUTOPAS_CUDA)
-    cudaGetDeviceCount(&nDevices);
-#endif
-    if (DataLayout == DataLayoutOption::cuda) {
-      return (not useNewton3) and (nDevices > 0) and not combineSoA;
-    } else {
-      return not useNewton3 and not(combineSoA && DataLayout != DataLayoutOption::soa);
-    }
+    return not(DataLayout == DataLayoutOption::cuda) and not useNewton3 and
+           not(combineSoA && DataLayout != DataLayoutOption::soa);
   }
 
   TraversalOption getTraversalType() const override {
