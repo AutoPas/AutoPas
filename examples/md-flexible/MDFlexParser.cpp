@@ -191,6 +191,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         if (parsedStrategies.size() != 1) {
           cerr << "Please provide exactly one selector strategy. Parsed strategies are: "
                << iterableToString(parsedStrategies) << endl;
+          displayHelp = true;
         }
         selectorStrategy = *parsedStrategies.begin();
         if (selectorStrategy == autopas::SelectorStrategyOption()) {
