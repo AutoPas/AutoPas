@@ -89,11 +89,11 @@ static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
 
 /**
  * Lists all traversal options applicable for the given container.
- * @param container ContainerOption
+ * @param containerOption ContainerOption
  * @return set of all applicable traversal options.
  */
-static inline const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption container) {
-  switch (container) {
+static inline const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption containerOption) {
+  switch (containerOption) {
     case ContainerOption::linkedCells: {
       return allLCCompatibleTraversals();
     }
@@ -118,7 +118,7 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
   }
 
   autopas::utils::ExceptionHandler::exception("CompatibleTraversals: Unknown container option {}!",
-                                              container.to_string());
+                                              containerOption.to_string());
 
   static const std::set<TraversalOption> s{};
   return s;
@@ -126,15 +126,15 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
 
 /**
  * Lists all container options which given traversal can be applied to.
- * @param traversal TraversalOption
+ * @param traversalOption TraversalOption
  * @return set of all compatible container options.
  */
-static inline std::set<ContainerOption> allCompatibleContainers(TraversalOption traversal) {
+static inline std::set<ContainerOption> allCompatibleContainers(TraversalOption traversalOption) {
   std::set<ContainerOption> result{};
 
   for (const auto &container : ContainerOption::getAllOptions()) {
     auto allCompatible = compatibleTraversals::allCompatibleTraversals(container);
-    if (allCompatible.find(traversal) != allCompatible.end()) {
+    if (allCompatible.find(traversalOption) != allCompatible.end()) {
       result.insert(container);
     }
   }
