@@ -57,7 +57,7 @@ void GaussianGenerator::fillWithParticles(autopas::AutoPas<Particle, ParticleCel
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     std::array<double, 3> position = {distributions[0](generator), distributions[1](generator),
                                       distributions[2](generator)};
-    // assert that position is valid
+    // verifies that position is valid
     for (size_t attempts = 1; attempts <= _maxAttempts and (not autopas::utils::inBox(position, boxMin, boxMax));
          ++attempts) {
       if (attempts == _maxAttempts) {
