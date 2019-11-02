@@ -17,42 +17,93 @@
 // parseOptions tests
 // these tests shall not (yet :) be generated since we here want to pass strings that do not match exactly.
 
+/**
+ * The parseXXXOptionsTests define a mapping of enums to strings. It is then tested if parseOptions
+ * can correctly parse them individually or all at once.
+ */
+
 TEST(OptionTest, parseTraversalOptionsTest) {
-  testParseMultiple<autopas::TraversalOption>(
-      autopas::TraversalOption::getAllOptions(),
-      "c01, c04, c08, c18, c04-soa, direct, slicedv01, verletc18, verlec01, verlet-sliced, "
-      "cudac01, verletlists, c01-combined, verlet-clusters, var-verlet-lists-as-build, verlet-clusters-coloring, "
-      "verlet-cluster-cells",
-      autopas::TraversalOption::parseOptions);
+  std::map<autopas::TraversalOption, std::string> mapEnumString = {
+      {autopas::TraversalOption::c01, "c01"},
+      {autopas::TraversalOption::c01Verlet, "verlec01"},
+      {autopas::TraversalOption::c01CombinedSoA, "c01-combined"},
+      {autopas::TraversalOption::c01Cuda, "cudac01"},
+      {autopas::TraversalOption::c04, "c04"},
+      {autopas::TraversalOption::c04SoA, "c04-soa"},
+      {autopas::TraversalOption::c08, "c08"},
+      {autopas::TraversalOption::c18, "c18"},
+      {autopas::TraversalOption::c18Verlet, "verletc18"},
+      {autopas::TraversalOption::directSumTraversal, "direct"},
+      {autopas::TraversalOption::sliced, "slicedv01"},
+      {autopas::TraversalOption::slicedVerlet, "verlet-sliced"},
+      {autopas::TraversalOption::varVerletTraversalAsBuild, "var-verlet-lists-as-build"},
+      {autopas::TraversalOption::verletClusterCells, "verlet-cluster-cells"},
+      {autopas::TraversalOption::verletClusters, "verlet-clusters"},
+      {autopas::TraversalOption::verletClustersColoring, "verlet-clusters-coloring"},
+      {autopas::TraversalOption::verletTraversal, "verletlists"},
+  };
+
+  EXPECT_EQ(mapEnumString.size(), autopas::TraversalOption::getOptionNames().size());
+
+  testParseOptionsIndividually(mapEnumString);
+  testParseOptionsCombined(mapEnumString);
 }
 
 TEST(OptionTest, parseContainerOptionsTest) {
-  testParseMultiple<autopas::ContainerOption>(
-      autopas::ContainerOption::getAllOptions(),
-      "directSum, linkedCells, verletLists, verletLists-cells, vclusterlists, varVerletListsAsBuild, vclustercells",
-      autopas::ContainerOption::parseOptions);
+  std::map<autopas::ContainerOption, std::string> mapEnumString = {
+      {autopas::ContainerOption::directSum, "directSum"},
+      {autopas::ContainerOption::linkedCells, "linkedCells"},
+      {autopas::ContainerOption::varVerletListsAsBuild, "varVerletListsAsBuild"},
+      {autopas::ContainerOption::verletClusterCells, "vclustercells"},
+      {autopas::ContainerOption::verletClusterLists, "vclusterlists"},
+      {autopas::ContainerOption::verletLists, "verletLists"},
+      {autopas::ContainerOption::verletListsCells, "verletLists-cells"},
+  };
+
+  EXPECT_EQ(mapEnumString.size(), autopas::ContainerOption::getOptionNames().size());
+
+  testParseOptionsIndividually(mapEnumString);
+  testParseOptionsCombined(mapEnumString);
 }
 
 TEST(OptionTest, parseDataLayoutOptionsTest) {
+  std::map<autopas::DataLayoutOption, std::string> mapEnumString = {
+    {autopas::DataLayoutOption::aos, "aos"},
+    {autopas::DataLayoutOption::soa, "soa"},
 #if defined(AUTOPAS_CUDA)
-  auto options = "cuda, soa, aos";
-#else
-  auto options = "soa, aos";
+    {autopas::DataLayoutOption::cuda, "cuda"},
 #endif
-  testParseMultiple<autopas::DataLayoutOption>(autopas::DataLayoutOption::getAllOptions(), options,
-                                               autopas::DataLayoutOption::parseOptions);
+  };
+
+  EXPECT_EQ(mapEnumString.size(), autopas::DataLayoutOption::getOptionNames().size());
+
+  testParseOptionsIndividually(mapEnumString);
+  testParseOptionsCombined(mapEnumString);
 }
 
 TEST(OptionTest, parseSelectorOptionsTest) {
-  testParseSingle<autopas::SelectorStrategyOption>(autopas::SelectorStrategyOption::getAllOptions(),
-                                                   {"absolute", "median", "mean"},
-                                                   autopas::SelectorStrategyOption::parseOptions);
+  std::map<autopas::SelectorStrategyOption, std::string> mapEnumString = {
+      {autopas::SelectorStrategyOption::fastestAbs, "absolute"},
+      {autopas::SelectorStrategyOption::fastestMean, "mean"},
+      {autopas::SelectorStrategyOption::fastestMedian, "median"},
+  };
+
+  EXPECT_EQ(mapEnumString.size(), autopas::SelectorStrategyOption::getOptionNames().size());
+
+  testParseOptionsIndividually(mapEnumString);
+  testParseOptionsCombined(mapEnumString);
 }
 
 TEST(OptionTest, parseTuningStrategyOptionsTest) {
-  testParseSingle<autopas::TuningStrategyOption>(autopas::TuningStrategyOption::getAllOptions(),
-                                                 {"full-search", "bayesian-search"},
-                                                 autopas::TuningStrategyOption::parseOptions);
+  std::map<autopas::TuningStrategyOption, std::string> mapEnumString = {
+      {autopas::TuningStrategyOption::bayesianSearch, "bayesian-search"},
+      {autopas::TuningStrategyOption::fullSearch, "full-search"},
+  };
+
+  EXPECT_EQ(mapEnumString.size(), autopas::TuningStrategyOption::getOptionNames().size());
+
+  testParseOptionsIndividually(mapEnumString);
+  testParseOptionsCombined(mapEnumString);
 }
 
 // Generated tests for all option types
@@ -64,22 +115,13 @@ TYPED_TEST_SUITE_P(OptionTest);
  * tests parseOptionExact against the strings from getAllOptionNames.
  */
 TYPED_TEST_P(OptionTest, parseExactOptionsTest) {
-  std::vector<std::string> allOptionNames;
-  allOptionNames.reserve(TypeParam::getAllOptions().size());
+  auto mapOptionEnumString = TypeParam::getOptionNames();
+  ASSERT_THAT(mapOptionEnumString, ::testing::SizeIs(::testing::Ge(1)));
 
-  for (auto [_, optionName] : TypeParam::getOptionNames()) {
-    allOptionNames.push_back(optionName);
+  for (auto &[optionEnum, optionString] : mapOptionEnumString) {
+    auto parsedOption = TypeParam::parseOptionExact(optionString);
+    EXPECT_EQ(parsedOption, optionEnum);
   }
-  ASSERT_EQ(TypeParam::getAllOptions().size(), allOptionNames.size()) << "Not all options tested!";
-
-  std::set<TypeParam> allParsedOptions;
-
-  for (auto &string : allOptionNames) {
-    auto parsedOption = TypeParam::parseOptionExact(string);
-    allParsedOptions.insert(parsedOption);
-  }
-
-  ASSERT_THAT(allParsedOptions, ::testing::ElementsAreArray(TypeParam::getAllOptions()));
 }
 
 // to_string tests
@@ -88,8 +130,8 @@ TYPED_TEST_P(OptionTest, parseExactOptionsTest) {
  */
 TYPED_TEST_P(OptionTest, to_stringTest) {
   // good options
-  for (auto &op : TypeParam::getAllOptions()) {
-    EXPECT_THAT(op.to_string(), Not(::testing::HasSubstr("Unknown")));
+  for (auto &[optionEnum, optionString] : TypeParam::getOptionNames()) {
+    EXPECT_EQ(optionEnum.to_string(), optionString);
   }
 
   // bad Options

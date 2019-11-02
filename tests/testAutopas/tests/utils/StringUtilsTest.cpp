@@ -7,7 +7,9 @@
 #include "StringUtilsTest.h"
 
 TEST(StringUtilsTest, parseDoublesTest) {
-  testParseMultiple<double>({1., 1.5, 2., 3., 20.}, "1.,1.5, 2,3.00,2e1", autopas::utils::StringUtils::parseDoubles);
+  auto parsedOptions = autopas::utils::StringUtils::parseDoubles("1.,1.5, 2,3.00,2e1");
+
+  EXPECT_THAT(parsedOptions, ::testing::ElementsAreArray({1., 1.5, 2., 3., 20.}));
 }
 
 TEST(StringUtilsTest, parseNumberSetTest) {

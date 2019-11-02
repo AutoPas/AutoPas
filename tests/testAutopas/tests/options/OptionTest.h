@@ -18,24 +18,34 @@ template <typename T>
 class OptionTest : public AutoPasTestBase {};
 
 /**
- * Tests a parsing function which takes a string and returns a value in a set of size one.
+ * For each map entry it is tested if the string can be parsed to the respective enum with parseOptions.
  * @tparam T Type of the object resulting form parsing.
- * @param allOptions Set of all expected options.
- * @param optionsStrings Vector of strings that shall be parsed.
- * @param parseFun Parsing function.
+ * @param mapOptionString mapping of enums to strings.
  */
 template <class T>
-void testParseSingle(const std::set<T> &allOptions, const std::vector<std::string> &optionsStrings,
-                     std::function<std::set<T>(const std::string &)> &&parseFun) {
-  ASSERT_EQ(allOptions.size(), optionsStrings.size()) << "Not all options tested!";
-
-  std::set<T> allParsedOptions;
-
-  for (auto &string : optionsStrings) {
-    auto parsedOptions = parseFun(string);
+void testParseOptionsIndividually(const std::map<T, std::string> &mapOptionString) {
+  for (auto &[optionEnum, optionString] : mapOptionString) {
+    auto parsedOptions = T::parseOptions(optionString);
     EXPECT_THAT(parsedOptions, ::testing::SizeIs(1));
-    allParsedOptions.insert(*parsedOptions.begin());
+    EXPECT_EQ(*(parsedOptions.begin()), optionEnum)
+        << "Option " << optionEnum.to_string() << " was not correctly parsed!";
+  }
+}
+
+/**
+ * Tests if parseOptions can parse all options when all strings of the map are combined to one.
+ * @tparam T Type of the object resulting form parsing.
+ * @param mapOptionString mapping of enums to strings.
+ */
+template <class T>
+void testParseOptionsCombined(const std::map<T, std::string> &mapOptionString) {
+  std::ostringstream allOptionsStringStream;
+
+  // merge all strings in one separated by a legal delimiter. We don't care for the trailing comma
+  for (auto &[_, optionString] : mapOptionString) {
+    allOptionsStringStream << optionString << ", ";
   }
 
-  ASSERT_THAT(allParsedOptions, ::testing::ElementsAreArray(allOptions));
+  auto parsedOptions = T::parseOptions(allOptionsStringStream.str());
+  EXPECT_EQ(parsedOptions.size(), mapOptionString.size()) << "Incorrect number of options parsed!";
 }
