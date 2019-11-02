@@ -8,8 +8,8 @@
 #pragma once
 
 #include <array>
-#include "autopas/pairwiseFunctors/FunctorCuda.cuh"
-#include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
+#include "autopas/molecularDynamics/FunctorCuda.cuh"
+#include "autopas/molecularDynamics/LJFunctorCuda.cuh"
 #include "cuda_runtime.h"
 
 namespace autopas {
