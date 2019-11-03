@@ -4,6 +4,9 @@
  * @author Joachim Marin
  */
 
+#include <getopt.h>
+#include <exception>
+#include <iomanip>
 #include <iostream>
 #include <random>
 #include "AdaptiveOctree.h"
@@ -14,15 +17,15 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
 
-autopas::utils::Timer timer = autopas::utils::Timer();
+autopas::utils::Timer *timer;
 int particleId = 0;
 
 unsigned long long nearFieldCalculations = 0;
 unsigned long long exactCalculations = 0;
 
 double measureTime() {
-  double ret = timer.stop();
-  timer.start();
+  double ret = timer->stop();
+  timer->start();
   return ret;
 }
 
@@ -238,6 +241,7 @@ void generateParticleList(OctreeNode &node, std::vector<FmmParticle *> &particle
 }
 
 int main(int argc, char **argv) {
+  // Default parameters
   int orderOfExpansion = 9;
   int maxParticlesPerNode = 16;
   int numberOfParticles = 500;
@@ -245,18 +249,103 @@ int main(int argc, char **argv) {
   int minDepth = 2;
   int maxDepth = 2;
 
-  timer.start();
+  bool displayHelp = false;
+  int option, option_index;
+  // clang-format off
+  static struct option long_options[] = {{"help", no_argument, nullptr, 'h'},
+                                         {"order", required_argument, nullptr, 'o'},
+                                         {"particles-per-cell", required_argument, nullptr, 'p'},
+                                         {"particles-total", required_argument, nullptr, 'n'},
+                                         {"depth-min", required_argument, nullptr, 'm'},
+                                         {"depth-max", required_argument, nullptr, 'M'},
+                                         {nullptr, 0, nullptr, 0}};
+  // clang-format on
 
-  if (argc == 6) {
-    orderOfExpansion = static_cast<int>(std::strtol(argv[1], nullptr, 10));
-    maxParticlesPerNode = static_cast<int>(std::strtol(argv[2], nullptr, 10));
-    numberOfParticles = static_cast<int>(std::strtol(argv[3], nullptr, 10));
-    minDepth = static_cast<int>(std::strtol(argv[4], nullptr, 10));
-    maxDepth = static_cast<int>(std::strtol(argv[5], nullptr, 10));
+  std::string strArg;
+  while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
+    if (optarg != nullptr) strArg = optarg;
+    transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
+    switch (option) {
+      case 'h': {
+        displayHelp = true;
+        break;
+      }
+      case 'o': {
+        try {
+          orderOfExpansion = static_cast<int>(std::stoi(strArg));
+        } catch (const std::exception &) {
+          std::cerr << "Error parsing order of expansion: " << optarg << std::endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'p': {
+        try {
+          maxParticlesPerNode = static_cast<int>(std::stoi(strArg));
+        } catch (const std::exception &) {
+          std::cerr << "Error parsing maximum particles per cell: " << optarg << std::endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'n': {
+        try {
+          numberOfParticles = static_cast<int>(std::stoi(strArg));
+        } catch (const std::exception &) {
+          std::cerr << "Error parsing total number of particles: " << optarg << std::endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'm': {
+        try {
+          minDepth = static_cast<int>(std::stoi(strArg));
+        } catch (const std::exception &) {
+          std::cerr << "Error parsing minimum octree depth: " << optarg << std::endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'M': {
+        try {
+          maxDepth = static_cast<int>(std::stoi(strArg));
+        } catch (const std::exception &) {
+          std::cerr << "Error parsing maximum octree depth: " << optarg << std::endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      default: {
+        // error message handled by getopt
+        displayHelp = true;
+      }
+    }
   }
+
+  if (displayHelp) {
+    std::cout << "Usage: " << argv[0] << std::endl;
+    for (auto o : long_options) {
+      if (o.name == nullptr) continue;
+      std::cout << "    --" << std::setw(32) << std::left << o.name;
+      if (o.has_arg) {
+        std::cout << "option";
+      }
+      std::cout << std::endl;
+    }
+
+    return -1;
+  }
+
+  // Print parameters.
   std::cout << "orderOfExpansion = " << orderOfExpansion << std::endl;
   std::cout << "maxParticlesPerNode = " << maxParticlesPerNode << std::endl;
   std::cout << "numberOfParticles = " << numberOfParticles << std::endl;
+  std::cout << "minDepth = " << minDepth << std::endl;
+  std::cout << "maxDepth = " << maxDepth << std::endl;
+
+  auto tmp = autopas::utils::Timer();
+  timer = &tmp;
+  timer->start();
 
   Math3D::initialize();
 
