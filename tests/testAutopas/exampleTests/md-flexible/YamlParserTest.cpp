@@ -11,7 +11,7 @@ TEST_F(YamlParserTest, calcAutoPasBox) {
   config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
   YamlParser::parseYamlFile(config);
   config.calcSimulationBox();
-  std::array<double, 3> compBoxMin = {0.25, -15.25, -15.25};
+  std::array<double, 3> compBoxMin = {-0.25, -15.25, -15.25};
   std::array<double, 3> compBoxMax = {23.25, 10.25, 13.25};
   EXPECT_EQ(config.boxMin, compBoxMin);
   EXPECT_EQ(config.boxMax, compBoxMax);
