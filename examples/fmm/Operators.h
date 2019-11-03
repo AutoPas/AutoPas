@@ -11,7 +11,6 @@
 #include "AdaptiveOctree.h"
 #include "FmmParticle.h"
 #include "Math3D.h"
-#include "Octree.h"
 #include "autopas/utils/ArrayMath.h"
 
 class Operators {
@@ -54,11 +53,6 @@ class Operators {
    */
   void L2P(AdaptiveOctreeNode &leaf);
 
-  void P2M_Old(OctreeNode &leaf);
-  void M2M_Old(OctreeNode &parent);
-  void M2L_Old(OctreeNode &node);
-  void L2L_Old(OctreeNode &parent);
-  void L2P_Old(OctreeNode &leaf);
 
  private:
   int orderOfExpansion;

@@ -14,7 +14,6 @@
 #include "Math3D.h"
 #include "Operators.h"
 #include "autopas/AutoPas.h"
-#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
 
 autopas::utils::Timer *timer;
@@ -78,108 +77,6 @@ void downwardPass(AdaptiveOctree &tree, Operators &op) {
   std::cout << "L2L and L2P took " << measureTime() << "s" << std::endl;
 }
 
-// old
-
-void upwardPassRec_Old(OctreeNode &node, Operators &op) {
-  if (node.isLeaf()) {
-    op.P2M_Old(node);
-  } else {
-    for (int i = 0; i < 8; ++i) {
-      auto child = node.getChild(i);
-      upwardPassRec_Old(*child, op);
-    }
-    op.M2M_Old(node);
-  }
-}
-
-void upwardPass_Old(Octree &tree, Operators &op) {
-  upwardPassRec_Old(*tree.getRoot(), op);
-  std::cout << "P2M and M2M took " << measureTime() << "s" << std::endl;
-}
-
-// M2L
-void downwardPassRec1_Old(OctreeNode &node, Operators &op) {
-  op.M2L_Old(node);
-  if (!node.isLeaf()) {
-    for (int i = 0; i < 8; ++i) {
-      auto child = node.getChild(i);
-      downwardPassRec1_Old(*child, op);
-    }
-  }
-}
-
-// L2L + L2P
-void downwardPassRec2_Old(OctreeNode &node, Operators &op) {
-  op.L2L_Old(node);
-  if (!node.isLeaf()) {
-    for (int i = 0; i < 8; ++i) {
-      auto child = node.getChild(i);
-      downwardPassRec2_Old(*child, op);
-    }
-  } else {
-    op.L2P_Old(node);
-  }
-}
-
-void downwardPass_Old(Octree &tree, Operators &op) {
-  downwardPassRec1_Old(*tree.getRoot(), op);
-  std::cout << "M2L took " << measureTime() << "s" << std::endl;
-  downwardPassRec2_Old(*tree.getRoot(), op);
-  std::cout << "L2L and L2P took " << measureTime() << "s" << std::endl;
-}
-
-void addParticlesFromNeighbours(OctreeNode &node) {
-  if (node.isLeaf()) {
-    // Check if cell contains particles.
-    if (node.getContainer()
-            ->getRegionIterator(node.getLowCorner(), node.getHighCorner(), autopas::IteratorBehavior::ownedOnly)
-            .isValid()) {
-      for (auto neighbour : *node.getNeighbourList()) {
-        if (&node != neighbour) {
-          for (auto iter = neighbour->getContainer()->getRegionIterator(
-                   neighbour->getLowCorner(), neighbour->getHighCorner(), autopas::IteratorBehavior::ownedOnly);
-               iter.isValid(); ++iter) {
-            node.getContainer()->addOrUpdateHaloParticle(*iter);
-          }
-        }
-      }
-    }
-  } else {
-    for (int i = 0; i < 8; ++i) {
-      addParticlesFromNeighbours(*node.getChild(i));
-    }
-  }
-}
-
-void calculateNearField_Old(OctreeNode &node /*, NearFieldFunctor &functor*/) {
-  if (node.isLeaf()) {
-    // node.getContainer()->iteratePairwise(&functor);
-
-    for (auto part = node.getContainer()->getRegionIterator(node.getLowCorner(), node.getHighCorner(),
-                                                            autopas::IteratorBehavior::ownedOnly);
-         part.isValid(); ++part) {
-      for (auto inter = node.getContainer()->getRegionIterator(node.getHaloLowCorner(), node.getHaloHighCorner());
-           inter.isValid(); ++inter) {
-        if (part->getID() != inter->getID()) {
-          auto distVec = autopas::ArrayMath::sub(part->getR(), inter->getR());
-          auto spherical = Math3D::toSpherical(distVec);
-          auto dist = spherical[0];
-          part->resultFMM_Old += inter->charge / dist;
-          part->shortRange_Old += inter->charge / dist;
-          nearFieldCalculations++;
-        }
-      }
-    }
-
-  } else {
-    for (int i = 0; i < 8; ++i) {
-      calculateNearField_Old(*node.getChild(i) /*, functor*/);
-    }
-  }
-}
-
-// end old
-
 void calculateNearField(AdaptiveOctreeNode &node) {
   if (node.isLeaf()) {
     int tmp = 0;
@@ -213,41 +110,20 @@ void calculateNearField(AdaptiveOctreeNode &node) {
   }
 }
 
-void addParticleToCont(AutoPasCont &cont, Octree &treeOld, double x, double y, double z, double charge) {
+void addParticleToCont(AutoPasCont &cont, double x, double y, double z, double charge) {
   FmmParticle particle({x, y, z}, {0, 0, 0}, particleId, charge);
   particleId++;
   cont.addParticle(particle);
-
-  int cellX = static_cast<int>(x / treeOld.getCellSize());
-  int cellY = static_cast<int>(y / treeOld.getCellSize());
-  int cellZ = static_cast<int>(z / treeOld.getCellSize());
-
-  // treeOld.getAutoPasCont(cellX, cellY, cellZ)->addParticle(particle);
-  treeOld.getCell(treeOld.getHeight(), cellX, cellY, cellZ)->getContainer()->addParticle(particle);
-}
-
-void generateParticleList(OctreeNode &node, std::vector<FmmParticle *> &particles) {
-  if (node.isLeaf()) {
-    for (auto iter = node.getContainer()->getRegionIterator(node.getLowCorner(), node.getHighCorner(),
-                                                            autopas::IteratorBehavior::ownedOnly);
-         iter.isValid(); ++iter) {
-      particles.push_back(&*iter);
-    }
-  } else {
-    for (int i = 0; i < 8; ++i) {
-      generateParticleList(*node.getChild(i), particles);
-    }
-  }
 }
 
 int main(int argc, char **argv) {
   // Default parameters
-  int orderOfExpansion = 9;
-  int maxParticlesPerNode = 16;
+  int orderOfExpansion = 8;
+  int maxParticlesPerNode = 64;
   int numberOfParticles = 500;
-  double errorTolerance = 0.000001;
-  int minDepth = 2;
-  int maxDepth = 2;
+  double errorTolerance = 0.01;
+  int minDepth = 0;
+  int maxDepth = -1;
 
   bool displayHelp = false;
   int option, option_index;
@@ -256,11 +132,13 @@ int main(int argc, char **argv) {
                                          {"order", required_argument, nullptr, 'o'},
                                          {"particles-per-cell", required_argument, nullptr, 'p'},
                                          {"particles-total", required_argument, nullptr, 'n'},
+                                         {"error-tolerance", required_argument, nullptr, 'e'},
                                          {"depth-min", required_argument, nullptr, 'm'},
                                          {"depth-max", required_argument, nullptr, 'M'},
                                          {nullptr, 0, nullptr, 0}};
   // clang-format on
 
+  // Parse command line parameters.
   std::string strArg;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
     if (optarg != nullptr) strArg = optarg;
@@ -272,7 +150,7 @@ int main(int argc, char **argv) {
       }
       case 'o': {
         try {
-          orderOfExpansion = static_cast<int>(std::stoi(strArg));
+          orderOfExpansion = std::stoi(strArg);
         } catch (const std::exception &) {
           std::cerr << "Error parsing order of expansion: " << optarg << std::endl;
           displayHelp = true;
@@ -281,7 +159,7 @@ int main(int argc, char **argv) {
       }
       case 'p': {
         try {
-          maxParticlesPerNode = static_cast<int>(std::stoi(strArg));
+          maxParticlesPerNode = std::stoi(strArg);
         } catch (const std::exception &) {
           std::cerr << "Error parsing maximum particles per cell: " << optarg << std::endl;
           displayHelp = true;
@@ -290,16 +168,25 @@ int main(int argc, char **argv) {
       }
       case 'n': {
         try {
-          numberOfParticles = static_cast<int>(std::stoi(strArg));
+          numberOfParticles = std::stoi(strArg);
         } catch (const std::exception &) {
           std::cerr << "Error parsing total number of particles: " << optarg << std::endl;
           displayHelp = true;
         }
         break;
       }
+      case 'e': {
+        try {
+          errorTolerance = std::stod(strArg);
+        } catch (const std::exception &) {
+          std::cerr << "Error parsing error tolerance:  " << optarg << std::endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 'm': {
         try {
-          minDepth = static_cast<int>(std::stoi(strArg));
+          minDepth = std::stoi(strArg);
         } catch (const std::exception &) {
           std::cerr << "Error parsing minimum octree depth: " << optarg << std::endl;
           displayHelp = true;
@@ -308,7 +195,7 @@ int main(int argc, char **argv) {
       }
       case 'M': {
         try {
-          maxDepth = static_cast<int>(std::stoi(strArg));
+          maxDepth = std::stoi(strArg);
         } catch (const std::exception &) {
           std::cerr << "Error parsing maximum octree depth: " << optarg << std::endl;
           displayHelp = true;
@@ -340,16 +227,17 @@ int main(int argc, char **argv) {
   std::cout << "orderOfExpansion = " << orderOfExpansion << std::endl;
   std::cout << "maxParticlesPerNode = " << maxParticlesPerNode << std::endl;
   std::cout << "numberOfParticles = " << numberOfParticles << std::endl;
+  std::cout << "errorTolerance = " << errorTolerance << std::endl;
   std::cout << "minDepth = " << minDepth << std::endl;
   std::cout << "maxDepth = " << maxDepth << std::endl;
 
+  // Start timer.
   auto tmp = autopas::utils::Timer();
   timer = &tmp;
   timer->start();
 
+  // Initialize static fields of Math3D.
   Math3D::initialize();
-
-  measureTime();
 
   // Setup AutoPas object.
   std::array<double, 3> lowCorner({0, 0, 0});
@@ -364,33 +252,18 @@ int main(int argc, char **argv) {
   std::mt19937 randomEngine(rd());
   std::uniform_real_distribution<double> random(0.0, 1.0);
 
-  Octree treeOld = Octree(4, 2.0, 2);
-
   // Add particles at random positions.
   for (int i = 0; i < numberOfParticles; ++i) {
     double x = random(randomEngine) * (highCorner[0] - lowCorner[0]) + lowCorner[0];
     double y = random(randomEngine) * (highCorner[1] - lowCorner[1]) + lowCorner[1];
     double z = random(randomEngine) * (highCorner[2] - lowCorner[2]) + lowCorner[2];
     double charge = random(randomEngine) * 1.0;
-    addParticleToCont(cont, treeOld, x, y, z, charge);
+    addParticleToCont(cont, x, y, z, charge);
   }
 
   AdaptiveOctree tree = AdaptiveOctree(cont, maxParticlesPerNode, orderOfExpansion, minDepth, maxDepth);
 
-  // create particle vector
-
-  std::vector<FmmParticle *> particles(0);
-  generateParticleList(*treeOld.getRoot(), particles);
-
-  auto newList = std::vector<FmmParticle *>(particleId);
-  auto oldList = std::vector<FmmParticle *>(particleId);
-
-  for (auto particle : particles) {
-    oldList[particle->getID()] = particle;
-  }
-  for (auto particle = cont.begin(); particle.isValid(); ++particle) {
-    newList[particle->getID()] = &*particle;
-  }
+  // Create particle vector containing all particles in the domain. Will be used to calculate exact results.
 
   std::cout << "currentMaxDepth = " << tree.currentMaxDepth << std::endl;
   std::cout << "numberOfNodes = " << tree.numberOfNodes << std::endl;
@@ -410,24 +283,10 @@ int main(int argc, char **argv) {
   downwardPass(tree, op);
   std::cout << "DownwardPass done" << std::endl;
 
-  // FMM Old
-  std::cout << "[Old] Init Operators done" << std::endl;
-  upwardPass_Old(treeOld, op);
-  std::cout << "[Old] UpwardPass done" << std::endl;
-  downwardPass_Old(treeOld, op);
-  std::cout << "[Old] DownwardPass done" << std::endl;
-
   // Near field:
   calculateNearField(*tree.getRoot());
 
   std::cout << "Near field calculation took " << measureTime() << "s" << std::endl;
-
-  // Near field old
-
-  addParticlesFromNeighbours(*treeOld.getRoot());
-  calculateNearField_Old(*treeOld.getRoot() /*, functor*/);
-
-  std::cout << "[Old] Near field calculation took " << measureTime() << "s" << std::endl;
 
   // Calculate exact result by calculating all interactions directly.
   for (auto particle = cont.begin(); particle.isValid(); ++particle) {
@@ -449,25 +308,18 @@ int main(int argc, char **argv) {
   std::cout << "exactCalculations = " << exactCalculations << std::endl;
 
   // Check results.
-  for (auto particle : newList) {
+  for (auto particle = cont.begin(); particle.isValid(); ++particle) {
     if (particle->resultExact != 0) {
       int id = particle->getID();
-      // double error = std::abs(particle->resultFMM / particle->resultExact);
-      double error = std::abs(particle->resultFMM / oldList[id]->resultFMM_Old);
+      double error = std::abs(particle->resultFMM / particle->resultExact);
 
       if (std::abs(error - 1.0) > errorTolerance) {
-        std::cout << "\tAbsolute error = " << std::abs(particle->resultFMM - oldList[id]->resultFMM_Old) << std::endl;
-        std::cout << "\tRelative error = " << error << std::endl;
         std::cout << "[ID=" << id << "] " << particle->getR()[0] << ", " << particle->getR()[1] << ", "
                   << particle->getR()[2] << ", charge = " << particle->charge << std::endl;
         std::cout << "long range " << particle->longRange << std::endl;
         std::cout << "short range " << particle->shortRange << std::endl;
         std::cout << "resultFMM " << particle->resultFMM << std::endl;
         std::cout << "resultExact " << particle->resultExact << std::endl;
-
-        std::cout << "[Old] long range " << oldList[id]->longRange_Old << std::endl;
-        std::cout << "[Old] short range " << oldList[id]->shortRange_Old << std::endl;
-        std::cout << "[Old] resultFMM " << oldList[id]->resultFMM_Old << std::endl;
       }
     }
   }
