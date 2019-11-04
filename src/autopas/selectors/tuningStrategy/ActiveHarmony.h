@@ -9,7 +9,6 @@
 #include <string>
 #include <autopas/selectors/Configuration.h>
 #include <autopas/containers/CompatibleTraversals.h>
-#include <cfloat>
 #include "TuningStrategyInterface.h"
 #include "include/hclient.h"
 
@@ -91,7 +90,7 @@ void ActiveHarmony::addEvidence(long time) {
 
 bool ActiveHarmony::tune(bool currentInvalid) {
   if (currentInvalid) {
-    auto perf = DBL_MAX;
+    auto perf = std::numeric_limits<double>::max();
     ah_report(htask, &perf);
   }
   if (ah_fetch(htask) < 0) {
@@ -106,6 +105,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
   std::transform(newton3Option.begin(), newton3Option.end(), newton3Option.begin(), ::tolower);
   _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(), 1.0, traversalOption, *DataLayoutOption::parseOptions(dataLayoutOption).begin(), *Newton3Option::parseOptions(newton3Option).begin());
   AutoPasLog(debug, "Trying configuration {}.", _currentConfig.toString());
+  // TODO is current config optimal? maybe we have to call ah_best
   return !ah_converged(htask);
 }
 
@@ -174,7 +174,7 @@ void ActiveHarmony::reset() {
   }
 
   // task configuration TODO
-  ah_def_strategy(hdef, "pro.so");
+  ah_def_strategy(hdef, "nm.so");
   ah_def_cfg(hdef, "INIT_RADIUS", "0.5");
   // task initialization
   htask = ah_start(hdesc, hdef);
