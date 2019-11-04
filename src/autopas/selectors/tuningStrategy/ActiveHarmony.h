@@ -7,7 +7,7 @@
 #pragma once
 
 #include <string>
-#include <autopas/selectors/FeatureVector.h>
+#include <autopas/selectors/Configuration.h>
 #include <autopas/containers/CompatibleTraversals.h>
 #include <cfloat>
 #include "TuningStrategyInterface.h"
@@ -73,7 +73,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   std::set<DataLayoutOption> _allowedDataLayoutOptions;
   std::set<Newton3Option> _allowedNewton3Options;
 
-  FeatureVector _currentConfig;
+  Configuration _currentConfig;
 };
 
 void ActiveHarmony::addEvidence(long time) {
@@ -98,7 +98,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
   std::transform(dataLayoutOption.begin(), dataLayoutOption.end(), dataLayoutOption.begin(), ::tolower);
   std::string newton3Option = ah_get_enum(htask, "newton3Option");
   std::transform(newton3Option.begin(), newton3Option.end(), newton3Option.begin(), ::tolower);
-  _currentConfig = FeatureVector(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(), 1.0, traversalOption, *DataLayoutOption::parseOptions(dataLayoutOption).begin(), *Newton3Option::parseOptions(newton3Option).begin());
+  _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(), 1.0, traversalOption, *DataLayoutOption::parseOptions(dataLayoutOption).begin(), *Newton3Option::parseOptions(newton3Option).begin());
   return !ah_converged(htask);
 }
 
@@ -185,7 +185,7 @@ void ActiveHarmony::reset() {
   htask = ah_start(hdesc, hdef);
   ah_def_free(hdef);
 
-  _currentConfig = FeatureVector(*compatibleTraversals::allCompatibleContainers(*_allowedTraversalOptions.begin()).begin(), 1.0, *_allowedTraversalOptions.begin(), *_allowedDataLayoutOptions.begin(), *_allowedNewton3Options.begin());
+  _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(*_allowedTraversalOptions.begin()).begin(), 1.0, *_allowedTraversalOptions.begin(), *_allowedDataLayoutOptions.begin(), *_allowedNewton3Options.begin());
 }
 
 std::set<ContainerOption> ActiveHarmony::getAllowedContainerOptions() const {
