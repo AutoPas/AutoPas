@@ -14,27 +14,28 @@ using ::testing::ValuesIn;
 
 // Parse combination strings and call actual test function
 TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
-  auto contTravStr = std::get<0>(GetParam());
-  auto dataLayoutStr = std::get<1>(GetParam());
+  auto [containerTraversalTuple, dataLayoutOption] = GetParam();
+  auto [containerOption, traversalOption] = containerTraversalTuple;
 
-  auto contTravStrVector = autopas::utils::StringUtils::tokenize(contTravStr, "+");
-  auto containerOption = autopas::ContainerOption::parseOptionExact(contTravStrVector[0]);
-  auto traversalOption = autopas::TraversalOption::parseOptionExact(contTravStrVector[1]);
-  auto dataLayoutOption = autopas::DataLayoutOption::parseOptionExact(dataLayoutStr);
   countFunctorCalls(containerOption, traversalOption, dataLayoutOption);
 }
 
 // Generate Unittests for all Container / Traversal / Datalayout combinations
-// Use strings such that generated test names are readable
 INSTANTIATE_TEST_SUITE_P(
     Generated, Newton3OnOffTest,
-    Combine(ValuesIn([]() -> std::vector<std::string> {
+    Combine(ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> {
               // needed because CellBlock3D (called when building containers) logs always
               autopas::Logger::create();
 
-              std::vector<std::string> ret;
+              std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> ret;
 
+              // container factory
+              autopas::ContainerSelector<Particle, FPCell> containerSelector({0., 0., 0.}, {10., 10., 10.}, 1.);
+              autopas::ContainerSelectorInfo containerInfo(1., 0.);
+
+              // generate for all containers, even those to come
               for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
+                // skip containers that do not work with both newton modes
                 // @TODO: let verlet lists support Newton 3
                 if (containerOption == autopas::ContainerOption::verletLists ||
                     containerOption == autopas::ContainerOption::verletListsCells ||
@@ -43,9 +44,6 @@ INSTANTIATE_TEST_SUITE_P(
                     containerOption == autopas::ContainerOption::verletClusterCells) {
                   continue;
                 }
-
-                autopas::ContainerSelector<Particle, FPCell> containerSelector({0, 0, 0}, {10, 10, 10}, 1);
-                autopas::ContainerSelectorInfo containerInfo(1, 0);
 
                 containerSelector.selectContainer(containerOption, containerInfo);
 
@@ -61,13 +59,8 @@ INSTANTIATE_TEST_SUITE_P(
                     // Traversal provides no AoS and SoA Traversal
                     continue;
                   }
-                  std::stringstream name;
 
-                  name << containerOption.to_string();
-                  name << "+";
-                  name << traversalOption.to_string();
-
-                  ret.push_back(name.str());
+                  ret.emplace_back(containerOption, traversalOption);
                 }
               }
 
@@ -75,13 +68,7 @@ INSTANTIATE_TEST_SUITE_P(
 
               return ret;
             }()),
-            ValuesIn([]() {
-              std::vector<std::string> ret;
-              auto allDataLayoutOptions = autopas::DataLayoutOption::getAllOptions();
-              std::transform(allDataLayoutOptions.begin(), allDataLayoutOptions.end(), std::back_inserter(ret),
-                             [](autopas::DataLayoutOption d) -> std::string { return d.to_string(); });
-              return ret;
-            }())),
+            ValuesIn(autopas::DataLayoutOption::getAllOptions())),
     Newton3OnOffTest::PrintToStringParamName());
 
 // Count number of Functor calls with and without newton 3 and compare
