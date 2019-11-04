@@ -23,7 +23,7 @@ class Timer {
   /**
    * start the timer.
    */
-  void start() noexcept;
+  void start();
 
   /**
    * Stops the timer and returns the time elapsed in seconds since the last call
