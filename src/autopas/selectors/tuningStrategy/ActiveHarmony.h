@@ -89,7 +89,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
     ah_report(htask, &perf);
   }
   if (ah_fetch(htask) < 0) {
-    utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error fetching values from server");
+    utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching values from server");
   }
   std::string traversalOptionStr = ah_get_enum(htask, "traversalOption");
   std::transform(traversalOptionStr.begin(), traversalOptionStr.end(), traversalOptionStr.begin(), ::tolower);
