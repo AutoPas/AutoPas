@@ -9,10 +9,8 @@ file(
 add_executable(md-flexible ${MY_SRC})
 
 target_include_directories(autopas PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-# FIXME: zip instead of sources
-target_include_directories(md-flexible PUBLIC ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/include)
 
-target_link_libraries(md-flexible autopas ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a)
+target_link_libraries(md-flexible autopas libyaml-cpp)
 
 # --- copy script files to build dir ---
 file(

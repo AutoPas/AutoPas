@@ -34,7 +34,7 @@ target_link_libraries(
     autopas
     libgtest
     libgmock
-    ${PROJECT_SOURCE_DIR}/libs/yaml-cpp/lib/libyaml-cpp.a
+    libyaml-cpp
 )
 
 # this cmake module was only introduced in 3.10
