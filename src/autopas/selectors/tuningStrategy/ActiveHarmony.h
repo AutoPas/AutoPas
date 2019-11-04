@@ -35,6 +35,9 @@ class ActiveHarmony : public TuningStrategyInterface {
         _allowedDataLayoutOptions(allowedDataLayoutOptions),
         _allowedNewton3Options(allowedNewton3Options),
         _currentConfig() {
+    if (getenv("HARMONY_HOME") == nullptr) {
+      // TODO putenv("HARMONY_HOME=home");
+    }
 
     reset();
   }
