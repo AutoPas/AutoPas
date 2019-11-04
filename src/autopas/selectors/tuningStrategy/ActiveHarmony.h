@@ -11,7 +11,7 @@
 #include <autopas/containers/CompatibleTraversals.h>
 #include <cfloat>
 #include "TuningStrategyInterface.h"
-#include "hclient.h"
+#include "include/hclient.h"
 
 namespace autopas {
 

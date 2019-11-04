@@ -21,6 +21,7 @@ target_link_libraries(
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler Do not link against
                                   # openmp when using archer
         $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${ARCHER}>>>:OpenMP::OpenMP_CXX>
+        ${CMAKE_BINARY_DIR}/libs/harmony/include/lib/libharmony.a
 )
 
 # Ompstuff needs to be here because OpenMP.cmake needs to run before this file to create to OpenMP
