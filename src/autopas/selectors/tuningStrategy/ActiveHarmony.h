@@ -79,7 +79,7 @@ class ActiveHarmony : public TuningStrategyInterface {
 void ActiveHarmony::addEvidence(long time) {
   auto perf = (double) time;
   if (ah_report(htask, &perf) != 0) {
-    utils::ExceptionHandler::exception("Error reporting performance to server");
+    utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error reporting performance to server");
   }
 }
 
@@ -89,7 +89,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
     ah_report(htask, &perf);
   }
   if (ah_fetch(htask) < 0) {
-    utils::ExceptionHandler::exception("Error fetching values from server");
+    utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error fetching values from server");
   }
   std::string traversalOptionStr = ah_get_enum(htask, "traversalOption");
   std::transform(traversalOptionStr.begin(), traversalOptionStr.end(), traversalOptionStr.begin(), ::tolower);
@@ -107,7 +107,7 @@ void ActiveHarmony::removeN3Option(Newton3Option option) {
   reset();
   if (this->searchSpaceIsEmpty()) {
     utils::ExceptionHandler::exception(
-            "Removing all configurations with Newton 3 {} caused the search space to be empty!", option);
+            "Activeharmony::removeN3Option: Removing all configurations with Newton 3 {} caused the search space to be empty!", option);
   }
 }
 
@@ -119,21 +119,20 @@ void ActiveHarmony::reset() {
 // initiate the tuning session
   hdesc = ah_alloc();
   if (hdesc == nullptr) {
-    utils::ExceptionHandler::exception("Error allocating Harmony descriptor.");
-    // TODO handle error
+    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating Harmony descriptor.");
   }
 
   if (ah_connect(hdesc, nullptr, 0) != 0) {
-    utils::ExceptionHandler::exception("Error connecting to Harmony session.");
+    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error connecting to Harmony session.");
   }
 
   hdef_t *hdef = ah_def_alloc();
   if (hdef == nullptr) {
-    utils::ExceptionHandler::exception("Error allocating definition descriptor");
+    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating definition descriptor");
   }
 
   if (ah_def_name(hdef, "AutoPas") != 0) {
-    utils::ExceptionHandler::exception("Error settings search name");
+    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error settings search name");
   }
   // tuning parameters
 
@@ -151,29 +150,29 @@ void ActiveHarmony::reset() {
   }
 */
   if (ah_def_enum(hdef, "traversalOption", nullptr) != 0) {
-    utils::ExceptionHandler::exception("Error defining enum \"traversalOption\"");
+    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum \"traversalOption\"");
   }
   for (auto &traversalOption : _allowedTraversalOptions) {
     if (ah_def_enum_value(hdef, "traversalOption", traversalOption.to_string().c_str()) != 0) {
-      utils::ExceptionHandler::exception("Error defining enum value for enum \"traversalOption\"");
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum value for enum \"traversalOption\"");
     }
   }
 
   if (ah_def_enum(hdef, "dataLayoutOption", nullptr) != 0) {
-    utils::ExceptionHandler::exception("Error defining enum \"dataLayoutOption\"");
+    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum \"dataLayoutOption\"");
   }
   for (auto &dataLayoutOption : _allowedDataLayoutOptions) {
     if (ah_def_enum_value(hdef, "dataLayoutOption", dataLayoutOption.to_string().c_str()) != 0) {
-      utils::ExceptionHandler::exception("Error defining enum value for enum \"dataLayoutOption\"");
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum value for enum \"dataLayoutOption\"");
     }
   }
 
   if (ah_def_enum(hdef, "newton3Option", nullptr) != 0) {
-    utils::ExceptionHandler::exception("Error defining enum \"newton3Option\"");
+    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum \"newton3Option\"");
   }
   for (auto &newton3Option : _allowedNewton3Options) {
     if (ah_def_enum_value(hdef, "newton3Option", newton3Option.to_string().c_str()) != 0) {
-      utils::ExceptionHandler::exception("Error defining enum value for enum \"newton3Option\"");
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum value for enum \"newton3Option\"");
     }
   }
 
@@ -183,7 +182,6 @@ void ActiveHarmony::reset() {
   ah_def_layers(hdef, "log.so");
   ah_def_cfg(hdef, "LOG_FILE", "/tmp/tuning.run");
   // task initialization
-  // TODO bind tuning parameters to local variables, or maybe retrieve parameters in getConfiguration ?
   htask = ah_start(hdesc, hdef);
   ah_def_free(hdef);
 
