@@ -143,8 +143,7 @@ TYPED_TEST_P(OptionTest, to_stringTest) {
 REGISTER_TYPED_TEST_SUITE_P(OptionTest, parseExactOptionsTest, to_stringTest);
 
 // instantiate tests for all option types
-typedef ::testing::Types<autopas::AcquisitionFunctionOption, autopas::ContainerOption, autopas::DataLayoutOption,
-                         autopas::Newton3Option, autopas::SelectorStrategyOption, autopas::TraversalOption,
-                         autopas::TuningStrategyOption>
-    OptionTypes;
+using OptionTypes = ::testing::Types<autopas::AcquisitionFunctionOption, autopas::ContainerOption,
+                                     autopas::DataLayoutOption, autopas::Newton3Option, autopas::SelectorStrategyOption,
+                                     autopas::TraversalOption, autopas::TuningStrategyOption>;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, OptionTest, OptionTypes);
