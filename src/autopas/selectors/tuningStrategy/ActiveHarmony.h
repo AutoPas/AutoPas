@@ -86,6 +86,7 @@ void ActiveHarmony::addEvidence(long time) {
   if (ah_report(htask, &perf) != 0) {
     utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error reporting performance to server");
   }
+  AutoPasLog(debug, "Reported time {} for configuration {}.", perf, _currentConfig.toString());
 }
 
 bool ActiveHarmony::tune(bool currentInvalid) {
@@ -104,6 +105,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
   std::string newton3Option = ah_get_enum(htask, "newton3Option");
   std::transform(newton3Option.begin(), newton3Option.end(), newton3Option.begin(), ::tolower);
   _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(), 1.0, traversalOption, *DataLayoutOption::parseOptions(dataLayoutOption).begin(), *Newton3Option::parseOptions(newton3Option).begin());
+  AutoPasLog(debug, "Trying configuration {}.", _currentConfig.toString());
   return !ah_converged(htask);
 }
 
