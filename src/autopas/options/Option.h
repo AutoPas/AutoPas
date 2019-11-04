@@ -22,19 +22,14 @@ template <typename actualOption>
 class Option {
  public:
   /**
-   * Constructor.
-   */
-  constexpr Option() = default;
-
-  /**
-   * No cast to bool.
+   * Prevents cast to bool by deleting the conversion operator.
    * @return
    */
   explicit operator bool() = delete;
 
   /**
    * Provides a way to iterate over the possible options.
-   * @return set of all possible values of this option type.
+   * @return Set of all possible values of this option type.
    */
   static std::set<actualOption> getAllOptions() {
     std::set<actualOption> retSet;
@@ -66,43 +61,57 @@ class Option {
    * Possible options can be found in getAllOptions().
    *
    * This function uses the Needleman-Wunsch algorithm to find the closest matching options.
-   * If an option is ambiguous an execption is thrown.
+   * If an option is ambiguous an exception is thrown.
    *
    * @param optionsString String containing traversal options.
    * @return Set of option enums. If no valid option was found the empty set is returned.
    */
   static std::set<actualOption> parseOptions(const std::string &optionsString) {
-    std::set<actualOption> optionsSet;
-
+    std::set<actualOption> foundOptions;
+    std::vector<std::string> haystack;
     auto needles = autopas::utils::StringUtils::tokenize(optionsString, autopas::utils::StringUtils::delimiters);
 
-    std::vector<std::string> haystack;
-
-    for (auto &option : actualOption::getAllOptions()) {
-      auto s = option.to_string();
-      std::transform(s.begin(), s.end(), s.begin(), ::tolower);
-      haystack.push_back(s);
-    }
-
-    // assure all string representations are lower case
-    std::map<actualOption, std::string> allOptionNames;
-    for (auto &pairEnumString : actualOption::getOptionNames()) {
-      auto s = pairEnumString.second;
-      std::transform(s.begin(), s.end(), s.begin(), ::tolower);
-      allOptionNames.emplace(pairEnumString.first, s);
+    // create a map of enum -> string with lowercase enums as a lookup and fill strings in the haystack
+    std::map<std::string, actualOption> allOptionNamesLower;
+    for (auto &[optionEnum, optionString] : actualOption::getOptionNames()) {
+      std::transform(optionString.begin(), optionString.end(), optionString.begin(), ::tolower);
+      allOptionNamesLower.emplace(optionString, optionEnum);
+      haystack.push_back(optionString);
     }
 
     for (auto &needle : needles) {
+      // first find the best matching string
       auto matchingString = autopas::utils::StringUtils::matchStrings(haystack, needle);
-      for (auto &pairEnumString : allOptionNames) {
-        if (pairEnumString.second == matchingString) {
-          optionsSet.insert(pairEnumString.first);
-          break;
-        }
+      // then find the corresponding enum and add it to the return set
+      foundOptions.insert(allOptionNamesLower[matchingString]);
+    }
+
+    return foundOptions;
+  }
+
+  /**
+   * Converts a string to an enum.
+   *
+   * This function works faster than parseOptions, however, the given string needs to match exactly an option.
+   *
+   * @tparam lowercase if set to true all option names are transformed to lower case.
+   * @param optionString
+   * @return Option enum.
+   */
+  template <bool lowercase = false>
+  static actualOption parseOptionExact(const std::string &optionString) {
+    for (auto [optionEnum, optionName] : actualOption::getOptionNames()) {
+      if (lowercase) {
+        std::transform(std::begin(optionName), std::end(optionName), std::begin(optionName), ::tolower);
+      }
+      if (optionString == optionName) {
+        return optionEnum;
       }
     }
 
-    return optionsSet;
+    // the end of the function should not be reached
+    utils::ExceptionHandler::exception("Option::parseOptionExact() no match found for: {}", optionString);
+    return actualOption();
   }
 };
 }  // namespace autopas

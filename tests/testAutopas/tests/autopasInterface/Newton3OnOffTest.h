@@ -17,8 +17,10 @@
 /**
  * Test to check if newton3 and non-newton3 work as expected
  */
-class Newton3OnOffTest : public AutoPasTestBase,
-                         public ::testing::WithParamInterface<std::tuple<std::string, std::string>> {
+class Newton3OnOffTest
+    : public AutoPasTestBase,
+      public ::testing::WithParamInterface<
+          std::tuple<std::tuple<autopas::ContainerOption, autopas::TraversalOption>, autopas::DataLayoutOption>> {
  public:
   Newton3OnOffTest() : mockFunctor() {}
 
@@ -61,12 +63,15 @@ class Newton3OnOffTest : public AutoPasTestBase,
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       auto inputTuple = static_cast<ParamType>(info.param);
-      std::string containerPlusTraversal(std::get<0>(inputTuple));
-      auto contTrav = autopas::utils::StringUtils::tokenize(containerPlusTraversal, "+");
-      std::string dataLayout(std::get<1>(inputTuple));
+
+      auto [containerTraversalTuple, dataLayoutOption] = inputTuple;
+      auto [containerOption, traversalOption] = containerTraversalTuple;
+
+      auto retStr =
+          containerOption.to_string() + "_" + traversalOption.to_string() + "_" + dataLayoutOption.to_string();
       // replace all '-' with '_', otherwise the test name is invalid
-      std::replace(dataLayout.begin(), dataLayout.end(), '-', '_');
-      return contTrav[0] + "_" + contTrav[1] + "_" + dataLayout;
+      std::replace(retStr.begin(), retStr.end(), '-', '_');
+      return retStr;
     }
   };
 };

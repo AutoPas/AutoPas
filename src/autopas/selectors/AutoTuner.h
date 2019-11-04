@@ -6,12 +6,12 @@
 
 #pragma once
 
-#include <autopas/options/Newton3Option.h>
 #include <array>
 #include <memory>
 #include <set>
 #include "autopas/autopasIncludes.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/selectors/Configuration.h"
