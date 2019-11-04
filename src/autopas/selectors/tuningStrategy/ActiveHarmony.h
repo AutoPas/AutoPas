@@ -26,7 +26,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    */
-  ActiveHarmony(const NumberSetFinite<double> &allowedCellSizeFactors,
+  ActiveHarmony(const NumberInterval<double> &allowedCellSizeFactors,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                 const std::set<Newton3Option> &allowedNewton3Options)
@@ -77,6 +77,8 @@ class ActiveHarmony : public TuningStrategyInterface {
   std::set<Newton3Option> _allowedNewton3Options;
 
   Configuration _currentConfig;
+
+  static constexpr int cellSizeSamples = 100;
 };
 
 void ActiveHarmony::addEvidence(long time) {
@@ -110,7 +112,7 @@ void ActiveHarmony::removeN3Option(Newton3Option option) {
   reset();
   if (this->searchSpaceIsEmpty()) {
     utils::ExceptionHandler::exception(
-            "Activeharmony::removeN3Option: Removing all configurations with Newton 3 {} caused the search space to be empty!", option);
+            "ActiveHarmony::removeN3Option: Removing all configurations with Newton 3 {} caused the search space to be empty!", option);
   }
 }
 
@@ -137,21 +139,11 @@ void ActiveHarmony::reset() {
   if (ah_def_name(hdef, "AutoPas") != 0) {
     utils::ExceptionHandler::exception("ActiveHarmony::reset: Error settings search name");
   }
-  // tuning parameters
 
+  if (ah_def_real(hdef, "cellSizeFactor", _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(), (_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()) / cellSizeSamples, nullptr) != 0) {
+    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining real \"cellSizeFactor\"");
+  }
 
-/*
-  if (ah_def_enum(hdef, "cellSizeFactor", nullptr) != 0) {
-    utils::ExceptionHandler::exception("Error defining enum \"cellSizeFactor\"");
-  }
-  for (auto &cellSizeFactor : _allowedCellSizeFactors->getAll()) {
-    std::stringstream ss;
-    ss<<cellSizeFactor; // convert enum to string
-    if (ah_def_enum_value(hdef, "cellSizeFactor", ss.str().c_str()) != 0) {
-      utils::ExceptionHandler::exception("Error defining enum value for enum \"cellSizeFactor\"");
-    }
-  }
-*/
   if (ah_def_enum(hdef, "traversalOption", nullptr) != 0) {
     utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum \"traversalOption\"");
   }
@@ -182,13 +174,11 @@ void ActiveHarmony::reset() {
   // task configuration TODO
   ah_def_strategy(hdef, "pro.so");
   ah_def_cfg(hdef, "INIT_RADIUS", "0.5");
-  ah_def_layers(hdef, "log.so");
-  ah_def_cfg(hdef, "LOG_FILE", "/tmp/tuning.run");
   // task initialization
   htask = ah_start(hdesc, hdef);
   ah_def_free(hdef);
 
-  _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(*_allowedTraversalOptions.begin()).begin(), 1.0, *_allowedTraversalOptions.begin(), *_allowedDataLayoutOptions.begin(), *_allowedNewton3Options.begin());
+  tune(false);
 }
 
 std::set<ContainerOption> ActiveHarmony::getAllowedContainerOptions() const {
