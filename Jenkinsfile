@@ -66,7 +66,7 @@ pipeline{
         }
         stage('build and test'){
             options {
-                timeout(time: 2, unit: 'HOURS')
+                timeout(time: 4, unit: 'HOURS')
             }
             parallel{
                 stage('gpu cloud') {
