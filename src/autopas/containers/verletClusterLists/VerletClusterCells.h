@@ -33,7 +33,7 @@ template <class Particle>
 class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> {
  public:
   /**
-   * Constructor of the VerletClusterLists class.
+   * Constructor of the VerletClusterCells class.
    * The neighbor lists are build using an estimated density.
    * The box is divided into cuboids with roughly the
    * same side length. The rebuildFrequency should be chosen, s.t. the particles do

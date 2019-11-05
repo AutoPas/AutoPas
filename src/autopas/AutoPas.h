@@ -64,10 +64,10 @@ class AutoPas {
         _maxEvidence(10),
         _tuningStrategyOption(TuningStrategyOption::fullSearch),
         _selectorStrategy(SelectorStrategyOption::fastestAbs),
-        _allowedContainers(allContainerOptions),
-        _allowedTraversals(allTraversalOptions),
-        _allowedDataLayouts(allDataLayoutOptions),
-        _allowedNewton3Options(allNewton3Options),
+        _allowedContainers(ContainerOption::getAllOptions()),
+        _allowedTraversals(TraversalOption::getAllOptions()),
+        _allowedDataLayouts(DataLayoutOption::getAllOptions()),
+        _allowedNewton3Options(Newton3Option::getAllOptions()),
         _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
@@ -499,7 +499,8 @@ class AutoPas {
    * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
    */
   std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
-    switch (_tuningStrategyOption) {
+    // clang compiler bug requires static cast
+    switch (static_cast<TuningStrategyOption>(_tuningStrategyOption)) {
       case TuningStrategyOption::fullSearch: {
         if (not _allowedCellSizeFactors->isFinite()) {
           autopas::utils::ExceptionHandler::exception(

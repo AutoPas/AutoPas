@@ -23,7 +23,7 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                                         public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
  private:
@@ -153,7 +153,7 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
   std::unordered_map<Particle *, SoAView<typename Particle::SoAArraysType>> _clusterToSoAViewMap;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processColorCell(
     unsigned long xColorCell, unsigned long yColorCell, unsigned long zColorCell, int gridsPerColoringCell) {
   // We are only doing a 2D coloring.
@@ -195,7 +195,7 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseClusterPairAoS(
     Particle *clusterStart, Particle *neighborClusterStart, int clusterSize) {
   const bool isClusterInteractionWithItself = neighborClusterStart == clusterStart;
@@ -214,7 +214,7 @@ void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, 
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseClusterPairSoA(
     Particle *clusterStart, Particle *neighborClusterStart) {
   auto clusterView = _clusterToSoAViewMap[clusterStart];

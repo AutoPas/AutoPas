@@ -27,8 +27,8 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                      public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
@@ -41,7 +41,7 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    */
   C04Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                const double interactionLength, const std::array<double, 3> &cellLength)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap),
         _end(ArrayMath::subScalar(ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {
@@ -52,7 +52,7 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
 
   TraversalOption getTraversalType() const override { return TraversalOption::c04; }
 
-  DataLayoutOption getDataLayout() const override { return DataLayout; }
+  DataLayoutOption getDataLayout() const override { return dataLayout; }
 
   bool getUseNewton3() const override { return useNewton3; }
 
@@ -61,7 +61,7 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
    * @return
    */
   bool isApplicable() const override {
-    if (DataLayout == DataLayoutOption::cuda) {
+    if (dataLayout == DataLayoutOption::cuda) {
       return false;
     }
     const double minLength = *std::min_element(this->_cellLength.cbegin(), this->_cellLength.cend());
@@ -81,13 +81,13 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, Dat
 
   std::array<std::array<long, 3>, 32> _cellOffsets32Pack;
 
-  C08CellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellHandler;
+  C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
 
   const std::array<long, 3> _end;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-constexpr void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::computeOffsets32Pack() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+constexpr void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets32Pack() {
   using std::make_pair;
   using utils::ThreeDimensionalMapping::threeToOneD;
 
@@ -121,8 +121,8 @@ constexpr void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::processBasePack32(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBasePack32(
     std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex) {
   using utils::ThreeDimensionalMapping::threeToOneD;
   std::array<long, 3> index;
@@ -143,8 +143,8 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::proces
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
@@ -162,8 +162,8 @@ void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traver
   }  // close parallel region
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-void C04Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseSingleColor(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSingleColor(
     std::vector<ParticleCell> &cells, int color) {
   // we need to traverse one body-centered cubic (BCC) grid, which consists of two cartesian grids
 
