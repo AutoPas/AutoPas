@@ -84,6 +84,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
           cerr << "Error parsing number of the box length: " << optarg << endl;
           displayHelp = true;
         }
+        break;
       }
       case 'c': {
         // overwrite default argument
