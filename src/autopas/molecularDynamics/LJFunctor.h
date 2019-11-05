@@ -57,14 +57,16 @@ class LJFunctor
    */
   LJFunctor() = delete;
 
+ private:
   /**
-   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   * Interal, actual constructor.
    * @param cutoff
    * @param shift
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
+   * @param dummy unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctor(double cutoff, double shift, bool duplicatedCalculation = true)
+  explicit LJFunctor(double cutoff, double shift, bool duplicatedCalculation, void * /*dummy*/)
       : Functor<Particle, ParticleCell, SoAArraysType, LJFunctor<Particle, ParticleCell>>(cutoff),
         _cutoffsquare{cutoff * cutoff},
         _shift6{shift * 6.0},
@@ -83,6 +85,22 @@ class LJFunctor
 #endif
   }
 
+ public:
+  /**
+   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   *
+   * @note Only to be used with mixing == false.
+   *
+   * @param cutoff
+   * @param shift
+   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
+   * simulation boundary. e.g. eightShell: false, fullShell: true.
+   */
+  explicit LJFunctor(double cutoff, double shift, bool duplicatedCalculation = true)
+      : LJFunctor(cutoff, shift, duplicatedCalculation, nullptr) {
+    static_assert(not useMixing);
+  }
+
   /**
    * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
    * @param cutoff
@@ -93,9 +111,9 @@ class LJFunctor
    */
   explicit LJFunctor(double cutoff, double shift, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
                      bool duplicatedCalculation = true)
-      : LJFunctor(cutoff, shift, duplicatedCalculation) {
+      : LJFunctor(cutoff, shift, duplicatedCalculation, nullptr) {
+    static_assert(useMixing);
     _PPLibrary = &particlePropertiesLibrary;
-    //@TODO: check that this constructor is only called with mixing == true
   }
 
   bool isRelevantForTuning() override { return relevantForTuning; }

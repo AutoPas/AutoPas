@@ -10,19 +10,24 @@
 
 template <bool mixing>
 void LJFunctorTest::testAoSNoGlobals(bool newton3) {
+  using FuncType = autopas::LJFunctor<Molecule, FMCell, mixing>;
+
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
-  autopas::LJFunctor<Molecule, FMCell, /* mixing */ mixing> functor(cutoff, shift, particlePropertiesLibrary);
+  std::unique_ptr<FuncType> functor;
+
   particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0);
-  if (mixing) {
+  if constexpr (mixing) {
+    functor = std::make_unique<FuncType>(cutoff, shift, particlePropertiesLibrary);
     particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0);
   } else {
-    functor.setParticleProperties(epsilon * 24, 1);
+    functor = std::make_unique<FuncType>(cutoff, shift);
+    functor->setParticleProperties(epsilon * 24, 1);
   }
 
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
 
-  functor.AoSFunctor(p1, p2, newton3);
+  functor->AoSFunctor(p1, p2, newton3);
 
   auto f1one = p1.getF();
   auto f2one = p2.getF();
@@ -52,7 +57,7 @@ void LJFunctorTest::testAoSNoGlobals(bool newton3) {
     EXPECT_DOUBLE_EQ(f2one[2], 0);
   }
 
-  functor.AoSFunctor(p2, p1, newton3);
+  functor->AoSFunctor(p2, p1, newton3);
 
   auto f1two = p1.getF();
   auto f2two = p2.getF();
@@ -99,14 +104,18 @@ TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsN3) {
 
 template <bool mixing>
 void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType) {
+  using FuncType = autopas::LJFunctor<Molecule, FMCell, mixing>;
+
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
-  // test is for the soa functors the forces are calculated correctly
-  autopas::LJFunctor<Molecule, FMCell, mixing> functor(cutoff, shift, particlePropertiesLibrary);
+  std::unique_ptr<FuncType> functor;
+
   particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0);
   if constexpr (mixing) {
+    functor = std::make_unique<FuncType>(cutoff, shift, particlePropertiesLibrary);
     particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0);
   } else {
-    functor.setParticleProperties(epsilon * 24, 1);
+    functor = std::make_unique<FuncType>(cutoff, shift);
+    functor->setParticleProperties(epsilon * 24, 1);
   }
 
   FMCell cell1, cell2;
@@ -133,17 +142,17 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
     }
   }
   // Load the particles into the soa.
-  functor.SoALoader(cell1, cell1._particleSoABuffer);
-  functor.SoALoader(cell2, cell2._particleSoABuffer);
+  functor->SoALoader(cell1, cell1._particleSoABuffer);
+  functor->SoALoader(cell2, cell2._particleSoABuffer);
 
   switch (interactionType) {
     case InteractionType::own:
       // Interation of one cell with itself
-      functor.SoAFunctor(cell1._particleSoABuffer, newton3);
+      functor->SoAFunctor(cell1._particleSoABuffer, newton3);
       break;
     case InteractionType::pair:
       // Interation of a cell pair
-      functor.SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+      functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
       break;
     case InteractionType::verlet:
       // Build verlet list
@@ -152,12 +161,12 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
       if (not newton3) {
         neighborList[1].push_back(0);
       }
-      functor.SoAFunctor(cell1._particleSoABuffer, neighborList, 0, 2, newton3);
+      functor->SoAFunctor(cell1._particleSoABuffer, neighborList, 0, 2, newton3);
   }
 
   // Extract the particles from the soa
-  functor.SoAExtractor(cell1, cell1._particleSoABuffer);
-  functor.SoAExtractor(cell2, cell2._particleSoABuffer);
+  functor->SoAExtractor(cell1, cell1._particleSoABuffer);
+  functor->SoAExtractor(cell2, cell2._particleSoABuffer);
 
   // force of particle 1
   auto f1 = cell1.begin()->getF();
@@ -201,11 +210,11 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
   }
 
   if (interactionType == InteractionType::pair) {
-    functor.SoALoader(cell1, cell1._particleSoABuffer);
-    functor.SoALoader(cell2, cell2._particleSoABuffer);
-    functor.SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
-    functor.SoAExtractor(cell1, cell1._particleSoABuffer);
-    functor.SoAExtractor(cell2, cell2._particleSoABuffer);
+    functor->SoALoader(cell1, cell1._particleSoABuffer);
+    functor->SoALoader(cell2, cell2._particleSoABuffer);
+    functor->SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
+    functor->SoAExtractor(cell1, cell1._particleSoABuffer);
+    functor->SoAExtractor(cell2, cell2._particleSoABuffer);
 
     f1 = cell1.begin()->getF();
     f2 = cell2.begin()->getF();
