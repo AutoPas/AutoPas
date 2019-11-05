@@ -97,16 +97,26 @@ bool ActiveHarmony::tune(bool currentInvalid) {
     utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching values from server");
   }
   std::string traversalOptionStr = ah_get_enum(htask, "traversalOption");
-  std::transform(traversalOptionStr.begin(), traversalOptionStr.end(), traversalOptionStr.begin(), ::tolower);
-  auto traversalOption = *TraversalOption::parseOptions(traversalOptionStr).begin();
+  auto traversalOption = TraversalOption::parseOptionExact(traversalOptionStr);
   std::string dataLayoutOption = ah_get_enum(htask, "dataLayoutOption");
-  std::transform(dataLayoutOption.begin(), dataLayoutOption.end(), dataLayoutOption.begin(), ::tolower);
   std::string newton3Option = ah_get_enum(htask, "newton3Option");
-  std::transform(newton3Option.begin(), newton3Option.end(), newton3Option.begin(), ::tolower);
-  _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(), 1.0, traversalOption, *DataLayoutOption::parseOptions(dataLayoutOption).begin(), *Newton3Option::parseOptions(newton3Option).begin());
+  double cellSizeFactor = ah_get_real(htask, "cellSizeFactor");
+  _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(), cellSizeFactor, traversalOption, DataLayoutOption::parseOptionExact(dataLayoutOption), Newton3Option::parseOptionExact(newton3Option));
   AutoPasLog(debug, "ActiveHarmony::tune: Trying configuration {}.", _currentConfig.toString());
-  // TODO is current config optimal? maybe we have to call ah_best
-  return !ah_converged(htask);
+  auto converged = ah_converged(htask);
+  if (converged) {
+    AutoPasLog(debug, "ActiveHarmony::tune: Reached converged state.");
+    if (ah_best(htask) != 0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching best point.");
+    }
+    traversalOptionStr = ah_get_enum(htask, "traversalOption");
+    traversalOption = TraversalOption::parseOptionExact(traversalOptionStr);
+    dataLayoutOption = ah_get_enum(htask, "dataLayoutOption");
+    newton3Option = ah_get_enum(htask, "newton3Option");
+    cellSizeFactor = ah_get_real(htask, "cellSizeFactor");
+    _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(), cellSizeFactor, traversalOption, DataLayoutOption::parseOptionExact(dataLayoutOption), Newton3Option::parseOptionExact(newton3Option));
+  }
+  return !converged;
 }
 
 void ActiveHarmony::removeN3Option(Newton3Option option) {
