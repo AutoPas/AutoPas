@@ -7,9 +7,7 @@
 
 #pragma once
 
-#include <array>
-#include "autopas/molecularDynamics/FunctorCuda.cuh"
-#include "autopas/molecularDynamics/LJFunctorCuda.cuh"
+#include "autopas/pairwiseFunctors/FunctorCuda.cuh"
 #include "cuda_runtime.h"
 
 namespace autopas {

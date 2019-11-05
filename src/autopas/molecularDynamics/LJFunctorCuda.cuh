@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "autopas/molecularDynamics/FunctorCuda.cuh"
+#include "autopas/pairwiseFunctors/FunctorCuda.cuh"
 #include "cuda_runtime.h"
 
 namespace autopas {
 
 /**
- * Stores all pointers to the device Memory SoAs as needed by the LJ Functor
+ * Stores all pointers to the device Memory SoAs as needed by thqe LJ Functor
  * @tparam floatType of all vectors
  */
 template <typename floatType>
