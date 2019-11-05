@@ -53,7 +53,7 @@ add_test(
 
 add_test(
     NAME md-flexMeasurePerf
-    COMMAND ${PROJECT_SOURCE_DIR}/examples/md-flexible/scrips/measurePerf.sh md-flexible -silent
+    COMMAND measurePerf.sh md-flexible -silent
     CONFIGURATIONS checkExamples
 )
 
