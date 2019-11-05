@@ -133,7 +133,7 @@ do
                             --cutoff 1 \
                             --cell-size ${cellSizeFactor} \
                             --box-length 10 \
-                            --particles-generator uniform \
+                            --particle-generator uniform \
                             --particles-total ${Mols[$i]} \
                             --iterations ${thisReps} \
                             --tuning-interval $(( ${thisReps} + 1 )) \
@@ -144,7 +144,7 @@ do
                             --newton3 ${newton3Opt}
                         )
 
-                        printf "${output}\n"
+                        printf '%s\n' "${output}"
 
                         if [[ "${SILENT}" = false ]] ; then
                             if [[ "${configPrinted}" = false ]] ; then
