@@ -162,6 +162,10 @@ class LogicHandler {
     return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
+  std::unique_ptr<FmmTree> getFastMultipoleTree() {
+    return _autoTuner.getContainer()->getFastMultipoleMethodTree();
+  }
+
  private:
   void checkMinimalSize() {
     auto container = _autoTuner.getContainer();

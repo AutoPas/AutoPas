@@ -8,9 +8,11 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <vector>
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
+#include "autopas/fastMultipoleMethod/FmmTree.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -256,6 +258,8 @@ class ParticleContainerInterface {
   std::set<TraversalOption> getAllTraversals() const {
     return compatibleTraversals::allCompatibleTraversals(this->getContainerType());
   }
+
+  [[nodiscard]] virtual std::unique_ptr<FmmTree> getFastMultipoleMethodTree() const = 0;
 };
 
 }  // namespace autopas

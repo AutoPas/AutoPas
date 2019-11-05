@@ -480,6 +480,10 @@ class AutoPas {
     _tuningStrategyOption = tuningStrategyOption;
   }
 
+  std::unique_ptr<FmmTree> getFastMultipoleTree() {
+    return _logicHandler->getFastMultipoleTree();
+  }
+
  private:
   /**
    * Generates a new Tuning Strategy object from the member variables of this autopas object.

@@ -202,6 +202,12 @@ class DirectSum : public ParticleContainer<ParticleCell> {
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
   }
 
+  [[nodiscard]] std::unique_ptr<FmmTree> getFastMultipoleMethodTree() const override {
+    autopas::utils::ExceptionHandler::exception(
+        "DirectSum.getFastMultipoleMethodTree() not yet implemented.");
+    return nullptr;
+  }
+
  private:
   class DirectSumCellBorderAndFlagManager : public internal::CellBorderAndFlagManager {
     /**

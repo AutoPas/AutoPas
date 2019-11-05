@@ -15,6 +15,7 @@
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -295,6 +296,100 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    * @note const version
    */
   const std::vector<ParticleCell> &getCells() const { return this->_cells; }
+
+  void createFmmNode(FmmTreeNode &node, int depth) const {
+    auto nodeMin3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMin());
+    auto nodeMax3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMax());
+    auto delta = ArrayMath::sub(nodeMax3DIndex, nodeMin3DIndex);
+
+    for (int i = 0; i < depth; ++i) {
+      std::cout << "    ";
+    }
+    std::cout << "createFmmNode" << std::endl;
+    for (int i = 0; i < depth; ++i) {
+      std::cout << "    ";
+    }
+    std::cout << autopas::ArrayUtils::to_string(node.getBoxMin()) << std::endl;
+    for (int i = 0; i < depth; ++i) {
+      std::cout << "    ";
+    }
+    std::cout << autopas::ArrayUtils::to_string(node.getBoxMax()) << std::endl;
+
+
+    /*std::cout << autopas::ArrayUtils::to_string(nodeMin3DIndex) << std::endl;
+    std::cout << autopas::ArrayUtils::to_string(nodeMax3DIndex) << std::endl;
+    std::cout << "getCellLength " << autopas::ArrayUtils::to_string(_cellBlock.getCellLength()) << std::endl;*/
+
+    /*std::cout << "nodeMin3DIndex = {" << nodeMin3DIndex[0] << "," << nodeMin3DIndex[1] << "," << nodeMin3DIndex[2]
+              << "}" << std::endl;
+    std::cout << "nodeMax3DIndex = {" << nodeMax3DIndex[0] << "," << nodeMax3DIndex[1] << "," << nodeMax3DIndex[2]
+              << "}" << std::endl;*/
+
+    // Find the axis in which the box is the largest (based on 3D index).
+    int largestIndex = 0;
+    if (delta[1] > delta[largestIndex]) {
+      largestIndex = 1;
+    }
+    if (delta[2] > delta[largestIndex]) {
+      largestIndex = 2;
+    }
+    auto largestSize = delta[largestIndex];
+
+    // std::cout << "delta = " << autopas::ArrayUtils::to_string(delta) << std::endl;
+    // std::cout << "largestIndex = " << largestIndex << std::endl;
+    // std::cout << "largestSize = " << largestSize << std::endl;
+
+    // Must be at least 2 cells to do a split.
+    if (largestSize >= 2) {
+
+      // The 3D index where the node will be split. Only the largestIndex axis is interesting.
+      // The other indices are set to the min corner of the box.
+      auto split3DIndex = std::array<unsigned long, 3>({0, 0, 0});
+      for (int i = 0; i < 3; ++i) {
+        split3DIndex[i] = nodeMin3DIndex[i];
+      }
+      unsigned long half = largestSize / 2;
+      // Split largest size at the center.
+      split3DIndex[largestIndex] = nodeMin3DIndex[largestIndex] + half;
+
+      // Find the double coordinates of the split position.
+      auto midBoxMin = std::array<double, 3>({0, 0, 0});
+      auto midBoxMax = std::array<double, 3>({0, 0, 0});
+      _cellBlock.getCellBoundingBox(split3DIndex, midBoxMin, midBoxMax);
+
+      // std::cout << "midBox" << std::endl;
+
+      // std::cout << autopas::ArrayUtils::to_string(midBoxMin) << std::endl;
+      // std::cout << autopas::ArrayUtils::to_string(midBoxMax) << std::endl;
+
+      auto splitMin = std::array<double, 3>({0, 0, 0});
+      auto splitMax = std::array<double, 3>({0, 0, 0});
+
+      for (int i = 0; i < 3; ++i) {
+        splitMin[i] = node.getBoxMin()[i];
+        splitMax[i] = node.getBoxMax()[i];
+      }
+
+      // The lower corner of the center cell is the split position.
+      splitMin[largestIndex] = midBoxMin[largestIndex];
+      splitMax[largestIndex] = midBoxMin[largestIndex];
+
+      // std::cout << autopas::ArrayUtils::to_string(splitMin) << std::endl;
+      // std::cout << autopas::ArrayUtils::to_string(splitMax) << std::endl;
+
+      node.split(splitMax, splitMin);
+      // if (depth < 4) {
+      createFmmNode(node.getChild(0), depth + 1);
+      createFmmNode(node.getChild(1), depth + 1);
+      //}
+    }
+  }
+
+  [[nodiscard]] std::unique_ptr<FmmTree> getFastMultipoleMethodTree() const override {
+    std::unique_ptr<FmmTree> tree = std::make_unique<FmmTree>();
+    createFmmNode(tree->setRoot(this->getBoxMin(), this->getBoxMax()), 0);
+    return tree;
+  }
 
  protected:
   /**

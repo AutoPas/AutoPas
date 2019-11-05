@@ -24,3 +24,5 @@ add_subdirectory(cluster-test)
 
 add_subdirectory(basic-cuda)
 add_subdirectory(benchmark-cuda)
+
+add_subdirectory(fmm-integration-test)
