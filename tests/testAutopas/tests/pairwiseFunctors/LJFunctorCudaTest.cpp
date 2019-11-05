@@ -92,10 +92,10 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   FMCell cell2NoCuda(cell2Cuda);
 
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoCuda(_cutoff,
-                                                                                                              0.0);
+                                                                                                               0.0);
   ljFunctorNoCuda.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorCuda(_cutoff,
-                                                                                                            0.0);
+                                                                                                             0.0);
   ljFunctorCuda.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ljFunctorCuda.getCudaWrapper()->setNumThreads(32);
@@ -154,11 +154,11 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
   FMCell cellNoCuda(cellCuda);
 
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoCuda(_cutoff,
-                                                                                                              0.0);
+                                                                                                               0.0);
   ljFunctorNoCuda.setParticleProperties(sqrt(_epsilon * _epsilon) * 24.0,
                                         ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorCuda(_cutoff,
-                                                                                                            0.0);
+                                                                                                             0.0);
   ljFunctorCuda.setParticleProperties(sqrt(_epsilon * _epsilon) * 24.0,
                                       ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
   ljFunctorCuda.getCudaWrapper()->setNumThreads(32);

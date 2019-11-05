@@ -10,9 +10,9 @@
 
 #include <gtest/gtest.h>
 #include <chrono>
-#include "testingHelpers/commonTypedefs.h"
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class AoSvsCudaTest : public AutoPasTestBase {
  public:
