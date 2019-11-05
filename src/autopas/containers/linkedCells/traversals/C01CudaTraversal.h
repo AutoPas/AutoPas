@@ -29,7 +29,7 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
@@ -101,7 +101,7 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
   utils::CudaDeviceVector<size_t> _deviceCellSizes;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets() {
   for (int z = -1; z <= 1; ++z) {
     for (int y = -1; y <= 1; ++y) {
@@ -140,7 +140,7 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 #endif
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   if (not(dataLayout == DataLayoutOption::cuda)) {
     utils::ExceptionHandler::exception(

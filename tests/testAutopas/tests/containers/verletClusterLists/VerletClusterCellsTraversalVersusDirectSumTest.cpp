@@ -38,7 +38,7 @@ void VerletClusterCellsTraversalVersusDirectSumTest::fillContainerWithMolecules(
   }
 }
 
-template <bool useNewton3, autopas::DataLayoutOption dataLayout, bool calculateGlobals>
+template <bool useNewton3, autopas::DataLayoutOption::Value dataLayout, bool calculateGlobals>
 void VerletClusterCellsTraversalVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   fillContainerWithMolecules(numMolecules, _directSum);
   // now fill second container with the molecules from the first one, because

@@ -50,14 +50,15 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param lastNumSamples number of samples used for prediction of last tuning step.
    * @param seed seed of random number generator (should only be used for tests)
    */
-  BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions = allContainerOptions,
+  BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
                  const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
-                 const std::set<TraversalOption> &allowedTraversalOptions = allTraversalOptions,
-                 const std::set<DataLayoutOption> &allowedDataLayoutOptions = allDataLayoutOptions,
-                 const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options, size_t maxEvidence = 10,
-                 AcquisitionFunctionOption predAcqFunction = lcb, size_t predNumSamples = 1000,
-                 AcquisitionFunctionOption lastAcqFunction = ucb, size_t lastNumSamples = 1000,
-                 unsigned long seed = std::random_device()())
+                 const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
+                 const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
+                 const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
+                 size_t maxEvidence = 10, AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lcb,
+                 size_t predNumSamples = 1000,
+                 AcquisitionFunctionOption lastAcqFunction = AcquisitionFunctionOption::ucb,
+                 size_t lastNumSamples = 1000, unsigned long seed = std::random_device()())
       : _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
         _dataLayoutOptions(allowedDataLayoutOptions),

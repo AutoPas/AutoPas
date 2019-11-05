@@ -22,7 +22,7 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class C08BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
  public:
   /**
@@ -47,9 +47,9 @@ class C08BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
   inline void c08Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 template <typename LoopBody>
-inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::c08Traversal(
+inline void C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::c08Traversal(
     LoopBody &&loopBody) {
   const auto end = ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
   const auto stride = ArrayMath::addScalar(this->_overlap, 1ul);

@@ -20,7 +20,7 @@ namespace autopas {
 class FeatureVector : public Configuration {
  public:
   /**
-   * Number of tuneable dimensions
+   * Number of tune-able dimensions.
    */
   static constexpr size_t featureSpaceDims = 4;
 
@@ -31,18 +31,18 @@ class FeatureVector : public Configuration {
 
   /**
    * Constructor
-   * @param _container
-   * @param _traversal
-   * @param _dataLayout
-   * @param _newton3
-   * @param _cellSizeFactor
+   * @param container
+   * @param traversal
+   * @param dataLayout
+   * @param newton3
+   * @param cellSizeFactor
    */
-  FeatureVector(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                DataLayoutOption _dataLayout, Newton3Option _newton3)
-      : Configuration(_container, _cellSizeFactor, _traversal, _dataLayout, _newton3) {}
+  FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
+                DataLayoutOption dataLayout, Newton3Option newton3)
+      : Configuration(container, cellSizeFactor, traversal, dataLayout, newton3) {}
 
   /**
-   * Construct from Configuration
+   * Construct from Configuration.
    * @param conf
    */
   FeatureVector(Configuration conf) : Configuration(conf) {}
@@ -64,7 +64,7 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Cast to Eigen::VectorXd ignoring ContainerOption
+   * Cast to Eigen::VectorXd ignoring ContainerOption.
    * @return
    */
   operator Eigen::VectorXd() const {
@@ -98,11 +98,22 @@ class FeatureVector : public Configuration {
     auto n3 = rng.uniformSample(newton3, n);
 
     std::vector<FeatureVector> result;
-    for (unsigned i = 0; i < n; ++i) {
-      result.emplace_back(ContainerOption(-1), csf[i], tr[i], dl[i], n3[i]);
+    for (size_t i = 0; i < n; ++i) {
+      result.emplace_back(ContainerOption(), csf[i], tr[i], dl[i], n3[i]);
     }
 
     return result;
   }
 };
+
+/**
+ * Stream insertion operator.
+ * @param os
+ * @param featureVector
+ * @return
+ */
+inline std::ostream &operator<<(std::ostream &os, const FeatureVector &featureVector) {
+  return os << featureVector.toString();
+}
+
 }  // namespace autopas

@@ -21,8 +21,9 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const unsigned int maxSamples = 2;
   autopas::LJFunctor<Molecule, FMCell> functor(cutoff, 0.);
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
-      autopas::allContainerOptions, std::set<double>({cellSizeFactor}), autopas::allTraversalOptions,
-      autopas::allDataLayoutOptions, autopas::allNewton3Options);
+      autopas::ContainerOption::getAllOptions(), std::set<double>({cellSizeFactor}),
+      autopas::TraversalOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
+      autopas::Newton3Option::getAllOptions());
   autopas::AutoTuner<Molecule, FMCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
                                                  std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs,
                                                  100, maxSamples);
@@ -30,8 +31,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
-  auto prevConfig = autopas::Configuration(autopas::ContainerOption(-1), -1., autopas::TraversalOption(-1),
-                                           autopas::DataLayoutOption(-1), autopas::Newton3Option(-1));
+  auto prevConfig = autopas::Configuration();
 
   // total number of possible configurations * number of samples + last iteration after tuning
   // number of configs manually counted:
@@ -44,7 +44,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        c04                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        c04SoA                      (SoA, newton3 <=> noNewton3)         = 2
   //                        c01-combined-SoA            (SoA, noNewton3)                     = 1
-  //                        c04-combined-SoA    with (SoA, newton3 <=> noNewton3)            = 2
+  //                        c04-combined-SoA            (SoA, newton3 <=> noNewton3)         = 2
   // VerletLists:           verlet-lists                (AoS <=> SoA, newton3 <=> noNewton3) = 4
   // VerletListsCells:      verlet-sliced               (AoS, newton3 <=> noNewton3)         = 2
   //                        verlet-c18                  (AoS, newton3 <=> noNewton3)         = 2

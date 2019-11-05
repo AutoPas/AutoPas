@@ -66,7 +66,7 @@ pipeline{
         }
         stage('build and test'){
             options {
-                timeout(time: 2, unit: 'HOURS')
+                timeout(time: 4, unit: 'HOURS')
             }
             parallel{
                 stage('gpu cloud') {
@@ -240,7 +240,7 @@ pipeline{
                         container('autopas-intel18'){
                             dir("build-intel"){
                                 sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -DAUTOPAS_OPENMP=OFF ..'"
-                                sh "bash -i -c 'make -j 8 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
+                                sh "bash -i -c 'make -j 4 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
                                 sh "bash -i -c './tests/testAutopas/runTests'"
                             }
                             dir("build-intel/examples"){
@@ -254,7 +254,7 @@ pipeline{
                         container('autopas-intel18'){
                             dir("build-intel-ninja-openmp"){
                                 sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -G Ninja -DAUTOPAS_OPENMP=ON ..'"
-                                sh "bash -i -c 'ninja -j 8 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
+                                sh "bash -i -c 'ninja -j 4 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
                                 sh "bash -i -c './tests/testAutopas/runTests'"
                             }
                             dir("build-intel-ninja-openmp/examples"){

@@ -24,8 +24,8 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 2>,
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, 2>,
                         public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
@@ -38,7 +38,7 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
    */
   explicit C04SoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                            const double cutoff, const std::array<double, 3> &cellLength)
-      : C04BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, 2>(dims, pairwiseFunctor, cutoff,
+      : C04BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, 2>(dims, pairwiseFunctor, cutoff,
                                                                                     cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}
 
@@ -46,27 +46,27 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
 
   TraversalOption getTraversalType() const override { return TraversalOption::c04SoA; }
 
-  DataLayoutOption getDataLayout() const override { return DataLayout; }
+  DataLayoutOption getDataLayout() const override { return dataLayout; }
 
   bool getUseNewton3() const override { return useNewton3; }
 
   /**
-   * c04SoA traversals are only usable with DataLayout SoA.
+   * c04SoA traversals are only usable with dataLayout SoA.
    * @note Currently there is a bug when cellsize factor is smaller than 1:
    * https://github.com/AutoPas/AutoPas/issues/354
    * @return
    */
   bool isApplicable() const override {
-    return DataLayout == DataLayoutOption::soa and
+    return dataLayout == DataLayoutOption::soa and
            (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1);
   }
 
  private:
-  C04SoACellHandler<ParticleCell, PairwiseFunctor, DataLayout, useNewton3> _cellHandler;
+  C04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C04SoATraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+inline void C04SoATraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   _cellHandler.resizeBuffers();
   auto &cells = *(this->_cells);
   this->c04Traversal(

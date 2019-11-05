@@ -47,7 +47,7 @@ TEST_F(ForceCalculationTest, testLJwithU0AoS) {
   std::array<std::array<double, 3>, 4> expectedForces = {{{-24, -24, 0}, {24, -24, 0}, {-24, 24, 0}, {24, 24, 0}}};
   double tolerance = 1e-13;
 
-  testLJ(spacing, cutoff, autopas::aos, expectedForces, tolerance);
+  testLJ(spacing, cutoff, autopas::DataLayoutOption::aos, expectedForces, tolerance);
 }
 
 TEST_F(ForceCalculationTest, testLJwithU0SoA) {
@@ -57,7 +57,7 @@ TEST_F(ForceCalculationTest, testLJwithU0SoA) {
   std::array<std::array<double, 3>, 4> expectedForces = {{{-24, -24, 0}, {24, -24, 0}, {-24, 24, 0}, {24, 24, 0}}};
   double tolerance = 1e-13;
 
-  testLJ(spacing, cutoff, autopas::soa, expectedForces, tolerance);
+  testLJ(spacing, cutoff, autopas::DataLayoutOption::soa, expectedForces, tolerance);
 }
 
 TEST_F(ForceCalculationTest, testLJwithF0AoS) {
@@ -67,7 +67,7 @@ TEST_F(ForceCalculationTest, testLJwithF0AoS) {
   std::array<std::array<double, 3>, 4> expectedForces = {{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}};
   double tolerance = 1e-13;
 
-  testLJ(spacing, cutoff, autopas::aos, expectedForces, tolerance);
+  testLJ(spacing, cutoff, autopas::DataLayoutOption::aos, expectedForces, tolerance);
 }
 
 TEST_F(ForceCalculationTest, testLJwithF0SoA) {
@@ -77,5 +77,5 @@ TEST_F(ForceCalculationTest, testLJwithF0SoA) {
   std::array<std::array<double, 3>, 4> expectedForces = {{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}};
   double tolerance = 1e-13;
 
-  testLJ(spacing, cutoff, autopas::soa, expectedForces, tolerance);
+  testLJ(spacing, cutoff, autopas::DataLayoutOption::soa, expectedForces, tolerance);
 }

@@ -8,7 +8,7 @@
 
 LinkedCellsVersusVerletListsTest::LinkedCellsVersusVerletListsTest() : _verletLists(nullptr), _linkedCells(nullptr) {}
 
-template <bool useNewton3, autopas::DataLayoutOption dataLayoutOption>
+template <bool useNewton3, autopas::DataLayoutOption::Value dataLayoutOption>
 void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double rel_err_tolerance,
                                             std::array<double, 3> boxMax) {
   // generate containers
@@ -75,13 +75,13 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
     // special case if newton3 is disabled and soa are used: here linked cells will anyways partially use newton3 (for
     // the intra cell interactions), so linked cell kernel calls will be less than for verlet.
     EXPECT_LE(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls())
-        << "N3: " << (useNewton3 ? "true" : "false") << ", " << autopas::utils::StringUtils::to_string(dataLayoutOption)
+        << "N3: " << (useNewton3 ? "true" : "false") << ", " << autopas::DataLayoutOption(dataLayoutOption).to_string()
         << ", boxMax = [" << boxMax[0] << ", " << boxMax[1] << ", " << boxMax[2] << "]";
 
   } else {
     // normally the number of kernel calls should be exactly the same
     EXPECT_EQ(flopsLinked.getKernelCalls(), flopsVerlet.getKernelCalls())
-        << "N3: " << (useNewton3 ? "true" : "false") << ", " << autopas::utils::StringUtils::to_string(dataLayoutOption)
+        << "N3: " << (useNewton3 ? "true" : "false") << ", " << autopas::DataLayoutOption(dataLayoutOption).to_string()
         << ", boxMax = [" << boxMax[0] << ", " << boxMax[1] << ", " << boxMax[2] << "]";
   }
   // blackbox mode: the following line is only true, if the verlet lists do NOT use less cells than the linked cells

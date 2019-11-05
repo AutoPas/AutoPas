@@ -20,12 +20,16 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
   YAML::Node node = YAML::LoadFile(config.yamlFilename);
 
   if (node[MDFlexConfig::containerOptionsStr]) {
-    config.containerOptions = autopas::utils::StringUtils::parseContainerOptions(
-        node[MDFlexConfig::containerOptionsStr].as<std::string>(), false);
+    config.containerOptions =
+        autopas::ContainerOption::parseOptions(node[MDFlexConfig::containerOptionsStr].as<std::string>());
   }
   if (node[MDFlexConfig::selectorStrategyStr]) {
-    config.selectorStrategy =
-        autopas::utils::StringUtils::parseSelectorStrategy(node[MDFlexConfig::selectorStrategyStr].as<std::string>());
+    auto parsedOptions =
+        autopas::SelectorStrategyOption::parseOptions(node[MDFlexConfig::selectorStrategyStr].as<std::string>());
+    if (parsedOptions.size() != 1) {
+      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one selector strategy option!");
+    }
+    config.selectorStrategy = *parsedOptions.begin();
   }
   if (node[MDFlexConfig::periodicStr]) {
     config.periodic = node[MDFlexConfig::periodicStr].as<bool>();
@@ -39,7 +43,7 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
   }
   if (node[MDFlexConfig::dataLayoutOptionsStr]) {
     config.dataLayoutOptions =
-        autopas::utils::StringUtils::parseDataLayout(node[MDFlexConfig::dataLayoutOptionsStr].as<std::string>());
+        autopas::DataLayoutOption::parseOptions(node[MDFlexConfig::dataLayoutOptionsStr].as<std::string>());
   }
   if (node[MDFlexConfig::functorOptionStr]) {
     auto strArg = node[MDFlexConfig::functorOptionStr].as<std::string>();
@@ -59,14 +63,14 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
   }
   if (node[MDFlexConfig::newton3OptionsStr]) {
     config.newton3Options =
-        autopas::utils::StringUtils::parseNewton3Options(node[MDFlexConfig::newton3OptionsStr].as<std::string>());
+        autopas::Newton3Option::parseOptions(node[MDFlexConfig::newton3OptionsStr].as<std::string>());
   }
   if (node[MDFlexConfig::deltaTStr]) {
     config.deltaT = node[MDFlexConfig::deltaTStr].as<double>();
   }
   if (node[MDFlexConfig::traversalOptionsStr]) {
     config.traversalOptions =
-        autopas::utils::StringUtils::parseTraversalOptions(node[MDFlexConfig::traversalOptionsStr].as<std::string>());
+        autopas::TraversalOption::parseOptions(node[MDFlexConfig::traversalOptionsStr].as<std::string>());
   }
   if (node[MDFlexConfig::tuningIntervalStr]) {
     config.tuningInterval = node[MDFlexConfig::tuningIntervalStr].as<unsigned int>();
@@ -78,8 +82,12 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.tuningMaxEvidence = node[MDFlexConfig::tuningMaxEvidenceStr].as<unsigned int>();
   }
   if (node[MDFlexConfig::tuningStrategyOptionsStr]) {
-    config.tuningStrategyOption = autopas::utils::StringUtils::parseTuningStrategyOption(
-        node[MDFlexConfig::tuningStrategyOptionsStr].as<std::string>());
+    auto parsedOptions =
+        autopas::TuningStrategyOption::parseOptions(node[MDFlexConfig::tuningStrategyOptionsStr].as<std::string>());
+    if (parsedOptions.size() != 1) {
+      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one tuning strategy option!");
+    }
+    config.tuningStrategyOption = *parsedOptions.begin();
   }
   if (node[MDFlexConfig::logLevelStr]) {
     auto strArg = node[MDFlexConfig::logLevelStr].as<std::string>();

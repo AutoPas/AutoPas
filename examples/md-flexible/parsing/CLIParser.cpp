@@ -54,10 +54,9 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (option) {
       case '3': {
-        config.newton3Options = autopas::utils::StringUtils::parseNewton3Options(strArg, false);
+        config.newton3Options = autopas::Newton3Option::parseOptions(strArg);
         if (config.newton3Options.empty()) {
           cerr << "Unknown Newton3 option: " << strArg << endl;
-          cerr << "Please use 'enabled' or 'disabled'!" << endl;
           displayHelp = true;
         }
         break;
@@ -88,10 +87,9 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'c': {
         // overwrite default argument
-        config.containerOptions = autopas::utils::StringUtils::parseContainerOptions(strArg, false);
+        config.containerOptions = autopas::ContainerOption::parseOptions(strArg);
         if (config.containerOptions.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
-          cerr << "Please use 'DirectSum', 'LinkedCells', 'VerletLists', 'VCells' or 'VCluster'!" << endl;
           displayHelp = true;
         }
         break;
@@ -115,10 +113,9 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'd': {
-        config.dataLayoutOptions = autopas::utils::StringUtils::parseDataLayout(strArg);
+        config.dataLayoutOptions = autopas::DataLayoutOption::parseOptions(strArg);
         if (config.dataLayoutOptions.empty()) {
           cerr << "Unknown data layouts: " << strArg << endl;
-          cerr << "Please use 'AoS' or 'SoA'!" << endl;
           displayHelp = true;
         }
         break;
@@ -329,21 +326,20 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 't': {
-        config.traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
+        config.traversalOptions = autopas::TraversalOption::parseOptions(strArg);
         if (config.traversalOptions.empty()) {
           cerr << "Unknown Traversal: " << strArg << endl;
-          cerr << "Please use 'c08', 'c01', 'c18', 'sliced' or 'direct'!" << endl;
           displayHelp = true;
         }
         break;
       }
       case 'T': {
-        config.tuningStrategyOption = autopas::utils::StringUtils::parseTuningStrategyOption(strArg);
-        if (config.tuningStrategyOption == autopas::TuningStrategyOption(-1)) {
-          cerr << "Unknown Tuning Strategy: " << strArg << endl;
-          cerr << "Please use 'full-search' or 'bayesian-search'!" << endl;
+        auto parsedOptions = autopas::TuningStrategyOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one tuning strategy option." << endl;
           displayHelp = true;
         }
+        config.tuningStrategyOption = *parsedOptions.begin();
         break;
       }
       case 'u': {
@@ -373,12 +369,12 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'y': {
-        config.selectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
-        if (config.selectorStrategy == autopas::SelectorStrategyOption(-1)) {
-          cerr << "Unknown Selector Strategy: " << strArg << endl;
-          cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
+        auto parsedOptions = autopas::SelectorStrategyOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one selector strategy option." << endl;
           displayHelp = true;
         }
+        config.selectorStrategy = *parsedOptions.begin();
         break;
       }
       case 'Y': {

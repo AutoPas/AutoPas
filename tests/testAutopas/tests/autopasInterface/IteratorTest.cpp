@@ -263,7 +263,7 @@ using ::testing::ValuesIn;
 INSTANTIATE_TEST_SUITE_P(Generated, IteratorTest,
                          // proper indent
                          Combine(ValuesIn([]() -> std::set<autopas::ContainerOption> {
-                                   auto allContainerOptions = autopas::allContainerOptions;
+                                   auto allContainerOptions = autopas::ContainerOption::getAllOptions();
                                    /// @TODO no verletClusterLists yet, so we erase it for now.
                                    allContainerOptions.erase(
                                        allContainerOptions.find(autopas::ContainerOption::verletClusterLists));

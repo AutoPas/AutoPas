@@ -8,29 +8,63 @@
 
 #include <set>
 
+#include "autopas/options/Option.h"
+
 namespace autopas {
 
 /**
- * Different acquisition functions
+ * Class representing the acquisition function choices for the Bayesian search.
  */
-enum AcquisitionFunctionOption {
+class AcquisitionFunctionOption : public Option<AcquisitionFunctionOption> {
+ public:
   /**
-   * Upper confidence bound
+   * Different acquisition functions
    */
-  ucb,
-  /**
-   * Lower confidence bound
-   */
-  lcb,
-  /**
-   * mean
-   */
-  mean
-};
+  enum Value {
+    /**
+     * Upper confidence bound
+     */
+    ucb,
+    /**
+     * Lower confidence bound
+     */
+    lcb,
+    /**
+     * mean
+     */
+    mean
+  };
 
-/**
- * Provides a way to iterate over the possible choices of AcquisitionFunction.
- */
-static const std::set<AcquisitionFunctionOption> allAcquisitionFunctionOptions = {
-    AcquisitionFunctionOption::ucb, AcquisitionFunctionOption::lcb, AcquisitionFunctionOption::mean};
+  /**
+   * Constructor.
+   */
+  AcquisitionFunctionOption() = default;
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
+  constexpr AcquisitionFunctionOption(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
+  constexpr operator Value() const { return _value; }
+
+  /**
+   * Provides a way to iterate over the possible choices of TraversalOption.
+   * @return map option -> string representation
+   */
+  static std::map<AcquisitionFunctionOption, std::string> getOptionNames() {
+    return {
+        {AcquisitionFunctionOption::ucb, "upper-confidence-bound"},
+        {AcquisitionFunctionOption::lcb, "lower-confidence-bound"},
+        {AcquisitionFunctionOption::mean, "mean"},
+    };
+  };
+
+ private:
+  Value _value{Value(-1)};
+};
 }  // namespace autopas

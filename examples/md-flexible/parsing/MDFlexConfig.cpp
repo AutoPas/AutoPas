@@ -23,7 +23,7 @@ void MDFlexConfig::print() {
 
   if (containerOptions.size() > 1 or traversalOptions.size() > 1 or dataLayoutOptions.size() > 1) {
     cout << setw(valueOffset) << left << "Selector Strategy"
-         << ":  " << autopas::utils::StringUtils::to_string(selectorStrategy) << endl;
+         << ":  " << selectorStrategy << endl;
   }
 
   cout << setw(valueOffset) << left << "Data Layout"
@@ -31,7 +31,7 @@ void MDFlexConfig::print() {
   cout << setw(valueOffset) << left << "Allowed traversals"
        << ":  " << autopas::utils::StringUtils::iterableToString(traversalOptions) << endl;
   cout << setw(valueOffset) << left << "Tuning Strategy"
-       << ":  " << autopas::utils::StringUtils::to_string(tuningStrategyOption) << endl;
+       << ":  " << tuningStrategyOption << endl;
   cout << setw(valueOffset) << left << "Tuning Interval"
        << ":  " << tuningInterval << endl;
   cout << setw(valueOffset) << left << "Tuning Samples"
