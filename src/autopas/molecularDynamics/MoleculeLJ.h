@@ -41,8 +41,16 @@ class MoleculeLJ : public Particle {
   /**
    * The type for the SoA storage.
    */
-  typedef typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType, floatType,
-                                           size_t, floatType>::Type SoAArraysType;
+  using SoAArraysType = typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType,
+                                                         floatType, size_t, floatType>::Type;
+
+#if defined(AUTOPAS_CUDA)
+  /**
+   * The type for storage arrays for Cuda.
+   */
+  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<size_t, floatType, floatType, floatType, floatType,
+                                                                    floatType, floatType, size_t, floatType>::Type;
+#endif
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
