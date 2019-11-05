@@ -324,7 +324,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         tuningStrategyOption = *parsedTuningStrategies.begin();
         if (tuningStrategyOption == autopas::TuningStrategyOption()) {
           cerr << "Unknown Tuning Strategy: " << strArg << endl;
-          cerr << "Please use 'full-search' or 'bayesian-search'!" << endl;
+          cerr << "Please use 'full-search', 'bayesian-search' or 'active-harmony'!" << endl;
           displayHelp = true;
         }
         break;
