@@ -169,7 +169,8 @@ class Simulation {
       _timeDiscretization;
 
   struct timers {
-    autopas::utils::Timer positionUpdate, forceUpdate, velocityUpdate, simulate, vtk, init, total, thermostat;
+    autopas::utils::Timer positionUpdate, forceUpdate, velocityUpdate, simulate, vtk, init, total, thermostat,
+        boundaries;
   } _timers;
 
   /**
@@ -327,7 +328,9 @@ void Simulation<Particle, ParticleCell>::simulate() {
     }
 
     if (_config->periodic) {
+      _timers.boundaries.start();
       BoundaryConditions<ParticleCell>::applyPeriodic(_autopas);
+      _timers.boundaries.stop();
     }
     _timers.positionUpdate.start();
     _timeDiscretization->calculatePositions(_autopas);
@@ -395,7 +398,8 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   }
 
   auto durationTotal = _timers.total.stop();
-  auto durationSimulateSec = _timers.simulate.getTotalTime() * 1e-6;
+  auto durationSimulate = _timers.simulate.getTotalTime();
+  auto durationSimulateSec = durationSimulate * 1e-6;
 
   // take total time as base for formatting since this should be the longest
   auto digitsTimeTotalMuS = std::to_string(durationTotal).length();
@@ -406,16 +410,24 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   cout << fixed << setprecision(_floatPrecision);
   cout << endl << "Measurements:" << endl;
   cout << timerToString("Time total      ", durationTotal, digitsTimeTotalMuS) << endl;
-  cout << timerToString("  Force         ", _timers.forceUpdate.getTotalTime(), digitsTimeTotalMuS, durationTotal)
+  cout << timerToString("  Initialization", _timers.init.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
+  cout << timerToString("  Simulation    ", durationSimulate, digitsTimeTotalMuS, durationTotal) << endl;
+  if (_config->periodic) {
+    cout << timerToString("    Boundaries  ", _timers.boundaries.getTotalTime(), digitsTimeTotalMuS, durationSimulate)
+         << endl;
+  }
+  cout << timerToString("    Position    ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalMuS, durationSimulate)
        << endl;
-  cout << timerToString("  Position      ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalMuS, durationTotal)
+  cout << timerToString("    Force       ", _timers.forceUpdate.getTotalTime(), digitsTimeTotalMuS, durationSimulate)
        << endl;
-  cout << timerToString("  Velocity      ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalMuS, durationTotal)
+  cout << timerToString("    Velocity    ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalMuS, durationSimulate)
        << endl;
-  cout << timerToString("  VTK           ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
-  cout << timerToString("  Initialization", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
+  if (not _config->vtkFileName.empty()) {
+    cout << timerToString("    VTK         ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationSimulate) << endl;
+  }
   if (_config->useThermostat) {
-    cout << timerToString("  Thermostat    ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
+    cout << timerToString("    Thermostat  ", _timers.thermostat.getTotalTime(), digitsTimeTotalMuS, durationSimulate)
+         << endl;
   }
 
   auto numIterations = _config->iterations;
