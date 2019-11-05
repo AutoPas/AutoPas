@@ -75,14 +75,9 @@ class LJFunctor
         _aosThreadData(),
         _duplicatedCalculations{duplicatedCalculation},
         _postProcessed{false} {
-    //@TODO: make sure that this constructor is only called with mixing == false
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
     }
-#if defined(AUTOPAS_CUDA)
-    LJFunctorConstants<SoAFloatPrecision> constants(_cutoffsquare, _epsilon24, _sigmasquare, _shift6);
-    _cudawrapper.loadConstants(&constants);
-#endif
   }
 
  public:
