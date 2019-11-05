@@ -7,11 +7,13 @@ include(ExternalProject)
 ExternalProject_Add(
     yaml-cpp
     URL
-        # eigen-master:
+        # yaml-cpp-master:
         # https://github.com/jbeder/yaml-cpp/archive/master.zip
         # commit a8ba6a8:
         ${CMAKE_SOURCE_DIR}/libs/yaml-cpp-master.zip
     URL_HASH MD5=6495f4c5dcf45414e25938e53a10ce9d
+    # needed to compile with ninja
+    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/yaml-cpp/src/yaml-cpp-build/libyaml-cpp.a
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/yaml-cpp
     # Disable install steps
     INSTALL_COMMAND
