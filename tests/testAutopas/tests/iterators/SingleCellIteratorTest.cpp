@@ -16,7 +16,7 @@ void SingleCellIteratorTest::SetUp() {
     for (auto &a : arr) {
       a = static_cast<double>(i);
     }
-    MoleculeLJ<> m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), 0);
+    Molecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), 0);
     _vecOfMolecules.push_back(m);
   }
 }
@@ -39,7 +39,7 @@ TEST_F(SingleCellIteratorTest, testFullParticleCell) {
 }
 
 TEST_F(SingleCellIteratorTest, testRMMParticleCell) {
-  RMMParticleCell<MoleculeLJ<>> fpc;
+  RMMParticleCell<Molecule> fpc;
 
   fillWithParticles(&fpc);
 

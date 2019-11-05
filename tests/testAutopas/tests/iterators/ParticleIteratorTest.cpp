@@ -16,7 +16,7 @@ void ParticleIteratorTest::SetUp() {
     for (auto &a : arr) {
       a = static_cast<double>(i);
     }
-    MoleculeLJ<> m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), 0);
+    Molecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), 0);
     _vecOfMolecules.push_back(m);
   }
 
@@ -155,7 +155,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_mutable) {
 
 TEST_F(ParticleIteratorTest, testRMMIterator_EFEFFEEFEF) {
   // Empty Full Empty Full Full Empty Empty Full Empty Full
-  std::vector<RMMParticleCell<MoleculeLJ<>>> data(10);
+  std::vector<RMMParticleCell<Molecule>> data(10);
 
   for (auto i : {1u, 3u, 4u, 7u, 9u}) {
     fillWithParticles(&data.at(i));
@@ -185,7 +185,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_EFEFFEEFEF) {
 
 TEST_F(ParticleIteratorTest, testRMMIterator_FEFEEFFEFE) {
   // Full Empty Full Empty Empty Full Full Empty Full Empty
-  std::vector<RMMParticleCell<MoleculeLJ<>>> data(10);
+  std::vector<RMMParticleCell<Molecule>> data(10);
 
   for (auto i : {0u, 2u, 5u, 6u, 8u}) {
     fillWithParticles(&data.at(i));
@@ -249,7 +249,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
 
 TEST_F(ParticleIteratorTest, testRMMIterator_mutable) {
   // Full Empty Full Empty Empty Full Full Empty Full Empty
-  std::vector<RMMParticleCell<MoleculeLJ<>>> data(10);
+  std::vector<RMMParticleCell<Molecule>> data(10);
 
   for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
     fillWithParticles(&data.at(i));
@@ -348,9 +348,9 @@ void testContainerIteratorBehavior(Container &container, Molecule &mol, Molecule
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
   DirectSum<FMCell> ds({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
-  MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
+  Molecule mol({1., 1., 1.}, {0., 0., 0.}, 1);
   ds.addParticle(mol);
-  MoleculeLJ<> haloMol({-1., 1., 1.}, {0., 0., 0.}, 2, 0);
+  Molecule haloMol({-1., 1., 1.}, {0., 0., 0.}, 2, 0);
   ds.addHaloParticle(haloMol);
 
   testContainerIteratorBehavior(ds, mol, haloMol);
@@ -358,19 +358,19 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorLinkedCells) {
   LinkedCells<FMCell> linkedCells({0., 0., 0.}, {10., 10., 10.}, 3, 0., 1.);
-  MoleculeLJ mol({1., 1., 1.}, {0., 0., 0.}, 1);
+  Molecule mol({1., 1., 1.}, {0., 0., 0.}, 1);
   linkedCells.addParticle(mol);
-  MoleculeLJ<> haloMol({-1., 1., 1.}, {0., 0., 0.}, 2, 0);
+  Molecule haloMol({-1., 1., 1.}, {0., 0., 0.}, 2, 0);
   linkedCells.addHaloParticle(haloMol);
 
   testContainerIteratorBehavior(linkedCells, mol, haloMol);
 }
 
 TEST_F(ParticleIteratorTest, testIteratorBehaviorVerletLists) {
-  VerletLists<MoleculeLJ<>> verletLists({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
-  MoleculeLJ<> mol({1., 1., 1.}, {0., 0., 0.}, 1, 0);
+  VerletLists<Molecule> verletLists({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
+  Molecule mol({1., 1., 1.}, {0., 0., 0.}, 1, 0);
   verletLists.addParticle(mol);
-  MoleculeLJ<> haloMol({-1., 1., 1.}, {0., 0., 0.}, 2, 0);
+  Molecule haloMol({-1., 1., 1.}, {0., 0., 0.}, 2, 0);
   verletLists.addHaloParticle(haloMol);
 
   // test normally
