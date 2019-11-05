@@ -18,7 +18,7 @@ ExternalProject_Add(
     # Disable install steps
     INSTALL_COMMAND
         ""
-        # Disable everything we don't need and set build type to release
+        # Disable everything we don't need and set build type to release. Also disable warnings.
     CMAKE_ARGS
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
@@ -27,6 +27,7 @@ ExternalProject_Add(
         -DYAML_CPP_BUILD_TESTS=OFF
         -DYAML_CPP_BUILD_CONTRIB=OFF
         -DYAML_CPP_BUILD_TOOLS=OFF
+        -DCMAKE_CXX_FLAGS=-w
 )
 
 # Get GTest source and binary directories from CMake project
