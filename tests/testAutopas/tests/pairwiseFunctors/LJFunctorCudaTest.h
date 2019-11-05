@@ -48,13 +48,14 @@ class LJFunctorCudaTest : public AutoPasTestBase,
 
   /**
    * Checks that two non empty SoAs' particles are equal
-   * @tparam SoAType
+   * @tparam Particle
    * @param soa1
    * @param soa2
    * @return
    */
-  template <class SoAType>
-  bool SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2);
+  template <class Particle>
+  bool SoAParticlesEqual(autopas::SoA<typename Particle::SoAArraysType> &soa1,
+                         autopas::SoA<typename Particle::SoAArraysType> &soa2);
 
   /**
    * Check that two non empty AoSs' (=Cells) particles are equal.
