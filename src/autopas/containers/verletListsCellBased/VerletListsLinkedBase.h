@@ -209,7 +209,7 @@ class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle
                                  this->getInteractionLength(), this->_linkedCells.getCellBlock().getCellLength());
   }
 
-  [[nodiscard]] std::unique_ptr<FmmTree> getFastMultipoleMethodTree() const override {
+  [[nodiscard]] std::unique_ptr<fmm::FmmTree> getFastMultipoleMethodTree() const override {
     autopas::utils::ExceptionHandler::exception(
         "VerletListsLinkedBase.getFastMultipoleMethodTree() not yet implemented.");
     return nullptr;

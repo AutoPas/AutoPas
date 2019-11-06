@@ -297,7 +297,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    */
   const std::vector<ParticleCell> &getCells() const { return this->_cells; }
 
-  void createFmmNode(FmmTreeNode &node, int depth) const {
+  void createFmmNode(fmm::FmmTreeNode &node, int depth) const {
     auto nodeMin3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMin());
     auto nodeMax3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMax());
     auto delta = ArrayMath::sub(nodeMax3DIndex, nodeMin3DIndex);
@@ -385,8 +385,8 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
     }
   }
 
-  [[nodiscard]] std::unique_ptr<FmmTree> getFastMultipoleMethodTree() const override {
-    std::unique_ptr<FmmTree> tree = std::make_unique<FmmTree>();
+  [[nodiscard]] std::unique_ptr<fmm::FmmTree> getFastMultipoleMethodTree() const override {
+    auto tree = std::make_unique<fmm::FmmTree>();
     createFmmNode(tree->setRoot(this->getBoxMin(), this->getBoxMax()), 0);
     return tree;
   }

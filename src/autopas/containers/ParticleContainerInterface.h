@@ -259,7 +259,7 @@ class ParticleContainerInterface {
     return compatibleTraversals::allCompatibleTraversals(this->getContainerType());
   }
 
-  [[nodiscard]] virtual std::unique_ptr<FmmTree> getFastMultipoleMethodTree() const = 0;
+  [[nodiscard]] virtual std::unique_ptr<fmm::FmmTree> getFastMultipoleMethodTree() const = 0;
 };
 
 }  // namespace autopas

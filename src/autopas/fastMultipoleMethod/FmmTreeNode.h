@@ -9,6 +9,9 @@
 #include <memory>
 #include <vector>
 
+namespace autopas::fmm {
+
+// forward declaration
 class FmmTree;
 
 class FmmTreeNode {
@@ -26,3 +29,4 @@ class FmmTreeNode {
   std::array<double, 3> boxMax;
   std::vector<std::unique_ptr<FmmTreeNode>> child;
 };
+}  // namespace autopas::fmm

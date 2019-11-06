@@ -480,7 +480,7 @@ class AutoPas {
     _tuningStrategyOption = tuningStrategyOption;
   }
 
-  std::unique_ptr<FmmTree> getFastMultipoleTree() {
+  std::unique_ptr<fmm::FmmTree> getFastMultipoleTree() {
     return _logicHandler->getFastMultipoleTree();
   }
 
