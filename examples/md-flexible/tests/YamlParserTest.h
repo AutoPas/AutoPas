@@ -7,8 +7,8 @@
 #include <gtest/gtest.h>
 #include <cmath>
 #include <vector>
-#include "../../../../examples/md-flexible/parsing/MDFlexConfig.h"
-#include "../../../../examples/md-flexible/parsing/YamlParser.h"
+#include "parsing/MDFlexConfig.h"
+#include "parsing/YamlParser.h"
 #include "AutoPasTestBase.h"
 #include "Objects/Objects.h"
 #include "autopas/AutoPas.h"

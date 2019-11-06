@@ -5,9 +5,9 @@
  */
 #pragma once
 #include <gtest/gtest.h>
-#include "../../../../examples/md-flexible/PrintableMolecule.h"
-#include "../../../../examples/md-flexible/Simulation.h"
-#include "../../../../examples/md-flexible/parsing/YamlParser.h"
+#include "PrintableMolecule.h"
+#include "Simulation.h"
+#include "parsing/YamlParser.h"
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"

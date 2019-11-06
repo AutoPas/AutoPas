@@ -268,23 +268,20 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   autopas::Logger::get()->set_level(logLevel);
   _autopas.init();
 
-  if (_config->checkpointfile != "") {
-    Checkpoint<decltype(_autopas), Particle>::initDomain(_autopas, _config->checkpointfile);
-  } else {
-    // initializing Objects
-    for (const auto &grid : cubesGrid) {
-      Generator::cubeGrid<Particle, ParticleCell>(_autopas, grid);
-    }
-    for (const auto &cube : cubesGauss) {
-      Generator::cubeGauss<Particle, ParticleCell>(_autopas, cube);
-    }
-    for (const auto &cube : cubesUniform) {
-      Generator::cubeRandom<Particle, ParticleCell>(_autopas, cube);
-    }
-    for (const auto &sphere : spheres) {
-      Generator::sphere<Particle, ParticleCell>(_autopas, sphere);
-    }
+  // initializing Objects
+  for (const auto &grid : cubesGrid) {
+    Generator::cubeGrid<Particle, ParticleCell>(_autopas, grid);
   }
+  for (const auto &cube : cubesGauss) {
+    Generator::cubeGauss<Particle, ParticleCell>(_autopas, cube);
+  }
+  for (const auto &cube : cubesUniform) {
+    Generator::cubeRandom<Particle, ParticleCell>(_autopas, cube);
+  }
+  for (const auto &sphere : spheres) {
+    Generator::sphere<Particle, ParticleCell>(_autopas, sphere);
+  }
+
   // initilizing Thermostat
   if (_config->useThermostat) {
     _thermostat = std::make_unique<

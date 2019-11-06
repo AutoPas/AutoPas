@@ -1,14 +1,22 @@
 file(
     GLOB_RECURSE
-    MY_SRC
+    MDFlex_SRC
     "*.cpp"
     "*.h"
     "../../tests/testAutopas/testingHelpers/RandomGenerator.cpp"
 )
 
-add_executable(md-flexible ${MY_SRC})
+# remove all files from the test dir
+foreach (FILE_PATH ${MDFlex_SRC})
+    string(FIND ${FILE_PATH} "/tests/" EXCLUDE_FILE)
+    if (NOT ${EXCLUDE_FILE} EQUAL -1)
+        list(REMOVE_ITEM MDFlex_SRC ${FILE_PATH})
+    endif ()
+endforeach ()
 
-target_include_directories(autopas PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_executable(md-flexible ${MDFlex_SRC})
+
+target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(md-flexible autopas libyaml-cpp)
 
@@ -27,6 +35,9 @@ foreach (script ${SCRIPTS})
 endforeach (script)
 
 # -----------------test-----------------
+
+add_subdirectory(tests)
+
 # add check for current target
 # cmake-format: off
 add_test(

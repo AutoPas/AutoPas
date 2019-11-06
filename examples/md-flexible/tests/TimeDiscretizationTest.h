@@ -9,8 +9,8 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-#include "../../../../examples/md-flexible/PrintableMolecule.h"
-#include "../../../../examples/md-flexible/TimeDiscretization.h"
+#include "PrintableMolecule.h"
+#include "TimeDiscretization.h"
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
