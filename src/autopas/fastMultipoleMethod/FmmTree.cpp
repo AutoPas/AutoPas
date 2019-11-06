@@ -6,7 +6,7 @@
 
 #include "FmmTree.h"
 
-FmmTreeNode &FmmTree::setRoot(std::array<double, 3> boxMin, std::array<double, 3> boxMax) {
+autopas::fmm::FmmTreeNode &autopas::fmm::FmmTree::setRoot(std::array<double, 3> boxMin, std::array<double, 3> boxMax) {
   root = std::make_unique<FmmTreeNode>(*this, nullptr, boxMin, boxMax);
   return *root;
 }

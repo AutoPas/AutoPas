@@ -5,6 +5,7 @@
  */
 
 #include "FmmTreeTest.h"
+#include "autopas/fastMultipoleMethod/autopasFMM.h"
 
 TEST_F(FmmTreeTest, TestFmmTreeGeneration) {
   std::cout << std::endl;

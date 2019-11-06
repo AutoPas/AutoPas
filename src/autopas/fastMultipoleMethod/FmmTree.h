@@ -11,6 +11,7 @@
 #include <vector>
 #include "FmmTreeNode.h"
 
+namespace autopas::fmm {
 class FmmTree {
  public:
   FmmTree() = default;
@@ -21,4 +22,4 @@ class FmmTree {
   std::unique_ptr<FmmTreeNode> root;
 };
 
-
+}  // namespace autopas::fmm
