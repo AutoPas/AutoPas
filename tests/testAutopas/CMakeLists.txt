@@ -22,7 +22,6 @@ if (AUTOPAS_ENABLE_CUDA)
 endif ()
 
 add_executable(runTests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
-include_directories(${PROJECT_SOURCE_DIR}/libs/yaml-cpp/include)
 
 target_compile_definitions(
     runTests PRIVATE
