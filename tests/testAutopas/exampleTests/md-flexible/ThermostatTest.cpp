@@ -28,15 +28,15 @@ void ThermostatTest::basicApplication(
     autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> &autopas) {
   double nrApplications = targetT / deltaT;
   auto _thermostat = Thermostat<decltype(autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>(
-      initT, initBM, targetT, deltaT, _particlePropertiesLibrary);
+      initT, targetT, deltaT, _particlePropertiesLibrary);
   if (initBM) {
-    _thermostat.initialize(autopas);
+    _thermostat.addBrownianMotion(autopas, false);
   } else {
     // initial velocity value of particles necessary otherwise zero divisions causing error
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       iter->addV({0, 0.1, 0});
     }
-    _thermostat.initialize(autopas);
+    _thermostat.addBrownianMotion(autopas, false);
   }
   _thermostat.apply(autopas);
   for (size_t i = 1; i <= nrApplications; i++) {
@@ -53,7 +53,7 @@ void ThermostatTest::calcTemperature(size_t particlesPerDimension) {
   initFillWithParticles({particlesPerDimension, particlesPerDimension, particlesPerDimension} /*particlesPerdim*/,
                         1. /*particleSpacing*/, 1.5 /*cutoff*/, autopas /*autopas Object*/);
   auto _thermostat = Thermostat<decltype(autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>(
-      0.1 /*initT*/, true /*initBM*/, 5 /*targetT*/, 0.01 /*deltaT*/, _particlePropertiesLibrary);
+      0.1 /*initT*/, 5 /*targetT*/, 0.01 /*deltaT*/, _particlePropertiesLibrary);
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     iter->setV({0.1, 0.1, 0.2});
   }

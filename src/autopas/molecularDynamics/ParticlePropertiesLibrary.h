@@ -61,6 +61,19 @@ class ParticlePropertiesLibrary {
   ~ParticlePropertiesLibrary() = default;
 
   /**
+   * Returns a set of all particle types stored.
+   * @return
+   */
+  std::set<intType>getTypes() const {
+    std::set<intType> typeIDs;
+    for (auto &[typeID, _] : _masses) {
+      typeIDs.insert(typeID);
+    }
+
+    return typeIDs;
+  }
+
+  /**
    * Getter for the particle's epsilon*24.
    * @param i typeId of the particle.
    * @return 24*epsilon_i

@@ -289,13 +289,9 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   if (_config->useThermostat) {
     _thermostat = std::make_unique<
         Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
-        _config->initTemperature, _config->useCurrentTempForBrownianMotion, _config->targetTemperature,
+        _config->initTemperature, _config->targetTemperature,
         _config->deltaTemp, *_particlePropertiesLibrary);
-  }
-  //    Checkpoint<decltype(_autopas),Particle>::initDomain(_autopas,_parser->getCheckpointFile());
-  // initializing velocites of Particles
-  if (_config->useThermostat) {
-    _thermostat->initialize(_autopas);
+    _thermostat->addBrownianMotion(_autopas, _config->useCurrentTempForBrownianMotion);
   }
 
   _timers.init.stop();

@@ -21,13 +21,11 @@ class Thermostat {
   /**
    * Constructor if target Temperature is specified
    * @param tInit initialTemperature of System
-   * @param initBm initialization with BM or other Formula
    * @param tTarget target Temperature of System
    * @param deltaTemp
    * @param particlePropertiesLibrary
    */
-  // true
-  Thermostat(ThermostatFloatType tInit, bool initBm, ThermostatFloatType tTarget, ThermostatFloatType deltaTemp,
+  Thermostat(ThermostatFloatType tInit, ThermostatFloatType tTarget, ThermostatFloatType deltaTemp,
              const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary);
 
   /**
@@ -49,10 +47,21 @@ class Thermostat {
   Thermostat &operator=(const Thermostat &thermo) = default;
 
   /**
-   * Initializes the Simulation according to brownian movement.
+   * Adds brownian motion.
    * @param ps Particle system to be initialized.
    */
-  void initialize(AutoPasTemplate &autopas);
+
+  /**
+   * Adds brownian motion to the given system.
+   *
+   * If useCurrentTemp is set to true the factor of the brownian motion is calculated per particle based on its mass and
+   * the system's temperature. Otherwise a constant factor of 0.1 is used.
+   * Set this to false if the system is initialized without velocities.
+   *
+   * @param autopas
+   * @param useCurrentTemp
+   */
+  void addBrownianMotion(AutoPasTemplate &autopas, bool useCurrentTemp);
 
   /**
    * Scales velocity of particles to reach desired temperature.
@@ -67,10 +76,10 @@ class Thermostat {
    */
   ThermostatFloatType calcTemperature(AutoPasTemplate &autopas);
 
+ private:
   /**
    * Add a random velocity according to the Maxwell-Boltzmann distribution to the
    * particles, with a given mean velocity.
-   * code taken from the MolSim Course
    *
    * @param p The particle to initialize.
    * @param factor
@@ -82,7 +91,7 @@ class Thermostat {
   /**
    * helper function for MaxwellBoltzmannDistribution().
    * Generates a gauss deviate, i.e. values according to the normal distribution.
-   * code taken from:
+   * Code taken from:
    * Griebel et. al.: Numerical Simulation in Molecular Dynamics, p. 427
    */
   static ThermostatFloatType gaussDeviate() {
@@ -107,7 +116,6 @@ class Thermostat {
     }
   }
 
- private:
   /**
    * Initial temperature + deltaTemp * simstep / n_thermostat.
    */
@@ -117,11 +125,6 @@ class Thermostat {
    * Target temperature.
    */
   const ThermostatFloatType _tTarget;
-
-  /**
-   * Specifies, how the velocity values will be initialized: With Brownian Motion or according to the temperature
-   */
-  const bool _useCurrentTempForBrownianMotion;
 
   /**
    * Temperature difference per thermostat application until t_target is reached.
@@ -134,32 +137,35 @@ class Thermostat {
   ParticlePropertiesLibraryTemplate _particlePropertiesLibrary;
 };
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::initialize(AutoPasTemplate &autopas) {
-  constexpr ThermostatFloatType boltzmannConst = 1.38064852e-23;  // Boltzmann constant in J/K
-  if (_useCurrentTempForBrownianMotion) {
-// we consider: "However, the initialization with the Brownian Motion should be optional." means factor=0.1
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      maxwellBoltzmannDistribution(*iter, 0.1);
+void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::addBrownianMotion(AutoPasTemplate &autopas,
+                                                                                       bool useCurrentTemp) {
+  // factors for the brownian motion per particle type.
+  std::map<size_t, ThermostatFloatType> factors;
+  if (useCurrentTemp) {
+    // brownian motion with disturbance depending on current temperature and mass
+    constexpr ThermostatFloatType boltzmannConst = 1.38064852e-23;  // Boltzmann constant in J/K
+    ThermostatFloatType currentTempMulKB = calcTemperature(autopas) * boltzmannConst;
+    for (auto typeID : _particlePropertiesLibrary.getTypes()) {
+      factors.emplace(typeID, std::sqrt(currentTempMulKB / _particlePropertiesLibrary.getMass(typeID)));
     }
   } else {
-    ThermostatFloatType currentTempMulKB = calcTemperature(autopas) * boltzmannConst;
+    // simple version of brownian motion with constant disturbance for all particles
+    for (auto typeID : _particlePropertiesLibrary.getTypes()) {
+      factors.emplace(typeID, 0.1);
+    }
+  }
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      ThermostatFloatType factor = std::sqrt(currentTempMulKB / _particlePropertiesLibrary.getMass(iter->getTypeId()));
-      maxwellBoltzmannDistribution(*iter, factor);
-    }
+  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    maxwellBoltzmannDistribution(*iter, factors[iter->getTypeId()]);
   }
 }
 
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::apply(AutoPasTemplate &autopas) {
   ThermostatFloatType temp = calcTemperature(autopas);
-  static ThermostatFloatType scaling;
+  ThermostatFloatType scaling;
   if (_tInit == _tTarget) {
     scaling = std::sqrt(_tTarget / temp);
   } else {
@@ -195,10 +201,6 @@ Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calcTemperature(
 
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::Thermostat(
-    ThermostatFloatType tInit, bool initBm, ThermostatFloatType tTarget, ThermostatFloatType deltaTemp,
+    ThermostatFloatType tInit, ThermostatFloatType tTarget, ThermostatFloatType deltaTemp,
     const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary)
-    : _tInit(tInit),
-      _tTarget(tTarget),
-      _useCurrentTempForBrownianMotion(initBm),
-      _deltaTemp(deltaTemp),
-      _particlePropertiesLibrary(particlePropertiesLibrary) {}
+    : _tInit(tInit), _tTarget(tTarget), _deltaTemp(deltaTemp), _particlePropertiesLibrary(particlePropertiesLibrary) {}
