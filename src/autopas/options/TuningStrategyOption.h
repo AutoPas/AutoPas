@@ -22,8 +22,8 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
    */
   enum Value {
     /**
-    *  Random test configurations and select the best.
-    **/
+     *  Random test configurations and select the best.
+     **/
     randomSearch,
     /**
      * Tests all allowed configurations and select the best.
