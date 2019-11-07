@@ -6,9 +6,9 @@ file(
     "${PROJECT_SOURCE_DIR}/tests/testAutopas/testingHelpers/RandomGenerator.cpp"
 )
 
-# remove all files from the test dir
+# remove all files from the md-flexible/tests dir
 foreach (FILE_PATH ${MDFlex_SRC})
-    string(FIND ${FILE_PATH} "/tests/" EXCLUDE_FILE)
+    string(FIND ${FILE_PATH} "md-flexible/tests/" EXCLUDE_FILE)
     if (NOT ${EXCLUDE_FILE} EQUAL -1)
         list(REMOVE_ITEM MDFlex_SRC ${FILE_PATH})
     endif ()
