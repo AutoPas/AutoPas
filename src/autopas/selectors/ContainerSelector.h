@@ -85,43 +85,43 @@ std::unique_ptr<autopas::ParticleContainer<ParticleCell>> ContainerSelector<Part
   std::unique_ptr<autopas::ParticleContainer<ParticleCell>> container;
 
   switch (containerChoice) {
-    case directSum: {
+    case ContainerOption::directSum: {
       container = std::make_unique<DirectSum<ParticleCell>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
-    case linkedCells: {
+    case ContainerOption::linkedCells: {
       container = std::make_unique<LinkedCells<ParticleCell>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                               containerInfo.cellSizeFactor);
       break;
     }
-    case verletLists: {
+    case ContainerOption::verletLists: {
       container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                           VerletLists<Particle>::BuildVerletListType::VerletSoA,
                                                           containerInfo.cellSizeFactor);
       break;
     }
-    case verletListsCells: {
+    case ContainerOption::verletListsCells: {
       container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::c08,
                                                                containerInfo.verletSkin, containerInfo.cellSizeFactor);
       break;
     }
-    case verletClusterLists: {
+    case ContainerOption::verletClusterLists: {
       container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
-    case verletClusterCells: {
+    case ContainerOption::verletClusterCells: {
       container = std::make_unique<VerletClusterCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                                  containerInfo.verletClusterSize);
       break;
     }
-    case varVerletListsAsBuild: {
+    case ContainerOption::varVerletListsAsBuild: {
       container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
     default: {
       utils::ExceptionHandler::exception("ContainerSelector: Container type {} is not a known type!",
-                                         utils::StringUtils::to_string(containerChoice));
+                                         containerChoice.to_string());
     }
   }
 

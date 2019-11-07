@@ -28,7 +28,10 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C01TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C18TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/SlicedTraversalVerlet.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
+#include "autopas/options/TraversalOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Logger.h"
@@ -54,7 +57,7 @@ class TraversalSelector {
    * @param info
    * @return Smartpointer to the traversal.
    */
-  template <class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+  template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
   static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType,
                                                                PairwiseFunctor &pairwiseFunctor,
                                                                const TraversalSelectorInfo &info);
@@ -78,7 +81,7 @@ class TraversalSelector {
 };
 
 template <class ParticleCell>
-template <class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
     TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &info) {
   switch (traversalType) {
@@ -141,7 +144,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       return std::make_unique<VerletClustersTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor);
     }
-    case TraversalOption::verletClusterCellsTraversal: {
+    case TraversalOption::verletClusterCells: {
       return std::make_unique<VerletClusterCellsTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor);
     }
@@ -154,8 +157,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
                                                         PairwiseFunctor, dataLayout, useNewton3>>(&pairwiseFunctor);
     }
   }
-  autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!",
-                                              utils::StringUtils::to_string(traversalType));
+  autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());
   return std::unique_ptr<TraversalInterface>(nullptr);
 }
 template <class ParticleCell>
@@ -199,8 +201,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     }
   }
 
-  autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!",
-                                              utils::StringUtils::to_string(traversalType));
+  autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());
   return std::unique_ptr<TraversalInterface>(nullptr);
 }
 }  // namespace autopas

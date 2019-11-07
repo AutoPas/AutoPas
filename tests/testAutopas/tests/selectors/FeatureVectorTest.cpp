@@ -14,9 +14,9 @@ TEST_F(FeatureVectorTest, lhsSample) {
   autopas::Random rand(42);
   size_t n = 100;
 
-  auto vecList = autopas::FeatureVector::lhsSampleFeatures(n, rand, autopas::NumberInterval<double>(1., 2.),
-                                                           autopas::allTraversalOptions, autopas::allDataLayoutOptions,
-                                                           autopas::allNewton3Options);
+  auto vecList = autopas::FeatureVector::lhsSampleFeatures(
+      n, rand, autopas::NumberInterval<double>(1., 2.), autopas::TraversalOption::getAllOptions(),
+      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
 
   EXPECT_EQ(vecList.size(), n);
 }
@@ -54,9 +54,9 @@ TEST_F(FeatureVectorTest, distanceTest) {
 
 TEST_F(FeatureVectorTest, onehot) {
   autopas::Random rand(42);
-  auto vecList = autopas::FeatureVector::lhsSampleFeatures(100, rand, autopas::NumberInterval<double>(1., 2.),
-                                                           autopas::allTraversalOptions, autopas::allDataLayoutOptions,
-                                                           autopas::allNewton3Options);
+  auto vecList = autopas::FeatureVector::lhsSampleFeatures(
+      100, rand, autopas::NumberInterval<double>(1., 2.), autopas::TraversalOption::getAllOptions(),
+      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
 
   for (auto fv : vecList) {
     auto vec = fv.oneHotEncode();

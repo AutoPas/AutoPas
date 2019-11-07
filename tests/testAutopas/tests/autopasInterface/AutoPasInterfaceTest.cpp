@@ -423,7 +423,7 @@ INSTANTIATE_TEST_SUITE_P(
     Generated, AutoPasInterfaceTest,
     // proper indent
     Combine(ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> {
-              auto allContainerOptions = autopas::allContainerOptions;
+              auto allContainerOptions = autopas::ContainerOption::getAllOptions();
               /// @TODO no verletClusterLists yet, so we erase it for now.
               allContainerOptions.erase(allContainerOptions.find(autopas::ContainerOption::verletClusterLists));
               std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> tupleVector;
@@ -436,14 +436,14 @@ INSTANTIATE_TEST_SUITE_P(
               return tupleVector;
             }()),
             ValuesIn([]() -> std::set<autopas::DataLayoutOption> {
-              auto all = autopas::allDataLayoutOptions;
+              auto all = autopas::DataLayoutOption::getAllOptions();
               /// @TODO no cuda yet, so we erase it for now (if it is there)
               if (all.find(autopas::DataLayoutOption::cuda) != all.end()) {
                 all.erase(all.find(autopas::DataLayoutOption::cuda));
               }
               return all;
             }()),
-            ValuesIn(autopas::allNewton3Options), Values(0.5, 1., 1.5)),
+            ValuesIn(autopas::Newton3Option::getAllOptions()), Values(0.5, 1., 1.5)),
     AutoPasInterfaceTest::PrintToStringParamName());
 
 ///////////////////////////////////////// TWO containers //////////////////////////////////////////////////////////
@@ -529,17 +529,18 @@ using ::testing::ValuesIn;
 
 /// @todo: use this instead of below to enable testing of VerletClusterLists.
 // INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
-//                         Combine(ValuesIn(autopas::allContainerOptions), ValuesIn(autopas::allContainerOptions)),
+//                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()),
+//                         ValuesIn(autopas::ContainerOption::getAllOptions())),
 //                         ContainerSelectorTest::PrintToStringParamName());
 
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface2ContainersTest,
                          Combine(ValuesIn([]() -> std::set<autopas::ContainerOption> {
-                                   auto all = autopas::allContainerOptions;
+                                   auto all = autopas::ContainerOption::getAllOptions();
                                    all.erase(all.find(autopas::ContainerOption::verletClusterLists));
                                    return all;
                                  }()),
                                  ValuesIn([]() -> std::set<autopas::ContainerOption> {
-                                   auto all = autopas::allContainerOptions;
+                                   auto all = autopas::ContainerOption::getAllOptions();
                                    all.erase(all.find(autopas::ContainerOption::verletClusterLists));
                                    return all;
                                  }())),

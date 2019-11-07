@@ -6,34 +6,10 @@
 
 #include "StringUtilsTest.h"
 
-TEST(StringUtilsTest, parseTraversalOptionsTest) {
-  testParseMultiple<autopas::TraversalOption>(
-      autopas::allTraversalOptions,
-      "c01, c04, c08, c18, c04s, direct, sliced v01, c18verlet, verlet-sliced, "
-      "cuda-c01, verlet-lists, c01-combined, verlet-clusters, var-verlet-lists-as-build, verlet-clusters-coloring, "
-      "verlet-cluster-cells",
-      autopas::utils::StringUtils::parseTraversalOptions);
-}
-
-TEST(StringUtilsTest, parseContainerOptionsTest) {
-  testParseMultiple<autopas::ContainerOption>(
-      autopas::allContainerOptions,
-      "directSum, linkedCells, verletLists, verlet-cells, vcluster, varVerletListsAsBuild, vclustercells",
-      autopas::utils::StringUtils::parseContainerOptions);
-}
-
-TEST(StringUtilsTest, parseDataLayoutOptionsTest) {
-#if defined(AUTOPAS_CUDA)
-  testParseMultiple<autopas::DataLayoutOption>(autopas::allDataLayoutOptions, "cuda, soa, aos",
-                                               autopas::utils::StringUtils::parseDataLayout);
-#else
-  testParseMultiple<autopas::DataLayoutOption>(autopas::allDataLayoutOptions, "soa, aos",
-                                               autopas::utils::StringUtils::parseDataLayout);
-#endif
-}
-
 TEST(StringUtilsTest, parseDoublesTest) {
-  testParseMultiple<double>({1., 1.5, 2., 3., 20.}, "1.,1.5, 2,3.00,2e1", autopas::utils::StringUtils::parseDoubles);
+  auto parsedOptions = autopas::utils::StringUtils::parseDoubles("1.,1.5, 2,3.00,2e1");
+
+  EXPECT_THAT(parsedOptions, ::testing::ElementsAreArray({1., 1.5, 2., 3., 20.}));
 }
 
 TEST(StringUtilsTest, parseNumberSetTest) {
@@ -47,45 +23,4 @@ TEST(StringUtilsTest, parseNumberSetTest) {
     EXPECT_EQ(numberInterval->getMin(), 1.);
     EXPECT_EQ(numberInterval->getMax(), 2e1);
   }
-}
-
-TEST(StringUtilsTest, parseSelectorOptionsTest) {
-  testParseSingle<autopas::SelectorStrategyOption>(autopas::allSelectorStrategies, {"absolute", "median", "mean"},
-                                                   autopas::utils::StringUtils::parseSelectorStrategy);
-}
-
-TEST(StringUtilsTest, parseTuningStrategyOptionsTest) {
-  testParseSingle<autopas::TuningStrategyOption>(autopas::allTuningStrategyOptions,
-                                                 {"random-search", "full-search", "bayesian-search"},
-                                                 autopas::utils::StringUtils::parseTuningStrategyOption);
-}
-
-TEST(StringUtilsTest, parseAcquisitionFunctionOptionsTest) {
-  testParseSingle<autopas::AcquisitionFunctionOption>(autopas::allAcquisitionFunctionOptions,
-                                                      {"ucb", "lcb", "mean", "var", "pd", "ed"},
-                                                      autopas::utils::StringUtils::parseAcquisitionFunctionOption);
-}
-
-TEST(StringUtilsTest, to_stringDataLayoutTest) {
-  testToString(autopas::allDataLayoutOptions, {autopas::DataLayoutOption(-1)});
-}
-
-TEST(StringUtilsTest, to_stringSelectorStrategiesTest) {
-  testToString(autopas::allSelectorStrategies, {autopas::SelectorStrategyOption(-1)});
-}
-
-TEST(StringUtilsTest, to_stringContainerOptionsTest) {
-  testToString(autopas::allContainerOptions, {autopas::ContainerOption(-1)});
-}
-
-TEST(StringUtilsTest, to_stringTraversalOptionsTest) {
-  testToString(autopas::allTraversalOptions, {autopas::TraversalOption(-1)});
-}
-
-TEST(StringUtilsTest, to_stringTuningStrategyOptionsTest) {
-  testToString(autopas::allTuningStrategyOptions, {autopas::TuningStrategyOption(-1)});
-}
-
-TEST(StringUtilsTest, to_stringAcquisitionFunctionOptionsTest) {
-  testToString(autopas::allAcquisitionFunctionOptions, {autopas::AcquisitionFunctionOption(-1)});
 }

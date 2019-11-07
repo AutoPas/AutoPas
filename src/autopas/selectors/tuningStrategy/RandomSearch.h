@@ -29,12 +29,12 @@ class RandomSearch : public TuningStrategyInterface {
    * @param maxEvidence stop tuning after given number of evidence provided.
    * @param seed seed of random number generator (should only be used for tests)
    */
-  RandomSearch(const std::set<ContainerOption> &allowedContainerOptions = allContainerOptions,
+  RandomSearch(const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
                const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1. / 3., 2.),
-               const std::set<TraversalOption> &allowedTraversalOptions = allTraversalOptions,
-               const std::set<DataLayoutOption> &allowedDataLayoutOptions = allDataLayoutOptions,
-               const std::set<Newton3Option> &allowedNewton3Options = allNewton3Options, size_t maxEvidence = 10,
-               unsigned long seed = std::random_device()())
+               const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
+               const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
+               const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
+               size_t maxEvidence = 10, unsigned long seed = std::random_device()())
       : _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
         _dataLayoutOptions(allowedDataLayoutOptions),

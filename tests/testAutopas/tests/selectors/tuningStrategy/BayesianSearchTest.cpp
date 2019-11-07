@@ -4,9 +4,11 @@
  * @date 12.06.19
  */
 
-#include "BayesianSearchTest.h"
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
+
+#include "BayesianSearchTest.h"
+#include "autopas/options/Newton3Option.h"
 
 TEST_F(BayesianSearchTest, testSearchSpaceEmpty) {
   autopas::BayesianSearch bayesianSearch(std::set<autopas::ContainerOption>({}));

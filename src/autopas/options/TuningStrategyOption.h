@@ -8,33 +8,64 @@
 
 #include <set>
 
+#include "autopas/options/Option.h"
+
 namespace autopas {
 
 /**
- * Possible choices for the auto tuner.
+ * Class representing the choices of possible tuning strategies for the auto-tuner.
  */
-enum TuningStrategyOption {
+class TuningStrategyOption : public Option<TuningStrategyOption> {
+ public:
   /**
-   *  Random test configurations and select the best.
-   **/
-  randomSearch = 0,
-  /**
-   * Tests all allowed configurations and select the best.
+   * Possible choices for the auto tuner.
    */
-  fullSearch = 1,
-  /**
-   * Predict the configuration which will yield the most
-   * information if tested next.
-   */
-  bayesianSearch = 2
-};
+  enum Value {
+    /**
+    *  Random test configurations and select the best.
+    **/
+    randomSearch,
+    /**
+     * Tests all allowed configurations and select the best.
+     */
+    fullSearch,
+    /**
+     * Predict the configuration which will yield the most
+     * information if tested next.
+     */
+    bayesianSearch,
+  };
 
-/**
- * Provides a way to iterate over the possible choices of TuningStrategy.
- */
-static const std::set<TuningStrategyOption> allTuningStrategyOptions = {
-    TuningStrategyOption::randomSearch,
-    TuningStrategyOption::fullSearch,
-    TuningStrategyOption::bayesianSearch,
+  /**
+   * Constructor.
+   */
+  TuningStrategyOption() = default;
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
+  constexpr TuningStrategyOption(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
+  constexpr operator Value() const { return _value; }
+
+  /**
+   * Provides a way to iterate over the possible choices of TuningStrategy.
+   * @return map option -> string representation
+   */
+  static std::map<TuningStrategyOption, std::string> getOptionNames() {
+    return {
+        {TuningStrategyOption::bayesianSearch, "bayesian-Search"},
+        {TuningStrategyOption::fullSearch, "full-Search"},
+        {TuningStrategyOption::randomSearch, "random-Search"},
+    };
+  };
+
+ private:
+  Value _value{Value(-1)};
 };
 }  // namespace autopas

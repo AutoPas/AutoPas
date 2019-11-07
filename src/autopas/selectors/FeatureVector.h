@@ -20,7 +20,7 @@ namespace autopas {
 class FeatureVector : public Configuration {
  public:
   /**
-   * Number of tuneable dimensions
+   * Number of tune-able dimensions.
    */
   static constexpr size_t featureSpaceDims = 4;
 
@@ -28,8 +28,8 @@ class FeatureVector : public Configuration {
    * Dimensions of a one-hot-encoded vector
    * = 1 (cellSizeFactor) + traversals + dataLayouts + newton3
    */
-  inline static size_t oneHotDims =
-      1 + allTraversalOptions.size() + allDataLayoutOptions.size() + allNewton3Options.size();
+  inline static size_t oneHotDims = 1 + TraversalOption::getOptionNames().size() +
+                                    DataLayoutOption::getOptionNames().size() + Newton3Option::getOptionNames().size();
 
   /**
    * Default constructor. Results in invalid vector.
@@ -38,18 +38,18 @@ class FeatureVector : public Configuration {
 
   /**
    * Constructor
-   * @param _container
-   * @param _traversal
-   * @param _dataLayout
-   * @param _newton3
-   * @param _cellSizeFactor
+   * @param container
+   * @param traversal
+   * @param dataLayout
+   * @param newton3
+   * @param cellSizeFactor
    */
-  FeatureVector(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                DataLayoutOption _dataLayout, Newton3Option _newton3)
-      : Configuration(_container, _cellSizeFactor, _traversal, _dataLayout, _newton3) {}
+  FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
+                DataLayoutOption dataLayout, Newton3Option newton3)
+      : Configuration(container, cellSizeFactor, traversal, dataLayout, newton3) {}
 
   /**
-   * Construct from Configuration
+   * Construct from Configuration.
    * @param conf
    */
   FeatureVector(Configuration conf) : Configuration(conf) {}
@@ -91,14 +91,14 @@ class FeatureVector : public Configuration {
     data.reserve(oneHotDims);
 
     data.push_back(cellSizeFactor);
-    for (auto to : allTraversalOptions) {
-      data.push_back((to == traversal) ? 1. : 0.);
+    for (auto &[option, _] : TraversalOption::getOptionNames()) {
+      data.push_back((option == traversal) ? 1. : 0.);
     }
-    for (auto dlo : allDataLayoutOptions) {
-      data.push_back((dlo == dataLayout) ? 1. : 0.);
+    for (auto &[option, _] : DataLayoutOption::getOptionNames()) {
+      data.push_back((option == dataLayout) ? 1. : 0.);
     }
-    for (auto n3o : allNewton3Options) {
-      data.push_back((n3o == newton3) ? 1. : 0.);
+    for (auto &[option, _] : Newton3Option::getOptionNames()) {
+      data.push_back((option == newton3) ? 1. : 0.);
     }
 
     return Eigen::Map<Eigen::VectorXd>(data.data(), oneHotDims);
@@ -121,15 +121,15 @@ class FeatureVector : public Configuration {
     double cellSizeFactor = vec[pos++];
 
     // get traversal
-    std::optional<TraversalOption> traversal = {};
-    for (auto to : allTraversalOptions) {
+    std::optional<TraversalOption> traversal{};
+    for (auto &[option, _] : TraversalOption::getOptionNames()) {
       if (vec[pos++] == 1.) {
         if (traversal) {
           utils::ExceptionHandler::exception(
               "FeatureVector.oneHotDecode: Vector encodes more than one traversal. (More than one value for traversal "
               "equals 1.)");
         }
-        traversal = to;
+        traversal = option;
       }
     }
     if (not traversal) {
@@ -139,14 +139,14 @@ class FeatureVector : public Configuration {
 
     // get data layout
     std::optional<DataLayoutOption> dataLayout = {};
-    for (auto dlo : allDataLayoutOptions) {
+    for (auto &[option, _] : DataLayoutOption::getOptionNames()) {
       if (vec[pos++] == 1.) {
         if (dataLayout) {
           utils::ExceptionHandler::exception(
               "FeatureVector.oneHotDecode: Vector encodes more than one data layout. (More than one value for "
               "dataLayout equals 1.)");
         }
-        dataLayout = dlo;
+        dataLayout = option;
       }
     }
     if (not dataLayout) {
@@ -156,14 +156,14 @@ class FeatureVector : public Configuration {
 
     // get newton3
     std::optional<Newton3Option> newton3 = {};
-    for (auto n3o : allNewton3Options) {
+    for (auto &[option, _] : Newton3Option::getOptionNames()) {
       if (vec[pos++] == 1.) {
         if (newton3) {
           utils::ExceptionHandler::exception(
               "FeatureVector.oneHotDecode: Vector encodes more than one newton3. (More than one value for newton3 "
               "equals 1.)");
         }
-        newton3 = n3o;
+        newton3 = option;
       }
     }
     if (not newton3) {
@@ -171,7 +171,7 @@ class FeatureVector : public Configuration {
           "FeatureVector.oneHotDecode: Vector encodes no newton3. (All values for newton3 equal 0.)");
     }
 
-    return FeatureVector(ContainerOption(-1), cellSizeFactor, *traversal, *dataLayout, *newton3);
+    return FeatureVector(ContainerOption(), cellSizeFactor, *traversal, *dataLayout, *newton3);
   }
 
   /**
@@ -197,11 +197,22 @@ class FeatureVector : public Configuration {
     auto n3 = rng.uniformSample(newton3, n);
 
     std::vector<FeatureVector> result;
-    for (unsigned i = 0; i < n; ++i) {
-      result.emplace_back(ContainerOption(-1), csf[i], tr[i], dl[i], n3[i]);
+    for (size_t i = 0; i < n; ++i) {
+      result.emplace_back(ContainerOption(), csf[i], tr[i], dl[i], n3[i]);
     }
 
     return result;
   }
 };
+
+/**
+ * Stream insertion operator.
+ * @param os
+ * @param featureVector
+ * @return
+ */
+inline std::ostream &operator<<(std::ostream &os, const FeatureVector &featureVector) {
+  return os << featureVector.toString();
+}
+
 }  // namespace autopas

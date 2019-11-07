@@ -260,22 +260,22 @@ class GaussianProcess {
    */
   inline double calcAcquisition(AcquisitionFunctionOption af, const Vector &input) const {
     switch (af) {
-      case upperConfidenceBound: {
+      case AcquisitionFunctionOption::upperConfidenceBound: {
         return predictMean(input) + 2 * std::sqrt(predictVar(input));
       }
-      case lowerConfidenceBound: {
+      case AcquisitionFunctionOption::lowerConfidenceBound: {
         return predictMean(input) - 2 * std::sqrt(predictVar(input));
       }
-      case mean: {
+      case AcquisitionFunctionOption::mean: {
         return predictMean(input);
       }
-      case variance: {
+      case AcquisitionFunctionOption::variance: {
         return predictVar(input);
       }
-      case probabilityOfDecrease: {
+      case AcquisitionFunctionOption::probabilityOfDecrease: {
         return utils::Math::normalCDF((_evidenceMinValue - predictMean(input)) / predictVar(input));
       }
-      case expectedDecrease: {
+      case AcquisitionFunctionOption::expectedDecrease: {
         double mean = predictMean(input);
         double var = predictVar(input);
         double minNormed = (_evidenceMinValue - mean) / var;
