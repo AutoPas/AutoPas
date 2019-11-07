@@ -35,7 +35,7 @@ class ActiveHarmony : public TuningStrategyInterface {
         _allowedNewton3Options(allowedNewton3Options),
         _currentConfig() {
     if (getenv("HARMONY_HOME") == nullptr) {
-      // TODO putenv("HARMONY_HOME=home");
+      putenv(HARMONY_HOME);
     }
 
     reset();
@@ -115,6 +115,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
     newton3Option = ah_get_enum(htask, "newton3Option");
     cellSizeFactor = ah_get_real(htask, "cellSizeFactor");
     _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(), cellSizeFactor, traversalOption, DataLayoutOption::parseOptionExact(dataLayoutOption), Newton3Option::parseOptionExact(newton3Option));
+    AutoPasLog(debug, "ActiveHarmony::tune: Selected optimal configuration {}.", _currentConfig.toString());
   }
   return !converged;
 }

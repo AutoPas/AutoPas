@@ -25,3 +25,5 @@ ExternalProject_Get_Property(harmony source_dir)
 add_dependencies(autopas harmony)
 
 target_include_directories(autopas SYSTEM PUBLIC ${source_dir})
+
+target_compile_definitions(autopas PUBLIC HARMONY_HOME="HARMONY_HOME=${CMAKE_CURRENT_BINARY_DIR}/harmony/include")
