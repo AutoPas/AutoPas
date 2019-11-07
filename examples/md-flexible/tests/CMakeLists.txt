@@ -19,7 +19,7 @@ add_executable(mdFlexTests ${MDFlex_SRC})
 
 target_compile_definitions(
         mdFlexTests PRIVATE
-        YAMLDIRECTORY=\"${PROJECT_SOURCE_DIR}/tests/testAutopas/exampleTests/md-flexible/yamlTestFiles/\"
+        YAMLDIRECTORY=\"${PROJECT_SOURCE_DIR}/examples/md-flexible/tests/yamlTestFiles/\"
 )
 target_include_directories(mdFlexTests PUBLIC ${PROJECT_SOURCE_DIR}/tests/testAutopas ${PROJECT_SOURCE_DIR}/examples/md-flexible)
 
