@@ -3,7 +3,7 @@ file(
     MDFlex_SRC
     "*.cpp"
     "*.h"
-    "../../tests/testAutopas/testingHelpers/RandomGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/testAutopas/testingHelpers/RandomGenerator.cpp"
 )
 
 # remove all files from the test dir
