@@ -6,7 +6,6 @@ set(
     "${PROJECT_SOURCE_DIR}/src/" "${PROJECT_SOURCE_DIR}/examples/" "${PROJECT_SOURCE_DIR}/tests/"
 )
 # reset CF_ALL_SOURCE_FILES
-set(CF_ALL_SOURCE_FILES)
 foreach (TMP_PATH ${INCLUDE_DIRS})
     # search for files for each path in INCLUDE_DIRS and append them to CF_ALL_SOURCE_FILES
     file(
