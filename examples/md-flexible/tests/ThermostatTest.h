@@ -4,12 +4,12 @@
  * @date 28/08/19.
  */
 #pragma once
+#include "AutoPasTestBase.h"
 #include "Generator.h"
+#include "Objects/Objects.h"
 #include "PrintableMolecule.h"
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
-#include "AutoPasTestBase.h"
-#include "Objects/Objects.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/utils/ArrayUtils.h"
@@ -24,17 +24,22 @@ class ThermostatTest : public AutoPasTestBase {
     _particlePropertiesLibrary.addType(0, 1., 1., 1.); /*initializing the default particlePropertiesLibrary*/
   }
 
-  static void initContainer(AutoPasType &autopas, const Molecule &dummy, std::array<size_t, 3> particlesPerDim);
-
-  void basicApplication(double initT, double targetT, double deltaT, bool initBM, AutoPasType &autopas);
-
-  void calcTemperature(size_t particlesPerDimension);
-
  protected:
+  /**
+   * Fills an autopas container with a given grid of copies of the dummy particle and initializes the container.
+   * @param autopas
+   * @param dummy
+   * @param particlesPerDim
+   */
+  void initContainer(AutoPasType &autopas, const Molecule &dummy, std::array<size_t, 3> particlesPerDim);
 
+  /**
+   * Applies brownian motion to a system and checks that all velocities have changed.
+   * @param dummyMolecule
+   * @param useCurrentTemp
+   */
   void testBrownianMotion(const Molecule &dummyMolecule, bool useCurrentTemp);
 
   ParticlePropertiesLibrary<double, size_t> _particlePropertiesLibrary;
   AutoPasType _autopas;
-  static constexpr double _absDelta = 1e-7;
 };

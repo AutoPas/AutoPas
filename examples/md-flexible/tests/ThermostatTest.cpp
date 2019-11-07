@@ -26,11 +26,7 @@ void ThermostatTest::initContainer(AutoPasType &autopas, const Molecule &dummy, 
 void ThermostatTest::testBrownianMotion(const Molecule &dummyMolecule, bool useCurrentTemp) {
   initContainer(_autopas, dummyMolecule, {2, 1, 1});
 
-  const double tInit = 0.01;
-  const double tTarget = 0.1;
-  const double deltaTemp = 0.01;
-
-  ThermostatType thermostat(tInit, tTarget, deltaTemp, _particlePropertiesLibrary);
+  ThermostatType thermostat(1, 1, 1, _particlePropertiesLibrary);
 
   thermostat.addBrownianMotion(_autopas, useCurrentTemp);
   // check that velocities have actually changed
@@ -49,60 +45,21 @@ TEST_F(ThermostatTest, BrownianMotionTest_useCurrentTempTrue) {
   testBrownianMotion(m, true);
 }
 
-// void ThermostatTest::basicApplication(double initT, double targetT, double deltaT, bool initBM, AutoPasType &autopas)
-// {
-//  double nrApplications = targetT / deltaT;
-//  auto thermostat = Thermostat<decltype(autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>(
-//      initT, targetT, deltaT, _particlePropertiesLibrary);
-//  if (initBM) {
-//    thermostat.addBrownianMotion(autopas, false);
-//  } else {
-//    // initial velocity value of particles necessary otherwise zero divisions causing error
-//    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-//      iter->addV({0, 0.1, 0});
-//    }
-//    thermostat.addBrownianMotion(autopas, false);
-//  }
-//  thermostat.apply(autopas);
-//  for (size_t i = 1; i <= nrApplications; i++) {
-//    EXPECT_NEAR(thermostat.calcTemperature(autopas), (initT + (deltaT * i)) > targetT ? targetT : initT + (deltaT *
-//    i),
-//                _absDelta);
-//    thermostat.apply(autopas);
-//  }
-//  thermostat.apply(autopas);
-//  EXPECT_NEAR(thermostat.calcTemperature(autopas), targetT, _absDelta);
-//}
-//
-// void ThermostatTest::calcTemperature(size_t particlesPerDimension) {
-//  auto autopas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
-//  initContainer(1. /*particleSpacing*/, 1.5 /*cutoff*/,
-//                {particlesPerDimension, particlesPerDimension, particlesPerDimension} /*particlesPerdim*/);
-//  auto _thermostat = Thermostat<decltype(autopas), std::remove_reference_t<decltype(_particlePropertiesLibrary)>>(
-//      0.1 /*initT*/, 5 /*targetT*/, 0.01 /*deltaT*/, _particlePropertiesLibrary);
-//  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-//    iter->setV({0.1, 0.1, 0.2});
-//  }
-//  EXPECT_NEAR(_thermostat.calcTemperature(autopas), 0.02, _absDelta);
-//}
-//
-// TEST_F(ThermostatTest, Application) {
-//  auto _autopas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
-//  initContainer(1. /*particleSpacing*/, 1.5 /*cutoff*/, {2, 2, 2} /*particlesPerdim*/);
-//  basicApplication(0.01, 3.0, 0.001, true, _autopas);
-//  // reset _autopas
-//  initContainer(1. /*particleSpacing*/, 1.5 /*cutoff*/, {2, 2, 2} /*particlesPerdim*/);
-//  basicApplication(1.0, 7.0, 0.01, true, _autopas);
-//  // dont use current Temp for Brownian Motion initialization
-//  initContainer(1. /*particleSpacing*/, 1.5 /*cutoff*/, {2, 2, 2} /*particlesPerdim*/);
-//  basicApplication(0.01, 3.0, 0.001, false, _autopas);
-//  // reset _autopas
-//  initContainer(1. /*particleSpacing*/, 1.5 /*cutoff*/, {2, 2, 2} /*particlesPerdim*/);
-//  basicApplication(1.0, 7.0, 0.01, false, _autopas);
-//}
-//
-// TEST_F(ThermostatTest, calcTemperature) {
-//  calcTemperature(1);
-//  calcTemperature(2);
-//  calcTemperature(10);
-//}
+/**
+ * Init a system with 2x2x2 particles. Calculate its temperature and heat it up from 0 to 2.
+ */
+TEST_F(ThermostatTest, ApplyAndCalcTemperatureTest) {
+  Molecule m;
+  initContainer(_autopas, m, {2, 2, 2});
+  _particlePropertiesLibrary.addType(0, 1., 1., 1.);
+  ThermostatType thermo(1., 2., .5, _particlePropertiesLibrary);
+  EXPECT_NEAR(thermo.calcTemperature(_autopas), 0, 1e-12);
+  // add random velocities so that we do not scale zero vectors
+  thermo.addBrownianMotion(_autopas, false);
+  thermo.apply(_autopas);
+  EXPECT_NEAR(thermo.calcTemperature(_autopas), 1.5, 1e-12);
+  thermo.apply(_autopas);
+  EXPECT_NEAR(thermo.calcTemperature(_autopas), 2., 1e-12);
+  thermo.apply(_autopas);
+  EXPECT_NEAR(thermo.calcTemperature(_autopas), 2., 1e-12);
+}
