@@ -7,12 +7,12 @@
 #include <gtest/gtest.h>
 #include <cmath>
 #include <vector>
-#include "parsing/MDFlexConfig.h"
-#include "parsing/YamlParser.h"
 #include "AutoPasTestBase.h"
 #include "Objects/Objects.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "parsing/MDFlexConfig.h"
+#include "parsing/YamlParser.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class YamlParserTest : public AutoPasTestBase {

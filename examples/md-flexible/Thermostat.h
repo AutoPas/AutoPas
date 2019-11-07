@@ -85,7 +85,7 @@ class Thermostat {
    * @param factor
    */
   void maxwellBoltzmannDistribution(autopas::Particle &p, const ThermostatFloatType factor) {
-    std::default_random_engine randomEngine(42); // constant seed for repeatability
+    std::default_random_engine randomEngine(42);  // constant seed for repeatability
     std::normal_distribution<double> normalDistribution{0, 1};
 
     p.setV(autopas::ArrayMath::addScalar(p.getV(), factor * normalDistribution(randomEngine)));

@@ -64,7 +64,7 @@ class ParticlePropertiesLibrary {
    * Returns a set of all particle types stored.
    * @return
    */
-  std::set<intType>getTypes() const {
+  std::set<intType> getTypes() const {
     std::set<intType> typeIDs;
     for (auto &[typeID, _] : _masses) {
       typeIDs.insert(typeID);

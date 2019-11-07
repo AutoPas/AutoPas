@@ -5,12 +5,12 @@
  */
 #pragma once
 #include <gtest/gtest.h>
+#include "AutoPasTestBase.h"
 #include "PrintableMolecule.h"
 #include "Simulation.h"
-#include "parsing/YamlParser.h"
-#include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "parsing/YamlParser.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class ParticlePropertiesLibraryTest : public AutoPasTestBase {

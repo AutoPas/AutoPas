@@ -4,18 +4,18 @@
  * @date 02/08/19
  */
 #pragma once
+#include <AutoPasTestBase.h>
 #include <gtest/gtest.h>
 #include <cmath>
 #include <vector>
-#include <AutoPasTestBase.h>
 #include "Generator.h"
+#include "Objects/Objects.h"
 #include "PrintableMolecule.h"
 #include "TimeDiscretization.h"
-#include "parsing/YamlParser.h"
-#include "Objects/Objects.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "parsing/YamlParser.h"
 #include "testingHelpers/GaussianGenerator.h"
 #include "testingHelpers/GridGenerator.h"
 #include "testingHelpers/RandomGenerator.h"

@@ -286,8 +286,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   if (_config->useThermostat) {
     _thermostat = std::make_unique<
         Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
-        _config->initTemperature, _config->targetTemperature,
-        _config->deltaTemp, *_particlePropertiesLibrary);
+        _config->initTemperature, _config->targetTemperature, _config->deltaTemp, *_particlePropertiesLibrary);
     _thermostat->addBrownianMotion(_autopas, _config->useCurrentTempForBrownianMotion);
   }
 
