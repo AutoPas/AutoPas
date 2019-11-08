@@ -133,29 +133,28 @@ inline std::vector<std::string> tokenize(const std::string &searchString, const 
 }
 
 /**
- * Converts a string to std::array<double,3>
- * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters
+ * Converts a string to std::array<double,3>.
+ * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters.
  *
  * String format: 3 doubles(or ints) separeted by delimiters (examples: 10.,10.,10.)
  *
- * @param boxOptionString
- * @return autopas boxOption
+ * @param string String to parse.
+ * @return
  */
-inline std::array<double, 3> parseBoxOption(const std::string &boxOptionString) {
-  std::array<double, 3> boxOption{};
-  auto doubles = tokenize(boxOptionString, delimiters);
-  auto size = doubles.size();
-  if (size > 3) {
-    throw std::runtime_error("wrong BoxOption: " + boxOptionString);
+inline std::array<double, 3> parseArrayD3(const std::string &string) {
+  std::array<double, 3> parsedArray{};
+  auto strings = tokenize(string, delimiters);
+  if (strings.size() > 3) {
+    autopas::utils::ExceptionHandler::exception("parseArrayD3(): found {} instead of 3 array fields.", strings.size());
   }
   for (int i = 0; i < 3; i++) {
     try {
-      boxOption[i] = std::stod(doubles.at(i));
+      parsedArray[i] = std::stod(strings[i]);
     } catch (const std::exception &e) {
-      std::cout << "BoxOption string: " << e.what() << "not convertable to doulbe" << std::endl;
+      autopas::utils::ExceptionHandler::exception("parseArrayD3(): could not convert {} to a double: \n{}", strings[i], e.what());
     }
   }
-  return boxOption;
+  return parsedArray;
 }
 
 /**

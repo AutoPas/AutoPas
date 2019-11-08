@@ -105,7 +105,7 @@ std::vector<std::array<double, 3>> Checkpoint<AutoPasTemplate, Particle>::readin
   std::string dataString;
   for (int i = 0; i < numOfP; i++) {
     std::getline(file, dataString);
-    data.emplace_back(autopas::utils::StringUtils::parseBoxOption(dataString));
+    data.emplace_back(autopas::utils::StringUtils::parseArrayD3(dataString));
     dataString = "";
   }
   return data;
