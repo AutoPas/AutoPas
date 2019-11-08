@@ -268,6 +268,11 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   autopas::Logger::get()->set_level(logLevel);
   _autopas.init();
 
+  // load checkpoint
+  if (not _config->checkpointfile.empty()) {
+    Checkpoint<decltype(_autopas)>::loadParticles(_autopas, _config->checkpointfile);
+  }
+
   // initializing Objects
   for (const auto &grid : cubesGrid) {
     Generator::cubeGrid<Particle, ParticleCell>(_autopas, grid);

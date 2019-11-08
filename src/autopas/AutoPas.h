@@ -36,6 +36,17 @@ static unsigned int _instanceCounter = 0;
 template <class Particle, class ParticleCell>
 class AutoPas {
  public:
+
+  /**
+   * Particle type to be accessible after initialization.
+   */
+  using Particle_t = Particle;
+
+  /**
+   * Particle Cell type to be accessible after initialization.
+   */
+  using ParticleCell_t = ParticleCell;
+
   /**
    * Define the iterator_t for simple use, also from the outside.
    * Helps to, e.g., wrap the AutoPas iterators

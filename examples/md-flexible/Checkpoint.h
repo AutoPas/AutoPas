@@ -13,7 +13,7 @@
 /**
  * This class implements the initialization of an AutoPas container from vtk checkpoint files
  */
-template <class AutoPasTemplate, class Particle>
+template <class AutoPasTemplate>
 class Checkpoint {
  public:
   /**
@@ -31,8 +31,9 @@ class Checkpoint {
    * @param autopas
    * @param vtkFilename
    */
-  static void initDomain(AutoPasTemplate &autopas, const std::string &vtkFilename);
+  static void loadParticles(AutoPasTemplate &autopas, const std::string &vtkFilename);
 
+ private:
   /**
    * helper function to go to a specific line of a file
    * @param file
@@ -54,8 +55,8 @@ class Checkpoint {
   static std::vector<std::array<double, 3>> readingData(std::ifstream &file, int numOfP);
 };
 
-template <class AutoPasTemplate, class Particle>
-void Checkpoint<AutoPasTemplate, Particle>::initDomain(AutoPasTemplate &autopas, const std::string &vtkFilename) {
+template <class AutoPasTemplate>
+void Checkpoint<AutoPasTemplate>::loadParticles(AutoPasTemplate &autopas, const std::string &vtkFilename) {
   // first: reading data from VtkFile:
   std::ifstream infile(vtkFilename);
   std::string extract;
@@ -83,24 +84,19 @@ void Checkpoint<AutoPasTemplate, Particle>::initDomain(AutoPasTemplate &autopas,
   // forces
   std::vector<std::array<double, 3>> forces = readingData(infile, numberOfParticles);
 
-  // creating Particles for checkpoint:
-  std::vector<Particle> particles;
+  // creating Particles from checkpoint:
   for (auto i = 0; i < numberOfParticles; i++) {
-    Particle p;
+    typename AutoPasTemplate::Particle_t p;
     p.setR(positions.at(i));
     p.setV(velocities.at(i));
     p.setF(forces.at(i));
     p.setID(i);
-    particles.emplace_back(p);
-  }
-  // second: adding all particle to AutoPas Object
-  for (auto it = particles.begin(); it != particles.end(); ++it) {
-    autopas.addParticle(*it);
+    autopas.addParticle(p);
   }
 }
 
-template <class AutoPasTemplate, class Particle>
-std::vector<std::array<double, 3>> Checkpoint<AutoPasTemplate, Particle>::readingData(std::ifstream &file, int numOfP) {
+template <class AutoPasTemplate>
+std::vector<std::array<double, 3>> Checkpoint<AutoPasTemplate>::readingData(std::ifstream &file, int numOfP) {
   std::vector<std::array<double, 3>> data;
   std::string dataString;
   for (int i = 0; i < numOfP; i++) {
