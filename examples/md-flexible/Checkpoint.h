@@ -26,83 +26,81 @@ class Checkpoint {
   ~Checkpoint() = default;
 
   /**
-   * Reads the Data of all particles from a Vtk file, and adds all Particles
-   * with their properties into the AutoPas container
+   * Reads the Data of all particles from a Vtk file and adds them into the AutoPas container.
    * @param autopas
    * @param vtkFilename
    */
   static void loadParticles(AutoPasTemplate &autopas, const std::string &vtkFilename);
 
  private:
-  /**
-   * helper function to go to a specific line of a file
-   * @param file
-   * @param index
-   */
-  static std::ifstream &GotoLine(std::ifstream &file, int index) {
-    file.seekg(std::ios::beg);
-    for (int i = 0; i < index - 1; ++i) {
-      file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    }
-    return file;
-  }
+   /**
+    * Reads the next numberOfParticles lines from file. The lines are expected to contain xyz data.
+    * @tparam dataType type of the data to be read. (Can be scalars or containers that support [])
+    * @tparam size number of entries per dataType.
+    * @param file
+    * @param numberOfParticles
+    * @return Vector of read data.
+    */
+  template <class dataType, int size>
+  static std::vector<dataType> readPayload(std::ifstream &file, size_t numberOfParticles);
 
   /**
-   *  Reads from a vtkFile the data of @param numOfP Particles returns a vector of the the data collected
-   *  @param file
-   *  @param numOfP size of data set to be collected
+   * Searches the file word by word and sets the file accessor directly behind the first found position.
+   * @param file
+   * @param word
    */
-  static std::vector<std::array<double, 3>> readingData(std::ifstream &file, int numOfP);
+  static void findWord(std::ifstream &file, const std::string word) {
+    std::string currentWord;
+    while (currentWord != word) {
+      file >> currentWord;
+    }
+  }
 };
 
 template <class AutoPasTemplate>
 void Checkpoint<AutoPasTemplate>::loadParticles(AutoPasTemplate &autopas, const std::string &vtkFilename) {
-  // first: reading data from VtkFile:
   std::ifstream infile(vtkFilename);
-  std::string extract;
-  // offset of vtk header informations
-  int dataOffset = 6;
-  GotoLine(infile, dataOffset);
-  std::string strNumberOfParticles;
-  infile >> extract;
-  // getting the numberOfParticles
-  infile >> strNumberOfParticles;
-  int numberOfParticles = std::stoi(strNumberOfParticles);
-  // getting all positions for all particles
-  GotoLine(infile, dataOffset + 1);
-  // position
-  std::vector<std::array<double, 3>> positions = readingData(infile, numberOfParticles);
-  // skip 3 lines of header informations:
-  std::getline(infile, extract);
-  std::getline(infile, extract);
-  std::getline(infile, extract);
-  // velocities
-  std::vector<std::array<double, 3>> velocities = readingData(infile, numberOfParticles);
-  // skip 2 lines of header informations:
-  std::getline(infile, extract);
-  std::getline(infile, extract);
-  // forces
-  std::vector<std::array<double, 3>> forces = readingData(infile, numberOfParticles);
+  size_t numParticles;
+  std::string dataType;
+
+  findWord(infile, "POINTS");
+  infile >> numParticles >> dataType;
+
+  auto positions = readPayload<std::array<double, 3>, 3>(infile, numParticles);
+  // next payload block is always preceded by the datatype
+  findWord(infile, dataType);
+  auto velocities = readPayload<std::array<double, 3>, 3>(infile, numParticles);
+  findWord(infile, dataType);
+  auto forces = readPayload<std::array<double, 3>, 3>(infile, numParticles);
+  findWord(infile, "default");
+  auto typeID = readPayload<size_t, 1>(infile, numParticles);
 
   // creating Particles from checkpoint:
-  for (auto i = 0; i < numberOfParticles; i++) {
+  for (auto i = 0ul; i < numParticles; ++i) {
     typename AutoPasTemplate::Particle_t p;
-    p.setR(positions.at(i));
-    p.setV(velocities.at(i));
-    p.setF(forces.at(i));
+    p.setR(positions[i]);
+    p.setV(velocities[i]);
+    p.setF(forces[i]);
+    p.setTypeId(typeID[i]);
     p.setID(i);
     autopas.addParticle(p);
   }
 }
 
 template <class AutoPasTemplate>
-std::vector<std::array<double, 3>> Checkpoint<AutoPasTemplate>::readingData(std::ifstream &file, int numOfP) {
-  std::vector<std::array<double, 3>> data;
-  std::string dataString;
-  for (int i = 0; i < numOfP; i++) {
-    std::getline(file, dataString);
-    data.emplace_back(autopas::utils::StringUtils::parseArrayD3(dataString));
-    dataString = "";
+template <class dataType, int size>
+std::vector<dataType> Checkpoint<AutoPasTemplate>::readPayload(std::ifstream &file, const size_t numberOfParticles) {
+  std::vector<dataType> data(numberOfParticles);
+  // loop over every line (=particle)
+  for (size_t i = 0; i < numberOfParticles; ++i) {
+    // loop over line (=coordinates)
+    if constexpr (size == 1) {
+      file >> data[i];
+    } else {
+      for (size_t j = 0; j < size; ++j) {
+        file >> data[i][j];
+      }
+    }
   }
   return data;
 }
