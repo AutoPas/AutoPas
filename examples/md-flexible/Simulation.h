@@ -92,6 +92,14 @@ class Simulation {
     }
     vtkFile << std::endl;
 
+    // print TypeIDs
+    vtkFile << "SCALARS typeIds int" << std::endl;
+    vtkFile << "LOOKUP_TABLE default" << std::endl;
+    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      vtkFile << iter->getTypeId() << std::endl;
+    }
+    vtkFile << std::endl;
+
     vtkFile.close();
 
     _timers.vtk.stop();
