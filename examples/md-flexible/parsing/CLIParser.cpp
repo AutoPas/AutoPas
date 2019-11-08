@@ -62,7 +62,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case '4': {
-        config.checkpointfile = strArg;
+        // already parsed in CLIParser::inputFilesPresent
         break;
       }
       case 'a': {
