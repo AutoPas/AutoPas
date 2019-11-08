@@ -151,7 +151,8 @@ inline std::array<double, 3> parseArrayD3(const std::string &string) {
     try {
       parsedArray[i] = std::stod(strings[i]);
     } catch (const std::exception &e) {
-      autopas::utils::ExceptionHandler::exception("parseArrayD3(): could not convert {} to a double: \n{}", strings[i], e.what());
+      autopas::utils::ExceptionHandler::exception("parseArrayD3(): could not convert {} to a double: \n{}", strings[i],
+                                                  e.what());
     }
   }
   return parsedArray;

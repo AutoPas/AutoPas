@@ -33,14 +33,14 @@ class Checkpoint {
   static void loadParticles(AutoPasTemplate &autopas, const std::string &vtkFilename);
 
  private:
-   /**
-    * Reads the next numberOfParticles lines from file. The lines are expected to contain xyz data.
-    * @tparam dataType type of the data to be read. (Can be scalars or containers that support [])
-    * @tparam size number of entries per dataType.
-    * @param file
-    * @param numberOfParticles
-    * @return Vector of read data.
-    */
+  /**
+   * Reads the next numberOfParticles lines from file. The lines are expected to contain xyz data.
+   * @tparam dataType type of the data to be read. (Can be scalars or containers that support [])
+   * @tparam size number of entries per dataType.
+   * @param file
+   * @param numberOfParticles
+   * @return Vector of read data.
+   */
   template <class dataType, int size>
   static std::vector<dataType> readPayload(std::ifstream &file, size_t numberOfParticles);
 

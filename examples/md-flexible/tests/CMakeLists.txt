@@ -1,10 +1,10 @@
 file(
-        GLOB_RECURSE
-        MDFlex_SRC
-        "../*.cpp"
-        "../*.h"
-        "${PROJECT_SOURCE_DIR}/tests/testAutopas/testingHelpers/RandomGenerator.h"
-        "${PROJECT_SOURCE_DIR}/tests/testAutopas/testingHelpers/RandomGenerator.cpp"
+    GLOB_RECURSE
+    MDFlex_SRC
+    "../*.cpp"
+    "../*.h"
+    "${PROJECT_SOURCE_DIR}/tests/testAutopas/testingHelpers/RandomGenerator.h"
+    "${PROJECT_SOURCE_DIR}/tests/testAutopas/testingHelpers/RandomGenerator.cpp"
 )
 
 # remove main
@@ -18,17 +18,20 @@ endforeach ()
 add_executable(mdFlexTests ${MDFlex_SRC})
 
 target_compile_definitions(
-        mdFlexTests PRIVATE
-        YAMLDIRECTORY=\"${PROJECT_SOURCE_DIR}/examples/md-flexible/tests/yamlTestFiles/\"
+    mdFlexTests PRIVATE
+    YAMLDIRECTORY=\"${PROJECT_SOURCE_DIR}/examples/md-flexible/tests/yamlTestFiles/\"
 )
-target_include_directories(mdFlexTests PUBLIC ${PROJECT_SOURCE_DIR}/tests/testAutopas ${PROJECT_SOURCE_DIR}/examples/md-flexible)
+target_include_directories(
+    mdFlexTests
+    PUBLIC ${PROJECT_SOURCE_DIR}/tests/testAutopas ${PROJECT_SOURCE_DIR}/examples/md-flexible
+)
 
 target_link_libraries(
-        mdFlexTests
-        autopas
-        libgtest
-        libgmock
-        libyaml-cpp
+    mdFlexTests
+    autopas
+    libgtest
+    libgmock
+    libyaml-cpp
 )
 
 # this cmake module was only introduced in 3.10
