@@ -278,7 +278,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
 
   // load checkpoint
   if (not _config->checkpointfile.empty()) {
-    Checkpoint<decltype(_autopas)>::loadParticles(_autopas, _config->checkpointfile);
+    Checkpoint::loadParticles(_autopas, _config->checkpointfile);
   }
 
   // initializing Objects

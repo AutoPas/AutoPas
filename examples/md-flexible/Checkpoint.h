@@ -13,7 +13,6 @@
 /**
  * This class implements the initialization of an AutoPas container from vtk checkpoint files
  */
-template <class AutoPasTemplate>
 class Checkpoint {
  public:
   /**
@@ -30,6 +29,7 @@ class Checkpoint {
    * @param autopas
    * @param vtkFilename
    */
+  template <class AutoPasTemplate>
   static void loadParticles(AutoPasTemplate &autopas, const std::string &vtkFilename);
 
  private:
@@ -58,7 +58,7 @@ class Checkpoint {
 };
 
 template <class AutoPasTemplate>
-void Checkpoint<AutoPasTemplate>::loadParticles(AutoPasTemplate &autopas, const std::string &vtkFilename) {
+void Checkpoint::loadParticles(AutoPasTemplate &autopas, const std::string &vtkFilename) {
   std::ifstream infile(vtkFilename);
   size_t numParticles;
   std::string dataType;
@@ -87,9 +87,8 @@ void Checkpoint<AutoPasTemplate>::loadParticles(AutoPasTemplate &autopas, const 
   }
 }
 
-template <class AutoPasTemplate>
 template <class dataType, int size>
-std::vector<dataType> Checkpoint<AutoPasTemplate>::readPayload(std::ifstream &file, const size_t numberOfParticles) {
+std::vector<dataType> Checkpoint::readPayload(std::ifstream &file, const size_t numberOfParticles) {
   std::vector<dataType> data(numberOfParticles);
   // loop over every line (=particle)
   for (size_t i = 0; i < numberOfParticles; ++i) {
