@@ -399,9 +399,9 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
     }
   }
 
-  // only create objects if nothing was set by a yaml file
-  if (config.cubeGaussObjects.empty() and config.cubeGridObjects.empty() and config.cubeUniformObjects.empty() and
-      config.sphereObjects.empty()) {
+  // only create objects if nothing was set by a yaml file and there was no checkpoint
+  if (config.checkpointfile.empty() and config.cubeGaussObjects.empty() and config.cubeGridObjects.empty() and
+      config.cubeUniformObjects.empty() and config.sphereObjects.empty()) {
     // common settings for any object type:
     unsigned int typeID = 0;
     double epsilon = 1.;
