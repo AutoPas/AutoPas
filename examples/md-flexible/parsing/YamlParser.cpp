@@ -23,6 +23,14 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.containerOptions =
         autopas::ContainerOption::parseOptions(node[MDFlexConfig::containerOptionsStr].as<std::string>());
   }
+  if (node[MDFlexConfig::boxMinStr]) {
+    auto tmpNode = node[MDFlexConfig::boxMinStr];
+    config.boxMin = {tmpNode[0].as<double>(), tmpNode[1].as<double>(), tmpNode[2].as<double>()};
+  }
+  if (node[MDFlexConfig::boxMaxStr]) {
+    auto tmpNode = node[MDFlexConfig::boxMaxStr];
+    config.boxMax = {tmpNode[0].as<double>(), tmpNode[1].as<double>(), tmpNode[2].as<double>()};
+  }
   if (node[MDFlexConfig::selectorStrategyStr]) {
     auto parsedOptions =
         autopas::SelectorStrategyOption::parseOptions(node[MDFlexConfig::selectorStrategyStr].as<std::string>());
