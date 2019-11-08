@@ -70,8 +70,8 @@ class ContainerSelector {
    * @param containerInfo additional parameter for the container
    * @return smartpointer to new container
    */
-  std::unique_ptr<autopas::ParticleContainerInterface<ParticleCell>> generateContainer(ContainerOption containerChoice,
-                                                                              ContainerSelectorInfo containerInfo);
+  std::unique_ptr<autopas::ParticleContainerInterface<ParticleCell>> generateContainer(
+      ContainerOption containerChoice, ContainerSelectorInfo containerInfo);
 
   const std::array<double, 3> _boxMin, _boxMax;
   const double _cutoff;
@@ -80,8 +80,9 @@ class ContainerSelector {
 };
 
 template <class Particle, class ParticleCell>
-std::unique_ptr<autopas::ParticleContainerInterface<ParticleCell>> ContainerSelector<Particle, ParticleCell>::generateContainer(
-    ContainerOption containerChoice, ContainerSelectorInfo containerInfo) {
+std::unique_ptr<autopas::ParticleContainerInterface<ParticleCell>>
+ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption containerChoice,
+                                                             ContainerSelectorInfo containerInfo) {
   std::unique_ptr<autopas::ParticleContainerInterface<ParticleCell>> container;
 
   switch (containerChoice) {

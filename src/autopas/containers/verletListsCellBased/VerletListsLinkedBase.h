@@ -216,7 +216,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<FullParticleCell
   /**
    * @copydoc autopas::ParticleContainerInterface::setBoxMax()
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) override final { _linkedCells.setBoxMax(boxMax);}
+  void setBoxMax(const std::array<double, 3> &boxMax) override final { _linkedCells.setBoxMax(boxMax); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMin()
