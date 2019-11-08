@@ -10,7 +10,6 @@
 #include "MDFlexConfig.h"
 #include "YamlParser.h"
 
-class MDFlexParser {
- public:
-  static bool parseInput(int argc, char **argv, MDFlexConfig &config);
+namespace MDFlexParser {
+bool parseInput(int argc, char **argv, MDFlexConfig &config);
 };

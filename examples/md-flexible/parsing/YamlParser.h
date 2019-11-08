@@ -21,21 +21,12 @@
 /**
  * Parser for input through YAML files.
  */
-class YamlParser {
- public:
-  /**
-   * Parses the Input for the simulation from the Yaml File specified in the configuration
-   * @param config configuration where the input is stored.
-   * @return false if any errors occurred during parsing.
-   * @FIXME: at the moment false is never returned
-   */
-  static bool parseYamlFile(MDFlexConfig &config);
-
- private:
-  /**
-   * Check if the passed file exists.
-   * @param filename
-   * @return true iff the file is found.
-   */
-  static bool checkFileExists(const std::string &filename);
-};
+namespace YamlParser {
+/**
+ * Parses the Input for the simulation from the Yaml File specified in the configuration
+ * @param config configuration where the input is stored.
+ * @return false if any errors occurred during parsing.
+ * @FIXME: at the moment false is never returned
+ */
+bool parseYamlFile(MDFlexConfig &config);
+};  // namespace YamlParser

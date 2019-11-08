@@ -7,12 +7,15 @@
 #include "YamlParser.h"
 #include <sys/stat.h>
 
-bool YamlParser::checkFileExists(const std::string &filename) {
+namespace YamlParser {
+namespace {
+bool checkFileExists(const std::string &filename) {
   struct stat buffer;
   return (stat(filename.c_str(), &buffer) == 0);
 }
+}  // namespace
 
-bool YamlParser::parseYamlFile(MDFlexConfig &config) {
+bool parseYamlFile(MDFlexConfig &config) {
   if (not checkFileExists(config.yamlFilename)) {
     throw std::runtime_error("YamlParser::parseYamlFile: File " + config.yamlFilename + " not found!");
   }
@@ -274,3 +277,4 @@ bool YamlParser::parseYamlFile(MDFlexConfig &config) {
   }
   return true;
 }
+}  // namespace YamlParser
