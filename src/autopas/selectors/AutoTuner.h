@@ -80,7 +80,7 @@ class AutoTuner {
    * Getter for the current container.
    * @return Smart pointer to the current container.
    */
-  std::shared_ptr<autopas::ParticleContainer<ParticleCell>> getContainer() {
+  std::shared_ptr<autopas::ParticleContainerInterface<ParticleCell>> getContainer() {
     return _containerSelector.getCurrentContainer();
   }
 
@@ -88,7 +88,7 @@ class AutoTuner {
    * Getter for the current container.
    * @return Smart pointer to the current container.
    */
-  std::shared_ptr<const autopas::ParticleContainer<ParticleCell>> getContainer() const {
+  std::shared_ptr<const autopas::ParticleContainerInterface<ParticleCell>> getContainer() const {
     return _containerSelector.getCurrentContainer();
   }
 

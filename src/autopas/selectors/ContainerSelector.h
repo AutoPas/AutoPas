@@ -55,13 +55,13 @@ class ContainerSelector {
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
    * @return Smartpointer to the optimal container.
    */
-  std::shared_ptr<autopas::ParticleContainer<ParticleCell>> getCurrentContainer();
+  std::shared_ptr<autopas::ParticleContainerInterface<ParticleCell>> getCurrentContainer();
 
   /**
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
    * @return Smartpointer to the optimal container.
    */
-  std::shared_ptr<const autopas::ParticleContainer<ParticleCell>> getCurrentContainer() const;
+  std::shared_ptr<const autopas::ParticleContainerInterface<ParticleCell>> getCurrentContainer() const;
 
  private:
   /**
@@ -70,19 +70,19 @@ class ContainerSelector {
    * @param containerInfo additional parameter for the container
    * @return smartpointer to new container
    */
-  std::unique_ptr<autopas::ParticleContainer<ParticleCell>> generateContainer(ContainerOption containerChoice,
+  std::unique_ptr<autopas::ParticleContainerInterface<ParticleCell>> generateContainer(ContainerOption containerChoice,
                                                                               ContainerSelectorInfo containerInfo);
 
   const std::array<double, 3> _boxMin, _boxMax;
   const double _cutoff;
-  std::shared_ptr<autopas::ParticleContainer<ParticleCell>> _currentContainer;
+  std::shared_ptr<autopas::ParticleContainerInterface<ParticleCell>> _currentContainer;
   ContainerSelectorInfo _currentInfo;
 };
 
 template <class Particle, class ParticleCell>
-std::unique_ptr<autopas::ParticleContainer<ParticleCell>> ContainerSelector<Particle, ParticleCell>::generateContainer(
+std::unique_ptr<autopas::ParticleContainerInterface<ParticleCell>> ContainerSelector<Particle, ParticleCell>::generateContainer(
     ContainerOption containerChoice, ContainerSelectorInfo containerInfo) {
-  std::unique_ptr<autopas::ParticleContainer<ParticleCell>> container;
+  std::unique_ptr<autopas::ParticleContainerInterface<ParticleCell>> container;
 
   switch (containerChoice) {
     case ContainerOption::directSum: {
@@ -142,7 +142,7 @@ std::unique_ptr<autopas::ParticleContainer<ParticleCell>> ContainerSelector<Part
 }
 
 template <class Particle, class ParticleCell>
-std::shared_ptr<autopas::ParticleContainer<ParticleCell>>
+std::shared_ptr<autopas::ParticleContainerInterface<ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::getCurrentContainer() {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(
@@ -152,7 +152,7 @@ ContainerSelector<Particle, ParticleCell>::getCurrentContainer() {
 }
 
 template <class Particle, class ParticleCell>
-std::shared_ptr<const autopas::ParticleContainer<ParticleCell>>
+std::shared_ptr<const autopas::ParticleContainerInterface<ParticleCell>>
 ContainerSelector<Particle, ParticleCell>::getCurrentContainer() const {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(
