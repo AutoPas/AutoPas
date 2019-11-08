@@ -103,17 +103,6 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
   double getInteractionLength() const override final { return _cutoff + _skin; }
 
   /**
-   * Checks if the given traversals are applicable to this container.
-   * @param traversalOptions
-   * @return True iff traversalOptions is a subset of _applicableTraversals
-   */
-  bool checkIfTraversalsAreApplicable(const std::set<TraversalOption> &traversalOptions) const {
-    auto applicableTraversals = compatibleTraversals::allCompatibleTraversals(this->getContainerType());
-    return std::includes(applicableTraversals.begin(), applicableTraversals.end(), traversalOptions.begin(),
-                         traversalOptions.end());
-  }
-
-  /**
    * Deletes all particles from the container.
    */
   void deleteAllParticles() override {
