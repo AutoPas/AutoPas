@@ -458,7 +458,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   return true;
 }
 
-bool CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
+void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
   int option, optionIndex;
   // suppress error messages since we only want to look if the yaml option is there
   auto opterrBefore = opterr;

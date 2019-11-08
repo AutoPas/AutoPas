@@ -16,14 +16,15 @@
 class CLIParser {
  public:
   /**
-   * Checks if a yaml file is specified in the given command line arguments and saves it's path to the given
-   * configuration.
+   * Checks if a checkpoint or yaml file is specified in the given command line arguments.
+   * If any files are found, their paths are saves in the respective fields of the given configuration.
+   *
    * @param argc number of command line arguments.
    * @param argv command line argument array.
    * @param config configuration where the input is stored.
-   * @return true if a yaml file argument was found.
+   * @return
    */
-  static bool inputFilesPresent(int argc, char **argv, MDFlexConfig &config);
+  static void inputFilesPresent(int argc, char **argv, MDFlexConfig &config);
 
   /**
    * Parses the Input for the simulation from the command line.
