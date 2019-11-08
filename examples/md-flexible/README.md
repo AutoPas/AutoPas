@@ -1,31 +1,38 @@
 # MD-Flexible 
 
-This programm aims to easily create and simulate molecular dynamic scenarios using AutoPas
+This demo shows how to easily create and simulate molecular dynamic
+scenarios using AutoPas and flexibly configure all of it's options.
+
 ## Compiling
-build instructions for md-flexible
+To build MD-Flexible execute the following from the AutoPas root folder:
 ```bash
-mkdir build
-cd build
-cmake [-G generator] [CMAKEOPTIONS] ..
-ccmake [OPTIONS]..
-make md-flexible [OPTIONS]
+mkdir build && $_
+cmake ..
+make md-flexible
 ```
+
 ## Usage 
-#####Information:
-1. Options are eather inputed via a .yaml configuration file, via the command line or both 
-2. Command line options overwrite the options specified in the yaml file
-3. A sample YAML configuration file with all available options is located at: examples/md-flexible/input/FullConfigurationFile.yaml
-5. For every execution, the options of the choosen scenario are printed on the command line 
-#####Execution:
-* Display all CL options
+
+When running md-flexible without any arguments a default simulation with
+all AutoPas options active is run and it's configuration printed. From
+there you can restrict any AutoPas options or change the simulation.
+
+For all available option see:
 ```bash
  examples/md-flexible/md-flexible --help
 ```
-* Specify .yaml configuration file
-```bash
- examples/md-flexible/md-flexible --yaml-filename <path-to-file>
-```
-* Default execution (3D Grid of 1000 particles)
-```bash
- examples/md-flexible/md-flexible
-```
+
+### Input
+
+MD-Flexible accepts input via command line arguments and YAML files.
+When given both, any command line options will overwrite their YAML
+counterparts.
+
+### Checkpoints
+
+MD-Flexible can be initialized through a previously written VTK file.
+Please use only VTK files written by MD-Flexible since the parsing is
+rather simple. The VTK file only contains Information about all
+particles positions, velocities, forces and typeIDs. All other options,
+especially the simulation box size and particle properties (still) need
+to be set through a YAML file.
