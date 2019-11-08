@@ -127,17 +127,12 @@ class GaussianProcess {
    * @param rngRef reference to rng
    */
   GaussianProcess(size_t dims, double sigma, Random &rngRef)
-      : _inputs(), _outputs(), _dims(dims), _sigma(sigma), _hypers(), _rng(rngRef) {
-    updateHyperparameters();
-  }
+      : _inputs(), _outputs(), _dims(dims), _sigma(sigma), _hypers(), _rng(rngRef) {}
 
   /**
    * Discard all evidence.
    */
-  void clear() {
-    _inputs.clear();
-    updateHyperparameters();
-  }
+  void clear() { _inputs.clear(); }
 
   /**
    * Get the number of evidence provided.

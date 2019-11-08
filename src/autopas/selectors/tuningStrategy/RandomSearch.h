@@ -15,7 +15,7 @@
 namespace autopas {
 
 /**
- * Randomly test configurations and select optimum.
+ * Randomly test a given number of configurations and select the fastest.
  */
 class RandomSearch : public TuningStrategyInterface {
  public:
