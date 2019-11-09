@@ -54,7 +54,7 @@ class Simulation {
 
     std::string fileBaseName = _config->vtkFileName;
     // as _autopas.getNumberOfParticles return number of haloAndOwned Particles, we need number of owned Particles
-    const auto numParticles = this->getNumParticles();
+    const auto numParticles = this->_autopas.getNumberOfParticles();
     std::ostringstream strstr;
     auto maxNumDigits = std::to_string(_config->iterations).length();
     strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtk";
@@ -134,27 +134,6 @@ class Simulation {
   void simulate();
 
   /**
-   * Getter for AutoPas object.
-   * @return Autopas Object
-   */
-  autopas::AutoPas<Particle, ParticleCell> *getAutopas() const;
-
-  /**
-   * Return the current number of owned Particles in the AutoPas Object.
-   * @return
-   */
-  size_t getNumParticles() {
-    size_t numberOfParticles = 0;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      numberOfParticles++;
-    }
-    return numberOfParticles;
-  }
-
-  /**
    * Prints statistics like duration of calculation etc of the Simulation.
    */
   void printStatistics();
@@ -196,11 +175,6 @@ class Simulation {
    */
   std::string timerToString(std::string name, long timeMS, size_t numberWidth = 0, long maxTime = 0);
 };
-
-template <class Particle, class ParticleCell>
-autopas::AutoPas<Particle, ParticleCell> *Simulation<Particle, ParticleCell>::getAutopas() const {
-  return _autopas.get();
-}
 
 template <typename Particle, typename ParticleCell>
 void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
