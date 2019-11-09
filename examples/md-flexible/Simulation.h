@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <iostream>
+
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
@@ -394,34 +395,22 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   // Statistics
   cout << fixed << setprecision(_floatPrecision);
   cout << endl << "Measurements:" << endl;
-  cout << timerToString("Time total      ", durationTotal, digitsTimeTotalMuS) << endl;
-  cout << timerToString("  Initialization", _timers.init.getTotalTime(), digitsTimeTotalMuS, durationTotal) << endl;
-  cout << timerToString("  Simulation    ", durationSimulate, digitsTimeTotalMuS, durationTotal) << endl;
-  if (_config->periodic) {
-    cout << timerToString("    Boundaries  ", _timers.boundaries.getTotalTime(), digitsTimeTotalMuS, durationSimulate)
-         << endl;
-  }
-  cout << timerToString("    Position    ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalMuS, durationSimulate)
-       << endl;
-  cout << timerToString("    Force       ", _timers.forceUpdate.getTotalTime(), digitsTimeTotalMuS, durationSimulate)
-       << endl;
-  cout << timerToString("    Velocity    ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalMuS, durationSimulate)
-       << endl;
-  if (not _config->vtkFileName.empty()) {
-    cout << timerToString("    VTK         ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationSimulate) << endl;
-  }
-  if (_config->useThermostat) {
-    cout << timerToString("    Thermostat  ", _timers.thermostat.getTotalTime(), digitsTimeTotalMuS, durationSimulate)
-         << endl;
-  }
+  cout << timerToString("Time total      ", durationTotal, digitsTimeTotalMuS);
+  cout << timerToString("  Initialization", _timers.init.getTotalTime(), digitsTimeTotalMuS, durationTotal);
+  cout << timerToString("  Simulation    ", durationSimulate, digitsTimeTotalMuS, durationTotal);
+  cout << timerToString("    Boundaries  ", _timers.boundaries.getTotalTime(), digitsTimeTotalMuS, durationSimulate);
+  cout << timerToString("    Position    ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalMuS,
+                        durationSimulate);
+  cout << timerToString("    Force       ", _timers.forceUpdate.getTotalTime(), digitsTimeTotalMuS, durationSimulate);
+  cout << timerToString("    Velocity    ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalMuS,
+                        durationSimulate);
+  cout << timerToString("    VTK         ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationSimulate);
+  cout << timerToString("    Thermostat  ", _timers.thermostat.getTotalTime(), digitsTimeTotalMuS, durationSimulate);
 
   auto numIterations = _config->iterations;
 
-  if (numIterations > 0) {
-    cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / numIterations, digitsTimeTotalMuS,
-                          durationTotal)
-         << endl;
-  }
+  cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / numIterations, digitsTimeTotalMuS,
+                        durationTotal);
   auto mfups = _autopas.getNumberOfParticles() * numIterations / durationSimulateSec * 1e-6;
   cout << "MFUPs/sec    : " << mfups << endl;
 
@@ -453,6 +442,11 @@ template <class Particle, class ParticleCell>
 
 std::string Simulation<Particle, ParticleCell>::timerToString(std::string name, long timeMS, size_t numberWidth,
                                                               long maxTime) {
+  // only print timers that were actually used
+  if (timeMS == 0) {
+    return "";
+  }
+
   std::ostringstream ss;
   ss << std::fixed << std::setprecision(_floatPrecision);
   ss << name << " : " << std::setw(numberWidth) << std::right << timeMS << " \u03bcs (" << ((double)timeMS * 1e-6)
@@ -460,5 +454,6 @@ std::string Simulation<Particle, ParticleCell>::timerToString(std::string name, 
   if (maxTime != 0) {
     ss << " =" << std::setw(7) << std::right << ((double)timeMS / (double)maxTime * 100) << "%";
   }
+  ss << std::endl;
   return ss.str();
 }
