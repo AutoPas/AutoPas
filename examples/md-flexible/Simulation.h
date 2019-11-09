@@ -199,9 +199,11 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
 
   _config = std::make_shared<MDFlexConfig>(mdFlexConfig);
   initializeParticlePropertiesLibrary();
-  _timeDiscretization = std::make_unique<
-      TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
-      _config->deltaT, *_particlePropertiesLibrary);
+  if (_config->deltaT != 0) {
+    _timeDiscretization = std::make_unique<
+        TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
+        _config->deltaT, *_particlePropertiesLibrary);
+  }
   auto logFileName(_config->logFileName);
   auto verletRebuildFrequency(_config->verletRebuildFrequency);
   auto logLevel(_config->logLevel);
@@ -270,7 +272,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   }
 
   // initilizing Thermostat
-  if (_config->useThermostat) {
+  if (_config->useThermostat and _config->deltaT != 0) {
     _thermostat = std::make_unique<
         Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
         _config->initTemperature, _config->targetTemperature, _config->deltaTemp, *_particlePropertiesLibrary);
@@ -301,20 +303,21 @@ void Simulation<Particle, ParticleCell>::simulate() {
       std::cout << "Iteration " << iteration << std::endl;
     }
 
-    // only write vtk files periodically and if a filename is given
-    if ((not _config->vtkFileName.empty()) and iteration % _config->vtkWriteFrequency == 0) {
-      this->writeVTKFile(iteration);
-    }
+    if (_config->deltaT != 0) {
+      // only write vtk files periodically and if a filename is given.
+      if ((not _config->vtkFileName.empty()) and iteration % _config->vtkWriteFrequency == 0) {
+        this->writeVTKFile(iteration);
+      }
 
-    if (_config->periodic) {
-      _timers.boundaries.start();
-      BoundaryConditions<ParticleCell>::applyPeriodic(_autopas);
-      _timers.boundaries.stop();
+      if (_config->periodic) {
+        _timers.boundaries.start();
+        BoundaryConditions<ParticleCell>::applyPeriodic(_autopas);
+        _timers.boundaries.stop();
+      }
+      _timers.positionUpdate.start();
+      _timeDiscretization->calculatePositions(_autopas);
+      _timers.positionUpdate.stop();
     }
-    _timers.positionUpdate.start();
-    _timeDiscretization->calculatePositions(_autopas);
-    _timers.positionUpdate.stop();
-
     switch (this->_config->functorOption) {
       case MDFlexConfig::FunctorOption::lj12_6: {
         this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>>();
@@ -333,15 +336,18 @@ void Simulation<Particle, ParticleCell>::simulate() {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
-    _timers.velocityUpdate.start();
-    _timeDiscretization->calculateVelocities(_autopas);
-    _timers.velocityUpdate.stop();
 
-    // applying Velocity scaling with Thermostat:
-    if (_config->useThermostat and (iteration % _config->thermostatInterval) == 0) {
-      _timers.thermostat.start();
-      _thermostat->apply(_autopas);
-      _timers.thermostat.stop();
+    if (_config->deltaT != 0) {
+      _timers.velocityUpdate.start();
+      _timeDiscretization->calculateVelocities(_autopas);
+      _timers.velocityUpdate.stop();
+
+      // applying Velocity scaling with Thermostat:
+      if (_config->useThermostat and (iteration % _config->thermostatInterval) == 0) {
+        _timers.thermostat.start();
+        _thermostat->apply(_autopas);
+        _timers.thermostat.stop();
+      }
     }
   }
 
