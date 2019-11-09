@@ -268,13 +268,14 @@ class GaussianProcess {
         return predictVar(input);
       }
       case AcquisitionFunctionOption::probabilityOfDecrease: {
-        return utils::Math::normalCDF((_evidenceMinValue - predictMean(input)) / predictVar(input));
+        return utils::Math::normalCDF((_evidenceMinValue - predictMean(input)) / std::sqrt(predictVar(input)));
       }
       case AcquisitionFunctionOption::expectedDecrease: {
         double mean = predictMean(input);
-        double var = predictVar(input);
-        double minNormed = (_evidenceMinValue - mean) / var;
-        return (_evidenceMinValue - mean) * utils::Math::normalCDF(minNormed) + var * utils::Math::normalPDF(minNormed);
+        double stddev = std::sqrt(predictVar(input));
+        double minNormed = (_evidenceMinValue - mean) / stddev;
+        return (_evidenceMinValue - mean) * utils::Math::normalCDF(minNormed) +
+               stddev * utils::Math::normalPDF(minNormed);
       }
     }
 
