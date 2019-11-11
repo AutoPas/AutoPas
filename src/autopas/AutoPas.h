@@ -519,7 +519,7 @@ class AutoPas {
       }
 
       case TuningStrategyOption::activeHarmony: {
-        return std::make_unique<ActiveHarmony>(NumberInterval(_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()), _allowedTraversals, _allowedDataLayouts, _allowedNewton3Options);
+        return std::make_unique<ActiveHarmony>(_allowedContainers, NumberInterval(_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()), _allowedTraversals, _allowedDataLayouts, _allowedNewton3Options);
       }
     }
 

@@ -25,11 +25,13 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    */
-  ActiveHarmony(const NumberInterval<double> &allowedCellSizeFactors,
+  ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions,
+                const NumberInterval<double> &allowedCellSizeFactors,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                 const std::set<Newton3Option> &allowedNewton3Options)
-      : _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
+      : _allowedContainerOptions(allowedContainerOptions),
+        _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
         _allowedTraversalOptions(allowedTraversalOptions),
         _allowedDataLayoutOptions(allowedDataLayoutOptions),
         _allowedNewton3Options(allowedNewton3Options),
@@ -70,6 +72,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   hdesc_t *hdesc;
   htask_t *htask;
 
+  std::set<ContainerOption> _allowedContainerOptions;
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors; // Maybe use min, max, stepsize
   std::set<TraversalOption> _allowedTraversalOptions;
   std::set<DataLayoutOption> _allowedDataLayoutOptions;
@@ -161,8 +164,11 @@ void ActiveHarmony::reset() {
     utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum \"traversalOption\"");
   }
   for (auto &traversalOption : _allowedTraversalOptions) {
-    if (ah_def_enum_value(hdef, "traversalOption", traversalOption.to_string().c_str()) != 0) {
-      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum value for enum \"traversalOption\"");
+    if (_allowedContainerOptions.find(*compatibleTraversals::allCompatibleContainers(traversalOption).begin()) != _allowedContainerOptions.end()) {
+      if (ah_def_enum_value(hdef, "traversalOption", traversalOption.to_string().c_str()) != 0) {
+        utils::ExceptionHandler::exception(
+                "ActiveHarmony::reset: Error defining enum value for enum \"traversalOption\"");
+      }
     }
   }
 
