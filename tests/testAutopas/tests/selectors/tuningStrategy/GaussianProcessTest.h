@@ -12,84 +12,86 @@
 #include "autopas/selectors/FeatureVector.h"
 #include "autopas/selectors/tuningStrategy/GaussianProcess.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/Random.h"
 
-class GaussianProcessTest : public AutoPasTestBase {};
+class GaussianProcessTest : public AutoPasTestBase {
+ protected:
+  /**
+   * Option to choose min or max.
+   */
+  enum minMax { max, min };
 
-/**
- * Print a xChunks x yChunks mean and aquisition map.
- * @param xChunks width of maps
- * @param yChunks height of maps
- * @param domainX x domain of GaussianProcess
- * @param domainY y domain of GaussianProcess
- * @param gp GaussianProcess to calculate mean and acquisiton
- * @param af acquisition function
- * @param colorFactor Multiplies the mean by this factor to gain the color
- */
-void printMap(int xChunks, int yChunks, const autopas::NumberSet<double> &domainX,
-              const autopas::NumberSet<double> &domainY, const autopas::GaussianProcess<Eigen::VectorXd> &gp,
-              autopas::AcquisitionFunctionOption af, double colorFactor) {
-  // get distance between chunks
-  double xSpace = (domainX.getMax() - domainX.getMin()) / (xChunks - 1);
-  double ySpace = (domainY.getMax() - domainY.getMin()) / (yChunks - 1);
+  /**
+   *
+   * @param function
+   * @param target
+   * @param precision Allowed difference between target and what is predicted.
+   * @param domain
+   * @param acquisitionFunctionOption
+   * @param evidence if true the minimum of the evidences is used, otherwise the maximum.
+   * @param visualize if true, the acquisition map is printed to std::cout
+   */
+  template <class NumberSetType>
+  void test2DFunction(double (*function)(double, double), const Eigen::VectorXd &target, double precision,
+                      const std::pair<NumberSetType, NumberSetType> &domain,
+                      autopas::AcquisitionFunctionOption acquisitionFunctionOption, minMax evidence, minMax acquisition,
+                      bool visualize) {
+    autopas::Random rng(42);  // random generator
 
-  // precalculate acqMap
-  std::vector<std::vector<double>> acqMap;
-  double acqMin = std::numeric_limits<double>::max();
-  double acqMax = std::numeric_limits<double>::min();
-  for (int y = 0; y < xChunks; ++y) {
-    // calculate a row
-    std::vector<double> row;
-    for (int x = 0; x < xChunks; ++x) {
-      // calculate value of chunk
-      Eigen::Vector2d sample(x * xSpace + domainX.getMin(), (y * ySpace + domainY.getMin()));
-      double val = gp.calcAcquisition(af, sample);
+    constexpr size_t numEvidence = 10;      // number of samples allowed to make
+    constexpr size_t lhsNumSamples = 1000;  // number of sample to find min of acquisition function
 
-      // negate for special case lcb
-      if (af == autopas::AcquisitionFunctionOption::lowerConfidenceBound) val = -val;
+    autopas::GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
 
-      row.push_back(val);
+    // add first evidence
+    Eigen::VectorXd firstEvidence(2);
+    firstEvidence << 0, 0;
+    gp.addEvidence(firstEvidence, function(0, 0));
 
-      // keep track min and max value
-      acqMin = std::min(val, acqMin);
-      acqMax = std::max(val, acqMax);
+    for (unsigned idEvidence = 1; idEvidence < numEvidence; ++idEvidence) {
+      // create lhs samples
+      std::vector<Eigen::VectorXd> lhsSamples;
+      lhsSamples.reserve(lhsNumSamples);
+
+      auto xSamples = domain.first.uniformSample(lhsNumSamples, rng);
+      auto ySamples = domain.second.uniformSample(lhsNumSamples, rng);
+      for (size_t idSample = 0; idSample < lhsNumSamples; ++idSample) {
+        Eigen::Vector2d sample(xSamples[idSample], ySamples[idSample]);
+        lhsSamples.emplace_back(sample);
+      }
+
+      // sample acquisition function
+      auto am = acquisition == minMax::min ? gp.sampleAquisitionMin(acquisitionFunctionOption, lhsSamples)
+                                           : gp.sampleAquisitionMax(acquisitionFunctionOption, lhsSamples);
+      double amOut = function(am[0], am[1]);
+
+      if (visualize) {
+        printMap(20, 20, domain.first, domain.second, gp, acquisitionFunctionOption, 0.05);
+        std::cout << "Acq max: " << std::endl << am << std::endl;
+        std::cout << "Got: " << amOut << std::endl;
+      }
+      gp.addEvidence(am, amOut);
     }
 
-    acqMap.push_back(row);
+    auto predictedTarget = evidence == minMax::min ? gp.getEvidenceMin() : gp.getEvidenceMax();
+
+    // check if prediction is near target
+    double predMin = function(predictedTarget[0], predictedTarget[1]);
+    double realMin = function(target[0], target[1]);
+    EXPECT_NEAR(predMin, realMin, precision);
   }
 
-  // get scaling such that acqMax=1 and acqMin=0
-  double acqScale = 1 / (acqMax - acqMin);
-
-  // print map
-  for (int y = yChunks - 1; y >= 0; --y) {
-    // acquisiton row
-    for (int x = 0; x < xChunks; ++x) {
-      // map value between 0 to 1 and square for clearer differences of high values
-      double val = std::pow((acqMap[y][x] - acqMin) * acqScale, 2);
-
-      // map value to color
-      int color = static_cast<int>(232 + 23 * val);
-      color = std::clamp(color, 232, 255);
-
-      // print two spaces of that color
-      std::cout << "\033[48;5;" << color << "m  ";
-    }
-    // reset color, print a space
-    std::cout << "\033[0m ";
-
-    // mean row
-    for (int x = 0; x < xChunks; ++x) {
-      Eigen::Vector2d sample(x * xSpace + domainX.getMin(), (y * ySpace + domainY.getMin()));
-      double val = gp.predictMean(sample) * colorFactor;
-
-      // map value to color
-      int color = static_cast<int>(255 - val);
-      color = std::clamp(color, 232, 255);
-
-      // print two spaces of that color
-      std::cout << "\033[48;5;" << color << "m  ";
-    }
-    // reset color, print a space
-    std::cout << "\033[0m" << std::endl;
-  }
-}
+  /**
+   * Print a xChunks x yChunks mean and aquisition map.
+   * @param xChunks width of maps
+   * @param yChunks height of maps
+   * @param domainX x domain of GaussianProcess
+   * @param domainY y domain of GaussianProcess
+   * @param gp GaussianProcess to calculate mean and acquisiton
+   * @param af acquisition function
+   * @param colorFactor Multiplies the mean by this factor to gain the color
+   */
+  static void printMap(int xChunks, int yChunks, const autopas::NumberSet<double> &domainX,
+                       const autopas::NumberSet<double> &domainY, const autopas::GaussianProcess<Eigen::VectorXd> &gp,
+                       autopas::AcquisitionFunctionOption af, double colorFactor);
+};
