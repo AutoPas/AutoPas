@@ -35,11 +35,11 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorOw
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), lcContainer.getBoxMin(),
                                      lcContainer.getBoxMax(), 100);
 
-  TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
+  TouchableParticle part(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   lcContainer.addHaloParticle(part);
 
   // touch them using the regionIterator
-  auto testRegionMin = ArrayMath::addScalar(_boxMin, -_cutoff * 0.5);
+  auto testRegionMin = utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5);
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
@@ -96,10 +96,10 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHa
   RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0), lcContainer.getBoxMin(),
                                      lcContainer.getBoxMax(), 100);
 
-  TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
+  TouchableParticle part(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   lcContainer.addHaloParticle(part);
 
-  auto testRegionMin = ArrayMath::addScalar(_boxMin, -_cutoff * 0.5);
+  auto testRegionMin = utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5);
   // touch them using the regionIterator
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -109,8 +109,9 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHa
     iterator->touch();
     bool isInRegionOfInterest = utils::inBox(iterator->getR(), testRegionMin, _regionMax);
     bool isInHalo = not utils::inBox(iterator->getR(), _boxMin, _boxMax);
-    EXPECT_TRUE(isInRegionOfInterest and isInHalo) << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]"
-                                                   << " in thread: " << autopas_get_thread_num() << std::endl;
+    EXPECT_TRUE(isInRegionOfInterest and isInHalo)
+        << " particle at [" << utils::ArrayUtils::to_string(iterator->getR()) << "]"
+        << " in thread: " << autopas_get_thread_num() << std::endl;
   }
 
   // check the touch using the normal iterator (needed to check whether no particle was forgotten)
@@ -120,7 +121,7 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHa
     bool isInRegionOfInterest = utils::inBox(iterator->getR(), testRegionMin, _regionMax);
     bool isInHalo = not utils::inBox(iterator->getR(), _boxMin, _boxMax);
     EXPECT_EQ(isInRegionOfInterest and isInHalo ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
+        << " particle at [" << utils::ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
@@ -207,7 +208,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyCons
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
+        << " particle at [" << utils::ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
@@ -244,7 +245,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyAssi
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 3 : 0, iterator->getNumTouched())
-        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
+        << " particle at [" << utils::ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
@@ -297,7 +298,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorSparseDo
   // no openmp for check!
   for (auto iterator = lcContainer.begin(); iterator.isValid(); ++iterator) {
     EXPECT_EQ(utils::inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
+        << " particle at [" << utils::ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
     ++particlesChecked;
   }
   EXPECT_EQ(particlesChecked, idShouldTouch + idShouldNotTouch - idOffset);
@@ -350,7 +351,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorSparseDoma
   int particlesChecked = 0;
   for (auto iterator = dsContainer.begin(); iterator.isValid(); ++iterator) {
     EXPECT_EQ(utils::inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
+        << " particle at [" << utils::ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
     ++particlesChecked;
   }
   EXPECT_EQ(particlesChecked, idShouldTouch + idShouldNotTouch - idOffset);
@@ -380,7 +381,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIterator) {
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched())
-        << "at: [" << ArrayUtils::to_string(iterator->getR()) << "]";
+        << "at: [" << utils::ArrayUtils::to_string(iterator->getR()) << "]";
   }
 }
 
@@ -391,14 +392,14 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorOw
   RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), container.getBoxMin(),
                                      container.getBoxMax(), 100);
 
-  TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
+  TouchableParticle part(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   container.addHaloParticle(part);
 
   // touch them using the regionIterator
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iterator = container.getRegionIterator(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
+  for (auto iterator = container.getRegionIterator(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
                                                    autopas::IteratorBehavior::ownedOnly);
        iterator.isValid(); ++iterator) {
     iterator->touch();
@@ -412,7 +413,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorOw
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _boxMin, _regionMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
+        << " particle at [" << utils::ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
@@ -423,14 +424,14 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorHa
   RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0), container.getBoxMin(),
                                      container.getBoxMax(), 100);
 
-  TouchableParticle part(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
+  TouchableParticle part(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
   container.addHaloParticle(part);
 
   // touch them using the regionIterator
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iterator = container.getRegionIterator(ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
+  for (auto iterator = container.getRegionIterator(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax,
                                                    autopas::IteratorBehavior::haloOnly);
        iterator.isValid(); ++iterator) {
     iterator->touch();
@@ -443,11 +444,11 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorHa
     //         << ", " << iterator->getR()[1] << ", " << iterator->getR()[2]
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
-    EXPECT_EQ(utils::inBox(iterator->getR(), ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
+    EXPECT_EQ(utils::inBox(iterator->getR(), utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), _regionMax)
                   ? (utils::inBox(iterator->getR(), _boxMin, _regionMax) ? 0 : 1)
                   : 0,
               iterator->getNumTouched())
-        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
+        << " particle at [" << utils::ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
@@ -474,7 +475,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorEmpty) {
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
+        << " particle at [" << utils::ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
     i++;
   }
   EXPECT_EQ(i, 0);
@@ -503,7 +504,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyConstr
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
+        << " particle at [" << utils::ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
@@ -540,7 +541,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyAssign
     //              << "] touched:" << iterator->getNumTouched() << std::endl;
 
     EXPECT_EQ(utils::inBox(iterator->getR(), _regionMin, _regionMax) ? 3 : 0, iterator->getNumTouched())
-        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
+        << " particle at [" << utils::ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
   }
 }
 
@@ -601,7 +602,7 @@ TEST_F(RegionParticleIteratorTest, testVerletRegionParticleIteratorSparseDomain)
   int particlesChecked = 0;
   for (auto iterator = vlContainer.begin(); iterator.isValid(); ++iterator) {
     EXPECT_EQ(utils::inBox(iterator->getR(), regionOfInterstMin, regionOfInterstMax) ? 1 : 0, iterator->getNumTouched())
-        << " particle at [" << ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
+        << " particle at [" << utils::ArrayUtils::to_string(iterator->getR()) << "]" << std::endl;
     ++particlesChecked;
   }
   EXPECT_EQ(particlesChecked, idShouldTouch + idShouldNotTouch - idOffset);
@@ -616,8 +617,8 @@ void RegionParticleIteratorTest::checkTouches(LCTouch &lcContainer, std::array<d
     for (auto pIter = lcContainer.getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
       ++numTouches;
       EXPECT_EQ(utils::inBox(pIter->getR(), regionMin, regionMax) ? 1 : 0, pIter->getNumTouched())
-          << "at: [" << ArrayUtils::to_string(pIter->getR()) << "]" << std::endl
-          << "in cell: " << cellId << " [" << ArrayUtils::to_string(cellId3D) << "]";
+          << "at: [" << utils::ArrayUtils::to_string(pIter->getR()) << "]" << std::endl
+          << "in cell: " << cellId << " [" << utils::ArrayUtils::to_string(cellId3D) << "]";
     }
   }
   EXPECT_GE(numTouches, 0) << "No Particles were checked!";

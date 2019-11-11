@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <autopas/options/AcquisitionFunctionOption.h>
 #include <map>
 #include <set>
 
@@ -98,6 +99,9 @@ class MDFlexConfig {
   std::array<double, 3> boxMin{0, 0, 0};
   static inline const char *boxMaxStr{"box-max"};
   std::array<double, 3> boxMax{5, 5, 5};
+  static inline const char *acquisitionFunctionOptionStr{"tuning-acquisition-function"};
+  autopas::AcquisitionFunctionOption acquisitionFunctionOption{
+      autopas::AcquisitionFunctionOption::lowerConfidenceBound};
 
   // Simulation Options:
   static inline const char *cutoffStr{"cutoff"};

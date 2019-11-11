@@ -222,7 +222,7 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas, Functor *functor,
       << "The container should own exactly " << numParticlesExpected << " particles!";
 
   for (auto &mol : molecules) {
-    EXPECT_NEAR(autopas::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144., 1.)
+    EXPECT_NEAR(autopas::utils::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144., 1.)
         << "wrong force calculated for particle: " << mol.toString();
   }
 
@@ -246,7 +246,8 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::AutoPas
   ASSERT_EQ(numParticles, 2) << "There should be exactly two owned particles!";
 
   for (auto &mol : molecules) {
-    EXPECT_DOUBLE_EQ(autopas::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144) << "wrong force calculated.";
+    EXPECT_DOUBLE_EQ(autopas::utils::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144)
+        << "wrong force calculated.";
   }
 
   EXPECT_DOUBLE_EQ(functor1->getUpot() + functor2->getUpot(), 16128.1) << "wrong upot calculated";
@@ -279,7 +280,7 @@ void testSimulationLoop(testingTuple options) {
   double distance = .5;
   std::array<double, 3> pos1{9.99, 5., 5.};
   std::array<double, 3> distVec{0., distance, 0.};
-  std::array<double, 3> pos2 = autopas::ArrayMath::add(pos1, distVec);
+  std::array<double, 3> pos2 = autopas::utils::ArrayMath::add(pos1, distVec);
 
   {
     Molecule particle1(pos1, {0., 0., 0.}, 0, 0);
@@ -300,7 +301,7 @@ void testSimulationLoop(testingTuple options) {
   {
     std::array<double, 3> moveVec{skin / 3., 0., 0.};
     for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      iter->setR(autopas::ArrayMath::add(iter->getR(), moveVec));
+      iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
       iter->setF(zeroArr);
     }
   }
@@ -355,10 +356,10 @@ void testHaloCalculation(testingTuple options) {
         std::array<double, 3> edge{x_diff * mul + mid, y_diff * mul + mid, z_diff * mul + mid};
 
         std::array<double, 3> diff = {x_diff * 1., y_diff * 1., z_diff * 1.};
-        diff = autopas::ArrayMath::mulScalar(autopas::ArrayMath::normalize(diff), distance / 2.);
+        diff = autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::normalize(diff), distance / 2.);
 
-        auto pos1 = autopas::ArrayMath::sub(edge, diff);
-        auto pos2 = autopas::ArrayMath::add(edge, diff);
+        auto pos1 = autopas::utils::ArrayMath::sub(edge, diff);
+        auto pos2 = autopas::utils::ArrayMath::add(edge, diff);
 
         Molecule particle1(pos1, {0., 0., 0.}, id++);
         autoPas.addParticle(particle1);
@@ -460,7 +461,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   double distance = .5;
   std::array<double, 3> pos1{9.99, 5., 5.};
   std::array<double, 3> distVec{0., distance, 0.};
-  std::array<double, 3> pos2 = autopas::ArrayMath::add(pos1, distVec);
+  std::array<double, 3> pos2 = autopas::utils::ArrayMath::add(pos1, distVec);
 
   {
     Molecule particle1(pos1, {0., 0., 0.}, 0, 0);
@@ -489,7 +490,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
     std::array<double, 3> moveVec{skin / 3., 0., 0.};
     for (auto aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-        iter->setR(autopas::ArrayMath::add(iter->getR(), moveVec));
+        iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
         iter->setF(zeroArr);
       }
     }

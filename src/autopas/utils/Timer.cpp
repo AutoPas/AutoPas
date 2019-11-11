@@ -21,7 +21,7 @@ void autopas::utils::Timer::start() {
   _startTime = high_resolution_clock::now();
 }
 
-double autopas::utils::Timer::stop() {
+long autopas::utils::Timer::stop() {
   const auto time(high_resolution_clock::now());
 
   if (not _currentlyRunning) {
@@ -35,3 +35,4 @@ double autopas::utils::Timer::stop() {
 
   return diff;
 }
+void autopas::utils::Timer::addTime(long microseconds) { _totalTime += microseconds; }

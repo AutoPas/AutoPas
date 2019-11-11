@@ -12,6 +12,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   bool displayHelp = false;
   int option, option_index;
   static struct option long_options[] = {{"help", no_argument, nullptr, 'h'},
+                                         {MDFlexConfig::acquisitionFunctionOptionStr, required_argument, nullptr, 'A'},
                                          {MDFlexConfig::boxLengthStr, required_argument, nullptr, 'b'},
                                          {MDFlexConfig::cellSizeFactorsStr, required_argument, nullptr, 'a'},
                                          {MDFlexConfig::checkpointfileStr, required_argument, nullptr, '4'},
@@ -65,6 +66,17 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         // already parsed in CLIParser::inputFilesPresent
         break;
       }
+      case 'A': {
+        auto parsedOptions = autopas::AcquisitionFunctionOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one tuning acquisition function." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::StringUtils::iterableToString(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.acquisitionFunctionOption = *parsedOptions.begin();
+        break;
+      }
       case 'a': {
         config.cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(strArg);
         if (config.cellSizeFactors->isEmpty()) {
@@ -87,7 +99,6 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'c': {
-        // overwrite default argument
         config.containerOptions = autopas::ContainerOption::parseOptions(strArg);
         if (config.containerOptions.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
@@ -337,7 +348,9 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       case 'T': {
         auto parsedOptions = autopas::TuningStrategyOption::parseOptions(strArg);
         if (parsedOptions.size() != 1) {
-          cerr << "Pass exactly one tuning strategy option." << endl;
+          cerr << "Pass exactly one tuning strategy option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::StringUtils::iterableToString(parsedOptions) << endl;
           displayHelp = true;
         }
         config.tuningStrategyOption = *parsedOptions.begin();
@@ -372,7 +385,9 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       case 'y': {
         auto parsedOptions = autopas::SelectorStrategyOption::parseOptions(strArg);
         if (parsedOptions.size() != 1) {
-          cerr << "Pass exactly one selector strategy option." << endl;
+          cerr << "Pass exactly one selector strategy option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::StringUtils::iterableToString(parsedOptions) << endl;
           displayHelp = true;
         }
         config.selectorStrategy = *parsedOptions.begin();

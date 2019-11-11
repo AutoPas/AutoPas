@@ -157,8 +157,8 @@ class Simulation {
       _timeDiscretization;
 
   struct timers {
-    autopas::utils::Timer positionUpdate, forceUpdate, velocityUpdate, simulate, vtk, init, total, thermostat,
-        boundaries;
+    autopas::utils::Timer positionUpdate, forceUpdateTotal, forceUpdateTuning, forceUpdateNonTuning, velocityUpdate,
+        simulate, vtk, init, total, thermostat, boundaries;
   } _timers;
 
   /**
@@ -286,12 +286,17 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
 template <class Particle, class ParticleCell>
 template <class FunctorType>
 void Simulation<Particle, ParticleCell>::calculateForces() {
-  _timers.forceUpdate.start();
+  _timers.forceUpdateTotal.start();
 
   auto functor = FunctorType(_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary);
-  _autopas.iteratePairwise(&functor);
+  bool tuningIteration = _autopas.iteratePairwise(&functor);
 
-  _timers.forceUpdate.stop();
+  auto timeIteration = _timers.forceUpdateTotal.stop();
+  if (tuningIteration) {
+    _timers.forceUpdateTuning.addTime(timeIteration);
+  } else {
+    _timers.forceUpdateNonTuning.addTime(timeIteration);
+  }
 }
 
 template <class Particle, class ParticleCell>
@@ -401,7 +406,12 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   cout << timerToString("    Boundaries  ", _timers.boundaries.getTotalTime(), digitsTimeTotalMuS, durationSimulate);
   cout << timerToString("    Position    ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalMuS,
                         durationSimulate);
-  cout << timerToString("    Force       ", _timers.forceUpdate.getTotalTime(), digitsTimeTotalMuS, durationSimulate);
+  cout << timerToString("    Force       ", _timers.forceUpdateTotal.getTotalTime(), digitsTimeTotalMuS,
+                        durationSimulate);
+  cout << timerToString("      Tuning    ", _timers.forceUpdateTuning.getTotalTime(), digitsTimeTotalMuS,
+                        _timers.forceUpdateTotal.getTotalTime());
+  cout << timerToString("      NonTuning ", _timers.forceUpdateNonTuning.getTotalTime(), digitsTimeTotalMuS,
+                        _timers.forceUpdateTotal.getTotalTime());
   cout << timerToString("    Velocity    ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalMuS,
                         durationSimulate);
   cout << timerToString("    VTK         ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationSimulate);

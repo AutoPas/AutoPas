@@ -46,8 +46,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
         _kernelCalls(0ul) {}
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    auto dr = ArrayMath::sub(i.getR(), j.getR());
-    double dr2 = ArrayMath::dot(dr, dr);
+    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+    double dr2 = utils::ArrayMath::dot(dr, dr);
 #ifdef AUTOPAS_OPENMP
 #pragma omp critical
 #endif

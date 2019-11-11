@@ -16,6 +16,7 @@
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/BayesianSearch.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/selectors/tuningStrategy/RandomSearch.h"
 #include "autopas/utils/NumberSet.h"
 
 namespace autopas {
@@ -72,6 +73,7 @@ class AutoPas {
         _tuningInterval(5000),
         _numSamples(3),
         _maxEvidence(10),
+        _acquisitionFunctionOption(AcquisitionFunctionOption::lowerConfidenceBound),
         _tuningStrategyOption(TuningStrategyOption::fullSearch),
         _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(ContainerOption::getAllOptions()),
@@ -183,9 +185,10 @@ class AutoPas {
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
    * @param f Functor that describes the pair-potential.
+   * @return true if this was a tuning iteration.
    */
   template <class Functor>
-  void iteratePairwise(Functor *f) {
+  bool iteratePairwise(Functor *f) {
     static_assert(not std::is_same<Functor, autopas::Functor<Particle, ParticleCell>>::value,
                   "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
                   "derived type instead, e.g. by using a dynamic_cast.");
@@ -193,7 +196,7 @@ class AutoPas {
       utils::ExceptionHandler::exception("Functor cutoff ({}) must not be larger than container cutoff ({})",
                                          f->getCutoff(), this->getCutoff());
     }
-    _logicHandler->iteratePairwise(f);
+    return _logicHandler->iteratePairwise(f);
   }
 
   /**
@@ -411,6 +414,18 @@ class AutoPas {
   void setMaxEvidence(unsigned int maxEvidence) { AutoPas::_maxEvidence = maxEvidence; }
 
   /**
+   * Get acquisition function used for tuning
+   * @return
+   */
+  AcquisitionFunctionOption getAcquisitionFunction() const { return _acquisitionFunctionOption; }
+
+  /**
+   * Set acquisition function for tuning
+   * @param acqFun acquisition function
+   */
+  void setAcquisitionFunction(AcquisitionFunctionOption acqFun) { AutoPas::_acquisitionFunctionOption = acqFun; }
+
+  /**
    * Get the selector configuration strategy.
    * @return
    */
@@ -511,6 +526,10 @@ class AutoPas {
   std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
     // clang compiler bug requires static cast
     switch (static_cast<TuningStrategyOption>(_tuningStrategyOption)) {
+      case TuningStrategyOption::randomSearch: {
+        return std::make_unique<RandomSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
+                                              _allowedDataLayouts, _allowedNewton3Options, _maxEvidence);
+      }
       case TuningStrategyOption::fullSearch: {
         if (not _allowedCellSizeFactors->isFinite()) {
           autopas::utils::ExceptionHandler::exception(
@@ -524,7 +543,8 @@ class AutoPas {
 
       case TuningStrategyOption::bayesianSearch: {
         return std::make_unique<BayesianSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
-                                                _allowedDataLayouts, _allowedNewton3Options, _maxEvidence);
+                                                _allowedDataLayouts, _allowedNewton3Options, _maxEvidence,
+                                                _acquisitionFunctionOption);
       }
     }
 
@@ -569,6 +589,11 @@ class AutoPas {
    * Tuning Strategies which work on a fixed number of evidence should use this value.
    */
   unsigned int _maxEvidence;
+  /**
+   * Acquisition function used for tuning.
+   * For possible acquisition function choices see AutoPas::AcquisitionFunction.
+   */
+  AcquisitionFunctionOption _acquisitionFunctionOption;
 
   /**
    * Strategy option for the auto tuner.

@@ -30,7 +30,7 @@ void checkRegionIteratorForAllParticles(AutoPasT &autoPas, autopas::IteratorBeha
   for (auto iter1 = autoPas.begin(behavior); iter1.isValid(); ++iter1) {
     unsigned int count = 0;
     auto low = iter1->getR();
-    auto up = autopas::ArrayMath::addScalar(low, 1e-10);
+    auto up = autopas::utils::ArrayMath::addScalar(low, 1e-10);
 
     for (auto iter2 = autoPas.getRegionIterator(low, up, behavior); iter2.isValid(); ++iter2) {
       ++count;

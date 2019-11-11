@@ -128,8 +128,8 @@ class LJFunctor
       sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
       epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
     }
-    auto dr = ArrayMath::sub(i.getR(), j.getR());
-    double dr2 = ArrayMath::dot(dr, dr);
+    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+    double dr2 = utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffsquare) return;
 
@@ -139,14 +139,14 @@ class LJFunctor
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = ArrayMath::mulScalar(dr, fac);
+    auto f = utils::ArrayMath::mulScalar(dr, fac);
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
       j.subF(f);
     }
     if (calculateGlobals) {
-      auto virial = ArrayMath::mul(dr, f);
+      auto virial = utils::ArrayMath::mul(dr, f);
       double upot = epsilon24 * lj12m6 + _shift6;
 
       const int threadnum = autopas_get_thread_num();
@@ -154,21 +154,21 @@ class LJFunctor
         // for non-newton3 the division is in the post-processing step.
         if (newton3) {
           upot *= 0.5;
-          virial = ArrayMath::mulScalar(virial, (double)0.5);
+          virial = utils::ArrayMath::mulScalar(virial, (double)0.5);
         }
         if (i.isOwned()) {
           _aosThreadData[threadnum].upotSum += upot;
-          _aosThreadData[threadnum].virialSum = ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+          _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
         }
         // for non-newton3 the second particle will be considered in a separate calculation
         if (newton3 and j.isOwned()) {
           _aosThreadData[threadnum].upotSum += upot;
-          _aosThreadData[threadnum].virialSum = ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+          _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
         }
       } else {
         // for non-newton3 we divide by 2 only in the postprocess step!
         _aosThreadData[threadnum].upotSum += upot;
-        _aosThreadData[threadnum].virialSum = ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
       }
     }
   }
@@ -698,13 +698,13 @@ class LJFunctor
 #endif
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
         _upotSum += _aosThreadData[i].upotSum;
-        _virialSum = ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
+        _virialSum = utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
       }
       if (not newton3) {
         // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
         // here.
         _upotSum *= 0.5;
-        _virialSum = ArrayMath::mulScalar(_virialSum, 0.5);
+        _virialSum = utils::ArrayMath::mulScalar(_virialSum, 0.5);
       }
       // we have always calculated 6*upot, so we divide by 6 here!
       _upotSum /= 6.;
