@@ -73,6 +73,12 @@ class NumberSet {
   virtual std::set<Number> getAll() const = 0;
 
   /**
+   * Get a random number in the set.
+   * @param rng random number generator
+   * @return
+   */
+  virtual Number getRandom(Random &rng) const = 0;
+  /**
    * Sample n points from the set. These points are
    * spaced evenly across the space.
    * @param n max samples
@@ -108,7 +114,7 @@ class NumberSetFinite : public NumberSet<Number> {
 
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberSetFinite>(*this); }
 
-  operator std::string() const override { return "{" + ArrayUtils::to_string(_set) + "}"; }
+  operator std::string() const override { return "{" + utils::ArrayUtils::to_string(_set) + "}"; }
 
   inline bool isEmpty() const override { return _set.empty(); }
   inline bool isFinite() const override { return true; }
@@ -119,6 +125,7 @@ class NumberSetFinite : public NumberSet<Number> {
 
   inline std::set<Number> getAll() const override { return _set; }
 
+  inline Number getRandom(Random &rng) const override { return rng.pickRandom(_set); }
   std::vector<Number> uniformSample(size_t n, Random &rng) const override { return rng.uniformSample(_set, n); }
 };
 
@@ -179,6 +186,10 @@ class NumberInterval : public NumberSet<Number> {
     return {};
   }
 
+  inline Number getRandom(Random &rng) const override {
+    std::uniform_real_distribution<Number> distr(_min, _max);
+    return distr(rng);
+  }
   std::vector<Number> uniformSample(size_t n, Random &rng) const override {
     std::vector<Number> result;
     if (n == 0) {
@@ -195,7 +206,7 @@ class NumberInterval : public NumberSet<Number> {
     result.push_back(_max);
 
     // randomize the sample
-    rng.shuffle(std::begin(result), std::end(result));
+    std::shuffle(std::begin(result), std::end(result), rng);
 
     return result;
   }

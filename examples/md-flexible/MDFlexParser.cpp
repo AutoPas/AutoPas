@@ -39,6 +39,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
                                          {"traversal", required_argument, nullptr, 't'},
+                                         {"tuning-acquisition-function", required_argument, nullptr, 'A'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
                                          {"tuning-max-evidence", required_argument, nullptr, 'E'},
@@ -306,6 +307,20 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'A': {
+        auto parsedAcquisitionFunctions = autopas::AcquisitionFunctionOption::parseOptions(strArg);
+        if (parsedAcquisitionFunctions.size() != 1) {
+          cerr << "Please provide exactly one acquisition function. Parsed strategies are: "
+               << iterableToString(parsedAcquisitionFunctions) << endl;
+          displayHelp = true;
+        }
+        tuningAcqFun = *parsedAcquisitionFunctions.begin();
+        if (tuningAcqFun == autopas::AcquisitionFunctionOption()) {
+          cerr << "Unknown acquisition function: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 't': {
         traversalOptions = autopas::TraversalOption::parseOptions(strArg);
         if (traversalOptions.empty()) {
@@ -320,6 +335,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         if (parsedTuningStrategies.size() != 1) {
           cerr << "Please provide exactly one tuning strategy. Parsed strategies are: "
                << iterableToString(parsedTuningStrategies) << endl;
+          displayHelp = true;
         }
         tuningStrategyOption = *parsedTuningStrategies.begin();
         if (tuningStrategyOption == autopas::TuningStrategyOption()) {
@@ -506,6 +522,8 @@ void MDFlexParser::printConfig() {
        << ":  " << tuningSamples << endl;
   cout << setw(valueOffset) << left << "Tuning Max evidence"
        << ":  " << tuningMaxEvidence << endl;
+  cout << setw(valueOffset) << left << "Tuning Acquisition Function"
+       << ":  " << tuningAcqFun.to_string() << endl;
 }
 
 std::set<autopas::ContainerOption> MDFlexParser::getContainerOptions() const { return containerOptions; }
@@ -556,6 +574,8 @@ unsigned int MDFlexParser::getTuningInterval() const { return tuningInterval; }
 unsigned int MDFlexParser::getTuningSamples() const { return tuningSamples; }
 
 unsigned int MDFlexParser::getTuningMaxEvidence() const { return tuningMaxEvidence; }
+
+autopas::AcquisitionFunctionOption MDFlexParser::getAcquisitionFunctionOption() const { return tuningAcqFun; }
 
 autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 
