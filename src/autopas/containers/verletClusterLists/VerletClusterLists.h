@@ -706,7 +706,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   int _clusterSize;
 
   /**
-   * The number of clusters. This is not equal to _cells.size(), as every grid might contain multiple clusters.
+   * The number of clusters. This is not equal to _cells.size(), as every grid (=cell) might contain multiple clusters.
    */
   index_t _numClusters;
 

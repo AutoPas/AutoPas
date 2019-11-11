@@ -38,7 +38,7 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
       : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
   /**
-   * Destructor of ParticleContainer
+   * Destructor of ParticleContainer.
    */
   ~ParticleContainer() override = default;
 
