@@ -50,14 +50,79 @@ class ActiveHarmony : public TuningStrategyInterface {
       putenv(HARMONY_HOME);
     }
 
-    reset();
+    // initiate the tuning session
+    hdesc = ah_alloc();
+    if (hdesc == nullptr) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating Harmony descriptor.");
+    }
+
+    if (ah_connect(hdesc, nullptr, 0) != 0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error connecting to Harmony session.");
+    }
+    // set up tuning parameters
+    hdef_t *hdef = ah_def_alloc();
+    if (hdef == nullptr) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating definition descriptor");
+    }
+
+    if (ah_def_name(hdef, "AutoPas") != 0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error settings search name");
+    }
+
+    if (ah_def_real(hdef, "cellSizeFactor", _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(),
+                    (_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()) / cellSizeSamples, nullptr) !=
+        0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining real \"cellSizeFactor\"");
+    }
+
+    if (ah_def_enum(hdef, "traversalOption", nullptr) != 0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum \"traversalOption\"");
+    }
+    for (auto &traversalOption : _allowedTraversalOptions) {
+      if (ah_def_enum_value(hdef, "traversalOption", traversalOption.to_string().c_str()) != 0) {
+        utils::ExceptionHandler::exception(
+                "ActiveHarmony::reset: Error defining enum value for enum \"traversalOption\"");
+      }
+    }
+
+    if (ah_def_enum(hdef, "dataLayoutOption", nullptr) != 0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum \"dataLayoutOption\"");
+    }
+    for (auto &dataLayoutOption : _allowedDataLayoutOptions) {
+      if (ah_def_enum_value(hdef, "dataLayoutOption", dataLayoutOption.to_string().c_str()) != 0) {
+        utils::ExceptionHandler::exception(
+                "ActiveHarmony::reset: Error defining enum value for enum \"dataLayoutOption\"");
+      }
+    }
+
+    if (ah_def_enum(hdef, "newton3Option", nullptr) != 0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum \"newton3Option\"");
+    }
+    for (auto &newton3Option : _allowedNewton3Options) {
+      if (ah_def_enum_value(hdef, "newton3Option", newton3Option.to_string().c_str()) != 0) {
+        utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum value for enum \"newton3Option\"");
+      }
+    }
+
+    ah_def_strategy(hdef, "nm.so");
+    ah_def_cfg(hdef, "INIT_RADIUS", "0.5");
+    // task initialization
+    htask = ah_start(hdesc, hdef);
+    ah_def_free(hdef);
+    if (htask == nullptr) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error starting task.");
+    }
+
+    tune(false);
   }
 
   ~ActiveHarmony() override {
     if (htask != nullptr) {
       ah_leave(htask);
+      ah_kill(htask);
     }
     if (hdesc != nullptr) {
+      ah_close(hdesc);
       ah_free(hdesc);
     }
   }
@@ -118,6 +183,9 @@ bool ActiveHarmony::tune(bool currentInvalid) {
   _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(),
                                  cellSizeFactor, traversalOption, DataLayoutOption::parseOptionExact(dataLayoutOption),
                                  Newton3Option::parseOptionExact(newton3Option));
+  if (_allowedNewton3Options.find(_currentConfig.newton3) == _allowedNewton3Options.end()) {
+    return tune(true);
+  }
   AutoPasLog(debug, "ActiveHarmony::tune: Trying configuration {}.", _currentConfig.toString());
   auto converged = ah_converged(htask);
   if (converged) {
@@ -141,7 +209,6 @@ bool ActiveHarmony::tune(bool currentInvalid) {
 
 void ActiveHarmony::removeN3Option(Newton3Option option) {
   _allowedNewton3Options.erase(option);
-  reset();
   if (this->searchSpaceIsEmpty()) {
     utils::ExceptionHandler::exception(
             "ActiveHarmony::removeN3Option: Removing all configurations with Newton 3 {} caused the search space to be empty!",
@@ -154,67 +221,8 @@ const Configuration &ActiveHarmony::getCurrentConfiguration() const {
 }
 
 void ActiveHarmony::reset() {
-// initiate the tuning session
-  hdesc = ah_alloc();
-  if (hdesc == nullptr) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating Harmony descriptor.");
-  }
-
-  if (ah_connect(hdesc, nullptr, 0) != 0) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error connecting to Harmony session.");
-  }
-
-  hdef_t *hdef = ah_def_alloc();
-  if (hdef == nullptr) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating definition descriptor");
-  }
-
-  if (ah_def_name(hdef, "AutoPas") != 0) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error settings search name");
-  }
-
-  if (ah_def_real(hdef, "cellSizeFactor", _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(),
-          (_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()) / cellSizeSamples, nullptr) != 0) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining real \"cellSizeFactor\"");
-  }
-
-  if (ah_def_enum(hdef, "traversalOption", nullptr) != 0) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum \"traversalOption\"");
-  }
-  for (auto &traversalOption : _allowedTraversalOptions) {
-    if (ah_def_enum_value(hdef, "traversalOption", traversalOption.to_string().c_str()) != 0) {
-      utils::ExceptionHandler::exception(
-              "ActiveHarmony::reset: Error defining enum value for enum \"traversalOption\"");
-    }
-  }
-
-  if (ah_def_enum(hdef, "dataLayoutOption", nullptr) != 0) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum \"dataLayoutOption\"");
-  }
-  for (auto &dataLayoutOption : _allowedDataLayoutOptions) {
-    if (ah_def_enum_value(hdef, "dataLayoutOption", dataLayoutOption.to_string().c_str()) != 0) {
-      utils::ExceptionHandler::exception(
-              "ActiveHarmony::reset: Error defining enum value for enum \"dataLayoutOption\"");
-    }
-  }
-
-  if (ah_def_enum(hdef, "newton3Option", nullptr) != 0) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum \"newton3Option\"");
-  }
-  for (auto &newton3Option : _allowedNewton3Options) {
-    if (ah_def_enum_value(hdef, "newton3Option", newton3Option.to_string().c_str()) != 0) {
-      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum value for enum \"newton3Option\"");
-    }
-  }
-
-  // task configuration TODO
-  ah_def_strategy(hdef, "nm.so");
-  ah_def_cfg(hdef, "INIT_RADIUS", "0.5");
-  // task initialization
-  htask = ah_start(hdesc, hdef);
-  ah_def_free(hdef);
-
-  tune(false);
+  ah_restart(htask);
+  // TODO call ah_fetch?
 }
 
 std::set<ContainerOption> ActiveHarmony::getAllowedContainerOptions() const {
