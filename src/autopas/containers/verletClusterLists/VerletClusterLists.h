@@ -298,7 +298,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   void rebuild(bool useNewton3) {
     std::vector<Particle> invalidParticles = collectParticlesAndClearClusters();
 
-    auto boxSize = ArrayMath::sub(_boxMax, _boxMin);
+    auto boxSize = utils::ArrayMath::sub(_boxMax, _boxMin);
 
     _gridSideLength = estimateOptimalGridSideLength(invalidParticles.size(), boxSize);
     _gridSideLengthReciprocal = 1 / _gridSideLength;

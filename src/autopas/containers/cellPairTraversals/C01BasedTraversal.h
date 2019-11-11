@@ -56,7 +56,7 @@ template <typename LoopBody>
 inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::c01Traversal(
     LoopBody &&loopBody) {
   const auto offset = this->_overlap;
-  const auto end = ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
+  const auto end = utils::ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
   this->cTraversal(std::forward<LoopBody>(loopBody), end, {1ul, 1ul, 1ul}, offset);
 }
 }  // namespace autopas

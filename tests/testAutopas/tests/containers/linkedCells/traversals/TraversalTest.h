@@ -55,8 +55,8 @@ class TraversalTest : public AutoPasTestBase,
       const auto coordsI = i.getR();
       const auto coordsJ = j.getR();
 
-      std::array<double, 3> dr = autopas::ArrayMath::sub(coordsI, coordsJ);
-      const double dr2 = autopas::ArrayMath::dot(dr, dr);
+      std::array<double, 3> dr = autopas::utils::ArrayMath::sub(coordsI, coordsJ);
+      const double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
       if (dr2 > _cutoffSquare) return;
 

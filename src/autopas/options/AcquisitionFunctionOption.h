@@ -21,18 +21,12 @@ class AcquisitionFunctionOption : public Option<AcquisitionFunctionOption> {
    * Different acquisition functions
    */
   enum Value {
-    /**
-     * Upper confidence bound
-     */
-    ucb,
-    /**
-     * Lower confidence bound
-     */
-    lcb,
-    /**
-     * mean
-     */
-    mean
+    upperConfidenceBound,
+    lowerConfidenceBound,
+    mean,
+    variance,
+    probabilityOfDecrease,
+    expectedDecrease,
   };
 
   /**
@@ -53,14 +47,17 @@ class AcquisitionFunctionOption : public Option<AcquisitionFunctionOption> {
   constexpr operator Value() const { return _value; }
 
   /**
-   * Provides a way to iterate over the possible choices of TraversalOption.
+   * Provides a way to iterate over the possible choices of AcquisitionFunction.
    * @return map option -> string representation
    */
   static std::map<AcquisitionFunctionOption, std::string> getOptionNames() {
     return {
-        {AcquisitionFunctionOption::ucb, "upper-confidence-bound"},
-        {AcquisitionFunctionOption::lcb, "lower-confidence-bound"},
+        {AcquisitionFunctionOption::upperConfidenceBound, "upper-confidence-bound"},
+        {AcquisitionFunctionOption::lowerConfidenceBound, "lower-confidence-bound"},
         {AcquisitionFunctionOption::mean, "mean"},
+        {AcquisitionFunctionOption::variance, "variance"},
+        {AcquisitionFunctionOption::probabilityOfDecrease, "probability-of-decrease"},
+        {AcquisitionFunctionOption::expectedDecrease, "expected-decrease"},
     };
   };
 

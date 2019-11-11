@@ -96,11 +96,28 @@ TEST(OptionTest, parseSelectorOptionsTest) {
 
 TEST(OptionTest, parseTuningStrategyOptionsTest) {
   std::map<autopas::TuningStrategyOption, std::string> mapEnumString = {
-      {autopas::TuningStrategyOption::bayesianSearch, "bayesian-search"},
-      {autopas::TuningStrategyOption::fullSearch, "full-search"},
+      {autopas::TuningStrategyOption::bayesianSearch, "bayesian"},
+      {autopas::TuningStrategyOption::fullSearch, "full"},
+      {autopas::TuningStrategyOption::randomSearch, "random"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TuningStrategyOption::getOptionNames().size());
+
+  testParseOptionsIndividually(mapEnumString);
+  testParseOptionsCombined(mapEnumString);
+}
+
+TEST(OptionTest, parseAcquisitionFunctionOptionsTest) {
+  std::map<autopas::AcquisitionFunctionOption, std::string> mapEnumString = {
+      {autopas::AcquisitionFunctionOption::upperConfidenceBound, "upperconfbound"},
+      {autopas::AcquisitionFunctionOption::expectedDecrease, "expdecr"},
+      {autopas::AcquisitionFunctionOption::lowerConfidenceBound, "lowerconfbound"},
+      {autopas::AcquisitionFunctionOption::mean, "mean"},
+      {autopas::AcquisitionFunctionOption::probabilityOfDecrease, "probofdecrease"},
+      {autopas::AcquisitionFunctionOption::variance, "varianz"},
+  };
+
+  EXPECT_EQ(mapEnumString.size(), autopas::AcquisitionFunctionOption::getOptionNames().size());
 
   testParseOptionsIndividually(mapEnumString);
   testParseOptionsCombined(mapEnumString);

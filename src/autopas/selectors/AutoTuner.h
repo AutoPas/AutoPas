@@ -154,7 +154,7 @@ class AutoTuner {
             // print all configs
             ss << std::endl << _tuningStrategy->getCurrentConfiguration().toString() << " : [ ";
             // print all timings
-            ss << ArrayUtils::to_string(_samples, " ");
+            ss << utils::ArrayUtils::to_string(_samples, " ");
             ss << " ] ";
             ss << "Reduced value: " << reducedValue;
             AutoPasLog(debug, "Collected times for  {}", ss.str());

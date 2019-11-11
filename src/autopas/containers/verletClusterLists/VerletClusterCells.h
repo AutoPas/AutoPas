@@ -47,8 +47,8 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   VerletClusterCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, int clusterSize = 32)
       : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
-        _boxMinWithHalo(ArrayMath::subScalar(boxMin, cutoff + skin)),
-        _boxMaxWithHalo(ArrayMath::addScalar(boxMax, cutoff + skin)),
+        _boxMinWithHalo(utils::ArrayMath::subScalar(boxMin, cutoff + skin)),
+        _boxMaxWithHalo(utils::ArrayMath::addScalar(boxMax, cutoff + skin)),
         _clusterSize(clusterSize),
         _isValid(false) {
     this->_cells.resize(1);
@@ -134,9 +134,9 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     Particle pCopy = haloParticle;
     pCopy.setOwned(false);
 
-    for (auto it =
-             getRegionIterator(ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
-                               ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2), IteratorBehavior::haloOnly);
+    for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
+                                     utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2),
+                                     IteratorBehavior::haloOnly);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
         *it = pCopy;
@@ -265,8 +265,8 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     }
 
     // restrict search area to the region where particles are
-    const auto lowerCornerInBounds = ArrayMath::max(lowerCorner, _boxMinWithHalo);
-    const auto upperCornerInBounds = ArrayMath::min(higherCorner, _boxMaxWithHalo);
+    const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _boxMinWithHalo);
+    const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _boxMaxWithHalo);
 
     // Find cells intersecting the search region
     size_t xmin = (size_t)((lowerCornerInBounds[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
@@ -298,8 +298,8 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     // restrict search area to the region where particles are
-    const auto lowerCornerInBounds = ArrayMath::max(lowerCorner, _boxMinWithHalo);
-    const auto upperCornerInBounds = ArrayMath::min(higherCorner, _boxMaxWithHalo);
+    const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _boxMinWithHalo);
+    const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _boxMaxWithHalo);
 
     // Special iterator requires sorted cells.
     // Otherwise all cells are traversed with the general Iterator.
