@@ -70,9 +70,9 @@ void TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::cal
     auto f = iter->getF();
     iter->setOldF(f);
     iter->setF({0., 0., 0.});
-    v = autopas::ArrayMath::mulScalar(v, particle_delta_t);
-    f = autopas::ArrayMath::mulScalar(f, (particle_delta_t * particle_delta_t / (2 * m)));
-    auto newR = autopas::ArrayMath::add(v, f);
+    v = autopas::utils::ArrayMath::mulScalar(v, particle_delta_t);
+    f = autopas::utils::ArrayMath::mulScalar(f, (particle_delta_t * particle_delta_t / (2 * m)));
+    auto newR = autopas::utils::ArrayMath::add(v, f);
     iter->addR(newR);
   }
 }
@@ -87,7 +87,7 @@ void TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::cal
     auto m = _particlePropertiesLibrary.getMass(iter->getTypeId());
     auto force = iter->getF();
     auto old_force = iter->getOldf();
-    auto newV = autopas::ArrayMath::mulScalar((autopas::ArrayMath::add(force, old_force)), particle_delta_t / (2 * m));
+    auto newV = autopas::utils::ArrayMath::mulScalar((autopas::utils::ArrayMath::add(force, old_force)), particle_delta_t / (2 * m));
     iter->addV(newV);
   }
 }

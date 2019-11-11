@@ -71,12 +71,12 @@ class Sphere : public Object {
               for (int l = -1; l <= 1; l += 2) {
                 std::array<double, 3> mirrorMultipliers = {(double)i, (double)k, (double)l};
                 // position mirrored, scaled and absolute
-                std::array<double, 3> posVector = autopas::ArrayMath::add(
-                    center, autopas::ArrayMath::mulScalar(autopas::ArrayMath::mul(relativePos, mirrorMultipliers),
+                std::array<double, 3> posVector = autopas::utils::ArrayMath::add(
+                    center, autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(relativePos, mirrorMultipliers),
                                                           particleSpacing));
 
-                double distFromCentersSquare = autopas::ArrayMath::dot(autopas::ArrayMath::sub(posVector, center),
-                                                                       autopas::ArrayMath::sub(posVector, center));
+                double distFromCentersSquare = autopas::utils::ArrayMath::dot(autopas::utils::ArrayMath::sub(posVector, center),
+                                                                       autopas::utils::ArrayMath::sub(posVector, center));
                 const auto r = (radius + 1) * particleSpacing;
                 const auto rSquare = r * r;
                 // since the loops create a cubic grid only apply f for positions inside the sphere
@@ -116,7 +116,7 @@ class Sphere : public Object {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "Center of Sphere"
-           << ":  " << autopas::ArrayUtils::to_string(center) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(center) << std::endl;
     output << std::setw(_valueOffset) << std::left << "radius in Particles"
            << ":  " << radius << std::endl;
     output << std::setw(_valueOffset) << std::left << "particleSpacing"

@@ -46,17 +46,17 @@ void TimeDiscretizationTest::initFillWithParticles(
 std::array<double, 3> TimeDiscretizationTest::nextPosition(std::array<double, 3> position, std::array<double, 3> force,
                                                            std::array<double, 3> velocity, double particle_delta_t) {
   auto m = 1.0;  // mass is =1 for all particles in test scope
-  velocity = autopas::ArrayMath::mulScalar(velocity, particle_delta_t);
-  force = autopas::ArrayMath::mulScalar(force, (particle_delta_t * particle_delta_t / (2 * m)));
-  auto newR = autopas::ArrayMath::add(velocity, force);
-  return autopas::ArrayMath::add(position, newR);
+  velocity = autopas::utils::ArrayMath::mulScalar(velocity, particle_delta_t);
+  force = autopas::utils::ArrayMath::mulScalar(force, (particle_delta_t * particle_delta_t / (2 * m)));
+  auto newR = autopas::utils::ArrayMath::add(velocity, force);
+  return autopas::utils::ArrayMath::add(position, newR);
 }
 
 std::array<double, 3> TimeDiscretizationTest::nextVelocity(std::array<double, 3> velocity, std::array<double, 3> force,
                                                            std::array<double, 3> oldf, double particle_delta_t) {
   auto m = 1.0;
-  auto newV = autopas::ArrayMath::mulScalar((autopas::ArrayMath::add(force, oldf)), particle_delta_t / (2 * m));
-  return autopas::ArrayMath::add(velocity, newV);
+  auto newV = autopas::utils::ArrayMath::mulScalar((autopas::utils::ArrayMath::add(force, oldf)), particle_delta_t / (2 * m));
+  return autopas::utils::ArrayMath::add(velocity, newV);
 }
 
 void TimeDiscretizationTest::Pos_and_Velo_Test(

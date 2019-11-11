@@ -58,20 +58,20 @@ class CubeGauss : public Object {
   const std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
 
   const std::array<double, 3> getBoxMax() const override {
-    return autopas::ArrayMath::add(bottomLeftCorner, boxLength);
+    return autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength);
   }
 
   std::string to_string() const override {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "Distribution-Mean"
-           << ":  " << autopas::ArrayUtils::to_string(distributionMean) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(distributionMean) << std::endl;
     output << std::setw(_valueOffset) << std::left << "Distribution-StdDev"
-           << ":  " << autopas::ArrayUtils::to_string(distributionStdDev) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(distributionStdDev) << std::endl;
     output << std::setw(_valueOffset) << std::left << "NumberOfParticles"
            << ":  " << numParticles << std::endl;
     output << std::setw(_valueOffset) << std::left << "BoxLength"
-           << ":  " << autopas::ArrayUtils::to_string(boxLength) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(boxLength) << std::endl;
     output << Object::to_string();
     return output.str();
   }

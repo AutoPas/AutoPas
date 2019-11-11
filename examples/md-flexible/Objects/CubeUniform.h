@@ -39,18 +39,18 @@ class CubeUniform : public Object {
   const std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
 
   const std::array<double, 3> getBoxMax() const override {
-    return autopas::ArrayMath::add(bottomLeftCorner, boxLength);
+    return autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength);
   }
 
   std::string to_string() const override {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "Center"
-           << ":  " << autopas::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
     output << std::setw(_valueOffset) << std::left << "NumberOfParticles"
            << ":  " << numParticles << std::endl;
     output << std::setw(_valueOffset) << std::left << "BoxLength"
-           << ":  " << autopas::ArrayUtils::to_string(boxLength) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(boxLength) << std::endl;
     output << Object::to_string();
     return output.str();
   }

@@ -64,10 +64,10 @@ void GaussianGenerator::fillWithParticles(autopas::AutoPas<Particle, ParticleCel
         std::ostringstream errormessage;
         errormessage << "GaussianGenerator::fillWithParticles(): Could not find a valid position for particle " << i
                      << "after" << _maxAttempts << "attempts. Check if your parameters make sense:" << std::endl
-                     << "BoxMin       = " << autopas::ArrayUtils::to_string(boxMin) << std::endl
-                     << "BoxMax       = " << autopas::ArrayUtils::to_string(boxMax) << std::endl
-                     << "Gauss mean   = " << autopas::ArrayUtils::to_string(distributionMean) << std::endl
-                     << "Gauss stdDev = " << autopas::ArrayUtils::to_string(distributionStdDev) << std::endl;
+                     << "BoxMin       = " << autopas::utils::ArrayUtils::to_string(boxMin) << std::endl
+                     << "BoxMax       = " << autopas::utils::ArrayUtils::to_string(boxMax) << std::endl
+                     << "Gauss mean   = " << autopas::utils::ArrayUtils::to_string(distributionMean) << std::endl
+                     << "Gauss stdDev = " << autopas::utils::ArrayUtils::to_string(distributionStdDev) << std::endl;
         throw std::runtime_error(errormessage.str());
       }
       position = {distributions[0](generator), distributions[1](generator), distributions[2](generator)};

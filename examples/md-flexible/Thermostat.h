@@ -88,7 +88,7 @@ class Thermostat {
     std::default_random_engine randomEngine(42);  // constant seed for repeatability
     std::normal_distribution<double> normalDistribution{0, 1};
 
-    p.setV(autopas::ArrayMath::addScalar(p.getV(), factor * normalDistribution(randomEngine)));
+    p.setV(autopas::utils::ArrayMath::addScalar(p.getV(), factor * normalDistribution(randomEngine)));
   }
 
   /**
@@ -155,7 +155,7 @@ void Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::apply(AutoP
 #pragma omp parallel
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    iter->setV(autopas::ArrayMath::mulScalar(iter->getV(), scaling));
+    iter->setV(autopas::utils::ArrayMath::mulScalar(iter->getV(), scaling));
   }
 }
 
@@ -169,7 +169,7 @@ Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calcTemperature(
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto vel = iter->getV();
-    kineticEnergyMul2 += _particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::ArrayMath::dot(vel, vel);
+    kineticEnergyMul2 += _particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
   }
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};

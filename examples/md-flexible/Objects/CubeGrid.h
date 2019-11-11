@@ -59,14 +59,14 @@ class CubeGrid : public Object {
     std::array<double, 3> dppD;
     // copy for type conversion
     std::copy(std::begin(particlesPerDim), std::end(particlesPerDim), std::begin(dppD));
-    return autopas::ArrayMath::add(bottomLeftCorner, (autopas::ArrayMath::mulScalar(dppD, particleSpacing)));
+    return autopas::utils::ArrayMath::add(bottomLeftCorner, (autopas::utils::ArrayMath::mulScalar(dppD, particleSpacing)));
   }
 
   std::string to_string() const override {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "Particles per dimension"
-           << ":  " << autopas::ArrayUtils::to_string(particlesPerDim) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(particlesPerDim) << std::endl;
     output << std::setw(_valueOffset) << std::left << "Particle spacing"
            << ":  " << particleSpacing << std::endl;
     output << std::setw(_valueOffset) << std::left << "Number of Particles"

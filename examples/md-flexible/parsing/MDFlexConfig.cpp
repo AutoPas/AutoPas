@@ -60,9 +60,9 @@ void MDFlexConfig::print() {
   cout << setw(valueOffset) << left << "Cutoff radius"
        << ":  " << cutoff << endl;
   cout << setw(valueOffset) << left << "boxMin"
-       << ":  " << autopas::ArrayUtils::to_string(boxMin) << endl;
+       << ":  " << autopas::utils::ArrayUtils::to_string(boxMin) << endl;
   cout << setw(valueOffset) << left << "boxMax"
-       << ":  " << autopas::ArrayUtils::to_string(boxMax) << endl;
+       << ":  " << autopas::utils::ArrayUtils::to_string(boxMax) << endl;
   cout << setw(valueOffset) << left << "Cell size factor"
        << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
   cout << setw(valueOffset) << left << "deltaT"

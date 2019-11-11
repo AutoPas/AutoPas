@@ -68,7 +68,7 @@ class Object {
   virtual std::string to_string() const {
     std::ostringstream output;
     output << std::setw(_valueOffset) << std::left << "Initial velocities"
-           << ":  " << autopas::ArrayUtils::to_string(_velocity) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_velocity) << std::endl;
     output << std::setw(_valueOffset) << std::left << "TypeID"
            << ":  " << _typeId << std::endl;
     output << std::setw(_valueOffset) << std::left << "Epsilon"
