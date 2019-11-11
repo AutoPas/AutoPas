@@ -38,8 +38,8 @@ class GaussianProcessTest : public AutoPasTestBase {
                       bool visualize) {
     autopas::Random rng(42);  // random generator
 
-    constexpr size_t numEvidence = 10;      // number of samples allowed to make
-    constexpr size_t lhsNumSamples = 1000;  // number of sample to find min of acquisition function
+    constexpr size_t numEvidence = 7;      // number of samples allowed to make
+    constexpr size_t lhsNumSamples = 850;  // number of sample to find min of acquisition function
 
     autopas::GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
 
