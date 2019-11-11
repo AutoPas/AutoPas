@@ -37,14 +37,16 @@ class LJFunctorAVX
    */
   LJFunctorAVX() = delete;
 
+ private:
   /**
-   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   * Interal, actual constructor.
    * @param cutoff
    * @param shift
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
+   * @param dummy unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctorAVX(double cutoff, double shift, bool duplicatedCalculation = false)
+  explicit LJFunctorAVX(double cutoff, double shift, bool duplicatedCalculation, void * /*dummy*/)
 #ifdef __AVX__
       : Functor<Particle, ParticleCell, SoAArraysType, LJFunctorAVX<Particle, ParticleCell>>(cutoff),
         _one{_mm256_set1_pd(1.)},
@@ -76,6 +78,21 @@ class LJFunctorAVX
     utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
+ public:
+  /**
+   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   *
+   * @note Only to be used with mixing == false.
+   *
+   * @param cutoff
+   * @param shift
+   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
+   * simulation boundary. e.g. eightShell: false, fullShell: true.
+   */
+  explicit LJFunctorAVX(double cutoff, double shift, bool duplicatedCalculation = true)
+      : LJFunctorAVX(cutoff, shift, duplicatedCalculation, nullptr) {
+    static_assert(not useMixing);
+  }
 
   /**
    * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
@@ -88,9 +105,9 @@ class LJFunctorAVX
   explicit LJFunctorAVX(double cutoff, double shift,
                         ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
                         bool duplicatedCalculation = true)
-      : LJFunctorAVX(cutoff, shift, duplicatedCalculation) {
+      : LJFunctorAVX(cutoff, shift, duplicatedCalculation, nullptr) {
+    static_assert(useMixing);
     _PPLibrary = &particlePropertiesLibrary;
-    //@TODO: check that this constructor is only called with mixing == true
   }
 
   bool isRelevantForTuning() override { return relevantForTuning; }
