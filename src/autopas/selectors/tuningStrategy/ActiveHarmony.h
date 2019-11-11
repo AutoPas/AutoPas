@@ -30,12 +30,22 @@ class ActiveHarmony : public TuningStrategyInterface {
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                 const std::set<Newton3Option> &allowedNewton3Options)
-      : _allowedContainerOptions(allowedContainerOptions),
-        _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
-        _allowedTraversalOptions(allowedTraversalOptions),
-        _allowedDataLayoutOptions(allowedDataLayoutOptions),
-        _allowedNewton3Options(allowedNewton3Options),
-        _currentConfig() {
+          : _allowedContainerOptions(),
+            _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
+            _allowedTraversalOptions(allowedTraversalOptions),
+            _allowedDataLayoutOptions(allowedDataLayoutOptions),
+            _allowedNewton3Options(allowedNewton3Options),
+            _currentConfig() {
+
+    // reduce traversal and container option to possible combinations
+    for (auto &traversalOption : _allowedTraversalOptions) {
+      auto container = *compatibleTraversals::allCompatibleContainers(traversalOption).begin();
+      if (allowedContainerOptions.find(container) == allowedContainerOptions.end()) {
+        _allowedTraversalOptions.erase(traversalOption);
+      } else {
+        _allowedContainerOptions.emplace(container);
+      }
+    }
     if (getenv("HARMONY_HOME") == nullptr) {
       putenv(HARMONY_HOME);
     }
@@ -88,7 +98,8 @@ void ActiveHarmony::addEvidence(long time) {
   if (ah_report(htask, &perf) != 0) {
     utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error reporting performance to server");
   }
-  AutoPasLog(debug, "ActiveHarmony::addEvidence: Reported time {} for configuration {}.", perf, _currentConfig.toString());
+  AutoPasLog(debug, "ActiveHarmony::addEvidence: Reported time {} for configuration {}.", perf,
+             _currentConfig.toString());
 }
 
 bool ActiveHarmony::tune(bool currentInvalid) {
@@ -104,7 +115,9 @@ bool ActiveHarmony::tune(bool currentInvalid) {
   std::string dataLayoutOption = ah_get_enum(htask, "dataLayoutOption");
   std::string newton3Option = ah_get_enum(htask, "newton3Option");
   double cellSizeFactor = ah_get_real(htask, "cellSizeFactor");
-  _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(), cellSizeFactor, traversalOption, DataLayoutOption::parseOptionExact(dataLayoutOption), Newton3Option::parseOptionExact(newton3Option));
+  _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(),
+                                 cellSizeFactor, traversalOption, DataLayoutOption::parseOptionExact(dataLayoutOption),
+                                 Newton3Option::parseOptionExact(newton3Option));
   AutoPasLog(debug, "ActiveHarmony::tune: Trying configuration {}.", _currentConfig.toString());
   auto converged = ah_converged(htask);
   if (converged) {
@@ -117,7 +130,10 @@ bool ActiveHarmony::tune(bool currentInvalid) {
     dataLayoutOption = ah_get_enum(htask, "dataLayoutOption");
     newton3Option = ah_get_enum(htask, "newton3Option");
     cellSizeFactor = ah_get_real(htask, "cellSizeFactor");
-    _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(), cellSizeFactor, traversalOption, DataLayoutOption::parseOptionExact(dataLayoutOption), Newton3Option::parseOptionExact(newton3Option));
+    _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(),
+                                   cellSizeFactor, traversalOption,
+                                   DataLayoutOption::parseOptionExact(dataLayoutOption),
+                                   Newton3Option::parseOptionExact(newton3Option));
     AutoPasLog(debug, "ActiveHarmony::tune: Selected optimal configuration {}.", _currentConfig.toString());
   }
   return !converged;
@@ -128,7 +144,8 @@ void ActiveHarmony::removeN3Option(Newton3Option option) {
   reset();
   if (this->searchSpaceIsEmpty()) {
     utils::ExceptionHandler::exception(
-            "ActiveHarmony::removeN3Option: Removing all configurations with Newton 3 {} caused the search space to be empty!", option);
+            "ActiveHarmony::removeN3Option: Removing all configurations with Newton 3 {} caused the search space to be empty!",
+            option);
   }
 }
 
@@ -156,7 +173,8 @@ void ActiveHarmony::reset() {
     utils::ExceptionHandler::exception("ActiveHarmony::reset: Error settings search name");
   }
 
-  if (ah_def_real(hdef, "cellSizeFactor", _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(), (_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()) / cellSizeSamples, nullptr) != 0) {
+  if (ah_def_real(hdef, "cellSizeFactor", _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(),
+          (_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()) / cellSizeSamples, nullptr) != 0) {
     utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining real \"cellSizeFactor\"");
   }
 
@@ -164,11 +182,9 @@ void ActiveHarmony::reset() {
     utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum \"traversalOption\"");
   }
   for (auto &traversalOption : _allowedTraversalOptions) {
-    if (_allowedContainerOptions.find(*compatibleTraversals::allCompatibleContainers(traversalOption).begin()) != _allowedContainerOptions.end()) {
-      if (ah_def_enum_value(hdef, "traversalOption", traversalOption.to_string().c_str()) != 0) {
-        utils::ExceptionHandler::exception(
-                "ActiveHarmony::reset: Error defining enum value for enum \"traversalOption\"");
-      }
+    if (ah_def_enum_value(hdef, "traversalOption", traversalOption.to_string().c_str()) != 0) {
+      utils::ExceptionHandler::exception(
+              "ActiveHarmony::reset: Error defining enum value for enum \"traversalOption\"");
     }
   }
 
@@ -177,7 +193,8 @@ void ActiveHarmony::reset() {
   }
   for (auto &dataLayoutOption : _allowedDataLayoutOptions) {
     if (ah_def_enum_value(hdef, "dataLayoutOption", dataLayoutOption.to_string().c_str()) != 0) {
-      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining enum value for enum \"dataLayoutOption\"");
+      utils::ExceptionHandler::exception(
+              "ActiveHarmony::reset: Error defining enum value for enum \"dataLayoutOption\"");
     }
   }
 
@@ -201,12 +218,7 @@ void ActiveHarmony::reset() {
 }
 
 std::set<ContainerOption> ActiveHarmony::getAllowedContainerOptions() const {
-  std::set<ContainerOption> allowedContainerOptions;
-  for (auto traversalOption : _allowedTraversalOptions) {
-    auto compatibleContainerOptions = compatibleTraversals::allCompatibleContainers(traversalOption);
-    allowedContainerOptions.insert(compatibleContainerOptions.begin(), compatibleContainerOptions.end());
-  }
-  return allowedContainerOptions;
+  return _allowedContainerOptions;
 }
 
 bool ActiveHarmony::searchSpaceIsTrivial() const {
@@ -214,12 +226,15 @@ bool ActiveHarmony::searchSpaceIsTrivial() const {
     return false;
   }
 
-  return (_allowedCellSizeFactors->isFinite() && _allowedCellSizeFactors->size() == 1) and
-         _allowedTraversalOptions.size() == 1 and _allowedDataLayoutOptions.size() == 1 and _allowedNewton3Options.size() == 1;
+  return _allowedContainerOptions.size() == 1 and
+         (_allowedCellSizeFactors->isFinite() && _allowedCellSizeFactors->size() == 1) and
+         _allowedTraversalOptions.size() == 1 and _allowedDataLayoutOptions.size() == 1 and
+         _allowedNewton3Options.size() == 1;
 }
 
 bool ActiveHarmony::searchSpaceIsEmpty() const {
-  return (_allowedCellSizeFactors->isFinite() && _allowedCellSizeFactors->size() == 0) or
+  return _allowedContainerOptions.empty() or
+         (_allowedCellSizeFactors->isFinite() && _allowedCellSizeFactors->size() == 0) or
          _allowedTraversalOptions.empty() or _allowedDataLayoutOptions.empty() or _allowedNewton3Options.empty();
 }
 
