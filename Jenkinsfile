@@ -288,7 +288,7 @@ pipeline{
 
         stage("publish documentation"){
             when{ branch 'master' }
-            agent{ label 'atsccs11_prio' }
+            agent{ label 'www_access' }
             steps{
                 unstash 'doxydocs'
                 dir("build-doxygen"){
