@@ -36,7 +36,7 @@ class SortedCellView : public ParticleCell<Particle> {
   SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
     _particles.reserve(cell.numParticles());
     for (auto p = getStaticCellIter(cell); p.isValid(); ++p) {
-      _particles.push_back(std::make_pair(ArrayMath::dot(p->getR(), r), &(*p)));
+      _particles.push_back(std::make_pair(utils::ArrayMath::dot(p->getR(), r), &(*p)));
     }
     std::sort(_particles.begin(), _particles.end(),
               [](const auto &a, const auto &b) -> bool { return a.first < b.first; });

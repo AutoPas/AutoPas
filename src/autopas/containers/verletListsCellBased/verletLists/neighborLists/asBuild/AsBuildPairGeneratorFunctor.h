@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "autopas/utils/ArrayMath.h"
+
 namespace autopas {
 
 template <class Particle>
@@ -55,8 +57,8 @@ class AsBuildPairGeneratorFunctor
    * @param newton3 Not used!
    */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    auto dist = ArrayMath::sub(i.getR(), j.getR());
-    double distsquare = ArrayMath::dot(dist, dist);
+    auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+    double distsquare = utils::ArrayMath::dot(dist, dist);
     if (distsquare < _cutoffskinsquared) {
       if (callCheckInstead) {
         _list.checkPair(&i, &j);

@@ -66,7 +66,7 @@ double getTimeStepGlobal(AutoPasContainer &sphSystem) {
     part->calcDt();
     if (part->getDt() < 0.002) {
       std::cout << "small time step for particle " << part->getID() << " at ["
-                << autopas::ArrayUtils::to_string(part->getR()) << "]" << std::endl;
+                << autopas::utils::ArrayUtils::to_string(part->getR()) << "]" << std::endl;
     }
     dt = std::min(dt, part->getDt());
   }
@@ -76,8 +76,8 @@ double getTimeStepGlobal(AutoPasContainer &sphSystem) {
 
 void leapfrogInitialKick(AutoPasContainer &sphSystem, const double dt) {
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
-    part->setVel_half(
-        autopas::ArrayMath::add(part->getV(), autopas::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
+    part->setVel_half(autopas::utils::ArrayMath::add(
+        part->getV(), autopas::utils::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
     part->setEng_half(part->getEnergy() + 0.5 * dt * part->getEngDot());
   }
 }
@@ -85,21 +85,21 @@ void leapfrogInitialKick(AutoPasContainer &sphSystem, const double dt) {
 void leapfrogFullDrift(AutoPasContainer &sphSystem, const double dt) {
   // time becomes t + dt;
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
-    part->addR(autopas::ArrayMath::mulScalar(part->getVel_half(), dt));
+    part->addR(autopas::utils::ArrayMath::mulScalar(part->getVel_half(), dt));
   }
 }
 
 void leapfrogPredict(AutoPasContainer &sphSystem, const double dt) {
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
-    part->addV(autopas::ArrayMath::mulScalar(part->getAcceleration(), dt));
+    part->addV(autopas::utils::ArrayMath::mulScalar(part->getAcceleration(), dt));
     part->addEnergy(part->getEngDot() * dt);
   }
 }
 
 void leapfrogFinalKick(AutoPasContainer &sphSystem, const double dt) {
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
-    part->setV(
-        autopas::ArrayMath::add(part->getVel_half(), autopas::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
+    part->setV(autopas::utils::ArrayMath::add(part->getVel_half(),
+                                              autopas::utils::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
     part->setEnergy(part->getEng_half() + 0.5 * dt * part->getEngDot());
   }
 }
@@ -179,7 +179,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
       for (diff[2] = -1; diff[2] < 2; diff[2]++) {
         if (not diff[0] and not diff[1] and not diff[2]) {
           // at least one dimension has to be non-zero
-          std::cout << "skipping diff: " << autopas::ArrayUtils::to_string(diff) << std::endl;
+          std::cout << "skipping diff: " << autopas::utils::ArrayUtils::to_string(diff) << std::endl;
           continue;
         }
         // figure out from where we get our halo particles
@@ -275,8 +275,8 @@ void printConservativeVariables(AutoPasContainer &sphSystem) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
   double energySum = 0.0;                       // total energy
   for (auto it = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); it.isValid(); ++it) {
-    momSum = autopas::ArrayMath::add(momSum, autopas::ArrayMath::mulScalar(it->getV(), it->getMass()));
-    energySum += (it->getEnergy() + 0.5 * autopas::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
+    momSum = autopas::utils::ArrayMath::add(momSum, autopas::utils::ArrayMath::mulScalar(it->getV(), it->getMass()));
+    energySum += (it->getEnergy() + 0.5 * autopas::utils::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
   }
   printf("%.16e\n", energySum);
   printf("%.16e\n", momSum[0]);

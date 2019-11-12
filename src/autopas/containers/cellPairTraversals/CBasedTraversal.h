@@ -141,7 +141,7 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
     for (unsigned long col = 0; col < numColors; ++col) {
       notifyColorChange(col);
       std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
-      std::array<unsigned long, 3> start(ArrayMath::add(startWithoutOffset, offset));
+      std::array<unsigned long, 3> start(utils::ArrayMath::add(startWithoutOffset, offset));
 
       // intel compiler demands following:
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];

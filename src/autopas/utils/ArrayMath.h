@@ -12,7 +12,7 @@
 #include <numeric>
 #include <sstream>
 
-namespace autopas::ArrayMath {
+namespace autopas::utils::ArrayMath {
 
 /**
  * Adds two arrays, returns the result.
@@ -199,4 +199,4 @@ template <class T, std::size_t SIZE>
   return mulScalar(a, static_cast<T>(1) / L2Norm(a));
 }
 
-}  // namespace autopas::ArrayMath
+}  // namespace autopas::utils::ArrayMath
