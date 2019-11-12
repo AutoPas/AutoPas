@@ -213,10 +213,12 @@ TEST_F(AutoPasTest, getNumParticlesTest) {
   expectedParticles(1, 1);
 
   // update container is expected to remove all halo particles
-  auto unused = autoPas.updateContainerForced();
+  auto haloParticles = autoPas.updateContainerForced();
+  EXPECT_EQ(haloParticles.size(), 0);
   expectedParticles(1, 0);
 
   autoPas.begin()->setR({-0.2, -0.2, -0.2});
-  unused = autoPas.updateContainerForced();
+  haloParticles = autoPas.updateContainerForced();
+  EXPECT_EQ(haloParticles.size(), 1);
   expectedParticles(0, 0);
 }
