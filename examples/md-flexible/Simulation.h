@@ -103,9 +103,7 @@ class Simulation {
   }
 
   /**
-   * Initialized the ParticlePropertiesLibrary for usage in functor
-   * during Simualtion::initialize call
-   * with the parsed values in the yamlParser
+   * Initializes the ParticlePropertiesLibrary with properties from _config.
    */
   void initializeParticlePropertiesLibrary();
 
@@ -116,7 +114,7 @@ class Simulation {
   void initialize(const MDFlexConfig &mdFlexConfig);
 
   /**
-   * Does the ForceCalculation
+   * Calculates the pairwise forces in the system and measures the runtime.
    * @tparam Force Calculation Functor
    */
   template <class FunctorType>
