@@ -32,8 +32,8 @@ class GaussianProcessTest : public AutoPasTestBase {
    * @param visualize if true, the acquisition map is printed to std::cout
    */
   template <class NumberSetType>
-  void test2DFunction(double (*function)(double, double), const Eigen::VectorXd &target, double precision,
-                      const std::pair<NumberSetType, NumberSetType> &domain,
+  void test2DFunction(const std::function<double(double, double)> &function, const Eigen::VectorXd &target,
+                      double precision, const std::pair<NumberSetType, NumberSetType> &domain,
                       autopas::AcquisitionFunctionOption acquisitionFunctionOption, minMax evidence, minMax acquisition,
                       bool visualize) {
     autopas::Random rng(42);  // random generator
