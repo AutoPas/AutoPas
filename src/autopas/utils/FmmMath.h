@@ -13,7 +13,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
-
+namespace autopas::utils {
 constexpr auto maxFactorialParameter = 128;
 
 /**
@@ -286,3 +286,5 @@ std::vector<std::complex<floatType>> FmmMath<floatType, intType>::imaginaryPower
 
 template <typename floatType, typename intType>
 bool FmmMath<floatType, intType>::initialized = false;
+
+}  // namespace autopas::utils
