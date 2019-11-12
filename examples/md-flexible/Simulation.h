@@ -37,11 +37,7 @@ class Simulation {
    *
    * Closes the log file if applicable.
    */
-  ~Simulation() {
-    if (not _config->logFileName.empty()) {
-      _logFile.close();
-    }
-  }
+  ~Simulation() = default;
 
   /**
    * Writes a VTK file for the current state of the AutoPas object.
