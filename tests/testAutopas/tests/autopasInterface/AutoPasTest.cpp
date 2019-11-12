@@ -200,14 +200,17 @@ void AutoPasTest::expectedParticles(size_t expectedOwned, size_t expectedHalo) {
 }
 
 TEST_F(AutoPasTest, getNumParticlesTest) {
+  // there should be no particles in an empty container
   expectedParticles(0, 0);
 
   Particle particle;
 
+  // add a particle in the domain -> owned
   particle.setR({1, 1, 1});
   autoPas.addParticle(particle);
   expectedParticles(1, 0);
 
+  // add a particle outside the domain -> halo
   particle.setR({-0.1, -0.1, -0.1});
   autoPas.addOrUpdateHaloParticle(particle);
   expectedParticles(1, 1);
@@ -217,6 +220,7 @@ TEST_F(AutoPasTest, getNumParticlesTest) {
   EXPECT_EQ(haloParticles.size(), 0);
   expectedParticles(1, 0);
 
+  // move the owned particle in the halo
   autoPas.begin()->setR({-0.2, -0.2, -0.2});
   haloParticles = autoPas.updateContainerForced();
   EXPECT_EQ(haloParticles.size(), 1);
