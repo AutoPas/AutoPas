@@ -7,7 +7,9 @@
 #pragma once
 
 #include <immintrin.h>
+
 #include <array>
+
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -241,8 +243,9 @@ class LJFunctorAVX
  private:
   template <bool newton3, bool masked>
   inline void SoAKernel(const size_t j, const __m256d &x1, const __m256d &y1, const __m256d &z1,
-                        const double *const x2ptr, const double *const y2ptr, const double *const z2ptr,
-                        double *const fx2ptr, double *const fy2ptr, double *const fz2ptr,
+                        const double *const __restrict__ x2ptr, const double *const __restrict__ y2ptr,
+                        const double *const __restrict__ z2ptr, double *const __restrict__ fx2ptr,
+                        double *const __restrict__ fy2ptr, double *const __restrict__ fz2ptr,
                         const size_t *const typeID1ptr, const size_t *const type2IDptr, __m256d &fxacc, __m256d &fyacc,
                         __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ, __m256d *upotSum,
                         const unsigned int rest = 0) {
