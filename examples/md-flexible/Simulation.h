@@ -140,15 +140,15 @@ class Simulation {
   const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
 
  private:
-  autopas::AutoPas<Particle, ParticleCell> _autopas;
+  using AutoPasType = autopas::AutoPas<Particle, ParticleCell>;
+  using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
+
+  AutoPasType _autopas;
   std::shared_ptr<MDFlexConfig> _config;
   std::ofstream _logFile;
-  std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> _particlePropertiesLibrary;
-  std::unique_ptr<Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>
-      _thermostat;
-  std::unique_ptr<
-      TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>
-      _timeDiscretization;
+  std::unique_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
+  std::unique_ptr<Thermostat<AutoPasType, ParticlePropertiesLibraryType>> _thermostat;
+  std::unique_ptr<TimeDiscretization<AutoPasType, ParticlePropertiesLibraryType>> _timeDiscretization;
 
   struct timers {
     autopas::utils::Timer positionUpdate, forceUpdateTotal, forceUpdateTuning, forceUpdateNonTuning, velocityUpdate,
@@ -181,7 +181,7 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
     throw std::runtime_error("Number of particle properties differ!");
   }
 
-  _particlePropertiesLibrary = std::make_unique<std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>();
+  _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibraryType>();
 
   for (auto [type, epsilon] : _config->epsilonMap) {
     _particlePropertiesLibrary->addType(type, epsilon, _config->sigmaMap.at(type), _config->massMap.at(type));
@@ -195,8 +195,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   _config = std::make_shared<MDFlexConfig>(mdFlexConfig);
   initializeParticlePropertiesLibrary();
   if (_config->deltaT != 0) {
-    _timeDiscretization = std::make_unique<
-        typename decltype(_timeDiscretization)::element_type>(
+    _timeDiscretization = std::make_unique<typename decltype(_timeDiscretization)::element_type>(
         _config->deltaT, *_particlePropertiesLibrary);
   }
   auto logFileName(_config->logFileName);
@@ -268,8 +267,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
 
   // initilizing Thermostat
   if (_config->useThermostat and _config->deltaT != 0) {
-    _thermostat = std::make_unique<
-        typename decltype(_thermostat)::element_type>(
+    _thermostat = std::make_unique<typename decltype(_thermostat)::element_type>(
         _config->initTemperature, _config->targetTemperature, _config->deltaTemp, *_particlePropertiesLibrary);
     _thermostat->addBrownianMotion(_autopas, _config->useCurrentTempForBrownianMotion);
   }
