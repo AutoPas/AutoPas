@@ -91,7 +91,9 @@ class LJFunctorAVX
    */
   explicit LJFunctorAVX(double cutoff, double shift, bool duplicatedCalculation = true)
       : LJFunctorAVX(cutoff, shift, duplicatedCalculation, nullptr) {
-    static_assert(not useMixing);
+    static_assert(not useMixing,
+                  "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
+                  "mixing to false.");
   }
 
   /**
@@ -106,7 +108,9 @@ class LJFunctorAVX
                         ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
                         bool duplicatedCalculation = true)
       : LJFunctorAVX(cutoff, shift, duplicatedCalculation, nullptr) {
-    static_assert(useMixing);
+    static_assert(useMixing,
+                  "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
+                  "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
 
