@@ -192,3 +192,31 @@ TEST_F(AutoPasTest, checkConstIterator) {
   // with 2 particles
   testConstIterator(autoPas, autoPas.getNumberOfParticles());
 }
+
+void AutoPasTest::expectedParticles(size_t expectedOwned, size_t expectedHalo) {
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::haloAndOwned), expectedHalo + expectedOwned);
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly), expectedOwned);
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::haloOnly), expectedHalo);
+}
+
+TEST_F(AutoPasTest, getNumParticlesTest) {
+  expectedParticles(0, 0);
+
+  Particle particle;
+
+  particle.setR({1, 1, 1});
+  autoPas.addParticle(particle);
+  expectedParticles(1, 0);
+
+  particle.setR({-0.1, -0.1, -0.1});
+  autoPas.addOrUpdateHaloParticle(particle);
+  expectedParticles(1, 1);
+
+  // update container is expected to remove all halo particles
+  auto unused = autoPas.updateContainerForced();
+  expectedParticles(1, 0);
+
+  autoPas.begin()->setR({-0.2, -0.2, -0.2});
+  unused = autoPas.updateContainerForced();
+  expectedParticles(0, 0);
+}
