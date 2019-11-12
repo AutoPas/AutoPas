@@ -442,9 +442,13 @@ class GaussianProcess {
    */
   static inline double kernel(const Vector &input1, const Vector &input2, double theta,
                               const Eigen::VectorXd &dimScale) {
-    Eigen::VectorXd r = static_cast<Eigen::VectorXd>(input1 - input2);
-    Eigen::VectorXd rSquared = r.array().square();
-    return theta * exp(-rSquared.dot(dimScale));
+    double dot = 0;
+    for (int i = 0; i < input1.size(); ++i) {
+      double dist = input1[i] - input2[i];
+      dist *= dist * dimScale[i];
+      dot += dist;
+    }
+    return theta * exp(-dot);
   }
 
   /**
