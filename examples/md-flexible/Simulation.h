@@ -202,7 +202,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   initializeParticlePropertiesLibrary();
   if (_config->deltaT != 0) {
     _timeDiscretization = std::make_unique<
-        decltype(_timeDiscretization)::element_type(
+        typename decltype(_timeDiscretization)::element_type>(
         _config->deltaT, *_particlePropertiesLibrary);
   }
   auto logFileName(_config->logFileName);
@@ -275,7 +275,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   // initilizing Thermostat
   if (_config->useThermostat and _config->deltaT != 0) {
     _thermostat = std::make_unique<
-        decltype(_thermostat::element_type)(
+        typename decltype(_thermostat)::element_type>(
         _config->initTemperature, _config->targetTemperature, _config->deltaTemp, *_particlePropertiesLibrary);
     _thermostat->addBrownianMotion(_autopas, _config->useCurrentTempForBrownianMotion);
   }
