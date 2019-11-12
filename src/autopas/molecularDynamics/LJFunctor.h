@@ -124,7 +124,7 @@ class LJFunctor
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto sigmasquare = _sigmasquare;
     auto epsilon24 = _epsilon24;
-    if (useMixing) {
+    if constexpr (useMixing) {
       sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
       epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
     }
@@ -215,7 +215,7 @@ class LJFunctor
 
       std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
       std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
-      if (useMixing) {
+      if constexpr (useMixing) {
         // preload all sigma and epsilons for next vectorized region
         sigmaSquares.resize(soa.getNumParticles());
         epsilon24s.resize(soa.getNumParticles());
@@ -229,7 +229,7 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        if (useMixing) {
+        if constexpr (useMixing) {
           sigmasquare = sigmaSquares[j];
           epsilon24 = epsilon24s[j];
         }
@@ -347,7 +347,7 @@ class LJFunctor
       // preload all sigma and epsilons for next vectorized region
       std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
       std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
-      if (useMixing) {
+      if constexpr (useMixing) {
         sigmaSquares.resize(soa2.getNumParticles());
         epsilon24s.resize(soa2.getNumParticles());
         for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
@@ -360,7 +360,7 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
-        if (useMixing) {
+        if constexpr (useMixing) {
           sigmasquare = sigmaSquares[j];
           epsilon24 = epsilon24s[j];
         }
@@ -835,7 +835,7 @@ class LJFunctor
 
           alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> sigmaSquares;
           alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> epsilon24s;
-          if (useMixing) {
+          if constexpr (useMixing) {
             for (size_t j = 0; j < vecsize; j++) {
               sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
               epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[currentList[joff + j]]);
@@ -854,7 +854,7 @@ class LJFunctor
           // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
-            if (useMixing) {
+            if constexpr (useMixing) {
               sigmasquare = sigmaSquares[j];
               epsilon24 = epsilon24s[j];
             }
@@ -930,7 +930,7 @@ class LJFunctor
       for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
         size_t j = neighborList[i][jNeighIndex];
         if (i == j) continue;
-        if (useMixing) {
+        if constexpr (useMixing) {
           sigmasquare = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
           epsilon24 = _PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
         }

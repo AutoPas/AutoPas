@@ -44,7 +44,7 @@ class Simulation {
   }
 
   /**
-   * Writes a VTK file for the current state of the AutoPas object
+   * Writes a VTK file for the current state of the AutoPas object.
    * @tparam AutoPasTemplate Template for the templetized autopas type.
    * @param filename
    * @param numParticles
@@ -140,7 +140,7 @@ class Simulation {
   void printStatistics();
 
   /**
-   * Getter for ParticlePropertiesLibrary of Simulation
+   * Getter for ParticlePropertiesLibrary of Simulation.
    * @return unique_prt(ParticlePropertiesLibrary)
    */
   const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
@@ -167,7 +167,7 @@ class Simulation {
   constexpr static auto _floatPrecision = 3;
 
   /**
-   * Convert a time and a name to a propperly formatted string.
+   * Convert a time and a name to a properly formatted string.
    * @param name incl. offset.
    * @param timeMS in microseconds.
    * @param numberWidth Width to which the time should be offset.
@@ -202,7 +202,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   initializeParticlePropertiesLibrary();
   if (_config->deltaT != 0) {
     _timeDiscretization = std::make_unique<
-        TimeDiscretization<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
+        decltype(_timeDiscretization)::element_type(
         _config->deltaT, *_particlePropertiesLibrary);
   }
   auto logFileName(_config->logFileName);
@@ -275,7 +275,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   // initilizing Thermostat
   if (_config->useThermostat and _config->deltaT != 0) {
     _thermostat = std::make_unique<
-        Thermostat<decltype(_autopas), std::remove_reference_t<decltype(*_particlePropertiesLibrary)>>>(
+        decltype(_thermostat::element_type)(
         _config->initTemperature, _config->targetTemperature, _config->deltaTemp, *_particlePropertiesLibrary);
     _thermostat->addBrownianMotion(_autopas, _config->useCurrentTempForBrownianMotion);
   }
@@ -288,7 +288,7 @@ template <class FunctorType>
 void Simulation<Particle, ParticleCell>::calculateForces() {
   _timers.forceUpdateTotal.start();
 
-  auto functor = FunctorType(_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary);
+  FunctorType functor {_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary};
   bool tuningIteration = _autopas.iteratePairwise(&functor);
 
   auto timeIteration = _timers.forceUpdateTotal.stop();
