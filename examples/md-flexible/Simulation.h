@@ -158,7 +158,7 @@ class Simulation {
   /**
    * Precision of floating point numbers printed.
    */
-  constexpr static auto _floatPrecision = 3;
+  constexpr static auto _floatStringPrecision = 3;
 
   /**
    * Convert a time and a name to a properly formatted string.
@@ -392,7 +392,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   // time statistics
   //  cout << "Simulation duration without initilization: " << _timers.durationSimulate << " \u03bcs" << endl;
   // Statistics
-  cout << fixed << setprecision(_floatPrecision);
+  cout << fixed << setprecision(_floatStringPrecision);
   cout << endl << "Measurements:" << endl;
   cout << timerToString("Time total      ", durationTotal, digitsTimeTotalMuS);
   cout << timerToString("  Initialization", _timers.init.getTotalTime(), digitsTimeTotalMuS, durationTotal);
@@ -452,7 +452,7 @@ std::string Simulation<Particle, ParticleCell>::timerToString(std::string name, 
   }
 
   std::ostringstream ss;
-  ss << std::fixed << std::setprecision(_floatPrecision);
+  ss << std::fixed << std::setprecision(_floatStringPrecision);
   ss << name << " : " << std::setw(numberWidth) << std::right << timeMS << " \u03bcs (" << ((double)timeMS * 1e-6)
      << "s)";
   if (maxTime != 0) {
