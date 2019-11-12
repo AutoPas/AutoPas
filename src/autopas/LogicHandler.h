@@ -38,7 +38,10 @@ class LogicHandler {
     if (not isContainerValid() or forced) {
       AutoPasLog(debug, "Initiating container update.");
       _containerIsValid = false;
-      return std::make_pair(std::move(_autoTuner.getContainer()->updateContainer()), true);
+      _numParticlesHalo.exchange(0, std::memory_order_relaxed);
+      auto returnPair = std::make_pair(std::move(_autoTuner.getContainer()->updateContainer()), true);
+      _numParticlesOwned.fetch_sub(returnPair.first.size(), std::memory_order_relaxed);
+      return returnPair;
     } else {
       AutoPasLog(debug, "Skipping container update.");
       return std::make_pair(std::vector<Particle>{}, false);
@@ -51,6 +54,7 @@ class LogicHandler {
   void addParticle(Particle &p) {
     if (not isContainerValid()) {
       _autoTuner.getContainer()->addParticle(p);
+      _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Adding of particles not allowed while neighborlists are still valid. Please invalidate the neighborlists "
@@ -68,6 +72,7 @@ class LogicHandler {
       if (not utils::inBox(haloParticle.getR(), _autoTuner.getContainer()->getBoxMin(),
                            _autoTuner.getContainer()->getBoxMax())) {
         container->addHaloParticle(haloParticle);
+        _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
       } else {
         utils::ExceptionHandler::exception("Trying to add a halo particle that is not OUTSIDE of the bounding box.\n" +
                                            haloParticle.toString());
@@ -109,6 +114,8 @@ class LogicHandler {
   void deleteAllParticles() {
     _containerIsValid = false;
     _autoTuner.getContainer()->deleteAllParticles();
+    _numParticlesOwned.exchange(0, std::memory_order_relaxed);
+    _numParticlesHalo.exchange(0, std::memory_order_relaxed);
   }
 
   /**
@@ -165,6 +172,18 @@ class LogicHandler {
     return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
+  /**
+   * Get the number of owned particles.
+   * @return
+   */
+  const size_t getNumParticlesOwned() const { return _numParticlesOwned; }
+
+  /**
+   * Get the number of halo particles.
+   * @return
+   */
+  const size_t getNumParticlesHalo() const { return _numParticlesHalo; }
+
  private:
   void checkMinimalSize() {
     auto container = _autoTuner.getContainer();
@@ -207,5 +226,15 @@ class LogicHandler {
    * Steps since last rebuild
    */
   unsigned int _stepsSinceLastContainerRebuild{std::numeric_limits<unsigned int>::max()};
+
+  /**
+   * Atomic tracker of the number of owned particles.
+   */
+  std::atomic<size_t> _numParticlesOwned{0ul};
+
+  /**
+   * Atomic tracker of the number of halo particles.
+   */
+  std::atomic<size_t> _numParticlesHalo{0ul};
 };
 }  // namespace autopas
