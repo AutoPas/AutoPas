@@ -623,7 +623,7 @@ class LJFunctor
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 9> getNeededAttr() {
+  constexpr static const auto getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 9>{
         Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
@@ -633,7 +633,7 @@ class LJFunctor
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 6> getNeededAttr(std::false_type) {
+  constexpr static const auto getNeededAttr(std::false_type) {
     return std::array<typename Particle::AttributeNames, 6>{
         Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
@@ -642,7 +642,7 @@ class LJFunctor
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 3> getComputedAttr() {
+  constexpr static const auto getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 3>{
         Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
   }
