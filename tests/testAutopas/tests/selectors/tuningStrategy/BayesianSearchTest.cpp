@@ -77,13 +77,13 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
 }
 
 TEST_F(BayesianSearchTest, testFindBest) {
-  size_t maxEvidence = 16;
+  size_t maxEvidence = 7;
   unsigned long seed = 21;
   autopas::BayesianSearch bayesSearch({autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1, 2}),
                                       {autopas::TraversalOption::c08, autopas::TraversalOption::c01},
                                       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
                                       {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, maxEvidence,
-                                      autopas::AcquisitionFunctionOption::lowerConfidenceBound, 1000, seed);
+                                      autopas::AcquisitionFunctionOption::lowerConfidenceBound, 200, seed);
 
   // configuration to find
   autopas::FeatureVector best(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,

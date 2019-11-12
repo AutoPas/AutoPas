@@ -448,7 +448,7 @@ class GaussianProcess {
       dist *= dist * dimScale[i];
       dot += dist;
     }
-    return theta * exp(-dot);
+    return theta * std::exp(-dot);
   }
 
   /**
