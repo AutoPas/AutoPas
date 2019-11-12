@@ -250,7 +250,7 @@ class AutoPas {
    * @param behavior Tells this function to report the number of halo, owned or all particles.
    * @return the number of particles in this container.
    */
-  unsigned long getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+  unsigned long getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::ownedOnly) const {
     switch (behavior) {
       case IteratorBehavior::ownedOnly: {
         return _logicHandler->getNumParticlesOwned();
