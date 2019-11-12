@@ -222,7 +222,7 @@ const Configuration &ActiveHarmony::getCurrentConfiguration() const {
 
 void ActiveHarmony::reset() {
   ah_restart(htask);
-  // TODO call ah_fetch?
+  tune(false);
 }
 
 std::set<ContainerOption> ActiveHarmony::getAllowedContainerOptions() const {
