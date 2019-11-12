@@ -202,9 +202,8 @@ class DirectSum : public ParticleContainer<ParticleCell> {
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
   }
 
-  [[nodiscard]] std::unique_ptr<fmm::FmmTree> getFastMultipoleMethodTree() const override {
-    autopas::utils::ExceptionHandler::exception(
-        "DirectSum.getFastMultipoleMethodTree() not yet implemented.");
+  [[nodiscard]] std::unique_ptr<fmm::FmmTree<ParticleCell>> getFastMultipoleMethodTree() override {
+    autopas::utils::ExceptionHandler::exception("DirectSum.getFastMultipoleMethodTree() not yet implemented.");
     return nullptr;
   }
 

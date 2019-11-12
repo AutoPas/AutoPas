@@ -7,4 +7,7 @@
 #pragma once
 
 // add includes here.
-//#include "FMMOperators.h"
+#include "FmmOperatorInterface.h"
+#include "FmmTree.h"
+#include "FmmTreeNode.h"
+#include "PotentialOperators.h"

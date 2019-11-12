@@ -12,12 +12,16 @@
 #include <vector>
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
-#include "autopas/fastMultipoleMethod/FmmTree.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
+
+namespace autopas::fmm {
+template <class ParticleCell>
+class FmmTree;
+}
 
 namespace autopas {
 
@@ -259,7 +263,7 @@ class ParticleContainerInterface {
     return compatibleTraversals::allCompatibleTraversals(this->getContainerType());
   }
 
-  [[nodiscard]] virtual std::unique_ptr<fmm::FmmTree> getFastMultipoleMethodTree() const = 0;
+  [[nodiscard]] virtual std::unique_ptr<fmm::FmmTree<ParticleCell>> getFastMultipoleMethodTree() = 0;
 };
 
 }  // namespace autopas

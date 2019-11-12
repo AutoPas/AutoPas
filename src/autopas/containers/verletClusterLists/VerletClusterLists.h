@@ -240,9 +240,8 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    */
   auto getClusterSize() const { return _clusterSize; }
 
-  [[nodiscard]] std::unique_ptr<fmm::FmmTree> getFastMultipoleMethodTree() const override {
-    autopas::utils::ExceptionHandler::exception(
-        "VerletClusterLists.getFastMultipoleMethodTree() not yet implemented.");
+  [[nodiscard]] std::unique_ptr<fmm::FmmTree<FullParticleCell<Particle>>> getFastMultipoleMethodTree() override {
+    autopas::utils::ExceptionHandler::exception("VerletClusterLists.getFastMultipoleMethodTree() not yet implemented.");
     return nullptr;
   }
 

@@ -11,9 +11,11 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
+#include "autopas/fastMultipoleMethod/FmmTree.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/particles/FmmParticle.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ParticleCellHelpers.h"
@@ -297,7 +299,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    */
   const std::vector<ParticleCell> &getCells() const { return this->_cells; }
 
-  void createFmmNode(fmm::FmmTreeNode &node) const {
+  void createFmmNode(fmm::FmmTreeNode<ParticleCell> &node) const {
     auto nodeMin3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMin());
     auto nodeMax3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMax());
     auto delta = ArrayMath::sub(nodeMax3DIndex, nodeMin3DIndex);
@@ -327,7 +329,6 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 
     // Must be at least 2 cells to do a split.
     if (largestSize >= 2) {
-
       // The 3D index where the node will be split. Only the largestIndex axis is interesting.
       // The other indices are set to the min corner of the box.
 
@@ -361,11 +362,14 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
       createFmmNode(node.getChild(0));
       createFmmNode(node.getChild(1));
       //}
+    } else {
+      node.makeLeaf();
     }
   }
 
-  [[nodiscard]] std::unique_ptr<fmm::FmmTree> getFastMultipoleMethodTree() const override {
-    auto tree = std::make_unique<fmm::FmmTree>();
+  [[nodiscard]] std::unique_ptr<fmm::FmmTree<ParticleCell>> getFastMultipoleMethodTree() override {
+    auto tree = std::make_unique<fmm::FmmTree<ParticleCell>>(this);
+
     createFmmNode(tree->setRoot(this->getBoxMin(), this->getBoxMax()));
     return tree;
   }
