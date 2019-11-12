@@ -176,7 +176,7 @@ class FmmMath {
     }
 
     using namespace std::complex_literals;
-    return std::exp(1i * phi * m) *
+    return std::exp(1i * phi * static_cast<double>(m)) *
            std::sqrt(FmmMath::factorial(n - std::abs(m)) / FmmMath::factorial(n + std::abs(m))) *
            associatedLegendrePolynomial(std::abs(m), n, std::cos(theta));
   }
