@@ -19,8 +19,8 @@ class FmmTreeNode {
   FmmTreeNode(FmmTree &tree, FmmTreeNode *parent, std::array<double, 3> boxMin, std::array<double, 3> boxMax);
   void split(std::array<double, 3> firstBoxMax, std::array<double, 3> secondBoxMin);
   FmmTreeNode &getChild(int index) { return *child[index]; }
-  [[nodiscard]] const std::array<double, 3> &getBoxMin() const { return boxMin; }
-  [[nodiscard]] const std::array<double, 3> &getBoxMax() const { return boxMax; }
+  [[nodiscard]] std::array<double, 3> getBoxMin() const { return boxMin; }
+  [[nodiscard]] std::array<double, 3> getBoxMax() const { return boxMax; }
 
  private:
   FmmTree *tree;

@@ -297,24 +297,10 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    */
   const std::vector<ParticleCell> &getCells() const { return this->_cells; }
 
-  void createFmmNode(fmm::FmmTreeNode &node, int depth) const {
+  void createFmmNode(fmm::FmmTreeNode &node) const {
     auto nodeMin3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMin());
     auto nodeMax3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMax());
     auto delta = ArrayMath::sub(nodeMax3DIndex, nodeMin3DIndex);
-
-    for (int i = 0; i < depth; ++i) {
-      std::cout << "    ";
-    }
-    std::cout << "createFmmNode" << std::endl;
-    for (int i = 0; i < depth; ++i) {
-      std::cout << "    ";
-    }
-    std::cout << autopas::ArrayUtils::to_string(node.getBoxMin()) << std::endl;
-    for (int i = 0; i < depth; ++i) {
-      std::cout << "    ";
-    }
-    std::cout << autopas::ArrayUtils::to_string(node.getBoxMax()) << std::endl;
-
 
     /*std::cout << autopas::ArrayUtils::to_string(nodeMin3DIndex) << std::endl;
     std::cout << autopas::ArrayUtils::to_string(nodeMax3DIndex) << std::endl;
@@ -344,13 +330,11 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 
       // The 3D index where the node will be split. Only the largestIndex axis is interesting.
       // The other indices are set to the min corner of the box.
-      auto split3DIndex = std::array<unsigned long, 3>({0, 0, 0});
-      for (int i = 0; i < 3; ++i) {
-        split3DIndex[i] = nodeMin3DIndex[i];
-      }
-      unsigned long half = largestSize / 2;
+
       // Split largest size at the center.
-      split3DIndex[largestIndex] = nodeMin3DIndex[largestIndex] + half;
+      auto largestSizeMid = nodeMin3DIndex[largestIndex] + (largestSize / 2);
+      auto split3DIndex = nodeMin3DIndex;
+      split3DIndex[largestIndex] = largestSizeMid;
 
       // Find the double coordinates of the split position.
       auto midBoxMin = std::array<double, 3>({0, 0, 0});
@@ -362,13 +346,8 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
       // std::cout << autopas::ArrayUtils::to_string(midBoxMin) << std::endl;
       // std::cout << autopas::ArrayUtils::to_string(midBoxMax) << std::endl;
 
-      auto splitMin = std::array<double, 3>({0, 0, 0});
-      auto splitMax = std::array<double, 3>({0, 0, 0});
-
-      for (int i = 0; i < 3; ++i) {
-        splitMin[i] = node.getBoxMin()[i];
-        splitMax[i] = node.getBoxMax()[i];
-      }
+      auto splitMin = node.getBoxMin();
+      auto splitMax = node.getBoxMax();
 
       // The lower corner of the center cell is the split position.
       splitMin[largestIndex] = midBoxMin[largestIndex];
@@ -379,15 +358,15 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 
       node.split(splitMax, splitMin);
       // if (depth < 4) {
-      createFmmNode(node.getChild(0), depth + 1);
-      createFmmNode(node.getChild(1), depth + 1);
+      createFmmNode(node.getChild(0));
+      createFmmNode(node.getChild(1));
       //}
     }
   }
 
   [[nodiscard]] std::unique_ptr<fmm::FmmTree> getFastMultipoleMethodTree() const override {
     auto tree = std::make_unique<fmm::FmmTree>();
-    createFmmNode(tree->setRoot(this->getBoxMin(), this->getBoxMax()), 0);
+    createFmmNode(tree->setRoot(this->getBoxMin(), this->getBoxMax()));
     return tree;
   }
 
