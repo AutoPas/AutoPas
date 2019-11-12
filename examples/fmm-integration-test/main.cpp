@@ -18,18 +18,13 @@ int main(int argc, char **argv) {
 
   std::cout << "Init Test" << std::endl;
 
-  auto cont = AutoPasCont();
-  cont.setAllowedContainers(std::set<autopas::ContainerOption>{autopas::ContainerOption::linkedCells});
-  cont.setBoxMin(std::array<double, 3>{0, 0, 0});
-  cont.setBoxMax(std::array<double, 3>{2, 3, 4});
+  AutoPasCont cont;
+  cont.setAllowedContainers({autopas::ContainerOption::linkedCells});
+  cont.setBoxMin({0, 0, 0});
+  cont.setBoxMax({2, 3, 4});
   cont.init();
 
-  for (int i = 0; i < 10; ++i) {
-    auto r = RandomGenerator::randomPosition(cont.getBoxMin(), cont.getBoxMax());
-    auto v = std::array<double, 3>({0, 0, 0});
-    auto part = autopas::Particle(r, v, i);
-    cont.addParticle(part);
-  }
+  RandomGenerator::fillWithParticles(cont, autopas::Particle(), 10);
 
   std::cout << "Number of Particles: " << cont.getNumberOfParticles() << std::endl;
 
