@@ -131,11 +131,11 @@ TEST_F(GaussianProcessTest, sine) {
 
   // gp should try to approximate the sine as blackbox function
   auto functor = [](double input) { return std::sin(input); };
-  constexpr double epsilon = 0.05;         // allowed error
-  constexpr size_t numEvidence = 6;        // number of evidence to provide
+  constexpr double epsilon = 0.05;        // allowed error
+  constexpr size_t numEvidence = 6;       // number of evidence to provide
   constexpr size_t numPredictions = 500;  // number of predictions to make
-  constexpr double domainStart = 0.;       // start of tested domain
-  constexpr double domainEnd = 2 * M_PI;   // end of tested domain
+  constexpr double domainStart = 0.;      // start of tested domain
+  constexpr double domainEnd = 2 * M_PI;  // end of tested domain
 
   GaussianProcess<Eigen::VectorXd> gp(1, 0.001, rng);
 
