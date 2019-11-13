@@ -72,6 +72,7 @@ class FmmTreeNode {
     return 0.0;
   }
   std::set<FmmTreeNode *> &getInteractionList() {
+    // current warning: return sth. proper that is not on the stack.
     // Todo
     std::set<FmmTreeNode *> set;
     return set;
