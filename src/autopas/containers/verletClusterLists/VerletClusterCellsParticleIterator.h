@@ -244,13 +244,14 @@ class VerletClusterCellsRegionParticleIterator
    * lower corner of target region
    */
   const std::array<double, 3> _startRegion;
+  
   /**
    * upper corner of target region
    */
   const std::array<double, 3> _endRegion;
 
   /**
-   * indecies of possible cells
+   * indices of possible cells
    */
   std::vector<size_t> _indicesInRegion;
 
