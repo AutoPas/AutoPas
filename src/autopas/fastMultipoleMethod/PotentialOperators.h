@@ -48,7 +48,7 @@ class PotentialOperators : public FmmOperatorInterface<ParticleCell> {
     for (auto iter = leaf.getTree().getContainer()->getRegionIterator(leaf.getBoxMin(), leaf.getBoxMax());
          iter.isValid(); ++iter) {
       auto spherical = autopas::utils::FmmMath<double, long>::toSpherical(
-          autopas::ArrayMath::sub(iter->getR(), leaf.getBoxCenter()));
+          autopas::utils::ArrayMath::sub(iter->getR(), leaf.getBoxCenter()));
       for (long m = -orderOfExpansion; m <= orderOfExpansion; ++m) {
         fmmMath.sphericalHarmonicsBuildCache(-m, orderOfExpansion, spherical[1], spherical[2]);
         for (long n = std::abs(m); n <= orderOfExpansion; n++) {
@@ -70,7 +70,7 @@ class PotentialOperators : public FmmOperatorInterface<ParticleCell> {
         continue;
       }*/
       auto spherical = autopas::utils::FmmMath<double, long>::toSpherical(
-          autopas::ArrayMath::sub(child.getBoxCenter(), parent.getBoxCenter()));
+          autopas::utils::ArrayMath::sub(child.getBoxCenter(), parent.getBoxCenter()));
       double r = spherical[0];
       double theta = spherical[1];
       double phi = spherical[2];
@@ -107,7 +107,7 @@ class PotentialOperators : public FmmOperatorInterface<ParticleCell> {
   void M2L(FmmTreeNode<ParticleCell> &node) override {
     for (auto inter : node.getInteractionList()) {
       auto spherical = autopas::utils::FmmMath<double, long>::toSpherical(
-          autopas::ArrayMath::sub(inter->getBoxCenter(), node.getBoxCenter()));
+          autopas::utils::ArrayMath::sub(inter->getBoxCenter(), node.getBoxCenter()));
       double rho = spherical[0];
       double theta = spherical[1];
       double phi = spherical[2];
@@ -160,7 +160,7 @@ class PotentialOperators : public FmmOperatorInterface<ParticleCell> {
   void L2L(FmmTreeNode<ParticleCell> &node) override {
     if (node.getDepth() > 0) {
       auto parent = node.getOctreeParent();
-      auto cartesian = autopas::ArrayMath::sub(parent.getBoxCenter(), node.getBoxCenter());
+      auto cartesian = autopas::utils::ArrayMath::sub(parent.getBoxCenter(), node.getBoxCenter());
       auto spherical = autopas::utils::FmmMath<double, long>::toSpherical(cartesian);
       double rho = spherical[0];
       double theta = spherical[1];
@@ -198,7 +198,7 @@ class PotentialOperators : public FmmOperatorInterface<ParticleCell> {
     for (auto iter = leaf.getTree().getContainer()->getRegionIterator(leaf.getBoxMin(), leaf.getBoxMax());
          iter.isValid(); ++iter) {
       auto sphericalPos = autopas::utils::FmmMath<double, long>::toSpherical(
-          autopas::ArrayMath::sub(iter->getR(), leaf.getBoxCenter()));
+          autopas::utils::ArrayMath::sub(iter->getR(), leaf.getBoxCenter()));
 
       double rho = sphericalPos[0];
       double theta = sphericalPos[1];

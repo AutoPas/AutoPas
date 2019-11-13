@@ -306,7 +306,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
   void createFmmNode(fmm::FmmTreeNode<ParticleCell> &node) const {
     auto nodeMin3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMin());
     auto nodeMax3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMax());
-    auto delta = ArrayMath::sub(nodeMax3DIndex, nodeMin3DIndex);
+    auto delta = utils::ArrayMath::sub(nodeMax3DIndex, nodeMin3DIndex);
 
     /*std::cout << autopas::ArrayUtils::to_string(nodeMin3DIndex) << std::endl;
     std::cout << autopas::ArrayUtils::to_string(nodeMax3DIndex) << std::endl;

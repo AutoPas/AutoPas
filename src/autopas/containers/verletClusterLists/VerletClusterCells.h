@@ -377,6 +377,11 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     _isValid = false;
   }
 
+  [[nodiscard]] std::unique_ptr<fmm::FmmTree<FullParticleCell<Particle>>> getFastMultipoleMethodTree() override {
+    autopas::utils::ExceptionHandler::exception("VerletClusterCells.getFastMultipoleMethodTree() not yet implemented.");
+    return nullptr;
+  }
+
  protected:
   /**
    * Recalculate grids and clusters,

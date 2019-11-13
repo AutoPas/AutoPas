@@ -29,7 +29,7 @@ class FmmTreeNode {
     } else {
       depth = parent->depth + 1;
     }
-    boxCenter = autopas::ArrayMath::mulScalar(autopas::ArrayMath::add(boxMin, boxMax), 0.5);
+    boxCenter = autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::add(boxMin, boxMax), 0.5);
     _isOctreeNode = (depth % 3 == 0);
   }
   void split(std::array<double, 3> firstBoxMax, std::array<double, 3> secondBoxMin) {
