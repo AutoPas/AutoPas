@@ -22,7 +22,7 @@ namespace autopas {
  * @tparam LinkedSoAArraysType SoAArraysType used by the linked cells container
  */
 template <class Particle, class LinkedParticleCell, class LinkedSoAArraysType = typename Particle::SoAArraysType>
-class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle>> {
+class VerletListsLinkedBase : public ParticleContainerInterface<FullParticleCell<Particle>> {
   using ParticleCell = FullParticleCell<Particle>;
 
  public:
@@ -40,8 +40,7 @@ class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                         const double skin, const std::set<TraversalOption> &applicableTraversals,
                         const double cellSizeFactor)
-      : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
-        _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
+      : _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       AutoPasLog(debug, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
     }
@@ -112,8 +111,8 @@ class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle
       std::array<double, 3> boxmin{0., 0., 0.};
       std::array<double, 3> boxmax{0., 0., 0.};
       _linkedCells.getCellBlock().getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-      boxmin = ArrayMath::subScalar(boxmin, this->getSkin() / 2.);
-      boxmax = ArrayMath::addScalar(boxmax, this->getSkin() / 2.);
+      boxmin = utils::ArrayMath::subScalar(boxmin, this->getSkin() / 2.);
+      boxmax = utils::ArrayMath::addScalar(boxmax, this->getSkin() / 2.);
       for (auto iter = _linkedCells.getCells()[cellIndex1d].begin(); iter.isValid(); ++iter) {
         if (not utils::inBox(iter->getR(), boxmin, boxmax)) {
           outlierFound = true;  // we need an update
@@ -209,11 +208,57 @@ class VerletListsLinkedBase : public ParticleContainer<FullParticleCell<Particle
                                  this->getInteractionLength(), this->_linkedCells.getCellBlock().getCellLength());
   }
 
+
   [[nodiscard]] std::unique_ptr<fmm::FmmTree<ParticleCell>> getFastMultipoleMethodTree() override {
     autopas::utils::ExceptionHandler::exception(
         "VerletListsLinkedBase.getFastMultipoleMethodTree() not yet implemented.");
     return nullptr;
   }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getBoxMax()
+   */
+  const std::array<double, 3> &getBoxMax() const override final { return _linkedCells.getBoxMax(); }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setBoxMax()
+   */
+  void setBoxMax(const std::array<double, 3> &boxMax) override final { _linkedCells.setBoxMax(boxMax); }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getBoxMin()
+   */
+  const std::array<double, 3> &getBoxMin() const override final { return _linkedCells.getBoxMin(); }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setBoxMin()
+   */
+  void setBoxMin(const std::array<double, 3> &boxMin) override final { _linkedCells.setBoxMin(boxMin); }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getCutoff()
+   */
+  double getCutoff() const override final { return _linkedCells.getCutoff(); }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setCutoff()
+   */
+  void setCutoff(double cutoff) override final { _linkedCells.setCutoff(cutoff); }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getSkin()
+   */
+  double getSkin() const override final { return _linkedCells.getSkin(); }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setSkin()
+   */
+  void setSkin(double skin) override final { _linkedCells.setSkin(skin); }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
+   */
+  double getInteractionLength() const override final { return _linkedCells.getInteractionLength(); }
 
  protected:
   /// internal linked cells storage, handles Particle storage and used to build verlet lists

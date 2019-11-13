@@ -90,7 +90,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+    AutoPasLog(debug, "Using traversal {}.", traversal->getTraversalType().to_string());
 
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal);
@@ -140,7 +140,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     return TraversalSelectorInfo(
         {2, 0, 0},
         this->getCutoff() /*intentionally use cutoff here, as the directsumtraversal should be using the cutoff.*/,
-        ArrayMath::sub(this->getBoxMax(), this->getBoxMin()));
+        utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin()));
   }
 
   ParticleIteratorWrapper<ParticleType, true> begin(

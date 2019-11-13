@@ -9,6 +9,7 @@
 #include <tuple>
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/StringUtils.h"
 
@@ -38,23 +39,16 @@ class Configuration {
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
    */
-  Configuration()
-      : container(ContainerOption(-1)),
-        traversal(TraversalOption(-1)),
-        dataLayout(DataLayoutOption(-1)),
-        newton3(Newton3Option(-1)),
-        cellSizeFactor(-1.) {}
+  Configuration() : container(), traversal(), dataLayout(), newton3(), cellSizeFactor(-1.) {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
    * @return String representation.
    */
   std::string toString() const {
-    return "{Container: " + utils::StringUtils::to_string(container) +
-           " , CellSizeFactor: " + std::to_string(cellSizeFactor) +
-           " , Traversal: " + utils::StringUtils::to_string(traversal) +
-           " , Data Layout: " + utils::StringUtils::to_string(dataLayout) +
-           " , Newton 3: " + utils::StringUtils::to_string(newton3) + "}";
+    return "{Container: " + container.to_string() + " , CellSizeFactor: " + std::to_string(cellSizeFactor) +
+           " , Traversal: " + traversal.to_string() + " , Data Layout: " + dataLayout.to_string() +
+           " , Newton 3: " + newton3.to_string() + "}";
   }
 
   /**

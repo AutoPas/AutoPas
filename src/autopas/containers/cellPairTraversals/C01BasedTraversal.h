@@ -21,7 +21,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam dataLayout indicates usage of SoA
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3,
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
           int collapseDepth = 3>
 class C01BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth> {
  public:
@@ -50,12 +50,13 @@ class C01BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
   inline void c01Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3, int collapseDepth>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          int collapseDepth>
 template <typename LoopBody>
 inline void C01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::c01Traversal(
     LoopBody &&loopBody) {
   const auto offset = this->_overlap;
-  const auto end = ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
+  const auto end = utils::ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
   this->cTraversal(std::forward<LoopBody>(loopBody), end, {1ul, 1ul, 1ul}, offset);
 }
 }  // namespace autopas

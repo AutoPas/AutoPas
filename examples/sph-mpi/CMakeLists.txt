@@ -5,6 +5,7 @@ file(
     "*.h"
 )
 
+message(STATUS "searching for mpi...")
 find_package(MPI)
 
 if (NOT ${MPI_CXX_FOUND})

@@ -29,7 +29,7 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
@@ -59,15 +59,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @return true iff the traversal can be applied.
    */
   bool isApplicable() const override {
-    if (dataLayout == DataLayoutOption::cuda) {
-      int nDevices = 0;
-#if defined(AUTOPAS_CUDA)
-      cudaGetDeviceCount(&nDevices);
-#endif
-      return (this->_sliceThickness.size() > 0) && (nDevices > 0);
-    } else {
-      return this->_sliceThickness.size() > 0;
-    }
+    return not(dataLayout == DataLayoutOption::cuda) and this->_sliceThickness.size() > 0;
   }
 
   /**
@@ -162,7 +154,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::init(
     const std::array<unsigned long, 3> &dims) {
   for (unsigned int d = 0; d < 3; d++) {
@@ -200,7 +192,7 @@ inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useN
 
   locks.resize((numSlices - 1) * _overlapLongestAxis);
 }
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 template <bool allCells, typename LoopBody>
 void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::slicedTraversal(LoopBody &&loopBody) {
   using std::array;

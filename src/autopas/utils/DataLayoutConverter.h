@@ -16,7 +16,7 @@ namespace autopas::utils {
  * @tparam Functor The functor that defines the interaction of two particles.
  * @tparam DataLayout the Layout to convert to
  */
-template <class Functor, DataLayoutOption dataLayout>
+template <class Functor, DataLayoutOption::Value dataLayout>
 class DataLayoutConverter {
  public:
   /**

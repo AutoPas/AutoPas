@@ -32,18 +32,6 @@ class RandomGenerator {
   static std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
 
   /**
-   * Fills any container (also AutoPas object) with randomly uniformly distributed particles.
-   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
-   * @tparam Particle Type of the default particle.
-   * @param container
-   * @param defaultParticle
-   * @param numParticles
-   */
-  template <class Container, class Particle>
-  static void fillWithParticles(Container &container, const Particle &defaultParticle,
-                                unsigned long numParticles = 100ul);
-
-  /**
    * Fills the given container with randomly distributed particles between boxMin and boxMax.
    * @tparam Container
    * @tparam Particle Type of particle to be generated
@@ -70,6 +58,18 @@ class RandomGenerator {
   template <class Container, class Particle>
   static void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
                                     unsigned long numParticles = 100ul);
+
+  /**
+   * Fills any container (also AutoPas object) with randomly uniformly distributed particles.
+   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
+   * @tparam Particle Type of the default particle.
+   * @param container
+   * @param defaultParticle
+   * @param numParticles
+   */
+  template <class Container, class Particle>
+  static void fillWithParticles(Container &container, const Particle &defaultParticle,
+                                unsigned long numParticles = 100ul);
 };
 
 template <class Container, class Particle>

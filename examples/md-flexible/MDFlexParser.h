@@ -17,8 +17,9 @@ using namespace std;
 
 class MDFlexParser {
  public:
-  enum FunctorOption { lj12_6, lj12_6_AVX };
+  enum FunctorOption { lj12_6, lj12_6_AVX, lj12_6_Globals };
   enum GeneratorOption { grid, uniform, gaussian };
+  enum PrecisionOption { FP32, FP64 };
 
   MDFlexParser() = default;
 
@@ -32,6 +33,7 @@ class MDFlexParser {
   double getDistributionStdDev() const;
   FunctorOption getFunctorOption() const;
   GeneratorOption getGeneratorOption() const;
+  PrecisionOption getPrecisionOption() const;
   size_t getIterations() const;
   bool getMeasureFlops() const;
   std::set<autopas::Newton3Option> getNewton3Options() const;
@@ -43,10 +45,12 @@ class MDFlexParser {
   unsigned int getTuningInterval() const;
   unsigned int getTuningSamples() const;
   unsigned int getTuningMaxEvidence() const;
+  autopas::AcquisitionFunctionOption getAcquisitionFunctionOption() const;
   autopas::TuningStrategyOption getTuningStrategyOption() const;
   std::string getWriteVTK() const;
   const std::set<autopas::TraversalOption> &getTraversalOptions() const;
   unsigned int getVerletRebuildFrequency() const;
+  unsigned int getVerletClusterSize() const;
   double getVerletSkinRadius() const;
   bool parseInput(int argc, char **argv);
   void printConfig();
@@ -56,12 +60,12 @@ class MDFlexParser {
 
   // defaults:
   // AutoPas options:
-  std::set<autopas::ContainerOption> containerOptions = autopas::allContainerOptions;
-  std::set<autopas::DataLayoutOption> dataLayoutOptions = autopas::allDataLayoutOptions;
+  std::set<autopas::ContainerOption> containerOptions = autopas::ContainerOption::getAllOptions();
+  std::set<autopas::DataLayoutOption> dataLayoutOptions = autopas::DataLayoutOption::getAllOptions();
   autopas::SelectorStrategyOption selectorStrategy = autopas::SelectorStrategyOption::fastestAbs;
-  std::set<autopas::TraversalOption> traversalOptions = autopas::allTraversalOptions;
+  std::set<autopas::TraversalOption> traversalOptions = autopas::TraversalOption::getAllOptions();
   autopas::TuningStrategyOption tuningStrategyOption = autopas::TuningStrategyOption::fullSearch;
-  std::set<autopas::Newton3Option> newton3Options = autopas::allNewton3Options;
+  std::set<autopas::Newton3Option> newton3Options = autopas::Newton3Option::getAllOptions();
   std::unique_ptr<autopas::NumberSet<double>> cellSizeFactors =
       std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{1.});
 
@@ -72,6 +76,7 @@ class MDFlexParser {
   double distributionStdDev = 2.;
   FunctorOption functorOption = FunctorOption::lj12_6;
   GeneratorOption generatorOption = GeneratorOption::grid;
+  PrecisionOption precisionOption = PrecisionOption::FP64;
   size_t iterations = 10;
   spdlog::level::level_enum logLevel = spdlog::level::info;
   bool measureFlops = true;
@@ -81,8 +86,10 @@ class MDFlexParser {
   unsigned int tuningInterval = 100;
   unsigned int tuningSamples = 3;
   unsigned int tuningMaxEvidence = 10;
+  autopas::AcquisitionFunctionOption tuningAcqFun = autopas::AcquisitionFunctionOption::lowerConfidenceBound;
   std::string writeVTK = "";
   std::string logFileName = "";
   unsigned int verletRebuildFrequency = 5;
+  unsigned int verletClusterSize = 64;
   double verletSkinRadius = .2;
 };

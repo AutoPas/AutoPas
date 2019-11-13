@@ -16,6 +16,7 @@
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
@@ -56,7 +57,7 @@ class VerletListsCells
   ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+    AutoPasLog(debug, "Using traversal {}.", traversal->getTraversalType().to_string());
 
     // Check if traversal is allowed for this container and give it the data it needs.
     auto vTraversal = dynamic_cast<autopas::VerletListsCellsTraversal<Particle> *>(traversal);
@@ -104,8 +105,10 @@ class VerletListsCells
     typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap,
                                                            this->getCutoff() + this->getSkin());
 
-    switch (_buildTraversal) {
-      case c08: {
+    // clang compiler bug requires static cast
+    switch (static_cast<TraversalOption>(_buildTraversal)) {
+        //    switch (_buildTraversal) {
+      case TraversalOption::c08: {
         autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
           auto buildTraversal = C08Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
@@ -114,7 +117,7 @@ class VerletListsCells
         });
         break;
       }
-      case c18: {
+      case TraversalOption::c18: {
         autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
           auto buildTraversal = C18Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
@@ -123,7 +126,7 @@ class VerletListsCells
         });
         break;
       }
-      case c01: {
+      case TraversalOption::c01: {
         if (useNewton3) {
           utils::ExceptionHandler::exception("VerletListsCells::updateVerletLists(): c01 does not support newton3");
         } else {

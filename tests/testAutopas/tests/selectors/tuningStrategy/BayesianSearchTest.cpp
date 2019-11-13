@@ -4,9 +4,11 @@
  * @date 12.06.19
  */
 
-#include "BayesianSearchTest.h"
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
+
+#include "BayesianSearchTest.h"
+#include "autopas/options/Newton3Option.h"
 
 TEST_F(BayesianSearchTest, testSearchSpaceEmpty) {
   autopas::BayesianSearch bayesianSearch(std::set<autopas::ContainerOption>({}));
@@ -81,8 +83,7 @@ TEST_F(BayesianSearchTest, testFindBest) {
                                       {autopas::TraversalOption::c08, autopas::TraversalOption::c01},
                                       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
                                       {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, maxEvidence,
-                                      autopas::AcquisitionFunctionOption::lcb, 1000,
-                                      autopas::AcquisitionFunctionOption::ucb, 1000, seed);
+                                      autopas::AcquisitionFunctionOption::lowerConfidenceBound, 1000, seed);
 
   // configuration to find
   autopas::FeatureVector best(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
@@ -91,7 +92,7 @@ TEST_F(BayesianSearchTest, testFindBest) {
   while (bayesSearch.tune()) {
     autopas::FeatureVector current(bayesSearch.getCurrentConfiguration());
 
-    Eigen::VectorXd diff = static_cast<Eigen::VectorXd>(best - current);
+    Eigen::VectorXd diff = best - current;
     double distanceSquared = diff.array().square().sum();
     long dummyTime = static_cast<long>(654321 * distanceSquared);
 

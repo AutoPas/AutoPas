@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
       functorTypeInt = std::stoi(argv[4]);
     }
     if (argc >= 4) {
-      containerOptions = autopas::utils::StringUtils::parseContainerOptions(argv[3]);
+      containerOptions = autopas::ContainerOption::parseOptions(argv[3]);
       numIterations = std::stoi(argv[2]);
       numParticles = std::stoi(argv[1]);
       if (containerOptions.size() != 1) {
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
   autoPas.setAllowedNewton3Options({useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled});
   autoPas.setAllowedDataLayouts({autopas::DataLayoutOption::aos});  // currently aos only!
 
-  auto traversalType = autopas::TraversalOption(-1);
+  autopas::TraversalOption traversalType;
   switch (*containerOptions.begin()) {
     case autopas::ContainerOption::linkedCells: {
       traversalType = autopas::TraversalOption::c08;
@@ -134,8 +134,8 @@ int main(int argc, char *argv[]) {
       break;
     }
     default:
-      std::cerr << "Error: containerType " << autopas::utils::StringUtils::to_string(*containerOptions.begin())
-                << " not yet supported." << std::endl;
+      std::cerr << "Error: containerType " << containerOptions.begin()->to_string() << " not yet supported."
+                << std::endl;
       exit(2);
   }
   autoPas.setAllowedTraversals({traversalType});

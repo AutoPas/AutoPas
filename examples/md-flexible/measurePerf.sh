@@ -53,10 +53,12 @@ traversals__DirectSum=directSumTraversal
 traversals__LinkedCells=c08
 traversals__VerletLists=verlet-lists
 traversals__VerletCells=verletC18
-traversals__VerletCluster=verlet-clusters-coloring
+traversals__VerletClusterLists=verlet-clusters-coloring
+#traversals__VerletClusterCells=verlet-cluster-cells
 
 # iterate over containers
-for container in LinkedCells VerletLists DirectSum VerletCluster VerletCells ;
+# add VerletClusterCells when it supports SoAs with global calculation
+for container in DirectSum LinkedCells VerletLists VerletClusterLists VerletCells ;
 do
     separate "Container: ${container}"
     # only set verlet options if needed

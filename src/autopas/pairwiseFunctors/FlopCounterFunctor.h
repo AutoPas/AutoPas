@@ -38,7 +38,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ParticleCell>(typename Particle::ParticleFloatingPointType cutoffRadius)
+  explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
       : autopas::Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
                          FlopCounterFunctor<Particle, ParticleCell>>(cutoffRadius),
         _cutoffSquare(cutoffRadius * cutoffRadius),
@@ -46,8 +46,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
         _kernelCalls(0ul) {}
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    auto dr = ArrayMath::sub(i.getR(), j.getR());
-    double dr2 = ArrayMath::dot(dr, dr);
+    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+    double dr2 = utils::ArrayMath::dot(dr, dr);
 #ifdef AUTOPAS_OPENMP
 #pragma omp critical
 #endif

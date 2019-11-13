@@ -16,12 +16,24 @@
  */
 class PrintableMolecule : public autopas::MoleculeLJ {
  public:
-  PrintableMolecule() : MoleculeLJ() {}
+  PrintableMolecule() : autopas::MoleculeLJ() {}
 
-  PrintableMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i) : MoleculeLJ(r, v, i) {}
+  PrintableMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i) : autopas::MoleculeLJ(r, v, i) {}
 
   /**
    * Print molecule properties to std out.
    */
-  void print();
+  void print() {
+    std::cout << "Molecule with position: ";
+    for (auto &r : this->getR()) {
+      std::cout << std::setw(10) << r << ", ";
+    }
+    std::cout << "and force: ";
+
+    for (auto &f : this->getF()) {
+      std::cout << std::setw(15) << f << ", ";
+    }
+    std::cout << "ID: " << std::setw(5) << this->getID();
+    std::cout << std::endl;
+  }
 };

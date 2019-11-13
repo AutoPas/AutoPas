@@ -25,7 +25,7 @@ class LinkedCellsVersusVerletClusterListsTest : public AutoPasTestBase {
   double getCutoff() const { return 1.0; }
 
  protected:
-  template <autopas::DataLayoutOption dataLayout, bool useNewton3>
+  template <autopas::DataLayoutOption::Value dataLayout, bool useNewton3>
   void test(unsigned long numMolecules, double rel_err_tolerance, autopas::TraversalOption traversalOption,
             std::array<double, 3> boxMax);
 
