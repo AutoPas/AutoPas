@@ -33,12 +33,15 @@ class FmmTreeNode {
     _isOctreeNode = (depth % 3 == 0);
   }
   void split(std::array<double, 3> firstBoxMax, std::array<double, 3> secondBoxMin) {
-    child = std::vector<std::shared_ptr<autopas::fmm::FmmTreeNode<ParticleCell>>>(2);
-    child[0] = std::make_shared<autopas::fmm::FmmTreeNode<ParticleCell>>(*this->tree, this, boxMin, firstBoxMax);
-    child[1] = std::make_shared<autopas::fmm::FmmTreeNode<ParticleCell>>(*this->tree, this, secondBoxMin, boxMax);
+    if (children.empty()) {
+      children.emplace_back(*this->tree, this, boxMin, firstBoxMax);
+      children.emplace_back(*this->tree, this, boxMin, secondBoxMin);
+    } else {
+      autopas::utils::ExceptionHandler::exception("trying to split an already split FmmTreeNode");
+    }
   }
 
-  FmmTreeNode &getChild(int index) { return *child[index]; }
+  FmmTreeNode &getChild(int index) { return children[index]; }
   [[nodiscard]] std::array<double, 3> getBoxMin() const { return boxMin; }
   [[nodiscard]] std::array<double, 3> getBoxMax() const { return boxMax; }
   [[nodiscard]] std::array<double, 3> getBoxCenter() const { return boxCenter; }
@@ -74,7 +77,7 @@ class FmmTreeNode {
   std::set<FmmTreeNode *> &getInteractionList() {
     // current warning: return sth. proper that is not on the stack.
     // Todo
-    std::set<FmmTreeNode *> set;
+    static std::set<FmmTreeNode *> set;
     return set;
   }
 
@@ -94,7 +97,7 @@ class FmmTreeNode {
   std::array<double, 3> boxMax;
   std::array<double, 3> boxCenter;
   long depth;
-  std::vector<std::shared_ptr<FmmTreeNode>> child;
+  std::vector<FmmTreeNode> children;
   bool _isLeaf = false;
   bool _isOctreeNode = false;
   bool _isOctreeLeaf = false;
