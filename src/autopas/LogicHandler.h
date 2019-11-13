@@ -176,13 +176,13 @@ class LogicHandler {
    * Get the number of owned particles.
    * @return
    */
-  const size_t getNumParticlesOwned() const { return _numParticlesOwned; }
+  unsigned long getNumParticlesOwned() const { return _numParticlesOwned; }
 
   /**
    * Get the number of halo particles.
    * @return
    */
-  const size_t getNumParticlesHalo() const { return _numParticlesHalo; }
+  unsigned long getNumParticlesHalo() const { return _numParticlesHalo; }
 
  private:
   void checkMinimalSize() {
