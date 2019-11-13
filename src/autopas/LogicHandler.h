@@ -6,6 +6,7 @@
 
 #pragma once
 #include <limits>
+#include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/utils/Logger.h"
 
@@ -149,7 +150,7 @@ class LogicHandler {
   autopas::ParticleIteratorWrapper<Particle, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    return std::as_const(_autoTuner).getContainer()->begin(behavior);
+    return std::as_const(begin(behavior));
   }
 
   /**
@@ -183,6 +184,22 @@ class LogicHandler {
    * @return
    */
   unsigned long getNumParticlesHalo() const { return _numParticlesHalo; }
+
+  /**
+   * Atomically decrease the counted number of owned particles by n.
+   * @param n
+   */
+  void decreaseCounterNumParticlesOwned(const size_t n) {
+    _numParticlesOwned.fetch_sub(n, std::memory_order_relaxed);
+  }
+
+  /**
+   * Atomically decrease the counted number of halo particles by n.
+   * @param n
+   */
+  void decreaseCounterNumParticlesHalo(const size_t n) {
+    _numParticlesHalo.fetch_sub(n, std::memory_order_relaxed);
+  }
 
  private:
   void checkMinimalSize() {

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <memory>
+#include <autopas/LogicHandler.h>
 #include "autopas/iterators/ParticleIteratorInterface.h"
 
 namespace autopas {
@@ -92,6 +93,11 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
  protected:
   inline void deleteCurrentParticleImpl() override final {
     if constexpr (modifiable) {
+      if(_particleIterator.get()->operator*().isOwned()){
+        logicHandlerPtr->decreaseCounterNumParticlesOwned(1);
+      } else {
+        logicHandlerPtr->decreaseCounterNumParticlesHalo(1);
+      }
       _particleIterator->deleteCurrentParticle();
     } else {
       utils::ExceptionHandler::exception("Error: Trying to delete a particle through a const iterator.");
@@ -99,6 +105,7 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
   }
 
  private:
+  LogicHandler *logicHandlerPtr;
   std::unique_ptr<autopas::internal::ParticleIteratorInterfaceImpl<Particle, modifiable>> _particleIterator;
 };
 

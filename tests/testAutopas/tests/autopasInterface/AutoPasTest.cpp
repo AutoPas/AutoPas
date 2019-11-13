@@ -226,3 +226,25 @@ TEST_F(AutoPasTest, getNumParticlesTest) {
   EXPECT_EQ(haloParticles.size(), 1);
   expectedParticles(0, 0);
 }
+
+TEST_F(AutoPasTest, getNumParticlesIteratorTest) {
+  // there should be no particles in an empty container
+  expectedParticles(0, 0);
+
+  Particle particle;
+
+  // add a particle in the domain -> owned
+  int numParticles = 0;
+  for (; numParticles < 3; ++numParticles) {
+    particle.setR({(double)numParticles, (double)numParticles, (double)numParticles});
+    autoPas.addParticle(particle);
+    expectedParticles(numParticles + 1, 0);
+  }
+
+  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+    iter.deleteCurrentParticle();
+    --numParticles;
+    expectedParticles(numParticles, 0);
+  }
+
+}
