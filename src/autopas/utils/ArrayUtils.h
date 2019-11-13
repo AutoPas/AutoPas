@@ -10,7 +10,7 @@
 #include <array>
 #include <sstream>
 
-namespace autopas::ArrayUtils {
+namespace autopas::utils::ArrayUtils {
 
 /**
  * Creates a new array by performing an element-wise static_cast<>.
@@ -52,4 +52,4 @@ template <class T>
   return strStream.str();
 }
 
-}  // namespace autopas::ArrayUtils
+}  // namespace autopas::utils::ArrayUtils

@@ -19,8 +19,8 @@ class IteratorTest : public testing::Test, public ::testing::WithParamInterface<
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       auto inputTuple = static_cast<ParamType>(info.param);
       std::string str;
-      str += autopas::utils::StringUtils::to_string(std::get<0>(inputTuple)) + "_";
-      str += std::string{"cellSizeFactor"} + autopas::utils::StringUtils::to_string(std::get<1>(inputTuple));
+      str += std::get<0>(inputTuple).to_string() + "_";
+      str += std::string{"cellSizeFactor"} + std::to_string(std::get<1>(inputTuple));
       std::replace(str.begin(), str.end(), '-', '_');
       std::replace(str.begin(), str.end(), '.', '_');
       return str;

@@ -23,7 +23,7 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3,
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
           int collapseDepth = 3>
 class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth> {
  public:
@@ -49,12 +49,13 @@ class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
   inline void c04Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, int collapseDepth>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          int collapseDepth>
 template <typename LoopBody>
-inline void C04BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3, collapseDepth>::c04Traversal(
+inline void C04BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::c04Traversal(
     LoopBody &&loopBody) {
-  const auto end = ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
-  auto stride = ArrayMath::addScalar(this->_overlap, 1ul);
+  const auto end = utils::ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
+  auto stride = utils::ArrayMath::addScalar(this->_overlap, 1ul);
   stride[0] = 1;
   this->cTraversal(std::forward<LoopBody>(loopBody), end, stride);
 }

@@ -15,7 +15,7 @@ void testIndex(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas:
   unsigned long counter = 0ul;
   for (auto &m : mesh) {
     unsigned long index = cellBlock.get1DIndexOfPosition(m);
-    ASSERT_EQ(index, counter) << "Pos: [" << autopas::ArrayUtils::to_string(m) << "]";
+    ASSERT_EQ(index, counter) << "Pos: [" << autopas::utils::ArrayUtils::to_string(m) << "]";
     ++counter;
   }
 }

@@ -11,6 +11,7 @@
 #include <set>
 #include "autopas/autopasIncludes.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/selectors/Configuration.h"
@@ -79,7 +80,7 @@ class AutoTuner {
    * Getter for the current container.
    * @return Smart pointer to the current container.
    */
-  std::shared_ptr<autopas::ParticleContainer<ParticleCell>> getContainer() {
+  std::shared_ptr<autopas::ParticleContainerInterface<ParticleCell>> getContainer() {
     return _containerSelector.getCurrentContainer();
   }
 
@@ -87,7 +88,7 @@ class AutoTuner {
    * Getter for the current container.
    * @return Smart pointer to the current container.
    */
-  std::shared_ptr<const autopas::ParticleContainer<ParticleCell>> getContainer() const {
+  std::shared_ptr<const autopas::ParticleContainerInterface<ParticleCell>> getContainer() const {
     return _containerSelector.getCurrentContainer();
   }
 
@@ -153,7 +154,7 @@ class AutoTuner {
             // print all configs
             ss << std::endl << _tuningStrategy->getCurrentConfiguration().toString() << " : [ ";
             // print all timings
-            ss << ArrayUtils::to_string(_samples, " ");
+            ss << utils::ArrayUtils::to_string(_samples, " ");
             ss << " ] ";
             ss << "Reduced value: " << reducedValue;
             AutoPasLog(debug, "Collected times for  {}", ss.str());
@@ -183,7 +184,7 @@ class AutoTuner {
    */
   void selectCurrentContainer();
 
-  template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool inTuningPhase>
+  template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
   void iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild);
 
   /**
@@ -317,12 +318,12 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool
 }
 
 template <class Particle, class ParticleCell>
-template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool inTuningPhase>
+template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
 void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild) {
   auto containerPtr = getContainer();
   AutoPasLog(debug, "Iterating with configuration: {}", _tuningStrategy->getCurrentConfiguration().toString());
 
-  auto traversal = TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(
+  auto traversal = TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, dataLayout, useNewton3>(
       _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
 
   if (not traversal->isApplicable()) {
@@ -382,7 +383,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
         (_tuningStrategy->getCurrentConfiguration().newton3 == Newton3Option::disabled and
          not pairwiseFunctor.allowsNonNewton3())) {
       AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
-                 utils::StringUtils::to_string(_tuningStrategy->getCurrentConfiguration().newton3));
+                 _tuningStrategy->getCurrentConfiguration().newton3.to_string());
 
       _tuningStrategy->removeN3Option(_tuningStrategy->getCurrentConfiguration().newton3);
     } else {

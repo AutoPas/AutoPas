@@ -7,6 +7,17 @@
 #include "MDFlexParser.h"
 #include "autopas/utils/StringUtils.h"
 
+template <class T>
+std::string iterableToString(T arr) {
+  std::ostringstream ss;
+  for (auto a : arr) {
+    ss << a.to_string() << ", ";
+  }
+  // remove last comma by removing last two characters.
+  auto str = ss.str();
+  return arr.empty() ? "" : str.substr(0, str.size() - 2);
+}
+
 bool MDFlexParser::parseInput(int argc, char **argv) {
   bool displayHelp = false;
   int option, option_index;
@@ -28,6 +39,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"particles-total", required_argument, nullptr, 'N'},
                                          {"particle-spacing", required_argument, nullptr, 's'},
                                          {"traversal", required_argument, nullptr, 't'},
+                                         {"tuning-acquisition-function", required_argument, nullptr, 'A'},
                                          {"tuning-interval", required_argument, nullptr, 'I'},
                                          {"tuning-samples", required_argument, nullptr, 'S'},
                                          {"tuning-max-evidence", required_argument, nullptr, 'E'},
@@ -40,13 +52,13 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
                                          {"verlet-skin-radius", required_argument, nullptr, 'r'},
                                          {"vtk", required_argument, nullptr, 'w'},
                                          {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
-  string strArg;
+  std::string strArg;
   while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (option) {
       case '3': {
-        newton3Options = autopas::utils::StringUtils::parseNewton3Options(strArg, false);
+        newton3Options = autopas::Newton3Option::parseOptions(strArg);
         if (newton3Options.empty()) {
           cerr << "Unknown Newton3 option: " << strArg << endl;
           cerr << "Please use 'enabled' or 'disabled'!" << endl;
@@ -65,7 +77,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       }
       case 'c': {
         // overwrite default argument
-        containerOptions = autopas::utils::StringUtils::parseContainerOptions(strArg, false);
+        containerOptions = autopas::ContainerOption::parseOptions(strArg);
         if (containerOptions.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
           cerr << "Please use 'DirectSum', 'LinkedCells', 'VerletLists', 'VCells' or 'VCluster'!" << endl;
@@ -91,7 +103,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'd': {
-        dataLayoutOptions = autopas::utils::StringUtils::parseDataLayout(strArg);
+        dataLayoutOptions = autopas::DataLayoutOption::parseOptions(strArg);
         if (dataLayoutOptions.empty()) {
           cerr << "Unknown data layouts: " << strArg << endl;
           cerr << "Please use 'AoS' or 'SoA'!" << endl;
@@ -176,8 +188,14 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'y': {
-        selectorStrategy = autopas::utils::StringUtils::parseSelectorStrategy(strArg);
-        if (selectorStrategy == autopas::SelectorStrategyOption(-1)) {
+        auto parsedStrategies = autopas::SelectorStrategyOption::parseOptions(strArg);
+        if (parsedStrategies.size() != 1) {
+          cerr << "Please provide exactly one selector strategy. Parsed strategies are: "
+               << iterableToString(parsedStrategies) << endl;
+          displayHelp = true;
+        }
+        selectorStrategy = *parsedStrategies.begin();
+        if (selectorStrategy == autopas::SelectorStrategyOption()) {
           cerr << "Unknown Selector Strategy: " << strArg << endl;
           cerr << "Please use 'fastestAbs', 'fastestMean' or 'fastestMedian'!" << endl;
           displayHelp = true;
@@ -224,6 +242,7 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
       }
       case 'L': {
         logFileName = strArg;
+        autopas::TuningStrategyOption::parseOptions(strArg);
         break;
       }
       case 'm': {
@@ -288,8 +307,22 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         }
         break;
       }
+      case 'A': {
+        auto parsedAcquisitionFunctions = autopas::AcquisitionFunctionOption::parseOptions(strArg);
+        if (parsedAcquisitionFunctions.size() != 1) {
+          cerr << "Please provide exactly one acquisition function. Parsed strategies are: "
+               << iterableToString(parsedAcquisitionFunctions) << endl;
+          displayHelp = true;
+        }
+        tuningAcqFun = *parsedAcquisitionFunctions.begin();
+        if (tuningAcqFun == autopas::AcquisitionFunctionOption()) {
+          cerr << "Unknown acquisition function: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 't': {
-        traversalOptions = autopas::utils::StringUtils::parseTraversalOptions(strArg);
+        traversalOptions = autopas::TraversalOption::parseOptions(strArg);
         if (traversalOptions.empty()) {
           cerr << "Unknown Traversal: " << strArg << endl;
           cerr << "Please use 'c08', 'c01', 'c18', 'sliced' or 'direct'!" << endl;
@@ -298,8 +331,14 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
         break;
       }
       case 'T': {
-        tuningStrategyOption = autopas::utils::StringUtils::parseTuningStrategyOption(strArg);
-        if (tuningStrategyOption == autopas::TuningStrategyOption(-1)) {
+        auto parsedTuningStrategies = autopas::TuningStrategyOption::parseOptions(strArg);
+        if (parsedTuningStrategies.size() != 1) {
+          cerr << "Please provide exactly one tuning strategy. Parsed strategies are: "
+               << iterableToString(parsedTuningStrategies) << endl;
+          displayHelp = true;
+        }
+        tuningStrategyOption = *parsedTuningStrategies.begin();
+        if (tuningStrategyOption == autopas::TuningStrategyOption()) {
           cerr << "Unknown Tuning Strategy: " << strArg << endl;
           cerr << "Please use 'full-search' or 'bayesian-search'!" << endl;
           displayHelp = true;
@@ -365,17 +404,6 @@ bool MDFlexParser::parseInput(int argc, char **argv) {
   return true;
 }
 
-template <class T>
-std::string iterableToString(T arr) {
-  std::ostringstream ss;
-  for (auto a : arr) {
-    ss << autopas::utils::StringUtils::to_string(a) << ", ";
-  }
-  // deletes last comma
-  ss << "\b\b";
-  return ss.str();
-}
-
 void MDFlexParser::printConfig() {
   constexpr size_t valueOffset = 32;
   cout << setw(valueOffset) << left << "Container"
@@ -395,7 +423,7 @@ void MDFlexParser::printConfig() {
 
   if (containerOptions.size() > 1 or traversalOptions.size() > 1 or dataLayoutOptions.size() > 1) {
     cout << setw(valueOffset) << left << "Selector Strategy"
-         << ":  " << autopas::utils::StringUtils::to_string(selectorStrategy) << endl;
+         << ":  " << selectorStrategy.to_string() << endl;
   }
 
   cout << setw(valueOffset) << left << "Data Layout"
@@ -487,13 +515,15 @@ void MDFlexParser::printConfig() {
   cout << setw(valueOffset) << left << "Iterations"
        << ":  " << iterations << endl;
   cout << setw(valueOffset) << left << "Tuning Strategy"
-       << ":  " << autopas::utils::StringUtils::to_string(tuningStrategyOption) << endl;
+       << ":  " << tuningStrategyOption.to_string() << endl;
   cout << setw(valueOffset) << left << "Tuning Interval"
        << ":  " << tuningInterval << endl;
   cout << setw(valueOffset) << left << "Tuning Samples"
        << ":  " << tuningSamples << endl;
   cout << setw(valueOffset) << left << "Tuning Max evidence"
        << ":  " << tuningMaxEvidence << endl;
+  cout << setw(valueOffset) << left << "Tuning Acquisition Function"
+       << ":  " << tuningAcqFun.to_string() << endl;
 }
 
 std::set<autopas::ContainerOption> MDFlexParser::getContainerOptions() const { return containerOptions; }
@@ -544,6 +574,8 @@ unsigned int MDFlexParser::getTuningInterval() const { return tuningInterval; }
 unsigned int MDFlexParser::getTuningSamples() const { return tuningSamples; }
 
 unsigned int MDFlexParser::getTuningMaxEvidence() const { return tuningMaxEvidence; }
+
+autopas::AcquisitionFunctionOption MDFlexParser::getAcquisitionFunctionOption() const { return tuningAcqFun; }
 
 autopas::Logger::LogLevel MDFlexParser::getLogLevel() const { return logLevel; }
 

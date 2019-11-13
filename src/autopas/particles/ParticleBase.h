@@ -75,13 +75,13 @@ class ParticleBase {
    * Add a partial force to the force acting on the particle
    * @param f partial force to be added
    */
-  void addF(const std::array<double, 3> &f) { _f = ArrayMath::add(_f, f); }
+  void addF(const std::array<double, 3> &f) { _f = utils::ArrayMath::add(_f, f); }
 
   /**
    * Substract a partial force from the force acting on the particle
    * @param f partial force to be substracted
    */
-  void subF(const std::array<double, 3> &f) { _f = ArrayMath::sub(_f, f); }
+  void subF(const std::array<double, 3> &f) { _f = utils::ArrayMath::sub(_f, f); }
 
   /**
    * Get the id of the particle
@@ -111,7 +111,7 @@ class ParticleBase {
    * Add a distance vector to the position of the particle
    * @param r vector to be added
    */
-  void addR(const std::array<double, 3> &r) { _r = ArrayMath::add(_r, r); }
+  void addR(const std::array<double, 3> &r) { _r = utils::ArrayMath::add(_r, r); }
 
   /**
    * Get the velocity of the particle
@@ -129,7 +129,7 @@ class ParticleBase {
    * Add a vector to the current velocity of the particle
    * @param v vector to be added
    */
-  void addV(const std::array<double, 3> &v) { _v = ArrayMath::add(_v, v); }
+  void addV(const std::array<double, 3> &v) { _v = utils::ArrayMath::add(_v, v); }
 
   /**
    * Creates a string containing all data of the particle.

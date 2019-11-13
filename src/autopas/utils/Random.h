@@ -16,18 +16,13 @@ namespace autopas {
 /**
  * Class for random algorithms.
  */
-class Random {
+class Random : public std::mt19937 {
  public:
   /**
    * Constructor
-   */
-  Random() : _rng(std::random_device()()) {}
-
-  /**
-   * Construct with seed.
    * @param seed
    */
-  explicit Random(unsigned long seed) : _rng(seed) {}
+  explicit Random(unsigned long seed = std::random_device()()) : std::mt19937(seed) {}
 
   /**
    * Class should not be copied constructed
@@ -64,31 +59,33 @@ class Random {
     if (result.size() > n) {
       // randomize the last copy of the set
       size_t extra = result.size() - n;
-      std::shuffle(std::end(result) - extra, std::end(result), _rng);
+      std::shuffle(std::end(result) - extra, std::end(result), *this);
 
       // truncate the rest
       result.resize(n);
     }
 
     // randomize the sample
-    std::shuffle(std::begin(result), std::end(result), _rng);
+    std::shuffle(std::begin(result), std::end(result), *this);
 
     return result;
   }
 
   /**
-   * Reorders the elements in the given range [first, last) such that each possible
-   * permutation of those elements has equal probability of appearance.
-   * @param first
-   * @param last
+   * Get a uniformly random object from the given set.
+   * @param pool set
+   * @return random element
    */
-  template <class RandomIt>
-  inline void shuffle(RandomIt first, RandomIt last) {
-    std::shuffle(first, last, _rng);
-  }
+  template <class T>
+  T pickRandom(std::set<T> pool) {
+    std::uniform_int_distribution<size_t> distr(0ul, pool.size() - 1ul);
+    size_t pos = distr(*this);
 
- private:
-  std::mt19937 _rng;
+    auto it = pool.begin();
+    for (size_t i = 0; i < pos; ++i) ++it;
+
+    return *it;
+  }
 };
 
 }  // namespace autopas

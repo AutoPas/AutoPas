@@ -24,7 +24,7 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   EXPECT_THROW((containerSelector.getCurrentContainer()), autopas::utils::ExceptionHandler::AutoPasException);
 
   // test all individual options
-  for (auto containerOp : autopas::allContainerOptions) {
+  for (auto containerOp : autopas::ContainerOption::getAllOptions()) {
     containerSelector.selectContainer(containerOp, containerInfo);
 
     EXPECT_EQ(containerOp, containerSelector.getCurrentContainer()->getContainerType());
@@ -48,8 +48,8 @@ void getStatus(const std::array<double, 3> &bBoxMin, const std::array<double, 3>
        ++iter) {
     ListInner.push_back(*iter);
   }
-  const auto haloBoxMin = autopas::ArrayMath::subScalar(bBoxMin, cutoff);
-  const auto haloBoxMax = autopas::ArrayMath::addScalar(bBoxMax, cutoff);
+  const auto haloBoxMin = autopas::utils::ArrayMath::subScalar(bBoxMin, cutoff);
+  const auto haloBoxMax = autopas::utils::ArrayMath::addScalar(bBoxMax, cutoff);
   for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::haloOnly); iter.isValid();
        ++iter) {
     if (autopas::utils::inBox(iter->getR(), haloBoxMin, haloBoxMax)) {
@@ -83,8 +83,6 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
                                    min - cutoff - verletSkin - 1e-3};
     };
     size_t id = 0;
-    // const auto haloBoxMin = autopas::ArrayMath::subScalar(bBoxMin, cutoff);
-    // const auto haloBoxMax = autopas::ArrayMath::addScalar(bBoxMax, cutoff);
 
     for (auto x : getPossible1DPositions(bBoxMin[0], bBoxMax[0])) {
       for (auto y : getPossible1DPositions(bBoxMin[1], bBoxMax[1])) {
@@ -116,25 +114,25 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
 
   EXPECT_THAT(afterListInner, UnorderedElementsAreArray(beforeListInner));
   EXPECT_THAT(afterListHalo, UnorderedElementsAreArray(beforeListHalo));
-  if (autopas::utils::StringUtils::to_string(to).find("Verlet") != std::string::npos and
-      autopas::utils::StringUtils::to_string(from).find("Verlet") != std::string::npos) {
+  if (to.to_string().find("Verlet") != std::string::npos and from.to_string().find("Verlet") != std::string::npos) {
     EXPECT_THAT(afterListHaloVerletOnly, UnorderedElementsAreArray(beforeListHaloVerletOnly));
   }
 }
 
 /// @todo: use this instead of below to enable testing of VerletClusterLists.
 // INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
-//                         Combine(ValuesIn(autopas::allContainerOptions), ValuesIn(autopas::allContainerOptions)),
+//                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()),
+//                         ValuesIn(autopas::ContainerOption::getAllOptions())),
 //                         ContainerSelectorTest::PrintToStringParamName());
 
 INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
                          Combine(ValuesIn([]() -> std::set<autopas::ContainerOption> {
-                                   auto all = autopas::allContainerOptions;
+                                   auto all = autopas::ContainerOption::getAllOptions();
                                    all.erase(all.find(autopas::ContainerOption::verletClusterLists));
                                    return all;
                                  }()),
                                  ValuesIn([]() -> std::set<autopas::ContainerOption> {
-                                   auto all = autopas::allContainerOptions;
+                                   auto all = autopas::ContainerOption::getAllOptions();
                                    all.erase(all.find(autopas::ContainerOption::verletClusterLists));
                                    return all;
                                  }())),

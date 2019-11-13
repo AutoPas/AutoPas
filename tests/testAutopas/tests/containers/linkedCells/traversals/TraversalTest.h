@@ -30,7 +30,7 @@ class TraversalTest : public AutoPasTestBase,
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       auto inputTuple = static_cast<ParamType>(info.param);
-      std::string traversal(autopas::utils::StringUtils::to_string(std::get<0>(inputTuple)));
+      auto traversal(std::get<0>(inputTuple).to_string());
       // replace all '-' with '_', otherwise the test name is invalid
       std::replace(traversal.begin(), traversal.end(), '-', '_');
       return traversal + "_" + (std::get<1>(inputTuple) ? "N3on" : "N3off");
@@ -55,8 +55,8 @@ class TraversalTest : public AutoPasTestBase,
       const auto coordsI = i.getR();
       const auto coordsJ = j.getR();
 
-      std::array<double, 3> dr = autopas::ArrayMath::sub(coordsI, coordsJ);
-      const double dr2 = autopas::ArrayMath::dot(dr, dr);
+      std::array<double, 3> dr = autopas::utils::ArrayMath::sub(coordsI, coordsJ);
+      const double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
       if (dr2 > _cutoffSquare) return;
 

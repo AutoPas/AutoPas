@@ -18,7 +18,7 @@ namespace autopas {
  * @tparam dataLayout The data layout to use. Currently, only AoS is supported.
  * @tparam useNewton3 If newton 3 should be used. Currently, only false is supported.
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VerletClustersTraversal : public TraversalInterface,
                                 public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;

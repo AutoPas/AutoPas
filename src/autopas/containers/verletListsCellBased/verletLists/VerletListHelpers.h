@@ -65,9 +65,9 @@ class VerletListHelpers {
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
-      auto dist = ArrayMath::sub(i.getR(), j.getR());
+      auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
 
-      double distsquare = ArrayMath::dot(dist, dist);
+      double distsquare = utils::ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared) {
         // this is thread safe, only if particle i is accessed by only one
         // thread at a time. which is ensured, as particle i resides in a
@@ -251,8 +251,8 @@ class VerletListHelpers {
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-      auto dist = ArrayMath::sub(i.getR(), j.getR());
-      double distsquare = ArrayMath::dot(dist, dist);
+      auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+      double distsquare = utils::ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffsquared) {
         // this is thread safe, we have variables on the stack
         auto found = std::find(_verletListsAoS[&i].begin(), _verletListsAoS[&i].end(), &j);

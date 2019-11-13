@@ -41,7 +41,7 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
     overlap[d] = std::ceil(cutoff / 1.0);
   }
 
-  const auto boxMax = autopas::ArrayMath::sub(edgeLength, overlap);
+  const auto boxMax = autopas::utils::ArrayMath::sub(edgeLength, overlap);
 
   for (unsigned int z = 0; z < edgeLength[2]; ++z) {
     for (unsigned int y = 0; y < edgeLength[1]; ++y) {

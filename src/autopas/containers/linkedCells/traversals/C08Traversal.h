@@ -26,7 +26,7 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                      public LinkedCellTraversalInterface<ParticleCell> {
  public:
@@ -62,8 +62,8 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
   C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C08Traversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+inline void C08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
