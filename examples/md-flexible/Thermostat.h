@@ -169,7 +169,8 @@ Thermostat<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::calcTemperature(
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto vel = iter->getV();
-    kineticEnergyMul2 += _particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
+    kineticEnergyMul2 +=
+        _particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
   }
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};

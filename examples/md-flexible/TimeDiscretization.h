@@ -87,7 +87,8 @@ void TimeDiscretization<AutoPasTemplate, ParticlePropertiesLibraryTemplate>::cal
     auto m = _particlePropertiesLibrary.getMass(iter->getTypeId());
     auto force = iter->getF();
     auto old_force = iter->getOldf();
-    auto newV = autopas::utils::ArrayMath::mulScalar((autopas::utils::ArrayMath::add(force, old_force)), particle_delta_t / (2 * m));
+    auto newV = autopas::utils::ArrayMath::mulScalar((autopas::utils::ArrayMath::add(force, old_force)),
+                                                     particle_delta_t / (2 * m));
     iter->addV(newV);
   }
 }

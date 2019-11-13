@@ -55,7 +55,8 @@ std::array<double, 3> TimeDiscretizationTest::nextPosition(std::array<double, 3>
 std::array<double, 3> TimeDiscretizationTest::nextVelocity(std::array<double, 3> velocity, std::array<double, 3> force,
                                                            std::array<double, 3> oldf, double particle_delta_t) {
   auto m = 1.0;
-  auto newV = autopas::utils::ArrayMath::mulScalar((autopas::utils::ArrayMath::add(force, oldf)), particle_delta_t / (2 * m));
+  auto newV =
+      autopas::utils::ArrayMath::mulScalar((autopas::utils::ArrayMath::add(force, oldf)), particle_delta_t / (2 * m));
   return autopas::utils::ArrayMath::add(velocity, newV);
 }
 

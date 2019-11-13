@@ -59,7 +59,8 @@ class CubeGrid : public Object {
     std::array<double, 3> dppD;
     // copy for type conversion
     std::copy(std::begin(particlesPerDim), std::end(particlesPerDim), std::begin(dppD));
-    return autopas::utils::ArrayMath::add(bottomLeftCorner, (autopas::utils::ArrayMath::mulScalar(dppD, particleSpacing)));
+    return autopas::utils::ArrayMath::add(bottomLeftCorner,
+                                          (autopas::utils::ArrayMath::mulScalar(dppD, particleSpacing)));
   }
 
   std::string to_string() const override {

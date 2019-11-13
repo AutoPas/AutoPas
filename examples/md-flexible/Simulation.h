@@ -280,7 +280,7 @@ template <class FunctorType>
 void Simulation<Particle, ParticleCell>::calculateForces() {
   _timers.forceUpdateTotal.start();
 
-  FunctorType functor {_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary};
+  FunctorType functor{_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary};
   bool tuningIteration = _autopas.iteratePairwise(&functor);
 
   auto timeIteration = _timers.forceUpdateTotal.stop();
