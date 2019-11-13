@@ -8,8 +8,8 @@
 
 #include <algorithm>
 #include <vector>
+#include "VerletClusterTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/containers/cellPairTraversals/VerletClusterTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/CudaDeviceVector.h"
