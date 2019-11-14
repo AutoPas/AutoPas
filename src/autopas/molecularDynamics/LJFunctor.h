@@ -194,7 +194,7 @@ class LJFunctor
     SoAFloatPrecision *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    auto *const __restrict__ typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict__ typeptr = soa.template begin<Particle::AttributeNames::typeId>();
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
     SoAFloatPrecision sigmasquare = _sigmasquare;
@@ -319,8 +319,8 @@ class LJFunctor
     auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
-    auto *const __restrict__ typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
-    auto *const __restrict__ typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict__ typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict__ typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
 
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
@@ -774,8 +774,8 @@ class LJFunctor
     auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-    auto *const __restrict__ typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
-    auto *const __restrict__ typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict__ typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict__ typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
 
     const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
 
@@ -837,8 +837,8 @@ class LJFunctor
           // vecsize particles in the neighborlist of particle i starting at
           // particle joff
 
-          alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> sigmaSquares;
-          alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> epsilon24s;
+          [[maybe_unused]] alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> sigmaSquares;
+          [[maybe_unused]] alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> epsilon24s;
           if constexpr (useMixing) {
             for (size_t j = 0; j < vecsize; j++) {
               sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
