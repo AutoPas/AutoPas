@@ -17,6 +17,18 @@ enum IteratorBehavior {
   haloAndOwned  /// iterate over both halo and owned particles
 };
 
+namespace internal {
+
+/**
+ * Function to access hidden iterator.deleteCurrentParticle() to mark it as internal.
+ * @tparam ParticleIterator
+ * @param iterator
+ */
+template <class ParticleIterator>
+void deleteParticle(ParticleIterator &iterator) {
+  iterator.deleteCurrentParticle();
+}
+}  // namespace internal
 /**
  * ParticleIteratorInterface class to iterate over particles.
  * This class provides a basic interface for all iterators within AutoPas.
@@ -29,6 +41,13 @@ enum IteratorBehavior {
 template <class Particle, bool modifiable>
 class ParticleIteratorInterface {
   using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
+
+  /**
+   * Function to access hidden iterator.deleteCurrentParticle() to mark it as internal.
+   * @tparam ParticleIterator
+   */
+  template <class T>
+  friend void internal::deleteParticle(T &);
 
  public:
   /**
@@ -56,6 +75,13 @@ class ParticleIteratorInterface {
   virtual inline ParticleType *operator->() const final { return &(this->operator*()); }
 
   /**
+   * Check whether the iterator is valid
+   * @return returns whether the iterator is valid
+   */
+  virtual bool isValid() const = 0;
+
+ protected:
+  /**
    * Deletes the current particle.
    * @note Do NOT use this function from outside the autopas namespce. Use AutoPas::deleteParticle instead.
    * @note This function is disabled for const iterators.
@@ -66,13 +92,6 @@ class ParticleIteratorInterface {
     deleteCurrentParticleImpl();
   }
 
-  /**
-   * Check whether the iterator is valid
-   * @return returns whether the iterator is valid
-   */
-  virtual bool isValid() const = 0;
-
- protected:
   /**
    * Implementation of the deletion. The split is needed to disable it.
    */
