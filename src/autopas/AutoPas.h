@@ -10,7 +10,6 @@
 #include <memory>
 #include <set>
 #include <type_traits>
-#include <autopas/selectors/tuningStrategy/ActiveHarmony.h>
 #include "autopas/LogicHandler.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/options/TuningStrategyOption.h"
@@ -18,6 +17,7 @@
 #include "autopas/selectors/tuningStrategy/BayesianSearch.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopas/selectors/tuningStrategy/RandomSearch.h"
+#include "autopas/selectors/tuningStrategy/ActiveHarmony.h"
 #include "autopas/utils/NumberSet.h"
 
 namespace autopas {
