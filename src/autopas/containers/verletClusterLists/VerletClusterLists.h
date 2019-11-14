@@ -260,7 +260,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   /**
    * Helper method to iterate over all clusters in parallel.
    *
-   * It is alwys safe to modify the particles in the cluster that is passed to the given loop body. However, when
+   * It is always safe to modify the particles in the cluster that is passed to the given loop body. However, when
    * modifying particles from other clusters, the caller has to make sure that no data races occur. Particles must not
    * be added or removed during the traversal.
    * @tparam LoopBody The type of the lambda to execute for all clusters.
