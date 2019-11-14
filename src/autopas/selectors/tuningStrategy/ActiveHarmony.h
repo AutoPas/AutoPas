@@ -47,7 +47,7 @@ class ActiveHarmony : public TuningStrategyInterface {
       }
     }
     if (getenv("HARMONY_HOME") == nullptr) {
-      putenv(HARMONY_HOME);
+      putenv(const_cast<char *>(HARMONY_HOME));
     }
 
     reset();
@@ -92,6 +92,18 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   Configuration _currentConfig;
 
+  /**
+   * Fetch parameter-values from harmony server and update _currentConfig.
+   */
+  inline void fetchConfiguration();
+
+  /**
+   * Invalidates the current configuration by reporting the worst possible performance to the harmony server.
+   * Always returns true to allow being used in boolean statements.
+   * @return true
+   */
+  inline bool invalidateConfiguration();
+
   static constexpr int cellSizeSamples = 100;
 };
 
@@ -104,41 +116,53 @@ void ActiveHarmony::addEvidence(long time) {
              _currentConfig.toString());
 }
 
+void ActiveHarmony::fetchConfiguration() {
+  auto traversalOptionStr = ah_get_enum(htask, "traversalOption");
+  auto traversalOption = TraversalOption::parseOptionExact(traversalOptionStr);
+  auto dataLayoutOption = ah_get_enum(htask, "dataLayoutOption");
+  auto newton3Option = ah_get_enum(htask, "newton3Option");
+
+  double cellSizeFactor;
+  if (_allowedCellSizeFactors->isFinite() && _allowedCellSizeFactors->size() == 1) {
+    cellSizeFactor = _allowedCellSizeFactors->getMin();
+  } else {
+    cellSizeFactor = ah_get_real(htask, "cellSizeFactor");
+  }
+  _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(),
+                                 cellSizeFactor, traversalOption,
+                                 DataLayoutOption::parseOptionExact(dataLayoutOption),
+                                 Newton3Option::parseOptionExact(newton3Option));
+}
+
+bool ActiveHarmony::invalidateConfiguration() {
+  auto worstPerf = std::numeric_limits<double>::max();
+  addEvidence(worstPerf);
+  return true;
+}
+
 bool ActiveHarmony::tune(bool currentInvalid) {
   if (currentInvalid) {
-    auto perf = std::numeric_limits<double>::max();
-    ah_report(htask, &perf);
+    invalidateConfiguration();
   }
-  if (ah_fetch(htask) < 0) {
-    utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching values from server");
-  }
-  std::string traversalOptionStr = ah_get_enum(htask, "traversalOption");
-  auto traversalOption = TraversalOption::parseOptionExact(traversalOptionStr);
-  std::string dataLayoutOption = ah_get_enum(htask, "dataLayoutOption");
-  std::string newton3Option = ah_get_enum(htask, "newton3Option");
-  double cellSizeFactor = ah_get_real(htask, "cellSizeFactor");
-  _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(),
-                                 cellSizeFactor, traversalOption, DataLayoutOption::parseOptionExact(dataLayoutOption),
-                                 Newton3Option::parseOptionExact(newton3Option));
-  if (_allowedNewton3Options.find(_currentConfig.newton3) == _allowedNewton3Options.end()) {
-    return tune(true);
-  }
+
+  // get configurations from server until valid newton3 option is found
+  do {
+    if (ah_fetch(htask) < 0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching values from server");
+    }
+    fetchConfiguration();
+  } while (_allowedNewton3Options.find(_currentConfig.newton3) == _allowedNewton3Options.end() &&
+           invalidateConfiguration()); // short-circuit evaluation makes this only execute if newton3 option is invalid
   AutoPasLog(debug, "ActiveHarmony::tune: Trying configuration {}.", _currentConfig.toString());
+
   auto converged = ah_converged(htask);
   if (converged) {
+    // set configuration to optimum
     AutoPasLog(debug, "ActiveHarmony::tune: Reached converged state.");
     if (ah_best(htask) != 0) {
       utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching best point.");
     }
-    traversalOptionStr = ah_get_enum(htask, "traversalOption");
-    traversalOption = TraversalOption::parseOptionExact(traversalOptionStr);
-    dataLayoutOption = ah_get_enum(htask, "dataLayoutOption");
-    newton3Option = ah_get_enum(htask, "newton3Option");
-    cellSizeFactor = ah_get_real(htask, "cellSizeFactor");
-    _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(),
-                                   cellSizeFactor, traversalOption,
-                                   DataLayoutOption::parseOptionExact(dataLayoutOption),
-                                   Newton3Option::parseOptionExact(newton3Option));
+    fetchConfiguration();
     AutoPasLog(debug, "ActiveHarmony::tune: Selected optimal configuration {}.", _currentConfig.toString());
   }
   return !converged;
@@ -186,7 +210,8 @@ void ActiveHarmony::reset() {
     utils::ExceptionHandler::exception("ActiveHarmony::reset: Error settings search name");
   }
 
-  if (_allowedCellSizeFactors->isFinite() and _allowedCellSizeFactors->size() == 1) {} else {
+  if (_allowedCellSizeFactors->isFinite() and _allowedCellSizeFactors->size() == 1) {}
+  else {
     if (ah_def_real(hdef, "cellSizeFactor", _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(),
                     (_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()) / cellSizeSamples,
                     nullptr) !=
