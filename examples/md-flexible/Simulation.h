@@ -50,7 +50,7 @@ class Simulation {
     _timers.vtk.start();
 
     std::string fileBaseName = _config->vtkFileName;
-    // as _autopas.getNumberOfParticles return number of haloAndOwned Particles, we need number of owned Particles
+    // only count number of owned particles here
     const auto numParticles = this->_autopas.getNumberOfParticles();
     std::ostringstream strstr;
     auto maxNumDigits = std::to_string(_config->iterations).length();
