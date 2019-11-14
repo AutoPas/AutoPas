@@ -151,7 +151,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIteratorDelete) {
 
   for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
     if (iter->getID() % 2 == 0) {
-      iter.deleteCurrentParticle();
+      autopas::internal::deleteParticle(iter);
     }
   }
 
