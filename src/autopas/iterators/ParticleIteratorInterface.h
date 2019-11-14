@@ -57,6 +57,7 @@ class ParticleIteratorInterface {
 
   /**
    * Deletes the current particle.
+   * @note Do NOT use this function from outside the autopas namespce. Use AutoPas::deleteParticle instead.
    * @note This function is disabled for const iterators.
    * @return void
    */

@@ -39,9 +39,12 @@ class LogicHandler {
     if (not isContainerValid() or forced) {
       AutoPasLog(debug, "Initiating container update.");
       _containerIsValid = false;
-      _numParticlesHalo.exchange(0, std::memory_order_relaxed);
       auto returnPair = std::make_pair(std::move(_autoTuner.getContainer()->updateContainer()), true);
+      // update container returns the particles which were previously owned and are now removed.
+      // Therefore remove them from the counter.
       _numParticlesOwned.fetch_sub(returnPair.first.size(), std::memory_order_relaxed);
+      // updateContainer deletes all halo particles.
+      _numParticlesHalo.exchange(0, std::memory_order_relaxed);
       return returnPair;
     } else {
       AutoPasLog(debug, "Skipping container update.");
@@ -115,6 +118,7 @@ class LogicHandler {
   void deleteAllParticles() {
     _containerIsValid = false;
     _autoTuner.getContainer()->deleteAllParticles();
+    // all particles are gone -> reset counters.
     _numParticlesOwned.exchange(0, std::memory_order_relaxed);
     _numParticlesHalo.exchange(0, std::memory_order_relaxed);
   }

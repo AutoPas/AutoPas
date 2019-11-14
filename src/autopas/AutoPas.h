@@ -171,19 +171,11 @@ class AutoPas {
    */
   void deleteAllParticles() { _logicHandler->deleteAllParticles(); }
 
-  void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) { _logicHandler->deleteParticle(iter); }
-
   /**
-   * When using an iterator to delete particles the internal logic handler needs to be notified.
+   * Deletes the particle behind the current iterator position.
    * @param iter
    */
-  void accountForDeletedParticles(ParticleIteratorWrapper<Particle, true> &iter) {
-    auto [numOwned, numHalo] = iter.getNumParticlesDeleted();
-    _logicHandler->decreaseCounterNumParticlesOwned(numOwned);
-    _logicHandler->decreaseCounterNumParticlesHalo(numHalo);
-    // reset counters in the iterator if it is reused
-    iter.resetNumParticlesDeletedCounter();
-  }
+  void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) { _logicHandler->deleteParticle(iter); }
 
   /**
    * Function to iterate over all pairs of particles in the container.
