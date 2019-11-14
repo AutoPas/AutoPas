@@ -103,7 +103,7 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle, m
  protected:
   inline void deleteCurrentParticleImpl() override final {
     if constexpr (modifiable) {
-      _particleIterator->deleteCurrentParticle();
+      internal::deleteParticle(*_particleIterator);
     } else {
       utils::ExceptionHandler::exception("Error: Trying to delete a particle through a const iterator.");
     }

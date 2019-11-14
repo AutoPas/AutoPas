@@ -100,7 +100,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
   {
     ParticleIterator<Molecule, FMCell, true> iter(&data);
     for (; iter.isValid(); ++iter, ++numFoundParticles) {
-      iter.deleteCurrentParticle();
+      autopas::internal::deleteParticle(iter);
     }
   }
   ASSERT_EQ(numFoundParticles, 20);
@@ -229,7 +229,7 @@ TEST_F(ParticleIteratorTest, testRMMIterator_deletion) {
   {
     ParticleIterator<Particle, RMMParticleCell<Particle>, true> iter(&data);
     for (; iter.isValid(); ++iter, ++numFoundParticles) {
-      iter.deleteCurrentParticle();
+      autopas::internal::deleteParticle(iter);
     }
   }
   ASSERT_EQ(numFoundParticles, 20);

@@ -108,7 +108,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     // @todo: make this proper
     for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
       if (not iter->isOwned()) {
-        iter.deleteCurrentParticle();
+        internal::deleteParticle(iter);
       }
     }
   }
@@ -128,7 +128,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     for (auto iter = this->begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       if (not utils::inBox(iter->getR(), _boxMin, _boxMax)) {
         invalidParticles.push_back(*iter);
-        iter.deleteCurrentParticle();
+        internal::deleteParticle(iter);
       }
     }
 

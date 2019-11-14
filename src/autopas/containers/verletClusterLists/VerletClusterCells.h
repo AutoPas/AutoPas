@@ -204,7 +204,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     for (auto iter = begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
         outsideParticles.push_back(*iter);
-        iter.deleteCurrentParticle();
+        internal::deleteParticle(iter);
       }
     }
 
