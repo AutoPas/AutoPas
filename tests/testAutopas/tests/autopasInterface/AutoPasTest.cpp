@@ -241,22 +241,10 @@ TEST_F(AutoPasTest, getNumParticlesIteratorTest) {
     expectedParticles(numParticles + 1, 0);
   }
 
-  {
-    auto iter = autoPas.begin();
-    iter.deleteCurrentParticle();
-    ++iter;
-    --numParticles;
-    iter.deleteCurrentParticle();
-    ++iter;
-    --numParticles;
-    autoPas.accountForDeletedParticles(iter);
-    expectedParticles(numParticles, 0);
-  }
 
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-    iter.deleteCurrentParticle();
+    autoPas.deleteParticle(iter);
     --numParticles;
-    autoPas.accountForDeletedParticles(iter);
     expectedParticles(numParticles, 0);
   }
 }

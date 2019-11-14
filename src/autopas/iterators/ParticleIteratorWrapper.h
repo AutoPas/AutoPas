@@ -31,13 +31,6 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
  public:
   ParticleIteratorWrapper() : _particleIterator(nullptr) {}
 
-  virtual ~ParticleIteratorWrapper() {
-    if (numParticlesDeletedHalo != 0 or numParticlesDeletedOwned != 0) {
-      utils::ExceptionHandler::exception(
-          "ParticleIteratorWrapper: Iterator was used to delete particles but Autopas::accountForDeletedParticles() "
-          "was not called!");
-    }
-  }
   /**
    * Constructor of the ParticleIteratorWrapper
    * @param particleIteratorInterface
@@ -97,23 +90,9 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
    */
   bool operator!=(const bool &input) const { return not(*this == input); }
 
-  std::tuple<size_t, size_t> getNumParticlesDeleted() const {
-    return std::tie(numParticlesDeletedOwned, numParticlesDeletedHalo);
-  }
-
-  void resetNumParticlesDeletedCounter() {
-    numParticlesDeletedOwned = 0;
-    numParticlesDeletedHalo = 0;
-  }
-
  protected:
   inline void deleteCurrentParticleImpl() override final {
     if constexpr (modifiable) {
-      if (_particleIterator.get()->operator*().isOwned()) {
-        ++numParticlesDeletedOwned;
-      } else {
-        ++numParticlesDeletedHalo;
-      }
       _particleIterator->deleteCurrentParticle();
     } else {
       utils::ExceptionHandler::exception("Error: Trying to delete a particle through a const iterator.");
@@ -121,8 +100,6 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
   }
 
  private:
-  size_t numParticlesDeletedOwned{0ul};
-  size_t numParticlesDeletedHalo{0ul};
   std::unique_ptr<autopas::internal::ParticleIteratorInterfaceImpl<Particle, modifiable>> _particleIterator;
 };
 

@@ -120,6 +120,19 @@ class LogicHandler {
   }
 
   /**
+   * Deletes a single particle and updates internal particle counters.
+   * @param iter
+   */
+  void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) {
+    if ((*iter).isOwned()) {
+      _numParticlesOwned.fetch_sub(1, std::memory_order_relaxed);
+    } else {
+      _numParticlesHalo.fetch_sub(1, std::memory_order_relaxed);
+    }
+    iter.deleteCurrentParticle();
+  }
+
+  /**
    * @copydoc AutoPas::iteratePairwise()
    */
   template <class Functor>
@@ -184,22 +197,6 @@ class LogicHandler {
    * @return
    */
   unsigned long getNumParticlesHalo() const { return _numParticlesHalo; }
-
-  /**
-   * Atomically decrease the counted number of owned particles by n.
-   * @param n
-   */
-  void decreaseCounterNumParticlesOwned(const size_t n) {
-    _numParticlesOwned.fetch_sub(n, std::memory_order_relaxed);
-  }
-
-  /**
-   * Atomically decrease the counted number of halo particles by n.
-   * @param n
-   */
-  void decreaseCounterNumParticlesHalo(const size_t n) {
-    _numParticlesHalo.fetch_sub(n, std::memory_order_relaxed);
-  }
 
  private:
   void checkMinimalSize() {
