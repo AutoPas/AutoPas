@@ -173,7 +173,7 @@ class AutoPas {
 
   /**
    * Deletes the particle behind the current iterator position.
-   * @param iter
+   * @param iter Needs to be a modify-able iterator.
    */
   void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) { _logicHandler->deleteParticle(iter); }
 

@@ -83,7 +83,10 @@ class ParticleIteratorInterface {
  protected:
   /**
    * Deletes the current particle.
-   * @note Do NOT use this function from outside the autopas namespce. Use AutoPas::deleteParticle instead.
+   * @note Do NOT use this function from outside the autopas namespace. Use AutoPas::deleteParticle instead.
+   *
+   * @note From inside of autopas use internal::deleteParticle(iterator).
+   *
    * @note This function is disabled for const iterators.
    * @return void
    */
