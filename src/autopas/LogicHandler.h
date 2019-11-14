@@ -150,7 +150,7 @@ class LogicHandler {
   autopas::ParticleIteratorWrapper<Particle, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    return std::as_const(begin(behavior));
+    return std::as_const(_autoTuner).getContainer()->begin(behavior);
   }
 
   /**

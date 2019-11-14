@@ -235,16 +235,28 @@ TEST_F(AutoPasTest, getNumParticlesIteratorTest) {
 
   // add a particle in the domain -> owned
   int numParticles = 0;
-  for (; numParticles < 3; ++numParticles) {
+  for (; numParticles < 5; ++numParticles) {
     particle.setR({(double)numParticles, (double)numParticles, (double)numParticles});
     autoPas.addParticle(particle);
     expectedParticles(numParticles + 1, 0);
   }
 
-  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+  {
+    auto iter = autoPas.begin();
     iter.deleteCurrentParticle();
+    ++iter;
     --numParticles;
+    iter.deleteCurrentParticle();
+    ++iter;
+    --numParticles;
+    autoPas.accountForDeletedParticles(iter);
     expectedParticles(numParticles, 0);
   }
 
+  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+    iter.deleteCurrentParticle();
+    --numParticles;
+    autoPas.accountForDeletedParticles(iter);
+    expectedParticles(numParticles, 0);
+  }
 }

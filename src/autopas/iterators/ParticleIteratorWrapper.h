@@ -7,8 +7,8 @@
 #pragma once
 
 #include <memory>
-#include <autopas/LogicHandler.h>
 #include "autopas/iterators/ParticleIteratorInterface.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
@@ -31,6 +31,13 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
  public:
   ParticleIteratorWrapper() : _particleIterator(nullptr) {}
 
+  virtual ~ParticleIteratorWrapper() {
+    if (numParticlesDeletedHalo != 0 or numParticlesDeletedOwned != 0) {
+      utils::ExceptionHandler::exception(
+          "ParticleIteratorWrapper: Iterator was used to delete particles but Autopas::accountForDeletedParticles() "
+          "was not called!");
+    }
+  }
   /**
    * Constructor of the ParticleIteratorWrapper
    * @param particleIteratorInterface
@@ -90,13 +97,22 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
    */
   bool operator!=(const bool &input) const { return not(*this == input); }
 
+  std::tuple<size_t, size_t> getNumParticlesDeleted() const {
+    return std::tie(numParticlesDeletedOwned, numParticlesDeletedHalo);
+  }
+
+  void resetNumParticlesDeletedCounter() {
+    numParticlesDeletedOwned = 0;
+    numParticlesDeletedHalo = 0;
+  }
+
  protected:
   inline void deleteCurrentParticleImpl() override final {
     if constexpr (modifiable) {
-      if(_particleIterator.get()->operator*().isOwned()){
-        logicHandlerPtr->decreaseCounterNumParticlesOwned(1);
+      if (_particleIterator.get()->operator*().isOwned()) {
+        ++numParticlesDeletedOwned;
       } else {
-        logicHandlerPtr->decreaseCounterNumParticlesHalo(1);
+        ++numParticlesDeletedHalo;
       }
       _particleIterator->deleteCurrentParticle();
     } else {
@@ -105,7 +121,8 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
   }
 
  private:
-  LogicHandler *logicHandlerPtr;
+  size_t numParticlesDeletedOwned{0ul};
+  size_t numParticlesDeletedHalo{0ul};
   std::unique_ptr<autopas::internal::ParticleIteratorInterfaceImpl<Particle, modifiable>> _particleIterator;
 };
 
