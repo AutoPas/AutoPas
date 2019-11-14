@@ -241,7 +241,6 @@ TEST_F(AutoPasTest, getNumParticlesIteratorTest) {
     expectedParticles(numParticles + 1, 0);
   }
 
-
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     autoPas.deleteParticle(iter);
     --numParticles;

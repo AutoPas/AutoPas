@@ -171,9 +171,7 @@ class AutoPas {
    */
   void deleteAllParticles() { _logicHandler->deleteAllParticles(); }
 
-  void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) {
-    _logicHandler->deleteParticle(iter);
-  }
+  void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) { _logicHandler->deleteParticle(iter); }
 
   /**
    * When using an iterator to delete particles the internal logic handler needs to be notified.
