@@ -36,7 +36,7 @@ class NumberSetFinite : public NumberSet<Number> {
 
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberSetFinite>(*this); }
 
-  operator std::string() const override { return "{" + utils::ArrayUtils::to_string(_set) + "}"; }
+  std::string to_string() const override { return "{" + utils::ArrayUtils::to_string(_set) + "}"; }
 
   inline bool isEmpty() const override { return _set.empty(); }
   inline bool isFinite() const override { return true; }

@@ -40,7 +40,7 @@ class NumberInterval : public NumberSet<Number> {
 
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberInterval>(*this); }
 
-  operator std::string() const override {
+  std::string to_string() const override {
     std::ostringstream ss;
     ss << "[" << _min << ", " << _max << "]";
     return ss.str();

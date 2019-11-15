@@ -33,7 +33,18 @@ class NumberSet {
    * Get a string representation of the set
    * @return string representation
    */
-  virtual operator std::string() const = 0;
+  virtual std::string to_string() const = 0;
+
+  /**
+   * Stream operator.
+   * @param os
+   * @param numberSet
+   * @return
+   */
+  friend std::ostream &operator<<(std::ostream &os, const NumberSet &numberSet) {
+    os << numberSet.to_string();
+    return os;
+  }
 
   /**
    * Indicates if the set is empty.
