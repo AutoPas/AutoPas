@@ -7,111 +7,89 @@
 #include "MDFlexConfig.h"
 #include "autopas/utils/StringUtils.h"
 
-void MDFlexConfig::print() {
+std::string MDFlexConfig::to_string() const {
   using namespace std;
-  cout << setw(valueOffset) << left << "Container"
-       << ":  " << autopas::utils::StringUtils::iterableToString(containerOptions) << endl;
+  ostringstream os;
+
+  os << setw(valueOffset) << left << containerOptionsStr << ":  "
+     << autopas::utils::StringUtils::iterableToString(containerOptions) << endl;
 
   // if verlet lists are in the container options print verlet config data
   if (autopas::utils::StringUtils::iterableToString(containerOptions).find("erlet") != std::string::npos) {
-    cout << setw(valueOffset) << left << "Verlet rebuild frequency"
-         << ":  " << verletRebuildFrequency << endl;
+    os << setw(valueOffset) << left << verletRebuildFrequencyStr << ":  " << verletRebuildFrequency << endl;
 
-    cout << setw(valueOffset) << left << "Verlet skin radius"
-         << ":  " << verletSkinRadius << endl;
+    os << setw(valueOffset) << left << verletSkinRadiusStr << ":  " << verletSkinRadius << endl;
   }
 
   if (containerOptions.size() > 1 or traversalOptions.size() > 1 or dataLayoutOptions.size() > 1) {
-    cout << setw(valueOffset) << left << "Selector Strategy"
-         << ":  " << selectorStrategy << endl;
+    os << setw(valueOffset) << left << selectorStrategyStr << ":  " << selectorStrategy << endl;
   }
 
-  cout << setw(valueOffset) << left << "Data Layout"
-       << ":  " << autopas::utils::StringUtils::iterableToString(dataLayoutOptions) << endl;
-  cout << setw(valueOffset) << left << "Allowed traversals"
-       << ":  " << autopas::utils::StringUtils::iterableToString(traversalOptions) << endl;
-  cout << setw(valueOffset) << left << "Tuning Strategy"
-       << ":  " << tuningStrategyOption << endl;
-  cout << setw(valueOffset) << left << "Tuning Interval"
-       << ":  " << tuningInterval << endl;
-  cout << setw(valueOffset) << left << "Tuning Samples"
-       << ":  " << tuningSamples << endl;
-  cout << setw(valueOffset) << left << "Tuning Max evidence"
-       << ":  " << tuningMaxEvidence << endl;
-  cout << setw(valueOffset) << left << "Functor"
-       << ":  ";
+  os << setw(valueOffset) << left << dataLayoutOptionsStr << ":  "
+     << autopas::utils::StringUtils::iterableToString(dataLayoutOptions) << endl;
+  os << setw(valueOffset) << left << traversalOptionsStr << ":  "
+     << autopas::utils::StringUtils::iterableToString(traversalOptions) << endl;
+  os << setw(valueOffset) << left << tuningStrategyOptionsStr << ":  " << tuningStrategyOption << endl;
+  os << setw(valueOffset) << left << tuningIntervalStr << ":  " << tuningInterval << endl;
+  os << setw(valueOffset) << left << tuningSamplesStr << ":  " << tuningSamples << endl;
+  os << setw(valueOffset) << left << tuningMaxEvidenceStr << ":  " << tuningMaxEvidence << endl;
+  os << setw(valueOffset) << left << functorOptionStr << ":  ";
   switch (functorOption) {
     case FunctorOption::lj12_6: {
-      cout << "Lennard-Jones (12-6)" << endl;
+      os << "Lennard-Jones (12-6)" << endl;
       break;
     }
     case FunctorOption::lj12_6_AVX: {
-      cout << "Lennard-Jones (12-6) AVX intrinsics" << endl;
+      os << "Lennard-Jones (12-6) AVX intrinsics" << endl;
       break;
     }
     case FunctorOption::lj12_6_Globals: {
-      cout << "Lennard-Jones (12-6) with globals" << endl;
+      os << "Lennard-Jones (12-6) with globals" << endl;
       break;
     }
   }
-  cout << setw(valueOffset) << left << "Newton3"
-       << ":  " << autopas::utils::StringUtils::iterableToString(newton3Options) << endl;
+  os << setw(valueOffset) << left << newton3OptionsStr << ":  "
+     << autopas::utils::StringUtils::iterableToString(newton3Options) << endl;
 
-  cout << setw(valueOffset) << left << "Cutoff radius"
-       << ":  " << cutoff << endl;
-  cout << setw(valueOffset) << left << "boxMin"
-       << ":  " << autopas::utils::ArrayUtils::to_string(boxMin) << endl;
-  cout << setw(valueOffset) << left << "boxMax"
-       << ":  " << autopas::utils::ArrayUtils::to_string(boxMax) << endl;
-  cout << setw(valueOffset) << left << "Cell size factor"
-       << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
-  cout << setw(valueOffset) << left << "deltaT"
-       << ":  " << deltaT << endl;
-  cout << setw(valueOffset) << left << "Iterations"  // iterations * deltaT = time_end;
-       << ":  " << iterations << endl;
-  cout << setw(valueOffset) << left << "periodic boundaries"
-       << ":  " << periodic << endl
-       << endl;
+  os << setw(valueOffset) << left << cutoffStr << ":  " << cutoff << endl;
+  os << setw(valueOffset) << left << boxMinStr << ":  " << autopas::utils::ArrayUtils::to_string(boxMin) << endl;
+  os << setw(valueOffset) << left << boxMaxStr << ":  " << autopas::utils::ArrayUtils::to_string(boxMax) << endl;
+  os << setw(valueOffset) << left << cellSizeFactorsStr << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
+  os << setw(valueOffset) << left << deltaTStr << ":  " << deltaT << endl;
+  os << setw(valueOffset) << left << iterationsStr << ":  " << iterations << endl;
+  os << setw(valueOffset) << left << periodicStr << ":  " << periodic << endl << endl;
 
-  cout << setw(valueOffset) << left << "Object Generation:" << endl;
-  int objectId = 1;
-  for (auto c : cubeGridObjects) {
-    cout << "-Cube Grid Nr " << objectId << ":  " << endl;
-    cout << c << endl;
-    objectId++;
-  }
-  objectId = 1;
-  for (auto c : cubeGaussObjects) {
-    cout << "-Cube Gauss Nr" << objectId << ":  " << endl;
-    cout << c << endl;
-    objectId++;
-  }
-  objectId = 1;
-  for (auto c : cubeUniformObjects) {
-    cout << "-Cube Uniform Nr " << objectId << ":  " << endl;
-    cout << c << endl;
-    objectId++;
-  }
-  objectId = 1;
-  for (auto c : sphereObjects) {
-    cout << "-Sphere Nr " << objectId << ":  " << endl;
-    cout << c << endl;
-    objectId++;
-  }
+  os << setw(valueOffset) << left << "Objects:" << endl;
+
+  auto printObjectCollection = [](auto objectCollection, auto name, auto &os) {
+    int objectId = 0;
+    for (auto object : objectCollection) {
+      os << "  " << name << ":" << endl;
+      os << "    " << objectId << ":  " << endl;
+      auto objectStr = object.to_string();
+      // indent all lines of object
+      objectStr = std::regex_replace(objectStr, std::regex("(^|\n)(.)"), "$1      $2");
+      os << objectStr << endl;
+      objectId++;
+    }
+  };
+
+  printObjectCollection(cubeGridObjects, cubeGridObjectsStr, os);
+  printObjectCollection(cubeGaussObjects, cubeGaussObjectsStr, os);
+  printObjectCollection(cubeUniformObjects, cubeUniformObjectsStr, os);
+  printObjectCollection(sphereObjects, sphereObjectsStr, os);
+
   if (useThermostat) {
-    cout << setw(valueOffset) << left << "Thermostat:" << endl;
-    cout << setw(valueOffset) << left << "initializing velocites"
-         << ":  " << initTemperature << endl;
-    //@todo print usage of eather maxwellB or BM during initialization(after adding parsing options)
-    cout << setw(valueOffset) << left << "initial Temperature"
-         << ":  " << initTemperature << endl;
-    cout << setw(valueOffset) << left << "number of TimeSteps"
-         << ":  " << thermostatInterval << endl;
-    cout << setw(valueOffset) << left << "target Temperature"
-         << ":  " << targetTemperature << endl;
-    cout << setw(valueOffset) << left << "deltaTemp"
-         << ":  " << deltaTemp << endl;
+    os << setw(valueOffset) << left << thermostatStr << endl;
+    os << setw(valueOffset) << left << initTemperatureStr << ":  " << initTemperature << endl;
+    os << setw(valueOffset) << left << targetTemperatureStr << ":  " << targetTemperature << endl;
+    os << setw(valueOffset) << left << deltaTempStr << ":  " << deltaTemp << endl;
+    os << setw(valueOffset) << left << thermostatIntervalStr << ":  " << thermostatInterval << endl;
+    os << setw(valueOffset) << left << useCurrentTempForBrownianMotionStr << ":  " << useCurrentTempForBrownianMotion
+       << endl;
   }
+
+  return os.str();
 }
 
 void MDFlexConfig::calcSimulationBox() {

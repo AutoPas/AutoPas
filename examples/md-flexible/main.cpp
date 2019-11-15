@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
   // make sure sim box is big enough
   config.calcSimulationBox();
 
-  config.print();
+  std::cout << config;
 
   // Initialization
   simulation.initialize(config);
@@ -36,6 +36,10 @@ int main(int argc, char **argv) {
   std::cout << "Simulation done!" << std::endl << std::endl;
 
   simulation.printStatistics();
+
+  std::ofstream configFileEnd("MDFlex_end.yaml");
+  configFileEnd << config;
+  configFileEnd.close();
 
   return EXIT_SUCCESS;
 }

@@ -93,5 +93,6 @@ class Object {
   double _sigma;
   double _mass;
 
-  static constexpr size_t _valueOffset = 32;
+  // valueOffset of MDFlexConfig - expected indent
+  static constexpr size_t _valueOffset = 32 - 6;
 };

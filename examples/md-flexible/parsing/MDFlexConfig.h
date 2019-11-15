@@ -28,9 +28,9 @@
 class MDFlexConfig {
  public:
   /**
-   * Print the content of the config to std::out.
+   * Convert the content of the config to a string representation.
    */
-  void print();
+  std::string to_string() const;
 
   /**
    * Checks parsed Objects and determines the necessary size of the simulation box.
@@ -177,3 +177,11 @@ class MDFlexConfig {
   // used for cli-output alignment
   static constexpr size_t valueOffset{32};
 };
+
+/**
+ * Stream insertion operator for MDFlexConfig.
+ * @param os
+ * @param config
+ * @return
+ */
+inline std::ostream &operator<<(std::ostream &os, const MDFlexConfig &config) { return os << config.to_string(); }
