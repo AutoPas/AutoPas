@@ -13,6 +13,8 @@
 #include <vector>
 
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/NumberSetFinite.h"
+#include "autopas/utils/NumberInterval.h"
 
 namespace autopas::utils::StringUtils {
 
