@@ -185,38 +185,49 @@ inline bool parseBoolOption(const std::string &booleanOption) {
  * @return Set of doubles. If no valid double was found the empty set is returned.
  */
 inline std::set<double> parseDoubles(const std::string &doubleString) {
-  auto words = tokenize(doubleString, delimiters);
-
   std::set<double> doubles;
 
-  for (auto &word : words) {
+  // a double consists of some integers, maybe a dot and maybe more numbers
+  std::regex regex_double {R"([0-9]+\.?[0-9]*)"};
+
+  // use regex iter to find all doubles in the string.
+  for (auto number = std::sregex_iterator(doubleString.begin(), doubleString.end(), regex_double); number != std::sregex_iterator(); ++number) {
     try {
-      double value = stod(word);
+      double value = stod(number->str());
       doubles.insert(value);
     } catch (const std::exception &) {
-      autopas::utils::ExceptionHandler::exception("Failed to parse a double from: {}", word);
+      autopas::utils::ExceptionHandler::exception("Failed to parse a double from: {}", number->str());
     }
   }
+
   return doubles;
 }
 
 /**
  * Converts a string to a NumberSet<double>.
+ *
+ * @note Formats:
+ * NumberSetFinite [x,y,z]
+ * NumberInterval x-y
+ *
  * @param setString String containing the set.
  * @return NumberSet<double>. If no valid double was found the empty set is returned.
  */
 inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::string &setString) {
-  // try to match an interval [x,y]
+  // try to match an interval x-y
   std::regex rgx(
-      "\\["         // open square bracket
-      "([^,]++)"    // any number of non-comma chars (1st Capturing Group)
-      ","           // comma
-      "([^\\]]++)"  // any number of non-closing-bracket chars (2nd Capturing Group)
-      "\\]"         // closing square bracket
+      "([0-9]+"          // at least one int (start of 1. capture)
+      "\\.?"                // maybe a dot
+      "[0-9]*)"             // maybe more integers (end of 2. capture)
+      "\\s*"                // maybe whitespaces
+      "-"                   // a dash
+      "\\s*"                // maybe more whitespaces
+      "([0-9]+\\.?[0-9]*)"  // the second float (2. capture)
   );
   std::smatch matches;
   if (std::regex_match(setString, matches, rgx)) {
     try {
+      // matchers has whole string as str(0) so start at 1
       double min = stod(matches.str(1));
       double max = stod(matches.str(2));
       return std::make_unique<autopas::NumberInterval<double>>(min, max);

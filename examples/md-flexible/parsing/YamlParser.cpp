@@ -5,6 +5,7 @@
  */
 
 #include "YamlParser.h"
+#include <ostream>
 #include <sys/stat.h>
 
 namespace YamlParser {
@@ -49,8 +50,17 @@ bool parseYamlFile(MDFlexConfig &config) {
     config.cutoff = node[MDFlexConfig::cutoffStr].as<double>();
   }
   if (node[MDFlexConfig::cellSizeFactorsStr]) {
-    config.cellSizeFactors =
-        autopas::utils::StringUtils::parseNumberSet(node[MDFlexConfig::cellSizeFactorsStr].as<std::string>());
+    auto myNode = node[MDFlexConfig::cellSizeFactorsStr];
+
+    if (myNode.size() > 1){
+      std::ostringstream os;
+      for (const auto &s : myNode) {
+        os << s << ",";
+      }
+      config.cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(os.str());
+    } else {
+      config.cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(myNode.Scalar());
+    }
   }
   if (node[MDFlexConfig::dataLayoutOptionsStr]) {
     config.dataLayoutOptions =

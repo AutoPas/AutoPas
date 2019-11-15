@@ -42,7 +42,7 @@ class NumberInterval : public NumberSet<Number> {
 
   std::string to_string() const override {
     std::ostringstream ss;
-    ss << "[" << _min << ", " << _max << "]";
+    ss << _min << "-" << _max;
     return ss.str();
   }
 
