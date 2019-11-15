@@ -51,7 +51,7 @@ class Simulation {
 
     std::string fileBaseName = _config->vtkFileName;
     // only count number of owned particles here
-    const auto numParticles = this->_autopas.getNumberOfParticles();
+    const auto numParticles = this->_autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly);
     std::ostringstream strstr;
     auto maxNumDigits = std::to_string(_config->iterations).length();
     strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtk";
@@ -413,7 +413,8 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
 
   cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / numIterations, digitsTimeTotalMuS,
                         durationTotal);
-  auto mfups = _autopas.getNumberOfParticles() * numIterations / durationSimulateSec * 1e-6;
+  auto mfups = _autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) * numIterations /
+               _timers.forceUpdateTotal.getTotalTime() * 1e-6;
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (_config->measureFlops) {
