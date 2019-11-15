@@ -71,7 +71,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         if (parsedOptions.size() != 1) {
           cerr << "Pass exactly one tuning acquisition function." << endl
                << "Passed: " << strArg << endl
-               << "Parsed: " << autopas::utils::StringUtils::iterableToString(parsedOptions) << endl;
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
           displayHelp = true;
         }
         config.acquisitionFunctionOption = *parsedOptions.begin();
@@ -350,7 +350,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         if (parsedOptions.size() != 1) {
           cerr << "Pass exactly one tuning strategy option." << endl
                << "Passed: " << strArg << endl
-               << "Parsed: " << autopas::utils::StringUtils::iterableToString(parsedOptions) << endl;
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
           displayHelp = true;
         }
         config.tuningStrategyOption = *parsedOptions.begin();
@@ -387,7 +387,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         if (parsedOptions.size() != 1) {
           cerr << "Pass exactly one selector strategy option." << endl
                << "Passed: " << strArg << endl
-               << "Parsed: " << autopas::utils::StringUtils::iterableToString(parsedOptions) << endl;
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
           displayHelp = true;
         }
         config.selectorStrategy = *parsedOptions.begin();

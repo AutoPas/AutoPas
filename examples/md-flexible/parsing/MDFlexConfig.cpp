@@ -12,10 +12,10 @@ std::string MDFlexConfig::to_string() const {
   ostringstream os;
 
   os << setw(valueOffset) << left << containerOptionsStr << ":  "
-     << autopas::utils::StringUtils::iterableToString(containerOptions) << endl;
+     << autopas::utils::ArrayUtils::to_string(containerOptions) << endl;
 
   // if verlet lists are in the container options print verlet config data
-  if (autopas::utils::StringUtils::iterableToString(containerOptions).find("erlet") != std::string::npos) {
+  if (autopas::utils::ArrayUtils::to_string(containerOptions).find("erlet") != std::string::npos) {
     os << setw(valueOffset) << left << verletRebuildFrequencyStr << ":  " << verletRebuildFrequency << endl;
 
     os << setw(valueOffset) << left << verletSkinRadiusStr << ":  " << verletSkinRadius << endl;
@@ -26,9 +26,9 @@ std::string MDFlexConfig::to_string() const {
   }
 
   os << setw(valueOffset) << left << dataLayoutOptionsStr << ":  "
-     << autopas::utils::StringUtils::iterableToString(dataLayoutOptions) << endl;
+     << autopas::utils::ArrayUtils::to_string(dataLayoutOptions) << endl;
   os << setw(valueOffset) << left << traversalOptionsStr << ":  "
-     << autopas::utils::StringUtils::iterableToString(traversalOptions) << endl;
+     << autopas::utils::ArrayUtils::to_string(traversalOptions) << endl;
   os << setw(valueOffset) << left << tuningStrategyOptionsStr << ":  " << tuningStrategyOption << endl;
   os << setw(valueOffset) << left << tuningIntervalStr << ":  " << tuningInterval << endl;
   os << setw(valueOffset) << left << tuningSamplesStr << ":  " << tuningSamples << endl;
@@ -48,13 +48,14 @@ std::string MDFlexConfig::to_string() const {
       break;
     }
   }
-  os << setw(valueOffset) << left << newton3OptionsStr << ":  "
-     << autopas::utils::StringUtils::iterableToString(newton3Options) << endl;
+  os << setw(valueOffset) << left << newton3OptionsStr << ":  " << autopas::utils::ArrayUtils::to_string(newton3Options)
+     << endl;
 
   os << setw(valueOffset) << left << cutoffStr << ":  " << cutoff << endl;
   os << setw(valueOffset) << left << boxMinStr << ":  " << autopas::utils::ArrayUtils::to_string(boxMin) << endl;
   os << setw(valueOffset) << left << boxMaxStr << ":  " << autopas::utils::ArrayUtils::to_string(boxMax) << endl;
-  os << setw(valueOffset) << left << cellSizeFactorsStr << ":  " << static_cast<std::string>(*cellSizeFactors) << endl;
+  os << setw(valueOffset) << left << cellSizeFactorsStr << ":  "
+     << "\"" << static_cast<std::string>(*cellSizeFactors) << "\"" << endl;
   os << setw(valueOffset) << left << deltaTStr << ":  " << deltaT << endl;
   os << setw(valueOffset) << left << iterationsStr << ":  " << iterations << endl;
   os << setw(valueOffset) << left << periodicStr << ":  " << periodic << endl << endl;
