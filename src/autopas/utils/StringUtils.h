@@ -236,10 +236,11 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::str
 template <class T>
 inline std::string iterableToString(T arr) {
   std::ostringstream ss;
+  ss << "[";
   for (const auto &a : arr) {
     ss << a << ", ";
   }
   auto str = ss.str();
-  return str.length() > 2 ? str.substr(0, str.length() - 2) : str;
+  return str.length() > 2 ? str.substr(0, str.length() - 2) +"]" : "[]";
 }
 }  // namespace autopas::utils::StringUtils
