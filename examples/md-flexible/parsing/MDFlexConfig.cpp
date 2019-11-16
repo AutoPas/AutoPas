@@ -58,7 +58,7 @@ std::string MDFlexConfig::to_string() const {
      << "\"" << *cellSizeFactors << "\"" << endl;
   os << setw(valueOffset) << left << deltaTStr << ":  " << deltaT << endl;
   os << setw(valueOffset) << left << iterationsStr << ":  " << iterations << endl;
-  os << setw(valueOffset) << left << periodicStr << ":  " << periodic << endl << endl;
+  os << setw(valueOffset) << left << boolalpha << periodicStr << ":  " << periodic << endl << endl;
 
   os << setw(valueOffset) << left << "Objects:" << endl;
 
@@ -81,7 +81,7 @@ std::string MDFlexConfig::to_string() const {
   printObjectCollection(sphereObjects, sphereObjectsStr, os);
 
   if (useThermostat) {
-    os << setw(valueOffset) << left << thermostatStr << endl;
+    os << setw(valueOffset) << left << boolalpha << thermostatStr << endl;
     os << setw(valueOffset) << left << initTemperatureStr << ":  " << initTemperature << endl;
     os << setw(valueOffset) << left << targetTemperatureStr << ":  " << targetTemperature << endl;
     os << setw(valueOffset) << left << deltaTempStr << ":  " << deltaTemp << endl;
