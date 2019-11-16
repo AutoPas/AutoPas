@@ -18,9 +18,7 @@ TEST(StringUtilsTest, parseNumberSetTest) {
 
   auto numberSet = autopas::utils::StringUtils::parseNumberSet("[1.,2e1]");
   auto *numberInterval = dynamic_cast<autopas::NumberInterval<double> *>(numberSet.get());
-  EXPECT_NE(numberInterval, nullptr);
-  if (numberInterval) {
-    EXPECT_EQ(numberInterval->getMin(), 1.);
-    EXPECT_EQ(numberInterval->getMax(), 2e1);
-  }
+  ASSERT_NE(numberInterval, nullptr);
+  EXPECT_EQ(numberInterval->getMin(), 1.);
+  EXPECT_EQ(numberInterval->getMax(), 2e1);
 }
