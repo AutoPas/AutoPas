@@ -67,15 +67,15 @@ class Object {
    */
   virtual std::string to_string() const {
     std::ostringstream output;
-    output << std::setw(_valueOffset) << std::left << "Initial velocities"
+    output << std::setw(_valueOffset) << std::left << "velocity"
            << ":  " << autopas::utils::ArrayUtils::to_string(_velocity) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "TypeID"
+    output << std::setw(_valueOffset) << std::left << "particle-type"
            << ":  " << _typeId << std::endl;
-    output << std::setw(_valueOffset) << std::left << "Epsilon"
+    output << std::setw(_valueOffset) << std::left << "particle-epsilon"
            << ":  " << _epsilon << std::endl;
-    output << std::setw(_valueOffset) << std::left << "Sigma"
+    output << std::setw(_valueOffset) << std::left << "particle-sigma"
            << ":  " << _sigma << std::endl;
-    output << std::setw(_valueOffset) << std::left << "Mass"
+    output << std::setw(_valueOffset) << std::left << "particle-mass"
            << ":  " << _mass << std::endl
            << std::endl;
     return output.str();

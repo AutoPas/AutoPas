@@ -64,14 +64,16 @@ class CubeGauss : public Object {
   std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(_valueOffset) << std::left << "Distribution-Mean"
+    output << std::setw(_valueOffset) << std::left << "distribution-mean"
            << ":  " << autopas::utils::ArrayUtils::to_string(distributionMean) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "Distribution-StdDev"
+    output << std::setw(_valueOffset) << std::left << "distribution-stddeviation"
            << ":  " << autopas::utils::ArrayUtils::to_string(distributionStdDev) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "NumberOfParticles"
+    output << std::setw(_valueOffset) << std::left << "numberOfParticles"
            << ":  " << numParticles << std::endl;
-    output << std::setw(_valueOffset) << std::left << "BoxLength"
+    output << std::setw(_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(boxLength) << std::endl;
+    output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
+           << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
   }

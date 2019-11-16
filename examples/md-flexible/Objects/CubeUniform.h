@@ -45,12 +45,12 @@ class CubeUniform : public Object {
   std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(_valueOffset) << std::left << "Center"
-           << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "NumberOfParticles"
+    output << std::setw(_valueOffset) << std::left << "numberOfParticles"
            << ":  " << numParticles << std::endl;
-    output << std::setw(_valueOffset) << std::left << "BoxLength"
+    output << std::setw(_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(boxLength) << std::endl;
+    output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
+           << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
   }

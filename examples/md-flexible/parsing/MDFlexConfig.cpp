@@ -54,8 +54,7 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << left << cutoffStr << ":  " << cutoff << endl;
   os << setw(valueOffset) << left << boxMinStr << ":  " << autopas::utils::ArrayUtils::to_string(boxMin) << endl;
   os << setw(valueOffset) << left << boxMaxStr << ":  " << autopas::utils::ArrayUtils::to_string(boxMax) << endl;
-  os << setw(valueOffset) << left << cellSizeFactorsStr << ":  "
-     << "\"" << *cellSizeFactors << "\"" << endl;
+  os << setw(valueOffset) << left << cellSizeFactorsStr << ":  " << *cellSizeFactors  << endl;
   os << setw(valueOffset) << left << deltaTStr << ":  " << deltaT << endl;
   os << setw(valueOffset) << left << iterationsStr << ":  " << iterations << endl;
   os << setw(valueOffset) << left << boolalpha << periodicStr << ":  " << periodic << endl << endl;

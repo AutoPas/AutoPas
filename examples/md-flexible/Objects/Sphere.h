@@ -116,13 +116,13 @@ class Sphere : public Object {
   std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(_valueOffset) << std::left << "Center of Sphere"
+    output << std::setw(_valueOffset) << std::left << "center"
            << ":  " << autopas::utils::ArrayUtils::to_string(center) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "radius in Particles"
+    output << std::setw(_valueOffset) << std::left << "radius"
            << ":  " << radius << std::endl;
-    output << std::setw(_valueOffset) << std::left << "particleSpacing"
+    output << std::setw(_valueOffset) << std::left << "particle-spacing"
            << ":  " << particleSpacing << std::endl;
-    output << std::setw(_valueOffset) << std::left << "NumberOfParticles"
+    output << std::setw(_valueOffset) << std::left << "numberOfParticles"
            << ":  " << this->getParticlesTotal() << std::endl;
     output << Object::to_string();
     return output.str();

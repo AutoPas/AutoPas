@@ -66,12 +66,12 @@ class CubeGrid : public Object {
   std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(_valueOffset) << std::left << "Particles per dimension"
+    output << std::setw(_valueOffset) << std::left << "particles-per-dimension"
            << ":  " << autopas::utils::ArrayUtils::to_string(particlesPerDim) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "Particle spacing"
+    output << std::setw(_valueOffset) << std::left << "particle-spacing"
            << ":  " << particleSpacing << std::endl;
-    output << std::setw(_valueOffset) << std::left << "Number of Particles"
-           << ":  " << (particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]) << std::endl;
+    output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
+           << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
   }
