@@ -13,7 +13,7 @@ namespace autopas {
 /**
  * Class describing a finite set of numbers
  */
-template<class Number>
+template <class Number>
 class NumberSetFinite : public NumberSet<Number> {
  private:
   std::set<Number> _set;
@@ -50,4 +50,4 @@ class NumberSetFinite : public NumberSet<Number> {
   inline Number getRandom(Random &rng) const override { return rng.pickRandom(_set); }
   std::vector<Number> uniformSample(size_t n, Random &rng) const override { return rng.uniformSample(_set, n); }
 };
-}
+}  // namespace autopas

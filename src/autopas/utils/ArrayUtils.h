@@ -37,7 +37,8 @@ template <class output_t, class input_t, std::size_t SIZE>
  * @return String representation of a.
  */
 template <class T>
-[[nodiscard]] std::string to_string(T &&a, const std::string &delimiter = ", ", const std::array<std::string, 2> &surround = {"[", "]"}) {
+[[nodiscard]] std::string to_string(T &&a, const std::string &delimiter = ", ",
+                                    const std::array<std::string, 2> &surround = {"[", "]"}) {
   auto it = std::cbegin(a);
   const auto end = std::cend(a);
   if (it == end) {
