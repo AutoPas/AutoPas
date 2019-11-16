@@ -9,10 +9,36 @@
 #include <ostream>
 
 namespace YamlParser {
+// anonymous namespace to hide helper function
 namespace {
+
+/**
+ * Checks if a file with the given path exists.
+ * @param filename
+ * @return True iff the file exists.
+ */
 bool checkFileExists(const std::string &filename) {
   struct stat buffer;
   return (stat(filename.c_str(), &buffer) == 0);
+}
+
+/**
+ * Converts a node that potentially contains a series to a string.
+ * @param node
+ * @return String representation with ", " as delimiter.
+ */
+std::string seriesNodeToString(const YAML::Node &node) {
+  if (node.size() > 1) {
+    std::ostringstream os;
+    for (const auto &n : node) {
+      os << n << ",";
+    }
+    return os.str();
+  } else {
+    node.Scalar();
+  }
+
+  return "";
 }
 }  // namespace
 
@@ -24,8 +50,7 @@ bool parseYamlFile(MDFlexConfig &config) {
   YAML::Node node = YAML::LoadFile(config.yamlFilename);
 
   if (node[MDFlexConfig::containerOptionsStr]) {
-    config.containerOptions =
-        autopas::ContainerOption::parseOptions(node[MDFlexConfig::containerOptionsStr].as<std::string>());
+    config.containerOptions = autopas::ContainerOption::parseOptions(seriesNodeToString(node[MDFlexConfig::containerOptionsStr]));
   }
   if (node[MDFlexConfig::boxMinStr]) {
     auto tmpNode = node[MDFlexConfig::boxMinStr];
@@ -50,21 +75,11 @@ bool parseYamlFile(MDFlexConfig &config) {
     config.cutoff = node[MDFlexConfig::cutoffStr].as<double>();
   }
   if (node[MDFlexConfig::cellSizeFactorsStr]) {
-    auto myNode = node[MDFlexConfig::cellSizeFactorsStr];
-
-    if (myNode.size() > 1) {
-      std::ostringstream os;
-      for (const auto &s : myNode) {
-        os << s << ",";
-      }
-      config.cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(os.str());
-    } else {
-      config.cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(myNode.Scalar());
-    }
+    config.cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(seriesNodeToString(node[MDFlexConfig::cellSizeFactorsStr]));
   }
   if (node[MDFlexConfig::dataLayoutOptionsStr]) {
     config.dataLayoutOptions =
-        autopas::DataLayoutOption::parseOptions(node[MDFlexConfig::dataLayoutOptionsStr].as<std::string>());
+        autopas::DataLayoutOption::parseOptions(seriesNodeToString(node[MDFlexConfig::dataLayoutOptionsStr]));
   }
   if (node[MDFlexConfig::functorOptionStr]) {
     auto strArg = node[MDFlexConfig::functorOptionStr].as<std::string>();
@@ -84,14 +99,14 @@ bool parseYamlFile(MDFlexConfig &config) {
   }
   if (node[MDFlexConfig::newton3OptionsStr]) {
     config.newton3Options =
-        autopas::Newton3Option::parseOptions(node[MDFlexConfig::newton3OptionsStr].as<std::string>());
+        autopas::Newton3Option::parseOptions(seriesNodeToString(node[MDFlexConfig::newton3OptionsStr]));
   }
   if (node[MDFlexConfig::deltaTStr]) {
     config.deltaT = node[MDFlexConfig::deltaTStr].as<double>();
   }
   if (node[MDFlexConfig::traversalOptionsStr]) {
     config.traversalOptions =
-        autopas::TraversalOption::parseOptions(node[MDFlexConfig::traversalOptionsStr].as<std::string>());
+        autopas::TraversalOption::parseOptions(seriesNodeToString(node[MDFlexConfig::traversalOptionsStr]));
   }
   if (node[MDFlexConfig::tuningIntervalStr]) {
     config.tuningInterval = node[MDFlexConfig::tuningIntervalStr].as<unsigned int>();
@@ -287,4 +302,5 @@ bool parseYamlFile(MDFlexConfig &config) {
   }
   return true;
 }
+
 }  // namespace YamlParser
