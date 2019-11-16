@@ -116,6 +116,20 @@ constexpr char delimitersRgx[] = "[\\s,;|/]";
 constexpr char delimitersRgxInv[] = "[^\\s,;|/]";
 
 /**
+ *  Regex for a double e.g. 1 | 1.2 | 1.2e-3
+ */
+static const std::string  regexDoubleStr {
+                                      "[0-9]+"  // at least one int
+                                      "\\.?"    // maybe a dot
+                                      "[0-9]*"  // maybe more integers after the dot
+                                      "(?:"     // start of non-capturing group for exp
+                                      "e"       // exponent
+                                      "-?"      // optional minus
+                                      "[0-9]+"  // at least one int
+                                      ")?"      // end of group, group is optional
+};
+
+/**
  * Splits a string by multiple delimiters.
  * @param searchString
  * @param delimiters
@@ -187,11 +201,10 @@ inline bool parseBoolOption(const std::string &booleanOption) {
 inline std::set<double> parseDoubles(const std::string &doubleString) {
   std::set<double> doubles;
 
-  // a double consists of some integers, maybe a dot and maybe more numbers
-  std::regex regex_double {R"([0-9]+\.?[0-9]*)"};
+  std::regex regexDouble(regexDoubleStr);
 
   // use regex iter to find all doubles in the string.
-  for (auto number = std::sregex_iterator(doubleString.begin(), doubleString.end(), regex_double); number != std::sregex_iterator(); ++number) {
+  for (auto number = std::sregex_iterator(doubleString.begin(), doubleString.end(), regexDouble); number != std::sregex_iterator(); ++number) {
     try {
       double value = stod(number->str());
       doubles.insert(value);
@@ -215,17 +228,19 @@ inline std::set<double> parseDoubles(const std::string &doubleString) {
  */
 inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::string &setString) {
   // try to match an interval x-y
-  std::regex rgx(
-      "([0-9]+"          // at least one int (start of 1. capture)
-      "\\.?"                // maybe a dot
-      "[0-9]*)"             // maybe more integers (end of 2. capture)
-      "\\s*"                // maybe whitespaces
-      "-"                   // a dash
-      "\\s*"                // maybe more whitespaces
-      "([0-9]+\\.?[0-9]*)"  // the second float (2. capture)
+  std::regex regexInterval(
+      "("                           // start of 1. capture
+      + regexDoubleStr +              // a double
+      ")"                             // end of 1. capture
+      "\\s*"                          // maybe whitespaces
+      "-"                             // a dash
+      "\\s*"                          // maybe more whitespaces
+      "("                             // start of 2. capture
+      + regexDoubleStr +              // a double
+      ")"                             // end of 2. capture
   );
   std::smatch matches;
-  if (std::regex_match(setString, matches, rgx)) {
+  if (std::regex_match(setString, matches, regexInterval)) {
     try {
       // matchers has whole string as str(0) so start at 1
       double min = stod(matches.str(1));
