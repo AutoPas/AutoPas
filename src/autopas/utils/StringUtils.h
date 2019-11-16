@@ -72,7 +72,8 @@ inline int needlemanWunschScore(std::string s1, std::string s2) {
  * @param needle
  * @return Best matching string.
  */
-inline std::string matchStrings(const std::vector<std::string> &haystack, const std::string &needle) {
+inline std::string matchStrings(const std::vector<std::string> &haystack, std::string needle) {
+  std::transform(needle.begin(), needle.end(), needle.begin(), ::tolower);
   auto bestDistance = std::numeric_limits<int>::min();
   std::vector<std::string> matchedStrings;
   for (auto &s : haystack) {
