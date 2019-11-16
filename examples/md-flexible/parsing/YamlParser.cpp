@@ -35,7 +35,7 @@ std::string seriesNodeToString(const YAML::Node &node) {
     }
     return os.str();
   } else {
-    node.Scalar();
+    return node.Scalar();
   }
 
   return "";
