@@ -12,8 +12,7 @@ std::string MDFlexConfig::to_string() const {
   ostringstream os;
 
   auto passedContainerOptionsStr = autopas::utils::ArrayUtils::to_string(containerOptions);
-  os << setw(valueOffset) << left << containerOptionsStr << ":  "
-     << passedContainerOptionsStr << endl;
+  os << setw(valueOffset) << left << containerOptionsStr << ":  " << passedContainerOptionsStr << endl;
 
   // if verlet lists are in the container options print verlet config data
   if (passedContainerOptionsStr.find("erlet") != std::string::npos) {
@@ -33,7 +32,7 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << left << traversalOptionsStr << ":  "
      << autopas::utils::ArrayUtils::to_string(traversalOptions) << endl;
   os << setw(valueOffset) << left << tuningStrategyOptionsStr << ":  " << tuningStrategyOption << endl;
-  if(tuningStrategyOption == autopas::TuningStrategyOption::bayesianSearch) {
+  if (tuningStrategyOption == autopas::TuningStrategyOption::bayesianSearch) {
     os << setw(valueOffset) << left << acquisitionFunctionOptionStr << ":  " << acquisitionFunctionOption << endl;
   }
   os << setw(valueOffset) << left << tuningIntervalStr << ":  " << tuningInterval << endl;
@@ -60,7 +59,7 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << left << cutoffStr << ":  " << cutoff << endl;
   os << setw(valueOffset) << left << boxMinStr << ":  " << autopas::utils::ArrayUtils::to_string(boxMin) << endl;
   os << setw(valueOffset) << left << boxMaxStr << ":  " << autopas::utils::ArrayUtils::to_string(boxMax) << endl;
-  os << setw(valueOffset) << left << cellSizeFactorsStr << ":  " << *cellSizeFactors  << endl;
+  os << setw(valueOffset) << left << cellSizeFactorsStr << ":  " << *cellSizeFactors << endl;
   os << setw(valueOffset) << left << deltaTStr << ":  " << deltaT << endl;
   os << setw(valueOffset) << left << iterationsStr << ":  " << iterations << endl;
   os << setw(valueOffset) << left << boolalpha << periodicStr << ":  " << periodic << endl;
@@ -75,7 +74,7 @@ std::string MDFlexConfig::to_string() const {
       auto objectStr = object.to_string();
       // indent all lines of object
       objectStr = std::regex_replace(objectStr, std::regex("(^|\n)(.)"), "$1      $2");
-      os << objectStr; // no endl needed here because objectStr ends a line
+      os << objectStr;  // no endl needed here because objectStr ends a line
       objectId++;
     }
   };
@@ -95,8 +94,7 @@ std::string MDFlexConfig::to_string() const {
        << useCurrentTempForBrownianMotion << endl;
   }
 
-  if (not vtkFileName.empty())
-    os << setw(valueOffset) << left << vtkFileNameStr << ":  " << vtkFileName << endl;
+  if (not vtkFileName.empty()) os << setw(valueOffset) << left << vtkFileNameStr << ":  " << vtkFileName << endl;
   if (not checkpointfile.empty())
     os << setw(valueOffset) << left << checkpointfileStr << ":  " << checkpointfile << endl;
 
@@ -109,7 +107,7 @@ void MDFlexConfig::calcSimulationBox() {
   std::array<std::vector<double>, 3> maxs;
 
   // helper function
-  auto emplaceObjectLimits = [&] (const auto &objectCollection) {
+  auto emplaceObjectLimits = [&](const auto &objectCollection) {
     for (auto &object : objectCollection) {
       for (size_t i = 0; i < 3; ++i) {
         mins[i].emplace_back(object.getBoxMin()[i]);
@@ -123,10 +121,12 @@ void MDFlexConfig::calcSimulationBox() {
   emplaceObjectLimits(cubeUniformObjects);
   emplaceObjectLimits(sphereObjects);
 
-  std::array<double, 3> objectMin = {*std::min_element(mins[0].begin(), mins[0].end()), *std::min_element(mins[1].begin(), mins[1].end()),
-            *std::min_element(mins[2].begin(), mins[2].end())};
-  std::array<double, 3> objectMax = {*std::max_element(maxs[0].begin(), maxs[0].end()), *std::max_element(maxs[1].begin(), maxs[1].end()),
-            *std::max_element(maxs[2].begin(), maxs[2].end())};
+  std::array<double, 3> objectMin = {*std::min_element(mins[0].begin(), mins[0].end()),
+                                     *std::min_element(mins[1].begin(), mins[1].end()),
+                                     *std::min_element(mins[2].begin(), mins[2].end())};
+  std::array<double, 3> objectMax = {*std::max_element(maxs[0].begin(), maxs[0].end()),
+                                     *std::max_element(maxs[1].begin(), maxs[1].end()),
+                                     *std::max_element(maxs[2].begin(), maxs[2].end())};
 
   for (int i = 0; i < 3; i++) {
     // pad domain such that periodic boundaries can work.

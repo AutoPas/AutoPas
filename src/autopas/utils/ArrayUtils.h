@@ -33,7 +33,8 @@ template <class output_t, class input_t, std::size_t SIZE>
  * Generates a string representation of a container which fulfills the Container requirement (provide cbegin and cend).
  * @tparam T Type of Container.
  * @param a Container.
- * @param delimiter String delimiter.
+ * @param delimiter String that is put between items.
+ * @param surround Strings to be put before and after the listing (e.g. brackets).
  * @return String representation of a.
  */
 template <class T>

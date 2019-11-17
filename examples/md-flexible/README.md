@@ -37,7 +37,6 @@ to be used as a reference.
 
 * After every execution, a configuration YAML file is generated. It is
 possible to use this file as input for a new simulation.
-
 * You can generate vtk output by providing a vtk-filename
 (see help for details).
 

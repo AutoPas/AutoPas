@@ -505,7 +505,8 @@ void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
       case 'C':
         config.checkpointfile = optarg;
         if (not checkFileExists(optarg)) {
-          throw std::runtime_error("CLIParser::inputFilesPresent: Checkpoint-File " + config.checkpointfile + " not found!");
+          throw std::runtime_error("CLIParser::inputFilesPresent: Checkpoint-File " + config.checkpointfile +
+                                   " not found!");
         }
         break;
       case 'Y':
