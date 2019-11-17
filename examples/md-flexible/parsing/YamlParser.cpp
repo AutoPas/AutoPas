@@ -22,24 +22,6 @@ bool checkFileExists(const std::string &filename) {
   return (stat(filename.c_str(), &buffer) == 0);
 }
 
-/**
- * Converts a node that potentially contains a series to a string.
- * @param node
- * @return String representation with ", " as delimiter.
- */
-std::string seriesNodeToString(const YAML::Node &node) {
-  if (node.size() > 1) {
-    std::ostringstream os;
-    for (const auto &n : node) {
-      os << n << ",";
-    }
-    return os.str();
-  } else {
-    return node.Scalar();
-  }
-
-  return "";
-}
 }  // namespace
 
 bool parseYamlFile(MDFlexConfig &config) {
@@ -50,7 +32,7 @@ bool parseYamlFile(MDFlexConfig &config) {
   YAML::Node node = YAML::LoadFile(config.yamlFilename);
 
   if (node[MDFlexConfig::containerOptionsStr]) {
-    config.containerOptions = autopas::ContainerOption::parseOptions(seriesNodeToString(node[MDFlexConfig::containerOptionsStr]));
+    config.containerOptions = autopas::ContainerOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[MDFlexConfig::containerOptionsStr], ", ", {"",""}));
   }
   if (node[MDFlexConfig::boxMinStr]) {
     auto tmpNode = node[MDFlexConfig::boxMinStr];
@@ -75,11 +57,11 @@ bool parseYamlFile(MDFlexConfig &config) {
     config.cutoff = node[MDFlexConfig::cutoffStr].as<double>();
   }
   if (node[MDFlexConfig::cellSizeFactorsStr]) {
-    config.cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(seriesNodeToString(node[MDFlexConfig::cellSizeFactorsStr]));
+    config.cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(autopas::utils::ArrayUtils::to_string(node[MDFlexConfig::cellSizeFactorsStr], ", ", {"",""}));
   }
   if (node[MDFlexConfig::dataLayoutOptionsStr]) {
     config.dataLayoutOptions =
-        autopas::DataLayoutOption::parseOptions(seriesNodeToString(node[MDFlexConfig::dataLayoutOptionsStr]));
+        autopas::DataLayoutOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[MDFlexConfig::dataLayoutOptionsStr], ", ", {"",""}));
   }
   if (node[MDFlexConfig::functorOptionStr]) {
     auto strArg = node[MDFlexConfig::functorOptionStr].as<std::string>();
@@ -99,14 +81,14 @@ bool parseYamlFile(MDFlexConfig &config) {
   }
   if (node[MDFlexConfig::newton3OptionsStr]) {
     config.newton3Options =
-        autopas::Newton3Option::parseOptions(seriesNodeToString(node[MDFlexConfig::newton3OptionsStr]));
+        autopas::Newton3Option::parseOptions(autopas::utils::ArrayUtils::to_string(node[MDFlexConfig::newton3OptionsStr], ", ", {"",""}));
   }
   if (node[MDFlexConfig::deltaTStr]) {
     config.deltaT = node[MDFlexConfig::deltaTStr].as<double>();
   }
   if (node[MDFlexConfig::traversalOptionsStr]) {
     config.traversalOptions =
-        autopas::TraversalOption::parseOptions(seriesNodeToString(node[MDFlexConfig::traversalOptionsStr]));
+        autopas::TraversalOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[MDFlexConfig::traversalOptionsStr], ", ", {"",""}));
   }
   if (node[MDFlexConfig::tuningIntervalStr]) {
     config.tuningInterval = node[MDFlexConfig::tuningIntervalStr].as<unsigned int>();
