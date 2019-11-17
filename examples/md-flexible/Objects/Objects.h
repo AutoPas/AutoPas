@@ -76,8 +76,7 @@ class Object {
     output << std::setw(_valueOffset) << std::left << "particle-sigma"
            << ":  " << _sigma << std::endl;
     output << std::setw(_valueOffset) << std::left << "particle-mass"
-           << ":  " << _mass << std::endl
-           << std::endl;
+           << ":  " << _mass << std::endl;
     return output.str();
   };
 
@@ -94,5 +93,5 @@ class Object {
   double _mass;
 
   // valueOffset of MDFlexConfig - expected indent
-  static constexpr size_t _valueOffset = 32 - 6;
+  static constexpr size_t _valueOffset = 33 - 6;
 };

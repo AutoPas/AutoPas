@@ -175,7 +175,7 @@ class MDFlexConfig {
   std::string checkpointfile;
 
   // used for cli-output alignment
-  static constexpr size_t valueOffset{32};
+  static constexpr size_t valueOffset{33};
 };
 
 /**

@@ -11,14 +11,17 @@ std::string MDFlexConfig::to_string() const {
   using namespace std;
   ostringstream os;
 
+  auto passedContainerOptionsStr = autopas::utils::ArrayUtils::to_string(containerOptions);
   os << setw(valueOffset) << left << containerOptionsStr << ":  "
-     << autopas::utils::ArrayUtils::to_string(containerOptions) << endl;
+     << passedContainerOptionsStr << endl;
 
   // if verlet lists are in the container options print verlet config data
-  if (autopas::utils::ArrayUtils::to_string(containerOptions).find("erlet") != std::string::npos) {
+  if (passedContainerOptionsStr.find("erlet") != std::string::npos) {
     os << setw(valueOffset) << left << verletRebuildFrequencyStr << ":  " << verletRebuildFrequency << endl;
-
     os << setw(valueOffset) << left << verletSkinRadiusStr << ":  " << verletSkinRadius << endl;
+    if (passedContainerOptionsStr.find("luster") != std::string::npos) {
+      os << setw(valueOffset) << left << verletClusterSizeStr << ":  " << verletClusterSize << endl;
+    }
   }
 
   if (containerOptions.size() > 1 or traversalOptions.size() > 1 or dataLayoutOptions.size() > 1) {
@@ -30,6 +33,9 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << left << traversalOptionsStr << ":  "
      << autopas::utils::ArrayUtils::to_string(traversalOptions) << endl;
   os << setw(valueOffset) << left << tuningStrategyOptionsStr << ":  " << tuningStrategyOption << endl;
+  if(tuningStrategyOption == autopas::TuningStrategyOption::bayesianSearch) {
+    os << setw(valueOffset) << left << acquisitionFunctionOptionStr << ":  " << acquisitionFunctionOption << endl;
+  }
   os << setw(valueOffset) << left << tuningIntervalStr << ":  " << tuningInterval << endl;
   os << setw(valueOffset) << left << tuningSamplesStr << ":  " << tuningSamples << endl;
   os << setw(valueOffset) << left << tuningMaxEvidenceStr << ":  " << tuningMaxEvidence << endl;
@@ -57,19 +63,19 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << left << cellSizeFactorsStr << ":  " << *cellSizeFactors  << endl;
   os << setw(valueOffset) << left << deltaTStr << ":  " << deltaT << endl;
   os << setw(valueOffset) << left << iterationsStr << ":  " << iterations << endl;
-  os << setw(valueOffset) << left << boolalpha << periodicStr << ":  " << periodic << endl << endl;
+  os << setw(valueOffset) << left << boolalpha << periodicStr << ":  " << periodic << endl;
 
   os << setw(valueOffset) << left << "Objects:" << endl;
 
   auto printObjectCollection = [](auto objectCollection, auto name, auto &os) {
     int objectId = 0;
-    for (auto object : objectCollection) {
+    for (const auto &object : objectCollection) {
       os << "  " << name << ":" << endl;
       os << "    " << objectId << ":  " << endl;
       auto objectStr = object.to_string();
       // indent all lines of object
       objectStr = std::regex_replace(objectStr, std::regex("(^|\n)(.)"), "$1      $2");
-      os << objectStr << endl;
+      os << objectStr; // no endl needed here because objectStr ends a line
       objectId++;
     }
   };
@@ -80,14 +86,19 @@ std::string MDFlexConfig::to_string() const {
   printObjectCollection(sphereObjects, sphereObjectsStr, os);
 
   if (useThermostat) {
-    os << setw(valueOffset) << left << boolalpha << thermostatStr << endl;
-    os << setw(valueOffset) << left << initTemperatureStr << ":  " << initTemperature << endl;
-    os << setw(valueOffset) << left << targetTemperatureStr << ":  " << targetTemperature << endl;
-    os << setw(valueOffset) << left << deltaTempStr << ":  " << deltaTemp << endl;
-    os << setw(valueOffset) << left << thermostatIntervalStr << ":  " << thermostatInterval << endl;
-    os << setw(valueOffset) << left << useCurrentTempForBrownianMotionStr << ":  " << useCurrentTempForBrownianMotion
-       << endl;
+    os << thermostatStr << ":" << endl;
+    os << "  " << setw(valueOffset - 2) << left << initTemperatureStr << ":  " << initTemperature << endl;
+    os << "  " << setw(valueOffset - 2) << left << targetTemperatureStr << ":  " << targetTemperature << endl;
+    os << "  " << setw(valueOffset - 2) << left << deltaTempStr << ":  " << deltaTemp << endl;
+    os << "  " << setw(valueOffset - 2) << left << thermostatIntervalStr << ":  " << thermostatInterval << endl;
+    os << "  " << setw(valueOffset - 2) << left << useCurrentTempForBrownianMotionStr << ":  "
+       << useCurrentTempForBrownianMotion << endl;
   }
+
+  if (not vtkFileName.empty())
+    os << setw(valueOffset) << left << vtkFileNameStr << ":  " << vtkFileName << endl;
+  if (not checkpointfile.empty())
+    os << setw(valueOffset) << left << checkpointfileStr << ":  " << checkpointfile << endl;
 
   return os.str();
 }

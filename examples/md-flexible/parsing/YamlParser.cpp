@@ -9,26 +9,8 @@
 #include <ostream>
 
 namespace YamlParser {
-// anonymous namespace to hide helper function
-namespace {
-
-/**
- * Checks if a file with the given path exists.
- * @param filename
- * @return True iff the file exists.
- */
-bool checkFileExists(const std::string &filename) {
-  struct stat buffer;
-  return (stat(filename.c_str(), &buffer) == 0);
-}
-
-}  // namespace
 
 bool parseYamlFile(MDFlexConfig &config) {
-  if (not checkFileExists(config.yamlFilename)) {
-    throw std::runtime_error("YamlParser::parseYamlFile: File " + config.yamlFilename + " not found!");
-  }
-
   YAML::Node node = YAML::LoadFile(config.yamlFilename);
 
   if (node[MDFlexConfig::containerOptionsStr]) {
@@ -141,7 +123,7 @@ bool parseYamlFile(MDFlexConfig &config) {
     }
   }
   if (node[MDFlexConfig::checkpointfileStr]) {
-    config.checkpointfile = node["checkpointFile"].as<std::string>();
+    config.checkpointfile = node[MDFlexConfig::checkpointfileStr].as<std::string>();
   }
   if (node[MDFlexConfig::logFileNameStr]) {
     config.logFileName = node[MDFlexConfig::logFileNameStr].as<std::string>();

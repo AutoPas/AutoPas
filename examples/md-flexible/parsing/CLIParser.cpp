@@ -473,6 +473,21 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   return true;
 }
 
+// anonymous namespace to hide helper function
+namespace {
+
+/**
+ * Checks if a file with the given path exists.
+ * @param filename
+ * @return True iff the file exists.
+ */
+bool checkFileExists(const std::string &filename) {
+  struct stat buffer;
+  return (stat(filename.c_str(), &buffer) == 0);
+}
+
+}  // namespace
+
 void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
   int option, optionIndex;
   // suppress error messages since we only want to look if the yaml option is there
@@ -489,9 +504,15 @@ void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
     switch (option) {
       case 'C':
         config.checkpointfile = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::inputFilesPresent: Checkpoint-File " + config.checkpointfile + " not found!");
+        }
         break;
       case 'Y':
         config.yamlFilename = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::inputFilesPresent: Yaml-File " + config.yamlFilename + " not found!");
+        }
         break;
     }
   }

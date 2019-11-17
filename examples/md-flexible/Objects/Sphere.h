@@ -122,8 +122,6 @@ class Sphere : public Object {
            << ":  " << radius << std::endl;
     output << std::setw(_valueOffset) << std::left << "particle-spacing"
            << ":  " << particleSpacing << std::endl;
-    output << std::setw(_valueOffset) << std::left << "numberOfParticles"
-           << ":  " << this->getParticlesTotal() << std::endl;
     output << Object::to_string();
     return output.str();
   }

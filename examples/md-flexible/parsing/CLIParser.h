@@ -33,4 +33,5 @@ void inputFilesPresent(int argc, char **argv, MDFlexConfig &config);
  * @return false if any errors occurred during parsing.
  */
 bool parseInput(int argc, char **argv, MDFlexConfig &config);
+
 };  // namespace CLIParser
