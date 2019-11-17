@@ -28,11 +28,24 @@ MD-Flexible accepts input via command line arguments and YAML files.
 When given both, any command line options will overwrite their YAML
 counterparts.
 
+The keywords for the YAML file are the same as for the command line
+input. However, since there are options that can only be defined
+through the YAML file there is also the file `input/ALLOptions.yaml`
+to be used as a reference.
+
+### Output
+
+* After every execution, a configuration YAML file is generated. It is
+possible to use this file as input for a new simulation.
+
+* You can generate vtk output by providing a vtk-filename
+(see help for details).
+
 ### Checkpoints
 
 MD-Flexible can be initialized through a previously written VTK file.
 Please use only VTK files written by MD-Flexible since the parsing is
-rather simple. The VTK file only contains Information about all
+rather strict. The VTK file only contains Information about all
 particles positions, velocities, forces and typeIDs. All other options,
 especially the simulation box size and particle properties (still) need
 to be set through a YAML file.
