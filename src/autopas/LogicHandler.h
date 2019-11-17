@@ -165,7 +165,7 @@ class LogicHandler {
     return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
-  std::unique_ptr<fmm::FmmTree<ParticleCell>> getFastMultipoleTree() {
+  std::unique_ptr<fmm::FmmTree> getFastMultipoleTree() {
     return _autoTuner.getContainer()->getFastMultipoleMethodTree();
   }
 

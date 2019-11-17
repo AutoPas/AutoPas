@@ -11,7 +11,6 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
-#include "autopas/fastMultipoleMethod/FmmTree.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -303,7 +302,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    */
   const std::vector<ParticleCell> &getCells() const { return this->_cells; }
 
-  void createFmmNode(fmm::FmmTreeNode<ParticleCell> &node) const {
+  void createFmmNode(fmm::FmmTreeNode &node) const {
     auto nodeMin3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMin());
     auto nodeMax3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMax());
     auto delta = utils::ArrayMath::sub(nodeMax3DIndex, nodeMin3DIndex);
@@ -371,8 +370,8 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
     }
   }
 
-  [[nodiscard]] std::unique_ptr<fmm::FmmTree<ParticleCell>> getFastMultipoleMethodTree() override {
-    auto tree = std::make_unique<fmm::FmmTree<ParticleCell>>(this);
+  [[nodiscard]] std::unique_ptr<fmm::FmmTree> getFastMultipoleMethodTree() override {
+    auto tree = std::make_unique<fmm::FmmTree>();
 
     createFmmNode(tree->setRoot(this->getBoxMin(), this->getBoxMax()));
     return tree;

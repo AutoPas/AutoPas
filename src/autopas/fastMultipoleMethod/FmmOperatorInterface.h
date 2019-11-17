@@ -5,15 +5,15 @@
 
 namespace autopas::fmm {
 
-template <class ParticleCell>
+template <class Particle, class ParticleCell>
 class FmmOperatorInterface {
  public:
-  virtual void P2M(FmmTreeNode<ParticleCell> &leaf) = 0;
-  virtual void M2M(FmmTreeNode<ParticleCell> &parent) = 0;
-  virtual void M2L(FmmTreeNode<ParticleCell> &node) = 0;
-  virtual void L2L(FmmTreeNode<ParticleCell> &child) = 0;
-  virtual void L2P(FmmTreeNode<ParticleCell> &leaf) = 0;
-  void RunFmm(FmmTree<ParticleCell> &fmmTree) {
+  virtual void P2M(FmmTreeNode &leaf, AutoPas<Particle, ParticleCell> &container) = 0;
+  virtual void M2M(FmmTreeNode &parent) = 0;
+  virtual void M2L(FmmTreeNode &node) = 0;
+  virtual void L2L(FmmTreeNode &child) = 0;
+  virtual void L2P(FmmTreeNode &leaf, AutoPas<Particle, ParticleCell> &container) = 0;
+  void RunFmm(FmmTree &fmmTree, AutoPas<Particle, ParticleCell> &container) {
     // Todo
   }
 };

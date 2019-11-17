@@ -16,8 +16,8 @@
 
 namespace autopas::fmm {
 
-template <class ParticleCell>
-class PotentialOperators : public FmmOperatorInterface<ParticleCell> {
+template <class Particle, class ParticleCell>
+class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
   using Complex = std::complex<double>;
 
  private:
@@ -42,11 +42,10 @@ class PotentialOperators : public FmmOperatorInterface<ParticleCell> {
     }
   }
 
-  void P2M(FmmTreeNode<ParticleCell> &leaf) override {
+  void P2M(FmmTreeNode &leaf, AutoPas<Particle, ParticleCell> &container) override {
     // Loop order changed, so the spherical harmonics cache is built less frequently.
 
-    for (auto iter = leaf.getTree().getContainer()->getRegionIterator(leaf.getBoxMin(), leaf.getBoxMax());
-         iter.isValid(); ++iter) {
+    for (auto iter = container.getRegionIterator(leaf.getBoxMin(), leaf.getBoxMax()); iter.isValid(); ++iter) {
       auto spherical = autopas::utils::FmmMath<double, long>::toSpherical(
           autopas::utils::ArrayMath::sub(iter->getR(), leaf.getBoxCenter()));
       for (long m = -orderOfExpansion; m <= orderOfExpansion; ++m) {
@@ -60,7 +59,7 @@ class PotentialOperators : public FmmOperatorInterface<ParticleCell> {
     }
   }
 
-  void M2M(FmmTreeNode<ParticleCell> &parent) override {
+  void M2M(FmmTreeNode &parent) override {
     if (parent.isLeaf()) {
       return;
     }
@@ -104,7 +103,7 @@ class PotentialOperators : public FmmOperatorInterface<ParticleCell> {
   }
 
   // Most performance critical function. Over 90% of fmm is spent here.
-  void M2L(FmmTreeNode<ParticleCell> &node) override {
+  void M2L(FmmTreeNode &node) override {
     for (auto inter : node.getInteractionList()) {
       auto spherical = autopas::utils::FmmMath<double, long>::toSpherical(
           autopas::utils::ArrayMath::sub(inter->getBoxCenter(), node.getBoxCenter()));
@@ -157,7 +156,7 @@ class PotentialOperators : public FmmOperatorInterface<ParticleCell> {
     }
   }
 
-  void L2L(FmmTreeNode<ParticleCell> &node) override {
+  void L2L(FmmTreeNode &node) override {
     if (node.getDepth() > 0) {
       auto parent = node.getOctreeParent();
       auto cartesian = autopas::utils::ArrayMath::sub(parent.getBoxCenter(), node.getBoxCenter());
@@ -194,9 +193,8 @@ class PotentialOperators : public FmmOperatorInterface<ParticleCell> {
     }
   }
 
-  void L2P(FmmTreeNode<ParticleCell> &leaf) override {
-    for (auto iter = leaf.getTree().getContainer()->getRegionIterator(leaf.getBoxMin(), leaf.getBoxMax());
-         iter.isValid(); ++iter) {
+  void L2P(FmmTreeNode &leaf, AutoPas<Particle, ParticleCell> &container) override {
+    for (auto iter = container.getRegionIterator(leaf.getBoxMin(), leaf.getBoxMax()); iter.isValid(); ++iter) {
       auto sphericalPos = autopas::utils::FmmMath<double, long>::toSpherical(
           autopas::utils::ArrayMath::sub(iter->getR(), leaf.getBoxCenter()));
 

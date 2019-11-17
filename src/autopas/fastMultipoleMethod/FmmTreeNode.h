@@ -15,14 +15,11 @@
 namespace autopas::fmm {
 
 // forward declaration
-template <class ParticleCell>
 class FmmTree;
 
-template <class ParticleCell>
 class FmmTreeNode {
  public:
-  FmmTreeNode(FmmTree<ParticleCell> &tree, FmmTreeNode *parent, std::array<double, 3> boxMin,
-              std::array<double, 3> boxMax)
+  FmmTreeNode(FmmTree &tree, FmmTreeNode *parent, std::array<double, 3> boxMin, std::array<double, 3> boxMax)
       : tree(&tree), parent(parent), boxMin(boxMin), boxMax(boxMax) {
     if (parent == nullptr) {
       depth = 0;
@@ -49,7 +46,7 @@ class FmmTreeNode {
   [[nodiscard]] bool isOctreeNode() const { return _isOctreeNode; }
   [[nodiscard]] bool isOctreeLeaf() const { return _isOctreeLeaf; }
   [[nodiscard]] long getDepth() const { return depth; }
-  [[nodiscard]] FmmTree<ParticleCell> &getTree() const { return *tree; }
+  [[nodiscard]] FmmTree &getTree() const { return *tree; }
 
   void makeLeaf() {
     _isLeaf = true;
@@ -91,7 +88,7 @@ class FmmTreeNode {
       }
     }
   }
-  FmmTree<ParticleCell> *tree;
+  FmmTree *tree;
   FmmTreeNode *parent;
   std::array<double, 3> boxMin;
   std::array<double, 3> boxMax;

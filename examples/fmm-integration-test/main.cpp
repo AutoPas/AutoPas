@@ -36,8 +36,9 @@ int main(int argc, char **argv) {
   autopas::utils::FmmMath<double, long> fmmMath;
   std::cout << "Factorial(5) = " << autopas::utils::FmmMath<double, long>::factorial(5) << std::endl;
 
-  autopas::fmm::PotentialOperators<autopas::FullParticleCell<autopas::fmm::FmmParticle>> op(8);
-  // op.RunFmm(*fmmTree);
+  autopas::fmm::PotentialOperators<autopas::fmm::FmmParticle, autopas::FullParticleCell<autopas::fmm::FmmParticle>> op(
+      8);
+  op.RunFmm(*fmmTree, cont);
 
   std::cout << std::flush;
 }
