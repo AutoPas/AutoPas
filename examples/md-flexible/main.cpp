@@ -37,7 +37,11 @@ int main(int argc, char **argv) {
 
   simulation.printStatistics();
 
-  std::ofstream configFileEnd("MDFlex_end.yaml");
+  // print config.yaml file of current run
+  auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+  std::ostringstream nowStrStr;
+  nowStrStr << std::put_time(std::localtime(&now), "%Y-%m-%d_%H-%M-%S");
+  std::ofstream configFileEnd("MDFlex_end_" + nowStrStr.str() + ".yaml");
   configFileEnd << config;
   configFileEnd.close();
 
