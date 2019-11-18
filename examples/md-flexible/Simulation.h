@@ -349,6 +349,13 @@ void Simulation<Particle, ParticleCell>::simulate() {
     }
   }
 
+  // update temperature for generated config output
+  if (_config->useThermostat) {
+    _timers.thermostat.start();
+    _config->initTemperature = _thermostat->calcTemperature(_autopas);
+    _timers.thermostat.stop();
+  }
+
   // writes final state of the simulation
   if ((not _config->vtkFileName.empty())) {
     this->writeVTKFile(_config->iterations);
