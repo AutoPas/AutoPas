@@ -40,7 +40,8 @@ int main(int argc, char **argv) {
   // print config.yaml file of current run
   auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
   std::ostringstream nowStrStr;
-  nowStrStr << std::put_time(std::localtime(&now), "%Y-%m-%d_%H-%M-%S");
+  tm unused;
+  nowStrStr << std::put_time(localtime_r(&now, &unused), "%Y-%m-%d_%H-%M-%S");
   std::ofstream configFileEnd("MDFlex_end_" + nowStrStr.str() + ".yaml");
   configFileEnd << config;
   configFileEnd.close();
