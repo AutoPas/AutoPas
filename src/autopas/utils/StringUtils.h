@@ -18,6 +18,8 @@
 
 namespace autopas::utils::StringUtils {
 
+// anonymous namespace for namespace-private helper functions
+namespace {
 /**
  * Calculates a similarity score of s1 and s2 based on the Needleman-Wunsch string alignment algorithm.
  *
@@ -61,7 +63,7 @@ inline int needlemanWunschScore(std::string s1, std::string s2) {
   // the score lower right corner contains similarity score
   return scoreMatrix[scoreMatrix.size() - 1][scoreMatrix[scoreMatrix.size() - 1].size() - 1];
 }
-
+}  // namespace
 /**
  * Finds best match of needle in haystack.
  *
