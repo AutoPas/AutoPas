@@ -121,18 +121,15 @@ void MDFlexConfig::calcSimulationBox() {
   emplaceObjectLimits(cubeUniformObjects);
   emplaceObjectLimits(sphereObjects);
 
-  std::array<double, 3> objectMin = {*std::min_element(mins[0].begin(), mins[0].end()),
-                                     *std::min_element(mins[1].begin(), mins[1].end()),
-                                     *std::min_element(mins[2].begin(), mins[2].end())};
-  std::array<double, 3> objectMax = {*std::max_element(maxs[0].begin(), maxs[0].end()),
-                                     *std::max_element(maxs[1].begin(), maxs[1].end()),
-                                     *std::max_element(maxs[2].begin(), maxs[2].end())};
-
   for (int i = 0; i < 3; i++) {
     // pad domain such that periodic boundaries can work.
     // This is necessary if the given min/max is not at least half the spacing away of the farthest object.
-    boxMin[i] = std::min(boxMin[i], objectMin[i] - particleSpacing / 2);
-    boxMax[i] = std::max(boxMax[i], objectMax[i] + particleSpacing / 2);
+    if (not mins[0].empty()) {
+      auto objectMin = *std::min_element(mins[i].begin(), mins[i].end());
+      auto objectMax = *std::max_element(maxs[i].begin(), maxs[i].end());
+      boxMin[i] = std::min(boxMin[i], objectMin - particleSpacing / 2);
+      boxMax[i] = std::max(boxMax[i], objectMax + particleSpacing / 2);
+    }
 
     // needed for 2D Simulation, that BoxLength >= interactionLength for all Dimensions
     if (boxMax[i] - boxMin[i] < interactionLength) {
