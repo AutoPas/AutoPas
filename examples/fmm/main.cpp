@@ -307,6 +307,8 @@ int main(int argc, char **argv) {
   std::cout << "nearFieldCalculations = " << nearFieldCalculations << std::endl;
   std::cout << "exactCalculations = " << exactCalculations << std::endl;
 
+  bool correctResult = true;
+
   // Check results.
   for (auto particle = cont.begin(); particle.isValid(); ++particle) {
     if (particle->resultExact != 0) {
@@ -320,9 +322,14 @@ int main(int argc, char **argv) {
         std::cout << "short range " << particle->shortRange << std::endl;
         std::cout << "resultFMM " << particle->resultFMM << std::endl;
         std::cout << "resultExact " << particle->resultExact << std::endl;
+        correctResult = false;
       }
     }
   }
-
-  return EXIT_SUCCESS;
+  if (correctResult) {
+    return EXIT_SUCCESS;
+  } else {
+    std::cout << "At least 1 result of the fast multipole method is wrong." << std::endl;
+    return 1;
+  }
 }
