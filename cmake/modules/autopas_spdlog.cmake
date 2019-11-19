@@ -8,7 +8,7 @@ else ()
     message(STATUS "spdlog - not found or version older than 1.3.1")
     message(
         STATUS
-            "spdlog - if you want to use your version set the environment variable spdlog_DIR to pass hints to find_package"
+            "spdlog - if you want to use your version point the environment variable spdlog_DIR to the directory containing spdlogConfig.cmake in order to pass hints to find_package"
     )
     message(STATUS "spdlog - using bundled version 1.4.3 (commit 79259fd)")
 
