@@ -13,10 +13,9 @@ ExternalProject_Add(
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/harmony
     # since we only unpack a header lib src == include
     SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/harmony/include
-    # Disable build & install steps
+    # tell cmake to run make inside the source folder
+    BUILD_IN_SOURCE TRUE
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-    INSTALL_COMMAND ""
 )
 
 # Get GTest source and binary directories from CMake project
