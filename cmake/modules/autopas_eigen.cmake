@@ -9,7 +9,7 @@ else ()
     message(STATUS "Eigen3 - not found or version older than 3.3.7")
     message(
         STATUS
-            "Eigen3 - if you want to use your version point the environment variable Eigen3_DIR to the directory containing Eigen3Config.cmake in order to pass hints to find_package"
+            "Eigen3 - if you want to use your version point the cmake variable Eigen3_DIR to the directory containing Eigen3Config.cmake in order to pass hints to find_package"
     )
     message(STATUS "Eigen3 - using bundled version 3.3.90 (commit 66be6c7)")
 
