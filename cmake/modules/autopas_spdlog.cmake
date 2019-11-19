@@ -1,5 +1,4 @@
 # first try: check if we find any installed version
-set(spdlog_DIR /work/ga68cat/workspace/spdlog/install/lib/cmake/spdlog)
 find_package(spdlog QUIET)
 if (spdlog_FOUND AND ${spdlog_VERSION} VERSION_GREATER_EQUAL 1.3.1)
     message(STATUS "spdlog - using installed system version ${spdlog_VERSION}")
@@ -7,6 +6,10 @@ if (spdlog_FOUND AND ${spdlog_VERSION} VERSION_GREATER_EQUAL 1.3.1)
 else ()
     # system version not found -> install bundled version
     message(STATUS "spdlog - not found or version older than 1.3.1")
+    message(
+        STATUS
+            "spdlog - if you want to use your version set the environment variable spdlog_DIR to pass hints to find_package"
+    )
     message(STATUS "spdlog - using bundled version 1.4.3 (commit 79259fd)")
 
     include(ExternalProject)
