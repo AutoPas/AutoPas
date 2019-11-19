@@ -374,6 +374,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
     auto tree = std::make_unique<fmm::FmmTree>();
 
     createFmmNode(tree->setRoot(this->getBoxMin(), this->getBoxMax()));
+    tree->getRoot().init(tree->getRoot());
     return tree;
   }
 

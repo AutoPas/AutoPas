@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 
   autopas::fmm::PotentialOperators<autopas::fmm::FmmParticle, autopas::FullParticleCell<autopas::fmm::FmmParticle>> op(
       8);
-  op.RunFmm(*fmmTree, cont);
+  op.RunFmm(*fmmTree, 8, cont);
 
   std::cout << std::flush;
 }
