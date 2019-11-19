@@ -4,3 +4,5 @@ TARGET_INCLUDE_DIRECTORIES(autopas SYSTEM PUBLIC spdlog-1.3.1/include)
 
 #eigen3
 include(autopas_eigen)
+
+include(autopas_yaml-cpp)

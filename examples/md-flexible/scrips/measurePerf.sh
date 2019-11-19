@@ -89,7 +89,7 @@ do
 
                     filename="runtimes_${container}_${dataLayout}_N3${newton3Opt}"
 
-                    # print current cell size only if relevant 
+                    # print current cell size only if relevant
                     if [[ ${container} =~ 'LinkedCells' ]];
                     then
                         separate "Cell size ${cellSizeFactor}"
@@ -133,17 +133,18 @@ do
                             --cutoff 1 \
                             --cell-size ${cellSizeFactor} \
                             --box-length 10 \
-                            --particles-generator uniform \
+                            --particle-generator uniform \
                             --particles-total ${Mols[$i]} \
                             --iterations ${thisReps} \
                             --tuning-interval $(( ${thisReps} + 1 )) \
                             --verlet-rebuild-frequency ${VLRebuild[$iVL]} \
                             --verlet-skin-radius ${VLSkin[$iVL]} \
                             --no-flops \
+                            --periodic false \
                             --newton3 ${newton3Opt}
                         )
 
-                        printf "${output}\n"
+                        printf '%s\n' "${output}"
 
                         if [[ "${SILENT}" = false ]] ; then
                             if [[ "${configPrinted}" = false ]] ; then

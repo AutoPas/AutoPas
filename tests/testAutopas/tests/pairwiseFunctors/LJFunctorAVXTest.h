@@ -8,6 +8,7 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/utils/SoA.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -59,7 +60,7 @@ class LJFunctorAVXTest : public AutoPasTestBase {
    * @param cell2
    * @return
    */
-  bool AoSParticlesEqual(FPCell &cell1, FPCell &cell2);
+  bool AoSParticlesEqual(FMCell &cell1, FMCell &cell2);
 
   /**
    * Check that two particles are equal.

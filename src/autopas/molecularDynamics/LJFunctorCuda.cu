@@ -5,7 +5,7 @@
  * @author jspahl
  */
 #include <iostream>
-#include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
+#include "LJFunctorCuda.cuh"
 #include "autopas/utils/CudaExceptionHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "math_constants.h"

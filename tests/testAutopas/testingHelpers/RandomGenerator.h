@@ -32,19 +32,21 @@ class RandomGenerator {
   static std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
 
   /**
-   * Fills the given container with randomly distributed particles between boxMin and boxMax.
-   * @tparam Container
-   * @tparam Particle Type of particle to be generated
+   * Fills any container (also AutoPas object) with randomly uniformly distributed particles.
+   * Particle properties will be used from the default particle. Particle IDs start from the default particle.
+   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
+   * @tparam Particle Type of the default particle.
    * @param container
-   * @param defaultParticle inserted particle
-   * @param boxMin min. position
-   * @param boxMax max. position
-   * @param numParticles number of particles
+   * @param defaultParticle
+   * @param boxMin
+   * @param boxMax
+   * @param numParticles
+   * @param seed
    */
   template <class Container, class Particle>
   static void fillWithParticles(Container &container, const Particle &defaultParticle,
                                 const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                unsigned long numParticles = 100ul);
+                                unsigned long numParticles = 100ul, unsigned int seed = 42);
 
   /**
    * Fills only a given part of a container (also AutoPas object) with randomly uniformly distributed particles.
@@ -54,38 +56,20 @@ class RandomGenerator {
    * @param defaultParticle
    * @param haloWidth
    * @param numParticles
+   * @param seed
    */
   template <class Container, class Particle>
   static void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
-                                    unsigned long numParticles = 100ul);
-
-  /**
-   * Fills any container (also AutoPas object) with randomly uniformly distributed particles.
-   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
-   * @tparam Particle Type of the default particle.
-   * @param container
-   * @param defaultParticle
-   * @param numParticles
-   */
-  template <class Container, class Particle>
-  static void fillWithParticles(Container &container, const Particle &defaultParticle,
-                                unsigned long numParticles = 100ul);
+                                    unsigned long numParticles = 100ul, unsigned int seed = 42);
 };
 
 template <class Container, class Particle>
 void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
-                                        unsigned long numParticles) {
-  RandomGenerator::fillWithParticles(container, defaultParticle, container.getBoxMin(), container.getBoxMax(),
-                                     numParticles);
-}
-
-template <class Container, class Particle>
-void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
                                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                        unsigned long numParticles) {
-  srand(42);  // fixed seedpoint
+                                        unsigned long numParticles, unsigned int seed) {
+  srand(seed);  // fixed seedpoint
 
-  for (unsigned long i = 0; i < numParticles; ++i) {
+  for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     Particle particle(defaultParticle);
     particle.setR(randomPosition(boxMin, boxMax));
     particle.setID(i);
@@ -95,8 +79,8 @@ void RandomGenerator::fillWithParticles(Container &container, const Particle &de
 
 template <class Container, class Particle>
 void RandomGenerator::fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
-                                            unsigned long numParticles) {
-  srand(42);  // fixed seedpoint
+                                            unsigned long numParticles, unsigned int seed) {
+  srand(seed);  // fixed seedpoint
 
   auto haloBoxMin = container.getBoxMin();
   auto haloBoxMax = container.getBoxMax();
@@ -107,10 +91,12 @@ void RandomGenerator::fillWithHaloParticles(Container &container, const Particle
     haloBoxMax[i] += haloWidth * .99;
   }
 
-  for (unsigned long i = 0; i < numParticles; ++i) {
-    const auto pos = randomPosition(haloBoxMax, haloBoxMax);
-    // we only want  to add particles not in the actual box
-    if (autopas::utils::inBox(pos, container.getBoxMin(), container.getBoxMax())) continue;
+  for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
+    auto pos = randomPosition(haloBoxMax, haloBoxMax);
+    // we only want to add particles not in the actual box
+    while (autopas::utils::inBox(pos, container.getBoxMin(), container.getBoxMax())) {
+      pos = randomPosition(haloBoxMax, haloBoxMax);
+    }
     Particle particle(defaultParticle);
     particle.setR(pos);
     particle.setID(i);

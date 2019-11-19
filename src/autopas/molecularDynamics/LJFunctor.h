@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+#include "ParticlePropertiesLibrary.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -15,8 +16,8 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 #if defined(AUTOPAS_CUDA)
-#include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
-#include "autopas/pairwiseFunctors/LJFunctorCudaGlobals.cuh"
+#include "autopas/molecularDynamics/LJFunctorCuda.cuh"
+#include "autopas/molecularDynamics/LJFunctorCudaGlobals.cuh"
 #include "autopas/utils/CudaDeviceVector.h"
 #include "autopas/utils/CudaStreamHandler.h"
 #else
@@ -33,15 +34,17 @@ enum class FunctorN3Modes {
   Newton3Off,
   Both,
 };
-
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
  * @tparam Particle The type of particle.
  * @tparam ParticleCell The type of particlecell.
+ * @tparam useMixing Switch for the functor to be used with multiple particle types.
+ * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
+ * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, class ParticleCell, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
+template <class Particle, class ParticleCell, bool useMixing = false, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
           bool calculateGlobals = false, bool relevantForTuning = true>
 class LJFunctor
     : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType, LJFunctor<Particle, ParticleCell>> {
@@ -54,33 +57,62 @@ class LJFunctor
    */
   LJFunctor() = delete;
 
+ private:
   /**
-   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   * Interal, actual constructor.
    * @param cutoff
-   * @param epsilon
-   * @param sigma
    * @param shift
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
+   * @param dummy unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctor(double cutoff, double epsilon, double sigma, double shift, bool duplicatedCalculation = true)
+  explicit LJFunctor(double cutoff, double shift, bool duplicatedCalculation, void * /*dummy*/)
       : Functor<Particle, ParticleCell, SoAArraysType, LJFunctor<Particle, ParticleCell>>(cutoff),
         _cutoffsquare{cutoff * cutoff},
-        _epsilon24{epsilon * 24.0},
-        _sigmasquare{sigma * sigma},
         _shift6{shift * 6.0},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
         _duplicatedCalculations{duplicatedCalculation},
         _postProcessed{false} {
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
     }
-#if defined(AUTOPAS_CUDA)
-    LJFunctorConstants<SoAFloatPrecision> constants(_cutoffsquare, _epsilon24, _sigmasquare, _shift6);
-    _cudawrapper.loadConstants(&constants);
-#endif
+  }
+
+ public:
+  /**
+   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   *
+   * @note Only to be used with mixing == false.
+   *
+   * @param cutoff
+   * @param shift
+   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
+   * simulation boundary. e.g. eightShell: false, fullShell: true.
+   */
+  explicit LJFunctor(double cutoff, double shift, bool duplicatedCalculation = true)
+      : LJFunctor(cutoff, shift, duplicatedCalculation, nullptr) {
+    static_assert(not useMixing,
+                  "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
+                  "mixing to false.");
+  }
+
+  /**
+   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   * @param cutoff
+   * @param shift
+   * @param particlePropertiesLibrary
+   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
+   * simulation boundary. e.g. eightShell: false, fullShell: true.
+   */
+  explicit LJFunctor(double cutoff, double shift, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
+                     bool duplicatedCalculation = true)
+      : LJFunctor(cutoff, shift, duplicatedCalculation, nullptr) {
+    static_assert(useMixing,
+                  "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
+                  "or set mixing to true.");
+    _PPLibrary = &particlePropertiesLibrary;
   }
 
   bool isRelevantForTuning() override { return relevantForTuning; }
@@ -94,17 +126,23 @@ class LJFunctor
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    auto sigmasquare = _sigmasquare;
+    auto epsilon24 = _epsilon24;
+    if constexpr (useMixing) {
+      sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
+      epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
+    }
     auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
     double dr2 = utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffsquare) return;
 
     double invdr2 = 1. / dr2;
-    double lj6 = _sigmasquare * invdr2;
+    double lj6 = sigmasquare * invdr2;
     lj6 = lj6 * lj6 * lj6;
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
-    double fac = _epsilon24 * (lj12 + lj12m6) * invdr2;
+    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = utils::ArrayMath::mulScalar(dr, fac);
     i.addF(f);
     if (newton3) {
@@ -113,7 +151,7 @@ class LJFunctor
     }
     if (calculateGlobals) {
       auto virial = utils::ArrayMath::mul(dr, f);
-      double upot = _epsilon24 * lj12m6 + _shift6;
+      double upot = epsilon24 * lj12m6 + _shift6;
 
       const int threadnum = autopas_get_thread_num();
       if (_duplicatedCalculations) {
@@ -155,10 +193,12 @@ class LJFunctor
     SoAFloatPrecision *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
-    const SoAFloatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
-                            shift6 = _shift6;
 
+    [[maybe_unused]] auto *const __restrict__ typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
+    const SoAFloatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
+    SoAFloatPrecision sigmasquare = _sigmasquare;
+    SoAFloatPrecision epsilon24 = _epsilon24;
     if (calculateGlobals) {
       // Checks if the cell is a halo cell, if it is, we skip it.
       bool isHaloCell = ownedPtr[0] ? false : true;
@@ -177,10 +217,26 @@ class LJFunctor
       SoAFloatPrecision fyacc = 0.;
       SoAFloatPrecision fzacc = 0.;
 
+      std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
+      std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
+      if constexpr (useMixing) {
+        // preload all sigma and epsilons for next vectorized region
+        sigmaSquares.resize(soa.getNumParticles());
+        epsilon24s.resize(soa.getNumParticles());
+        for (unsigned int j = 0; j < soa.getNumParticles(); ++j) {
+          sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
+          epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
+        }
+      }
+
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
+        if constexpr (useMixing) {
+          sigmasquare = sigmaSquares[j];
+          epsilon24 = epsilon24s[j];
+        }
         const SoAFloatPrecision drx = xptr[i] - xptr[j];
         const SoAFloatPrecision dry = yptr[i] - yptr[j];
         const SoAFloatPrecision drz = zptr[i] - zptr[j];
@@ -263,6 +319,8 @@ class LJFunctor
     auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+    [[maybe_unused]] auto *const __restrict__ typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict__ typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
 
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
@@ -282,17 +340,35 @@ class LJFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
-    const SoAFloatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
-                            shift6 = _shift6;
+    const SoAFloatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
+    SoAFloatPrecision sigmasquare = _sigmasquare;
+    SoAFloatPrecision epsilon24 = _epsilon24;
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       SoAFloatPrecision fxacc = 0;
       SoAFloatPrecision fyacc = 0;
       SoAFloatPrecision fzacc = 0;
 
+      // preload all sigma and epsilons for next vectorized region
+      std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
+      std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
+      if constexpr (useMixing) {
+        sigmaSquares.resize(soa2.getNumParticles());
+        epsilon24s.resize(soa2.getNumParticles());
+        for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
+          sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
+          epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
+        }
+      }
+
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
+        if constexpr (useMixing) {
+          sigmasquare = sigmaSquares[j];
+          epsilon24 = epsilon24s[j];
+        }
+
         const SoAFloatPrecision drx = x1ptr[i] - x2ptr[j];
         const SoAFloatPrecision dry = y1ptr[i] - y2ptr[j];
         const SoAFloatPrecision drz = z1ptr[i] - z2ptr[j];
@@ -352,7 +428,6 @@ class LJFunctor
           energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
         }
       }
-
       const int threadnum = autopas_get_thread_num();
 
       _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
@@ -409,10 +484,28 @@ class LJFunctor
     }
 
 #else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
+    utils::ExceptionHandler::exception("LJFunctor::CudaFunctor: AutoPas was compiled without CUDA support!");
 #endif
   }
 
+  /**
+   * Sets the particle properties constants for this functor.
+   *
+   * This is only necessary if no particlePropertiesLibrary is used.
+   * If compiled with CUDA this function also loads the values to the GPU.
+   *
+   * @param epsilon24
+   * @param sigmaSquare
+   */
+  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquare) {
+    _epsilon24 = epsilon24;
+    _sigmasquare = sigmaSquare;
+#if defined(AUTOPAS_CUDA)
+    LJFunctorConstants<SoAFloatPrecision> constants(_cutoffsquare, _epsilon24 /* epsilon24 */,
+                                                    _sigmasquare /* sigmasquare */, _shift6);
+    _cudawrapper.loadConstants(&constants);
+#endif
+  }
   /**
    * @brief Functor using Cuda on SoAs in device Memory
    *
@@ -505,7 +598,7 @@ class LJFunctor
     }
 
 #else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
+    utils::ExceptionHandler::exception("LJFunctor::deviceSoALoader: AutoPas was compiled without CUDA support!");
 #endif
   }
 
@@ -527,33 +620,33 @@ class LJFunctor
         size, soa.template begin<Particle::AttributeNames::forceZ>());
 
 #else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
+    utils::ExceptionHandler::exception("LJFunctor::deviceSoAExtractor: AutoPas was compiled without CUDA support!");
 #endif
   }
 
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 8> getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 8>{
+  constexpr static const auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 9>{
         Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
   }
 
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 5> getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 5>{
-        Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
+  constexpr static const auto getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 6>{
+        Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 3> getComputedAttr() {
+  constexpr static const auto getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 3>{
         Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
   }
@@ -624,7 +717,7 @@ class LJFunctor
   }
 
   /**
-   * Get the potential Energy
+   * Get the potential Energy.
    * @return the potential Energy
    */
   double getUpot() {
@@ -640,8 +733,8 @@ class LJFunctor
   }
 
   /**
-   * Get the virial
-   * @return the virial
+   * Get the virial.
+   * @return
    */
   double getVirial() {
     if (not calculateGlobals) {
@@ -654,6 +747,18 @@ class LJFunctor
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
+
+  /**
+   * Getter for 24*epsilon.
+   * @return 24*epsilon
+   */
+  SoAFloatPrecision getEpsilon24() const { return _epsilon24; }
+
+  /**
+   * Getter for the squared sigma.
+   * @return squared sigma.
+   */
+  SoAFloatPrecision getSigmaSquare() const { return _sigmasquare; }
 
  private:
   template <bool newton3, bool duplicatedCalculations>
@@ -669,11 +774,14 @@ class LJFunctor
     auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    [[maybe_unused]] auto *const __restrict__ typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict__ typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
 
     const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
 
-    const SoAFloatPrecision cutoffsquare = _cutoffsquare, epsilon24 = _epsilon24, sigmasquare = _sigmasquare,
-                            shift6 = _shift6;
+    const SoAFloatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
+    SoAFloatPrecision sigmasquare = _sigmasquare;
+    SoAFloatPrecision epsilon24 = _epsilon24;
 
     SoAFloatPrecision upotSum = 0.;
     SoAFloatPrecision virialSumX = 0.;
@@ -729,6 +837,15 @@ class LJFunctor
           // vecsize particles in the neighborlist of particle i starting at
           // particle joff
 
+          [[maybe_unused]] alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> sigmaSquares;
+          [[maybe_unused]] alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> epsilon24s;
+          if constexpr (useMixing) {
+            for (size_t j = 0; j < vecsize; j++) {
+              sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
+              epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[currentList[joff + j]]);
+            }
+          }
+
           // gather position of particle j
 #pragma omp simd safelen(vecsize)
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
@@ -737,9 +854,14 @@ class LJFunctor
             zArr[tmpj] = zptr[currentList[joff + tmpj]];
             ownedArr[tmpj] = ownedPtr[currentList[joff + tmpj]];
           }
+
           // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
           for (size_t j = 0; j < vecsize; j++) {
+            if constexpr (useMixing) {
+              sigmasquare = sigmaSquares[j];
+              epsilon24 = epsilon24s[j];
+            }
             // const size_t j = currentList[jNeighIndex];
 
             const SoAFloatPrecision drx = xtmp[j] - xArr[j];
@@ -812,6 +934,10 @@ class LJFunctor
       for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
         size_t j = neighborList[i][jNeighIndex];
         if (i == j) continue;
+        if constexpr (useMixing) {
+          sigmasquare = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
+          epsilon24 = _PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
+        }
 
         const SoAFloatPrecision drx = xptr[i] - xptr[j];
         const SoAFloatPrecision dry = yptr[i] - yptr[j];
@@ -920,8 +1046,11 @@ class LJFunctor
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
-  const double _cutoffsquare, _epsilon24, _sigmasquare, _shift6;
+  const double _cutoffsquare, _shift6;
+  // not const because they might be reset through PPL
+  double _epsilon24, _sigmasquare;
 
+  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _upotSum;
   // sum of the virial, only calculated if calculateGlobals is true

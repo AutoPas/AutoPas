@@ -76,7 +76,7 @@ void testAdditionAndIteration(testingTuple options) {
     for (auto y : getPossible1DPositions(boxMin[1], boxMax[1])) {
       for (auto z : getPossible1DPositions(boxMin[2], boxMax[2])) {
         std::array<double, 3> pos{x, y, z};
-        Molecule p(pos, {0., 0., 0.}, id);
+        Molecule p(pos, {0., 0., 0.}, id, 0);
         ++id;
         // add the two particles!
         if (autopas::utils::inBox(pos, boxMin, boxMax)) {
