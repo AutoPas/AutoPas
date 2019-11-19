@@ -53,7 +53,7 @@ else ()
 
     add_dependencies(yaml-cpp yaml-cpp_external)
 
-    file(MAKE_DIRECTORY "${install_dir}/src/yaml-cpp/include")
+    file(MAKE_DIRECTORY "${install_dir}/src/yaml-cpp_external/include")
 
     # Set libgtest properties
     set_target_properties(
@@ -62,6 +62,6 @@ else ()
             "IMPORTED_LOCATION"
             "${binary_dir}/libyaml-cpp.a"
             "INTERFACE_INCLUDE_DIRECTORIES"
-            "${install_dir}/src/yaml-cpp/include"
+            "${install_dir}/src/yaml-cpp_external/include"
     )
 endif ()
