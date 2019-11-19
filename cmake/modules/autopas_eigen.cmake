@@ -7,12 +7,7 @@ if (NOT ${Eigen3_ForceBundled})
     if (Eigen3_FOUND AND "${Eigen3_VERSION}" VERSION_GREATER_EQUAL 3.3.7)
         message(STATUS "Eigen3 - using installed system version ${Eigen3_VERSION}")
         # to later add the alias Eigen3::Eigen needs to be promoted to global visibility
-        set_target_properties(
-                Eigen3::Eigen
-                PROPERTIES
-                "IMPORTED_GLOBAL"
-                "TRUE"
-        )
+        set_target_properties(Eigen3::Eigen PROPERTIES "IMPORTED_GLOBAL" "TRUE")
         # we need to alias this because aparently make sometimes breaks on '::'
         add_library(Eigen3 ALIAS Eigen3::Eigen)
         return()
@@ -52,18 +47,13 @@ ExternalProject_Add(
 ExternalProject_Get_Property(Eigen3_bundled source_dir)
 
 add_library(
-        Eigen3
-        STATIC
-        IMPORTED
-        GLOBAL
+    Eigen3
+    STATIC
+    IMPORTED
+    GLOBAL
 )
 
 add_dependencies(Eigen3 Eigen3_bundled)
 
 # Set libgtest properties
-set_target_properties(
-        Eigen3
-        PROPERTIES
-        "INTERFACE_INCLUDE_DIRECTORIES"
-        "${source_dir}"
-)
+set_target_properties(Eigen3 PROPERTIES "INTERFACE_INCLUDE_DIRECTORIES" "${source_dir}")
