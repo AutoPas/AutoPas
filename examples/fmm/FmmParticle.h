@@ -16,9 +16,8 @@ class FmmParticle : public autopas::Particle {
   double longRange = 0;
   double shortRange = 0;
 
-  FmmParticle(std::array<double, 3> r, std::array<double, 3> v, int id, double charge) : ParticleBase(r, v, id) {
-    this->charge = charge;
-  }
+  FmmParticle(std::array<double, 3> r, std::array<double, 3> v, int id, double charge)
+      : ParticleBase(r, v, id), charge(charge) {}
 
-  FmmParticle() : ParticleBase() { this->charge = 1; }
+  FmmParticle() : ParticleBase(), charge(1) {}
 };
