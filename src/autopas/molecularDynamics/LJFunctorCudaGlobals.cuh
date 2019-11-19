@@ -7,9 +7,7 @@
 
 #pragma once
 
-#include <array>
 #include "autopas/pairwiseFunctors/FunctorCuda.cuh"
-#include "autopas/pairwiseFunctors/LJFunctorCuda.cuh"
 #include "cuda_runtime.h"
 
 namespace autopas {

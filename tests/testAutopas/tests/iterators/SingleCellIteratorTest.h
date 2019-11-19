@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class SingleCellIteratorTest : public AutoPasTestBase {
  public:
@@ -30,5 +31,5 @@ class SingleCellIteratorTest : public AutoPasTestBase {
  protected:
   // needs to be protected, because the test fixtures generate a derived class
   // for each unit test.
-  std::vector<autopas::MoleculeLJ> _vecOfMolecules;
+  std::vector<Molecule> _vecOfMolecules;
 };

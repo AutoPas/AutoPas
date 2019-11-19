@@ -26,16 +26,15 @@ std::array<double, 3> LCCudaTraversalVersusDirectSumTest::randomPosition(const s
   return r;
 }
 
-void LCCudaTraversalVersusDirectSumTest::fillContainerWithMolecules(
-    unsigned long numMolecules,
-    autopas::ParticleContainer<autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const {
+void LCCudaTraversalVersusDirectSumTest::fillContainerWithMolecules(unsigned long numMolecules,
+                                                                    autopas::ParticleContainer<FMCell> &cont) const {
   srand(42);  // fixed seedpoint
 
   std::array<double, 3> boxMin(cont.getBoxMin()), boxMax(cont.getBoxMax());
 
   for (unsigned long i = 0; i < numMolecules; ++i) {
     auto id = static_cast<unsigned long>(i);
-    autopas::MoleculeLJ m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
+    Molecule m(randomPosition(boxMin, boxMax), {0., 0., 0.}, id);
     cont.addParticle(m);
   }
 }
@@ -52,28 +51,24 @@ void LCCudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double
   double eps = 1.0;
   double sig = 1.0;
   double shift = 0.0;
-  autopas::MoleculeLJ::setEpsilon(eps);
-  autopas::MoleculeLJ::setSigma(sig);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcDS(getCutoff(), eps, sig,
-                                                                                               shift);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals> funcLC(getCutoff(), eps, sig,
-                                                                                               shift);
+  autopas::LJFunctor<Molecule, FMCell, /*mixing*/ false, autopas::FunctorN3Modes::Both, calculateGlobals> funcDS(
+      getCutoff(), shift);
+  funcDS.setParticleProperties(eps * 24, sig * sig);
+  autopas::LJFunctor<Molecule, FMCell, /*mixing*/ false, autopas::FunctorN3Modes::Both, calculateGlobals> funcLC(
+      getCutoff(), shift);
+  funcLC.setParticleProperties(eps * 24, sig * sig);
 
-  autopas::C01CudaTraversal<FMCell,
-                            autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals>,
-                            autopas::DataLayoutOption::cuda, useNewton3>
-      traversalLJ(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &funcLC);
-  autopas::DirectSumTraversal<FMCell,
-                              autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, calculateGlobals>,
-                              autopas::DataLayoutOption::aos, useNewton3>
-      traversalDS(&funcDS, getCutoff());
+  autopas::DirectSumTraversal<FMCell, decltype(funcDS), autopas::DataLayoutOption::aos, useNewton3> traversalDS(
+      &funcDS, getCutoff());
+  autopas::C01CudaTraversal<FMCell, decltype(funcLC), autopas::DataLayoutOption::cuda, useNewton3> traversalLC(
+      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &funcLC);
 
   funcDS.initTraversal();
   _directSum.iteratePairwise(&traversalDS);
   funcDS.endTraversal(useNewton3);
 
   funcLC.initTraversal();
-  _linkedCells.iteratePairwise(&traversalLJ);
+  _linkedCells.iteratePairwise(&traversalLC);
   funcLC.endTraversal(useNewton3);
 
   auto itDirect = _directSum.begin();
@@ -82,12 +77,12 @@ void LCCudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double
   std::vector<std::array<double, 3>> forcesDirect(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, the
   for (auto it = _directSum.begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
+    Molecule &m = *it;
     forcesDirect.at(m.getID()) = m.getF();
   }
 
   for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
+    Molecule &m = *it;
     forcesLinked.at(m.getID()) = m.getF();
   }
 

@@ -29,5 +29,5 @@ class VerletListsCellsTraversalTest : public AutoPasTestBase {
  protected:
   void test(unsigned long numMolecules);
 
-  autopas::VerletListsCells<autopas::MoleculeLJ> _verletListsCells, _verletListsCells_cs2;
+  autopas::VerletListsCells<Molecule> _verletListsCells, _verletListsCells_cs2;
 };
