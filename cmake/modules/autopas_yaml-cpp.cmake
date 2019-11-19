@@ -16,7 +16,7 @@ else ()
 
     # Extract yaml-cpp
     ExternalProject_Add(
-        yaml-cpp_external
+        yaml-cpp_bundled
         URL
             # yaml-cpp-master:
             # https://github.com/jbeder/yaml-cpp/archive/master.zip
@@ -42,7 +42,7 @@ else ()
     )
 
     # Get GTest source and binary directories from CMake project
-    ExternalProject_Get_Property(yaml-cpp_external install_dir binary_dir)
+    ExternalProject_Get_Property(yaml-cpp_bundled install_dir binary_dir)
 
     add_library(
         yaml-cpp
@@ -51,9 +51,9 @@ else ()
         GLOBAL
     )
 
-    add_dependencies(yaml-cpp yaml-cpp_external)
+    add_dependencies(yaml-cpp yaml-cpp_bundled)
 
-    file(MAKE_DIRECTORY "${install_dir}/src/yaml-cpp_external/include")
+    file(MAKE_DIRECTORY "${install_dir}/src/yaml-cpp_bundled/include")
 
     # Set libgtest properties
     set_target_properties(
@@ -62,6 +62,6 @@ else ()
             "IMPORTED_LOCATION"
             "${binary_dir}/libyaml-cpp.a"
             "INTERFACE_INCLUDE_DIRECTORIES"
-            "${install_dir}/src/yaml-cpp_external/include"
+            "${install_dir}/src/yaml-cpp_bundled/include"
     )
 endif ()

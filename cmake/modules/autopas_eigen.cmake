@@ -32,7 +32,7 @@ include(ExternalProject)
 
 # Extract Eigen3
 ExternalProject_Add(
-    Eigen3_external
+    Eigen3_bundled
     URL
         # eigen-master:
         # https://bitbucket.org/eigen/eigen/get/default.zip
@@ -49,7 +49,7 @@ ExternalProject_Add(
 )
 
 # Get GTest source and binary directories from CMake project
-ExternalProject_Get_Property(Eigen3_external source_dir)
+ExternalProject_Get_Property(Eigen3_bundled source_dir)
 
 add_library(
         Eigen3
@@ -58,7 +58,7 @@ add_library(
         GLOBAL
 )
 
-add_dependencies(Eigen3 Eigen3_external)
+add_dependencies(Eigen3 Eigen3_bundled)
 
 # Set libgtest properties
 set_target_properties(
