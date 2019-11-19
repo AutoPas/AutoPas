@@ -13,6 +13,7 @@ class FmmOperatorInterface {
   virtual void M2L(FmmTreeNode &node, long orderOfExpansion) = 0;
   virtual void L2L(FmmTreeNode &child, long orderOfExpansion) = 0;
   virtual void L2P(FmmTreeNode &leaf, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) = 0;
+  virtual void NearField(FmmParticle &p1, FmmParticle &p2) = 0;
 
   void P2MRec(FmmTreeNode &node, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) {
     node.initCoefficients(orderOfExpansion);
@@ -59,6 +60,24 @@ class FmmOperatorInterface {
     }
   }
 
+  void NearFieldRec(FmmTreeNode &node, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) {
+    if (node.isLeaf()) {
+      for (auto p1 = container.getRegionIterator(node.getBoxMin(), node.getBoxMax()); p1.isValid(); ++p1) {
+        for (auto nearCell : node.getNearFieldList()) {
+          for (auto p2 = container.getRegionIterator(nearCell->getBoxMin(), nearCell->getBoxMax()); p2.isValid();
+               ++p2) {
+            if (p1->getID() != p2->getID()) {
+              NearField(*p1, *p2);
+            }
+          }
+        }
+      }
+    } else {
+      NearFieldRec(node.getChild(0), orderOfExpansion, container);
+      NearFieldRec(node.getChild(1), orderOfExpansion, container);
+    }
+  }
+
  public:
   void RunFmm(FmmTree &fmmTree, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) {
     std::cout << "RunFmm 1" << std::endl;
@@ -71,6 +90,8 @@ class FmmOperatorInterface {
     L2LRec(fmmTree.getRoot(), orderOfExpansion, container);
     std::cout << "RunFmm 5" << std::endl;
     L2PRec(fmmTree.getRoot(), orderOfExpansion, container);
+    std::cout << "RunFmm 6" << std::endl;
+    NearFieldRec(fmmTree.getRoot(), orderOfExpansion, container);
     std::cout << "RunFmm 6" << std::endl;
   }
 };

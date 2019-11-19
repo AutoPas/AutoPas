@@ -54,6 +54,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
           auto add = iter->charge * std::pow(spherical[0], n) *
                      fmmMath.sphericalHarmonicsCached(-m, n, spherical[1], spherical[2]);
           leaf.setM(m, n, leaf.getM(m, n) + add);
+          // std::cout << "P2M =" << leaf.getM(m, n) << std::endl;
         }
       }
     }
@@ -97,6 +98,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
           }
           // Add the matrix defined in 5.22
           parent.setM(k, j, parent.getM(k, j) + mmn);
+          // std::cout << "M2M = " << parent.getM(k, j) << std::endl;
         }
       }
     }
@@ -149,6 +151,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
             }
 
             node.setL(k, j, node.getL(k, j) + sum);
+            // std::cout << "M2L = " << node.getL(k, j) << std::endl;
             rhoPower1 *= rho;
           }
         }
@@ -187,7 +190,9 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
             }
           }
           // Add the matrix defined in 5.30
+
           node.setL(k, j, node.getL(k, j) + lmn);
+          // std::cout << "L2L = " << node.getL(k, j) << std::endl;
         }
       }
     }
@@ -224,6 +229,14 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
       iter->longRange = potential.real();
       iter->resultFMM = potential.real();
     }
+  }
+  void NearField(FmmParticle &p1, FmmParticle &p2) override {
+    double x = p1.getR()[0] - p2.getR()[0];
+    double y = p1.getR()[1] - p2.getR()[1];
+    double z = p1.getR()[2] - p2.getR()[2];
+    auto dist = 1.0 / std::sqrt(x * x + y * y + z * z);
+    p1.resultFMM += p2.charge * dist;
+    p1.shortRange += p2.charge * dist;
   }
 };
 }  // namespace autopas::fmm

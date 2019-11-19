@@ -302,19 +302,30 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    */
   const std::vector<ParticleCell> &getCells() const { return this->_cells; }
 
-  void createFmmNode(fmm::FmmTreeNode &node) const {
-    auto nodeMin3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMin());
-    auto nodeMax3DIndex = _cellBlock.get3DIndexOfPosition(node.getBoxMax());
+  void createFmmNode(fmm::FmmTreeNode &node, int depth) const {
+    std::cout << "getCellLength " << autopas::utils::ArrayUtils::to_string(_cellBlock.getCellLength()) << std::endl;
+
+    auto halfCell = autopas::utils::ArrayMath::mulScalar(_cellBlock.getCellLength(), 0.5);
+
+    // BoxMin and BoxMax are always between two cells. Adding half a cell moves BoxMin and BoxMax to the center of a
+    // cell. This ensures, that the correct 3DIndex is returned.
+    auto nodeMin3DIndex = _cellBlock.get3DIndexOfPosition(autopas::utils::ArrayMath::add(node.getBoxMin(), halfCell));
+    auto nodeMax3DIndex = _cellBlock.get3DIndexOfPosition(autopas::utils::ArrayMath::add(node.getBoxMax(), halfCell));
+
+    auto tmp = autopas::utils::ArrayMath::sub(nodeMax3DIndex, std::array<unsigned long, 3>({1, 1, 1}));
+
+    node.name = "<<[" + autopas::utils::ArrayUtils::to_string(nodeMin3DIndex) + "] - [" +
+                autopas::utils::ArrayUtils::to_string(tmp) + "]>>";
+
     auto delta = utils::ArrayMath::sub(nodeMax3DIndex, nodeMin3DIndex);
 
-    /*std::cout << autopas::ArrayUtils::to_string(nodeMin3DIndex) << std::endl;
-    std::cout << autopas::ArrayUtils::to_string(nodeMax3DIndex) << std::endl;
-    std::cout << "getCellLength " << autopas::ArrayUtils::to_string(_cellBlock.getCellLength()) << std::endl;*/
+    std::cout << "-" << std::endl;
+    std::cout << "boxMin = " << autopas::utils::ArrayUtils::to_string(node.getBoxMin()) << std::endl;
+    std::cout << "boxMax = " << autopas::utils::ArrayUtils::to_string(node.getBoxMax()) << std::endl;
+    std::cout << "sphereRadius = " << node.getSphereRadius() << std::endl;
 
-    /*std::cout << "nodeMin3DIndex = {" << nodeMin3DIndex[0] << "," << nodeMin3DIndex[1] << "," << nodeMin3DIndex[2]
-              << "}" << std::endl;
-    std::cout << "nodeMax3DIndex = {" << nodeMax3DIndex[0] << "," << nodeMax3DIndex[1] << "," << nodeMax3DIndex[2]
-              << "}" << std::endl;*/
+    std::cout << autopas::utils::ArrayUtils::to_string(nodeMin3DIndex) << std::endl;
+    std::cout << autopas::utils::ArrayUtils::to_string(nodeMax3DIndex) << std::endl;
 
     // Find the axis in which the box is the largest (based on 3D index).
     int largestIndex = 0;
@@ -326,9 +337,9 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
     }
     auto largestSize = delta[largestIndex];
 
-    // std::cout << "delta = " << autopas::ArrayUtils::to_string(delta) << std::endl;
-    // std::cout << "largestIndex = " << largestIndex << std::endl;
-    // std::cout << "largestSize = " << largestSize << std::endl;
+    std::cout << "delta = " << autopas::utils::ArrayUtils::to_string(delta) << std::endl;
+    std::cout << "largestIndex = " << largestIndex << std::endl;
+    std::cout << "largestSize = " << largestSize << std::endl;
 
     // Must be at least 2 cells to do a split.
     if (largestSize >= 2) {
@@ -337,13 +348,19 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 
       // Split largest size at the center.
       auto largestSizeMid = nodeMin3DIndex[largestIndex] + (largestSize / 2);
+      std::cout << "largestSizeMid = " << largestSizeMid << std::endl;
       auto split3DIndex = nodeMin3DIndex;
       split3DIndex[largestIndex] = largestSizeMid;
+
+      std::cout << "split3DIndex = " << autopas::utils::ArrayUtils::to_string(split3DIndex) << std::endl;
 
       // Find the double coordinates of the split position.
       auto midBoxMin = std::array<double, 3>({0, 0, 0});
       auto midBoxMax = std::array<double, 3>({0, 0, 0});
       _cellBlock.getCellBoundingBox(split3DIndex, midBoxMin, midBoxMax);
+
+      std::cout << "midBoxMin = " << autopas::utils::ArrayUtils::to_string(midBoxMin) << std::endl;
+      std::cout << "midBoxMax = " << autopas::utils::ArrayUtils::to_string(midBoxMax) << std::endl;
 
       // std::cout << "midBox" << std::endl;
 
@@ -357,14 +374,16 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
       splitMin[largestIndex] = midBoxMin[largestIndex];
       splitMax[largestIndex] = midBoxMin[largestIndex];
 
+      std::cout << "splitMin = " << autopas::utils::ArrayUtils::to_string(splitMin) << std::endl;
+      std::cout << "splitMax = " << autopas::utils::ArrayUtils::to_string(splitMax) << std::endl;
+
       // std::cout << autopas::ArrayUtils::to_string(splitMin) << std::endl;
       // std::cout << autopas::ArrayUtils::to_string(splitMax) << std::endl;
 
       node.split(splitMax, splitMin);
-      // if (depth < 4) {
-      createFmmNode(node.getChild(0));
-      createFmmNode(node.getChild(1));
-      //}
+      createFmmNode(node.getChild(0), depth + 1);
+      createFmmNode(node.getChild(1), depth + 1);
+
     } else {
       node.makeLeaf();
     }
@@ -373,7 +392,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
   [[nodiscard]] std::unique_ptr<fmm::FmmTree> getFastMultipoleMethodTree() override {
     auto tree = std::make_unique<fmm::FmmTree>();
 
-    createFmmNode(tree->setRoot(this->getBoxMin(), this->getBoxMax()));
+    createFmmNode(tree->setRoot(this->getBoxMin(), this->getBoxMax()), 0);
     tree->getRoot().init(tree->getRoot());
     return tree;
   }

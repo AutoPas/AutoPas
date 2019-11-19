@@ -8,6 +8,7 @@
 #include <array>
 #include <complex>
 #include <memory>
+#include <string>
 #include <unordered_set>
 #include <vector>
 #include "autopas/utils/ArrayMath.h"
@@ -19,6 +20,7 @@ class FmmTree;
 
 class FmmTreeNode {
  public:
+  std::string name;
   FmmTreeNode(FmmTree &tree, FmmTreeNode *parent, std::array<double, 3> boxMin, std::array<double, 3> boxMax)
       : tree(&tree),
         parent(parent),
@@ -62,6 +64,10 @@ class FmmTreeNode {
           // Well separated for parent
         } else {
           // Well separated for this node
+
+          // Check if a descendant is well separated for the parent
+          // ...
+
           interactionList.insert(&otherNode);
         }
       } else {
@@ -69,14 +75,15 @@ class FmmTreeNode {
         interactionList.insert(&otherNode);
       }
     } else {
-      if (isLeaf()) {
-        // Node is leaf, so otherNode is added to the near field list.
-        nearFieldList.insert(&otherNode);
-      } else {
+      {
         // Node is not a leaf, so try to find more refined nodes to add to the interaction list.
         if (!otherNode.isLeaf()) {
           initRec(otherNode.getChild(0));
           initRec(otherNode.getChild(1));
+        } else {
+          if (isLeaf()) {
+            nearFieldList.insert(&otherNode);
+          }
         }
       }
     }
@@ -84,6 +91,19 @@ class FmmTreeNode {
 
   void init(FmmTreeNode &otherNode) {
     initRec(otherNode);
+    // Debug print near field list and interaction list
+    std::cout << "Node = " << name << std::endl;
+    std::cout << "NearFieldList = " << std::endl;
+    for (auto node : nearFieldList) {
+      std::cout << node->name << " , ";
+    }
+    std::cout << std::endl << std::endl;
+
+    std::cout << "InteractionList = " << std::endl;
+    for (auto node : interactionList) {
+      std::cout << node->name << " , ";
+    }
+    std::cout << std::endl << std::endl;
     if (!isLeaf()) {
       getChild(0).init(otherNode);
       getChild(1).init(otherNode);
