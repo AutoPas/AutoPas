@@ -1,6 +1,6 @@
 # first try: check if we find any installed version
 find_package(spdlog QUIET)
-if (spdlog_FOUND AND ${spdlog_VERSION} VERSION_GREATER_EQUAL 1.3.1)
+if (spdlog_FOUND AND "${spdlog_VERSION}" VERSION_GREATER_EQUAL 1.3.1)
     message(STATUS "spdlog - using installed system version ${spdlog_VERSION}")
     target_link_libraries(autopas PUBLIC spdlog::spdlog)
 else ()
