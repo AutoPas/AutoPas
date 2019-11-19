@@ -45,6 +45,17 @@ class FmmTreeNode {
     }
   }
 
+  void insertLeaves(FmmTreeNode &otherNode) {
+    if (otherNode.isLeaf()) {
+      if (ancestorInteractionList.find(&otherNode) == ancestorInteractionList.end()) {
+        interactionList.insert(&otherNode);
+      }
+    } else {
+      insertLeaves(otherNode.getChild(0));
+      insertLeaves(otherNode.getChild(1));
+    }
+  }
+
   void initRec(FmmTreeNode &otherNode) {
     double r1 = sphereRadius;
     double r2 = otherNode.sphereRadius;
@@ -64,15 +75,11 @@ class FmmTreeNode {
           // Well separated for parent
         } else {
           // Well separated for this node
-
-          // Check if a descendant is well separated for the parent
-          // ...
-
-          interactionList.insert(&otherNode);
+          insertLeaves(otherNode);
         }
       } else {
         // Well separated for this node
-        interactionList.insert(&otherNode);
+        insertLeaves(otherNode);
       }
     } else {
       {
@@ -90,6 +97,14 @@ class FmmTreeNode {
   }
 
   void init(FmmTreeNode &otherNode) {
+    if (getParent() != nullptr) {
+      for (auto node : getParent()->getInteractionList()) {
+        ancestorInteractionList.insert(node);
+      }
+      for (auto node : getParent()->ancestorInteractionList) {
+        ancestorInteractionList.insert(node);
+      }
+    }
     initRec(otherNode);
     // Debug print near field list and interaction list
     std::cout << "Node = " << name << std::endl;
@@ -177,6 +192,7 @@ class FmmTreeNode {
   double sphereRadius;
   std::unordered_set<FmmTreeNode *> interactionList;
   std::unordered_set<FmmTreeNode *> nearFieldList;
+  std::unordered_set<FmmTreeNode *> ancestorInteractionList;
 
   std::vector<std::vector<std::complex<double>>> coefficientM;
   std::vector<std::vector<std::complex<double>>> coefficientL;
