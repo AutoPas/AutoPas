@@ -31,11 +31,13 @@ class FmmTreeNode {
     } else {
       depth = parent->depth + 1;
     }
+
+    std::cout << "sphereRadius = " << sphereRadius << std::endl;
   }
   void split(std::array<double, 3> firstBoxMax, std::array<double, 3> secondBoxMin) {
     if (children.empty()) {
       children.emplace_back(*this->tree, this, boxMin, firstBoxMax);
-      children.emplace_back(*this->tree, this, boxMin, secondBoxMin);
+      children.emplace_back(*this->tree, this, secondBoxMin, boxMax);
     } else {
       autopas::utils::ExceptionHandler::exception("trying to split an already split FmmTreeNode");
     }
@@ -96,6 +98,7 @@ class FmmTreeNode {
   [[nodiscard]] long getDepth() const { return depth; }
   [[nodiscard]] FmmTree &getTree() const { return *tree; }
   [[nodiscard]] FmmTreeNode *getParent() const { return parent; }
+  [[nodiscard]] double getSphereRadius() const { return sphereRadius; }
 
   void makeLeaf() { _isLeaf = true; }
 
