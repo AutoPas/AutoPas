@@ -14,7 +14,7 @@ else ()
 
     include(ExternalProject)
     ExternalProject_Add(
-        spdlog
+        spdlog_external
         URL
             # spdlog master:
             # https://github.com/gabime/spdlog/archive/v1.x.zip
@@ -35,33 +35,32 @@ else ()
         INSTALL_COMMAND ""
     )
     ExternalProject_Get_Property(
-        spdlog
+        spdlog_external
         source_dir
         binary_dir
         install_dir
     )
 
     add_library(
-        libspdlog
+        spdlog::spdlog
         STATIC
         IMPORTED
         GLOBAL
     )
-    add_dependencies(libspdlog spdlog)
+    add_dependencies(spdlog::spdlog spdlog_external)
 
     # create directory otherwise cmake will complain during generate step bc it would only be
     # created by make
-    file(MAKE_DIRECTORY "${install_dir}/src/spdlog/include")
+    file(MAKE_DIRECTORY "${install_dir}/src/spdlog_external/include")
 
     # define interesting
     set_target_properties(
-        libspdlog
+        spdlog::spdlog
         PROPERTIES
             "IMPORTED_LOCATION"
             "${binary_dir}/libspdlog.a"
             "INTERFACE_INCLUDE_DIRECTORIES"
-            "${install_dir}/src/spdlog/include"
+            "${install_dir}/src/spdlog_external/include"
     )
 
-    target_link_libraries(autopas PUBLIC libspdlog)
 endif ()
