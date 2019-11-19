@@ -6,6 +6,14 @@ if (NOT ${Eigen3_ForceBundled})
     # actually I don't know our minimal supported version but this is the one I tested.
     if (Eigen3_FOUND AND "${Eigen3_VERSION}" VERSION_GREATER_EQUAL 3.3.7)
         message(STATUS "Eigen3 - using installed system version ${Eigen3_VERSION}")
+        # to later add the alias Eigen3::Eigen needs to be promoted to global visibility
+        set_target_properties(
+                Eigen3::Eigen
+                PROPERTIES
+                "IMPORTED_GLOBAL"
+                "TRUE"
+        )
+        # we need to alias this because aparently make sometimes breaks on '::'
         add_library(Eigen3 ALIAS Eigen3::Eigen)
         return()
     endif ()
