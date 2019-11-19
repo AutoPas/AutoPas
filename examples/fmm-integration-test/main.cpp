@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
   AutoPasCont cont;
   cont.setAllowedContainers({autopas::ContainerOption::linkedCells});
   cont.setBoxMin({0, 0, 0});
-  cont.setBoxMax({2, 3, 4});
+  cont.setBoxMax({1.2, 2.4, 3.6});
   cont.init();
 
   RandomGenerator::fillWithParticles(cont, autopas::fmm::FmmParticle(), 10);
@@ -39,6 +39,27 @@ int main(int argc, char **argv) {
   autopas::fmm::PotentialOperators<autopas::fmm::FmmParticle, autopas::FullParticleCell<autopas::fmm::FmmParticle>> op(
       8);
   op.RunFmm(*fmmTree, 8, cont);
+
+  for (auto particle = cont.begin(); particle.isValid(); ++particle) {
+    for (auto otherParticle = cont.begin(); otherParticle.isValid(); ++otherParticle) {
+      if (particle->getID() != otherParticle->getID()) {
+        double x = particle->getR()[0] - otherParticle->getR()[0];
+        double y = particle->getR()[1] - otherParticle->getR()[1];
+        double z = particle->getR()[2] - otherParticle->getR()[2];
+        auto dist = 1.0 / std::sqrt(x * x + y * y + z * z);
+        particle->resultExact += otherParticle->charge * dist;
+      }
+    }
+  }
+
+  for (auto particle = cont.begin(); particle.isValid(); ++particle) {
+    std::cout << "[ID=" << particle->getID() << "] " << particle->getR()[0] << ", " << particle->getR()[1] << ", "
+              << particle->getR()[2] << ", charge = " << particle->charge << std::endl;
+    std::cout << "long range " << particle->longRange << std::endl;
+    std::cout << "short range " << particle->shortRange << std::endl;
+    std::cout << "resultFMM " << particle->resultFMM << std::endl;
+    std::cout << "resultExact " << particle->resultExact << std::endl;
+  }
 
   std::cout << std::flush;
 }
