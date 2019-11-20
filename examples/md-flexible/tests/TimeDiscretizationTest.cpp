@@ -25,15 +25,15 @@ TEST_F(TimeDiscretizationTest, calcVelocities) {
 
   TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1);
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-      // only velocity in one direction is expected
-      EXPECT_EQ(iter->getV()[0], 0);
-      EXPECT_EQ(iter->getV()[1], 0);
-      // Strömer-Verlet: 1 + (0+1)/2 * 0.1 = 1.05
-      EXPECT_NEAR(iter->getV()[2], 1.05, 1e-13);
+    // only velocity in one direction is expected
+    EXPECT_EQ(iter->getV()[0], 0);
+    EXPECT_EQ(iter->getV()[1], 0);
+    // Strömer-Verlet: 1 + (0+1)/2 * 0.1 = 1.05
+    EXPECT_NEAR(iter->getV()[2], 1.05, 1e-13);
 
-      // set force for next iteration
-      iter->setOldF(iter->getF());
-      iter->setF({0, 0, 2});
+    // set force for next iteration
+    iter->setOldF(iter->getF());
+    iter->setF({0, 0, 2});
   }
 
   TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1);
@@ -61,7 +61,7 @@ TEST_F(TimeDiscretizationTest, calcPositions) {
     EXPECT_NEAR(iter->getR()[2], iterRef->getR()[2] + 0.105, 1e-13);
 
     // expect force to be reset
-    EXPECT_THAT(iter->getF(), ::testing::ElementsAreArray({0,0,0}));
+    EXPECT_THAT(iter->getF(), ::testing::ElementsAreArray({0, 0, 0}));
 
     // set force and velocity for next iteration
     iter->setF({0, 0, 2});

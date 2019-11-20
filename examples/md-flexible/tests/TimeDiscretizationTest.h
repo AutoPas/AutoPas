@@ -16,10 +16,7 @@
 
 class TimeDiscretizationTest : public AutoPasTestBase {
  public:
-  TimeDiscretizationTest()
-      : AutoPasTestBase() {
-    _particlePropertiesLibrary.addType(0, 1, 1, 1);
-  }
+  TimeDiscretizationTest() : AutoPasTestBase() { _particlePropertiesLibrary.addType(0, 1, 1, 1); }
   void fillWithParticlesAndInit(autopas::AutoPas<Molecule, FMCell> &autopas);
 
  protected:
