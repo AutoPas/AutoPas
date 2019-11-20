@@ -2,20 +2,22 @@ option(spdlog_ForceBundled "Do not look for an installed version, always use bun
 
 if (NOT ${spdlog_ForceBundled})
     # first try: check if we find any installed version
-    find_package(spdlog QUIET)
-    if (spdlog_FOUND AND "${spdlog_VERSION}" VERSION_GREATER_EQUAL 1.3.1)
+    set(expectedVersion 1.3.1)
+    find_package(spdlog ${expectedVersion} QUIET)
+    if (spdlog_FOUND)
         message(STATUS "spdlog - using installed system version ${spdlog_VERSION}")
         target_link_libraries(autopas PUBLIC spdlog::spdlog)
         return()
+    else ()
+            message(STATUS "spdlog - no system version compatible to version ${expectedVersion} found")
+            message(
+                STATUS
+                    "spdlog - if you want to use your version point the cmake variable spdlog_DIR to the directory containing spdlogConfig.cmake in order to pass hints to find_package"
+            )
     endif ()
 endif ()
 
 # system version not found -> install bundled version
-message(STATUS "spdlog - not found or version older than 1.3.1")
-message(
-    STATUS
-        "spdlog - if you want to use your version point the cmake variable spdlog_DIR to the directory containing spdlogConfig.cmake in order to pass hints to find_package"
-)
 message(STATUS "spdlog - using bundled version 1.4.3 (commit 79259fd)")
 
 include(ExternalProject)

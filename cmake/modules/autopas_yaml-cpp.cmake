@@ -1,20 +1,22 @@
 option(yaml-cpp_ForceBundled "Do not look for an installed version, always use bundled." OFF)
 
 if (NOT ${yaml-cpp_ForceBundled})
+    set(expectedVersion 0.5.2)
     # first try: check if we find any installed version
-    find_package(yaml-cpp QUIET)
-    if (yaml-cpp_FOUND AND "${yaml-cpp_VERSION}" VERSION_GREATER_EQUAL 0.6.3)
+    find_package(yaml-cpp ${expectedVersion} QUIET)
+    if (yaml-cpp_FOUND)
         message(STATUS "yaml-cpp - using installed system version ${yaml-cpp_VERSION}")
         return()
+    else ()
+            message(STATUS "yaml-cpp - no system version compatible to version ${expectedVersion} found")
+            message(
+                STATUS
+                    "yaml-cpp - if you want to use your version point the cmake variable yaml-cpp_DIR to the directory containing  yaml-cpp-config.cmake in order to pass hints to find_package"
+            )
     endif ()
 endif ()
 
 # system version not found -> install bundled version
-message(STATUS "yaml-cpp - not found or version older than 0.6.3")
-message(
-    STATUS
-        "yaml-cpp - if you want to use your version point the cmake variable yaml-cpp_DIR to the directory containing  yaml-cpp-config.cmake in order to pass hints to find_package"
-)
 message(STATUS "yaml-cpp - using bundled version 0.6.3 (commit 72f699f)")
 
 # Enable ExternalProject CMake module
