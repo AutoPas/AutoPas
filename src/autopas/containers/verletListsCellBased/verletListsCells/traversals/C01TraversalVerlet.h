@@ -20,11 +20,11 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam DataLayout
+ * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-class C01TraversalVerlet : public C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>,
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+class C01TraversalVerlet : public C01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                            public VerletListsCellsTraversal<typename ParticleCell::ParticleType> {
  public:
   /**
@@ -37,7 +37,7 @@ class C01TraversalVerlet : public C01BasedTraversal<ParticleCell, PairwiseFuncto
    */
   explicit C01TraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                               double interactionLength, const std::array<double, 3> &cellLength)
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>(dims, pairwiseFunctor,
+      : C01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
         _functor(pairwiseFunctor) {}
 
@@ -45,9 +45,9 @@ class C01TraversalVerlet : public C01BasedTraversal<ParticleCell, PairwiseFuncto
 
   TraversalOption getTraversalType() const override { return TraversalOption::c01Verlet; }
 
-  bool isApplicable() const override { return (not useNewton3) && (DataLayout == DataLayoutOption::aos); }
+  bool isApplicable() const override { return (not useNewton3) && (dataLayout == DataLayoutOption::aos); }
 
-  DataLayoutOption getDataLayout() const override { return DataLayout; }
+  DataLayoutOption getDataLayout() const override { return dataLayout; }
 
   bool getUseNewton3() const override { return useNewton3; }
 
@@ -55,8 +55,8 @@ class C01TraversalVerlet : public C01BasedTraversal<ParticleCell, PairwiseFuncto
   PairwiseFunctor *_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3>
-inline void C01TraversalVerlet<ParticleCell, PairwiseFunctor, DataLayout, useNewton3>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+inline void C01TraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template iterateVerletListsCell<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);

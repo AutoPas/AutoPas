@@ -12,7 +12,7 @@
 #include <numeric>
 #include <sstream>
 
-namespace autopas::ArrayMath {
+namespace autopas::utils::ArrayMath {
 
 /**
  * Adds two arrays, returns the result.
@@ -44,6 +44,40 @@ template <class T, std::size_t SIZE>
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] - b[d];
+  }
+  return result;
+}
+
+/**
+ * Takes elementwise minimum, returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a first parameter
+ * @param b second parameter
+ * @return min(a, b)
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> min(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  std::array<T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = std::min<T>(a[d], b[d]);
+  }
+  return result;
+}
+
+/**
+ * Takes elementwise maximum and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a
+ * @param b
+ * @return max(a, b)
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> max(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  std::array<T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = std::max<T>(a[d], b[d]);
   }
   return result;
 }
@@ -165,4 +199,4 @@ template <class T, std::size_t SIZE>
   return mulScalar(a, static_cast<T>(1) / L2Norm(a));
 }
 
-}  // namespace autopas::ArrayMath
+}  // namespace autopas::utils::ArrayMath

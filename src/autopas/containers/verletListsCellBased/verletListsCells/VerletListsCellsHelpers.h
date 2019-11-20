@@ -41,7 +41,7 @@ class VerletListsCellsHelpers {
      */
     VerletListGeneratorFunctor(VerletList_storage_type &verletLists,
                                std::unordered_map<Particle *, std::pair<size_t, size_t>> &cellMap, double cutoffskin)
-        : Functor<Particle, VerletListParticleCellType>(typename Particle::ParticleFloatingPointType(0.)),
+        : Functor<Particle, VerletListParticleCellType>(0.),
           _verletLists(verletLists),
           _cellMap(cellMap),
           _cutoffskinsquared(cutoffskin * cutoffskin) {}
@@ -61,8 +61,8 @@ class VerletListsCellsHelpers {
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-      auto dist = ArrayMath::sub(i.getR(), j.getR());
-      double distsquare = ArrayMath::dot(dist, dist);
+      auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+      double distsquare = utils::ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared) {
         // this is thread safe, only if particle i is accessed by only one
         // thread at a time. which is ensured, as particle i resides in a

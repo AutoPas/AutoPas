@@ -10,8 +10,10 @@
 #include <chrono>
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class AoSvsSoATest : public AutoPasTestBase {
  public:
-  void generateParticles(std::vector<autopas::Particle> *particles);
+  void generateParticles(std::vector<Molecule> *particles);
 };

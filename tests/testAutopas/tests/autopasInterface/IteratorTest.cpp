@@ -30,7 +30,8 @@ void checkRegionIteratorForAllParticles(AutoPasT &autoPas, autopas::IteratorBeha
   for (auto iter1 = autoPas.begin(behavior); iter1.isValid(); ++iter1) {
     unsigned int count = 0;
     auto low = iter1->getR();
-    auto up = autopas::ArrayMath::addScalar(low, 1e-10);
+    auto up = autopas::utils::ArrayMath::addScalar(low, 1e-10);
+
     for (auto iter2 = autoPas.getRegionIterator(low, up, behavior); iter2.isValid(); ++iter2) {
       ++count;
       EXPECT_EQ(&(*iter1), &(*iter2));
@@ -75,7 +76,7 @@ void testAdditionAndIteration(testingTuple options) {
     for (auto y : getPossible1DPositions(boxMin[1], boxMax[1])) {
       for (auto z : getPossible1DPositions(boxMin[2], boxMax[2])) {
         std::array<double, 3> pos{x, y, z};
-        Molecule p(pos, {0., 0., 0.}, id);
+        Molecule p(pos, {0., 0., 0.}, id, 0);
         ++id;
         // add the two particles!
         if (autopas::utils::inBox(pos, boxMin, boxMax)) {
@@ -262,7 +263,7 @@ using ::testing::ValuesIn;
 INSTANTIATE_TEST_SUITE_P(Generated, IteratorTest,
                          // proper indent
                          Combine(ValuesIn([]() -> std::set<autopas::ContainerOption> {
-                                   auto allContainerOptions = autopas::allContainerOptions;
+                                   auto allContainerOptions = autopas::ContainerOption::getAllOptions();
                                    /// @TODO no verletClusterLists yet, so we erase it for now.
                                    allContainerOptions.erase(
                                        allContainerOptions.find(autopas::ContainerOption::verletClusterLists));

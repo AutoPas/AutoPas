@@ -30,7 +30,7 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
    public:
     using SoAArraysType = Particle::SoAArraysType;
     using ParticleCell = FPCell;
-    using floatType = typename Particle::ParticleFloatingPointType;
+    using floatType = double;
 
     SimpleFunctor(floatType cutoff)
         : autopas::Functor<Particle, ParticleCell>(cutoff), _cutoffSquare(cutoff * cutoff){};
@@ -45,8 +45,8 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
       auto coordsI = i.getR();
       auto coordsJ = j.getR();
 
-      std::array<double, 3> dr = autopas::ArrayMath::sub(coordsI, coordsJ);
-      double dr2 = autopas::ArrayMath::dot(dr, dr);
+      std::array<double, 3> dr = autopas::utils::ArrayMath::sub(coordsI, coordsJ);
+      double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
       // in a grid with separation 1 this includes all neighbors with a Chebyshev distance of 1
       if (dr2 > _cutoffSquare) return;
 

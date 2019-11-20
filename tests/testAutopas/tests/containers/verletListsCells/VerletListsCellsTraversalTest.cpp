@@ -9,12 +9,7 @@
 VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()
     : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff()),
       _verletListsCells_cs2(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff(),
-                            2.0) {
-  double eps = 1.0;
-  double sig = 1.0;
-  autopas::MoleculeLJ::setEpsilon(eps);
-  autopas::MoleculeLJ::setSigma(sig);
-}
+                            2.0) {}
 
 std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells<Molecule> &verletListsCells,
                                                        double cutoff) {
@@ -23,15 +18,20 @@ std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsC01(cutoff), flopsC18(cutoff), flopsSli(cutoff);
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsC18N3(cutoff), flopsSliN3(cutoff);
 
-  autopas::C01TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, false>
+  autopas::C01TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
+                              false>
       traversalC01FLOPS(dim, &flopsC01, verletListsCells.getInteractionLength(), verletListsCells.getCellLength());
-  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, false>
+  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
+                              false>
       traversalC18FLOPS(dim, &flopsC18, verletListsCells.getInteractionLength(), verletListsCells.getCellLength());
-  autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, false>
+  autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
+                                 false>
       traversalSliFLOPS(dim, &flopsSli, verletListsCells.getInteractionLength(), verletListsCells.getCellLength());
-  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, true>
+  autopas::C18TraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
+                              true>
       traversalC18N3FLOPS(dim, &flopsC18N3, verletListsCells.getInteractionLength(), verletListsCells.getCellLength());
-  autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::aos, true>
+  autopas::SlicedTraversalVerlet<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
+                                 true>
       traversalSliN3FLOPS(dim, &flopsSliN3, verletListsCells.getInteractionLength(), verletListsCells.getCellLength());
 
   verletListsCells.rebuildNeighborLists(&traversalC01FLOPS);
@@ -62,9 +62,10 @@ std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells
 void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
   NumThreadGuard numThreadGuard(1);
 
-  RandomGenerator::fillWithParticles(_verletListsCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
-                                     numMolecules);
-  RandomGenerator::fillWithParticles(_verletListsCells_cs2, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0),
+  RandomGenerator::fillWithParticles(_verletListsCells, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0),
+                                     _verletListsCells.getBoxMin(), _verletListsCells.getBoxMax(), numMolecules);
+  RandomGenerator::fillWithParticles(_verletListsCells_cs2, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0),
+                                     _verletListsCells_cs2.getBoxMin(), _verletListsCells_cs2.getBoxMax(),
                                      numMolecules);
 
   auto kCVerlet = getKernelCallsAllTraversals(_verletListsCells, getCutoff());

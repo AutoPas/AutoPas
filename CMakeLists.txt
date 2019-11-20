@@ -49,14 +49,13 @@ option(AUTOPAS_ENABLE_CUDA "Activates Cuda Components" OFF)
 if (AUTOPAS_ENABLE_CUDA)
     message(STATUS "Cuda enabled.")
     enable_language(CUDA)
-    set(CUDA_SEPARABLE_COMPILATION ON)
 else ()
     message(STATUS "Cuda disabled.")
 endif ()
 
 enable_testing()
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
 
 include(ccache)
 include(clang-format)

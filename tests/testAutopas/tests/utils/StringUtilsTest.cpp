@@ -6,74 +6,23 @@
 
 #include "StringUtilsTest.h"
 
-TEST(StringUtilsTest, parseTraversalOptionsTest) {
-  testParseMultiple<autopas::TraversalOption>(
-      autopas::allTraversalOptions,
-      "c01, c04, c08, c18, c04s, direct, sliced v01, c18verlet, verlet-sliced, "
-      "cuda-c01, verlet-lists, c01-combined, verlet-clusters, var-verlet-lists-as-build, verlet-clusters-coloring",
-      autopas::utils::StringUtils::parseTraversalOptions);
-}
-
-TEST(StringUtilsTest, parseContainerOptionsTest) {
-  testParseMultiple<autopas::ContainerOption>(
-      autopas::allContainerOptions,
-      "directSum, linkedCells, verletLists, verlet-cells, vcluster, varVerletListsAsBuild",
-      autopas::utils::StringUtils::parseContainerOptions);
-}
-
-TEST(StringUtilsTest, parseDataLayoutOptionsTest) {
-#if defined(AUTOPAS_CUDA)
-  testParseMultiple<autopas::DataLayoutOption>(autopas::allDataLayoutOptions, "cuda, soa, aos",
-                                               autopas::utils::StringUtils::parseDataLayout);
-#else
-  testParseMultiple<autopas::DataLayoutOption>(autopas::allDataLayoutOptions, "soa, aos",
-                                               autopas::utils::StringUtils::parseDataLayout);
-#endif
-}
-
 TEST(StringUtilsTest, parseDoublesTest) {
-  testParseMultiple<double>({1., 1.5, 2., 3., 20.}, "1.,1.5, 2,3.00,2e1", autopas::utils::StringUtils::parseDoubles);
+  auto parsedOptions = autopas::utils::StringUtils::parseDoubles("1.,1.5, 2,3.00,2e1");
+
+  EXPECT_THAT(parsedOptions, ::testing::ElementsAreArray({1., 1.5, 2., 3., 20.}));
 }
 
-TEST(StringUtilsTest, parseNumberSetTest) {
-  EXPECT_EQ(autopas::utils::StringUtils::parseNumberSet("1.,1.5, 2,3.00,2e1")->getAll(),
-            std::set<double>({1., 1.5, 2., 3., 20.}));
-
-  auto numberSet = autopas::utils::StringUtils::parseNumberSet("[1.,2e1]");
-  auto *numberInterval = dynamic_cast<autopas::NumberInterval<double> *>(numberSet.get());
-  EXPECT_NE(numberInterval, nullptr);
-  if (numberInterval) {
-    EXPECT_EQ(numberInterval->getMin(), 1.);
-    EXPECT_EQ(numberInterval->getMax(), 2e1);
-  }
+TEST(StringUtilsTest, parseNumberSetFiniteTest) {
+  auto numberSet = autopas::utils::StringUtils::parseNumberSet("1.,1.5, 2,3.00,2e1, 1.2e-2");
+  auto numberSetFinite = dynamic_cast<autopas::NumberSetFinite<double> *>(numberSet.get());
+  ASSERT_NE(numberSetFinite, nullptr);  // if this is null numberSet was parsed to a NumberInterval
+  EXPECT_THAT(numberSetFinite->getAll(), ::testing::UnorderedElementsAre(1., 1.5, 2., 3., 20., 0.012));
 }
 
-TEST(StringUtilsTest, parseSelectorOptionsTest) {
-  testParseSingle<autopas::SelectorStrategyOption>(autopas::allSelectorStrategies, {"absolute", "median", "mean"},
-                                                   autopas::utils::StringUtils::parseSelectorStrategy);
-}
-
-TEST(StringUtilsTest, parseTuningStrategyOptionsTest) {
-  testParseSingle<autopas::TuningStrategyOption>(autopas::allTuningStrategyOptions, {"full-search", "bayesian-search"},
-                                                 autopas::utils::StringUtils::parseTuningStrategyOption);
-}
-
-TEST(StringUtilsTest, to_stringDataLayoutTest) {
-  testToString(autopas::allDataLayoutOptions, {autopas::DataLayoutOption(-1)});
-}
-
-TEST(StringUtilsTest, to_stringSelectorStrategiesTest) {
-  testToString(autopas::allSelectorStrategies, {autopas::SelectorStrategyOption(-1)});
-}
-
-TEST(StringUtilsTest, to_stringContainerOptionsTest) {
-  testToString(autopas::allContainerOptions, {autopas::ContainerOption(-1)});
-}
-
-TEST(StringUtilsTest, to_stringTraversalOptionsTest) {
-  testToString(autopas::allTraversalOptions, {autopas::TraversalOption(-1)});
-}
-
-TEST(StringUtilsTest, to_stringTuningStrategyOptionsTest) {
-  testToString(autopas::allTuningStrategyOptions, {autopas::TuningStrategyOption(-1)});
+TEST(StringUtilsTest, parseNumberIntervalTest) {
+  auto numberSet = autopas::utils::StringUtils::parseNumberSet("1.-2e1");
+  auto numberInterval = dynamic_cast<autopas::NumberInterval<double> *>(numberSet.get());
+  ASSERT_NE(numberInterval, nullptr);  // if this is null numberSet was parsed to a NumberSetFinite
+  EXPECT_EQ(numberInterval->getMin(), 1.);
+  EXPECT_EQ(numberInterval->getMax(), 2e1);
 }

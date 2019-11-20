@@ -38,7 +38,7 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
       : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
   /**
-   * destructor of ParticleContainer
+   * Destructor of ParticleContainer.
    */
   ~ParticleContainer() override = default;
 
@@ -103,17 +103,6 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
   double getInteractionLength() const override final { return _cutoff + _skin; }
 
   /**
-   * Checks if the given traversals are applicable to this container.
-   * @param traversalOptions
-   * @return True iff traversalOptions is a subset of _applicableTraversals
-   */
-  bool checkIfTraversalsAreApplicable(std::set<TraversalOption> traversalOptions) {
-    auto applicableTraversals = compatibleTraversals::allCompatibleTraversals(this->getContainerType());
-    return std::includes(applicableTraversals.begin(), applicableTraversals.end(), traversalOptions.begin(),
-                         traversalOptions.end());
-  }
-
-  /**
    * Deletes all particles from the container.
    */
   void deleteAllParticles() override {
@@ -133,7 +122,7 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
    * Get the number of particles saved in the container.
    * @return Number of particles in the container.
    */
-  unsigned long getNumParticles() override {
+  unsigned long getNumParticles() const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
     // @todo: find a sensible value for magic number

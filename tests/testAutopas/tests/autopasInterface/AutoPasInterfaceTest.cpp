@@ -11,8 +11,7 @@ constexpr double cutoff = 1.;
 constexpr double skin = 0.2;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
-constexpr double eps = 1.;
-constexpr double sigma = 1.;
+
 constexpr double shift = 0.1;
 constexpr std::array<double, 3> zeroArr = {0., 0., 0.};
 
@@ -212,22 +211,23 @@ void doSimulationLoop(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::Aut
 }
 
 template <typename Functor>
-void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas, Functor *functor) {
-  std::array<Molecule, 2> molecules{};
+void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas, Functor *functor, unsigned long numParticlesExpected) {
+  std::vector<Molecule> molecules(numParticlesExpected);
   size_t numParticles = 0;
   for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-    ASSERT_LT(numParticles, 2) << "Too many particles owned by this container.";
+    ASSERT_LT(numParticles, numParticlesExpected) << "Too many particles owned by this container.";
     molecules[numParticles++] = *iter;
   }
-  ASSERT_EQ(numParticles, 2) << "The container should own exactly two particles!";
+  ASSERT_EQ(numParticles, numParticlesExpected)
+      << "The container should own exactly " << numParticlesExpected << " particles!";
 
   for (auto &mol : molecules) {
-    EXPECT_DOUBLE_EQ(autopas::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144)
-        << "wrong force calculated.";  // this value should be correct already
+    EXPECT_NEAR(autopas::utils::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144., 1.)
+        << "wrong force calculated for particle: " << mol.toString();
   }
 
-  EXPECT_DOUBLE_EQ(functor->getUpot(), 16128.1) << "wrong upot calculated";
-  EXPECT_DOUBLE_EQ(functor->getVirial(), 195072.) << "wrong virial calculated";
+  EXPECT_NEAR(functor->getUpot(), 16128.1 * numParticles / 2., 1e-5) << "wrong upot calculated";
+  EXPECT_NEAR(functor->getVirial(), 195072. * numParticles / 2., 1e-5) << "wrong virial calculated";
 }
 
 template <typename Functor>
@@ -246,17 +246,15 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::AutoPas
   ASSERT_EQ(numParticles, 2) << "There should be exactly two owned particles!";
 
   for (auto &mol : molecules) {
-    EXPECT_DOUBLE_EQ(autopas::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144) << "wrong force calculated.";
+    EXPECT_DOUBLE_EQ(autopas::utils::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144)
+        << "wrong force calculated.";
   }
 
   EXPECT_DOUBLE_EQ(functor1->getUpot() + functor2->getUpot(), 16128.1) << "wrong upot calculated";
   EXPECT_DOUBLE_EQ(functor1->getVirial() + functor2->getVirial(), 195072.) << "wrong virial calculated";
 }
 
-void testSimulationLoop(testingTuple options) {
-  // create AutoPas object
-  autopas::AutoPas<Molecule, FMCell> autoPas;
-
+void setFromOptions(const testingTuple &options, autopas::AutoPas<Molecule, FMCell> &autoPas) {
   auto containerOption = std::get<0>(std::get<0>(options));
   auto traversalOption = std::get<1>(std::get<0>(options));
   auto dataLayoutOption = std::get<1>(options);
@@ -268,6 +266,13 @@ void testSimulationLoop(testingTuple options) {
   autoPas.setAllowedDataLayouts({dataLayoutOption});
   autoPas.setAllowedNewton3Options({newton3Option});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
+}
+
+void testSimulationLoop(testingTuple options) {
+  // create AutoPas object
+  autopas::AutoPas<Molecule, FMCell> autoPas;
+
+  setFromOptions(options, autoPas);
 
   defaultInit(autoPas);
 
@@ -275,29 +280,28 @@ void testSimulationLoop(testingTuple options) {
   double distance = .5;
   std::array<double, 3> pos1{9.99, 5., 5.};
   std::array<double, 3> distVec{0., distance, 0.};
-  std::array<double, 3> pos2 = autopas::ArrayMath::add(pos1, distVec);
+  std::array<double, 3> pos2 = autopas::utils::ArrayMath::add(pos1, distVec);
 
   {
-    Molecule particle1(pos1, {0., 0., 0.}, 0);
-    Molecule particle2(pos2, {0., 0., 0.}, 1);
+    Molecule particle1(pos1, {0., 0., 0.}, 0, 0);
+    Molecule particle2(pos2, {0., 0., 0.}, 1, 0);
 
     // add the two particles!
     autoPas.addParticle(particle1);
     autoPas.addParticle(particle2);
   }
-
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor(cutoff, eps,
-                                                                                                          sigma, shift);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift);
+  functor.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
 
-  doAssertions(autoPas, &functor);
+  doAssertions(autoPas, &functor, 2);
 
   // update positions a bit (outside of domain!) + reset F
   {
     std::array<double, 3> moveVec{skin / 3., 0., 0.};
     for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      iter->setR(autopas::ArrayMath::add(iter->getR(), moveVec));
+      iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
       iter->setF(zeroArr);
     }
   }
@@ -305,7 +309,7 @@ void testSimulationLoop(testingTuple options) {
   // do second simulation loop
   doSimulationLoop(autoPas, &functor);
 
-  doAssertions(autoPas, &functor);
+  doAssertions(autoPas, &functor, 2);
 
   // no position update this time, but resetF!
   {
@@ -316,7 +320,62 @@ void testSimulationLoop(testingTuple options) {
   // do third simulation loop, tests rebuilding of container.
   doSimulationLoop(autoPas, &functor);
 
-  doAssertions(autoPas, &functor);
+  doAssertions(autoPas, &functor, 2);
+}
+
+/**
+ * This test checks the correct calculation of an AutoPas container, where:
+ * The container owns 26 particles, that lie with a distance of 0.25 away from the centers of the faces and edges, as
+ * well as from the corners of the box. They always lie on a straight line `a` from these points to the center of the
+ * box. Additionally, the container owns 26 halo particles that lie outside of the container on the same line `a` with a
+ * distance of 0.5 from the owned particle.
+ * No additional halo exchange is simulated in this test.
+ * @param options
+ */
+void testHaloCalculation(testingTuple options) {
+  // create AutoPas object
+  autopas::AutoPas<Molecule, FMCell> autoPas;
+
+  setFromOptions(options, autoPas);
+
+  defaultInit(autoPas);
+
+  // create particle pairs with distance .5
+  double distance = .5;
+  unsigned long id = 0;
+  for (int x_diff : {-1, 0, 1}) {
+    for (int y_diff : {-1, 0, 1}) {
+      //    for (int y_diff : {0}) {
+      for (int z_diff : {-1, 0, 1}) {
+        //      for (int z_diff : {0}) {
+        if (x_diff == 0 and y_diff == 0 and z_diff == 0) {
+          continue;
+        }
+        double mul = 5.;
+        double mid = 5.;
+        std::array<double, 3> edge{x_diff * mul + mid, y_diff * mul + mid, z_diff * mul + mid};
+
+        std::array<double, 3> diff = {x_diff * 1., y_diff * 1., z_diff * 1.};
+        diff = autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::normalize(diff), distance / 2.);
+
+        auto pos1 = autopas::utils::ArrayMath::sub(edge, diff);
+        auto pos2 = autopas::utils::ArrayMath::add(edge, diff);
+
+        Molecule particle1(pos1, {0., 0., 0.}, id++);
+        autoPas.addParticle(particle1);
+        Molecule particle2(pos2, {0., 0., 0.}, id++);
+        autoPas.addOrUpdateHaloParticle(particle2);
+      }
+    }
+  }
+
+  autopas::LJFunctor<Molecule, FMCell, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
+      cutoff, shift);
+  functor.setParticleProperties(24, 1);
+
+  autoPas.iteratePairwise(&functor);
+
+  doAssertions(autoPas, &functor, 26);
 }
 
 TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
@@ -324,6 +383,25 @@ TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
   auto options = GetParam();
   try {
     testSimulationLoop(options);
+  } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
+    std::string str = autoPasException.what();
+    if (str.find("Trying to execute a traversal that is not applicable") != std::string::npos) {
+      GTEST_SKIP() << "skipped with exception: " << autoPasException.what() << std::endl;
+    } else {
+      // rethrow
+      throw;
+    }
+  }
+}
+
+/**
+ * This test checks the correct behavior of the AutoPas interface with respect to halo calculations, see also the
+ * comments of testHaloCalculation() for a more detailed description.
+ */
+TEST_P(AutoPasInterfaceTest, HaloCalculationTest) {
+  auto options = GetParam();
+  try {
+    testHaloCalculation(options);
   } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
     std::string str = autoPasException.what();
     if (str.find("Trying to execute a traversal that is not applicable") != std::string::npos) {
@@ -344,7 +422,7 @@ INSTANTIATE_TEST_SUITE_P(
     Generated, AutoPasInterfaceTest,
     // proper indent
     Combine(ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> {
-              auto allContainerOptions = autopas::allContainerOptions;
+              auto allContainerOptions = autopas::ContainerOption::getAllOptions();
               /// @TODO no verletClusterLists yet, so we erase it for now.
               allContainerOptions.erase(allContainerOptions.find(autopas::ContainerOption::verletClusterLists));
               std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> tupleVector;
@@ -357,14 +435,14 @@ INSTANTIATE_TEST_SUITE_P(
               return tupleVector;
             }()),
             ValuesIn([]() -> std::set<autopas::DataLayoutOption> {
-              auto all = autopas::allDataLayoutOptions;
+              auto all = autopas::DataLayoutOption::getAllOptions();
               /// @TODO no cuda yet, so we erase it for now (if it is there)
               if (all.find(autopas::DataLayoutOption::cuda) != all.end()) {
                 all.erase(all.find(autopas::DataLayoutOption::cuda));
               }
               return all;
             }()),
-            ValuesIn(autopas::allNewton3Options), Values(0.5, 1., 1.5)),
+            ValuesIn(autopas::Newton3Option::getAllOptions()), Values(0.5, 1., 1.5)),
     AutoPasInterfaceTest::PrintToStringParamName());
 
 ///////////////////////////////////////// TWO containers //////////////////////////////////////////////////////////
@@ -383,11 +461,11 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   double distance = .5;
   std::array<double, 3> pos1{9.99, 5., 5.};
   std::array<double, 3> distVec{0., distance, 0.};
-  std::array<double, 3> pos2 = autopas::ArrayMath::add(pos1, distVec);
+  std::array<double, 3> pos2 = autopas::utils::ArrayMath::add(pos1, distVec);
 
   {
-    Molecule particle1(pos1, {0., 0., 0.}, 0);
-    Molecule particle2(pos2, {0., 0., 0.}, 1);
+    Molecule particle1(pos1, {0., 0., 0.}, 0, 0);
+    Molecule particle2(pos2, {0., 0., 0.}, 1, 0);
 
     // add the two particles!
     for (auto p : {&particle1, &particle2}) {
@@ -398,12 +476,10 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
       }
     }
   }
-
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor1(
-      cutoff, eps, sigma, shift);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor2(
-      cutoff, eps, sigma, shift);
-
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor1(cutoff, shift);
+  functor1.setParticleProperties(24.0, 1);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor2(cutoff, shift);
+  functor2.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
 
@@ -414,7 +490,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
     std::array<double, 3> moveVec{skin / 3., 0., 0.};
     for (auto aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-        iter->setR(autopas::ArrayMath::add(iter->getR(), moveVec));
+        iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
         iter->setF(zeroArr);
       }
     }
@@ -450,17 +526,18 @@ using ::testing::ValuesIn;
 
 /// @todo: use this instead of below to enable testing of VerletClusterLists.
 // INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
-//                         Combine(ValuesIn(autopas::allContainerOptions), ValuesIn(autopas::allContainerOptions)),
+//                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()),
+//                         ValuesIn(autopas::ContainerOption::getAllOptions())),
 //                         ContainerSelectorTest::PrintToStringParamName());
 
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface2ContainersTest,
                          Combine(ValuesIn([]() -> std::set<autopas::ContainerOption> {
-                                   auto all = autopas::allContainerOptions;
+                                   auto all = autopas::ContainerOption::getAllOptions();
                                    all.erase(all.find(autopas::ContainerOption::verletClusterLists));
                                    return all;
                                  }()),
                                  ValuesIn([]() -> std::set<autopas::ContainerOption> {
-                                   auto all = autopas::allContainerOptions;
+                                   auto all = autopas::ContainerOption::getAllOptions();
                                    all.erase(all.find(autopas::ContainerOption::verletClusterLists));
                                    return all;
                                  }())),

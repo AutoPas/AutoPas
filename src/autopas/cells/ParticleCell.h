@@ -43,7 +43,13 @@ class ParticleCell {
    * for(auto iter = cell.begin(); iter.isValid; ++iter){...}
    * @return the iterator
    */
-  virtual SingleCellIteratorWrapper<Particle> begin() = 0;
+  virtual SingleCellIteratorWrapper<Particle, true> begin() = 0;
+
+  /**
+   * @copydoc begin()
+   * @note const version
+   */
+  virtual SingleCellIteratorWrapper<Particle, false> begin() const = 0;
 
   /**
    * End expression for all cells, this simply returns false.

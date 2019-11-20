@@ -90,7 +90,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+    AutoPasLog(debug, "Using traversal {}.", traversal->getTraversalType().to_string());
 
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal);
@@ -115,13 +115,13 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     for (auto iter = getCell().begin(); iter.isValid(); ++iter) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
         invalidParticles.push_back(*iter);
-        iter.deleteCurrentParticle();
+        internal::deleteParticle(iter);
       }
     }
     return invalidParticles;
   }
 
-  bool isContainerUpdateNeeded() override {
+  bool isContainerUpdateNeeded() const override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
     // @todo: find a sensible value for ???
@@ -135,20 +135,28 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     return outlierFound;
   }
 
-  TraversalSelectorInfo getTraversalSelectorInfo() override {
+  TraversalSelectorInfo getTraversalSelectorInfo() const override {
     // direct sum technically consists of two cells (owned + halo)
     return TraversalSelectorInfo(
         {2, 0, 0},
         this->getCutoff() /*intentionally use cutoff here, as the directsumtraversal should be using the cutoff.*/,
-        ArrayMath::sub(this->getBoxMax(), this->getBoxMin()));
+        utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin()));
   }
 
-  ParticleIteratorWrapper<ParticleType> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIteratorWrapper<ParticleType>(new internal::ParticleIterator<ParticleType, ParticleCell>(
+  ParticleIteratorWrapper<ParticleType, true> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIteratorWrapper<ParticleType, true>(new internal::ParticleIterator<ParticleType, ParticleCell, true>(
         &this->_cells, 0, &_cellBorderFlagManager, behavior));
   }
 
-  ParticleIteratorWrapper<ParticleType> getRegionIterator(
+  ParticleIteratorWrapper<ParticleType, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+    return ParticleIteratorWrapper<ParticleType, false>(
+        new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBorderFlagManager,
+                                                                          behavior));
+  }
+
+  ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     std::vector<size_t> cellsOfInterest;
@@ -166,8 +174,32 @@ class DirectSum : public ParticleContainer<ParticleCell> {
         break;
     }
 
-    return ParticleIteratorWrapper<ParticleType>(new internal::RegionParticleIterator<ParticleType, ParticleCell>(
-        &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
+    return ParticleIteratorWrapper<ParticleType, true>(
+        new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(
+            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
+  }
+
+  ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+    std::vector<size_t> cellsOfInterest;
+
+    switch (behavior) {
+      case IteratorBehavior::ownedOnly:
+        cellsOfInterest.push_back(0);
+        break;
+      case IteratorBehavior::haloOnly:
+        // for haloOnly all cells can contain halo particles!
+        [[fallthrough]];
+      case IteratorBehavior::haloAndOwned:
+        cellsOfInterest.push_back(0);
+        cellsOfInterest.push_back(1);
+        break;
+    }
+
+    return ParticleIteratorWrapper<ParticleType, false>(
+        new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
+            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
   }
 
  private:

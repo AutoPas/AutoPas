@@ -17,8 +17,10 @@
 /**
  * Test to check if newton3 and non-newton3 work as expected
  */
-class Newton3OnOffTest : public AutoPasTestBase,
-                         public ::testing::WithParamInterface<std::tuple<std::string, std::string>> {
+class Newton3OnOffTest
+    : public AutoPasTestBase,
+      public ::testing::WithParamInterface<
+          std::tuple<std::tuple<autopas::ContainerOption, autopas::TraversalOption>, autopas::DataLayoutOption>> {
  public:
   Newton3OnOffTest() : mockFunctor() {}
 
@@ -33,6 +35,7 @@ class Newton3OnOffTest : public AutoPasTestBase,
   double getCutoff() const { return 1.0; }
   double getCellSizeFactor() const { return 1.0; }
   double getVerletSkin() const { return 0.0; }
+  unsigned int getClusterSize() const { return 64; }
 
   void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                          autopas::DataLayoutOption dataLayout);
@@ -55,4 +58,20 @@ class Newton3OnOffTest : public AutoPasTestBase,
    */
   template <bool useNewton3, class Container, class Traversal>
   std::pair<size_t, size_t> eval(autopas::DataLayoutOption dataLayout, Container &container, Traversal traversalOption);
+
+  struct PrintToStringParamName {
+    template <class ParamType>
+    std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
+      auto inputTuple = static_cast<ParamType>(info.param);
+
+      auto [containerTraversalTuple, dataLayoutOption] = inputTuple;
+      auto [containerOption, traversalOption] = containerTraversalTuple;
+
+      auto retStr =
+          containerOption.to_string() + "_" + traversalOption.to_string() + "_" + dataLayoutOption.to_string();
+      // replace all '-' with '_', otherwise the test name is invalid
+      std::replace(retStr.begin(), retStr.end(), '-', '_');
+      return retStr;
+    }
+  };
 };

@@ -15,11 +15,14 @@ endif ()
 
 add_executable(runTests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
 
+target_compile_definitions(runTests PRIVATE)
+
 target_link_libraries(
     runTests
     autopas
     libgtest
     libgmock
+    libyaml-cpp
 )
 
 # this cmake module was only introduced in 3.10

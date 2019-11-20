@@ -16,7 +16,7 @@ namespace autopas {
  *
  * It furthermore notifies an observer when color changes during the traversal happen.
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class C08TraversalColorChangeNotify : public C08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
  public:
   /**
