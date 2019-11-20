@@ -28,10 +28,11 @@ target_include_directories(
 
 target_link_libraries(
     mdFlexTests
-    autopas
-    libgtest
-    libgmock
-    libyaml-cpp
+    PUBLIC
+        autopas
+        libgtest
+        libgmock
+        yaml-cpp
 )
 
 # this cmake module was only introduced in 3.10

@@ -18,7 +18,9 @@ add_executable(md-flexible ${MDFlex_SRC})
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(md-flexible autopas libyaml-cpp)
+include(autopas_yaml-cpp)
+
+target_link_libraries(md-flexible PUBLIC autopas yaml-cpp)
 
 # --- copy script files to build dir ---
 file(
