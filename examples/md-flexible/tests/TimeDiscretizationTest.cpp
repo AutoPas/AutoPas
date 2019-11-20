@@ -69,9 +69,8 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
   autopas.setBoxMax(boxmax);
   autopas.init();
   RandomGenerator::fillWithParticles(autopas, dummy, autopas.getBoxMin(), autopas.getBoxMax(), numberOfParticles);
-  double particleD = 0.01;
-  TimeDiscretization<decltype(autopas), decltype(_particlePropertiesLibrary)> td1(particleD,
-                                                                                  _particlePropertiesLibrary);
+  constexpr double deltaT = 0.01;
+  TimeDiscretization<decltype(autopas), decltype(_particlePropertiesLibrary)> td1(deltaT, _particlePropertiesLibrary);
   td1.calculatePositions(autopas);
   autopas.iteratePairwise(&functor);
   td1.calculateVelocities(autopas);
@@ -126,8 +125,12 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
 #endif
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       EXPECT_EQ(iter->getID(), i);
-      EXPECT_EQ(iter->getV(), nextVelocity(oldVelocityValues.at(i), velForces.at(i), forces.at(i), particleD));
-      EXPECT_EQ(iter->getR(), nextPosition(oldPositionValues.at(i), forces.at(i), oldVelocityValues.at(i), particleD));
+      auto expectedV = nextVelocity(oldVelocityValues.at(i), velForces.at(i), forces.at(i), deltaT);
+      auto expectedR = nextPosition(oldPositionValues.at(i), forces.at(i), oldVelocityValues.at(i), deltaT);
+      for (int dim = 0; dim < 3; ++dim) {
+        EXPECT_NEAR(iter->getV()[dim], expectedV[dim], 1e-13);
+        EXPECT_NEAR(iter->getR()[dim], expectedR[dim], 1e-13);
+      }
       i++;
     }
   }
