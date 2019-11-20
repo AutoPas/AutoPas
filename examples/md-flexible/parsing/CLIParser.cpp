@@ -4,6 +4,7 @@
  * @date 10/18/19
  */
 
+#include <sys/stat.h>
 #include "CLIParser.h"
 #include "autopas/utils/StringUtils.h"
 
