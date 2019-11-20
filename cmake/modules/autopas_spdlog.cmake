@@ -30,7 +30,7 @@ ExternalProject_Add(
         # spdlog commit 79259fd:
         ${CMAKE_SOURCE_DIR}/libs/spdlog-1.x.zip
     URL_HASH MD5=7415a9768f3433bd93d78c1c87fd0576
-    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/spdlog/src/spdlog-build/libspdlog.a
+    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/spdlog/src/spdlog_bundled-build/libspdlog.a
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/spdlog
     # Disable stuff we don't need. Especially warnings.
     CMAKE_ARGS

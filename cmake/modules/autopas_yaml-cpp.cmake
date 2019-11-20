@@ -32,7 +32,7 @@ ExternalProject_Add(
         ${CMAKE_SOURCE_DIR}/libs/yaml-cpp-master.zip
     URL_HASH MD5=6186f7ea92b907e9128bc74c96c1f791
     # needed to compile with ninja
-    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/yaml-cpp/src/yaml-cpp-build/libyaml-cpp.a
+    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/yaml-cpp/src/yaml-cpp_bundled-build/libyaml-cpp.a
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/yaml-cpp
     # Disable install steps
     INSTALL_COMMAND
