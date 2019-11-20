@@ -4,8 +4,8 @@
  * @date 10/18/19
  */
 
-#include <sys/stat.h>
 #include "CLIParser.h"
+#include <sys/stat.h>
 #include "autopas/utils/StringUtils.h"
 
 bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {

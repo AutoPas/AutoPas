@@ -70,8 +70,7 @@ void TimeDiscretizationTest::Pos_and_Velo_Test(
   autopas.init();
   RandomGenerator::fillWithParticles(autopas, dummy, autopas.getBoxMin(), autopas.getBoxMax(), numberOfParticles);
   constexpr double deltaT = 0.01;
-  TimeDiscretization<decltype(autopas), decltype(_particlePropertiesLibrary)> td1(deltaT,
-                                                                                  _particlePropertiesLibrary);
+  TimeDiscretization<decltype(autopas), decltype(_particlePropertiesLibrary)> td1(deltaT, _particlePropertiesLibrary);
   td1.calculatePositions(autopas);
   autopas.iteratePairwise(&functor);
   td1.calculateVelocities(autopas);
