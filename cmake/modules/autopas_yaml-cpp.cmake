@@ -8,11 +8,13 @@ if (NOT ${yaml-cpp_ForceBundled})
         message(STATUS "yaml-cpp - using installed system version ${yaml-cpp_VERSION}")
         return()
     else ()
-            message(STATUS "yaml-cpp - no system version compatible to version ${expectedVersion} found")
-            message(
-                STATUS
-                    "yaml-cpp - if you want to use your version point the cmake variable yaml-cpp_DIR to the directory containing  yaml-cpp-config.cmake in order to pass hints to find_package"
-            )
+        message(
+            STATUS "yaml-cpp - no system version compatible to version ${expectedVersion} found"
+        )
+        message(
+            STATUS
+                "yaml-cpp - if you want to use your version point the cmake variable yaml-cpp_DIR to the directory containing  yaml-cpp-config.cmake in order to pass hints to find_package"
+        )
     endif ()
 endif ()
 

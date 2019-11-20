@@ -10,11 +10,11 @@ if (NOT ${spdlog_ForceBundled})
         set_target_properties(spdlog::spdlog PROPERTIES "IMPORTED_GLOBAL" "TRUE")
         return()
     else ()
-            message(STATUS "spdlog - no system version compatible to version ${expectedVersion} found")
-            message(
-                STATUS
-                    "spdlog - if you want to use your version point the cmake variable spdlog_DIR to the directory containing spdlogConfig.cmake in order to pass hints to find_package"
-            )
+        message(STATUS "spdlog - no system version compatible to version ${expectedVersion} found")
+        message(
+            STATUS
+                "spdlog - if you want to use your version point the cmake variable spdlog_DIR to the directory containing spdlogConfig.cmake in order to pass hints to find_package"
+        )
     endif ()
 endif ()
 

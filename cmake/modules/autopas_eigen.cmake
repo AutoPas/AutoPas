@@ -50,9 +50,8 @@ ExternalProject_Get_Property(Eigen3_bundled source_dir)
 
 add_library(
     Eigen3
-    OBJECT      # this is a header only lib therefore object type is needed
-    IMPORTED
-    GLOBAL
+    OBJECT # this is a header only lib therefore object type is needed
+    IMPORTED GLOBAL
 )
 
 add_dependencies(Eigen3 Eigen3_bundled)
