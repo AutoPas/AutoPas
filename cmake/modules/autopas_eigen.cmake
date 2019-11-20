@@ -11,6 +11,7 @@ if (NOT ${Eigen3_ForceBundled})
         set_target_properties(Eigen3::Eigen PROPERTIES "IMPORTED_GLOBAL" "TRUE")
         # we need to alias this because aparently make sometimes breaks on '::'
         add_library(Eigen3 ALIAS Eigen3::Eigen)
+        // return, as we have found the target
         return()
     else ()
         message(STATUS "Eigen3 - no system version compatible to version ${expectedVersion} found")
