@@ -5,56 +5,54 @@
  */
 
 #include "TimeDiscretizationTest.h"
+#include "TimeDiscretization.h"
+#include "autopas/utils/ArrayMath.h"
+#include "testingHelpers/GridGenerator.h"
 
-void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<PrintableMolecule,
-                                                                       autopas::FullParticleCell<PrintableMolecule>> &autopas) {
+void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<Molecule, FMCell> &autopas) {
   autopas.setBoxMin({0., 0., 0.});
   autopas.setBoxMax({5., 5., 5.});
   autopas.init();
-  PrintableMolecule dummy;
+  Molecule dummy;
   dummy.setF({0., 0., 1.});
   dummy.setV({0., 0., 1.});
   GridGenerator::fillWithParticles(autopas, {2, 2, 2}, dummy, {1, 1, 1}, {0., 0., 0.});
 }
 
 TEST_F(TimeDiscretizationTest, calcVelocities) {
-  auto autoPas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
+  auto autoPas = autopas::AutoPas<Molecule, FMCell>();
   fillWithParticlesAndInit(autoPas);
 
-  TimeDiscretization<decltype(autoPas), decltype(_particlePropertiesLibrary)> timeDiscretization(0.1, _particlePropertiesLibrary);
-
-  timeDiscretization.calculateVelocities(autoPas);
+  TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1);
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
       // only velocity in one direction is expected
       EXPECT_EQ(iter->getV()[0], 0);
       EXPECT_EQ(iter->getV()[1], 0);
-      // Strömer-Verlet: (0+1)/2 * 0.1 + 0= 0.05
-      EXPECT_NEAR(iter->getV()[2], 0.05, 1e-13);
+      // Strömer-Verlet: 1 + (0+1)/2 * 0.1 = 1.05
+      EXPECT_NEAR(iter->getV()[2], 1.05, 1e-13);
 
       // set force for next iteration
       iter->setOldF(iter->getF());
       iter->setF({0, 0, 2});
   }
 
-  timeDiscretization.calculateVelocities(autoPas);
+  TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1);
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     // only velocity in one direction is expected
     EXPECT_EQ(iter->getV()[0], 0);
     EXPECT_EQ(iter->getV()[1], 0);
-    // Strömer-Verlet: (1+2)/2 * 0.1 + 0.05 = 0.2
-    EXPECT_NEAR(iter->getV()[2], 0.2, 1e-13);
+    // Strömer-Verlet: 1.05 + (1+2)/2 * 0.1 = 1.2
+    EXPECT_NEAR(iter->getV()[2], 1.2, 1e-13);
   }
 }
 
 TEST_F(TimeDiscretizationTest, calcPositions) {
-  auto autoPas = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
-  auto autoPasRef = autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>>();
+  auto autoPas = autopas::AutoPas<Molecule, FMCell>();
+  auto autoPasRef = autopas::AutoPas<Molecule, FMCell>();
   fillWithParticlesAndInit(autoPas);
   fillWithParticlesAndInit(autoPasRef);
 
-  TimeDiscretization<decltype(autoPas), decltype(_particlePropertiesLibrary)> timeDiscretization(0.1, _particlePropertiesLibrary);
-
-  timeDiscretization.calculatePositions(autoPas);
+  TimeDiscretization::calculatePositions(autoPas, _particlePropertiesLibrary, 0.1);
   for (auto iter = autoPas.begin(), iterRef = autoPasRef.begin(); iter.isValid(); ++iter, ++iterRef) {
     // only change in one direction is expected
     EXPECT_EQ(iter->getR()[0], iterRef->getR()[0]);
@@ -73,7 +71,7 @@ TEST_F(TimeDiscretizationTest, calcPositions) {
     iterRef->setR(iter->getR());
   }
 
-  timeDiscretization.calculatePositions(autoPas);
+  TimeDiscretization::calculatePositions(autoPas, _particlePropertiesLibrary, 0.1);
   for (auto iter = autoPas.begin(), iterRef = autoPasRef.begin(); iter.isValid(); ++iter, ++iterRef) {
     // only velocity in one direction is expected
     EXPECT_EQ(iter->getR()[0], iterRef->getR()[0]);

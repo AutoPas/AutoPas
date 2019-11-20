@@ -148,7 +148,6 @@ class Simulation {
   std::ofstream _logFile;
   std::unique_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
   std::unique_ptr<Thermostat<AutoPasType, ParticlePropertiesLibraryType>> _thermostat;
-  std::unique_ptr<TimeDiscretization<AutoPasType, ParticlePropertiesLibraryType>> _timeDiscretization;
 
   struct timers {
     autopas::utils::Timer positionUpdate, forceUpdateTotal, forceUpdateTuning, forceUpdateNonTuning, velocityUpdate,
@@ -194,10 +193,6 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
 
   _config = std::make_shared<MDFlexConfig>(mdFlexConfig);
   initializeParticlePropertiesLibrary();
-  if (_config->deltaT != 0) {
-    _timeDiscretization = std::make_unique<typename decltype(_timeDiscretization)::element_type>(
-        _config->deltaT, *_particlePropertiesLibrary);
-  }
   auto logFileName(_config->logFileName);
   auto verletRebuildFrequency(_config->verletRebuildFrequency);
   auto logLevel(_config->logLevel);
@@ -313,7 +308,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
         _timers.boundaries.stop();
       }
       _timers.positionUpdate.start();
-      _timeDiscretization->calculatePositions(_autopas);
+      TimeDiscretization::calculatePositions(_autopas, *_particlePropertiesLibrary, _config->deltaT);
       _timers.positionUpdate.stop();
     }
     switch (this->_config->functorOption) {
@@ -337,7 +332,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
 
     if (_config->deltaT != 0) {
       _timers.velocityUpdate.start();
-      _timeDiscretization->calculateVelocities(_autopas);
+      TimeDiscretization::calculateVelocities(_autopas, *_particlePropertiesLibrary, _config->deltaT);
       _timers.velocityUpdate.stop();
 
       // applying Velocity scaling with Thermostat:
