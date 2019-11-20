@@ -48,7 +48,7 @@ ExternalProject_Get_Property(Eigen3_bundled source_dir)
 
 add_library(
     Eigen3
-    STATIC
+    OBJECT      # this is a header only lib therefore object type is needed
     IMPORTED
     GLOBAL
 )
