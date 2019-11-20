@@ -6,6 +6,7 @@ if (NOT ${yaml-cpp_ForceBundled})
     find_package(yaml-cpp ${expectedVersion} QUIET)
     if (yaml-cpp_FOUND)
         message(STATUS "yaml-cpp - using installed system version ${yaml-cpp_VERSION}")
+        // return here, as we have now found and imported the target.
         return()
     else ()
         message(
