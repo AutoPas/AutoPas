@@ -27,8 +27,7 @@ void maxwellBoltzmannDistribution(autopas::Particle &p, const double averageVelo
 
   p.setV(autopas::utils::ArrayMath::addScalar(p.getV(), averageVelocity * normalDistribution(randomEngine)));
 }
-}
-
+}  // namespace
 
 /**
  * Calculates temperature of system.
@@ -38,7 +37,7 @@ void maxwellBoltzmannDistribution(autopas::Particle &p, const double averageVelo
  * @param particlePropertiesLibrary
  * @return Temperature of system.
  */
-template<class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
+template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 double calcTemperature(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
   // kinetic energy times 2
   double kineticEnergyMul2 = 0;
@@ -68,9 +67,8 @@ double calcTemperature(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
  * @param particlePropertiesLibrary
  * @param useCurrentTemp
  */
-template<class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-void addBrownianMotion(AutoPasTemplate &autopas,
-                       ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
+template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
+void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
                        bool useCurrentTemp) {
   // factors for the brownian motion per particle type.
   std::map<size_t, double> factors;
@@ -104,16 +102,21 @@ void addBrownianMotion(AutoPasTemplate &autopas,
  * @param targetTemperature
  * @param deltaTemperature Maximum temperature change.
  */
-template<class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-void apply(AutoPasTemplate &autopas,
-           ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
-           double targetTemperature,
-           double deltaTemperature) {
-  double currentTemperature = calcTemperature(autopas, particlePropertiesLibrary);
-  double nextTargetTemperature = currentTemperature + deltaTemperature;
+template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
+void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
+           const double targetTemperature, const double deltaTemperature) {
+  const double currentTemperature = calcTemperature(autopas, particlePropertiesLibrary);
+  // make sure we work with a positive delta
+  const double deltaTemperaturePositive = deltaTemperature < 0 ? -1 * deltaTemperature : deltaTemperature;
+
+  double nextTargetTemperature;
   // check if we are already in the vicinity of our target or if we still need full steps
-  if (std::abs(nextTargetTemperature) > std::abs(targetTemperature)) {
+  if (std::abs(currentTemperature - targetTemperature) < std::abs(deltaTemperature)) {
     nextTargetTemperature = targetTemperature;
+  } else {
+    // make sure we scale in the right direction
+    nextTargetTemperature = currentTemperature < targetTemperature ? currentTemperature + deltaTemperaturePositive
+                                                                   : currentTemperature - deltaTemperaturePositive;
   }
   double scaling = std::sqrt(nextTargetTemperature / currentTemperature);
 #ifdef AUTOPAS_OPENMP
@@ -123,4 +126,4 @@ void apply(AutoPasTemplate &autopas,
     iter->setV(autopas::utils::ArrayMath::mulScalar(iter->getV(), scaling));
   }
 }
-};
+};  // namespace Thermostat
