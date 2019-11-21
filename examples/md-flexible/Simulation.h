@@ -166,7 +166,7 @@ class Simulation {
    * @param maxTime if passed the percentage of timeMS of maxTime is appended.
    * @return formatted std::string
    */
-  std::string timerToString(std::string name, long timeMS, size_t numberWidth = 0, long maxTime = 0);
+  std::string timerToString(const std::string &name, long timeMS, size_t numberWidth = 0, long maxTime = 0);
 };
 
 template <typename Particle, typename ParticleCell>
@@ -447,7 +447,7 @@ const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &Simulation<Par
 }
 template <class Particle, class ParticleCell>
 
-std::string Simulation<Particle, ParticleCell>::timerToString(std::string name, long timeMS, size_t numberWidth,
+std::string Simulation<Particle, ParticleCell>::timerToString(const std::string &name, long timeMS, size_t numberWidth,
                                                               long maxTime) {
   // only print timers that were actually used
   if (timeMS == 0) {
