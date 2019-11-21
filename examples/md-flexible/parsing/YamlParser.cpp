@@ -263,8 +263,7 @@ bool parseYamlFile(MDFlexConfig &config) {
     config.thermostatInterval = node[MDFlexConfig::thermostatStr][MDFlexConfig::thermostatIntervalStr].as<size_t>();
     config.targetTemperature = node[MDFlexConfig::thermostatStr][MDFlexConfig::targetTemperatureStr].as<double>();
     config.deltaTemp = node[MDFlexConfig::thermostatStr][MDFlexConfig::deltaTempStr].as<double>();
-    config.addBrownianMotion =
-        node[MDFlexConfig::thermostatStr][MDFlexConfig::useCurrentTempForBrownianMotionStr].as<bool>();
+    config.addBrownianMotion = node[MDFlexConfig::thermostatStr][MDFlexConfig::addBrownianMotionStr].as<bool>();
   }
   return true;
 }
