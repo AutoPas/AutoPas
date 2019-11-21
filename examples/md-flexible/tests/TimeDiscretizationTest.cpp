@@ -25,10 +25,10 @@ TEST_F(TimeDiscretizationTest, calcVelocities) {
 
   TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1);
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-    // only velocity in one direction is expected
+    // only velocity in one direction is expected, as the force is initialized to point only in z-direction.
     EXPECT_EQ(iter->getV()[0], 0);
     EXPECT_EQ(iter->getV()[1], 0);
-    // Strömer-Verlet: 1 + (0+1)/2 * 0.1 = 1.05
+    // Störmer-Verlet: 1 + (0+1)/2 * 0.1 = 1.05
     EXPECT_NEAR(iter->getV()[2], 1.05, 1e-13);
 
     // set force for next iteration
@@ -41,7 +41,7 @@ TEST_F(TimeDiscretizationTest, calcVelocities) {
     // only velocity in one direction is expected
     EXPECT_EQ(iter->getV()[0], 0);
     EXPECT_EQ(iter->getV()[1], 0);
-    // Strömer-Verlet: 1.05 + (1+2)/2 * 0.1 = 1.2
+    // Störmer-Verlet: 1.05 + (1+2)/2 * 0.1 = 1.2
     EXPECT_NEAR(iter->getV()[2], 1.2, 1e-13);
   }
 }
@@ -57,7 +57,7 @@ TEST_F(TimeDiscretizationTest, calcPositions) {
     // only change in one direction is expected
     EXPECT_EQ(iter->getR()[0], iterRef->getR()[0]);
     EXPECT_EQ(iter->getR()[1], iterRef->getR()[1]);
-    // Strömer-Verlet: 0.1 * 1 + 0.1^2 * (1 / 2) = 0.105
+    // Störmer-Verlet: 0.1 * 1 + 0.1^2 * (1 / 2) = 0.105
     EXPECT_NEAR(iter->getR()[2], iterRef->getR()[2] + 0.105, 1e-13);
 
     // expect force to be reset
@@ -76,7 +76,7 @@ TEST_F(TimeDiscretizationTest, calcPositions) {
     // only velocity in one direction is expected
     EXPECT_EQ(iter->getR()[0], iterRef->getR()[0]);
     EXPECT_EQ(iter->getR()[1], iterRef->getR()[1]);
-    // Strömer-Verlet: 0.1 * .5 + 0.1^2 * (2 / 2) = 0.06
+    // Störmer-Verlet: 0.1 * .5 + 0.1^2 * (2 / 2) = 0.06
     EXPECT_NEAR(iter->getR()[2], iterRef->getR()[2] + 0.06, 1e-13);
   }
 }
