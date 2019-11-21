@@ -147,7 +147,6 @@ class Simulation {
   std::shared_ptr<MDFlexConfig> _config;
   std::ofstream _logFile;
   std::unique_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
-  std::unique_ptr<Thermostat<AutoPasType, ParticlePropertiesLibraryType>> _thermostat;
   std::unique_ptr<TimeDiscretization<AutoPasType, ParticlePropertiesLibraryType>> _timeDiscretization;
 
   struct timers {
@@ -265,11 +264,11 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
     Generator::sphere<Particle, ParticleCell>(_autopas, sphere);
   }
 
-  // initilizing Thermostat
+  // initilizing system to initial temperature and brownian motion
   if (_config->useThermostat and _config->deltaT != 0) {
-    _thermostat = std::make_unique<typename decltype(_thermostat)::element_type>(
-        _config->initTemperature, _config->targetTemperature, _config->deltaTemp, *_particlePropertiesLibrary);
-    _thermostat->addBrownianMotion(_autopas, _config->useCurrentTempForBrownianMotion);
+    Thermostat::addBrownianMotion(_autopas, *_particlePropertiesLibrary, _config->useCurrentTempForBrownianMotion);
+    // set system to initial temperature
+    Thermostat::apply(_autopas, *_particlePropertiesLibrary, _config->initTemperature, std::numeric_limits<double>::max());
   }
 
   _timers.init.stop();
@@ -343,7 +342,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
       // applying Velocity scaling with Thermostat:
       if (_config->useThermostat and (iteration % _config->thermostatInterval) == 0) {
         _timers.thermostat.start();
-        _thermostat->apply(_autopas);
+        Thermostat::apply(_autopas, *_particlePropertiesLibrary, _config->targetTemperature, _config->deltaTemp);
         _timers.thermostat.stop();
       }
     }
@@ -352,7 +351,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
   // update temperature for generated config output
   if (_config->useThermostat) {
     _timers.thermostat.start();
-    _config->initTemperature = _thermostat->calcTemperature(_autopas);
+    _config->initTemperature = Thermostat::calcTemperature(_autopas, *_particlePropertiesLibrary);
     _timers.thermostat.stop();
   }
 

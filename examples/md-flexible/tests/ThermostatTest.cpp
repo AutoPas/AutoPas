@@ -26,9 +26,9 @@ void ThermostatTest::initContainer(AutoPasType &autopas, const Molecule &dummy, 
 void ThermostatTest::testBrownianMotion(const Molecule &dummyMolecule, bool useCurrentTemp) {
   initContainer(_autopas, dummyMolecule, {2, 1, 1});
 
-  ThermostatType thermostat(1, 1, 1, _particlePropertiesLibrary);
+//  ThermostatType thermostat(1, 1, 1, _particlePropertiesLibrary);
 
-  thermostat.addBrownianMotion(_autopas, useCurrentTemp);
+  Thermostat::addBrownianMotion(_autopas, _particlePropertiesLibrary, useCurrentTemp);
   // check that velocities have actually changed
   for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
     for (int i = 0; i < 3; ++i) {
@@ -52,14 +52,22 @@ TEST_F(ThermostatTest, ApplyAndCalcTemperatureTest) {
   Molecule m;
   initContainer(_autopas, m, {2, 2, 2});
   _particlePropertiesLibrary.addType(0, 1., 1., 1.);
-  ThermostatType thermo(1., 2., .5, _particlePropertiesLibrary);
-  EXPECT_NEAR(thermo.calcTemperature(_autopas), 0, 1e-12);
+//  ThermostatType thermo(init 1.,target  2., delta .5, _particlePropertiesLibrary);
+  constexpr double initTemp = 1.;
+  constexpr double targetTemp = 2.;
+  constexpr double deltaTemp = .5;
+  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), 0, 1e-12);
   // add random velocities so that we do not scale zero vectors
-  thermo.addBrownianMotion(_autopas, false);
-  thermo.apply(_autopas);
-  EXPECT_NEAR(thermo.calcTemperature(_autopas), 1.5, 1e-12);
-  thermo.apply(_autopas);
-  EXPECT_NEAR(thermo.calcTemperature(_autopas), 2., 1e-12);
-  thermo.apply(_autopas);
-  EXPECT_NEAR(thermo.calcTemperature(_autopas), 2., 1e-12);
+  Thermostat::addBrownianMotion(_autopas, _particlePropertiesLibrary, false);
+  // expect temperature to have changed from zero
+  EXPECT_THAT(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), ::testing::Not(::testing::DoubleNear(0, 1e-12)));
+  // set system to initial temperature
+  Thermostat::apply(_autopas, _particlePropertiesLibrary, initTemp, std::numeric_limits<double>::max());
+  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), 1., 1e-12);
+  Thermostat::apply(_autopas, _particlePropertiesLibrary, targetTemp, deltaTemp);
+  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), 1.5, 1e-12);
+  Thermostat::apply(_autopas, _particlePropertiesLibrary, targetTemp, deltaTemp);
+  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), 2., 1e-12);
+  Thermostat::apply(_autopas, _particlePropertiesLibrary, targetTemp, deltaTemp);
+  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), 2., 1e-12);
 }
