@@ -15,7 +15,7 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class ThermostatTest : public AutoPasTestBase {
+ class ThermostatTest : public AutoPasTestBase, public ::testing::WithParamInterface<std::tuple<double, double, double>> {
  public:
   using AutoPasType = autopas::AutoPas<Molecule, autopas::FullParticleCell<Molecule>>;
 
