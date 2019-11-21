@@ -167,8 +167,8 @@ class MDFlexConfig {
   double deltaTemp{0.};
   static inline const char *thermostatIntervalStr{"thermostatInterval"};
   size_t thermostatInterval{0};
-  static inline const char *useCurrentTempForBrownianMotionStr{"useCurrentTempForBrownianMotion"};
-  bool useCurrentTempForBrownianMotion{true};
+  static inline const char *addBrownianMotionStr{"addBrownianMotion"};
+  bool addBrownianMotion{true};
 
   // Checkpoint Options
   static inline const char *checkpointfileStr{"checkpoint"};

@@ -266,9 +266,12 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
 
   // initializing system to initial temperature and Brownian motion
   if (_config->useThermostat and _config->deltaT != 0) {
-    Thermostat::addBrownianMotion(_autopas, *_particlePropertiesLibrary, _config->useCurrentTempForBrownianMotion);
+    if (_config->addBrownianMotion) {
+      Thermostat::addBrownianMotion(_autopas, *_particlePropertiesLibrary, _config->initTemperature);
+    }
     // set system to initial temperature
-    Thermostat::apply(_autopas, *_particlePropertiesLibrary, _config->initTemperature, std::numeric_limits<double>::max());
+    Thermostat::apply(_autopas, *_particlePropertiesLibrary, _config->initTemperature,
+                      std::numeric_limits<double>::max());
   }
 
   _timers.init.stop();
