@@ -39,7 +39,7 @@ void addMaxwellBoltzmannDistributedVelocity(autopas::Particle &p, const double a
 }  // namespace
 
 /**
- * Calculates temperature of system.
+ * Calculates temperature of system. Assuming dimension-less units and Boltzmann constant = 1.
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
  * @param autopas

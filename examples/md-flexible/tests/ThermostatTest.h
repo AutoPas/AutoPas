@@ -38,7 +38,7 @@ class ThermostatTest : public AutoPasTestBase,
    * @param dummyMolecule
    * @param useCurrentTemp
    */
-  void testBrownianMotion(const Molecule &dummyMolecule, const double targetTemperature);
+  void testBrownianMotion(const Molecule &dummyMolecule, double targetTemperature);
 
   ParticlePropertiesLibrary<double, size_t> _particlePropertiesLibrary;
   AutoPasType _autopas;

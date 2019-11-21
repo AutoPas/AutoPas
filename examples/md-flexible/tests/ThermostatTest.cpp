@@ -65,10 +65,10 @@ TEST_P(ThermostatTest, testApplyAndCalcTemperature) {
   Molecule m;
   initContainer(_autopas, m, {2, 2, 2});
   _particlePropertiesLibrary.addType(0, 1., 1., 1.);
-  //  ThermostatType thermo(init 1.,target  2., delta .5, _particlePropertiesLibrary);
-  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), 0, 1e-12);
+  // initially there are no velocities -> temperature should be exactly 0
+  EXPECT_EQ(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), 0);
   // add random velocities so that we do not scale zero vectors
-  Thermostat::addBrownianMotion(_autopas, _particlePropertiesLibrary, false);
+  Thermostat::addBrownianMotion(_autopas, _particlePropertiesLibrary, initialTemperature);
   // expect temperature to have changed from zero
   EXPECT_THAT(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary),
               ::testing::Not(::testing::DoubleNear(0, 1e-12)));
