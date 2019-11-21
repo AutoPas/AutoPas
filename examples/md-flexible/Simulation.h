@@ -264,7 +264,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
     Generator::sphere<Particle, ParticleCell>(_autopas, sphere);
   }
 
-  // initilizing system to initial temperature and brownian motion
+  // initializing system to initial temperature and Brownian motion
   if (_config->useThermostat and _config->deltaT != 0) {
     Thermostat::addBrownianMotion(_autopas, *_particlePropertiesLibrary, _config->useCurrentTempForBrownianMotion);
     // set system to initial temperature
