@@ -8,7 +8,7 @@ ExternalProject_Add(
     harmony
     URL
         ${CMAKE_SOURCE_DIR}/libs/harmony.zip
-    URL_HASH MD5=b4b6ff48da4c509276a0f89e5656dab8
+    URL_HASH MD5=a8768c2886bdc2e44e3b6b7d4f94729c
     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/harmony/include/lib/libharmony.a
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/harmony
     # since we only unpack a header lib src == include
