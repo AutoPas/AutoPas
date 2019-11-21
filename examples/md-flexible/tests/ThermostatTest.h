@@ -15,7 +15,8 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "testingHelpers/commonTypedefs.h"
 
- class ThermostatTest : public AutoPasTestBase, public ::testing::WithParamInterface<std::tuple<double, double, double>> {
+class ThermostatTest : public AutoPasTestBase,
+                       public ::testing::WithParamInterface<std::tuple<double, double, double>> {
  public:
   using AutoPasType = autopas::AutoPas<Molecule, autopas::FullParticleCell<Molecule>>;
 
@@ -37,7 +38,7 @@
    * @param dummyMolecule
    * @param useCurrentTemp
    */
-  void testBrownianMotion(const Molecule &dummyMolecule, bool useCurrentTemp);
+  void testBrownianMotion(const Molecule &dummyMolecule, const double targetTemperature);
 
   ParticlePropertiesLibrary<double, size_t> _particlePropertiesLibrary;
   AutoPasType _autopas;

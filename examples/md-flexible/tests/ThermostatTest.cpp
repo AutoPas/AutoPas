@@ -23,24 +23,33 @@ void ThermostatTest::initContainer(AutoPasType &autopas, const Molecule &dummy, 
                                    {particleSpacing / 2, particleSpacing / 2, particleSpacing / 2});
 }
 
-void ThermostatTest::testBrownianMotion(const Molecule &dummyMolecule, bool useCurrentTemp) {
-  initContainer(_autopas, dummyMolecule, {2, 1, 1});
+void ThermostatTest::testBrownianMotion(const Molecule &dummyMolecule, const double targetTemperature) {
+  // here we need a not too small amount of molecules to be able to make statistic deductions
+  initContainer(_autopas, dummyMolecule, {25, 25, 25});
 
-  Thermostat::addBrownianMotion(_autopas, _particlePropertiesLibrary, useCurrentTemp);
+  auto initTemperature = Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary);
+
+  // this only makes sense if the initial temperature is zero
+  Thermostat::addBrownianMotion(_autopas, _particlePropertiesLibrary, targetTemperature);
   // check that velocities have actually changed
   for (auto iter = _autopas.begin(); iter.isValid(); ++iter) {
     for (int i = 0; i < 3; ++i) {
       EXPECT_THAT(iter->getV()[i], ::testing::Not(::testing::DoubleEq(dummyMolecule.getV()[i])));
     }
   }
+  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), targetTemperature + initTemperature,
+              0.02);
 }
 
-TEST_F(ThermostatTest, BrownianMotionTest_useCurrentTempFalse) { testBrownianMotion(Molecule(), false); }
+TEST_F(ThermostatTest, BrownianMotionTest_InitV0) {
+  Molecule dummyMolecule;
+  testBrownianMotion(dummyMolecule, 1.5);
+}
 
-TEST_F(ThermostatTest, BrownianMotionTest_useCurrentTempTrue) {
-  Molecule m;
-  m.setV({1., 1., 1.});
-  testBrownianMotion(m, true);
+TEST_F(ThermostatTest, BrownianMotionTest_InitV1) {
+  Molecule dummyMolecule;
+  dummyMolecule.setV({1, 1, 1});
+  testBrownianMotion(dummyMolecule, 1.5);
 }
 
 /**
