@@ -58,7 +58,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
   constexpr operator Value() const { return _value; }
 
   /**
-   * Provides a way to iterate over the possible choices of TraversalOption.
+   * Provides a way to iterate over the possible choices of TuningStrategy.
    * @return map option -> string representation
    */
   static std::map<TuningStrategyOption, std::string> getOptionNames() {

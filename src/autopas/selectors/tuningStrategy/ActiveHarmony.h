@@ -10,7 +10,7 @@
 #include <autopas/selectors/Configuration.h>
 #include <autopas/containers/CompatibleTraversals.h>
 #include "TuningStrategyInterface.h"
-#include "include/hclient.h"
+#include "hclient.h"
 
 namespace autopas {
 
@@ -85,11 +85,11 @@ class ActiveHarmony : public TuningStrategyInterface {
   /**
    * Pointer for the connection to the ActiveHarmony server.
    */
-  hdesc_t *hdesc;
+  hdesc_t *hdesc = nullptr;
   /**
    * Pointer to the ActiveHarmony tuning task defining the tuning parameters and tuning process.
    */
-  htask_t *htask;
+  htask_t *htask = nullptr;
 
   std::set<ContainerOption> _allowedContainerOptions;
   std::unique_ptr<NumberSet < double>> _allowedCellSizeFactors;
