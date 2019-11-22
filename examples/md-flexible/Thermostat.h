@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 /**
  * Thermostat to adjust the Temperature of the Simulation
@@ -47,11 +48,11 @@ void addMaxwellBoltzmannDistributedVelocity(autopas::Particle &p, const double a
  * @return Temperature of system.
  */
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-double calcTemperature(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
+double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
   // kinetic energy times 2
   double kineticEnergyMul2 = 0;
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(+ : kineticEnergyMul2)
+#pragma omp parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary)
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto vel = iter->getV();
@@ -61,6 +62,66 @@ double calcTemperature(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};
   return kineticEnergyMul2 / (autopas.getNumberOfParticles() * dimensions);
+}
+
+/**
+ * Calculates temperature of system, for each component separately. Assuming dimension-less units and Boltzmann constant
+ * = 1.
+ * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
+ * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
+ * @param autopas
+ * @param particlePropertiesLibrary
+ * @return map of: particle typeID -> temperature for this type
+ */
+template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
+auto calcTemperatureComponent(const AutoPasTemplate &autopas,
+                              ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
+  // map of: particle typeID -> kinetic energy times 2 for this type
+  std::map<typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryIntType, double> kineticEnergyMul2Map;
+  // map of: particle typeID -> number of particles of this type
+  std::map<typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryIntType, size_t> numParticleMap;
+
+  for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
+    kineticEnergyMul2Map[typeID] = 0.;
+    numParticleMap[typeID] = 0ul;
+  }
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp declare reduction(mapAdd :                                                                           \
+  std::map<size_t, double> :                                                                                     \
+  [](auto& omp_in, auto& omp_out){                                                                               \
+    for (auto initer = omp_in.begin(), outiter = omp_out.begin(); initer != omp_in.end(); ++initer, ++outiter) { \
+      outiter->second += initer->second;                                                                         \
+    }                                                                                                            \
+  }(omp_in, omp_out)                                                                                             \
+)
+#pragma omp declare reduction(mapAdd :                                                                           \
+  std::map<size_t, size_t> :                                                                                     \
+  [](auto& omp_in, auto& omp_out){                                                                               \
+    for (auto initer = omp_in.begin(), outiter = omp_out.begin(); initer != omp_in.end(); ++initer, ++outiter) { \
+      outiter->second += initer->second;                                                                         \
+    }                                                                                                            \
+  }(omp_in, omp_out)                                                                                             \
+)
+#pragma omp parallel reduction(mapAdd                                                            \
+                               : kineticEnergyMul2Map) reduction(mapAdd                          \
+                                                                 : numParticleMap) default(none) \
+    shared(autopas, particlePropertiesLibrary)
+#endif
+  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    auto vel = iter->getV();
+    kineticEnergyMul2Map.at(iter->getTypeId()) +=
+        particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
+    numParticleMap.at(iter->getTypeId())++;
+  }
+  // AutoPas works always on 3 dimensions
+  constexpr unsigned int dimensions{3};
+
+  for (auto [kinEIter, numParIter] = std::tuple{kineticEnergyMul2Map.begin(), numParticleMap.begin()};
+       kinEIter != kineticEnergyMul2Map.end(); ++kinEIter, ++numParIter) {
+    kinEIter->second /= numParIter->second * dimensions;
+  }
+  return kineticEnergyMul2Map;
 }
 
 /**
@@ -86,7 +147,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
     factors.emplace(typeID, std::sqrt(targetTemperature / particlePropertiesLibrary.getMass(typeID)));
   }
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel
+#pragma omp parallel default(none) shared(autopas, factors)
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     addMaxwellBoltzmannDistributedVelocity(*iter, factors[iter->getTypeId()]);
@@ -105,25 +166,28 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
            const double targetTemperature, const double deltaTemperature) {
-  const double currentTemperature = calcTemperature(autopas, particlePropertiesLibrary);
+  auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
   // make sure we work with a positive delta
-  const double deltaTemperaturePositive = deltaTemperature < 0 ? -1 * deltaTemperature : deltaTemperature;
+  const double deltaTemperaturePositive = std::abs(deltaTemperature);
+  decltype(currentTemperatureMap) scalingMap;
 
-  double nextTargetTemperature;
-  // check if we are already in the vicinity of our target or if we still need full steps
-  if (std::abs(currentTemperature - targetTemperature) < std::abs(deltaTemperature)) {
-    nextTargetTemperature = targetTemperature;
-  } else {
-    // make sure we scale in the right direction
-    nextTargetTemperature = currentTemperature < targetTemperature ? currentTemperature + deltaTemperaturePositive
-                                                                   : currentTemperature - deltaTemperaturePositive;
+  for (const auto &[particleTypeID, currentTemperature] : currentTemperatureMap) {
+    double nextTargetTemperature;
+    // check if we are already in the vicinity of our target or if we still need full steps
+    if (std::abs(currentTemperature - targetTemperature) < std::abs(deltaTemperature)) {
+      nextTargetTemperature = targetTemperature;
+    } else {
+      // make sure we scale in the right direction
+      nextTargetTemperature = currentTemperature < targetTemperature ? currentTemperature + deltaTemperaturePositive
+                                                                     : currentTemperature - deltaTemperaturePositive;
+    }
+    scalingMap[particleTypeID] = std::sqrt(nextTargetTemperature / currentTemperature);
   }
-  double scaling = std::sqrt(nextTargetTemperature / currentTemperature);
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel
+#pragma omp parallel default(none) shared(autopas, scalingMap)
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    iter->setV(autopas::utils::ArrayMath::mulScalar(iter->getV(), scaling));
+    iter->setV(autopas::utils::ArrayMath::mulScalar(iter->getV(), scalingMap[iter->getTypeId()]));
   }
 }
 };  // namespace Thermostat
