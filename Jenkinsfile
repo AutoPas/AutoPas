@@ -109,11 +109,11 @@ pipeline{
                         }
                     }
                 }
-                stage("default") {
+                stage("gcc noopenmp") {
                     steps{
                         container('autopas-gcc7-cmake-make') {
                             dir("build"){
-                                sh "cmake .."
+                                sh "cmake -DAUTOPAS_OPENMP=OFF .."
                                 sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                                 sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
                             }
@@ -152,7 +152,7 @@ pipeline{
                     steps{
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer"){
-                                sh "cmake -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "cmake -DAUTOPAS_OPENMP=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
@@ -175,7 +175,7 @@ pipeline{
                         container('autopas-gcc7-cmake-make') {
                             dir("build-threadsanitizer"){
                                 // this is for simple testing of our threading libraries.
-                                sh "cmake -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON .."
+                                sh "cmake -DAUTOPAS_OPENMP=OFF -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON .."
                                 sh "make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
@@ -200,7 +200,7 @@ pipeline{
                     steps{
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-debug"){
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_OPENMP=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
@@ -211,7 +211,7 @@ pipeline{
                     steps{
                         container('autopas-clang6-cmake-ninja-make'){
                             dir("build-clang-ninja-addresssanitizer-release"){
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_OPENMP=OFF -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
