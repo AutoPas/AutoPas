@@ -463,7 +463,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
         dummyParticle.setR({_boxMaxWithHalo[0] + 8 * this->getInteractionLength() + static_cast<double>(i),
                             _boxMaxWithHalo[1] + 8 * this->getInteractionLength() + static_cast<double>(j),
                             _boxMaxWithHalo[2] + 8 * this->getInteractionLength()});
-        dummyParticle.setID(ULONG_MAX);
+        dummyParticle.setID(std::numeric_limits<size_t>::max());
         dummyParticle.setOwned(false);
         this->_cells[i].addParticle(dummyParticle);
       }

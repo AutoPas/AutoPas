@@ -22,6 +22,8 @@ target_link_libraries(
                                   # openmp when using archer
         $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${ARCHER}>>>:OpenMP::OpenMP_CXX>
         ${CMAKE_BINARY_DIR}/libs/harmony/include/lib/libharmony.a
+        Eigen3
+        spdlog::spdlog
 )
 
 # Ompstuff needs to be here because OpenMP.cmake needs to run before this file to create to OpenMP

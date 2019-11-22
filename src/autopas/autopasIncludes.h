@@ -20,7 +20,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 
 // particles
-#include "autopas/particles/MoleculeLJ.h"
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/particles/Particle.h"
 
 // cells
@@ -55,7 +55,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 
 // pairwise functors
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/pairwiseFunctors/Functor.h"
-#include "autopas/pairwiseFunctors/LJFunctor.h"

@@ -15,6 +15,8 @@ endif ()
 
 add_executable(runTests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
 
+target_compile_definitions(runTests PRIVATE)
+
 target_link_libraries(
     runTests
     autopas
