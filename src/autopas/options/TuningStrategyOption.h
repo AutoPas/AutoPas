@@ -35,7 +35,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      */
     bayesianSearch,
     /**
-     * ActiveHarmony implementation
+     * ActiveHarmony client / server system
      */
      activeHarmony,
   };
