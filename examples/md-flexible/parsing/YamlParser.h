@@ -14,7 +14,6 @@
 #include <string>
 #include "MDFlexConfig.h"
 #include "Objects/Objects.h"
-#include "Thermostat.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/utils/NumberSet.h"
 
