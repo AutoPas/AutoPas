@@ -26,7 +26,7 @@ void Operators::P2M(AdaptiveOctreeNode &leaf) {
   // Loop order changed, so the spherical harmonics cache is built less frequently.
   for (auto iter = leaf.getTree()->getDomain()->getRegionIterator(leaf.getNodeMinCorner(), leaf.getNodeMaxCorner());
        iter.isValid(); ++iter) {
-    auto spherical = Math3D::toSpherical(autopas::ArrayMath::sub(iter->getR(), leaf.getNodeCenter()));
+    auto spherical = Math3D::toSpherical(autopas::utils::ArrayMath::sub(iter->getR(), leaf.getNodeCenter()));
     for (int m = -orderOfExpansion; m <= orderOfExpansion; ++m) {
       math3D.sphericalHarmonicsBuildCache(-m, orderOfExpansion, spherical[1], spherical[2]);
       for (int n = std::abs(m); n <= orderOfExpansion; n++) {
@@ -47,7 +47,7 @@ void Operators::M2M(AdaptiveOctreeNode &parent) {
     if (child->isZeroM()) {
       continue;
     }
-    auto spherical = Math3D::toSpherical(autopas::ArrayMath::sub(child->getNodeCenter(), parent.getNodeCenter()));
+    auto spherical = Math3D::toSpherical(autopas::utils::ArrayMath::sub(child->getNodeCenter(), parent.getNodeCenter()));
     double r = spherical[0];
     double theta = spherical[1];
     double phi = spherical[2];
@@ -85,7 +85,7 @@ void Operators::M2L(AdaptiveOctreeNode &node) {
     if (inter->isZeroM()) {
       continue;
     }
-    auto spherical = Math3D::toSpherical(autopas::ArrayMath::sub(inter->getNodeCenter(), node.getNodeCenter()));
+    auto spherical = Math3D::toSpherical(autopas::utils::ArrayMath::sub(inter->getNodeCenter(), node.getNodeCenter()));
     double rho = spherical[0];
     double theta = spherical[1];
     double phi = spherical[2];
@@ -142,7 +142,7 @@ void Operators::L2L(AdaptiveOctreeNode &node) {
     if (parent->isZeroL()) {
       return;
     }
-    auto cartesian = autopas::ArrayMath::sub(parent->getNodeCenter(), node.getNodeCenter());
+    auto cartesian = autopas::utils::ArrayMath::sub(parent->getNodeCenter(), node.getNodeCenter());
     auto spherical = Math3D::toSpherical(cartesian);
     double rho = spherical[0];
     double theta = spherical[1];
@@ -179,7 +179,7 @@ void Operators::L2L(AdaptiveOctreeNode &node) {
 void Operators::L2P(AdaptiveOctreeNode &leaf) {
   for (auto iter = leaf.getTree()->getDomain()->getRegionIterator(leaf.getNodeMinCorner(), leaf.getNodeMaxCorner());
        iter.isValid(); ++iter) {
-    auto sphericalPos = Math3D::toSpherical(autopas::ArrayMath::sub(iter->getR(), leaf.getNodeCenter()));
+    auto sphericalPos = Math3D::toSpherical(autopas::utils::ArrayMath::sub(iter->getR(), leaf.getNodeCenter()));
 
     double rho = sphericalPos[0];
     double theta = sphericalPos[1];

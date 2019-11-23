@@ -12,9 +12,9 @@ AdaptiveOctreeNode::AdaptiveOctreeNode(AdaptiveOctree &tree, AdaptiveOctreeNode 
     : tree(&tree),
       parent(parent),
       nodeMinCorner(minCorner),
-      nodeCenter(autopas::ArrayMath::mulScalar(autopas::ArrayMath::add(minCorner, maxCorner), 0.5)),
+      nodeCenter(autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::add(minCorner, maxCorner), 0.5)),
       nodeMaxCorner(maxCorner),
-      nodeSize(autopas::ArrayMath::sub(maxCorner, minCorner)) {
+      nodeSize(autopas::utils::ArrayMath::sub(maxCorner, minCorner)) {
   // Initialize expansion coefficients to 0.
   fmmM = ComplexMatrix(tree.getOrderOfExpansion() * 2 + 1, std::vector<Complex>(tree.getOrderOfExpansion() + 1, 0));
   fmmL = ComplexMatrix(tree.getOrderOfExpansion() * 2 + 1, std::vector<Complex>(tree.getOrderOfExpansion() + 1, 0));
@@ -60,8 +60,8 @@ AdaptiveOctreeNode::AdaptiveOctreeNode(AdaptiveOctree &tree, AdaptiveOctreeNode 
       bool zOffset = u & 0x4u;
       std::array<double, 3> offset = std::array<double, 3>(
           {xOffset ? nodeSize[0] / 2 : 0, yOffset ? nodeSize[1] / 2 : 0, zOffset ? nodeSize[2] / 2 : 0});
-      child[i] = std::make_unique<AdaptiveOctreeNode>(tree, this, i, autopas::ArrayMath::add(nodeMinCorner, offset),
-                                                      autopas::ArrayMath::add(nodeCenter, offset));
+      child[i] = std::make_unique<AdaptiveOctreeNode>(tree, this, i, autopas::utils::ArrayMath::add(nodeMinCorner, offset),
+                                                      autopas::utils::ArrayMath::add(nodeCenter, offset));
     }
   } else {
     _isLeaf = true;
@@ -99,7 +99,7 @@ AdaptiveOctreeNode *AdaptiveOctreeNode::findNeighbour(int x, int y, int z) const
 
   std::array<double, 3> offset = std::array<double, 3>({x * nodeSize[0], y * nodeSize[1], z * nodeSize[2]});
 
-  auto neighbour = tree->getRoot()->findNode(autopas::ArrayMath::add(nodeCenter, offset), depth);
+  auto neighbour = tree->getRoot()->findNode(autopas::utils::ArrayMath::add(nodeCenter, offset), depth);
   // std::cout << "find = (" << nodeCenter[0] + offset[0] << ", " << nodeCenter[1] + offset[1] << ", "
   //          << nodeCenter[2] + offset[2] << ") -> " << neighbour->name << std::endl;
 

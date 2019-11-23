@@ -13,7 +13,7 @@ AdaptiveOctree::AdaptiveOctree(AutoPasCont &domain, int maxParticlesPerNode, int
       orderOfExpansion(orderOfExpansion),
       domainMinCorner(domain.getBoxMin()),
       domainMaxCorner(domain.getBoxMax()),
-      domainSize(autopas::ArrayMath::sub(domainMaxCorner, domainMinCorner)),
+      domainSize(autopas::utils::ArrayMath::sub(domainMaxCorner, domainMinCorner)),
       minDepth(minDepth),
       maxDepth(maxDepth) {
   root = std::make_unique<AdaptiveOctreeNode>(*this, nullptr, 0, domainMinCorner, domainMaxCorner);
