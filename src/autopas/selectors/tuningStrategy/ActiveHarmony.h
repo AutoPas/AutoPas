@@ -226,11 +226,11 @@ const Configuration &ActiveHarmony::getCurrentConfiguration() const {
 
 template<class O>
 void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, const std::set<O> options){
-  if (options.size() > 1) {
-    if (ah_def_enum(hdef, name, nullptr) != 0) {
+  if (options.size() > 1) { // only parameters with more than 1 possible options should be tuned
+    if (ah_def_enum(hdef, name, nullptr) != 0) { // define parameter
       utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum \"{}\"", name);
     }
-    for (auto &option : options) {
+    for (auto &option : options) { // define possible values for parameter
       if (ah_def_enum_value(hdef, name, option.to_string().c_str()) != 0) {
         utils::ExceptionHandler::exception(
                 "ActiveHarmony::configureTuningParameter: Error defining enum value for enum \"{}\"", name);
@@ -270,7 +270,7 @@ void ActiveHarmony::reset() {
     utils::ExceptionHandler::exception("ActiveHarmony::reset: Error settings search name");
   }
 
-  if (_allowedCellSizeFactors->isFinite()) {
+  if (_allowedCellSizeFactors->isFinite()) { // finite cell-size factors => define parameter as enum
     if (_allowedCellSizeFactors->size() == 1) {
       AutoPasLog(debug, "ActiveHarmony::reset: Skipping trivial parameter {}", cellSizeFactorsName);
     } else if (_allowedCellSizeFactors->size() > 1) {
@@ -284,7 +284,7 @@ void ActiveHarmony::reset() {
         }
       }
     }
-  } else {
+  } else { // infinite cell-size factors => define parameter as real
     AutoPasLog(debug, "ActiveHarmony::reset: Infinite cell-size factors; defining parameter as real");
     if (ah_def_real(hdef, cellSizeFactorsName, _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(),
                     (_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()) / cellSizeSamples,
@@ -292,7 +292,7 @@ void ActiveHarmony::reset() {
       utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining real \"{}\"", cellSizeFactorsName);
     }
   }
-
+  // set up other parameters
   configureTuningParameter(hdef, traversalOptionName, _allowedTraversalOptions);
   configureTuningParameter(hdef, dataLayoutOptionName, _allowedDataLayoutOptions);
   configureTuningParameter(hdef, newton3OptionName, _allowedNewton3Options);
