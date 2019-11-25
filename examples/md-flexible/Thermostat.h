@@ -64,6 +64,16 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
   return kineticEnergyMul2 / (autopas.getNumberOfParticles() * dimensions);
 }
 
+template <class maptype>
+void addMaps(maptype &inout, maptype &in) {
+  for (auto initer = in.begin(), outiter = inout.begin(); initer != in.end(); ++initer, ++outiter) {
+    outiter->second += initer->second;
+  }
+}
+
+template void addMaps(std::map<size_t, double> &, std::map<size_t, double> &);
+template void addMaps(std::map<size_t, size_t> &, std::map<size_t, size_t> &);
+
 /**
  * Calculates temperature of system, for each component separately. Assuming dimension-less units and Boltzmann constant
  * = 1.
@@ -77,9 +87,14 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 auto calcTemperatureComponent(const AutoPasTemplate &autopas,
                               ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
   // map of: particle typeID -> kinetic energy times 2 for this type
-  std::map<typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryIntType, double> kineticEnergyMul2Map;
+  std::map<size_t, double> kineticEnergyMul2Map;
   // map of: particle typeID -> number of particles of this type
-  std::map<typename ParticlePropertiesLibraryTemplate::ParticlePropertiesLibraryIntType, size_t> numParticleMap;
+  std::map<size_t, size_t> numParticleMap;
+
+#ifdef __clang__
+  kineticEnergyMul2Map = kineticEnergyMul2Map;
+  numParticleMap = numParticleMap;
+#endif
 
   for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
     kineticEnergyMul2Map[typeID] = 0.;
@@ -87,24 +102,10 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   }
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp declare reduction(mapAdd :                                                                           \
-  std::map<size_t, double> :                                                                                     \
-  [](auto& omp_in, auto& omp_out){                                                                               \
-    for (auto initer = omp_in.begin(), outiter = omp_out.begin(); initer != omp_in.end(); ++initer, ++outiter) { \
-      outiter->second += initer->second;                                                                         \
-    }                                                                                                            \
-  }(omp_in, omp_out)                                                                                             \
-)
-#pragma omp declare reduction(mapAdd :                                                                           \
-  std::map<size_t, size_t> :                                                                                     \
-  [](auto& omp_in, auto& omp_out){                                                                               \
-    for (auto initer = omp_in.begin(), outiter = omp_out.begin(); initer != omp_in.end(); ++initer, ++outiter) { \
-      outiter->second += initer->second;                                                                         \
-    }                                                                                                            \
-  }(omp_in, omp_out)                                                                                             \
-)
-#pragma omp parallel reduction(mapAdd                                                            \
-                               : kineticEnergyMul2Map) reduction(mapAdd                          \
+#pragma omp declare reduction(mapAddD :   std::map<size_t, double> :   addMaps(omp_in, omp_out)) initializer(omp_priv=omp_orig)
+#pragma omp declare reduction(mapAddS :   std::map<size_t, size_t> :   addMaps(omp_in, omp_out)) initializer(omp_priv=omp_orig)
+#pragma omp parallel reduction(mapAddD                                                           \
+                               : kineticEnergyMul2Map) reduction(mapAddS                         \
                                                                  : numParticleMap) default(none) \
     shared(autopas, particlePropertiesLibrary)
 #endif
