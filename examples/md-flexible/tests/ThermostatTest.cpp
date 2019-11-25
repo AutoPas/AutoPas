@@ -25,7 +25,7 @@ void ThermostatTest::initContainer(AutoPasType &autopas, const Molecule &dummy, 
 
 void ThermostatTest::testBrownianMotion(const Molecule &dummyMolecule, const double targetTemperature) {
   // here we need a not too small amount of molecules to be able to make statistic deductions
-  initContainer(_autopas, dummyMolecule, {25, 25, 25});
+  initContainer(_autopas, dummyMolecule, {30, 30, 30});
 
   auto initTemperature = Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary);
 

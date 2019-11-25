@@ -64,15 +64,6 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
   return kineticEnergyMul2 / (autopas.getNumberOfParticles() * dimensions);
 }
 
-template <class maptype>
-void addMaps(maptype &inout, maptype &in) {
-  for (auto initer = in.begin(), outiter = inout.begin(); initer != in.end(); ++initer, ++outiter) {
-    outiter->second += initer->second;
-  }
-}
-
-template void addMaps(std::map<size_t, double> &, std::map<size_t, double> &);
-template void addMaps(std::map<size_t, size_t> &, std::map<size_t, size_t> &);
 
 /**
  * Calculates temperature of system, for each component separately. Assuming dimension-less units and Boltzmann constant
@@ -91,24 +82,11 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   // map of: particle typeID -> number of particles of this type
   std::map<size_t, size_t> numParticleMap;
 
-#ifdef __clang__
-  kineticEnergyMul2Map = kineticEnergyMul2Map;
-  numParticleMap = numParticleMap;
-#endif
-
   for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
     kineticEnergyMul2Map[typeID] = 0.;
     numParticleMap[typeID] = 0ul;
   }
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp declare reduction(mapAddD :   std::map<size_t, double> :   addMaps(omp_in, omp_out)) initializer(omp_priv=omp_orig)
-#pragma omp declare reduction(mapAddS :   std::map<size_t, size_t> :   addMaps(omp_in, omp_out)) initializer(omp_priv=omp_orig)
-#pragma omp parallel reduction(mapAddD                                                           \
-                               : kineticEnergyMul2Map) reduction(mapAddS                         \
-                                                                 : numParticleMap) default(none) \
-    shared(autopas, particlePropertiesLibrary)
-#endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto vel = iter->getV();
     kineticEnergyMul2Map.at(iter->getTypeId()) +=
