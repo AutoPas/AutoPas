@@ -163,7 +163,7 @@ void ActiveHarmony::fetchConfiguration() {
   DataLayoutOption dataLayoutOption = fetchTuningParameter(dataLayoutOptionName, _allowedDataLayoutOptions);
   Newton3Option newton3Option = fetchTuningParameter(newton3OptionName, _allowedNewton3Options);
 
-  double cellSizeFactor;
+  double cellSizeFactor = 0;
   if (_allowedCellSizeFactors->isFinite()) {
     if(_allowedCellSizeFactors->size() == 1) {
       cellSizeFactor = _allowedCellSizeFactors->getMin();
