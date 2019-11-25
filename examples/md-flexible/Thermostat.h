@@ -64,7 +64,6 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
   return kineticEnergyMul2 / (autopas.getNumberOfParticles() * dimensions);
 }
 
-
 /**
  * Calculates temperature of system, for each component separately. Assuming dimension-less units and Boltzmann constant
  * = 1.
@@ -87,11 +86,30 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     numParticleMap[typeID] = 0ul;
   }
 
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    auto vel = iter->getV();
-    kineticEnergyMul2Map.at(iter->getTypeId()) +=
-        particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
-    numParticleMap.at(iter->getTypeId())++;
+#pragma omp parallel
+  {
+    // create aggregators for each thread
+    std::map<size_t, double> kineticEnergyMul2MapThread;
+    std::map<size_t, size_t> numParticleMapThread;
+    for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
+      kineticEnergyMul2MapThread[typeID] = 0.;
+      numParticleMapThread[typeID] = 0ul;
+    }
+    // parallel iterators
+    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+      auto vel = iter->getV();
+      kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
+          particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
+      numParticleMapThread.at(iter->getTypeId())++;
+    }
+    // manual reduction
+#pragma omp critical
+    {
+      for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
+        kineticEnergyMul2Map[typeID] += kineticEnergyMul2MapThread[typeID];
+        numParticleMap[typeID] += numParticleMapThread[typeID];
+      }
+    }
   }
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};
