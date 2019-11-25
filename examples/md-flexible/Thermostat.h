@@ -86,7 +86,9 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     numParticleMap[typeID] = 0ul;
   }
 
+#ifdef AUTOPAS_OPENMP
 #pragma omp parallel
+#endif
   {
     // create aggregators for each thread
     std::map<size_t, double> kineticEnergyMul2MapThread;
@@ -103,7 +105,9 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
       numParticleMapThread.at(iter->getTypeId())++;
     }
     // manual reduction
+#ifdef AUTOPAS_OPENMP
 #pragma omp critical
+#endif
     {
       for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
         kineticEnergyMul2Map[typeID] += kineticEnergyMul2MapThread[typeID];
