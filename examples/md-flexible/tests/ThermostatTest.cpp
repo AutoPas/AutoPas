@@ -52,6 +52,33 @@ TEST_F(ThermostatTest, BrownianMotionTest_InitV1) {
   testBrownianMotion(dummyMolecule, 1.5);
 }
 
+TEST_F(ThermostatTest, MultiComponentTest) {
+  Molecule dummyMolecule;
+  // fill with particles of type 0 and init
+  initContainer(_autopas, dummyMolecule, {25, 25, 25});
+  // add some type 1 particles
+  dummyMolecule.setTypeId(1);
+  GridGenerator::fillWithParticles(_autopas, {25, 25, 25}, dummyMolecule);
+
+  // init system with brownian motion and test for the given temperature
+  constexpr double targetTemperature1 = 4.2;
+  Thermostat::addBrownianMotion(_autopas, _particlePropertiesLibrary, targetTemperature1);
+  auto temperatureMap = Thermostat::calcTemperatureComponent(_autopas, _particlePropertiesLibrary);
+
+  for (auto &[typeId, temperature] : temperatureMap) {
+    // brownian motion is statistical therefore a large tolerance is needed
+    EXPECT_NEAR(temperature, targetTemperature1, 0.1);
+  }
+
+  // set system to a different temperature through apply and check that the temperature matches for each component
+  constexpr double targetTemperature2 = targetTemperature1 + 2.;
+  Thermostat::apply(_autopas, _particlePropertiesLibrary, targetTemperature2, std::numeric_limits<double>::max());
+  temperatureMap = Thermostat::calcTemperatureComponent(_autopas, _particlePropertiesLibrary);
+  for (auto &[typeId, temperature] : temperatureMap) {
+    EXPECT_NEAR(temperature, targetTemperature2, 1e-9);
+  }
+}
+
 /**
  * Initialize a system with the given temperature and scale it in steps of delta to the target temperature.
  * @param initialTemperature
@@ -64,7 +91,6 @@ TEST_P(ThermostatTest, testApplyAndCalcTemperature) {
   const double deltaTemperature = std::get<2>(GetParam());
   Molecule m;
   initContainer(_autopas, m, {2, 2, 2});
-  _particlePropertiesLibrary.addType(0, 1., 1., 1.);
   // initially there are no velocities -> temperature should be exactly 0
   EXPECT_EQ(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), 0);
   // add random velocities so that we do not scale zero vectors
