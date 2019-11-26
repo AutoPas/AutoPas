@@ -5,6 +5,7 @@
  */
 
 #include "Newton3OnOffTest.h"
+
 #include "autopas/utils/Logger.h"
 
 using ::testing::_;  // anything is ok

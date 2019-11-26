@@ -5,8 +5,10 @@
  */
 #pragma once
 #include <gtest/gtest.h>
+
 #include <cmath>
 #include <vector>
+
 #include "AutoPasTestBase.h"
 #include "Objects/Objects.h"
 #include "autopas/AutoPas.h"

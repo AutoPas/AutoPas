@@ -8,7 +8,9 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
 #include <cstdlib>
+
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "testingHelpers/RandomGenerator.h"

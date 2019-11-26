@@ -7,7 +7,9 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include <tuple>
+
 #include "autopas/AutoPas.h"
 
 class FullParticleCellTest : public testing::Test {};

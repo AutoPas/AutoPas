@@ -7,6 +7,7 @@
  */
 
 #include "LinkedCellsVersusVarVerletListsTest.h"
+
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VarVerletTraversalAsBuild.h"
 
 LinkedCellsVersusVarVerletListsTest::LinkedCellsVersusVarVerletListsTest()

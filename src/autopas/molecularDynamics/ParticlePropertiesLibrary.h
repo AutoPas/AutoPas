@@ -5,9 +5,11 @@
  */
 
 #pragma once
+
 #include <cmath>
 #include <map>
 #include <vector>
+
 #include "autopas/particles/Particle.h"
 
 /**
@@ -104,6 +106,7 @@ class ParticlePropertiesLibrary {
     auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
     return _computedMixing24Epsilon.at(key);
   }
+
   /**
    * Returns precomputed mixed squared sigma.
    * @param i typeId index of particle one.

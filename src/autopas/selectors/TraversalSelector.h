@@ -10,6 +10,7 @@
 #include <numeric>
 #include <unordered_map>
 #include <vector>
+
 #include "TraversalSelectorInfo.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"

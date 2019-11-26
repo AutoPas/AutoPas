@@ -4,15 +4,17 @@
  * @date 02/08/19
  */
 #pragma once
-#include <Objects/CubeGauss.h>
-#include <Objects/CubeGrid.h>
-#include <Objects/CubeUniform.h>
-#include <Objects/Sphere.h>
 #include <gtest/gtest.h>
+
 #include <cmath>
 #include <vector>
+
 #include "AutoPasTestBase.h"
+#include "Objects/CubeGauss.h"
+#include "Objects/CubeGrid.h"
+#include "Objects/CubeUniform.h"
 #include "Objects/Objects.h"
+#include "Objects/Sphere.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "testingHelpers/commonTypedefs.h"

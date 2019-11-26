@@ -9,6 +9,7 @@
 
 #include <array>
 #include <vector>
+
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"

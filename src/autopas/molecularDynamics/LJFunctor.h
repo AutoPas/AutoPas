@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"

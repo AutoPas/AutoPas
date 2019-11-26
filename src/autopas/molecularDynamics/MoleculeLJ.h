@@ -8,6 +8,7 @@
 #pragma once
 
 #include <vector>
+
 #include "autopas/particles/Particle.h"
 
 namespace autopas {
@@ -134,9 +135,7 @@ class MoleculeLJ : public Particle {
    * Set old force.
    * @param oldForce
    */
-  void setOldF(const std::array<double, 3> &oldForce) {
-    _oldF = oldForce;
-  }
+  void setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; }
 
   /**
    * Get TypeId.
@@ -148,9 +147,7 @@ class MoleculeLJ : public Particle {
    * Set the type id of the Molecule.
    * @param typeId
    */
-  void setTypeId(size_t typeId) {
-    _typeId = typeId;
-  }
+  void setTypeId(size_t typeId) { _typeId = typeId; }
 
  private:
   /**

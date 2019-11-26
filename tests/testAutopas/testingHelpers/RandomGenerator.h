@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+
 #include "autopas/utils/inBox.h"
 
 /**

@@ -5,6 +5,7 @@
  */
 
 #include "LinkedCellsVersusDirectSumTest.h"
+
 #include "testingHelpers/RandomGenerator.h"
 
 LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()

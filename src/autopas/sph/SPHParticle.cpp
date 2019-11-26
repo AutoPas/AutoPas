@@ -5,7 +5,9 @@
  */
 
 #include "autopas/sph/SPHParticle.h"
+
 #include <cmath>
+
 #include "autopas/utils/ArrayMath.h"
 
 using namespace autopas::sph;

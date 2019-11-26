@@ -9,6 +9,7 @@
 #include <array>
 #include <iomanip>
 #include <iostream>
+
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 
 /**

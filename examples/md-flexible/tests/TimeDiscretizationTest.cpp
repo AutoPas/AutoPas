@@ -5,6 +5,7 @@
  */
 
 #include "TimeDiscretizationTest.h"
+
 #include "TimeDiscretization.h"
 #include "autopas/utils/ArrayMath.h"
 #include "testingHelpers/GridGenerator.h"

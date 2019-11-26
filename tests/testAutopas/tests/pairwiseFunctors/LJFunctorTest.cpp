@@ -5,6 +5,7 @@
  */
 
 #include "LJFunctorTest.h"
+
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "testingHelpers/commonTypedefs.h"
 

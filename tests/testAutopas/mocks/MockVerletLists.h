@@ -7,6 +7,7 @@
 #pragma once
 
 #include <gmock/gmock.h>
+
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 
 // gmock does not write overrides, so we suppress that warning here!

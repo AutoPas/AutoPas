@@ -4,10 +4,12 @@
  * @date 02/08/19
  */
 #pragma once
-#include <AutoPasTestBase.h>
 #include <gtest/gtest.h>
+
 #include <cmath>
 #include <vector>
+
+#include "AutoPasTestBase.h"
 #include "Generator.h"
 #include "Objects/Objects.h"
 #include "PrintableMolecule.h"

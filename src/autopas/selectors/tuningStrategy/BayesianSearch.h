@@ -10,6 +10,7 @@
 #include <map>
 #include <set>
 #include <unordered_set>
+
 #include "GaussianProcess.h"
 #include "TuningStrategyInterface.h"
 #include "autopas/selectors/ContainerSelector.h"

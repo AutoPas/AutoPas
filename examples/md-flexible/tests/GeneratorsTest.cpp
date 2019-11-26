@@ -5,6 +5,7 @@
  */
 
 #include "GeneratorsTest.h"
+
 #include "autopas/utils/inBox.h"
 // the following test only work if testParsing.yaml is well set
 // all ParticleVelocities = {0.,0.,0.}
@@ -92,7 +93,9 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
         sphereCounter++;
         break;
       }
-      default: { throw std::runtime_error("something went wrong with the Types"); }
+      default: {
+        throw std::runtime_error("something went wrong with the Types");
+      }
     }
   }
   EXPECT_EQ(gridCounter, cubeGrid.at(0).getParticlesTotal());

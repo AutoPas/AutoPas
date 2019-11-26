@@ -5,6 +5,7 @@
  */
 
 #include "ForceCalculationTest.h"
+
 #include "testingHelpers/commonTypedefs.h"
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,

@@ -5,6 +5,7 @@
  */
 
 #include "VerletClusterCellsTest.h"
+
 #include "autopas/containers/verletClusterLists/VerletClusterCells.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClusterCellsTraversal.h"
 

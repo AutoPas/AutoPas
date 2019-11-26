@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/ParticleIteratorInterface.h"
 #include "autopas/utils/SoA.h"

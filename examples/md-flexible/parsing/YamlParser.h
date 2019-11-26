@@ -6,12 +6,14 @@
 #pragma once
 
 #include <yaml-cpp/yaml.h>
+
 #include <algorithm>
 #include <array>
 #include <iomanip>
 #include <iostream>
 #include <limits>
 #include <string>
+
 #include "MDFlexConfig.h"
 #include "Objects/Objects.h"
 #include "autopas/autopasIncludes.h"

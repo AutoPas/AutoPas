@@ -7,6 +7,7 @@
 #pragma once
 
 #include <memory>
+
 #include "autopas/iterators/ParticleIteratorInterface.h"
 #include "autopas/utils/ExceptionHandler.h"
 

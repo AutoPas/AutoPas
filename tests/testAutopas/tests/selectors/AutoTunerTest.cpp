@@ -5,8 +5,9 @@
  */
 
 #include "AutoTunerTest.h"
-#include <autopas/selectors/tuningStrategy/FullSearch.h>
+
 #include "autopas/selectors/AutoTuner.h"
+#include "autopas/selectors/tuningStrategy/FullSearch.h"
 
 using ::testing::_;
 

@@ -19,7 +19,8 @@ foreach (TMP_PATH ${INCLUDE_DIRS})
     list(APPEND CF_ALL_SOURCE_FILES ${CF_ALL_SOURCE_FILES_TMP})
 endforeach (TMP_PATH)
 
-find_program(CLANG_FORMAT NAMES clang-format clang-format-6.0)
+set(DESIRED_CLANG_FORMAT clang-format-9)
+find_program(CLANG_FORMAT NAMES ${DESIRED_CLANG_FORMAT})
 
 if (CLANG_FORMAT)
     message(STATUS "clang format found, added clangformat target")
@@ -56,6 +57,6 @@ if (CLANG_FORMAT)
 else ()
     message(
         STATUS
-            "clang-format-6 not found, not adding clang format target. Other Versions not supported!"
+            "${DESIRED_CLANG_FORMAT} not found, not adding clang format target. Other Versions not supported!"
     )
 endif ()

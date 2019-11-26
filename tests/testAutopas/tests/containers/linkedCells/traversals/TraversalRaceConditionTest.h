@@ -7,7 +7,9 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include <vector>
+
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"

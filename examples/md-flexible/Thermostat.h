@@ -6,6 +6,7 @@
 
 #pragma once
 #include <cstdlib>
+
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"

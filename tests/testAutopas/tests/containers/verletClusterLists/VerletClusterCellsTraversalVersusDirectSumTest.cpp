@@ -5,6 +5,7 @@
  */
 
 #include "VerletClusterCellsTraversalVersusDirectSumTest.h"
+
 #include "autopas/containers/verletClusterLists/traversals/VerletClusterCellsTraversal.h"
 
 VerletClusterCellsTraversalVersusDirectSumTest::VerletClusterCellsTraversalVersusDirectSumTest()

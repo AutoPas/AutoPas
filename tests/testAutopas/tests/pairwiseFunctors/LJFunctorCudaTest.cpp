@@ -7,6 +7,7 @@
 #if defined(AUTOPAS_CUDA)
 
 #include "LJFunctorCudaTest.h"
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "testingHelpers/RandomGenerator.h"

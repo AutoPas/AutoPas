@@ -11,6 +11,7 @@
 #include <map>
 #include <tuple>
 #include <vector>
+
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"

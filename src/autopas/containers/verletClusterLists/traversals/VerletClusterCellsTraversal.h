@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <vector>
+
 #include "VerletClusterTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/options/DataLayoutOption.h"

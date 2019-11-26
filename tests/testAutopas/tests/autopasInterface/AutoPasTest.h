@@ -7,8 +7,9 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <testingHelpers/commonTypedefs.h>
+
 #include "autopas/AutoPas.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class AutoPasTest : public testing::Test {
  public:

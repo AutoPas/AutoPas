@@ -5,7 +5,9 @@
  */
 
 #include "YamlParser.h"
+
 #include <sys/stat.h>
+
 #include <ostream>
 
 namespace YamlParser {

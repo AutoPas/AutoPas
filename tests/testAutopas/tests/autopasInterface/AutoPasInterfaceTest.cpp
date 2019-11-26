@@ -5,6 +5,7 @@
  */
 
 #include "AutoPasInterfaceTest.h"
+
 #include "testingHelpers/commonTypedefs.h"
 
 constexpr double cutoff = 1.;
