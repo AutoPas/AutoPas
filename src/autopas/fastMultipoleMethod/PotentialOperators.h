@@ -65,7 +65,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
       return;
     }
     for (std::size_t c = 0; c < 2; ++c) {
-      auto child = parent.getChild(c);
+      auto& child = parent.getChild(c);
       /*if (child->isZeroM()) {
         continue;
       }*/

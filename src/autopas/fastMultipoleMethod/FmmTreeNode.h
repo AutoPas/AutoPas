@@ -35,6 +35,11 @@ class FmmTreeNode {
 
     // std::cout << "sphereRadius = " << sphereRadius << std::endl;
   }
+  FmmTreeNode(const FmmTreeNode &) = delete;
+  FmmTreeNode &operator=(const FmmTreeNode &) = delete;
+  FmmTreeNode(FmmTreeNode &&) = default;
+  FmmTreeNode &operator=(FmmTreeNode &&) = default;
+
   void split(std::array<double, 3> firstBoxMax, std::array<double, 3> secondBoxMin) {
     if (children.empty()) {
       children.emplace_back(this, boxMin, firstBoxMax);

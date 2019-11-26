@@ -16,6 +16,11 @@ namespace autopas::fmm {
 class FmmTree {
  public:
   FmmTree() = default;
+  FmmTree(const FmmTree &) = delete;
+  FmmTree &operator=(const FmmTree &) = delete;
+  FmmTree(FmmTree &&) = default;
+  FmmTree &operator=(FmmTree &&) = default;
+
   FmmTreeNode &getRoot() { return *root; }
 
   FmmTreeNode &setRoot(std::array<double, 3> boxMin, std::array<double, 3> boxMax) {
