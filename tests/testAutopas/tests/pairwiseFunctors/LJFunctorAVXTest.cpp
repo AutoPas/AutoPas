@@ -7,6 +7,7 @@
 #ifdef __AVX__
 
 #include "LJFunctorAVXTest.h"
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/particles/Particle.h"

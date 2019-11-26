@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <vector>
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/iterators/ParticleIterator.h"

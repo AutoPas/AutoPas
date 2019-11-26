@@ -7,8 +7,10 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include <algorithm>
 #include <vector>
+
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "testingHelpers/GridGenerator.h"

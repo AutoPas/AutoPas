@@ -7,6 +7,7 @@
 #pragma once
 
 #include <set>
+
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ExceptionHandler.h"

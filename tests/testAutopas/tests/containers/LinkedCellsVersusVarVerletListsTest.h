@@ -6,10 +6,10 @@
 
 #pragma once
 
+#include <gtest/gtest.h>
+
 #include <cstdlib>
 #include <memory>
-
-#include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"

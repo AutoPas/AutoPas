@@ -4,12 +4,12 @@
  * @author F. Gratl
  */
 
-#include "Simulation.h"
-
-#include <autopas/utils/MemoryProfiler.h>
 #include <iostream>
+
 #include "PrintableMolecule.h"
+#include "Simulation.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "autopas/utils/MemoryProfiler.h"
 #include "parsing/MDFlexParser.h"
 
 int main(int argc, char **argv) {

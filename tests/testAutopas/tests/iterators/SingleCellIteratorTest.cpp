@@ -5,7 +5,9 @@
  */
 
 #include "SingleCellIteratorTest.h"
+
 #include <gtest/gtest.h>
+
 #include "autopas/autopasIncludes.h"
 
 using namespace autopas;

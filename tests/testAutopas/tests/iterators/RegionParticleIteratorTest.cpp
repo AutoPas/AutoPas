@@ -4,6 +4,7 @@
  * @date 03.04.18
  */
 #include "RegionParticleIteratorTest.h"
+
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 

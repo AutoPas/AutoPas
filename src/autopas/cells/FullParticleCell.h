@@ -8,6 +8,7 @@
 
 #include <mutex>
 #include <vector>
+
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/utils/CudaSoA.h"

@@ -4,6 +4,7 @@
  * @date 26.09.18
  */
 #include "VerletListsCellsTraversalTest.h"
+
 #include "testingHelpers/NumThreadGuard.h"
 
 VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()

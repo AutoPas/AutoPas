@@ -6,6 +6,7 @@
 
 #pragma once
 #include <limits>
+
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/utils/Logger.h"

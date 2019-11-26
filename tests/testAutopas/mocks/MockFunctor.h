@@ -7,6 +7,7 @@
 #pragma once
 
 #include <gmock/gmock.h>
+
 #include "autopas/autopasIncludes.h"
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"

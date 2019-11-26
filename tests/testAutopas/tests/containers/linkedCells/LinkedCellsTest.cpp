@@ -5,6 +5,7 @@
  */
 
 #include "LinkedCellsTest.h"
+
 #include <gmock/gmock-generated-matchers.h>
 
 LinkedCellsTest::LinkedCellsTest() : _linkedCells({0., 0., 0.}, {10., 10., 10.}, 1., 0., 1.) {}

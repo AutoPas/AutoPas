@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 
 namespace autopas {

@@ -5,6 +5,7 @@
  */
 #pragma once
 #include <gtest/gtest.h>
+
 #include "AutoPasTestBase.h"
 #include "PrintableMolecule.h"
 #include "Simulation.h"

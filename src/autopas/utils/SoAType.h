@@ -9,6 +9,7 @@
 
 #include <tuple>
 #include <vector>
+
 #include "autopas/utils/AlignedAllocator.h"
 
 namespace autopas::utils {

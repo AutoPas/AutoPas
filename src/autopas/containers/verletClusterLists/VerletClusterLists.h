@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cmath>
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"

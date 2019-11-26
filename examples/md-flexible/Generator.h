@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+
 #include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"

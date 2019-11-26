@@ -5,6 +5,7 @@
  */
 
 #include "TraversalRaceConditionTest.h"
+
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/StringUtils.h"
 #include "testingHelpers/GridGenerator.h"

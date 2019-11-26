@@ -7,6 +7,7 @@
 #if defined(AUTOPAS_CUDA)
 
 #include "AoSvsCudaTest.h"
+
 #include <testingHelpers/commonTypedefs.h>
 
 using namespace autopas;

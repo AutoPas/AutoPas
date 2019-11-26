@@ -5,6 +5,7 @@
  */
 
 #include "VerletListsTest.h"
+
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
 
 using ::testing::_;

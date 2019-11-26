@@ -5,6 +5,7 @@
  */
 
 #include "MDFlexConfig.h"
+
 #include "autopas/utils/StringUtils.h"
 
 std::string MDFlexConfig::to_string() const {

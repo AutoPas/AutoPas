@@ -7,9 +7,10 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <testingHelpers/commonTypedefs.h>
+
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class CellBlock3DTest : public AutoPasTestBase {
  public:

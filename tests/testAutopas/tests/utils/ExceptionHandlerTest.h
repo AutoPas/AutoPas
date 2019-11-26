@@ -7,6 +7,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include "AutoPasTestBase.h"
 #include "autopas/utils/ExceptionHandler.h"
 
