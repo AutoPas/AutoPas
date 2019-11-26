@@ -36,4 +36,3 @@ thermostat:
   thermostatInterval             :  100000
   useCurrentTempForBrownianMotion:  false
 vtk-filename                     :  SpinodalDecomposition_equilibration
-vtk-write-frequency              :  100000
