@@ -93,7 +93,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
               }
 
               mmn += product;
-              assert(!__isnan(mmn.real()) && !__isnan(mmn.imag()));
+              assert(not __isnan(mmn.real()) && not __isnan(mmn.imag()));
             }
           }
           // Add the matrix defined in 5.22
@@ -145,7 +145,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
               }
 
               sum += product;
-              // assert(!__isnan(sum.real()) && !__isnan(sum.imag()));
+              // assert(not __isnan(sum.real()) && not __isnan(sum.imag()));
 
               rhoPower2 *= rho;
             }
@@ -186,7 +186,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
               }
 
               lmn += product;
-              assert(!__isnan(lmn.real()) && !__isnan(lmn.imag()));
+              assert(not __isnan(lmn.real()) && not __isnan(lmn.imag()));
             }
           }
           // Add the matrix defined in 5.30
@@ -220,7 +220,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
             }
           }
           potential += product;
-          assert(!__isnan(potential.real()) && !__isnan(potential.imag()));
+          assert(not __isnan(potential.real()) && not __isnan(potential.imag()));
         }
       }
       if (std::abs(potential.imag()) > 0.00001) {

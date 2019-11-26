@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
       isCorrect = false;
     }
   }
-  if (!isCorrect) {
+  if (not isCorrect) {
     std::cerr << "wrong result" << std::endl;
   }
 

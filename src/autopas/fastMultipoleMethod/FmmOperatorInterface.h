@@ -26,7 +26,7 @@ class FmmOperatorInterface {
   }
 
   void M2MRec(FmmTreeNode &node, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) {
-    if (!node.isLeaf()) {
+    if (not node.isLeaf()) {
       M2MRec(node.getChild(0), orderOfExpansion, container);
       M2MRec(node.getChild(1), orderOfExpansion, container);
       M2M(node, orderOfExpansion);
@@ -35,7 +35,7 @@ class FmmOperatorInterface {
 
   void M2LRec(FmmTreeNode &node, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) {
     M2L(node, orderOfExpansion);
-    if (!node.isLeaf()) {
+    if (not node.isLeaf()) {
       M2LRec(node.getChild(0), orderOfExpansion, container);
       M2LRec(node.getChild(1), orderOfExpansion, container);
     }
@@ -45,7 +45,7 @@ class FmmOperatorInterface {
     if (node.getDepth() > 0) {
       L2L(node, orderOfExpansion);
     }
-    if (!node.isLeaf()) {
+    if (not node.isLeaf()) {
       L2LRec(node.getChild(0), orderOfExpansion, container);
       L2LRec(node.getChild(1), orderOfExpansion, container);
     }

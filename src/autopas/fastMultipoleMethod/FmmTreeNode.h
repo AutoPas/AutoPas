@@ -152,12 +152,12 @@ class FmmTreeNode {
   }
 
   void setM(long m, long n, std::complex<double> value) {
-    assert(!__isnan(value.real()) && !__isnan(value.imag()));
+    assert(not __isnan(value.real()) && not __isnan(value.imag()));
     long offset = m <= 0 ? 0 : -1;
     coefficientM.at(2 * std::abs(m) + offset).at(n) = value;
   }
   void setL(long m, long n, std::complex<double> value) {
-    assert(!__isnan(value.real()) && !__isnan(value.imag()));
+    assert(not __isnan(value.real()) && not __isnan(value.imag()));
     long offset = m <= 0 ? 0 : -1;
     coefficientL.at(2 * std::abs(m) + offset).at(n) = value;
   }
