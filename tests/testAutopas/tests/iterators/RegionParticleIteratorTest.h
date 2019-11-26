@@ -43,7 +43,7 @@ class RegionParticleIteratorTest : public AutoPasTestBase {
    * @param regionMin
    * @param regionMax
    */
-  void checkTouches(LCTouch &lcContainer, std::array<double, 3> &regionMin, std::array<double, 3> &regionMax);
+  static void checkTouches(LCTouch &lcContainer, std::array<double, 3> &regionMin, std::array<double, 3> &regionMax);
 
  protected:
   void testLinkedCellsRegionParticleIteratorBehaviorOwned();
