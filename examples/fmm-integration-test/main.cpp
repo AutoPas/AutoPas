@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
   AutoPasCont cont;
   cont.setAllowedContainers({autopas::ContainerOption::linkedCells});
   cont.setBoxMin({0, 0, 0});
-  cont.setBoxMax({4.8, 4.8, 4.8});
+  cont.setBoxMax({5, 4, 7});
   cont.init();
 
   RandomGenerator::fillWithParticles(cont, autopas::fmm::FmmParticle(), 30);
