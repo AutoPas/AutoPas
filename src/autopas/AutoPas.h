@@ -38,6 +38,16 @@ template <class Particle, class ParticleCell>
 class AutoPas {
  public:
   /**
+   * Particle type to be accessible after initialization.
+   */
+  using Particle_t = Particle;
+
+  /**
+   * Particle Cell type to be accessible after initialization.
+   */
+  using ParticleCell_t = ParticleCell;
+
+  /**
    * Define the iterator_t for simple use, also from the outside.
    * Helps to, e.g., wrap the AutoPas iterators
    */
@@ -154,7 +164,7 @@ class AutoPas {
    * If the neighbor lists of AutoPas are valid the particle will be used to update an already existing halo particle.
    * In this case if there is no matching halo particle, the given haloParticle will be ignored.
    * @note Exceptions are thrown in the following cases:
-   * 1. If the halo particle is added and it is insided of the owned domain (defined by boxmin and boxmax)of the
+   * 1. If the halo particle is added and it is inside of the owned domain (defined by boxmin and boxmax)of the
    * container.
    * 2. If the halo particle should be updated and the given haloParticle is too far inside of the domain (by more than
    * skin/2)
@@ -170,6 +180,12 @@ class AutoPas {
    * @note This invalidates the container, a rebuild is forced on the next iteratePairwise() call.
    */
   void deleteAllParticles() { _logicHandler->deleteAllParticles(); }
+
+  /**
+   * Deletes the particle behind the current iterator position.
+   * @param iter Needs to be a modify-able iterator.
+   */
+  void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) { _logicHandler->deleteParticle(iter); }
 
   /**
    * Function to iterate over all pairs of particles in the container.
@@ -247,9 +263,23 @@ class AutoPas {
 
   /**
    * Returns the number of particles in this container.
+   * @param behavior Tells this function to report the number of halo, owned or all particles.
    * @return the number of particles in this container.
    */
-  unsigned long getNumberOfParticles() const { return _autoTuner->getContainer()->getNumParticles(); }
+  unsigned long getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::ownedOnly) const {
+    switch (behavior) {
+      case IteratorBehavior::ownedOnly: {
+        return _logicHandler->getNumParticlesOwned();
+      }
+      case IteratorBehavior::haloOnly: {
+        return _logicHandler->getNumParticlesHalo();
+      }
+      case IteratorBehavior::haloAndOwned: {
+        return _logicHandler->getNumParticlesOwned() + _logicHandler->getNumParticlesHalo();
+      }
+    }
+    return 0;
+  }
 
   /**
    * Returns the type of the currently used container.

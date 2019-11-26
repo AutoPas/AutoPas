@@ -113,5 +113,16 @@ class Option {
     utils::ExceptionHandler::exception("Option::parseOptionExact() no match found for: {}", optionString);
     return actualOption();
   }
+
+  /**
+   * Stream operator.
+   * @param os
+   * @param option
+   * @return
+   */
+  friend std::ostream &operator<<(std::ostream &os, const Option &option) {
+    os << option.to_string();
+    return os;
+  }
 };
 }  // namespace autopas

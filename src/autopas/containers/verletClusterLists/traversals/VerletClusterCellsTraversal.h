@@ -8,8 +8,8 @@
 
 #include <algorithm>
 #include <vector>
+#include "VerletClusterTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/containers/cellPairTraversals/VerletClusterTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/CudaDeviceVector.h"
@@ -168,7 +168,8 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         cellSizePartSums[i + 1] = boundingBoxes[i].size() + cellSizePartSums[i];
       }
 
-      std::vector<unsigned int> neighborMatrix(cellSizePartSums.back() * neighborMatrixDim, UINT_MAX);
+      std::vector<unsigned int> neighborMatrix(cellSizePartSums.back() * neighborMatrixDim,
+                                               std::numeric_limits<unsigned int>::max());
 
       for (size_t cell = 0; cell < cellsSize; ++cell) {
         for (size_t cluster = 0; cluster < (*_neighborCellIds)[cell].size(); ++cluster) {

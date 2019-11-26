@@ -115,7 +115,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     for (auto iter = getCell().begin(); iter.isValid(); ++iter) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
         invalidParticles.push_back(*iter);
-        iter.deleteCurrentParticle();
+        internal::deleteParticle(iter);
       }
     }
     return invalidParticles;
