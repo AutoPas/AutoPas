@@ -34,7 +34,7 @@ class FmmTreeNode {
       depth = parent->depth + 1;
     }
 
-    std::cout << "sphereRadius = " << sphereRadius << std::endl;
+    // std::cout << "sphereRadius = " << sphereRadius << std::endl;
   }
   void split(std::array<double, 3> firstBoxMax, std::array<double, 3> secondBoxMin) {
     if (children.empty()) {
@@ -53,6 +53,84 @@ class FmmTreeNode {
     } else {
       insertLeaves(otherNode.getChild(0));
       insertLeaves(otherNode.getChild(1));
+    }
+  }
+
+  bool checkInteract(FmmTreeNode &otherNode) {
+    /*std::cout << "checkInteract:" << std::endl;
+    std::cout << name << std::endl;
+    std::cout << otherNode.name << std::endl;*/
+    double r1 = sphereRadius;
+    double r2 = otherNode.sphereRadius;
+    double maxRadius = std::max(r1, r2);
+    double distance = autopas::utils::ArrayMath::L2Norm(autopas::utils::ArrayMath::sub(boxCenter, otherNode.boxCenter));
+    // std::cout << "maxRadius = " << maxRadius << std::endl;
+    // std::cout << "distance = " << distance << std::endl;
+    return distance > 3 * maxRadius;
+  }
+
+  int findLargestIndex(std::array<double, 3> array) {
+    int largestIndex = 0;
+    if (array[1] > array[largestIndex]) {
+      largestIndex = 1;
+    }
+    if (array[2] > array[largestIndex]) {
+      largestIndex = 2;
+    }
+    return largestIndex;
+  }
+
+  void initLists(FmmTreeNode &otherNode) {
+    if (checkInteract(otherNode)) {
+      interactionList.insert(&otherNode);
+    } else {
+      auto boxSize1 = utils::ArrayMath::sub(boxMax, boxMin);
+      auto boxSize2 = utils::ArrayMath::sub(otherNode.boxMax, otherNode.boxMin);
+
+      auto largestIndex1 = findLargestIndex(boxSize1);
+      auto largestIndex2 = findLargestIndex(boxSize2);
+
+      auto largestSize1 = boxSize1[largestIndex1];
+      auto largestSize2 = boxSize2[largestIndex2];
+
+      if (largestSize1 > largestSize2) {
+        if (not isLeaf()) {
+          getChild(0).initLists(otherNode);
+          getChild(1).initLists(otherNode);
+        } else {
+          nearFieldList.insert(&otherNode);
+        }
+      } else {
+        if (not otherNode.isLeaf()) {
+          initLists(otherNode.getChild(0));
+          initLists(otherNode.getChild(1));
+        } else {
+          nearFieldList.insert(&otherNode);
+        }
+      }
+    }
+  }
+
+  void printLists() {
+    if (sphereRadius < 2) {
+      return;
+    }
+    // Debug print near field list and interaction list
+    std::cout << "Node = " << name << std::endl;
+    std::cout << "NearFieldList = " << std::endl;
+    for (auto node : nearFieldList) {
+      std::cout << node->name << " , ";
+    }
+    std::cout << std::endl << std::endl;
+
+    std::cout << "InteractionList = " << std::endl;
+    for (auto node : interactionList) {
+      std::cout << node->name << " , ";
+    }
+    std::cout << std::endl << std::endl;
+    if (not isLeaf()) {
+      getChild(0).printLists();
+      getChild(1).printLists();
     }
   }
 
