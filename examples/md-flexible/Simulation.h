@@ -147,7 +147,6 @@ class Simulation {
   std::shared_ptr<MDFlexConfig> _config;
   std::ofstream _logFile;
   std::unique_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
-  std::unique_ptr<Thermostat<AutoPasType, ParticlePropertiesLibraryType>> _thermostat;
 
   struct timers {
     autopas::utils::Timer positionUpdate, forceUpdateTotal, forceUpdateTuning, forceUpdateNonTuning, velocityUpdate,
@@ -167,7 +166,7 @@ class Simulation {
    * @param maxTime if passed the percentage of timeMS of maxTime is appended.
    * @return formatted std::string
    */
-  std::string timerToString(std::string name, long timeMS, size_t numberWidth = 0, long maxTime = 0);
+  std::string timerToString(const std::string &name, long timeMS, size_t numberWidth = 0, long maxTime = 0);
 };
 
 template <typename Particle, typename ParticleCell>
@@ -260,11 +259,14 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
     Generator::sphere<Particle, ParticleCell>(_autopas, sphere);
   }
 
-  // initilizing Thermostat
+  // initializing system to initial temperature and Brownian motion
   if (_config->useThermostat and _config->deltaT != 0) {
-    _thermostat = std::make_unique<typename decltype(_thermostat)::element_type>(
-        _config->initTemperature, _config->targetTemperature, _config->deltaTemp, *_particlePropertiesLibrary);
-    _thermostat->addBrownianMotion(_autopas, _config->useCurrentTempForBrownianMotion);
+    if (_config->addBrownianMotion) {
+      Thermostat::addBrownianMotion(_autopas, *_particlePropertiesLibrary, _config->initTemperature);
+    }
+    // set system to initial temperature
+    Thermostat::apply(_autopas, *_particlePropertiesLibrary, _config->initTemperature,
+                      std::numeric_limits<double>::max());
   }
 
   _timers.init.stop();
@@ -338,7 +340,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
       // applying Velocity scaling with Thermostat:
       if (_config->useThermostat and (iteration % _config->thermostatInterval) == 0) {
         _timers.thermostat.start();
-        _thermostat->apply(_autopas);
+        Thermostat::apply(_autopas, *_particlePropertiesLibrary, _config->targetTemperature, _config->deltaTemp);
         _timers.thermostat.stop();
       }
     }
@@ -347,7 +349,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
   // update temperature for generated config output
   if (_config->useThermostat) {
     _timers.thermostat.start();
-    _config->initTemperature = _thermostat->calcTemperature(_autopas);
+    _config->initTemperature = Thermostat::calcTemperature(_autopas, *_particlePropertiesLibrary);
     _timers.thermostat.stop();
   }
 
@@ -445,7 +447,7 @@ const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &Simulation<Par
 }
 template <class Particle, class ParticleCell>
 
-std::string Simulation<Particle, ParticleCell>::timerToString(std::string name, long timeMS, size_t numberWidth,
+std::string Simulation<Particle, ParticleCell>::timerToString(const std::string &name, long timeMS, size_t numberWidth,
                                                               long maxTime) {
   // only print timers that were actually used
   if (timeMS == 0) {

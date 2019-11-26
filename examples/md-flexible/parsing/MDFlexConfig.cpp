@@ -90,8 +90,7 @@ std::string MDFlexConfig::to_string() const {
     os << "  " << setw(valueOffset - 2) << left << targetTemperatureStr << ":  " << targetTemperature << endl;
     os << "  " << setw(valueOffset - 2) << left << deltaTempStr << ":  " << deltaTemp << endl;
     os << "  " << setw(valueOffset - 2) << left << thermostatIntervalStr << ":  " << thermostatInterval << endl;
-    os << "  " << setw(valueOffset - 2) << left << useCurrentTempForBrownianMotionStr << ":  "
-       << useCurrentTempForBrownianMotion << endl;
+    os << "  " << setw(valueOffset - 2) << left << addBrownianMotionStr << ":  " << addBrownianMotion << endl;
   }
 
   if (not vtkFileName.empty()) os << setw(valueOffset) << left << vtkFileNameStr << ":  " << vtkFileName << endl;

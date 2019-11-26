@@ -66,6 +66,6 @@ thermostat:
   targetTemperature              :  4
   deltaTemperature               :  0.1
   thermostatInterval             :  10
-  useCurrentTempForBrownianMotion:  false
+  addBrownianMotion              :  false
 vtk-filename                     :  AllOptionsSim
 #checkpoint: AllOptionsSim_10.vtk
