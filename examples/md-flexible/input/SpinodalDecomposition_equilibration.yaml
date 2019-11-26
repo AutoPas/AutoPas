@@ -1,4 +1,4 @@
-container                        :  [DirectSum, LinkedCells, VerletLists, VerletListsCells, VerletClusterLists, VarVerletListsAsBuild, VerletClusterCells]
+container                        :  [LinkedCells, VerletListsCells]
 verlet-rebuild-frequency         :  1
 verlet-skin-radius               :  0.2
 verlet-cluster-size              :  4
@@ -10,7 +10,7 @@ tuning-interval                  :  1000
 tuning-samples                   :  3
 tuning-max-evidence              :  10
 functor                          :  Lennard-Jones (12-6)
-newton3                          :  [enabled]
+newton3                          :  [enabled, disabled]
 cutoff                           :  2.5
 box-min                          :  [-0.1875, -0.1875, -0.1875]
 box-max                          :  [60.1875, 60.1875, 60.1875]
