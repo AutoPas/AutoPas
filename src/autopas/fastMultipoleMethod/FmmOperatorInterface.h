@@ -8,6 +8,7 @@ namespace autopas::fmm {
 template <class Particle, class ParticleCell>
 class FmmOperatorInterface {
  private:
+  virtual void init(long orderOfExpansion) = 0;
   virtual void P2M(FmmTreeNode &leaf, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) = 0;
   virtual void M2M(FmmTreeNode &parent, long orderOfExpansion) = 0;
   virtual void M2L(FmmTreeNode &node, long orderOfExpansion) = 0;
@@ -80,6 +81,7 @@ class FmmOperatorInterface {
 
  public:
   void RunFmm(FmmTree &fmmTree, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) {
+    init(orderOfExpansion);
     std::cout << "RunFmm 1" << std::endl;
     P2MRec(fmmTree.getRoot(), orderOfExpansion, container);
     std::cout << "RunFmm 2" << std::endl;

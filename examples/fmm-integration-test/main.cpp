@@ -44,8 +44,7 @@ int main(int argc, char **argv) {
   autopas::utils::FmmMath<double, long> fmmMath;
   std::cout << "Factorial(5) = " << autopas::utils::FmmMath<double, long>::factorial(5) << std::endl;
 
-  autopas::fmm::PotentialOperators<autopas::fmm::FmmParticle, autopas::FullParticleCell<autopas::fmm::FmmParticle>> op(
-      5);
+  autopas::fmm::PotentialOperators<autopas::fmm::FmmParticle, autopas::FullParticleCell<autopas::fmm::FmmParticle>> op;
   op.RunFmm(*fmmTree, 5, cont);
 
   for (auto particle = cont.begin(); particle.isValid(); ++particle) {

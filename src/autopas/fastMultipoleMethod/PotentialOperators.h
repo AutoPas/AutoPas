@@ -21,15 +21,16 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
   using Complex = std::complex<double>;
 
  private:
-  long orderOfExpansion;
   // i^(|k-m|-|k|-|m|)
   std::vector<std::vector<Complex>> powerM2L;
   autopas::utils::FmmMath<double, long> fmmMath;
 
  public:
-  explicit PotentialOperators(long orderOfExpansion) : orderOfExpansion(orderOfExpansion) {
+  PotentialOperators() {
     this->fmmMath = autopas::utils::FmmMath<double, long>();
+  }
 
+  void init(long orderOfExpansion) override {
     // The power i^(|k-m|-|k|-|m|) is needed frequently in the M2L operator.
     this->powerM2L =
         std::vector<std::vector<Complex>>(orderOfExpansion * 2 + 1, std::vector<Complex>(orderOfExpansion * 2 + 1));
