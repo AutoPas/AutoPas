@@ -21,9 +21,8 @@ class FmmTree;
 class FmmTreeNode {
  public:
   std::string name;
-  FmmTreeNode(FmmTree &tree, FmmTreeNode *parent, std::array<double, 3> boxMin, std::array<double, 3> boxMax)
-      : tree(&tree),
-        parent(parent),
+  FmmTreeNode(FmmTreeNode *parent, std::array<double, 3> boxMin, std::array<double, 3> boxMax)
+      : parent(parent),
         boxMin(boxMin),
         boxMax(boxMax),
         boxCenter(autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::add(boxMin, boxMax), 0.5)),
@@ -38,8 +37,8 @@ class FmmTreeNode {
   }
   void split(std::array<double, 3> firstBoxMax, std::array<double, 3> secondBoxMin) {
     if (children.empty()) {
-      children.emplace_back(*this->tree, this, boxMin, firstBoxMax);
-      children.emplace_back(*this->tree, this, secondBoxMin, boxMax);
+      children.emplace_back(this, boxMin, firstBoxMax);
+      children.emplace_back(this, secondBoxMin, boxMax);
     } else {
       autopas::utils::ExceptionHandler::exception("trying to split an already split FmmTreeNode");
     }
@@ -140,7 +139,6 @@ class FmmTreeNode {
   [[nodiscard]] std::array<double, 3> getBoxCenter() const { return boxCenter; }
   [[nodiscard]] bool isLeaf() const { return _isLeaf; }
   [[nodiscard]] long getDepth() const { return depth; }
-  [[nodiscard]] FmmTree &getTree() const { return *tree; }
   [[nodiscard]] FmmTreeNode *getParent() const { return parent; }
   [[nodiscard]] double getSphereRadius() const { return sphereRadius; }
 
@@ -189,7 +187,6 @@ class FmmTreeNode {
   std::unordered_set<FmmTreeNode *> &getNearFieldList() { return nearFieldList; }
 
  private:
-  FmmTree *tree;
   FmmTreeNode *parent;
   std::array<double, 3> boxMin;
   std::array<double, 3> boxMax;
