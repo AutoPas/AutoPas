@@ -141,9 +141,13 @@ class ActiveHarmony : public TuningStrategyInterface {
 };
 
 void ActiveHarmony::addEvidence(long time) {
-  auto perf = (double) time;
-  if (ah_report(htask, &perf) != 0) {
-    utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error reporting performance to server");
+  if (searchSpaceIsTrivial() or searchSpaceIsEmpty()) {
+    AutoPasLog(debug, "ActiveHarmony::addEvidence: Search space is {}; did not report performance", searchSpaceIsTrivial() ? "trivial" : "empty");
+  } else {
+    auto perf = (double) time;
+    if (ah_report(htask, &perf) != 0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error reporting performance to server");
+    }
   }
 }
 
@@ -185,6 +189,13 @@ bool ActiveHarmony::invalidateConfiguration() {
 }
 
 bool ActiveHarmony::tune(bool currentInvalid) {
+  if (searchSpaceIsTrivial()) {
+    fetchConfiguration();
+    return false;
+  } else if (searchSpaceIsEmpty()) {
+    _currentConfig = Configuration();
+    return false;
+  }
   if (currentInvalid) {
     invalidateConfiguration();
   }
@@ -251,61 +262,70 @@ void ActiveHarmony::reset() {
     ah_close(hdesc);
     ah_free(hdesc);
   }
-  // initiate the tuning session
-  hdesc = ah_alloc();
-  if (hdesc == nullptr) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating Harmony descriptor.");
-  }
 
-  if (ah_connect(hdesc, nullptr, 0) != 0) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error connecting to Harmony session.");
-  }
-  // set up tuning parameters
-  hdef_t *hdef = ah_def_alloc();
-  if (hdef == nullptr) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating definition descriptor");
-  }
+  if (searchSpaceIsTrivial() or searchSpaceIsEmpty()) {
+    AutoPasLog(debug, "Search space is {}; skipping harmony initialization.",
+               searchSpaceIsTrivial() ? "trivial" : "empty");
+  } else {
+    // initiate the tuning session
+    hdesc = ah_alloc();
+    if (hdesc == nullptr) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating Harmony descriptor.");
+    }
 
-  if (ah_def_name(hdef, "AutoPas") != 0) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error settings search name");
-  }
+    if (ah_connect(hdesc, nullptr, 0) != 0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error connecting to Harmony session.");
+    }
+    // set up tuning parameters
+    hdef_t *hdef = ah_def_alloc();
+    if (hdef == nullptr) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating definition descriptor");
+    }
 
-  if (_allowedCellSizeFactors->isFinite()) { // finite cell-size factors => define parameter as enum
-    if (_allowedCellSizeFactors->size() == 1) {
-      AutoPasLog(debug, "ActiveHarmony::reset: Skipping trivial parameter {}", cellSizeFactorsName);
-    } else if (_allowedCellSizeFactors->size() > 1) {
-      AutoPasLog(debug, "ActiveHarmony::reset: Finite cell-size factors; defining parameter as enum");
-      if (ah_def_enum(hdef, cellSizeFactorsName, nullptr) != 0) {
-        utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum \"{}\"", cellSizeFactorsName);
-      }
-      for (auto cellSizeFactor : _allowedCellSizeFactors->getAll()) {
-        if (ah_def_enum_value(hdef, cellSizeFactorsName, std::to_string(cellSizeFactor).c_str()) != 0) {
-          utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum value for enum \"{}\"", cellSizeFactorsName);
+    if (ah_def_name(hdef, "AutoPas") != 0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error settings search name");
+    }
+
+    if (_allowedCellSizeFactors->isFinite()) { // finite cell-size factors => define parameter as enum
+      if (_allowedCellSizeFactors->size() == 1) {
+        AutoPasLog(debug, "ActiveHarmony::reset: Skipping trivial parameter {}", cellSizeFactorsName);
+      } else if (_allowedCellSizeFactors->size() > 1) {
+        AutoPasLog(debug, "ActiveHarmony::reset: Finite cell-size factors; defining parameter as enum");
+        if (ah_def_enum(hdef, cellSizeFactorsName, nullptr) != 0) {
+          utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum \"{}\"",
+                                             cellSizeFactorsName);
+        }
+        for (auto cellSizeFactor : _allowedCellSizeFactors->getAll()) {
+          if (ah_def_enum_value(hdef, cellSizeFactorsName, std::to_string(cellSizeFactor).c_str()) != 0) {
+            utils::ExceptionHandler::exception(
+                    "ActiveHarmony::configureTuningParameter: Error defining enum value for enum \"{}\"",
+                    cellSizeFactorsName);
+          }
         }
       }
+    } else { // infinite cell-size factors => define parameter as real
+      AutoPasLog(debug, "ActiveHarmony::reset: Infinite cell-size factors; defining parameter as real");
+      if (ah_def_real(hdef, cellSizeFactorsName, _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(),
+                      (_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()) / cellSizeSamples,
+                      nullptr) != 0) {
+        utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining real \"{}\"", cellSizeFactorsName);
+      }
     }
-  } else { // infinite cell-size factors => define parameter as real
-    AutoPasLog(debug, "ActiveHarmony::reset: Infinite cell-size factors; defining parameter as real");
-    if (ah_def_real(hdef, cellSizeFactorsName, _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(),
-                    (_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()) / cellSizeSamples,
-                    nullptr) != 0) {
-      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining real \"{}\"", cellSizeFactorsName);
-    }
-  }
-  // set up other parameters
-  configureTuningParameter(hdef, traversalOptionName, _allowedTraversalOptions);
-  configureTuningParameter(hdef, dataLayoutOptionName, _allowedDataLayoutOptions);
-  configureTuningParameter(hdef, newton3OptionName, _allowedNewton3Options);
+    // set up other parameters
+    configureTuningParameter(hdef, traversalOptionName, _allowedTraversalOptions);
+    configureTuningParameter(hdef, dataLayoutOptionName, _allowedDataLayoutOptions);
+    configureTuningParameter(hdef, newton3OptionName, _allowedNewton3Options);
 
-  // use ActiveHarmony's implementation of the Nelder-Mead method
-  ah_def_strategy(hdef, "nm.so");
-  // set the size of the initial simplex (as portion of the total search space)
-  ah_def_cfg(hdef, "INIT_RADIUS", "0.5");
-  // task initialization
-  htask = ah_start(hdesc, hdef);
-  ah_def_free(hdef);
-  if (htask == nullptr) {
-    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error starting task.");
+    // use ActiveHarmony's implementation of the Nelder-Mead method
+    ah_def_strategy(hdef, "nm.so");
+    // set the size of the initial simplex (as portion of the total search space)
+    ah_def_cfg(hdef, "INIT_RADIUS", "0.5");
+    // task initialization
+    htask = ah_start(hdesc, hdef);
+    ah_def_free(hdef);
+    if (htask == nullptr) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error starting task.");
+    }
   }
 
   tune(false);
