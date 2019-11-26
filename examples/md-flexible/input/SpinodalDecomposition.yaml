@@ -5,9 +5,9 @@ verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
 traversal                        :  [c08, sliced, c18, c01, directSum, verlet-sliced, verlet-c18, verlet-c01, cuda-c01, verlet-lists, c01-combined-SoA, verlet-clusters, c04, var-verlet-lists-as-build, verlet-clusters-coloring, c04SoA, verlet-cluster-cells]
-tuning-strategy                  :  full-Search
+tuning-strategy                  :  active-harmony
 tuning-interval                  :  1000
-tuning-samples                   :  10
+tuning-samples                   :  3
 tuning-max-evidence              :  10
 functor                          :  Lennard-Jones (12-6)
 newton3                          :  [disabled, enabled]
@@ -25,4 +25,5 @@ thermostat:
   thermostatInterval             :  10
   useCurrentTempForBrownianMotion:  false
 vtk-filename                     :  SpinodalDecomposition
+vtk-write-frequency              :  10000
 checkpoint                       :  SpinodalDecomposition_equilibration_100000.vtk

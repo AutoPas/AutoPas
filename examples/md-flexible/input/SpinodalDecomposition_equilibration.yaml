@@ -7,10 +7,10 @@ data-layout                      :  [AoS, SoA]
 traversal                        :  [sliced, verlet-sliced]
 tuning-strategy                  :  full-Search
 tuning-interval                  :  1000
-tuning-samples                   :  10
+tuning-samples                   :  3
 tuning-max-evidence              :  10
 functor                          :  Lennard-Jones (12-6)
-newton3                          :  [disabled, enabled]
+newton3                          :  [enabled]
 cutoff                           :  2.5
 box-min                          :  [-0.1875, -0.1875, -0.1875]
 box-max                          :  [60.1875, 60.1875, 60.1875]
