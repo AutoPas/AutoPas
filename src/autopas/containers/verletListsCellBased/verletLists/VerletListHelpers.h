@@ -7,6 +7,7 @@
 #pragma once
 
 #include <atomic>
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"

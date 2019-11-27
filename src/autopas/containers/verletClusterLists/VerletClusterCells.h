@@ -9,11 +9,12 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/ParticleContainer.h"
-#include "autopas/containers/cellPairTraversals/VerletClusterTraversalInterface.h"
 #include "autopas/containers/verletClusterLists/VerletClusterCellsParticleIterator.h"
+#include "autopas/containers/verletClusterLists/traversals/VerletClusterTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -204,7 +205,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     for (auto iter = begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
         outsideParticles.push_back(*iter);
-        iter.deleteCurrentParticle();
+        internal::deleteParticle(iter);
       }
     }
 
@@ -468,7 +469,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
         dummyParticle.setR({_boxMaxWithHalo[0] + 8 * this->getInteractionLength() + static_cast<double>(i),
                             _boxMaxWithHalo[1] + 8 * this->getInteractionLength() + static_cast<double>(j),
                             _boxMaxWithHalo[2] + 8 * this->getInteractionLength()});
-        dummyParticle.setID(ULONG_MAX);
+        dummyParticle.setID(std::numeric_limits<size_t>::max());
         dummyParticle.setOwned(false);
         this->_cells[i].addParticle(dummyParticle);
       }

@@ -6,6 +6,8 @@
 
 #pragma once
 #include <limits>
+
+#include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/utils/Logger.h"
 
@@ -38,7 +40,13 @@ class LogicHandler {
     if (not isContainerValid() or forced) {
       AutoPasLog(debug, "Initiating container update.");
       _containerIsValid = false;
-      return std::make_pair(std::move(_autoTuner.getContainer()->updateContainer()), true);
+      auto returnPair = std::make_pair(std::move(_autoTuner.getContainer()->updateContainer()), true);
+      // update container returns the particles which were previously owned and are now removed.
+      // Therefore remove them from the counter.
+      _numParticlesOwned.fetch_sub(returnPair.first.size(), std::memory_order_relaxed);
+      // updateContainer deletes all halo particles.
+      _numParticlesHalo.exchange(0, std::memory_order_relaxed);
+      return returnPair;
     } else {
       AutoPasLog(debug, "Skipping container update.");
       return std::make_pair(std::vector<Particle>{}, false);
@@ -51,6 +59,7 @@ class LogicHandler {
   void addParticle(Particle &p) {
     if (not isContainerValid()) {
       _autoTuner.getContainer()->addParticle(p);
+      _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Adding of particles not allowed while neighborlists are still valid. Please invalidate the neighborlists "
@@ -68,6 +77,7 @@ class LogicHandler {
       if (not utils::inBox(haloParticle.getR(), _autoTuner.getContainer()->getBoxMin(),
                            _autoTuner.getContainer()->getBoxMax())) {
         container->addHaloParticle(haloParticle);
+        _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
       } else {
         utils::ExceptionHandler::exception("Trying to add a halo particle that is not OUTSIDE of the bounding box.\n" +
                                            haloParticle.toString());
@@ -109,6 +119,23 @@ class LogicHandler {
   void deleteAllParticles() {
     _containerIsValid = false;
     _autoTuner.getContainer()->deleteAllParticles();
+    // all particles are gone -> reset counters.
+    _numParticlesOwned.exchange(0, std::memory_order_relaxed);
+    _numParticlesHalo.exchange(0, std::memory_order_relaxed);
+  }
+
+  /**
+   * Deletes a single particle and updates internal particle counters.
+   * @param iter
+   */
+  void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) {
+    _containerIsValid = false;
+    if ((*iter).isOwned()) {
+      _numParticlesOwned.fetch_sub(1, std::memory_order_relaxed);
+    } else {
+      _numParticlesHalo.fetch_sub(1, std::memory_order_relaxed);
+    }
+    internal::deleteParticle(iter);
   }
 
   /**
@@ -169,6 +196,18 @@ class LogicHandler {
     return _autoTuner.getContainer()->getFastMultipoleMethodTree();
   }
 
+  /**
+   * Get the number of owned particles.
+   * @return
+   */
+  unsigned long getNumParticlesOwned() const { return _numParticlesOwned; }
+
+  /**
+   * Get the number of halo particles.
+   * @return
+   */
+  unsigned long getNumParticlesHalo() const { return _numParticlesHalo; }
+
  private:
   void checkMinimalSize() {
     auto container = _autoTuner.getContainer();
@@ -211,5 +250,15 @@ class LogicHandler {
    * Steps since last rebuild
    */
   unsigned int _stepsSinceLastContainerRebuild{std::numeric_limits<unsigned int>::max()};
+
+  /**
+   * Atomic tracker of the number of owned particles.
+   */
+  std::atomic<size_t> _numParticlesOwned{0ul};
+
+  /**
+   * Atomic tracker of the number of halo particles.
+   */
+  std::atomic<size_t> _numParticlesHalo{0ul};
 };
 }  // namespace autopas

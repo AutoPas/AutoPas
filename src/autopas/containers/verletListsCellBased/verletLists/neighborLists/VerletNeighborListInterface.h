@@ -8,6 +8,7 @@
 #pragma once
 
 #include <vector>
+
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/TraversalOption.h"

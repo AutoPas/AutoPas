@@ -5,8 +5,10 @@
  */
 
 #include <gtest/gtest.h>
+
 #include <chrono>
 #include <thread>
+
 #include "autopas/utils/Timer.h"
 
 TEST(DISABLED_TimerTest, testTimer) {

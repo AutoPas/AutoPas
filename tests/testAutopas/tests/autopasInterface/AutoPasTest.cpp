@@ -5,6 +5,7 @@
  */
 
 #include "AutoPasTest.h"
+
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
@@ -191,4 +192,59 @@ TEST_F(AutoPasTest, checkConstIterator) {
   autoPas.addParticle(p2);
   // with 2 particles
   testConstIterator(autoPas, autoPas.getNumberOfParticles());
+}
+
+void AutoPasTest::expectedParticles(size_t expectedOwned, size_t expectedHalo) {
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::haloAndOwned), expectedHalo + expectedOwned);
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly), expectedOwned);
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::haloOnly), expectedHalo);
+}
+
+TEST_F(AutoPasTest, getNumParticlesTest) {
+  // there should be no particles in an empty container
+  expectedParticles(0, 0);
+
+  Particle particle;
+
+  // add a particle in the domain -> owned
+  particle.setR({1, 1, 1});
+  autoPas.addParticle(particle);
+  expectedParticles(1, 0);
+
+  // add a particle outside the domain -> halo
+  particle.setR({-0.1, -0.1, -0.1});
+  autoPas.addOrUpdateHaloParticle(particle);
+  expectedParticles(1, 1);
+
+  // update container is expected to remove all halo particles
+  auto haloParticles = autoPas.updateContainerForced();
+  EXPECT_EQ(haloParticles.size(), 0);
+  expectedParticles(1, 0);
+
+  // move the owned particle in the halo
+  autoPas.begin()->setR({-0.2, -0.2, -0.2});
+  haloParticles = autoPas.updateContainerForced();
+  EXPECT_EQ(haloParticles.size(), 1);
+  expectedParticles(0, 0);
+}
+
+TEST_F(AutoPasTest, getNumParticlesIteratorTest) {
+  // there should be no particles in an empty container
+  expectedParticles(0, 0);
+
+  Particle particle;
+
+  // add a particle in the domain -> owned
+  int numParticles = 0;
+  for (; numParticles < 5; ++numParticles) {
+    particle.setR({(double)numParticles, (double)numParticles, (double)numParticles});
+    autoPas.addParticle(particle);
+    expectedParticles(numParticles + 1, 0);
+  }
+
+  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+    autoPas.deleteParticle(iter);
+    --numParticles;
+    expectedParticles(numParticles, 0);
+  }
 }

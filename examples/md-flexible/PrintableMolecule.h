@@ -9,16 +9,30 @@
 #include <array>
 #include <iomanip>
 #include <iostream>
-#include "autopas/particles/MoleculeLJ.h"
+
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 
 /**
  * Example for a custom particle type derived from a autopas molecule type.
  */
-class PrintableMolecule : public autopas::MoleculeLJ {
+class PrintableMolecule
+    : public autopas::MoleculeLJ<> /*apparently c++17 doesnt need <> but doesnt compile without it*/ {
  public:
-  PrintableMolecule() : autopas::MoleculeLJ() {}
+  /**
+   * Empty Constructor.
+   */
+  PrintableMolecule() : autopas::MoleculeLJ<>() {}
 
-  PrintableMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i) : autopas::MoleculeLJ(r, v, i) {}
+  /**
+   * Constructor.
+   * @param pos Position
+   * @param v Veloctiy
+   * @param moleculeId Molecule ID
+   * @param typeId Molecule Type ID
+   */
+  PrintableMolecule(std::array<double, 3> pos, std::array<double, 3> v, unsigned long moleculeId,
+                    unsigned int typeId = 0)
+      : autopas::MoleculeLJ<>(pos, v, moleculeId, typeId) {}
 
   /**
    * Print molecule properties to std out.

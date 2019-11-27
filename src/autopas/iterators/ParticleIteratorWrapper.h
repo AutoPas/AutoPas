@@ -7,7 +7,9 @@
 #pragma once
 
 #include <memory>
+
 #include "autopas/iterators/ParticleIteratorInterface.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
@@ -92,7 +94,7 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
  protected:
   inline void deleteCurrentParticleImpl() override final {
     if constexpr (modifiable) {
-      _particleIterator->deleteCurrentParticle();
+      internal::deleteParticle(*_particleIterator);
     } else {
       utils::ExceptionHandler::exception("Error: Trying to delete a particle through a const iterator.");
     }

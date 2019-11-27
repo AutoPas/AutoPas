@@ -12,15 +12,17 @@ TEST(StringUtilsTest, parseDoublesTest) {
   EXPECT_THAT(parsedOptions, ::testing::ElementsAreArray({1., 1.5, 2., 3., 20.}));
 }
 
-TEST(StringUtilsTest, parseNumberSetTest) {
-  EXPECT_EQ(autopas::utils::StringUtils::parseNumberSet("1.,1.5, 2,3.00,2e1")->getAll(),
-            std::set<double>({1., 1.5, 2., 3., 20.}));
+TEST(StringUtilsTest, parseNumberSetFiniteTest) {
+  auto numberSet = autopas::utils::StringUtils::parseNumberSet("1.,1.5, 2,3.00,2e1, 1.2e-2");
+  auto numberSetFinite = dynamic_cast<autopas::NumberSetFinite<double> *>(numberSet.get());
+  ASSERT_NE(numberSetFinite, nullptr);  // if this is null numberSet was parsed to a NumberInterval
+  EXPECT_THAT(numberSetFinite->getAll(), ::testing::UnorderedElementsAre(1., 1.5, 2., 3., 20., 0.012));
+}
 
-  auto numberSet = autopas::utils::StringUtils::parseNumberSet("[1.,2e1]");
-  auto *numberInterval = dynamic_cast<autopas::NumberInterval<double> *>(numberSet.get());
-  EXPECT_NE(numberInterval, nullptr);
-  if (numberInterval) {
-    EXPECT_EQ(numberInterval->getMin(), 1.);
-    EXPECT_EQ(numberInterval->getMax(), 2e1);
-  }
+TEST(StringUtilsTest, parseNumberIntervalTest) {
+  auto numberSet = autopas::utils::StringUtils::parseNumberSet("1.-2e1");
+  auto numberInterval = dynamic_cast<autopas::NumberInterval<double> *>(numberSet.get());
+  ASSERT_NE(numberInterval, nullptr);  // if this is null numberSet was parsed to a NumberSetFinite
+  EXPECT_EQ(numberInterval->getMin(), 1.);
+  EXPECT_EQ(numberInterval->getMax(), 2e1);
 }

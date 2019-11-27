@@ -5,7 +5,9 @@
  */
 
 #include "SingleCellIteratorTest.h"
+
 #include <gtest/gtest.h>
+
 #include "autopas/autopasIncludes.h"
 
 using namespace autopas;
@@ -16,7 +18,7 @@ void SingleCellIteratorTest::SetUp() {
     for (auto &a : arr) {
       a = static_cast<double>(i);
     }
-    MoleculeLJ m(arr, {0., 0., 0.}, static_cast<unsigned long>(i));
+    Molecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), 0);
     _vecOfMolecules.push_back(m);
   }
 }
@@ -24,7 +26,7 @@ void SingleCellIteratorTest::SetUp() {
 void SingleCellIteratorTest::TearDown() {}
 
 TEST_F(SingleCellIteratorTest, testFullParticleCell) {
-  FullParticleCell<MoleculeLJ> fpc;
+  FMCell fpc;
 
   fillWithParticles(&fpc);
 
@@ -39,7 +41,7 @@ TEST_F(SingleCellIteratorTest, testFullParticleCell) {
 }
 
 TEST_F(SingleCellIteratorTest, testRMMParticleCell) {
-  RMMParticleCell<MoleculeLJ> fpc;
+  RMMParticleCell<Molecule> fpc;
 
   fillWithParticles(&fpc);
 

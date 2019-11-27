@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+
 #include "DirectSumTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/options/DataLayoutOption.h"

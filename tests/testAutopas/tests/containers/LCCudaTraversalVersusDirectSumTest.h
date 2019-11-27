@@ -7,7 +7,9 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include <cstdlib>
+
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -29,13 +31,11 @@ class LCCudaTraversalVersusDirectSumTest : public AutoPasTestBase {
 
   std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) const;
 
-  void fillContainerWithMolecules(
-      unsigned long numMolecules,
-      autopas::ParticleContainer<autopas::FullParticleCell<autopas::MoleculeLJ>> &cont) const;
+  void fillContainerWithMolecules(unsigned long numMolecules, autopas::ParticleContainer<FMCell> &cont) const;
 
   template <bool useNewton3, bool calculateGlobals = false>
   void test(unsigned long numMolecules, double rel_err_tolerance);
 
-  autopas::DirectSum<autopas::FullParticleCell<autopas::MoleculeLJ>> _directSum;
-  autopas::LinkedCells<autopas::FullParticleCell<autopas::MoleculeLJ>> _linkedCells;
+  autopas::DirectSum<FMCell> _directSum;
+  autopas::LinkedCells<FMCell> _linkedCells;
 };

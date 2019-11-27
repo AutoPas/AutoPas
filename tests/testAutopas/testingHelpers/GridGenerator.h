@@ -34,7 +34,7 @@ class GridGenerator {
 
   /**
    * Fills any container (also AutoPas object) with a cuboid mesh of particles.
-   *
+   * Particle properties will be used from the default particle. Particle IDs start from the default particle.
    * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
    * @tparam Particle Type of the default particle.
    * @param container
@@ -54,7 +54,7 @@ template <class Particle, class ParticleCell>
 void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, const std::array<size_t, 3> &cellsPerDimension,
                                       const std::array<size_t, 3> &particlesPerDim, const Particle &defaultParticle,
                                       const std::array<double, 3> &spacing, const std::array<double, 3> &offset) {
-  size_t id = 0;
+  size_t id = defaultParticle.getID();
   for (unsigned long z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned long y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned long x = 0; x < particlesPerDim[0]; ++x) {

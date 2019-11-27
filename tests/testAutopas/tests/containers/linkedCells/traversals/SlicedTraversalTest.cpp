@@ -5,6 +5,7 @@
  */
 
 #include "SlicedTraversalTest.h"
+
 #include "testingHelpers/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
 

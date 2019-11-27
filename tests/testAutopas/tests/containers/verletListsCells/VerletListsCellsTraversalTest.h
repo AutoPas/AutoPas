@@ -8,7 +8,9 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
 #include <cstdlib>
+
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "testingHelpers/RandomGenerator.h"
@@ -29,5 +31,5 @@ class VerletListsCellsTraversalTest : public AutoPasTestBase {
  protected:
   void test(unsigned long numMolecules);
 
-  autopas::VerletListsCells<autopas::MoleculeLJ> _verletListsCells, _verletListsCells_cs2;
+  autopas::VerletListsCells<Molecule> _verletListsCells, _verletListsCells_cs2;
 };

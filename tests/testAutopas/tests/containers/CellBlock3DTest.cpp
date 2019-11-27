@@ -5,11 +5,12 @@
  */
 
 #include "CellBlock3DTest.h"
+
 #include "autopas/utils/ArrayUtils.h"
 #include "testingHelpers/GridGenerator.h"
 
-void testIndex(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
-               std::array<double, 3> &start, std::array<double, 3> &dr, std::array<int, 3> &numParts) {
+void testIndex(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::array<double, 3> &start,
+               std::array<double, 3> &dr, std::array<int, 3> &numParts) {
   auto mesh = CellBlock3DTest::getMesh(start, dr, numParts);
 
   unsigned long counter = 0ul;
@@ -50,8 +51,8 @@ TEST_F(CellBlock3DTest, test3x3x3) {
   testIndex(_cells_3x3x3, start, dr, numParts);
 }
 
-void testBoundary(autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
-                  std::array<double, 3> boxMin, std::array<double, 3> boxMax) {
+void testBoundary(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::array<double, 3> boxMin,
+                  std::array<double, 3> boxMax) {
   std::array<std::array<double, 4>, 3> possibleShifts = {};
   for (unsigned short dim = 0; dim < 3; ++dim) {
     possibleShifts[dim] = {std::nextafter(boxMin[dim], -1.),  // slightly below boxmin (outside)
@@ -95,7 +96,9 @@ void testBoundary(autopas::internal::CellBlock3D<autopas::FullParticleCell<autop
                   << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
                   << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
               break;
-            default: { FAIL(); }
+            default: {
+              FAIL();
+            }
           }
         }
       }
@@ -138,10 +141,8 @@ std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(std::array<double, 3
   return ret;
 }
 
-size_t getNumberOfParticlesInBox(
-    autopas::internal::CellBlock3D<autopas::FullParticleCell<autopas::MoleculeLJ>> &cellBlock,
-    std::vector<autopas::FullParticleCell<autopas::MoleculeLJ>> &vec) {
-  const autopas::MoleculeLJ defaultParticle;
+size_t getNumberOfParticlesInBox(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::vector<FMCell> &vec) {
+  const Molecule defaultParticle;
   GridGenerator::fillWithParticles(vec, cellBlock.getCellsPerDimensionWithHalo(),
                                    cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);
   cellBlock.clearHaloCells();

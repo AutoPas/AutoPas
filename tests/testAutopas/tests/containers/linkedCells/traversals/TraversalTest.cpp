@@ -5,6 +5,7 @@
  */
 
 #include "TraversalTest.h"
+
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/Logger.h"
 #include "testingHelpers/NumThreadGuard.h"

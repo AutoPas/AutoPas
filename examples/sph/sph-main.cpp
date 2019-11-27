@@ -7,6 +7,7 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+
 #include "autopas/AutoPas.h"
 #include "autopas/sph/autopassph.h"
 #include "autopas/utils/ArrayUtils.h"

@@ -9,13 +9,16 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include <chrono>
+
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class AoSvsCudaTest : public AutoPasTestBase {
  public:
-  void generateParticles(std::vector<autopas::Particle> *particles);
+  void generateParticles(std::vector<Molecule> *particles);
 };
 
 #endif  // AUTOPAS_CUDA

@@ -7,6 +7,7 @@
  */
 
 #include "LinkedCellsVersusVarVerletListsTest.h"
+
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VarVerletTraversalAsBuild.h"
 
 LinkedCellsVersusVarVerletListsTest::LinkedCellsVersusVarVerletListsTest()
@@ -20,22 +21,19 @@ void LinkedCellsVersusVarVerletListsTest::test(unsigned long numMolecules, doubl
   _verletLists = std::make_unique<vltype>(getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 4);
 
   // fill containers
-  RandomGenerator::fillWithParticles(*_verletLists, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
+  RandomGenerator::fillWithParticles(*_verletLists, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0),
+                                     _verletLists->getBoxMin(), _verletLists->getBoxMax(), numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new and different particles
   for (auto it = _verletLists->begin(); it.isValid(); ++it) {
     _linkedCells->addParticle(*it);
   }
 
-  const double eps = 1.0;
-  const double sig = 1.0;
   const double shift = 0.0;
-  autopas::MoleculeLJ::setEpsilon(eps);
-  autopas::MoleculeLJ::setSigma(sig);
-  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
-
-  autopas::VarVerletTraversalAsBuild<FMCell, autopas::MoleculeLJ, decltype(func), dataLayoutOption, useNewton3>
-      traversalLJV(&func);
+  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), shift);
+  func.setParticleProperties(1., 1.);
+  autopas::VarVerletTraversalAsBuild<FMCell, Molecule, decltype(func), dataLayoutOption, useNewton3> traversalLJV(
+      &func);
 
   autopas::C08Traversal<FMCell, decltype(func), dataLayoutOption, useNewton3> traversalLJ(
       _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &func, _linkedCells->getInteractionLength(),
@@ -51,12 +49,12 @@ void LinkedCellsVersusVarVerletListsTest::test(unsigned long numMolecules, doubl
   std::vector<std::array<double, 3>> forcesVerlet(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, the
   for (auto it = _verletLists->begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
+    Molecule &m = *it;
     forcesVerlet.at(m.getID()) = m.getF();
   }
 
   for (auto it = _linkedCells->begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
+    Molecule &m = *it;
     forcesLinked.at(m.getID()) = m.getF();
   }
 
@@ -74,7 +72,7 @@ void LinkedCellsVersusVarVerletListsTest::test(unsigned long numMolecules, doubl
       _linkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked, _linkedCells->getInteractionLength(),
       _linkedCells->getCellBlock().getCellLength());
 
-  autopas::VarVerletTraversalAsBuild<FMCell, autopas::MoleculeLJ, decltype(flopsLinked), dataLayoutOption, useNewton3>
+  autopas::VarVerletTraversalAsBuild<FMCell, Molecule, decltype(flopsLinked), dataLayoutOption, useNewton3>
       traversalFLOPSVerlet(&flopsVerlet);
   _linkedCells->iteratePairwise(&traversalFLOPSLC);
   _verletLists->iteratePairwise(&traversalFLOPSVerlet);

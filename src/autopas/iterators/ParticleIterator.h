@@ -8,6 +8,7 @@
 #pragma once
 
 #include <vector>
+
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/iterators/ParticleIteratorInterface.h"
 #include "autopas/iterators/SingleCellIterator.h"
@@ -144,7 +145,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
   inline void deleteCurrentParticleImpl() override {
     if (_iteratorWithinOneCell.isValid()) {
       if constexpr (modifiable) {
-        _iteratorWithinOneCell.deleteCurrentParticle();
+        internal::deleteParticle(_iteratorWithinOneCell);
       } else {
         utils::ExceptionHandler::exception("Error: Trying to delete a particle through a const iterator.");
       }

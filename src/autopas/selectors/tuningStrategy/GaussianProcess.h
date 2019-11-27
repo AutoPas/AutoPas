@@ -6,13 +6,14 @@
 
 #pragma once
 
-#include <omp.h>
 #include <Eigen/Dense>
+
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -406,7 +407,7 @@ class GaussianProcess {
       // precalculate matrices for all hyperparameters
       // @TODO find sensible chunkSize
 #ifdef AUTOPAS_OPENMP
-      const size_t chunkSize = std::max(hp_sample_size / (omp_get_max_threads() * 10), 1ul);
+      const size_t chunkSize = std::max(hp_sample_size / (autopas_get_num_threads() * 10), 1ul);
 #pragma omp parallel for schedule(dynamic, chunkSize)
 #endif
       for (size_t t = 0; t < hp_sample_size; ++t) {
@@ -442,9 +443,13 @@ class GaussianProcess {
    */
   static inline double kernel(const Vector &input1, const Vector &input2, double theta,
                               const Eigen::VectorXd &dimScale) {
-    Eigen::VectorXd r = static_cast<Eigen::VectorXd>(input1 - input2);
-    Eigen::VectorXd rSquared = r.array().square();
-    return theta * exp(-rSquared.dot(dimScale));
+    double dot = 0;
+    for (int i = 0; i < input1.size(); ++i) {
+      double dist = input1[i] - input2[i];
+      dist *= dist * dimScale[i];
+      dot += dist;
+    }
+    return theta * std::exp(-dot);
   }
 
   /**
@@ -453,9 +458,9 @@ class GaussianProcess {
    * @return Vector of covariances
    */
   Eigen::VectorXd kernelVector(const Vector &input, double theta, const Eigen::VectorXd &dimScale) const {
-    std::vector<double> k;
-    for (auto &d : _inputs) {
-      k.push_back(kernel(input, d, theta, dimScale));
+    std::vector<double> k(_inputs.size());
+    for (size_t i = 0; i < k.size(); ++i) {
+      k[i] = kernel(input, _inputs[i], theta, dimScale);
     }
     return Eigen::Map<Eigen::VectorXd>(k.data(), k.size());
   }

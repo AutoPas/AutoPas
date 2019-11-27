@@ -5,14 +5,14 @@
  */
 
 #include "AutoPasInterfaceTest.h"
+
 #include "testingHelpers/commonTypedefs.h"
 
 constexpr double cutoff = 1.;
 constexpr double skin = 0.2;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
-constexpr double eps = 1.;
-constexpr double sigma = 1.;
+
 constexpr double shift = 0.1;
 constexpr std::array<double, 3> zeroArr = {0., 0., 0.};
 
@@ -284,16 +284,15 @@ void testSimulationLoop(testingTuple options) {
   std::array<double, 3> pos2 = autopas::utils::ArrayMath::add(pos1, distVec);
 
   {
-    Molecule particle1(pos1, {0., 0., 0.}, 0);
-    Molecule particle2(pos2, {0., 0., 0.}, 1);
+    Molecule particle1(pos1, {0., 0., 0.}, 0, 0);
+    Molecule particle2(pos2, {0., 0., 0.}, 1, 0);
 
     // add the two particles!
     autoPas.addParticle(particle1);
     autoPas.addParticle(particle2);
   }
-
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor(cutoff, eps,
-                                                                                                          sigma, shift);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift);
+  functor.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
 
@@ -371,8 +370,9 @@ void testHaloCalculation(testingTuple options) {
     }
   }
 
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor(cutoff, eps,
-                                                                                                          sigma, shift);
+  autopas::LJFunctor<Molecule, FMCell, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
+      cutoff, shift);
+  functor.setParticleProperties(24, 1);
 
   autoPas.iteratePairwise(&functor);
 
@@ -465,8 +465,8 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   std::array<double, 3> pos2 = autopas::utils::ArrayMath::add(pos1, distVec);
 
   {
-    Molecule particle1(pos1, {0., 0., 0.}, 0);
-    Molecule particle2(pos2, {0., 0., 0.}, 1);
+    Molecule particle1(pos1, {0., 0., 0.}, 0, 0);
+    Molecule particle2(pos2, {0., 0., 0.}, 1, 0);
 
     // add the two particles!
     for (auto p : {&particle1, &particle2}) {
@@ -477,12 +477,10 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
       }
     }
   }
-
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor1(
-      cutoff, eps, sigma, shift);
-  autopas::LJFunctor<Molecule, FMCell, autopas::FunctorN3Modes::Both, true /*calculate globals*/> functor2(
-      cutoff, eps, sigma, shift);
-
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor1(cutoff, shift);
+  functor1.setParticleProperties(24.0, 1);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor2(cutoff, shift);
+  functor2.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
 

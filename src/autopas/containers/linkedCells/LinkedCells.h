@@ -150,7 +150,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
           // if not in cell
           if (utils::notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
             myInvalidParticles.push_back(*pIter);
-            pIter.deleteCurrentParticle();
+            internal::deleteParticle(pIter);
           }
         }
       }

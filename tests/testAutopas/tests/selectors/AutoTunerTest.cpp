@@ -5,8 +5,9 @@
  */
 
 #include "AutoTunerTest.h"
-#include <autopas/selectors/tuningStrategy/FullSearch.h>
+
 #include "autopas/selectors/AutoTuner.h"
+#include "autopas/selectors/tuningStrategy/FullSearch.h"
 
 using ::testing::_;
 
@@ -19,14 +20,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const double verletSkin = 0;
   const unsigned int verletClusterSize = 64;
   const unsigned int maxSamples = 2;
-
-  autopas::LJFunctor<Particle, FPCell> functor(cutoff, 1., 1., 0.);
-
+  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, 0.);
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
       autopas::ContainerOption::getAllOptions(), std::set<double>({cellSizeFactor}),
       autopas::TraversalOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
       autopas::Newton3Option::getAllOptions());
-  autopas::AutoTuner<Particle, FPCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
+  autopas::AutoTuner<Molecule, FMCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
                                                  std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs,
                                                  100, maxSamples);
 

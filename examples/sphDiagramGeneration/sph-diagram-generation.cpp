@@ -4,11 +4,12 @@
  * @author seckler
  */
 
-#include <autopas/AutoPas.h>
-#include <autopas/sph/autopassph.h>
 #include <array>
 #include <iostream>
+
 #include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
+#include "autopas/AutoPas.h"
+#include "autopas/sph/autopassph.h"
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations);

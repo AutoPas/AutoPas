@@ -9,6 +9,7 @@
 
 #include <tuple>
 #include <vector>
+
 #include "autopas/utils/CudaDeviceVector.h"
 
 namespace autopas::utils {

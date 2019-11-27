@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include <autopas/utils/WrapOpenMP.h>
 #include "autopas/containers/cellPairTraversals/CBasedTraversal.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 

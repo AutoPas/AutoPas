@@ -8,6 +8,7 @@
 
 #include <array>
 #include <vector>
+
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/inBox.h"

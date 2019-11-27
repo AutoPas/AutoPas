@@ -7,12 +7,14 @@
 #if defined(AUTOPAS_CUDA)
 
 #include "LJFunctorCudaTest.h"
+
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/pairwiseFunctors/LJFunctor.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "testingHelpers/RandomGenerator.h"
 
-template <class SoAType>
-bool LJFunctorCudaTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
+template <class Particle>
+bool LJFunctorCudaTest::SoAParticlesEqual(autopas::SoA<typename Particle::SoAArraysType> &soa1,
+                                          autopas::SoA<typename Particle::SoAArraysType> &soa2) {
   EXPECT_GT(soa1.getNumParticles(), 0);
   EXPECT_EQ(soa1.getNumParticles(), soa2.getNumParticles());
 
@@ -63,7 +65,7 @@ bool LJFunctorCudaTest::particleEqual(Particle &p1, Particle &p2) {
   // clang-format on
 }
 
-bool LJFunctorCudaTest::AoSParticlesEqual(FPCell &cell1, FPCell &cell2) {
+bool LJFunctorCudaTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
   EXPECT_GT(cell1.numParticles(), 0);
   EXPECT_EQ(cell1.numParticles(), cell2.numParticles());
 
@@ -77,23 +79,25 @@ bool LJFunctorCudaTest::AoSParticlesEqual(FPCell &cell1, FPCell &cell2) {
 
 template <typename ParticleType, bool useNewton3, bool calculateGlobals>
 void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2) {
-  autopas::FullParticleCell<ParticleType> cell1Cuda;
-  autopas::FullParticleCell<ParticleType> cell2Cuda;
+  FMCell cell1Cuda;
+  FMCell cell2Cuda;
 
-  ParticleType defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
+  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   RandomGenerator::fillWithParticles(cell1Cuda, defaultParticle, _lowCorner,
                                      {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
   RandomGenerator::fillWithParticles(cell2Cuda, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]},
                                      _highCorner, numParticles2);
 
   // copy cells
-  autopas::FullParticleCell<ParticleType> cell1NoCuda(cell1Cuda);
-  autopas::FullParticleCell<ParticleType> cell2NoCuda(cell2Cuda);
+  FMCell cell1NoCuda(cell1Cuda);
+  FMCell cell2NoCuda(cell2Cuda);
 
-  autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, calculateGlobals>
-      ljFunctorNoCuda(_cutoff, _epsilon, _sigma, 0.0);
-  autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, calculateGlobals>
-      ljFunctorCuda(_cutoff, _epsilon, _sigma, 0.0);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoCuda(_cutoff,
+                                                                                                               0.0);
+  ljFunctorNoCuda.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorCuda(_cutoff,
+                                                                                                             0.0);
+  ljFunctorCuda.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ljFunctorCuda.getCudaWrapper()->setNumThreads(32);
 
@@ -118,9 +122,9 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   ljFunctorCuda.deviceSoAExtractor(cell1Cuda._particleSoABuffer, cell1Cuda._particleSoABufferDevice);
   ljFunctorCuda.deviceSoAExtractor(cell2Cuda._particleSoABuffer, cell2Cuda._particleSoABufferDevice);
 
-  ASSERT_TRUE(SoAParticlesEqual(cell1Cuda._particleSoABuffer, cell1NoCuda._particleSoABuffer))
+  ASSERT_TRUE(SoAParticlesEqual<Molecule>(cell1Cuda._particleSoABuffer, cell1NoCuda._particleSoABuffer))
       << "Cells 1 not equal after applying functor and extracting to SoA.";
-  ASSERT_TRUE(SoAParticlesEqual(cell2Cuda._particleSoABuffer, cell2NoCuda._particleSoABuffer))
+  ASSERT_TRUE(SoAParticlesEqual<Molecule>(cell2Cuda._particleSoABuffer, cell2NoCuda._particleSoABuffer))
       << "Cells 2 not equal after applying functor and extracting to SoA.";
 
   ljFunctorCuda.SoAExtractor(cell1Cuda, cell1Cuda._particleSoABuffer);
@@ -142,18 +146,22 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
 
 template <typename ParticleType, bool useNewton3, bool calculateGlobals>
 void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles) {
-  autopas::FullParticleCell<ParticleType> cellCuda;
+  FMCell cellCuda;
 
-  ParticleType defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
+  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   RandomGenerator::fillWithParticles(cellCuda, defaultParticle, _lowCorner, _highCorner, numParticles);
 
   // copy cells
-  autopas::FullParticleCell<ParticleType> cellNoCuda(cellCuda);
+  FMCell cellNoCuda(cellCuda);
 
-  autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, calculateGlobals>
-      ljFunctorNoCuda(_cutoff, _epsilon, _sigma, 0.0);
-  autopas::LJFunctor<Particle, autopas::FullParticleCell<ParticleType>, autopas::FunctorN3Modes::Both, calculateGlobals>
-      ljFunctorCuda(_cutoff, _epsilon, _sigma, 0.0);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoCuda(_cutoff,
+                                                                                                               0.0);
+  ljFunctorNoCuda.setParticleProperties(sqrt(_epsilon * _epsilon) * 24.0,
+                                        ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorCuda(_cutoff,
+                                                                                                             0.0);
+  ljFunctorCuda.setParticleProperties(sqrt(_epsilon * _epsilon) * 24.0,
+                                      ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
   ljFunctorCuda.getCudaWrapper()->setNumThreads(32);
 
   ljFunctorNoCuda.initTraversal();
@@ -171,7 +179,7 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
 
   ljFunctorCuda.deviceSoAExtractor(cellCuda._particleSoABuffer, cellCuda._particleSoABufferDevice);
 
-  ASSERT_TRUE(SoAParticlesEqual(cellCuda._particleSoABuffer, cellNoCuda._particleSoABuffer))
+  ASSERT_TRUE(SoAParticlesEqual<Molecule>(cellCuda._particleSoABuffer, cellNoCuda._particleSoABuffer))
       << "Cells not equal after applying functor and extracting to SoA.";
 
   ljFunctorCuda.SoAExtractor(cellCuda, cellCuda._particleSoABuffer);

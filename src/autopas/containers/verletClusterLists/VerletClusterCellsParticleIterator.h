@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <vector>
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/iterators/ParticleIterator.h"
@@ -244,13 +245,14 @@ class VerletClusterCellsRegionParticleIterator
    * lower corner of target region
    */
   const std::array<double, 3> _startRegion;
+
   /**
    * upper corner of target region
    */
   const std::array<double, 3> _endRegion;
 
   /**
-   * indecies of possible cells
+   * indices of possible cells
    */
   std::vector<size_t> _indicesInRegion;
 

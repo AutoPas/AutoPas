@@ -1,23 +1,45 @@
 file(
     GLOB_RECURSE
-    MY_SRC
+    MDFlex_SRC
     "*.cpp"
     "*.h"
-    "../../tests/testAutopas/testingHelpers/RandomGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/testAutopas/testingHelpers/RandomGenerator.cpp"
 )
 
-add_executable(md-flexible ${MY_SRC})
+# remove all files from the md-flexible/tests dir
+foreach (FILE_PATH ${MDFlex_SRC})
+    string(FIND ${FILE_PATH} "md-flexible/tests/" EXCLUDE_FILE)
+    if (NOT ${EXCLUDE_FILE} EQUAL -1)
+        list(REMOVE_ITEM MDFlex_SRC ${FILE_PATH})
+    endif ()
+endforeach ()
 
-target_link_libraries(md-flexible autopas)
+add_executable(md-flexible ${MDFlex_SRC})
+
+target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+include(autopas_yaml-cpp)
+
+target_link_libraries(md-flexible PUBLIC autopas yaml-cpp)
 
 # --- copy script files to build dir ---
-file(GLOB_RECURSE SCRIPTS RELATIVE ${CMAKE_SOURCE_DIR} "*.sh" "*.gp" "*.py")
+file(
+    GLOB_RECURSE SCRIPTS
+    RELATIVE ${CMAKE_SOURCE_DIR}
+    "*.sh"
+    "*.gp"
+    "*.py"
+    "*.yaml"
+)
 
 foreach (script ${SCRIPTS})
-    configure_file(${CMAKE_SOURCE_DIR}/${script} ${CMAKE_BINARY_DIR}/${script} COPYONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/${script} ${CMAKE_BINARY_DIR}/examples/md-flexible COPYONLY)
 endforeach (script)
 
 # -----------------test-----------------
+
+add_subdirectory(tests)
+
 # add check for current target
 # cmake-format: off
 add_test(
@@ -31,19 +53,20 @@ add_test(
         --data-layout soa
         --functor lj
         --iterations 10
-        --particles-generator gauss
+        --particle-generator gauss
         --particles-per-dimension 10
         --particle-spacing 0.4
         --traversal c08,sliced
         --verlet-rebuild-frequency 5
         --verlet-skin-radius 0
+        --periodic false
     CONFIGURATIONS checkExamples
 )
 # cmake-format: on
 
 add_test(
     NAME md-flexMeasurePerf
-    COMMAND ${PROJECT_SOURCE_DIR}/examples/md-flexible/measurePerf.sh md-flexible -silent
+    COMMAND measurePerf.sh md-flexible -silent
     CONFIGURATIONS checkExamples
 )
 

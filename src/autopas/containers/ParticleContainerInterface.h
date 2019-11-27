@@ -10,6 +10,7 @@
 #include <array>
 #include <memory>
 #include <vector>
+
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/fastMultipoleMethod/FmmTree.h"
