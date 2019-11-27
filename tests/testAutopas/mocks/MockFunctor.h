@@ -15,43 +15,44 @@
 #include "autopas/utils/CudaSoA.h"
 #endif
 
-// gmock does not write overrides, so we suppress that warning here!
-#if __GNUC__ >= 5
-// Disable GCC 5's -Wsuggest-override warnings in gtest
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-override"
-#endif
-
 template <class Particle, class ParticleCell_t>
 class MockFunctor : public autopas::Functor<Particle, ParticleCell_t> {
  public:
   MockFunctor() : autopas::Functor<Particle, ParticleCell_t>(0.){};
 
   // virtual void AoSFunctor(Particle &i, Particle &j, bool newton3)
-  MOCK_METHOD3_T(AoSFunctor, void(Particle &i, Particle &j, bool newton3));
+  MOCK_METHOD(void, AoSFunctor, (Particle & i, Particle &j, bool newton3), (override));
 
   // virtual void SoAFunctor(SoAView &soa, bool newton3)
-  MOCK_METHOD2_T(SoAFunctor, void(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3));
+  MOCK_METHOD(void, SoAFunctor, (autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3), (override));
 
   // virtual void SoAFunctor(SoAView &soa1, SoAView &soa2, bool newton3)
-  MOCK_METHOD3_T(SoAFunctor, void(autopas::SoAView<typename Particle::SoAArraysType> soa,
-                                  autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3));
+  MOCK_METHOD(void, SoAFunctor,
+              (autopas::SoAView<typename Particle::SoAArraysType> soa,
+               autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3),
+              (override));
 
-  // virtual void SoAFunctor(SoAView &soa, const std::vector<std::vector<size_t,
+  // virtual void SoAFunctor(SoAView &soa, const std::vector, (override)<std::vector<size_t,
   // AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
-  MOCK_METHOD5_T(SoAFunctor, void(autopas::SoAView<typename Particle::SoAArraysType> soa,
-                                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &, size_t,
-                                  size_t, bool newton3));
+  MOCK_METHOD(void, SoAFunctor,
+              (autopas::SoAView<typename Particle::SoAArraysType> soa,
+               (const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &), size_t, size_t,
+               bool newton3),
+              (override));
 
   // virtual void SoALoader(ParticleCell &cell, autopas::SoA &soa, size_t
   // offset=0) {}
-  MOCK_METHOD2_T(SoALoader,
-                 void(autopas::ParticleCell<Particle> &cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
-  MOCK_METHOD3_T(SoALoader, void(autopas::ParticleCell<Particle> &cell,
-                                 autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
+  // no override for the two-input variant, as it only simulates the one with a default argument!
+  MOCK_METHOD(void, SoALoader,
+              (autopas::ParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
+  MOCK_METHOD(void, SoALoader,
+              (autopas::ParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
+               size_t offset),
+              (override));
 
-  MOCK_METHOD3_T(SoALoaderVerlet, void(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
-                                       autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
+  MOCK_METHOD(void, SoALoaderVerlet,
+              (typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType & cell,
+               autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
   template <typename /*dummy*/ = void,
             typename = std::enable_if_t<not std::is_same<
@@ -63,14 +64,17 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell_t> {
 
   // virtual void SoAExtractor(ParticleCell &cell, autopas::SoA &soa, size_t
   // offset=0) {}
-  MOCK_METHOD2_T(SoAExtractor,
-                 void(autopas::ParticleCell<Particle> &cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
-  MOCK_METHOD3_T(SoAExtractor, void(autopas::ParticleCell<Particle> &cell,
-                                    autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
+  // no override for the two-input variant, as it only simulates the one with a default argument!
+  MOCK_METHOD(void, SoAExtractor,
+              (autopas::ParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa));
+  MOCK_METHOD(void, SoAExtractor,
+              (autopas::ParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
+               size_t offset),
+              (override));
 
-  MOCK_METHOD3_T(SoAExtractorVerlet,
-                 void(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
-                      autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
+  MOCK_METHOD(void, SoAExtractorVerlet,
+              (typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType & cell,
+               autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
   template <typename = std::enable_if_t<not std::is_same<
                 typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType, ParticleCell_t>::value>>
@@ -80,34 +84,35 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell_t> {
   }
 
   // virtual bool allowsNewton3() { return true; }
-  MOCK_METHOD0(allowsNewton3, bool());
+  MOCK_METHOD(bool, allowsNewton3, (), (override));
 
   // virtual bool allowsNonNewton3() { return false; }
-  MOCK_METHOD0(allowsNonNewton3, bool());
+  MOCK_METHOD(bool, allowsNonNewton3, (), (override));
 
   //  bool isRelevantForTuning() { return true; }
-  MOCK_METHOD0(isRelevantForTuning, bool());
+  MOCK_METHOD(bool, isRelevantForTuning, (), (override));
 
 #if defined(AUTOPAS_CUDA)
   // virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3)
-  MOCK_METHOD2_T(CudaFunctor,
-                 void(autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3));
+  MOCK_METHOD(void, CudaFunctor,
+              (autopas::CudaSoA<typename Particle::CudaDeviceArraysType> & device_handle, bool newton3), (override));
 
   /*virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3)*/
-  MOCK_METHOD3_T(CudaFunctor,
-                 void(autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-                      autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3));
+  MOCK_METHOD(void, CudaFunctor,
+              (autopas::CudaSoA<typename Particle::CudaDeviceArraysType> & device_handle1,
+               autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3),
+              (override));
 
   //  void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
   //                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle)
-  MOCK_METHOD2_T(deviceSoALoader, void(autopas::SoA<typename Particle::SoAArraysType> &soa,
-                                       autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle));
-  MOCK_METHOD2_T(deviceSoAExtractor, void(autopas::SoA<typename Particle::SoAArraysType> &soa,
-                                          autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle));
+  MOCK_METHOD(void, deviceSoALoader,
+              (autopas::SoA<typename Particle::SoAArraysType> & soa,
+               autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle),
+              (override));
+  MOCK_METHOD(void, deviceSoAExtractor,
+              (autopas::SoA<typename Particle::SoAArraysType> & soa,
+               autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle),
+              (override));
 #endif
 };
-
-#if __GNUC__ >= 5
-#pragma GCC diagnostic pop
-#endif

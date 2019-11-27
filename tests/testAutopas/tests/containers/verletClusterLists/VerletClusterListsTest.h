@@ -15,7 +15,6 @@
 #include "autopas/particles/Particle.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "mocks/MockFunctor.h"
-#include "mocks/MockVerletLists.h"
 #include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
