@@ -20,8 +20,8 @@ class GaussianGenerator {
   /**
    * Fills any container (also AutoPas object) with randomly 3D gaussian distributed particles.
    * Particle properties will be used from the default particle. Particle IDs start from the default particle.
-   * @tparam Container Arbitrary container class that needs to support addParticle().
-   * @param autoPas
+   * @tparam Container Arbitrary container class. Needs to support addParticle().
+   * @param container
    * @param boxMin
    * @param boxMax
    * @param numParticles number of particles
