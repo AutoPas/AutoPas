@@ -3,7 +3,10 @@
 # get all project files
 set(
     INCLUDE_DIRS
-    "${PROJECT_SOURCE_DIR}/src/" "${PROJECT_SOURCE_DIR}/examples/" "${PROJECT_SOURCE_DIR}/tests/"
+    "${PROJECT_SOURCE_DIR}/src/"
+    "${PROJECT_SOURCE_DIR}/examples/"
+    "${PROJECT_SOURCE_DIR}/tests/"
+    "${PROJECT_SOURCE_DIR}/tools/"
 )
 # reset CF_ALL_SOURCE_FILES
 foreach (TMP_PATH ${INCLUDE_DIRS})
