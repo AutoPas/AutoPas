@@ -143,8 +143,8 @@ std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(std::array<double, 3
 
 size_t getNumberOfParticlesInBox(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::vector<FMCell> &vec) {
   const Molecule defaultParticle;
-  GridGenerator::fillWithParticles(vec, cellBlock.getCellsPerDimensionWithHalo(),
-                                   cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);
+  autopas_tools::generators::GridGenerator::fillWithParticles(
+      vec, cellBlock.getCellsPerDimensionWithHalo(), cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);
   cellBlock.clearHaloCells();
   return std::accumulate(vec.begin(), vec.end(), 0, [](auto acc, auto &e) { return acc + e.numParticles(); });
 }

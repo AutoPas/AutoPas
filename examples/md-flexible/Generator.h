@@ -71,7 +71,7 @@ void Generator::cubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, cons
   dummyParticle.setV(object.getVelocity());
   dummyParticle.setID(autopas.getNumberOfParticles());
   dummyParticle.setTypeId(object.getTypeId());
-  GridGenerator::fillWithParticles(
+  autopas_tools::generators::GridGenerator::fillWithParticles(
       autopas, object.getParticlesPerDim(), dummyParticle,
       {object.getParticleSpacing(), object.getParticleSpacing(), object.getParticleSpacing()}, object.getBoxMin());
 }

@@ -6,8 +6,10 @@
 
 #pragma once
 
-#include "autopas/AutoPas.h"
+#include "autopas/utils/ParticleTypeTrait.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
 
+namespace autopas_tools::generators {
 /**
  * Generator for grids of particles.
  */
@@ -16,7 +18,6 @@ class GridGenerator {
   /**
    * Fills a cell vector with a cuboid mesh of particles.
    *
-   * @tparam Particle Type of particle to be generated.
    * @tparam ParticleCell Type of ParticleCells in cell vector.
    * @param cells Cell vector.
    * @param cellsPerDimension Number of cells per dimension.
@@ -25,40 +26,42 @@ class GridGenerator {
    * @param spacing Factor for distance between two particles along one dimension (default is 1).
    * @param offset Offset to move all particles.
    */
-  template <class Particle, class ParticleCell>
-  static void fillWithParticles(std::vector<ParticleCell> &cells, const std::array<size_t, 3> &cellsPerDimension,
-                                const std::array<size_t, 3> &particlesPerDim,
-                                const Particle &defaultParticle = autopas::Particle(),
-                                const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
-                                const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
+  template <class ParticleCell>
+  static void fillWithParticles(
+      std::vector<ParticleCell> &cells, const std::array<size_t, 3> &cellsPerDimension,
+      const std::array<size_t, 3> &particlesPerDim,
+      const typename ParticleCell::ParticleType &defaultParticle = typename ParticleCell::ParticleType(),
+      const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
+      const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
 
   /**
    * Fills any container (also AutoPas object) with a cuboid mesh of particles.
    * Particle properties will be used from the default particle. Particle IDs start from the default particle.
-   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
-   * @tparam Particle Type of the default particle.
+   * @tparam Container Arbitrary container class that needs to support addParticle().
    * @param container
    * @param particlesPerDim Number of particles per dimension.
    * @param defaultParticle
    * @param spacing Factor for distance between two particles along one dimension (default is 1).
    * @param offset Offset to move all particles.
    */
-  template <class Container, class Particle>
+  template <class Container>
   static void fillWithParticles(Container &container, const std::array<size_t, 3> &particlesPerDim,
-                                const Particle &defaultParticle = autopas::Particle(),
+                                const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle =
+                                    typename autopas::utils::ParticleTypeTrait<Container>::value(),
                                 const std::array<double, 3> &spacing = std::array<double, 3>{1, 1, 1},
                                 const std::array<double, 3> &offset = std::array<double, 3>{.5, .5, .5});
 };
 
-template <class Particle, class ParticleCell>
+template <class ParticleCell>
 void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, const std::array<size_t, 3> &cellsPerDimension,
-                                      const std::array<size_t, 3> &particlesPerDim, const Particle &defaultParticle,
+                                      const std::array<size_t, 3> &particlesPerDim,
+                                      const typename ParticleCell::ParticleType &defaultParticle,
                                       const std::array<double, 3> &spacing, const std::array<double, 3> &offset) {
   size_t id = defaultParticle.getID();
   for (unsigned long z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned long y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned long x = 0; x < particlesPerDim[0]; ++x) {
-        Particle p(defaultParticle);
+        auto p = defaultParticle;
         p.setR({x * spacing[0] + offset[0], y * spacing[1] + offset[1], z * spacing[2] + offset[2]});
         p.setID(id++);
         const auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension);
@@ -68,15 +71,16 @@ void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, const st
   }
 }
 
-template <class Container, class Particle>
-void GridGenerator::fillWithParticles(Container &container, const std::array<size_t, 3> &particlesPerDim,
-                                      const Particle &defaultParticle, const std::array<double, 3> &spacing,
-                                      const std::array<double, 3> &offset) {
+template <class Container>
+void GridGenerator::fillWithParticles(
+    Container &container, const std::array<size_t, 3> &particlesPerDim,
+    const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle,
+    const std::array<double, 3> &spacing, const std::array<double, 3> &offset) {
   size_t id = 0;
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
-        Particle p(defaultParticle);
+        auto p = defaultParticle;
         p.setR({x * spacing[0] + offset[0], y * spacing[1] + offset[1], z * spacing[2] + offset[2]});
         p.setID(id++);
         container.addParticle(p);
@@ -84,3 +88,4 @@ void GridGenerator::fillWithParticles(Container &container, const std::array<siz
     }
   }
 }
+}  // namespace autopas_tools::generators
