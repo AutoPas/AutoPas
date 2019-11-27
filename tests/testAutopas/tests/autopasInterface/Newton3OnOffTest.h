@@ -9,10 +9,10 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
+#include "autopas-tools/generators/RandomGenerator.h"
 #include "autopas/AutoPas.h"
 #include "autopas/sph/autopassph.h"
 #include "mocks/MockFunctor.h"
-#include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**

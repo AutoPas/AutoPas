@@ -9,9 +9,9 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
+#include "autopas-tools/generators/RandomGenerator.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
-#include "testingHelpers/RandomGenerator.h"
 
 class LJFunctorTest : public AutoPasTestBase {
  public:

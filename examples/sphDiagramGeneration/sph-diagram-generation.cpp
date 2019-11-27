@@ -7,7 +7,7 @@
 #include <array>
 #include <iostream>
 
-#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
+#include "autopas-tools/generators/RandomGenerator.h"
 #include "autopas/AutoPas.h"
 #include "autopas/sph/autopassph.h"
 

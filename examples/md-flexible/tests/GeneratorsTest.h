@@ -14,13 +14,13 @@
 #include "Objects/Objects.h"
 #include "PrintableMolecule.h"
 #include "TimeDiscretization.h"
+#include "autopas-tools/generators/GaussianGenerator.h"
+#include "autopas-tools/generators/GridGenerator.h"
+#include "autopas-tools/generators/RandomGenerator.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "parsing/YamlParser.h"
-#include "testingHelpers/GaussianGenerator.h"
-#include "testingHelpers/GridGenerator.h"
-#include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class GeneratorsTest : public AutoPasTestBase {

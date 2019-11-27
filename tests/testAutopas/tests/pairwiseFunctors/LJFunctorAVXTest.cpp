@@ -8,10 +8,10 @@
 
 #include "LJFunctorAVXTest.h"
 
+#include "autopas-tools/generators/RandomGenerator.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/particles/Particle.h"
-#include "testingHelpers/RandomGenerator.h"
 
 template <class SoAType>
 bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {

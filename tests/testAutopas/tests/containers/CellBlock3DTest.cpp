@@ -6,8 +6,8 @@
 
 #include "CellBlock3DTest.h"
 
+#include "autopas-tools/generators/GridGenerator.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "testingHelpers/GridGenerator.h"
 
 void testIndex(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::array<double, 3> &start,
                std::array<double, 3> &dr, std::array<int, 3> &numParts) {

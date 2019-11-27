@@ -8,15 +8,15 @@
 #include <fstream>
 #include <iostream>
 
-#include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "BoundaryConditions.h"
 #include "Checkpoint.h"
 #include "Generator.h"
 #include "PrintableMolecule.h"
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
+#include "autopas-tools/generators/GaussianGenerator.h"
+#include "autopas-tools/generators/GridGenerator.h"
+#include "autopas-tools/generators/RandomGenerator.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/utils/MemoryProfiler.h"

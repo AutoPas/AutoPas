@@ -8,14 +8,14 @@
 
 #include <vector>
 
-#include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "Objects/CubeGauss.h"
 #include "Objects/CubeGrid.h"
 #include "Objects/CubeUniform.h"
 #include "Objects/Sphere.h"
 #include "PrintableMolecule.h"
+#include "autopas-tools/generators/GaussianGenerator.h"
+#include "autopas-tools/generators/GridGenerator.h"
+#include "autopas-tools/generators/RandomGenerator.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
 /**

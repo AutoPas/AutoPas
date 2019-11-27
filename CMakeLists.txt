@@ -74,6 +74,8 @@ add_subdirectory(libs)
 
 # autopas
 add_subdirectory(src)
+# autopas-tools
+add_subdirectory(tools)
 
 # tests and examples
 add_subdirectory(examples)

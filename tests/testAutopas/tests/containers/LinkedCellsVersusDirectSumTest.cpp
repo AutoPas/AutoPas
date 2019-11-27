@@ -6,7 +6,7 @@
 
 #include "LinkedCellsVersusDirectSumTest.h"
 
-#include "testingHelpers/RandomGenerator.h"
+#include "autopas-tools/generators/RandomGenerator.h"
 
 LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
     : _directSum(getBoxMin(), getBoxMax(), getCutoff(), 0.),

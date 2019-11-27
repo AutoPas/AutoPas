@@ -9,11 +9,11 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
+#include "autopas-tools/generators/RandomGenerator.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/Particle.h"
 #include "mocks/MockFunctor.h"
-#include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class VarVerletListsTest : public AutoPasTestBase {};

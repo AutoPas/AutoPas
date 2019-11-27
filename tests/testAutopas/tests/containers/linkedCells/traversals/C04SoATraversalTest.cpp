@@ -6,7 +6,7 @@
 
 #include "C04SoATraversalTest.h"
 
-#include "testingHelpers/GridGenerator.h"
+#include "autopas-tools/generators/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
 
 using ::testing::_;

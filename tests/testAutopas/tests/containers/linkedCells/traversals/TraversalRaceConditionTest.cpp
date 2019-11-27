@@ -6,9 +6,9 @@
 
 #include "TraversalRaceConditionTest.h"
 
+#include "autopas-tools/generators/GridGenerator.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/StringUtils.h"
-#include "testingHelpers/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
 
 /**

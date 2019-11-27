@@ -3,8 +3,6 @@ file(
     MDFlex_SRC
     "../*.cpp"
     "../*.h"
-    "${PROJECT_SOURCE_DIR}/tests/testAutopas/testingHelpers/RandomGenerator.h"
-    "${PROJECT_SOURCE_DIR}/tests/testAutopas/testingHelpers/RandomGenerator.cpp"
 )
 
 # remove main
@@ -30,6 +28,7 @@ target_link_libraries(
     mdFlexTests
     PUBLIC
         autopas
+        autopas-tools
         libgtest
         libgmock
         yaml-cpp

@@ -12,8 +12,8 @@
 #include <vector>
 
 #include "AutoPasTestBase.h"
+#include "autopas-tools/generators/GridGenerator.h"
 #include "autopas/AutoPas.h"
-#include "testingHelpers/GridGenerator.h"
 
 class ForceCalculationTest : public AutoPasTestBase {
  public:

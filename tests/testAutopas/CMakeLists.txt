@@ -20,6 +20,7 @@ target_compile_definitions(runTests PRIVATE)
 target_link_libraries(
     runTests
     autopas
+    autopas-tools
     libgtest
     libgmock
 )
