@@ -30,10 +30,10 @@ void DirectSumTraversalTest::testTraversal(bool useSoA) {
     particle.setID(i);
     // first particles go in domain cell rest to halo cell
     if (i < numParticles) {
-      particle.setR(RandomGenerator::randomPosition({0, 0, 0}, {10, 10, 10}));
+      particle.setR(autopas_tools::generators::RandomGenerator::randomPosition({0, 0, 0}, {10, 10, 10}));
       cells[0].addParticle(particle);
     } else {
-      particle.setR(RandomGenerator::randomPosition({10, 10, 10}, {20, 20, 20}));
+      particle.setR(autopas_tools::generators::RandomGenerator::randomPosition({10, 10, 10}, {20, 20, 20}));
       cells[1].addParticle(particle);
     }
   }
@@ -74,10 +74,10 @@ TEST_F(DirectSumTraversalTest, testTraversalCuda) {
     particle.setID(i);
     // first particles go in domain cell rest to halo cell
     if (i < numParticles) {
-      particle.setR(RandomGenerator::randomPosition({0, 0, 0}, {10, 10, 10}));
+      particle.setR(autopas_tools::generators::RandomGenerator::randomPosition({0, 0, 0}, {10, 10, 10}));
       cells[0].addParticle(particle);
     } else {
-      particle.setR(RandomGenerator::randomPosition({10, 10, 10}, {20, 20, 20}));
+      particle.setR(autopas_tools::generators::RandomGenerator::randomPosition({10, 10, 10}, {20, 20, 20}));
       cells[1].addParticle(particle);
     }
   }

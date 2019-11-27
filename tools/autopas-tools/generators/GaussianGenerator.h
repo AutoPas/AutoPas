@@ -9,7 +9,9 @@
 #include <random>
 
 #include "autopas/AutoPas.h"
+#include "autopas/utils/ParticleTypeTrait.h"
 
+namespace autopas_tools::generators {
 /**
  * Generator class for gaussian distributions
  */
@@ -18,8 +20,7 @@ class GaussianGenerator {
   /**
    * Fills any container (also AutoPas object) with randomly 3D gaussian distributed particles.
    * Particle properties will be used from the default particle. Particle IDs start from the default particle.
-   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
-   * @tparam Particle Type of the default particle.
+   * @tparam Container Arbitrary container class that needs to support addParticle().
    * @param autoPas
    * @param boxMin
    * @param boxMax
@@ -28,10 +29,11 @@ class GaussianGenerator {
    * @param distributionMean mean value / expected value. Mean is relative to boxMin.
    * @param distributionStdDev standard deviation
    */
-  template <class Particle, class ParticleCell>
-  static void fillWithParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas, const std::array<double, 3> &boxMin,
+  template <class Container>
+  static void fillWithParticles(Container &container, const std::array<double, 3> &boxMin,
                                 const std::array<double, 3> &boxMax, size_t numParticles,
-                                const Particle &defaultParticle = autopas::MoleculeLJ<>(),
+                                const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle =
+                                    typename autopas::utils::ParticleTypeTrait<Container>::value(),
                                 const std::array<double, 3> &distributionMean = {5., 5., 5.},
                                 const std::array<double, 3> &distributionStdDev = {2., 2., 2.});
 
@@ -43,12 +45,11 @@ class GaussianGenerator {
   constexpr static size_t _maxAttempts = 100;
 };
 
-template <class Particle, class ParticleCell>
-void GaussianGenerator::fillWithParticles(autopas::AutoPas<Particle, ParticleCell> &autoPas,
-                                          const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                          size_t numParticles, const Particle &defaultParticle,
-                                          const std::array<double, 3> &distributionMean,
-                                          const std::array<double, 3> &distributionStdDev) {
+template <class Container>
+void GaussianGenerator::fillWithParticles(
+    Container &container, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, size_t numParticles,
+    const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle,
+    const std::array<double, 3> &distributionMean, const std::array<double, 3> &distributionStdDev) {
   std::default_random_engine generator(42);
   std::array<std::normal_distribution<double>, 3> distributions = {
       std::normal_distribution<double>{distributionMean[0], distributionStdDev[0]},
@@ -73,9 +74,10 @@ void GaussianGenerator::fillWithParticles(autopas::AutoPas<Particle, ParticleCel
       }
       position = {distributions[0](generator), distributions[1](generator), distributions[2](generator)};
     };
-    Particle p(defaultParticle);
+    auto p = defaultParticle;
     p.setR(position);
     p.setID(i);
-    autoPas.addParticle(p);
+    container.addParticle(p);
   }
 }
+}  // namespace autopas_tools::generators
