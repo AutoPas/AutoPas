@@ -9,8 +9,8 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopasTools/generators/GridGenerator.h"
 #include "autopas/AutoPas.h"
+#include "autopasTools/generators/GridGenerator.h"
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 

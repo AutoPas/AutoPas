@@ -29,7 +29,7 @@ TEST_F(VerletClusterCellsTest, testVerletClusterBuild) {
   autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, Particle(), verletLists.getBoxMin(),
-                                                                verletLists.getBoxMax(), 500);
+                                                               verletLists.getBoxMax(), 500);
 
   EXPECT_EQ(verletLists.updateContainer().size(), 0);
 }
@@ -42,7 +42,7 @@ TEST_F(VerletClusterCellsTest, testNeighborListBuild) {
   autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, Particle(), verletLists.getBoxMin(),
-                                                                verletLists.getBoxMax(), 500);
+                                                               verletLists.getBoxMax(), 500);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
   autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> dummyTraversal(
@@ -59,7 +59,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIterator) {
   autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, Particle(), verletLists.getBoxMin(),
-                                                                verletLists.getBoxMax(), 500);
+                                                               verletLists.getBoxMax(), 500);
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(verletLists, Particle(), cutoff, 50);
   std::vector<int> particlesOwn(500, 0);
   std::vector<int> particlesHalo(50, 0);
@@ -144,7 +144,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIteratorDelete) {
   autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, Particle(), verletLists.getBoxMin(),
-                                                                verletLists.getBoxMax(), 500);
+                                                               verletLists.getBoxMax(), 500);
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(verletLists, Particle(), cutoff, 50);
 
   std::vector<int> particlesBoth(500, 0);
@@ -186,7 +186,7 @@ TEST_F(VerletClusterCellsTest, testVerletParticleLoss) {
   autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, Particle(), verletLists.getBoxMin(),
-                                                                verletLists.getBoxMax(), 500);
+                                                               verletLists.getBoxMax(), 500);
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(verletLists, Particle(), cutoff, 50);
   std::vector<int> particlesOwn(500, 0);
   std::vector<int> particlesHalo(50, 0);
@@ -327,7 +327,7 @@ TEST_F(VerletClusterCellsTest, testUpdateHaloParticle) {
   autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, Particle(), verletLists.getBoxMin(),
-                                                                verletLists.getBoxMax(), 500);
+                                                               verletLists.getBoxMax(), 500);
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(verletLists, Particle(), cutoff, 50);
 
   std::vector<Particle> haloToUpdate;
@@ -493,7 +493,7 @@ TEST_F(VerletClusterCellsTest, testVerletListRegionIterator) {
   autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, Particle(), verletLists.getBoxMin(),
-                                                                verletLists.getBoxMax(), 500);
+                                                               verletLists.getBoxMax(), 500);
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(verletLists, Particle(), cutoff, 50);
 
   std::vector<int> particlesOwn(500, 0);

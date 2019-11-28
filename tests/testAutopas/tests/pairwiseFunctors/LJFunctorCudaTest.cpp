@@ -8,9 +8,9 @@
 
 #include "LJFunctorCudaTest.h"
 
-#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 template <class Particle>
 bool LJFunctorCudaTest::SoAParticlesEqual(autopas::SoA<typename Particle::SoAArraysType> &soa1,
@@ -150,7 +150,7 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(cellCuda, defaultParticle, _lowCorner, _highCorner,
-                                                                numParticles);
+                                                               numParticles);
 
   // copy cells
   FMCell cellNoCuda(cellCuda);

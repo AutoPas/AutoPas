@@ -571,9 +571,9 @@ TEST_F(LJFunctorTest, testSetPropertiesVSPPLSoA) {
   FMCell cell1NoPPL;
   FMCell cell2NoPPL;
   autopasTools::generators::RandomGenerator::fillWithParticles(cell1NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
-                                                                numParticlesPerCell, 42);
+                                                               numParticlesPerCell, 42);
   autopasTools::generators::RandomGenerator::fillWithParticles(cell2NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
-                                                                numParticlesPerCell, 43);
+                                                               numParticlesPerCell, 43);
 
   funNoPPL.SoALoader(cell1NoPPL, cell1NoPPL._particleSoABuffer);
   funNoPPL.SoALoader(cell2NoPPL, cell2NoPPL._particleSoABuffer);

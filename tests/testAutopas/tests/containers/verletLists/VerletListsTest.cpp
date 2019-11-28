@@ -530,9 +530,9 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
 
   Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),
-                                                                verletLists1.getBoxMax(), 100);
+                                                               verletLists1.getBoxMax(), 100);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
-                                                                verletLists2.getBoxMax(), 100);
+                                                               verletLists2.getBoxMax(), 100);
   autopas::LJFunctor<Molecule, FMCell> ljFunctor(cutoff, 0);
   ljFunctor.setParticleProperties(1., 1.);
   autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>

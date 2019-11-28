@@ -9,8 +9,8 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/autopasIncludes.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 class TouchableParticle : public autopas::Particle {
  public:

@@ -13,11 +13,11 @@
 #include "Objects/CubeUniform.h"
 #include "Objects/Sphere.h"
 #include "PrintableMolecule.h"
+#include "autopas/AutoPas.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopasTools/generators/GaussianGenerator.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "autopasTools/generators/RandomGenerator.h"
-#include "autopas/AutoPas.h"
-#include "autopas/utils/ArrayMath.h"
 /**
  * Class for contructing a container and generating Objects and Shapes filled with Particles
  */
@@ -94,7 +94,7 @@ void Generator::cubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas, co
   dummyParticle.setTypeId(object.getTypeId());
   dummyParticle.setID(autopas.getNumberOfParticles());
   autopasTools::generators::RandomGenerator::fillWithParticles(autopas, dummyParticle, object.getBoxMin(),
-                                                                object.getBoxMax(), object.getParticlesTotal());
+                                                               object.getBoxMax(), object.getParticlesTotal());
 }
 
 template <class Particle, class ParticleCell>

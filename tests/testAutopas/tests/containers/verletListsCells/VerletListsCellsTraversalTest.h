@@ -12,8 +12,8 @@
 #include <cstdlib>
 
 #include "AutoPasTestBase.h"
-#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/autopasIncludes.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class VerletListsCellsTraversalTest : public AutoPasTestBase {

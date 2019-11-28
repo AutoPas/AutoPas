@@ -12,9 +12,9 @@
 #include <memory>
 
 #include "AutoPasTestBase.h"
-#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {

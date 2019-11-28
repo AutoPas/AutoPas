@@ -7,9 +7,9 @@
 #include <array>
 #include <iostream>
 
-#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/AutoPas.h"
 #include "autopas/sph/autopassph.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations);

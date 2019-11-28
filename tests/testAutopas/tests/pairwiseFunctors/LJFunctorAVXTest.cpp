@@ -8,10 +8,10 @@
 
 #include "LJFunctorAVXTest.h"
 
-#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/particles/Particle.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 template <class SoAType>
 bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
@@ -148,7 +148,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
-                                                                numParticles);
+                                                               numParticles);
 
   // copy cells
   FMCell cellNoAVX(cellAVX);

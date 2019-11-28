@@ -26,7 +26,7 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   Molecule defaultParticle;
 
   autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
-                                                              {particleSpacing, particleSpacing, particleSpacing});
+                                                             {particleSpacing, particleSpacing, particleSpacing});
 
   autopas::LJFunctor<Molecule, FMCell> functor(cutoff, 0.0);
   functor.setParticleProperties(24, 1);

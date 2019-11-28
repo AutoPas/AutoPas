@@ -36,11 +36,13 @@ class Object {
    */
   [[nodiscard]] const std::array<double, 3> &getVelocity() const { return _velocity; }
 
-  /**
-   * Getter for typeId of Particles in Objet
-   * @return typeId
-   */
-  [[nodiscard]] unsigned long getTypeId() const { return _typeId; }
+      /**
+       * Getter for typeId of Particles in Objet
+       * @return typeId
+       */
+      [[nodiscard]] unsigned long getTypeId() const {
+    return _typeId;
+  }
 
   /**
    * Getter for the smallest x,y,z coordinates for Object

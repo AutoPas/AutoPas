@@ -34,13 +34,15 @@ class CubeGrid : public Object {
       : Object(velocity, typeId, epsilon, sigma, mass),
         particlesPerDim(particlesPerDim),
         particleSpacing(particleSpacing),
-        bottomLeftCorner(bottomLeftCorner) {}
+        bottomLeftCorner(bottomLeftCorner){}
 
-  /**
-   * Getter for ParticleSpacing
-   * @return particleSpacing
-   */
-  [[nodiscard]] double getParticleSpacing() const { return particleSpacing; }
+            /**
+             * Getter for ParticleSpacing
+             * @return particleSpacing
+             */
+            [[nodiscard]] double getParticleSpacing() const {
+    return particleSpacing;
+  }
 
   /**
    * Getter for ParticlesPerDim
@@ -48,7 +50,7 @@ class CubeGrid : public Object {
    */
   [[nodiscard]] const std::array<size_t, 3> &getParticlesPerDim() const { return particlesPerDim; }
 
-  [[nodiscard]] size_t getParticlesTotal() const override {
+      [[nodiscard]] size_t getParticlesTotal() const override {
     return std::accumulate(std::begin(particlesPerDim), std::end(particlesPerDim), 1, std::multiplies<double>());
   }
 

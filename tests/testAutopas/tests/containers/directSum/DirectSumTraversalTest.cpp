@@ -6,8 +6,8 @@
 
 #include "DirectSumTraversalTest.h"
 
-#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 using ::testing::_;
 using ::testing::AtLeast;

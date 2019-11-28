@@ -14,12 +14,12 @@
 #include "PrintableMolecule.h"
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
-#include "autopasTools/generators/GaussianGenerator.h"
-#include "autopasTools/generators/GridGenerator.h"
-#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/utils/MemoryProfiler.h"
+#include "autopasTools/generators/GaussianGenerator.h"
+#include "autopasTools/generators/GridGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "parsing/MDFlexConfig.h"
 
 template <class Particle, class ParticleCell>
