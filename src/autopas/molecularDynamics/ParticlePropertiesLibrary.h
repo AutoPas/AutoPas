@@ -33,7 +33,7 @@ class ParticlePropertiesLibrary {
   /**
    * Default constructor.
    */
-  ParticlePropertiesLibrary() = default;
+  explicit ParticlePropertiesLibrary(const double cutoff) : _cutoff(cutoff) {}
 
   /**
    * Copy Constructor.
@@ -98,8 +98,8 @@ class ParticlePropertiesLibrary {
 
   /**
    * Returns the precomputed mixed epsilon24.
-   * @param  i typeId index of particle one.
-   * @param  j typeId index of particle two.
+   * @param  i typeId of particle one.
+   * @param  j typeId of particle two.
    * @return 24*epsilon_ij
    */
   inline floatType mixing24Epsilon(intType i, intType j) const {
@@ -109,8 +109,8 @@ class ParticlePropertiesLibrary {
 
   /**
    * Returns precomputed mixed squared sigma.
-   * @param i typeId index of particle one.
-   * @param j typeId index of particle two.
+   * @param i typeId of particle one.
+   * @param j typeId of particle two.
    * @return sigma_ij²
    */
   inline floatType mixingSigmaSquare(intType i, intType j) const {
@@ -118,17 +118,44 @@ class ParticlePropertiesLibrary {
     return _computedMixingSigmaSquare.at(key);
   }
 
+  /**
+   * Returns precomputed mixed shift 6.
+
+
+   * @param i typeId of particle one.
+   * @param j typeId of particle two.
+   * @return shift * 6
+   */
+  inline floatType mixingShift6(intType i, intType j) const {
+    auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
+    return _computedMixingShift6.at(key);
+  }
+
+  /**
+   * Calculate the shift of the lennard jones potential from given cutoff, epsilon, sigma.
+   * @param epsilon24
+   * @param sigmaSquare
+   * @param cutoffSquare squared cutoff of the potential that should be shifted
+   * @return shift multiplied by 6
+   */
+  static double calcShift6(double epsilon24, double sigmaSquare, double cutoffSquare);
+
  private:
+  const double _cutoff;
   std::map<intType, floatType> _epsilons;
   std::map<intType, floatType> _sigmas;
   std::map<intType, floatType> _masses;
+  std::map<intType, floatType> _shifts;
   std::map<std::pair<intType, intType>, floatType> _computedMixing24Epsilon;
   std::map<std::pair<intType, intType>, floatType> _computedMixingSigmaSquare;
+  std::map<std::pair<intType, intType>, floatType> _computedMixingShift6;
 };
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addType(intType typeID, floatType epsilon, floatType sigma,
                                                             floatType mass) {
+  _masses.emplace(typeID, mass);
+
   _epsilons.emplace(typeID, epsilon);
   for (auto &[indexOfExistingEpsilon, secondEpsilon] : _epsilons) {
     floatType epsilon24 = 24 * sqrt(epsilon * secondEpsilon);
@@ -143,7 +170,15 @@ void ParticlePropertiesLibrary<floatType, intType>::addType(intType typeID, floa
     _computedMixingSigmaSquare.emplace(newEntry, (newSigma * newSigma));
   }
 
-  _masses.emplace(typeID, mass);
+  auto cutoffSquare = _cutoff * _cutoff;
+  _shifts.emplace(typeID, calcShift6(epsilon * 24, sigma * sigma, cutoffSquare) / 6);
+  // getTypes relies on types saved in the masses map so the new type needs to be added there first
+  for (auto id : getTypes()) {
+    auto newEntry = std::make_pair(id, typeID);
+    floatType newShift6 =
+        calcShift6(_computedMixing24Epsilon[newEntry], _computedMixingSigmaSquare[newEntry], cutoffSquare);
+    _computedMixingShift6.emplace(newEntry, newShift6);
+  }
 }
 
 template <typename floatType, typename intType>
@@ -159,4 +194,13 @@ floatType ParticlePropertiesLibrary<floatType, intType>::get24Epsilon(intType i)
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquare(intType i) const {
   return _computedMixingSigmaSquare.at(std::make_pair(i, i));
+}
+
+template <typename floatType, typename intType>
+double ParticlePropertiesLibrary<floatType, intType>::calcShift6(double epsilon24, double sigmaSquare,
+                                                                 double cutoffSquare) {
+  auto sigmaPow2DivCutoff = sigmaSquare / (cutoffSquare);
+  auto sigmaPow6DivCutoff = sigmaPow2DivCutoff * sigmaPow2DivCutoff * sigmaPow2DivCutoff;
+  auto shift6 = epsilon24 * (sigmaPow6DivCutoff - sigmaPow6DivCutoff * sigmaPow6DivCutoff);
+  return shift6;
 }
