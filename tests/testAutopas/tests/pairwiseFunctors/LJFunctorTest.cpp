@@ -13,15 +13,15 @@ template <bool mixing>
 void LJFunctorTest::testAoSNoGlobals(bool newton3) {
   using FuncType = autopas::LJFunctor<Molecule, FMCell, mixing>;
 
-  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(cutoff);
   std::unique_ptr<FuncType> functor;
 
   particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0);
   if constexpr (mixing) {
-    functor = std::make_unique<FuncType>(cutoff, shift, particlePropertiesLibrary);
+    functor = std::make_unique<FuncType>(cutoff, particlePropertiesLibrary);
     particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0);
   } else {
-    functor = std::make_unique<FuncType>(cutoff, shift);
+    functor = std::make_unique<FuncType>(cutoff);
     functor->setParticleProperties(epsilon * 24, 1);
   }
 
@@ -107,15 +107,15 @@ template <bool mixing>
 void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType) {
   using FuncType = autopas::LJFunctor<Molecule, FMCell, mixing>;
 
-  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(cutoff);
   std::unique_ptr<FuncType> functor;
 
   particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0);
   if constexpr (mixing) {
-    functor = std::make_unique<FuncType>(cutoff, shift, particlePropertiesLibrary);
+    functor = std::make_unique<FuncType>(cutoff, particlePropertiesLibrary);
     particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0);
   } else {
-    functor = std::make_unique<FuncType>(cutoff, shift);
+    functor = std::make_unique<FuncType>(cutoff);
     functor->setParticleProperties(epsilon * 24, 1);
   }
 
@@ -253,6 +253,7 @@ TEST_F(LJFunctorTest, testSoAFunctorNoGlobals) {
     }
   }
 }
+
 TEST_F(LJFunctorTest, testSoAMixingFunctorNoGlobals) {
   for (InteractionType interactionType : {pair, own, verlet}) {
     for (bool newton3 : {false, true}) {
@@ -265,7 +266,7 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
   bool duplicatedCalculation = true;
   typedef autopas::utils::ExceptionHandler::AutoPasException exception_type;
 
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift,
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff,
                                                                                            duplicatedCalculation);
 
   // getupot without postprocessing is not allowed
@@ -285,8 +286,8 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
 }
 
 void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation) {
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift,
-                                                                                           duplicatedCalculation);
+  autopas::LJFunctor<Molecule, FMCell, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
+      cutoff, duplicatedCalculation);
   functor.setParticleProperties(epsilon * 24, 1);
   double xOffset;
   double whereFactor;
@@ -354,7 +355,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
 
 void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation,
                                    InteractionType interactionType, size_t additionalParticlesToVerletNumber) {
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift,
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff,
                                                                                            duplicatedCalculation);
   functor.setParticleProperties(epsilon * 24, 1);
   double xOffset;
@@ -520,7 +521,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
 
   Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1, 0);
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift,
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff,
                                                                                            duplicatedCalculation);
   functor.setParticleProperties(epsilon * 24, 1);
 
@@ -560,10 +561,9 @@ TEST_F(LJFunctorTest, testSetPropertiesVSPPLSoA) {
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> funNoPPL(1, 0);
   funNoPPL.setParticleProperties(24, 1);
 
-  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(cutoff);
   particlePropertiesLibrary.addType(0, 1, 1, 1);
-  autopas::LJFunctor<Molecule, FMCell, true, autopas::FunctorN3Modes::Both, true> funPPL(1, 0,
-                                                                                         particlePropertiesLibrary);
+  autopas::LJFunctor<Molecule, FMCell, true, autopas::FunctorN3Modes::Both, true> funPPL(1, particlePropertiesLibrary);
 
   size_t numParticlesPerCell = 9;
 
@@ -599,10 +599,9 @@ TEST_F(LJFunctorTest, testSetPropertiesVSPPLAoS) {
   autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> funNoPPL(1, 0);
   funNoPPL.setParticleProperties(24, 1);
 
-  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary;
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(cutoff);
   particlePropertiesLibrary.addType(0, 1, 1, 1);
-  autopas::LJFunctor<Molecule, FMCell, true, autopas::FunctorN3Modes::Both, true> funPPL(1, 0,
-                                                                                         particlePropertiesLibrary);
+  autopas::LJFunctor<Molecule, FMCell, true, autopas::FunctorN3Modes::Both, true> funPPL(1, particlePropertiesLibrary);
 
   std::vector<Molecule> moleculesNoPPL = {Molecule({0, 0, 0}, {0, 0, 0}, 0, 0), Molecule({0, 0, 1}, {0, 0, 0}, 1, 0)};
   std::vector<Molecule> moleculesPPL(moleculesNoPPL);

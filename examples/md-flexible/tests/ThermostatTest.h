@@ -20,7 +20,7 @@ class ThermostatTest : public AutoPasTestBase,
  public:
   using AutoPasType = autopas::AutoPas<Molecule, autopas::FullParticleCell<Molecule>>;
 
-  ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>()) {
+  ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>(1.)) {
     _particlePropertiesLibrary.addType(0, 1., 1., 1.);
     _particlePropertiesLibrary.addType(1, 1., 1., 2.);
   }
