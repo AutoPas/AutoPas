@@ -10,7 +10,7 @@
 
 #include "autopas/utils/inBox.h"
 
-namespace autopas_tools::generators {
+namespace autopasTools::generators {
 /**
  * Generator class for uniform distributions
  */
@@ -105,4 +105,4 @@ void RandomGenerator::fillWithHaloParticles(Container &container, const Particle
     container.addHaloParticle(particle);
   }
 }
-}  // namespace autopas_tools::generators
+}  // namespace autopasTools::generators

@@ -16,7 +16,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIterator) {
   LinkedCells<FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
-  autopas_tools::generators::RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0),
+  autopasTools::generators::RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0),
                                                                 lcContainer.getBoxMin(), lcContainer.getBoxMax(), 100);
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel default(none) shared(lcContainer)
@@ -33,7 +33,7 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorOw
   LinkedCells<FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
-  autopas_tools::generators::RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0),
+  autopasTools::generators::RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0),
                                                                 lcContainer.getBoxMin(), lcContainer.getBoxMax(), 100);
 
   TouchableParticle part(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
@@ -94,7 +94,7 @@ void RegionParticleIteratorTest::testLinkedCellsRegionParticleIteratorBehaviorHa
   LinkedCells<FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
-  autopas_tools::generators::RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0),
+  autopasTools::generators::RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0),
                                                                 lcContainer.getBoxMin(), lcContainer.getBoxMax(), 100);
 
   TouchableParticle part(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
@@ -190,7 +190,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyCons
   LinkedCells<FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
-  autopas_tools::generators::RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0),
+  autopasTools::generators::RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0),
                                                                 lcContainer.getBoxMin(), lcContainer.getBoxMax(), 100);
 
   {
@@ -219,7 +219,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorCopyAssi
   LinkedCells<FullParticleCell<TouchableParticle>> lcContainer(_boxMin, _boxMax, _cutoff, 0., 1.);
 
   // add a number of particles
-  autopas_tools::generators::RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0),
+  autopasTools::generators::RandomGenerator::fillWithParticles(lcContainer, TouchableParticle({0., 0., 0.}, 0),
                                                                 lcContainer.getBoxMin(), lcContainer.getBoxMax(), 100);
 
   {
@@ -366,7 +366,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIterator) {
   DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
-  autopas_tools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
+  autopasTools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
                                                                 container.getBoxMin(), container.getBoxMax(), 100);
 
   // touch them using the regionIterator
@@ -394,7 +394,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorOw
   DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
-  autopas_tools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
+  autopasTools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
                                                                 container.getBoxMin(), container.getBoxMax(), 100);
 
   TouchableParticle part(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
@@ -426,7 +426,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorHa
   DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
-  autopas_tools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
+  autopasTools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
                                                                 container.getBoxMin(), container.getBoxMax(), 100);
 
   TouchableParticle part(utils::ArrayMath::addScalar(_boxMin, -_cutoff * 0.5), 100);
@@ -490,7 +490,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyConstr
   DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
-  autopas_tools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
+  autopasTools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
                                                                 container.getBoxMin(), container.getBoxMax(), 100);
 
   {
@@ -519,7 +519,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyAssign
   DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
-  autopas_tools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
+  autopasTools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
                                                                 container.getBoxMin(), container.getBoxMax(), 100);
 
   {

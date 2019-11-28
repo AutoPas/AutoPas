@@ -62,7 +62,7 @@ TEST_F(VerletClusterListsTest, testVerletListNewton3Build) {
   autopas::VerletClusterLists<Particle> verletListsNoNewton3(min, max, cutoff, skin);
   autopas::VerletClusterLists<Particle> verletListsNewton3(min, max, cutoff, skin);
 
-  autopas_tools::generators::RandomGenerator::fillWithParticles(verletListsNoNewton3, autopas::Particle{},
+  autopasTools::generators::RandomGenerator::fillWithParticles(verletListsNoNewton3, autopas::Particle{},
                                                                 verletListsNoNewton3.getBoxMin(),
                                                                 verletListsNoNewton3.getBoxMax(), 100);
   // now fill second container with the molecules from the first one, because
@@ -134,7 +134,7 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
   int numParticles = 5000;
   autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
 
-  autopas_tools::generators::RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, min, max,
+  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, min, max,
                                                                 numParticles);
 
   CollectParticlesPerThreadFunctor functor;

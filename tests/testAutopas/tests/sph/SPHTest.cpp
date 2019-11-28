@@ -214,9 +214,9 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
   autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingAoS;
   {
     autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
-    autopas_tools::generators::RandomGenerator::fillWithParticles(cellUsingSoA, defaultSphParticle, {0., 0., 0.},
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingSoA, defaultSphParticle, {0., 0., 0.},
                                                                   {1., 1., 1.}, 30);
-    autopas_tools::generators::RandomGenerator::fillWithParticles(cellUsingAoS, defaultSphParticle, {0., 0., 0.},
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingAoS, defaultSphParticle, {0., 0., 0.},
                                                                   {1., 1., 1.}, 30);
   }
 
@@ -263,9 +263,9 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
   autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingAoS;
   {
     autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
-    autopas_tools::generators::RandomGenerator::fillWithParticles(cellUsingSoA, defaultSphParticle, {0., 0., 0.},
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingSoA, defaultSphParticle, {0., 0., 0.},
                                                                   {1., 1., 1.}, 30);
-    autopas_tools::generators::RandomGenerator::fillWithParticles(cellUsingAoS, defaultSphParticle, {0., 0., 0.},
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingAoS, defaultSphParticle, {0., 0., 0.},
                                                                   {1., 1., 1.}, 30);
   }
 
@@ -336,13 +336,13 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
   autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingAoS2;
   {
     autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
-    autopas_tools::generators::RandomGenerator::fillWithParticles(cellUsingSoA1, defaultSphParticle, {0., 0., 0.},
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingSoA1, defaultSphParticle, {0., 0., 0.},
                                                                   {.5, 1., 1.}, 30);
-    autopas_tools::generators::RandomGenerator::fillWithParticles(cellUsingAoS1, defaultSphParticle, {0., 0., 0.},
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingAoS1, defaultSphParticle, {0., 0., 0.},
                                                                   {.5, 1., 1.}, 30);
-    autopas_tools::generators::RandomGenerator::fillWithParticles(cellUsingAoS2, defaultSphParticle, {0.5, 0., 0.},
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingAoS2, defaultSphParticle, {0.5, 0., 0.},
                                                                   {1., 1., 1.}, 20);
-    autopas_tools::generators::RandomGenerator::fillWithParticles(cellUsingSoA2, defaultSphParticle, {0.5, 0., 0.},
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingSoA2, defaultSphParticle, {0.5, 0., 0.},
                                                                   {1., 1., 1.}, 20);
   }
 
@@ -399,13 +399,13 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
   autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingAoS2;
   {
     autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
-    autopas_tools::generators::RandomGenerator::fillWithParticles(cellUsingSoA1, defaultSphParticle, {0., 0., 0.},
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingSoA1, defaultSphParticle, {0., 0., 0.},
                                                                   {.5, 1., 1.}, 30);
-    autopas_tools::generators::RandomGenerator::fillWithParticles(cellUsingAoS1, defaultSphParticle, {0., 0., 0.},
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingAoS1, defaultSphParticle, {0., 0., 0.},
                                                                   {.5, 1., 1.}, 30);
-    autopas_tools::generators::RandomGenerator::fillWithParticles(cellUsingSoA2, defaultSphParticle, {0.5, 0., 0.},
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingSoA2, defaultSphParticle, {0.5, 0., 0.},
                                                                   {1., 1., 1.}, 20);
-    autopas_tools::generators::RandomGenerator::fillWithParticles(cellUsingAoS2, defaultSphParticle, {0.5, 0., 0.},
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingAoS2, defaultSphParticle, {0.5, 0., 0.},
                                                                   {1., 1., 1.}, 20);
   }
 
@@ -697,7 +697,7 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
 
   autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5,
                                                cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);
-  autopas_tools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::RandomGenerator::fillWithParticles(
       verletLists, defaultSPHParticle, verletLists.getBoxMin(), verletLists.getBoxMax(), numMolecules);
 
   // init particles in verlet list container

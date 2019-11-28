@@ -63,7 +63,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
         autoPas.init();
 
         auto defaultParticle = Particle({0, 0, 0}, {0, 0, 0}, 0);
-        autopas_tools::generators::GridGenerator::fillWithParticles(autoPas, particlesPerDimension, defaultParticle);
+        autopasTools::generators::GridGenerator::fillWithParticles(autoPas, particlesPerDimension, defaultParticle);
 
         SimpleFunctor functor(cellLength);
 

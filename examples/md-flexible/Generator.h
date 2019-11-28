@@ -71,7 +71,7 @@ void Generator::cubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, cons
   dummyParticle.setV(object.getVelocity());
   dummyParticle.setID(autopas.getNumberOfParticles());
   dummyParticle.setTypeId(object.getTypeId());
-  autopas_tools::generators::GridGenerator::fillWithParticles(
+  autopasTools::generators::GridGenerator::fillWithParticles(
       autopas, object.getParticlesPerDim(), dummyParticle,
       {object.getParticleSpacing(), object.getParticleSpacing(), object.getParticleSpacing()}, object.getBoxMin());
 }
@@ -82,7 +82,7 @@ void Generator::cubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas, con
   dummyParticle.setV(object.getVelocity());
   dummyParticle.setID(autopas.getNumberOfParticles());
   dummyParticle.setTypeId(object.getTypeId());
-  autopas_tools::generators::GaussianGenerator::fillWithParticles(
+  autopasTools::generators::GaussianGenerator::fillWithParticles(
       autopas, object.getBoxMin(), object.getBoxMax(), object.getParticlesTotal(), dummyParticle,
       object.getDistributionMean(), object.getDistributionMean());
 }
@@ -93,7 +93,7 @@ void Generator::cubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas, co
   dummyParticle.setV(object.getVelocity());
   dummyParticle.setTypeId(object.getTypeId());
   dummyParticle.setID(autopas.getNumberOfParticles());
-  autopas_tools::generators::RandomGenerator::fillWithParticles(autopas, dummyParticle, object.getBoxMin(),
+  autopasTools::generators::RandomGenerator::fillWithParticles(autopas, dummyParticle, object.getBoxMin(),
                                                                 object.getBoxMax(), object.getParticlesTotal());
 }
 

@@ -14,7 +14,7 @@ LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
 
 void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   Molecule defaultParticle;
-  autopas_tools::generators::RandomGenerator::fillWithParticles(_directSum, defaultParticle, _directSum.getBoxMin(),
+  autopasTools::generators::RandomGenerator::fillWithParticles(_directSum, defaultParticle, _directSum.getBoxMin(),
                                                                 _directSum.getBoxMax(), numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles

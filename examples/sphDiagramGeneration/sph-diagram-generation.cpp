@@ -25,7 +25,7 @@ void addParticles(
 
   for (int i = 0; i < numParticles; ++i) {
     auto id = static_cast<unsigned long>(i);
-    autopas::sph::SPHParticle particle(autopas_tools::generators::RandomGenerator::randomPosition(boxMin, boxMax),
+    autopas::sph::SPHParticle particle(autopasTools::generators::RandomGenerator::randomPosition(boxMin, boxMax),
                                        {0., 0., 0.}, id, 0.75, 0.012, 0.);
     sph_system.addParticle(particle);
   }

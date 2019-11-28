@@ -63,10 +63,10 @@ std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells
 void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
   NumThreadGuard numThreadGuard(1);
 
-  autopas_tools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::RandomGenerator::fillWithParticles(
       _verletListsCells, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0), _verletListsCells.getBoxMin(),
       _verletListsCells.getBoxMax(), numMolecules);
-  autopas_tools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::RandomGenerator::fillWithParticles(
       _verletListsCells_cs2, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0), _verletListsCells_cs2.getBoxMin(),
       _verletListsCells_cs2.getBoxMax(), numMolecules);
 

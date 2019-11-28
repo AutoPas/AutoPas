@@ -11,7 +11,7 @@
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ParticleTypeTrait.h"
 
-namespace autopas_tools::generators {
+namespace autopasTools::generators {
 /**
  * Generator class for gaussian distributions
  */
@@ -80,4 +80,4 @@ void GaussianGenerator::fillWithParticles(
     container.addParticle(p);
   }
 }
-}  // namespace autopas_tools::generators
+}  // namespace autopasTools::generators

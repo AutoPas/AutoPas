@@ -17,7 +17,7 @@ void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<Molecule,
   Molecule dummy;
   dummy.setF({0., 0., 1.});
   dummy.setV({0., 0., 1.});
-  autopas_tools::generators::GridGenerator::fillWithParticles(autopas, {2, 2, 2}, dummy, {1, 1, 1}, {0., 0., 0.});
+  autopasTools::generators::GridGenerator::fillWithParticles(autopas, {2, 2, 2}, dummy, {1, 1, 1}, {0., 0., 0.});
 }
 
 TEST_F(TimeDiscretizationTest, calcVelocities) {
