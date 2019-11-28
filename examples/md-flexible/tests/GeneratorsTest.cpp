@@ -93,7 +93,9 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
         sphereCounter++;
         break;
       }
-      default: { throw std::runtime_error("something went wrong with the Types"); }
+      default: {
+        throw std::runtime_error("something went wrong with the Types");
+      }
     }
   }
   EXPECT_EQ(gridCounter, cubeGrid.at(0).getParticlesTotal());

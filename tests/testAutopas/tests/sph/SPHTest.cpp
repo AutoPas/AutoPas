@@ -738,7 +738,8 @@ TEST_P(SPHTest, testVerletVsLC) {
   auto [dataLayoutOption, sphFunctorType] = params;
   if (sphFunctorType == SPHFunctorType::density) {
     autopas::sph::SPHCalcDensityFunctor densityFunctor;
-    testVerLetVsLC(densityFunctor, [](auto & /*ignored*/) {}, densityCheck, dataLayoutOption);
+    testVerLetVsLC(
+        densityFunctor, [](auto & /*ignored*/) {}, densityCheck, dataLayoutOption);
   } else {
     autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
     testVerLetVsLC(hydroForceFunctor, hydroInit, hydroCheck, dataLayoutOption);

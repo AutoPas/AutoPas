@@ -29,16 +29,13 @@ class Sphere : public Object {
       : Object(velocity, typeId, epsilon, sigma, mass),
         center(center),
         radius(radius),
-        particleSpacing(particleSpacing){}
+        particleSpacing(particleSpacing) {}
 
-                /**
-                 * Getter for center of Sphere
-                 * @return center
-                 */
-                [[nodiscard]] const std::array<double, 3> &
-            getCenter() const {
-    return center;
-  }
+  /**
+   * Getter for center of Sphere
+   * @return center
+   */
+  [[nodiscard]] const std::array<double, 3> &getCenter() const { return center; }
 
   /**
    * Getter for radius in number of Particles of Sphere
@@ -46,13 +43,11 @@ class Sphere : public Object {
    */
   [[nodiscard]] int getRadius() const { return radius; }
 
-      /**
-       * Getter for particleSpacing
-       * @return particleSpacing
-       */
-      [[nodiscard]] double getParticleSpacing() const {
-    return particleSpacing;
-  }
+  /**
+   * Getter for particleSpacing
+   * @return particleSpacing
+   */
+  [[nodiscard]] double getParticleSpacing() const { return particleSpacing; }
 
   /**
    * Call f for every point on the sphere where a particle should be.

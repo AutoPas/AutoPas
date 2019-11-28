@@ -30,11 +30,9 @@ class CubeUniform : public Object {
       : Object(velocity, typeId, epsilon, sigma, mass),
         numParticles(numParticles),
         boxLength(boxLength),
-        bottomLeftCorner(bottomLeftCorner){}
+        bottomLeftCorner(bottomLeftCorner) {}
 
-            [[nodiscard]] size_t getParticlesTotal() const override {
-    return numParticles;
-  }
+  [[nodiscard]] size_t getParticlesTotal() const override { return numParticles; }
 
   const std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
 

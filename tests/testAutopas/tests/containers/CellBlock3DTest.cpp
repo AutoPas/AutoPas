@@ -96,7 +96,9 @@ void testBoundary(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::array<
                   << " for d = " << d << ", ind[d] = " << ind[d] << ", position[d] = " << position[d]
                   << ", cellsPerDimWithHalo[d]: " << cellsPerDimWithHalo[d];
               break;
-            default: { FAIL(); }
+            default: {
+              FAIL();
+            }
           }
         }
       }
