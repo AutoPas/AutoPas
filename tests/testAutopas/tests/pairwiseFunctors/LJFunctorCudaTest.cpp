@@ -10,7 +10,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
-#include "testingHelpers/RandomGenerator.h"
+#include "autopas-tools/generators/RandomGenerator.h"
 
 template <class Particle>
 bool LJFunctorCudaTest::SoAParticlesEqual(autopas::SoA<typename Particle::SoAArraysType> &soa1,
