@@ -8,7 +8,7 @@
 
 #include "LJFunctorCudaTest.h"
 
-#include "autopas-tools/generators/RandomGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 

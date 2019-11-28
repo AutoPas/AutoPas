@@ -13,9 +13,9 @@
 #include "Objects/CubeUniform.h"
 #include "Objects/Sphere.h"
 #include "PrintableMolecule.h"
-#include "autopas-tools/generators/GaussianGenerator.h"
-#include "autopas-tools/generators/GridGenerator.h"
-#include "autopas-tools/generators/RandomGenerator.h"
+#include "autopasTools/generators/GaussianGenerator.h"
+#include "autopasTools/generators/GridGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
 /**

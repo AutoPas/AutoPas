@@ -11,7 +11,7 @@
 #include <cstdlib>
 
 #include "AutoPasTestBase.h"
-#include "autopas-tools/generators/RandomGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"

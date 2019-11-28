@@ -7,7 +7,7 @@
 #include "TimeDiscretizationTest.h"
 
 #include "TimeDiscretization.h"
-#include "autopas-tools/generators/GridGenerator.h"
+#include "autopasTools/generators/GridGenerator.h"
 #include "autopas/utils/ArrayMath.h"
 
 void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<Molecule, FMCell> &autopas) {
