@@ -17,10 +17,10 @@
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopasTools/generators/GaussianGenerator.h"
+#include "autopasTools/generators/GridGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "parsing/YamlParser.h"
-#include "testingHelpers/GaussianGenerator.h"
-#include "testingHelpers/GridGenerator.h"
-#include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class GeneratorsTest : public AutoPasTestBase {

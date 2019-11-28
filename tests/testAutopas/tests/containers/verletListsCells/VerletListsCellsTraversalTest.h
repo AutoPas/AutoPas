@@ -13,7 +13,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
-#include "testingHelpers/RandomGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class VerletListsCellsTraversalTest : public AutoPasTestBase {

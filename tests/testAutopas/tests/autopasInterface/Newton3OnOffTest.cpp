@@ -88,8 +88,10 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   auto container = containerSelector.getCurrentContainer();
 
   Molecule defaultParticle;
-  RandomGenerator::fillWithParticles(*container, defaultParticle, container->getBoxMin(), container->getBoxMax(), 100);
-  RandomGenerator::fillWithHaloParticles(*container, defaultParticle, container->getCutoff(), 10);
+  autopasTools::generators::RandomGenerator::fillWithParticles(*container, defaultParticle, container->getBoxMin(),
+                                                               container->getBoxMax(), 100);
+  autopasTools::generators::RandomGenerator::fillWithHaloParticles(*container, defaultParticle, container->getCutoff(),
+                                                                   10);
 
   EXPECT_CALL(mockFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
 

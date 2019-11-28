@@ -13,8 +13,8 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/particles/Particle.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
-#include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class VerletListsTest : public AutoPasTestBase, public ::testing::WithParamInterface<double> {

@@ -11,9 +11,9 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
+#include "autopasTools/generators/GridGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
-#include "testingHelpers/GridGenerator.h"
-#include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**

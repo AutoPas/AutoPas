@@ -24,7 +24,7 @@ class ParticleCell {
   /**
    * The particle type for this cell.
    */
-  typedef Particle ParticleType;
+  using ParticleType = Particle;
 
   /**
    * destructor of ParticleCell

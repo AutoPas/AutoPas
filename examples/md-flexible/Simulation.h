@@ -8,9 +8,6 @@
 #include <fstream>
 #include <iostream>
 
-#include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "BoundaryConditions.h"
 #include "Checkpoint.h"
 #include "Generator.h"
@@ -20,6 +17,9 @@
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/utils/MemoryProfiler.h"
+#include "autopasTools/generators/GaussianGenerator.h"
+#include "autopasTools/generators/GridGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "parsing/MDFlexConfig.h"
 
 template <class Particle, class ParticleCell>

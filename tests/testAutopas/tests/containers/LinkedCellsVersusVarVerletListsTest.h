@@ -15,7 +15,7 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
-#include "testingHelpers/RandomGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class LinkedCellsVersusVarVerletListsTest : public AutoPasTestBase {

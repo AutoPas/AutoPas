@@ -10,7 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
-#include "testingHelpers/RandomGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 class TouchableParticle : public autopas::Particle {
  public:

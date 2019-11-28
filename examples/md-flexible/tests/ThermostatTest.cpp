@@ -19,8 +19,9 @@ void ThermostatTest::initContainer(AutoPasType &autopas, const Molecule &dummy, 
   autopas.setCutoff(cutoff);
   autopas.init();
   // place particles grid in the middle of the domain
-  GridGenerator::fillWithParticles(autopas, particlesPerDim, dummy, {particleSpacing, particleSpacing, particleSpacing},
-                                   {particleSpacing / 2, particleSpacing / 2, particleSpacing / 2});
+  autopasTools::generators::GridGenerator::fillWithParticles(
+      autopas, particlesPerDim, dummy, {particleSpacing, particleSpacing, particleSpacing},
+      {particleSpacing / 2, particleSpacing / 2, particleSpacing / 2});
 }
 
 void ThermostatTest::testBrownianMotion(const Molecule &dummyMolecule, const double targetTemperature) {
@@ -58,7 +59,7 @@ TEST_F(ThermostatTest, MultiComponentTest) {
   initContainer(_autopas, dummyMolecule, {25, 25, 25});
   // add some type 1 particles
   dummyMolecule.setTypeId(1);
-  GridGenerator::fillWithParticles(_autopas, {25, 25, 25}, dummyMolecule);
+  autopasTools::generators::GridGenerator::fillWithParticles(_autopas, {25, 25, 25}, dummyMolecule);
 
   // init system with brownian motion and test for the given temperature
   constexpr double targetTemperature1 = 4.2;
