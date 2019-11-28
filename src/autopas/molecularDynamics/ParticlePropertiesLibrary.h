@@ -31,7 +31,8 @@ class ParticlePropertiesLibrary {
   using ParticlePropertiesLibraryIntType = intType;
 
   /**
-   * Default constructor.
+   * Constructor
+   * @param cutoff Cutoff for the Lennard Jones Potential (needed for calculation of shift)
    */
   explicit ParticlePropertiesLibrary(const double cutoff) : _cutoff(cutoff) {}
 
@@ -120,8 +121,6 @@ class ParticlePropertiesLibrary {
 
   /**
    * Returns precomputed mixed shift 6.
-
-
    * @param i typeId of particle one.
    * @param j typeId of particle two.
    * @return shift * 6

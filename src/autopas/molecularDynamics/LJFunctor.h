@@ -60,7 +60,7 @@ class LJFunctor
 
  private:
   /**
-   * Interal, actual constructor.
+   * Internal, actual constructor.
    * @param cutoff
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
@@ -81,7 +81,8 @@ class LJFunctor
 
  public:
   /**
-   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   * Constructor for Functor with mixing disabled. When using this functor it is necessary to call
+   * setParticleProperties() to set internal constants because it does not use a particle properties library.
    *
    * @note Only to be used with mixing == false.
    *
@@ -97,9 +98,9 @@ class LJFunctor
   }
 
   /**
-   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   * Constructor for Functor with mixing active. This functor takes a ParticlePropertiesLibrary to look up (mixed)
+   * properties like sigma, epsilon and shift.
    * @param cutoff
-   * @param shift
    * @param particlePropertiesLibrary
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.

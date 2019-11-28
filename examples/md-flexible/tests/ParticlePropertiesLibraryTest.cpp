@@ -50,7 +50,10 @@ TEST_F(ParticlePropertiesLibraryTest, shiftTest) {
   EXPECT_EQ(PPL.mixingShift6(1, 1), shifts[1]);
 }
 
-TEST_F(ParticlePropertiesLibraryTest, realisticsTest) {
+/**
+ * Idea: Two particles with distance of (almost) cutoff should produce (almost) zero shifted potential.
+ */
+TEST_F(ParticlePropertiesLibraryTest, mixedShiftTestUpot) {
   Molecule m1({0, 0, 0}, {0, 0, 0}, 0, 0);
   Molecule m2({cutoff - 1e-14, 0, 0}, {0, 0, 0}, 1, 1);
 
