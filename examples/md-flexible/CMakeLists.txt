@@ -19,7 +19,7 @@ target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(autopas_yaml-cpp)
 
-target_link_libraries(md-flexible PUBLIC autopas autopas-tools yaml-cpp)
+target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp)
 
 # --- copy script files to build dir ---
 file(

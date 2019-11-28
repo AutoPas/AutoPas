@@ -28,7 +28,7 @@ target_link_libraries(
     mdFlexTests
     PUBLIC
         autopas
-        autopas-tools
+        autopasTools
         libgtest
         libgmock
         yaml-cpp
