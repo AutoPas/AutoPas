@@ -19,7 +19,7 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
   Molecule dummy;
 
   autoPas.init();
-  GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, dummy, {1, 1, 1}, boxmin);
+  autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, dummy, {1, 1, 1}, boxmin);
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif

@@ -10,7 +10,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
-#include "testingHelpers/RandomGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 template <class Particle>
 bool LJFunctorCudaTest::SoAParticlesEqual(autopas::SoA<typename Particle::SoAArraysType> &soa1,
@@ -83,10 +83,10 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   FMCell cell2Cuda;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  RandomGenerator::fillWithParticles(cell1Cuda, defaultParticle, _lowCorner,
-                                     {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
-  RandomGenerator::fillWithParticles(cell2Cuda, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]},
-                                     _highCorner, numParticles2);
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      cell1Cuda, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      cell2Cuda, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles2);
 
   // copy cells
   FMCell cell1NoCuda(cell1Cuda);
@@ -149,7 +149,8 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
   FMCell cellCuda;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  RandomGenerator::fillWithParticles(cellCuda, defaultParticle, _lowCorner, _highCorner, numParticles);
+  autopasTools::generators::RandomGenerator::fillWithParticles(cellCuda, defaultParticle, _lowCorner, _highCorner,
+                                                               numParticles);
 
   // copy cells
   FMCell cellNoCuda(cellCuda);

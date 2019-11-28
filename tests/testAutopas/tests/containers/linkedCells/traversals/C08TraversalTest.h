@@ -10,8 +10,8 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
+#include "autopasTools/generators/GridGenerator.h"
 #include "mocks/MockFunctor.h"
-#include "testingHelpers/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class C08TraversalTest : public AutoPasTestBase {

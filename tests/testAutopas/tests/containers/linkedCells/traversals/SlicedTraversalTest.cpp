@@ -6,7 +6,7 @@
 
 #include "SlicedTraversalTest.h"
 
-#include "testingHelpers/GridGenerator.h"
+#include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
 
 using ::testing::_;
@@ -16,7 +16,7 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
   std::vector<FPCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
-  GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength, edgeLength);
+  autopasTools::generators::GridGenerator::fillWithParticles(cells, edgeLength, edgeLength);
 
   NumThreadGuard numThreadGuard(4);
 

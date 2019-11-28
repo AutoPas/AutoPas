@@ -16,8 +16,9 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
   Verlet _verletLists{getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 4};
   Linked _linkedCells{getBoxMin(), boxMax, getCutoff(), 1. /*cell size factor*/};
 
-  RandomGenerator::fillWithParticles(_linkedCells, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0), _linkedCells.getBoxMin(),
-                                     _linkedCells.getBoxMax(), numMolecules);
+  autopasTools::generators::RandomGenerator::fillWithParticles(_linkedCells, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0),
+                                                               _linkedCells.getBoxMin(), _linkedCells.getBoxMax(),
+                                                               numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
   for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
