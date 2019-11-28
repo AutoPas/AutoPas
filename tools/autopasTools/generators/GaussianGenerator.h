@@ -8,7 +8,7 @@
 
 #include <random>
 
-#include "autopas/AutoPas.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ParticleTypeTrait.h"
 
 namespace autopasTools::generators {
