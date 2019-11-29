@@ -144,7 +144,6 @@ class ParticlePropertiesLibrary {
   std::map<intType, floatType> _epsilons;
   std::map<intType, floatType> _sigmas;
   std::map<intType, floatType> _masses;
-  std::map<intType, floatType> _shifts;
   std::map<std::pair<intType, intType>, floatType> _computedMixing24Epsilon;
   std::map<std::pair<intType, intType>, floatType> _computedMixingSigmaSquare;
   std::map<std::pair<intType, intType>, floatType> _computedMixingShift6;
@@ -170,7 +169,6 @@ void ParticlePropertiesLibrary<floatType, intType>::addType(intType typeID, floa
   }
 
   auto cutoffSquare = _cutoff * _cutoff;
-  _shifts.emplace(typeID, calcShift6(epsilon * 24, sigma * sigma, cutoffSquare) / 6);
   // getTypes relies on types saved in the masses map so the new type needs to be added there first
   for (auto id : getTypes()) {
     auto newEntry = std::make_pair(id, typeID);
