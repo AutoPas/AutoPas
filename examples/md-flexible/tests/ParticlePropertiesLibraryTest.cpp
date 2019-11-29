@@ -64,6 +64,7 @@ TEST_F(ParticlePropertiesLibraryTest, mixedShiftTestUpot) {
   functor.initTraversal();
   functor.AoSFunctor(m1, m2, true);
   functor.endTraversal(true);
+  EXPECT_NE(functor.getUpot(), 0);
   EXPECT_NEAR(functor.getUpot(), 0, 1e-10);
 }
 
