@@ -197,6 +197,10 @@ bool ActiveHarmony::tune(bool currentInvalid) {
     return false;
   }
   if (currentInvalid) {
+    if (ah_converged(htask)) {
+      AutoPasLog(debug, "Active Harmony converged to invalid configuration; restarting tuning process.");
+      reset();
+    }
     invalidateConfiguration();
   }
 
