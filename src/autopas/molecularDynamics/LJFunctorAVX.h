@@ -43,12 +43,11 @@ class LJFunctorAVX
   /**
    * Interal, actual constructor.
    * @param cutoff
-   * @param shift
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    * @param dummy unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctorAVX(double cutoff, double shift, bool duplicatedCalculation, void * /*dummy*/)
+  explicit LJFunctorAVX(double cutoff, bool duplicatedCalculation, void * /*dummy*/)
 #ifdef __AVX__
       : Functor<Particle, ParticleCell, SoAArraysType, LJFunctorAVX<Particle, ParticleCell>>(cutoff),
         _one{_mm256_set1_pd(1.)},
@@ -58,13 +57,11 @@ class LJFunctorAVX
             _mm256_set_epi64x(0, -1, -1, -1),
         },
         _cutoffsquare{_mm256_set1_pd(cutoff * cutoff)},
-        _shift6{_mm256_set1_pd(shift * 6.0)},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
         _duplicatedCalculations{duplicatedCalculation},
         _postProcessed{false} {
-
     if (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
     }
@@ -87,12 +84,11 @@ class LJFunctorAVX
    * @note Only to be used with mixing == false.
    *
    * @param cutoff
-   * @param shift
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctorAVX(double cutoff, double shift, bool duplicatedCalculation = true)
-      : LJFunctorAVX(cutoff, shift, duplicatedCalculation, nullptr) {
+  explicit LJFunctorAVX(double cutoff, bool duplicatedCalculation = true)
+      : LJFunctorAVX(cutoff, duplicatedCalculation, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -101,15 +97,13 @@ class LJFunctorAVX
   /**
    * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
    * @param cutoff
-   * @param shift
    * @param particlePropertiesLibrary
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctorAVX(double cutoff, double shift,
-                        ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
+  explicit LJFunctorAVX(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
                         bool duplicatedCalculation = true)
-      : LJFunctorAVX(cutoff, shift, duplicatedCalculation, nullptr) {
+      : LJFunctorAVX(cutoff, duplicatedCalculation, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -252,6 +246,7 @@ class LJFunctorAVX
 #ifdef __AVX__
     __m256d epsilon24s = _epsilon24;
     __m256d sigmaSquares = _sigmaSquare;
+    __m256d shift6s = _shift6;
     if (useMixing) {
       epsilon24s = _mm256_set_pd(_PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 0)),
                                  _PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 1)),
@@ -261,6 +256,10 @@ class LJFunctorAVX
                                    _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 1)),
                                    _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 2)),
                                    _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 3)));
+      shift6s = _mm256_set_pd(_PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 0)),
+                              _PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 1)),
+                              _PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 2)),
+                              _PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 3)));
     }
 
     const __m256d x2 = masked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&x2ptr[j]);
@@ -332,7 +331,7 @@ class LJFunctorAVX
 
       // Global Potential
       const __m256d upotPART1 = _mm256_mul_pd(epsilon24s, lj12m6);
-      const __m256d upotPART2 = _mm256_add_pd(_shift6, upotPART1);
+      const __m256d upotPART2 = _mm256_add_pd(shift6s, upotPART1);
       const __m256d upot =
           masked ? _mm256_and_pd(upotPART2, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
                  : _mm256_and_pd(upotPART2, cutoffMask);
@@ -622,6 +621,8 @@ class LJFunctorAVX
   void setParticleProperties(double epsilon24, double sigmaSquare) {
     _epsilon24 = _mm256_set1_pd(epsilon24);
     _sigmaSquare = _mm256_set1_pd(sigmaSquare);
+    _shift6 =
+        _mm256_set1_pd(ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquare[0]));
   }
 
  private:
@@ -650,7 +651,7 @@ class LJFunctorAVX
   const __m256d _one;
   const __m256i _masks[3];
   const __m256d _cutoffsquare;
-  const __m256d _shift6;
+  __m256d _shift6;
   __m256d _epsilon24;
   __m256d _sigmaSquare;
 
