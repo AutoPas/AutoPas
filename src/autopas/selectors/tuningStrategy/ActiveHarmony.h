@@ -39,11 +39,11 @@ class ActiveHarmony : public TuningStrategyInterface {
 
     // reduce traversal and container option to possible combinations
     for (auto &traversalOption : _allowedTraversalOptions) {
-      auto container = *compatibleTraversals::allCompatibleContainers(traversalOption).begin();
-      if (allowedContainerOptions.find(container) == allowedContainerOptions.end()) {
+      auto compatibleContainers = compatibleTraversals::allCompatibleContainers(traversalOption);
+      if (compatibleContainers.empty() or allowedContainerOptions.find(*compatibleContainers.begin()) == allowedContainerOptions.end()) {
         _allowedTraversalOptions.erase(traversalOption);
       } else {
-        _allowedContainerOptions.emplace(container);
+        _allowedContainerOptions.emplace(*compatibleContainers.begin());
       }
     }
     // set HARMONY_HOME environment variable; needed by active harmony library; the macro is set by cmake
