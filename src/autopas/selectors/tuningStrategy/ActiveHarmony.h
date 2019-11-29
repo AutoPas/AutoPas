@@ -200,8 +200,9 @@ bool ActiveHarmony::tune(bool currentInvalid) {
     if (ah_converged(htask)) {
       AutoPasLog(debug, "Active Harmony converged to invalid configuration; restarting tuning process.");
       reset();
+    } else {
+      invalidateConfiguration();
     }
-    invalidateConfiguration();
   }
 
   // get configurations from server until valid newton3 option is found
