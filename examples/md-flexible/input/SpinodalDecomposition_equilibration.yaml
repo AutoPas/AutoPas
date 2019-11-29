@@ -34,5 +34,5 @@ thermostat:
   targetTemperature              :  1.4
   deltaTemperature               :  1
   thermostatInterval             :  10
-  useCurrentTempForBrownianMotion:  true
+  addBrownianMotion              :  true
 vtk-filename                     :  SpinodalDecomposition_equilibration

@@ -23,6 +23,6 @@ thermostat:
   targetTemperature              :  0.7
   deltaTemperature               :  1
   thermostatInterval             :  10
-  useCurrentTempForBrownianMotion:  false
+  addBrownianMotion              :  false
 vtk-filename                     :  SpinodalDecomposition
 checkpoint                       :  SpinodalDecomposition_equilibration_100000.vtk
