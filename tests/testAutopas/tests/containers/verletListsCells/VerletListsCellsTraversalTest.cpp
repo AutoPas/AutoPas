@@ -4,6 +4,7 @@
  * @date 26.09.18
  */
 #include "VerletListsCellsTraversalTest.h"
+
 #include "testingHelpers/NumThreadGuard.h"
 
 VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()
@@ -62,11 +63,12 @@ std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells
 void VerletListsCellsTraversalTest::test(unsigned long numMolecules) {
   NumThreadGuard numThreadGuard(1);
 
-  RandomGenerator::fillWithParticles(_verletListsCells, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0),
-                                     _verletListsCells.getBoxMin(), _verletListsCells.getBoxMax(), numMolecules);
-  RandomGenerator::fillWithParticles(_verletListsCells_cs2, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0),
-                                     _verletListsCells_cs2.getBoxMin(), _verletListsCells_cs2.getBoxMax(),
-                                     numMolecules);
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      _verletListsCells, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0), _verletListsCells.getBoxMin(),
+      _verletListsCells.getBoxMax(), numMolecules);
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      _verletListsCells_cs2, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0), _verletListsCells_cs2.getBoxMin(),
+      _verletListsCells_cs2.getBoxMax(), numMolecules);
 
   auto kCVerlet = getKernelCallsAllTraversals(_verletListsCells, getCutoff());
   auto kCVerlet_cs2 = getKernelCallsAllTraversals(_verletListsCells_cs2, getCutoff());

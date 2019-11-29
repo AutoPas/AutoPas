@@ -9,6 +9,7 @@
 #include <set>
 #include <sstream>
 #include <vector>
+
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Random.h"

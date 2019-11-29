@@ -8,6 +8,7 @@
 
 #include <map>
 #include <set>
+
 #include "TuningStrategyInterface.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"

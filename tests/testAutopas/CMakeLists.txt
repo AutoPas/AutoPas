@@ -20,6 +20,7 @@ target_compile_definitions(runTests PRIVATE)
 target_link_libraries(
     runTests
     autopas
+    autopasTools
     libgtest
     libgmock
 )
@@ -27,4 +28,4 @@ target_link_libraries(
 # this cmake module was only introduced in 3.10
 include(GoogleTest)
 # more robust, queries the compiled executable
-gtest_discover_tests(runTests)
+gtest_discover_tests(runTests TEST_PREFIX "testAutopas/")

@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <numeric>
 #include <vector>
+
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 

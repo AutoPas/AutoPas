@@ -5,9 +5,10 @@
  */
 
 #include "TraversalRaceConditionTest.h"
+
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/StringUtils.h"
-#include "testingHelpers/GridGenerator.h"
+#include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
 
 /**
@@ -62,7 +63,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
         autoPas.init();
 
         auto defaultParticle = Particle({0, 0, 0}, {0, 0, 0}, 0);
-        GridGenerator::fillWithParticles(autoPas, particlesPerDimension, defaultParticle);
+        autopasTools::generators::GridGenerator::fillWithParticles(autoPas, particlesPerDimension, defaultParticle);
 
         SimpleFunctor functor(cellLength);
 

@@ -11,6 +11,7 @@
 #include <cmath>
 #include <numeric>
 #include <vector>
+
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"

@@ -9,10 +9,8 @@ include(ExternalProject)
 # Download and install GoogleTest
 ExternalProject_Add(
     gtest
-    URL
-        # https://github.com/google/googletest/archive/master.zip
-        ${CMAKE_SOURCE_DIR}/libs/googletest-master.zip
-    URL_HASH MD5=9ead2b6ec99010eb7ec77fdaf6d9ded9
+    URL ${CMAKE_SOURCE_DIR}/libs/googletest-1.10.0.zip
+    URL_HASH MD5=82358affdd7ab94854c8ee73a180fc53
     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/gtest/src/gtest-build/lib/libgtest.a
     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/gtest/src/gtest-build/lib/libgmock.a
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/gtest

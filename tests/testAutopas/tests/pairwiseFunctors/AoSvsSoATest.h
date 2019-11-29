@@ -7,7 +7,9 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include <chrono>
+
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"

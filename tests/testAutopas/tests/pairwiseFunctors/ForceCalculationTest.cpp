@@ -5,6 +5,7 @@
  */
 
 #include "ForceCalculationTest.h"
+
 #include "testingHelpers/commonTypedefs.h"
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
@@ -24,8 +25,8 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   autoPas.init();
   Molecule defaultParticle;
 
-  GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
-                                   {particleSpacing, particleSpacing, particleSpacing});
+  autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
+                                                             {particleSpacing, particleSpacing, particleSpacing});
 
   autopas::LJFunctor<Molecule, FMCell> functor(cutoff, 0.0);
   functor.setParticleProperties(24, 1);

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/TraversalInterface.h"
 

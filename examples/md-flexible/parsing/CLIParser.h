@@ -7,7 +7,9 @@
 #pragma once
 
 #include <getopt.h>
+
 #include <iostream>
+
 #include "MDFlexConfig.h"
 
 /**

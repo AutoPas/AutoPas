@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"

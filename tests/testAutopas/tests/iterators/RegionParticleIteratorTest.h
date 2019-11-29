@@ -7,9 +7,10 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
-#include "testingHelpers/RandomGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 class TouchableParticle : public autopas::Particle {
  public:
@@ -42,7 +43,7 @@ class RegionParticleIteratorTest : public AutoPasTestBase {
    * @param regionMin
    * @param regionMax
    */
-  void checkTouches(LCTouch &lcContainer, std::array<double, 3> &regionMin, std::array<double, 3> &regionMax);
+  static void checkTouches(LCTouch &lcContainer, std::array<double, 3> &regionMin, std::array<double, 3> &regionMax);
 
  protected:
   void testLinkedCellsRegionParticleIteratorBehaviorOwned();

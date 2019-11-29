@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <autopas/options/AcquisitionFunctionOption.h>
 #include <map>
 #include <set>
 
@@ -14,6 +13,7 @@
 #include "Objects/CubeGrid.h"
 #include "Objects/CubeUniform.h"
 #include "Objects/Sphere.h"
+#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
@@ -167,8 +167,8 @@ class MDFlexConfig {
   double deltaTemp{0.};
   static inline const char *thermostatIntervalStr{"thermostatInterval"};
   size_t thermostatInterval{0};
-  static inline const char *useCurrentTempForBrownianMotionStr{"useCurrentTempForBrownianMotion"};
-  bool useCurrentTempForBrownianMotion{true};
+  static inline const char *addBrownianMotionStr{"addBrownianMotion"};
+  bool addBrownianMotion{true};
 
   // Checkpoint Options
   static inline const char *checkpointfileStr{"checkpoint"};

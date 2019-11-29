@@ -5,9 +5,10 @@
  */
 
 #include "TimeDiscretizationTest.h"
+
 #include "TimeDiscretization.h"
 #include "autopas/utils/ArrayMath.h"
-#include "testingHelpers/GridGenerator.h"
+#include "autopasTools/generators/GridGenerator.h"
 
 void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<Molecule, FMCell> &autopas) {
   autopas.setBoxMin({0., 0., 0.});
@@ -16,7 +17,7 @@ void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<Molecule,
   Molecule dummy;
   dummy.setF({0., 0., 1.});
   dummy.setV({0., 0., 1.});
-  GridGenerator::fillWithParticles(autopas, {2, 2, 2}, dummy, {1, 1, 1}, {0., 0., 0.});
+  autopasTools::generators::GridGenerator::fillWithParticles(autopas, {2, 2, 2}, dummy, {1, 1, 1}, {0., 0., 0.});
 }
 
 TEST_F(TimeDiscretizationTest, calcVelocities) {

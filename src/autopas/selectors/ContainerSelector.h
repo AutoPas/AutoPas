@@ -6,16 +6,17 @@
 
 #pragma once
 
-#include <autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h>
-#include <autopas/containers/verletListsCellBased/verletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h>
 #include <array>
 #include <vector>
+
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/selectors/ContainerSelectorInfo.h"

@@ -5,6 +5,7 @@
  */
 
 #include "LCCudaTraversalVersusDirectSumTest.h"
+
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 //#include "autopas/pairwiseFunctors/LJFunctor.h"
 

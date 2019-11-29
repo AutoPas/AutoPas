@@ -8,6 +8,7 @@
 #pragma once
 
 #include <algorithm>
+
 #include "autopas/containers/cellPairTraversals/SlicedBasedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"

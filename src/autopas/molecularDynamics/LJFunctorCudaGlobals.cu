@@ -5,6 +5,7 @@
  * @author jspahl
  */
 #include <iostream>
+
 #include "LJFunctorCudaGlobals.cuh"
 #include "autopas/molecularDynamics/LJFunctorCuda.cuh"
 #include "autopas/utils/CudaExceptionHandler.h"

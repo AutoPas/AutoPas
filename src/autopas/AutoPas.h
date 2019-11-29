@@ -10,6 +10,7 @@
 #include <memory>
 #include <set>
 #include <type_traits>
+
 #include "autopas/LogicHandler.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/options/TuningStrategyOption.h"

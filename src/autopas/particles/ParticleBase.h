@@ -10,6 +10,7 @@
 #include <array>
 #include <sstream>
 #include <tuple>
+
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/CudaSoAType.h"
 #include "autopas/utils/SoAStorage.h"

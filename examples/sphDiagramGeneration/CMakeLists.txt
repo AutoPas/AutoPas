@@ -3,12 +3,11 @@ file(
     MY_SRC
     "*.cpp"
     "*.h"
-    ../../tests/testAutopas/testingHelpers/RandomGenerator.cpp
 )
 
 add_executable(sph-diagram-generation ${MY_SRC})
 
-target_link_libraries(sph-diagram-generation autopas)
+target_link_libraries(sph-diagram-generation autopas autopasTools)
 
 # -----------------test-----------------
 # add check for current target

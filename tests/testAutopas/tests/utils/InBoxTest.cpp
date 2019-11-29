@@ -5,6 +5,7 @@
  */
 
 #include <gtest/gtest.h>
+
 #include "autopas/utils/inBox.h"
 
 TEST(InBoxTest, testInBox) {

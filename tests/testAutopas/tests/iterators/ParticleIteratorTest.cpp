@@ -5,7 +5,8 @@
  */
 
 #include "ParticleIteratorTest.h"
-#include <testingHelpers/commonTypedefs.h>
+
+#include "testingHelpers/commonTypedefs.h"
 
 using namespace autopas;
 using namespace autopas::internal;
