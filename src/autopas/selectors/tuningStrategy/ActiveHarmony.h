@@ -6,16 +6,17 @@
 
 #pragma once
 
-#include <string>
-#include <autopas/selectors/Configuration.h>
 #include <autopas/containers/CompatibleTraversals.h>
+#include <autopas/selectors/Configuration.h>
+
+#include <string>
+
 #include "TuningStrategyInterface.h"
 #include "hclient.h"
 
 namespace autopas {
 
 class ActiveHarmony : public TuningStrategyInterface {
-
  public:
   /**
    * Constructor. Note that ActiveHarmony assumes every traversal option is only applicable for one container.
@@ -30,17 +31,17 @@ class ActiveHarmony : public TuningStrategyInterface {
                 const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
                 const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions())
-          : _allowedContainerOptions(),
-            _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
-            _allowedTraversalOptions(allowedTraversalOptions),
-            _allowedDataLayoutOptions(allowedDataLayoutOptions),
-            _allowedNewton3Options(allowedNewton3Options),
-            _currentConfig() {
-
+      : _allowedContainerOptions(),
+        _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
+        _allowedTraversalOptions(allowedTraversalOptions),
+        _allowedDataLayoutOptions(allowedDataLayoutOptions),
+        _allowedNewton3Options(allowedNewton3Options),
+        _currentConfig() {
     // reduce traversal and container option to possible combinations
     for (auto &traversalOption : _allowedTraversalOptions) {
       auto compatibleContainers = compatibleTraversals::allCompatibleContainers(traversalOption);
-      if (compatibleContainers.empty() or allowedContainerOptions.find(*compatibleContainers.begin()) == allowedContainerOptions.end()) {
+      if (compatibleContainers.empty() or
+          allowedContainerOptions.find(*compatibleContainers.begin()) == allowedContainerOptions.end()) {
         _allowedTraversalOptions.erase(traversalOption);
       } else {
         _allowedContainerOptions.emplace(*compatibleContainers.begin());
@@ -92,7 +93,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   htask_t *htask = nullptr;
 
   std::set<ContainerOption> _allowedContainerOptions;
-  std::unique_ptr<NumberSet < double>> _allowedCellSizeFactors;
+  std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;
   std::set<TraversalOption> _allowedTraversalOptions;
   std::set<DataLayoutOption> _allowedDataLayoutOptions;
   std::set<Newton3Option> _allowedNewton3Options;
@@ -118,7 +119,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param name Name of the tuning parameter.
    * @param options Set of possible values of the tuning parameter.
    */
-  template<class O>
+  template <class O>
   inline void configureTuningParameter(hdef_t *hdef, const char *name, const std::set<O> options);
 
   /**
@@ -128,7 +129,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param options Set of all allowed options.
    * @return Value for tuning parameter.
    */
-  template<class O>
+  template <class O>
   inline O fetchTuningParameter(const char *name, const std::set<O> options);
 
   static constexpr int cellSizeSamples = 100;
@@ -137,21 +138,21 @@ class ActiveHarmony : public TuningStrategyInterface {
   static constexpr const char *dataLayoutOptionName = "dataLayoutOption";
   static constexpr const char *cellSizeFactorsName = "cellSizeFactor";
   static constexpr const char *newton3OptionName = "newton3Option";
-
 };
 
 void ActiveHarmony::addEvidence(long time) {
   if (searchSpaceIsTrivial() or searchSpaceIsEmpty()) {
-    AutoPasLog(debug, "ActiveHarmony::addEvidence: Search space is {}; did not report performance", searchSpaceIsTrivial() ? "trivial" : "empty");
+    AutoPasLog(debug, "ActiveHarmony::addEvidence: Search space is {}; did not report performance",
+               searchSpaceIsTrivial() ? "trivial" : "empty");
   } else {
-    auto perf = (double) time;
+    auto perf = (double)time;
     if (ah_report(htask, &perf) != 0) {
       utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error reporting performance to server");
     }
   }
 }
 
-template<class O>
+template <class O>
 O ActiveHarmony::fetchTuningParameter(const char *name, const std::set<O> options) {
   O option;
   if (options.size() > 1) {
@@ -169,7 +170,7 @@ void ActiveHarmony::fetchConfiguration() {
 
   double cellSizeFactor = 0;
   if (_allowedCellSizeFactors->isFinite()) {
-    if(_allowedCellSizeFactors->size() == 1) {
+    if (_allowedCellSizeFactors->size() == 1) {
       cellSizeFactor = _allowedCellSizeFactors->getMin();
     } else if (_allowedCellSizeFactors->size() > 1) {
       cellSizeFactor = std::strtod(ah_get_enum(htask, cellSizeFactorsName), nullptr);
@@ -212,7 +213,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
     }
     fetchConfiguration();
   } while (_allowedNewton3Options.find(_currentConfig.newton3) == _allowedNewton3Options.end() and
-           invalidateConfiguration()); // short-circuit evaluation makes this only execute if newton3 option is invalid
+           invalidateConfiguration());  // short-circuit evaluation makes this only execute if newton3 option is invalid
 
   auto converged = ah_converged(htask);
   if (converged) {
@@ -231,25 +232,24 @@ void ActiveHarmony::removeN3Option(Newton3Option option) {
   _allowedNewton3Options.erase(option);
   if (this->searchSpaceIsEmpty()) {
     utils::ExceptionHandler::exception(
-            "ActiveHarmony::removeN3Option: Removing all configurations with Newton 3 {} caused the search space to be empty!",
-            option);
+        "ActiveHarmony::removeN3Option: Removing all configurations with Newton 3 {} caused the search space to be "
+        "empty!",
+        option);
   }
 }
 
-const Configuration &ActiveHarmony::getCurrentConfiguration() const {
-  return _currentConfig;
-}
+const Configuration &ActiveHarmony::getCurrentConfiguration() const { return _currentConfig; }
 
-template<class O>
-void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, const std::set<O> options){
-  if (options.size() > 1) { // only parameters with more than 1 possible options should be tuned
-    if (ah_def_enum(hdef, name, nullptr) != 0) { // define parameter
+template <class O>
+void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, const std::set<O> options) {
+  if (options.size() > 1) {                       // only parameters with more than 1 possible options should be tuned
+    if (ah_def_enum(hdef, name, nullptr) != 0) {  // define parameter
       utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum \"{}\"", name);
     }
-    for (auto &option : options) { // define possible values for parameter
+    for (auto &option : options) {  // define possible values for parameter
       if (ah_def_enum_value(hdef, name, option.to_string().c_str()) != 0) {
         utils::ExceptionHandler::exception(
-                "ActiveHarmony::configureTuningParameter: Error defining enum value for enum \"{}\"", name);
+            "ActiveHarmony::configureTuningParameter: Error defining enum value for enum \"{}\"", name);
       }
     }
   } else {
@@ -291,7 +291,7 @@ void ActiveHarmony::reset() {
       utils::ExceptionHandler::exception("ActiveHarmony::reset: Error settings search name");
     }
 
-    if (_allowedCellSizeFactors->isFinite()) { // finite cell-size factors => define parameter as enum
+    if (_allowedCellSizeFactors->isFinite()) {  // finite cell-size factors => define parameter as enum
       if (_allowedCellSizeFactors->size() == 1) {
         AutoPasLog(debug, "ActiveHarmony::reset: Skipping trivial parameter {}", cellSizeFactorsName);
       } else if (_allowedCellSizeFactors->size() > 1) {
@@ -303,12 +303,12 @@ void ActiveHarmony::reset() {
         for (auto cellSizeFactor : _allowedCellSizeFactors->getAll()) {
           if (ah_def_enum_value(hdef, cellSizeFactorsName, std::to_string(cellSizeFactor).c_str()) != 0) {
             utils::ExceptionHandler::exception(
-                    "ActiveHarmony::configureTuningParameter: Error defining enum value for enum \"{}\"",
-                    cellSizeFactorsName);
+                "ActiveHarmony::configureTuningParameter: Error defining enum value for enum \"{}\"",
+                cellSizeFactorsName);
           }
         }
       }
-    } else { // infinite cell-size factors => define parameter as real
+    } else {  // infinite cell-size factors => define parameter as real
       AutoPasLog(debug, "ActiveHarmony::reset: Infinite cell-size factors; defining parameter as real");
       if (ah_def_real(hdef, cellSizeFactorsName, _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(),
                       (_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()) / cellSizeSamples,
@@ -336,9 +336,7 @@ void ActiveHarmony::reset() {
   tune(false);
 }
 
-std::set<ContainerOption> ActiveHarmony::getAllowedContainerOptions() const {
-  return _allowedContainerOptions;
-}
+std::set<ContainerOption> ActiveHarmony::getAllowedContainerOptions() const { return _allowedContainerOptions; }
 
 bool ActiveHarmony::searchSpaceIsTrivial() const {
   if (searchSpaceIsEmpty()) {

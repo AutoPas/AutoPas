@@ -37,7 +37,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
     /**
      * ActiveHarmony client / server system
      */
-     activeHarmony,
+    activeHarmony,
   };
 
   /**
@@ -66,7 +66,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::bayesianSearch, "bayesian-Search"},
         {TuningStrategyOption::fullSearch, "full-Search"},
         {TuningStrategyOption::randomSearch, "random-Search"},
-	{TuningStrategyOption::activeHarmony, "active-harmony"},
+        {TuningStrategyOption::activeHarmony, "active-harmony"},
     };
   };
 

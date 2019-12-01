@@ -15,10 +15,10 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
+#include "autopas/selectors/tuningStrategy/ActiveHarmony.h"
 #include "autopas/selectors/tuningStrategy/BayesianSearch.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopas/selectors/tuningStrategy/RandomSearch.h"
-#include "autopas/selectors/tuningStrategy/ActiveHarmony.h"
 #include "autopas/utils/NumberSet.h"
 
 namespace autopas {
@@ -570,7 +570,8 @@ class AutoPas {
       }
 
       case TuningStrategyOption::activeHarmony: {
-        return std::make_unique<ActiveHarmony>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals, _allowedDataLayouts, _allowedNewton3Options);
+        return std::make_unique<ActiveHarmony>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
+                                               _allowedDataLayouts, _allowedNewton3Options);
       }
     }
 
