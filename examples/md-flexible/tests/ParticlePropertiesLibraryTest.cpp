@@ -8,15 +8,64 @@
 double ParticlePropertiesLibraryTest::mixingE(double e1, double e2) { return std::sqrt(e1 * e2); }
 double ParticlePropertiesLibraryTest::mixingS(double s1, double s2) { return ((s1 + s2) / 2); }
 
-TEST_F(ParticlePropertiesLibraryTest, ClassFunctions) {
-  PPL.addType(0, epsilon, sigma, mass);
-  PPL.addType(1, epsilon2, sigma2, mass);
-  PrintableMolecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  PrintableMolecule p2({0., 0., 0.}, {0., 0., 0.}, 1);
-  p2.setTypeId(1);
-  ASSERT_EQ(mass, PPL.getMass(p1.getTypeId()));
-  ASSERT_EQ(PPL.mixing24Epsilon(p1.getTypeId(), p2.getTypeId()), 24 * mixingE(epsilon, epsilon2));
-  ASSERT_EQ(PPL.mixingSigmaSquare(p1.getTypeId(), p2.getTypeId()), mixingS(sigma, sigma2) * mixingS(sigma, sigma2));
+TEST_F(ParticlePropertiesLibraryTest, massTest) {
+  ASSERT_EQ(PPL.getTypes().size(), masses.size());
+  EXPECT_EQ(PPL.getMass(0), masses[0]);
+  EXPECT_EQ(PPL.getMass(1), masses[1]);
+}
+
+TEST_F(ParticlePropertiesLibraryTest, epsilonTest) {
+  ASSERT_EQ(PPL.getTypes().size(), epsilons.size());
+
+  EXPECT_EQ(PPL.get24Epsilon(0), epsilons[0] * 24);
+  EXPECT_EQ(PPL.get24Epsilon(1), epsilons[1] * 24);
+
+  for (unsigned int i = 0; i < epsilons.size(); ++i) {
+    for (unsigned int j = 0; j < epsilons.size(); ++j) {
+      auto expectedVal = mixingE(epsilons[i], epsilons[j]) * 24;
+      EXPECT_EQ(PPL.mixing24Epsilon(i, j), expectedVal) << "For i=" << i << " j=" << j;
+    }
+  }
+}
+
+TEST_F(ParticlePropertiesLibraryTest, sigmaTest) {
+  ASSERT_EQ(PPL.getTypes().size(), sigmas.size());
+
+  EXPECT_EQ(PPL.getSigmaSquare(0), sigmas[0] * sigmas[0]);
+  EXPECT_EQ(PPL.getSigmaSquare(1), sigmas[1] * sigmas[1]);
+
+  for (unsigned int i = 0; i < sigmas.size(); ++i) {
+    for (unsigned int j = 0; j < sigmas.size(); ++j) {
+      auto expectedVal = mixingS(sigmas[i], sigmas[j]);
+      expectedVal *= expectedVal;
+      EXPECT_EQ(PPL.mixingSigmaSquare(i, j), expectedVal) << "For i=" << i << " j=" << j;
+    }
+  }
+}
+
+TEST_F(ParticlePropertiesLibraryTest, shiftTest) {
+  ASSERT_EQ(PPL.getTypes().size(), shifts.size());
+
+  EXPECT_EQ(PPL.mixingShift6(0, 0), shifts[0]);
+  EXPECT_EQ(PPL.mixingShift6(1, 1), shifts[1]);
+}
+
+/**
+ * Idea: Two particles with distance of (almost) cutoff should produce (almost) zero shifted potential.
+ */
+TEST_F(ParticlePropertiesLibraryTest, mixedShiftTestUpot) {
+  Molecule m1({0, 0, 0}, {0, 0, 0}, 0, 0);
+  Molecule m2({cutoff - 1e-14, 0, 0}, {0, 0, 0}, 1, 1);
+
+  autopas::LJFunctor<Molecule, autopas::FullParticleCell<Molecule>, /*mixing*/ true, autopas::FunctorN3Modes::Both,
+                     /*globals*/ true>
+      functor(cutoff, PPL);
+
+  functor.initTraversal();
+  functor.AoSFunctor(m1, m2, true);
+  functor.endTraversal(true);
+  EXPECT_NE(functor.getUpot(), 0);
+  EXPECT_NEAR(functor.getUpot(), 0, 1e-10);
 }
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
