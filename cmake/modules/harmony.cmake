@@ -15,10 +15,9 @@ ExternalProject_Add(
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/harmony
     # since we only unpack a header lib src == include
     SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/harmony/include
-    # tell cmake to run make inside the source folder
+    # tell cmake to run make inside the source folder and suppress all warnings
     BUILD_IN_SOURCE TRUE
     CONFIGURE_COMMAND ""
-    # suppress all warnings
     BUILD_COMMAND CFLAGS=-w ${MAKE_EXE}
 )
 
