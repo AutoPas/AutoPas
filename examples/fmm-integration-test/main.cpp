@@ -61,21 +61,20 @@ int main(int argc, char **argv) {
 
   bool isCorrect = true;
   for (auto particle = cont.begin(); particle.isValid(); ++particle) {
-    std::cout << "[ID=" << particle->getID() << "] " << particle->getR()[0] << ", " << particle->getR()[1] << ", "
-              << particle->getR()[2] << ", charge = " << particle->charge << std::endl;
-    std::cout << "long range " << particle->longRange << std::endl;
-    std::cout << "short range " << particle->shortRange << std::endl;
-    std::cout << "resultFMM " << particle->resultFMM << std::endl;
-    std::cout << "resultExact " << particle->resultExact << std::endl;
     double error = std::abs(particle->resultFMM - particle->resultExact);
     if (error > 0.01) {
       isCorrect = false;
+
+      std::cout << "[ID=" << particle->getID() << "] " << particle->getR()[0] << ", " << particle->getR()[1] << ", "
+                << particle->getR()[2] << ", charge = " << particle->charge << std::endl;
+      std::cout << "long range " << particle->longRange << std::endl;
+      std::cout << "short range " << particle->shortRange << std::endl;
+      std::cout << "resultFMM " << particle->resultFMM << std::endl;
+      std::cout << "resultExact " << particle->resultExact << std::endl;
     }
   }
   std::cout << std::flush;
   if (not isCorrect) {
     std::cerr << "wrong result" << std::endl;
   }
-
-
 }
