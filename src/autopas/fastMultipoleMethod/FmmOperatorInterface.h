@@ -1,7 +1,10 @@
 #pragma once
 
+#include <iomanip>
+#include <iostream>
 #include "autopas/fastMultipoleMethod/FmmTree.h"
 #include "autopas/fastMultipoleMethod/FmmTreeNode.h"
+#include "autopas/utils/Timer.h"
 
 namespace autopas::fmm {
 
@@ -34,31 +37,64 @@ class FmmOperatorInterface {
   }
 
  public:
+  void printTime(const std::string &name, long time, long total) {
+    std::cout << std::setfill(' ') << std::setw(4) << name << ":";
+    std::cout << std::setfill(' ') << std::setw(9) << time;
+    std::cout << "us | ";
+    std::cout << std::setfill(' ') << std::setw(9) << std::fixed
+              << (100 * static_cast<double>(time) / static_cast<double>(total));
+    std::cout << "%" << std::endl;
+  }
+
   void RunFmm(FmmTree &fmmTree, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) {
+    autopas::utils::Timer timer;
+    long initTime, p2mTime, m2mTime, m2lTime, l2lTime, l2pTime, nearFieldTime;
+    long totalTime;
+    timer.start();
+
     init(orderOfExpansion);
+    initTime = timer.stop();
+    timer.start();
+
     auto &root = fmmTree.getRoot();
+
     upwardPass(root, [&](FmmTreeNode &node) {
       node.initCoefficients(orderOfExpansion);
       if (node.isLeaf()) {
         P2M(node, orderOfExpansion, container);
       }
     });
+    p2mTime = timer.stop();
+    timer.start();
+
     upwardPass(root, [&](FmmTreeNode &node) {
       if (not node.isLeaf()) {
         M2M(node, orderOfExpansion);
       }
     });
+    m2mTime = timer.stop();
+    timer.start();
+
     downwardPass(root, [&](FmmTreeNode &node) { M2L(node, orderOfExpansion); });
+    m2lTime = timer.stop();
+    timer.start();
+
     downwardPass(root, [&](FmmTreeNode &node) {
       if (node.getDepth() > 0) {
         L2L(node, orderOfExpansion);
       }
     });
+    l2lTime = timer.stop();
+    timer.start();
+
     downwardPass(root, [&](FmmTreeNode &node) {
       if (node.isLeaf()) {
         L2P(node, orderOfExpansion, container);
       }
     });
+    l2pTime = timer.stop();
+    timer.start();
+
     downwardPass(root, [&](FmmTreeNode &node) {
       if (node.isLeaf()) {
         for (auto p1 = container.getRegionIterator(node.getBoxMin(), node.getBoxMax()); p1.isValid(); ++p1) {
@@ -73,6 +109,16 @@ class FmmOperatorInterface {
         }
       }
     });
+    nearFieldTime = timer.stop();
+
+    totalTime = initTime + p2mTime + m2mTime + m2lTime + l2lTime + l2pTime + nearFieldTime;
+    printTime("init", initTime, totalTime);
+    printTime("p2m", p2mTime, totalTime);
+    printTime("m2m", m2mTime, totalTime);
+    printTime("m2l", m2lTime, totalTime);
+    printTime("l2l", l2lTime, totalTime);
+    printTime("l2p", l2pTime, totalTime);
+    printTime("near", nearFieldTime, totalTime);
   }
 };
 }  // namespace autopas::fmm
