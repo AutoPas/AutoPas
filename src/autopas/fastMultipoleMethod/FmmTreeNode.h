@@ -72,32 +72,22 @@ class FmmTreeNode {
     // std::cout << "distance = " << distance << std::endl;
     return distance > 3 * maxRadius;
   }
-
-  int findLargestIndex(std::array<double, 3> array) {
-    int largestIndex = 0;
-    if (array[1] > array[largestIndex]) {
-      largestIndex = 1;
+  double getLargestSize() {
+    auto boxSize = utils::ArrayMath::sub(boxMax, boxMin);
+    double largestSize = boxSize[0];
+    for (size_t i = 1; i < 3; ++i) {
+      if (boxSize[i] > largestSize) {
+        largestSize = boxSize[i];
+      }
     }
-    if (array[2] > array[largestIndex]) {
-      largestIndex = 2;
-    }
-    return largestIndex;
+    return largestSize;
   }
 
   void initLists(FmmTreeNode &otherNode) {
     if (checkInteract(otherNode)) {
       interactionList.insert(&otherNode);
     } else {
-      auto boxSize1 = utils::ArrayMath::sub(boxMax, boxMin);
-      auto boxSize2 = utils::ArrayMath::sub(otherNode.boxMax, otherNode.boxMin);
-
-      auto largestIndex1 = findLargestIndex(boxSize1);
-      auto largestIndex2 = findLargestIndex(boxSize2);
-
-      auto largestSize1 = boxSize1[largestIndex1];
-      auto largestSize2 = boxSize2[largestIndex2];
-
-      if (largestSize1 > largestSize2) {
+      if (getLargestSize() > otherNode.getLargestSize()) {
         if (not isLeaf()) {
           getChild(0).initLists(otherNode);
           getChild(1).initLists(otherNode);
