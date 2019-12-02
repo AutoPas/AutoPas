@@ -395,7 +395,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
     createFmmNode(tree->setRoot(this->getBoxMin(), this->getBoxMax()), 0);
     // tree->getRoot().init(tree->getRoot());
     tree->getRoot().initLists(tree->getRoot());
-    tree->getRoot().printLists();
+    // tree->getRoot().printLists();
     return tree;
   }
 
