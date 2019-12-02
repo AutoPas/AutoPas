@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
   cont.setBoxMax({5, 4, 7});
   cont.init();
 
-  RandomGenerator::fillWithParticles(cont, autopas::fmm::FmmParticle(), 30);
+  RandomGenerator::fillWithParticles(cont, autopas::fmm::FmmParticle(), cont.getBoxMin(), cont.getBoxMax(), 30);
   autopas::fmm::FmmParticle part;
   /*part = autopas::fmm::FmmParticle({0.1, 0.1, 0.1}, {0, 0, 0},0, 1);
   cont.addParticle(part);
@@ -72,9 +72,10 @@ int main(int argc, char **argv) {
       isCorrect = false;
     }
   }
+  std::cout << std::flush;
   if (not isCorrect) {
     std::cerr << "wrong result" << std::endl;
   }
 
-  std::cout << std::flush;
+
 }
