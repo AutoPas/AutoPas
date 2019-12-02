@@ -26,9 +26,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
   autopas::utils::FmmMath<double, long> fmmMath;
 
  public:
-  PotentialOperators() {
-    this->fmmMath = autopas::utils::FmmMath<double, long>();
-  }
+  PotentialOperators() { this->fmmMath = autopas::utils::FmmMath<double, long>(); }
 
   void init(long orderOfExpansion) override {
     // The power i^(|k-m|-|k|-|m|) is needed frequently in the M2L operator.
@@ -43,7 +41,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
     }
   }
 
-  void P2M(FmmTreeNode &leaf, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) override {
+  void p2m(FmmTreeNode &leaf, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) override {
     // Loop order changed, so the spherical harmonics cache is built less frequently.
 
     for (auto iter = container.getRegionIterator(leaf.getBoxMin(), leaf.getBoxMax()); iter.isValid(); ++iter) {
@@ -61,12 +59,12 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
     }
   }
 
-  void M2M(FmmTreeNode &parent, long orderOfExpansion) override {
+  void m2m(FmmTreeNode &parent, long orderOfExpansion) override {
     if (parent.isLeaf()) {
       return;
     }
     for (std::size_t c = 0; c < 2; ++c) {
-      auto& child = parent.getChild(c);
+      auto &child = parent.getChild(c);
       /*if (child->isZeroM()) {
         continue;
       }*/
@@ -106,7 +104,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
   }
 
   // Most performance critical function. Over 90% of fmm is spent here.
-  void M2L(FmmTreeNode &node, long orderOfExpansion) override {
+  void m2l(FmmTreeNode &node, long orderOfExpansion) override {
     for (auto inter : node.getInteractionList()) {
       auto spherical = autopas::utils::FmmMath<double, long>::toSpherical(
           autopas::utils::ArrayMath::sub(inter->getBoxCenter(), node.getBoxCenter()));
@@ -160,7 +158,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
     }
   }
 
-  void L2L(FmmTreeNode &node, long orderOfExpansion) override {
+  void l2l(FmmTreeNode &node, long orderOfExpansion) override {
     if (node.getDepth() > 0) {
       auto parent = node.getParent();
       auto cartesian = autopas::utils::ArrayMath::sub(parent->getBoxCenter(), node.getBoxCenter());
@@ -199,7 +197,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
     }
   }
 
-  void L2P(FmmTreeNode &leaf, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) override {
+  void l2p(FmmTreeNode &leaf, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) override {
     for (auto iter = container.getRegionIterator(leaf.getBoxMin(), leaf.getBoxMax()); iter.isValid(); ++iter) {
       auto sphericalPos = autopas::utils::FmmMath<double, long>::toSpherical(
           autopas::utils::ArrayMath::sub(iter->getR(), leaf.getBoxCenter()));
@@ -231,7 +229,7 @@ class PotentialOperators : public FmmOperatorInterface<Particle, ParticleCell> {
       iter->resultFMM = potential.real();
     }
   }
-  void NearField(FmmParticle &p1, FmmParticle &p2) override {
+  void nearField(FmmParticle &p1, FmmParticle &p2) override {
     double x = p1.getR()[0] - p2.getR()[0];
     double y = p1.getR()[1] - p2.getR()[1];
     double z = p1.getR()[2] - p2.getR()[2];

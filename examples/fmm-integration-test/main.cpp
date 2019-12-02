@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
   auto fmmTree = cont.getFastMultipoleTree();
 
   autopas::fmm::PotentialOperators<autopas::fmm::FmmParticle, autopas::FullParticleCell<autopas::fmm::FmmParticle>> op;
-  op.RunFmm(*fmmTree, 5, cont);
+  op.runFmm(*fmmTree, 5, cont);
 
   for (auto particle = cont.begin(); particle.isValid(); ++particle) {
     for (auto otherParticle = cont.begin(); otherParticle.isValid(); ++otherParticle) {

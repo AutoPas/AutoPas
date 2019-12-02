@@ -12,12 +12,12 @@ template <class Particle, class ParticleCell>
 class FmmOperatorInterface {
  private:
   virtual void init(long orderOfExpansion) = 0;
-  virtual void P2M(FmmTreeNode &leaf, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) = 0;
-  virtual void M2M(FmmTreeNode &parent, long orderOfExpansion) = 0;
-  virtual void M2L(FmmTreeNode &node, long orderOfExpansion) = 0;
-  virtual void L2L(FmmTreeNode &child, long orderOfExpansion) = 0;
-  virtual void L2P(FmmTreeNode &leaf, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) = 0;
-  virtual void NearField(FmmParticle &p1, FmmParticle &p2) = 0;
+  virtual void p2m(FmmTreeNode &leaf, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) = 0;
+  virtual void m2m(FmmTreeNode &parent, long orderOfExpansion) = 0;
+  virtual void m2l(FmmTreeNode &node, long orderOfExpansion) = 0;
+  virtual void l2l(FmmTreeNode &child, long orderOfExpansion) = 0;
+  virtual void l2p(FmmTreeNode &leaf, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) = 0;
+  virtual void nearField(FmmParticle &p1, FmmParticle &p2) = 0;
 
   template <typename Function>
   void upwardPass(FmmTreeNode &node, Function function) {
@@ -46,7 +46,7 @@ class FmmOperatorInterface {
     std::cout << "%" << std::endl;
   }
 
-  void RunFmm(FmmTree &fmmTree, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) {
+  void runFmm(FmmTree &fmmTree, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) {
     autopas::utils::Timer timer;
     long initTime, p2mTime, m2mTime, m2lTime, l2lTime, l2pTime, nearFieldTime;
     long totalTime;
@@ -61,7 +61,7 @@ class FmmOperatorInterface {
     upwardPass(root, [&](FmmTreeNode &node) {
       node.initCoefficients(orderOfExpansion);
       if (node.isLeaf()) {
-        P2M(node, orderOfExpansion, container);
+        p2m(node, orderOfExpansion, container);
       }
     });
     p2mTime = timer.stop();
@@ -69,19 +69,19 @@ class FmmOperatorInterface {
 
     upwardPass(root, [&](FmmTreeNode &node) {
       if (not node.isLeaf()) {
-        M2M(node, orderOfExpansion);
+        m2m(node, orderOfExpansion);
       }
     });
     m2mTime = timer.stop();
     timer.start();
 
-    downwardPass(root, [&](FmmTreeNode &node) { M2L(node, orderOfExpansion); });
+    downwardPass(root, [&](FmmTreeNode &node) { m2l(node, orderOfExpansion); });
     m2lTime = timer.stop();
     timer.start();
 
     downwardPass(root, [&](FmmTreeNode &node) {
       if (node.getDepth() > 0) {
-        L2L(node, orderOfExpansion);
+        l2l(node, orderOfExpansion);
       }
     });
     l2lTime = timer.stop();
@@ -89,7 +89,7 @@ class FmmOperatorInterface {
 
     downwardPass(root, [&](FmmTreeNode &node) {
       if (node.isLeaf()) {
-        L2P(node, orderOfExpansion, container);
+        l2p(node, orderOfExpansion, container);
       }
     });
     l2pTime = timer.stop();
@@ -102,7 +102,7 @@ class FmmOperatorInterface {
             for (auto p2 = container.getRegionIterator(nearCell->getBoxMin(), nearCell->getBoxMax()); p2.isValid();
                  ++p2) {
               if (p1->getID() != p2->getID()) {
-                NearField(*p1, *p2);
+                nearField(*p1, *p2);
               }
             }
           }
