@@ -16,10 +16,6 @@
 using AutoPasCont = autopas::AutoPas<autopas::fmm::FmmParticle, autopas::FullParticleCell<autopas::fmm::FmmParticle>>;
 
 int main(int argc, char **argv) {
-  std::cout << std::endl;
-
-  std::cout << "Init Test" << std::endl;
-
   AutoPasCont cont;
   cont.setAllowedContainers({autopas::ContainerOption::linkedCells});
   cont.setBoxMin({0, 0, 0});
@@ -27,22 +23,8 @@ int main(int argc, char **argv) {
   cont.init();
 
   RandomGenerator::fillWithParticles(cont, autopas::fmm::FmmParticle(), cont.getBoxMin(), cont.getBoxMax(), 30);
-  autopas::fmm::FmmParticle part;
-  /*part = autopas::fmm::FmmParticle({0.1, 0.1, 0.1}, {0, 0, 0},0, 1);
-  cont.addParticle(part);
-  part = autopas::fmm::FmmParticle({4.1, 0.1, 0.1}, {0, 0, 0},1, 1);
-  cont.addParticle(part);
-
-  part = autopas::fmm::FmmParticle({2, 0.1, 0.1}, {0, 0, 0},2, 1);
-  cont.addParticle(part);*/
-
-  std::cout << "Number of Particles: " << cont.getNumberOfParticles() << std::endl;
 
   auto fmmTree = cont.getFastMultipoleTree();
-
-  autopas::utils::FmmMath<double, long>::initialize();
-  autopas::utils::FmmMath<double, long> fmmMath;
-  std::cout << "Factorial(5) = " << autopas::utils::FmmMath<double, long>::factorial(5) << std::endl;
 
   autopas::fmm::PotentialOperators<autopas::fmm::FmmParticle, autopas::FullParticleCell<autopas::fmm::FmmParticle>> op;
   op.RunFmm(*fmmTree, 5, cont);
