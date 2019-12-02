@@ -16,6 +16,9 @@
 
 namespace autopas {
 
+/**
+ * Interface to the Active Harmony tuning framework.
+ */
 class ActiveHarmony : public TuningStrategyInterface {
  public:
   /**
