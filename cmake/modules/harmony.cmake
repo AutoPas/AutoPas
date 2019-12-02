@@ -3,7 +3,10 @@ message(STATUS "harmony - using bundled version")
 # Enable ExternalProject CMake module
 include(ExternalProject)
 
-# Extract eigen3
+# harmony is a make file project
+find_program(MAKE_EXE NAMES gmake nmake make)
+
+# Extract and build harmony
 ExternalProject_Add(
     harmony_bundled
     URL ${CMAKE_SOURCE_DIR}/libs/harmony.zip
@@ -15,6 +18,8 @@ ExternalProject_Add(
     # tell cmake to run make inside the source folder
     BUILD_IN_SOURCE TRUE
     CONFIGURE_COMMAND ""
+    # suppress all warnings
+    BUILD_COMMAND CFLAGS=-w ${MAKE_EXE}
 )
 
 # Get GTest source and binary directories from CMake project
