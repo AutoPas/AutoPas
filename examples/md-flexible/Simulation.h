@@ -179,7 +179,7 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
     throw std::runtime_error("Number of particle properties differ!");
   }
 
-  _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibraryType>();
+  _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibraryType>(_config->cutoff);
 
   for (auto [type, epsilon] : _config->epsilonMap) {
     _particlePropertiesLibrary->addType(type, epsilon, _config->sigmaMap.at(type), _config->massMap.at(type));
@@ -277,7 +277,7 @@ template <class FunctorType>
 void Simulation<Particle, ParticleCell>::calculateForces() {
   _timers.forceUpdateTotal.start();
 
-  FunctorType functor{_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary};
+  FunctorType functor{_autopas.getCutoff(), *_particlePropertiesLibrary};
   bool tuningIteration = _autopas.iteratePairwise(&functor);
 
   auto timeIteration = _timers.forceUpdateTotal.stop();

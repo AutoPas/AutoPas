@@ -14,8 +14,7 @@
 
 class LJFunctorAVXTest : public AutoPasTestBase {
  public:
-  LJFunctorAVXTest()
-      : AutoPasTestBase(), _cutoff{6.}, _epsilon{1.}, _sigma{1.}, _lowCorner{0, 0, 0}, _highCorner{6, 6, 6} {}
+  LJFunctorAVXTest() : AutoPasTestBase() {}
 
   /**
    *  Maximum error allowed for comparisons.
@@ -69,11 +68,10 @@ class LJFunctorAVXTest : public AutoPasTestBase {
    * @return
    */
   bool particleEqual(Particle &p1, Particle &p2);
-
-  const double _cutoff;
-  const double _epsilon;
-  const double _sigma;
-  const std::array<double, 3> _lowCorner;
-  const std::array<double, 3> _highCorner;
+  constexpr static double _cutoff{6.};
+  constexpr static double _epsilon{1.};
+  constexpr static double _sigma{1.};
+  const std::array<double, 3> _lowCorner{0., 0., 0.};
+  const std::array<double, 3> _highCorner{6., 6., 6.};
 };
 #endif  // __AVX__
