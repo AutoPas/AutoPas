@@ -17,6 +17,7 @@ pipeline{
                     "build documentation": {
                         container('autopas-cmake-doxygen-make'){
                             dir("build-doxygen") {
+                                sh 'ccache -s'
                                 sh 'cmake ..'
                                 sh 'make doc_doxygen 2>DoxygenWarningLog.txt'
                             }
