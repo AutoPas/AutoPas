@@ -58,8 +58,9 @@ class ParticlePropertiesLibrary {
    * @param epsilon
    * @param sigma
    * @param mass
+   * @param applyShift if the lj potential should be truncated shifted for this type.
    */
-  void addType(intType typeID, floatType epsilon, floatType sigma, floatType mass);
+  void addType(intType typeID, floatType epsilon, floatType sigma, floatType mass, bool applyShift);
 
   ~ParticlePropertiesLibrary() = default;
 
@@ -151,7 +152,7 @@ class ParticlePropertiesLibrary {
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addType(intType typeID, floatType epsilon, floatType sigma,
-                                                            floatType mass) {
+                                                            floatType mass, bool applyShift) {
   _masses.emplace(typeID, mass);
 
   _epsilons.emplace(typeID, epsilon);
@@ -173,7 +174,9 @@ void ParticlePropertiesLibrary<floatType, intType>::addType(intType typeID, floa
   for (auto id : getTypes()) {
     auto newEntry = std::make_pair(id, typeID);
     floatType newShift6 =
-        calcShift6(_computedMixing24Epsilon[newEntry], _computedMixingSigmaSquare[newEntry], cutoffSquare);
+        applyShift ? calcShift6(_computedMixing24Epsilon[newEntry], _computedMixingSigmaSquare[newEntry], cutoffSquare)
+                   : 0  // TODO: ??? wait for mail from Matthias
+        ;
     _computedMixingShift6.emplace(newEntry, newShift6);
   }
 }

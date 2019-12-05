@@ -16,10 +16,10 @@ void LJFunctorTest::testAoSNoGlobals(bool newton3) {
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(cutoff);
   std::unique_ptr<FuncType> functor;
 
-  particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0);
+  particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0, true);
   if constexpr (mixing) {
     functor = std::make_unique<FuncType>(cutoff, particlePropertiesLibrary);
-    particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0);
+    particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0, true);
   } else {
     functor = std::make_unique<FuncType>(cutoff);
     functor->setParticleProperties(epsilon * 24, 1);
@@ -110,10 +110,10 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(cutoff);
   std::unique_ptr<FuncType> functor;
 
-  particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0);
+  particlePropertiesLibrary.addType(0, epsilon, sigma, 1.0, true);
   if constexpr (mixing) {
     functor = std::make_unique<FuncType>(cutoff, particlePropertiesLibrary);
-    particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0);
+    particlePropertiesLibrary.addType(1, epsilon2, sigma2, 1.0, true);
   } else {
     functor = std::make_unique<FuncType>(cutoff);
     functor->setParticleProperties(epsilon * 24, 1);
@@ -562,7 +562,7 @@ TEST_F(LJFunctorTest, testSetPropertiesVSPPLSoA) {
   funNoPPL.setParticleProperties(24, 1);
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(cutoff);
-  particlePropertiesLibrary.addType(0, 1, 1, 1);
+  particlePropertiesLibrary.addType(0, 1, 1, 1, true);
   autopas::LJFunctor<Molecule, FMCell, true, autopas::FunctorN3Modes::Both, true> funPPL(1, particlePropertiesLibrary);
 
   size_t numParticlesPerCell = 9;
@@ -602,7 +602,7 @@ TEST_F(LJFunctorTest, testSetPropertiesVSPPLAoS) {
   funNoPPL.setParticleProperties(24, 1);
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(cutoff);
-  particlePropertiesLibrary.addType(0, 1, 1, 1);
+  particlePropertiesLibrary.addType(0, 1, 1, 1, true);
   autopas::LJFunctor<Molecule, FMCell, true, autopas::FunctorN3Modes::Both, true> funPPL(1, particlePropertiesLibrary);
 
   std::vector<Molecule> moleculesNoPPL = {Molecule({0, 0, 0}, {0, 0, 0}, 0, 0), Molecule({0, 0, 1}, {0, 0, 0}, 1, 0)};

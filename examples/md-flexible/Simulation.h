@@ -182,7 +182,7 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
   _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibraryType>(_config->cutoff);
 
   for (auto [type, epsilon] : _config->epsilonMap) {
-    _particlePropertiesLibrary->addType(type, epsilon, _config->sigmaMap.at(type), _config->massMap.at(type));
+    _particlePropertiesLibrary->addType(type, epsilon, _config->sigmaMap.at(type), _config->massMap.at(type), true);
   }
 }
 
