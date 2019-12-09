@@ -34,6 +34,10 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * information if tested next.
      */
     bayesianSearch,
+    /**
+     * ActiveHarmony client / server system
+     */
+    activeHarmony,
   };
 
   /**
@@ -62,6 +66,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::bayesianSearch, "bayesian-Search"},
         {TuningStrategyOption::fullSearch, "full-Search"},
         {TuningStrategyOption::randomSearch, "random-Search"},
+        {TuningStrategyOption::activeHarmony, "active-harmony"},
     };
   };
 

@@ -23,6 +23,7 @@ target_link_libraries(
         $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${ARCHER}>>>:OpenMP::OpenMP_CXX>
         Eigen3
         spdlog::spdlog
+        harmony
 )
 
 # Ompstuff needs to be here because OpenMP.cmake needs to run before this file to create to OpenMP
