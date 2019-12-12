@@ -193,23 +193,6 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   _config = std::make_shared<MDFlexConfig>(mdFlexConfig);
   initializeParticlePropertiesLibrary();
   auto logFileName(_config->logFileName);
-  auto verletRebuildFrequency(_config->verletRebuildFrequency);
-  auto logLevel(_config->logLevel);
-  auto &cellSizeFactors(_config->cellSizeFactors);
-  auto tuningStrategy(_config->tuningStrategyOption);
-  auto containerChoice(_config->containerOptions);
-  auto selectorStrategy(_config->selectorStrategy);
-  auto cutoff(_config->cutoff);
-  auto dataLayoutOptions(_config->dataLayoutOptions);
-  auto newton3Options(_config->newton3Options);
-  auto traversalOptions(_config->traversalOptions);
-  auto tuningInterval(_config->tuningInterval);
-  auto tuningSamples(_config->tuningSamples);
-  auto verletSkinRadius(_config->verletSkinRadius);
-  auto cubesGrid(_config->cubeGridObjects);
-  auto cubesGauss(_config->cubeGaussObjects);
-  auto cubesUniform(_config->cubeUniformObjects);
-  auto spheres(_config->sphereObjects);
 
   // select either std::out or a logfile for autopas log output.
   // This does not affect md-flex output.
@@ -221,23 +204,22 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
     streamBuf = _logFile.rdbuf();
   }
   std::ostream outputStream(streamBuf);
-  _autopas.setAllowedCellSizeFactors(*cellSizeFactors);
-  _autopas.setAllowedContainers(containerChoice);
-  _autopas.setAllowedDataLayouts(dataLayoutOptions);
-  _autopas.setAllowedNewton3Options(newton3Options);
-  _autopas.setAllowedTraversals(traversalOptions);
+  _autopas.setAllowedCellSizeFactors(*_config->cellSizeFactors);
+  _autopas.setAllowedContainers(_config->containerOptions);
+  _autopas.setAllowedDataLayouts(_config->dataLayoutOptions);
+  _autopas.setAllowedNewton3Options(_config->newton3Options);
+  _autopas.setAllowedTraversals(_config->traversalOptions);
   _autopas.setBoxMax(_config->boxMax);
   _autopas.setBoxMin(_config->boxMin);
-  _autopas.setCutoff(cutoff);
-  _autopas.setNumSamples(tuningSamples);
-  _autopas.setSelectorStrategy(selectorStrategy);
-  _autopas.setTuningInterval(tuningInterval);
-  _autopas.setTuningStrategyOption(tuningStrategy);
+  _autopas.setCutoff(_config->cutoff);
+  _autopas.setNumSamples(_config->tuningSamples);
+  _autopas.setSelectorStrategy(_config->selectorStrategy);
+  _autopas.setTuningInterval(_config->tuningInterval);
+  _autopas.setTuningStrategyOption(_config->tuningStrategyOption);
   _autopas.setVerletClusterSize(_config->verletClusterSize);
   _autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency);
-  _autopas.setVerletRebuildFrequency(verletRebuildFrequency);
-  _autopas.setVerletSkin(verletSkinRadius);
-  autopas::Logger::get()->set_level(logLevel);
+  _autopas.setVerletSkin(_config->verletSkinRadius);
+  autopas::Logger::get()->set_level(_config->logLevel);
   _autopas.init();
 
   // load checkpoint
@@ -246,16 +228,16 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   }
 
   // initializing Objects
-  for (const auto &grid : cubesGrid) {
+  for (const auto &grid : _config->cubeGridObjects) {
     Generator::cubeGrid<Particle, ParticleCell>(_autopas, grid);
   }
-  for (const auto &cube : cubesGauss) {
+  for (const auto &cube : _config->cubeGaussObjects) {
     Generator::cubeGauss<Particle, ParticleCell>(_autopas, cube);
   }
-  for (const auto &cube : cubesUniform) {
+  for (const auto &cube : _config->cubeUniformObjects) {
     Generator::cubeRandom<Particle, ParticleCell>(_autopas, cube);
   }
-  for (const auto &sphere : spheres) {
+  for (const auto &sphere : _config->sphereObjects) {
     Generator::sphere<Particle, ParticleCell>(_autopas, sphere);
   }
 
