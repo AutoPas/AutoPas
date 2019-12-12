@@ -204,7 +204,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
     streamBuf = _logFile.rdbuf();
   }
   std::ostream outputStream(streamBuf);
-  _autopas.setAllowedCellSizeFactors(_config->cellSizeFactors);
+  _autopas.setAllowedCellSizeFactors(*_config->cellSizeFactors);
   _autopas.setAllowedContainers(_config->containerOptions);
   _autopas.setAllowedDataLayouts(_config->dataLayoutOptions);
   _autopas.setAllowedNewton3Options(_config->newton3Options);
