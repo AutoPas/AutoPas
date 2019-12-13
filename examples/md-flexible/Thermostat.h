@@ -28,13 +28,13 @@ void addMaxwellBoltzmannDistributedVelocity(autopas::Particle &p, const double a
   // random engine needs static lifetime otherwise it would be recreated for every call.
   static std::default_random_engine randomEngine(42);
 
-  // when adding independent normally distributed to all velocity components the velocity change is maxwell boltzmann
-  // distributed
+  // when adding independent normally distributed values to all velocity components
+  // the velocity change is maxwell boltzmann distributed
   std::normal_distribution<double> normalDistribution{0, 1};
   std::array<double, 3> randomVelocity{};
-  for (size_t i = 0; i < randomVelocity.size(); ++i) {
+  for (double &i : randomVelocity) {
     auto randomNumber = normalDistribution(randomEngine);
-    randomVelocity[i] = averageVelocity * randomNumber;
+    i = averageVelocity * randomNumber;
   }
   p.setV(autopas::utils::ArrayMath::add(p.getV(), randomVelocity));
 }
