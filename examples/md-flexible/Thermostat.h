@@ -32,9 +32,8 @@ void addMaxwellBoltzmannDistributedVelocity(autopas::Particle &p, const double a
   // the velocity change is maxwell boltzmann distributed
   std::normal_distribution<double> normalDistribution{0, 1};
   std::array<double, 3> randomVelocity{};
-  for (double &i : randomVelocity) {
-    auto randomNumber = normalDistribution(randomEngine);
-    i = averageVelocity * randomNumber;
+  for (double &v : randomVelocity) {
+    v = averageVelocity * normalDistribution(randomEngine);
   }
   p.setV(autopas::utils::ArrayMath::add(p.getV(), randomVelocity));
 }
