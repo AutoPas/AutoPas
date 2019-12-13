@@ -12,7 +12,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 
 /**
- * Thermostat to adjust the Temperature of the Simulation
+ * Thermostat to adjust the Temperature of the Simulation.
  */
 namespace Thermostat {
 
@@ -41,7 +41,8 @@ void addMaxwellBoltzmannDistributedVelocity(autopas::Particle &p, const double a
 }  // namespace
 
 /**
- * Calculates temperature of system. Assuming dimension-less units and Boltzmann constant = 1.
+ * Calculates temperature of system.
+ * Assuming dimension-less units and Boltzmann constant = 1.
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
  * @param autopas
@@ -66,8 +67,8 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
 }
 
 /**
- * Calculates temperature of system, for each component separately. Assuming dimension-less units and Boltzmann constant
- * = 1.
+ * Calculates temperature of system, for each component separately.
+ * Assuming dimension-less units and Boltzmann constant = 1.
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
  * @param autopas
