@@ -4,7 +4,7 @@ verlet-skin-radius               :  0.3
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
-traversal                        :  [c08, sliced, c18, c01, directSum, verlet-sliced, verlet-c18, verlet-c01, cuda-c01, verlet-lists, c01-combined-SoA, verlet-clusters, c04, var-verlet-lists-as-build, verlet-clusters-coloring, c04SoA, verlet-cluster-cells]
+traversal                        :  [c08, sliced, c18, c01, verlet-sliced, verlet-c18, verlet-c01, cuda-c01, verlet-lists, c01-combined-SoA, verlet-clusters, c04, var-verlet-lists-as-build, verlet-clusters-coloring, c04SoA, verlet-cluster-cells]
 tuning-strategy                  :  active-harmony
 tuning-interval                  :  1000
 tuning-samples                   :  3
@@ -33,7 +33,7 @@ thermostat:
   initialTemperature             :  1.4
   targetTemperature              :  1.4
   deltaTemperature               :  2
-  thermostatInterval             :  1
+  thermostatInterval             :  10
   addBrownianMotion              :  true
 vtk-write-frequency              :  100000
 vtk-filename                     :  SpinodalDecomposition_equilibration
