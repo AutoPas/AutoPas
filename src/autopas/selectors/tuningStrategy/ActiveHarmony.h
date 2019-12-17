@@ -242,10 +242,10 @@ bool ActiveHarmony::tune(bool currentInvalid) {
       }
       fetchConfiguration();
       AutoPasLog(debug, "ActiveHarmony::tune: Selected optimal configuration {}.", _currentConfig.toString());
-      return true;
+      return false;
     }
   } while (skipConfig);
-  return false;
+  return true;
 }
 
 void ActiveHarmony::removeN3Option(Newton3Option option) {
