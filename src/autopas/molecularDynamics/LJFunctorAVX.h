@@ -436,14 +436,11 @@ class LJFunctorAVX
       const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
       const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
 
-      const union {
-        __m128d reg;
-        double arr[2];
-      } sumfxfyVEC = {.reg = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh)};
+      const __m128d sumfxfyVEC = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
       const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
 
-      const double sumfx = sumfxfyVEC.arr[0];
-      const double sumfy = sumfxfyVEC.arr[1];
+      const double sumfx = sumfxfyVEC[0];
+      const double sumfy = sumfxfyVEC[1];
       const double sumfz = _mm_cvtsd_f64(sumfzVEC);
 
       fx1ptr[i] += sumfx;
