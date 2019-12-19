@@ -20,7 +20,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const double verletSkin = 0;
   const unsigned int verletClusterSize = 64;
   const unsigned int maxSamples = 2;
-  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, 0.);
+  autopas::LJFunctor<Molecule, FMCell> functor(cutoff);
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
       autopas::ContainerOption::getAllOptions(), std::set<double>({cellSizeFactor}),
       autopas::TraversalOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),

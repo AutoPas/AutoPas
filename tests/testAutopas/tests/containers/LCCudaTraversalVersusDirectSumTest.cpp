@@ -49,14 +49,15 @@ void LCCudaTraversalVersusDirectSumTest::test(unsigned long numMolecules, double
     _linkedCells.addParticle(*it);
   }
 
-  double eps = 1.0;
-  double sig = 1.0;
-  double shift = 0.0;
-  autopas::LJFunctor<Molecule, FMCell, /*mixing*/ false, autopas::FunctorN3Modes::Both, calculateGlobals> funcDS(
-      getCutoff(), shift);
+  constexpr double eps = 1.0;
+  constexpr double sig = 1.0;
+  constexpr bool shifting = false;
+  constexpr bool mixing = false;
+  autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> funcDS(
+      getCutoff());
   funcDS.setParticleProperties(eps * 24, sig * sig);
-  autopas::LJFunctor<Molecule, FMCell, /*mixing*/ false, autopas::FunctorN3Modes::Both, calculateGlobals> funcLC(
-      getCutoff(), shift);
+  autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> funcLC(
+      getCutoff());
   funcLC.setParticleProperties(eps * 24, sig * sig);
 
   autopas::DirectSumTraversal<FMCell, decltype(funcDS), autopas::DataLayoutOption::aos, useNewton3> traversalDS(

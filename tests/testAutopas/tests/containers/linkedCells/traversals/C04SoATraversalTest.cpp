@@ -16,7 +16,7 @@ using ::testing::_;
  */
 TEST_F(C04SoATraversalTest, testTraversal) {
   std::array<size_t, 3> edgeLength = {3, 3, 3};
-  autopas::LJFunctor<Molecule, FMCell> functor(1., 1.);
+  autopas::LJFunctor<Molecule, FMCell> functor(1.);
   functor.setParticleProperties(24, 1);
   std::vector<FMCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);

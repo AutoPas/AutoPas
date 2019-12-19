@@ -24,8 +24,7 @@ void LinkedCellsVersusVerletListsTest::test(unsigned long numMolecules, double r
   for (auto it = _verletLists->begin(); it.isValid(); ++it) {
     _linkedCells->addParticle(*it);
   }
-  const double shift = 0.0;
-  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), shift);
+  autopas::LJFunctor<Molecule, FMCell> func(getCutoff());
   func.setParticleProperties(24, 1);
 
   autopas::TraversalVerlet<FMCell, decltype(func), dataLayoutOption, useNewton3> traversalLJV(&func);

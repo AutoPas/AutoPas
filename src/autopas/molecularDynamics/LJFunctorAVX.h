@@ -24,13 +24,19 @@ namespace autopas {
  * This Version is implemented using AVX intrinsics.
  * @tparam Particle The type of particle.
  * @tparam ParticleCell The type of particlecell.
+ * @tparam applyShift Switch for the lj potential to be truncated shifted.
+ * @tparam useMixing Switch for the functor to be used with multiple particle types.
+ * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
+ * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, class ParticleCell, bool useMixing = false, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
-          bool calculateGlobals = false, bool relevantForTuning = true>
-class LJFunctorAVX
-    : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType, LJFunctorAVX<Particle, ParticleCell>> {
+template <class Particle, class ParticleCell, bool applyShift = false, bool useMixing = false,
+          FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
+          bool relevantForTuning = true>
+class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
+                                    LJFunctorAVX<Particle, ParticleCell, applyShift, useMixing, useNewton3,
+                                                 calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -49,7 +55,9 @@ class LJFunctorAVX
    */
   explicit LJFunctorAVX(double cutoff, bool duplicatedCalculation, void * /*dummy*/)
 #ifdef __AVX__
-      : Functor<Particle, ParticleCell, SoAArraysType, LJFunctorAVX<Particle, ParticleCell>>(cutoff),
+      : Functor<Particle, ParticleCell, SoAArraysType,
+                LJFunctorAVX<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals,
+                             relevantForTuning>>(cutoff),
         _one{_mm256_set1_pd(1.)},
         _masks{
             _mm256_set_epi64x(0, 0, 0, -1),
@@ -235,6 +243,33 @@ class LJFunctorAVX
   }
 
  private:
+  /**
+   * Actual inner kernel of the SoAFunctor.
+   *
+   * @tparam newton3
+   * @tparam masked If false the full vector length is used. Else the last entries are masked away depending on the
+   * argument "rest".
+   * @param j
+   * @param x1
+   * @param y1
+   * @param z1
+   * @param x2ptr
+   * @param y2ptr
+   * @param z2ptr
+   * @param fx2ptr
+   * @param fy2ptr
+   * @param fz2ptr
+   * @param typeID1ptr
+   * @param type2IDptr
+   * @param fxacc
+   * @param fyacc
+   * @param fzacc
+   * @param virialSumX
+   * @param virialSumY
+   * @param virialSumZ
+   * @param upotSum
+   * @param rest
+   */
   template <bool newton3, bool masked>
   inline void SoAKernel(const size_t j, const __m256d &x1, const __m256d &y1, const __m256d &z1,
                         const double *const __restrict__ x2ptr, const double *const __restrict__ y2ptr,
@@ -256,10 +291,12 @@ class LJFunctorAVX
                                    _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 1)),
                                    _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 2)),
                                    _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 3)));
-      shift6s = _mm256_set_pd(_PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 0)),
-                              _PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 1)),
-                              _PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 2)),
-                              _PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 3)));
+      if constexpr (applyShift) {
+        shift6s = _mm256_set_pd(_PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 0)),
+                                _PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 1)),
+                                _PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 2)),
+                                _PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 3)));
+      }
     }
 
     const __m256d x2 = masked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&x2ptr[j]);
@@ -330,16 +367,15 @@ class LJFunctorAVX
       const __m256d virialz = _mm256_mul_pd(fz, drz);
 
       // Global Potential
-      const __m256d upotPART1 = _mm256_mul_pd(epsilon24s, lj12m6);
-      const __m256d upotPART2 = _mm256_add_pd(shift6s, upotPART1);
-      const __m256d upot =
-          masked ? _mm256_and_pd(upotPART2, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
-                 : _mm256_and_pd(upotPART2, cutoffMask);
+      const __m256d upot = _mm256_fmadd_pd(epsilon24s, lj12m6, shift6s);
+      const __m256d upotMasked =
+          masked ? _mm256_and_pd(upot, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
+                 : _mm256_and_pd(upot, cutoffMask);
 
       *virialSumX = _mm256_add_pd(*virialSumX, virialx);
       *virialSumY = _mm256_add_pd(*virialSumY, virialy);
       *virialSumZ = _mm256_add_pd(*virialSumZ, virialz);
-      *upotSum = _mm256_add_pd(*upotSum, upot);
+      *upotSum = _mm256_add_pd(*upotSum, upotMasked);
     }
 #endif
   }
@@ -618,8 +654,12 @@ class LJFunctorAVX
   void setParticleProperties(double epsilon24, double sigmaSquare) {
     _epsilon24 = _mm256_set1_pd(epsilon24);
     _sigmaSquare = _mm256_set1_pd(sigmaSquare);
-    _shift6 =
-        _mm256_set1_pd(ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquare[0]));
+    if constexpr (applyShift) {
+      _shift6 = _mm256_set1_pd(
+          ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquare[0]));
+    } else {
+      _shift6 = _mm256_setzero_pd();
+    }
   }
 
  private:
@@ -648,7 +688,7 @@ class LJFunctorAVX
   const __m256d _one;
   const __m256i _masks[3];
   const __m256d _cutoffsquare;
-  __m256d _shift6;
+  __m256d _shift6 = _mm256_setzero_pd();
   __m256d _epsilon24;
   __m256d _sigmaSquare;
 

@@ -39,16 +39,20 @@ enum class FunctorN3Modes {
  * A functor to handle lennard-jones interactions between two particles (molecules).
  * @tparam Particle The type of particle.
  * @tparam ParticleCell The type of particlecell.
+ * @tparam applyShift Switch for the lj potential to be truncated shifted.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, class ParticleCell, bool useMixing = false, FunctorN3Modes useNewton3 = FunctorN3Modes::Both,
-          bool calculateGlobals = false, bool relevantForTuning = true>
+template <class Particle, class ParticleCell, bool applyShift = false, bool useMixing = false,
+          FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
+          bool relevantForTuning = true>
 class LJFunctor
-    : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType, LJFunctor<Particle, ParticleCell>> {
+    : public Functor<
+          Particle, ParticleCell, typename Particle::SoAArraysType,
+          LJFunctor<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
   using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
 
@@ -67,7 +71,10 @@ class LJFunctor
    * @param dummy unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, bool duplicatedCalculation, void * /*dummy*/)
-      : Functor<Particle, ParticleCell, SoAArraysType, LJFunctor<Particle, ParticleCell>>(cutoff),
+      : Functor<
+            Particle, ParticleCell, SoAArraysType,
+            LJFunctor<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+            cutoff),
         _cutoffsquare{cutoff * cutoff},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
@@ -131,7 +138,9 @@ class LJFunctor
     if constexpr (useMixing) {
       sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
       epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
-      shift6 = _PPLibrary->mixingShift6(i.getTypeId(), j.getTypeId());
+      if constexpr (applyShift) {
+        shift6 = _PPLibrary->mixingShift6(i.getTypeId(), j.getTypeId());
+      }
     }
     auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
     double dr2 = utils::ArrayMath::dot(dr, dr);
@@ -226,11 +235,16 @@ class LJFunctor
         // preload all sigma and epsilons for next vectorized region
         sigmaSquares.resize(soa.getNumParticles());
         epsilon24s.resize(soa.getNumParticles());
-        shift6s.resize(soa.getNumParticles());
+        // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
+        if constexpr (applyShift) {
+          shift6s.resize(soa.getNumParticles());
+        }
         for (unsigned int j = 0; j < soa.getNumParticles(); ++j) {
           sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
           epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
-          shift6s[j] = _PPLibrary->mixingShift6(typeptr[i], typeptr[j]);
+          if constexpr (applyShift) {
+            shift6s[j] = _PPLibrary->mixingShift6(typeptr[i], typeptr[j]);
+          }
         }
       }
 
@@ -241,7 +255,9 @@ class LJFunctor
         if constexpr (useMixing) {
           sigmasquare = sigmaSquares[j];
           epsilon24 = epsilon24s[j];
-          shift6 = shift6s[j];
+          if constexpr (applyShift) {
+            shift6 = shift6s[j];
+          }
         }
         const SoAFloatPrecision drx = xptr[i] - xptr[j];
         const SoAFloatPrecision dry = yptr[i] - yptr[j];
@@ -362,11 +378,16 @@ class LJFunctor
       if constexpr (useMixing) {
         sigmaSquares.resize(soa2.getNumParticles());
         epsilon24s.resize(soa2.getNumParticles());
-        shift6s.resize(soa2.getNumParticles());
+        // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
+        if constexpr (applyShift) {
+          shift6s.resize(soa2.getNumParticles());
+        }
         for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
           sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
           epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
-          shift6s[j] = _PPLibrary->mixingShift6(typeptr1[i], typeptr2[j]);
+          if constexpr (applyShift) {
+            shift6s[j] = _PPLibrary->mixingShift6(typeptr1[i], typeptr2[j]);
+          }
         }
       }
 
@@ -377,7 +398,9 @@ class LJFunctor
         if constexpr (useMixing) {
           sigmasquare = sigmaSquares[j];
           epsilon24 = epsilon24s[j];
-          shift6 = shift6s[j];
+          if constexpr (applyShift) {
+            shift6 = shift6s[j];
+          }
         }
 
         const SoAFloatPrecision drx = x1ptr[i] - x2ptr[j];
@@ -511,7 +534,11 @@ class LJFunctor
   void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquare) {
     _epsilon24 = epsilon24;
     _sigmasquare = sigmaSquare;
-    _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmasquare, _cutoffsquare);
+    if (applyShift) {
+      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmasquare, _cutoffsquare);
+    } else {
+      _shift6 = 0.;
+    }
 #if defined(AUTOPAS_CUDA)
     LJFunctorConstants<SoAFloatPrecision> constants(_cutoffsquare, _epsilon24 /* epsilon24 */,
                                                     _sigmasquare /* sigmasquare */, _shift6);
@@ -857,7 +884,9 @@ class LJFunctor
             for (size_t j = 0; j < vecsize; j++) {
               sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
               epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[currentList[joff + j]]);
-              shift6s[j] = _PPLibrary->mixingShift6(typeptr1[i], typeptr2[currentList[joff + j]]);
+              if constexpr (applyShift) {
+                shift6s[j] = _PPLibrary->mixingShift6(typeptr1[i], typeptr2[currentList[joff + j]]);
+              }
             }
           }
 
@@ -876,7 +905,9 @@ class LJFunctor
             if constexpr (useMixing) {
               sigmasquare = sigmaSquares[j];
               epsilon24 = epsilon24s[j];
-              shift6 = shift6s[j];
+              if constexpr (applyShift) {
+                shift6 = shift6s[j];
+              }
             }
             // const size_t j = currentList[jNeighIndex];
 
@@ -953,7 +984,9 @@ class LJFunctor
         if constexpr (useMixing) {
           sigmasquare = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
           epsilon24 = _PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
-          shift6 = _PPLibrary->mixingShift6(typeptr1[i], typeptr2[j]);
+          if constexpr (applyShift) {
+            shift6 = _PPLibrary->mixingShift6(typeptr1[i], typeptr2[j]);
+          }
         }
 
         const SoAFloatPrecision drx = xptr[i] - xptr[j];
@@ -1065,7 +1098,7 @@ class LJFunctor
 
   const double _cutoffsquare;
   // not const because they might be reset through PPL
-  double _epsilon24, _sigmasquare, _shift6;
+  double _epsilon24, _sigmasquare, _shift6 = 0;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
   // sum of the potential energy, only calculated if calculateGlobals is true
