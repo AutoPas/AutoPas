@@ -15,6 +15,7 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
+#include "autopas/selectors/tuningStrategy/ActiveHarmony.h"
 #include "autopas/selectors/tuningStrategy/BayesianSearch.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopas/selectors/tuningStrategy/RandomSearch.h"
@@ -566,6 +567,11 @@ class AutoPas {
         return std::make_unique<BayesianSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
                                                 _allowedDataLayouts, _allowedNewton3Options, _maxEvidence,
                                                 _acquisitionFunctionOption);
+      }
+
+      case TuningStrategyOption::activeHarmony: {
+        return std::make_unique<ActiveHarmony>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
+                                               _allowedDataLayouts, _allowedNewton3Options);
       }
     }
 
