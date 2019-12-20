@@ -75,7 +75,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     }
   }
 #else
-      : Functor<Particle, ParticleCell, SoAArraysType, LJFunctorAVX<Particle, ParticleCell>>(cutoff),
+      : Functor<Particle, ParticleCell, SoAArraysType,
+                LJFunctorAVX<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals,
+                             relevantForTuning>>(cutoff),
         _one{0},
         _masks{0, 0, 0},
         _cutoffsquare{0},
