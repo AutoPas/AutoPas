@@ -369,7 +369,13 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const __m256d virialz = _mm256_mul_pd(fz, drz);
 
       // Global Potential
+#ifdef __FMA__
       const __m256d upot = _mm256_fmadd_pd(epsilon24s, lj12m6, shift6s);
+#else
+      const __m256d uTmp = _mm256_mul_pd(epsilon24s, lj12m6);
+      const __m256d upot = _mm256_add_pd(shift6s, uTmp);
+#endif
+
       const __m256d upotMasked =
           masked ? _mm256_and_pd(upot, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
                  : _mm256_and_pd(upot, cutoffMask);
