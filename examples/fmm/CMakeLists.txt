@@ -3,7 +3,7 @@ file(
         MY_SRC
         "*.cpp"
         "*.h"
-        "../../tests/testAutopas/testingHelpers/RandomGenerator.cpp"
+        "../../tools/autopasTools/generators/RandomGenerator.cpp"
 )
 
 add_executable(fmm ${MY_SRC})

@@ -9,6 +9,8 @@
 #include <iomanip>
 #include <iostream>
 #include <random>
+#include "../../tools/autopasTools/generators/GaussianGenerator.h"
+#include "../../tools/autopasTools/generators/RandomGenerator.h"
 #include "AdaptiveOctree.h"
 #include "FmmParticle.h"
 #include "Math3D.h"
@@ -16,65 +18,68 @@
 #include "autopas/AutoPas.h"
 #include "autopas/utils/Timer.h"
 
-autopas::utils::Timer *timer;
 int particleId = 0;
 
 unsigned long long nearFieldCalculations = 0;
 unsigned long long exactCalculations = 0;
 
-double measureTime() {
-  double ret = timer->stop();
-  timer->start();
-  return ret;
-}
+double getRatio(long a, long b) { return static_cast<double>(a) / static_cast<double>(b); }
 
-// P2M + M2M
-void upwardPassRec(AdaptiveOctreeNode &node, Operators &op) {
+// P2M
+void upwardPassP2M(AdaptiveOctreeNode &node, Operators &op) {
   if (node.isLeaf()) {
     op.P2M(node);
   } else {
     for (int i = 0; i < 8; ++i) {
       auto child = node.getChild(i);
-      upwardPassRec(*child, op);
+      upwardPassP2M(*child, op);
+    }
+  }
+}
+
+// M2M
+void upwardPassM2M(AdaptiveOctreeNode &node, Operators &op) {
+  if (not node.isLeaf()) {
+    for (int i = 0; i < 8; ++i) {
+      auto child = node.getChild(i);
+      upwardPassM2M(*child, op);
     }
     op.M2M(node);
   }
 }
 
-void upwardPass(AdaptiveOctree &tree, Operators &op) {
-  upwardPassRec(*tree.getRoot(), op);
-  std::cout << "P2M and M2M took " << measureTime() << "s" << std::endl;
-}
-
 // M2L
-void downwardPassRec1(AdaptiveOctreeNode &node, Operators &op) {
+void downwardPassM2L(AdaptiveOctreeNode &node, Operators &op) {
   op.M2L(node);
   if (!node.isLeaf()) {
     for (int i = 0; i < 8; ++i) {
       auto child = node.getChild(i);
-      downwardPassRec1(*child, op);
+      downwardPassM2L(*child, op);
     }
   }
 }
 
-// L2L + L2P
-void downwardPassRec2(AdaptiveOctreeNode &node, Operators &op) {
+// L2L
+void downwardPassL2L(AdaptiveOctreeNode &node, Operators &op) {
   op.L2L(node);
   if (!node.isLeaf()) {
     for (int i = 0; i < 8; ++i) {
       auto child = node.getChild(i);
-      downwardPassRec2(*child, op);
+      downwardPassL2L(*child, op);
+    }
+  }
+}
+
+// L2P
+void downwardPassL2P(AdaptiveOctreeNode &node, Operators &op) {
+  if (!node.isLeaf()) {
+    for (int i = 0; i < 8; ++i) {
+      auto child = node.getChild(i);
+      downwardPassL2P(*child, op);
     }
   } else {
     op.L2P(node);
   }
-}
-
-void downwardPass(AdaptiveOctree &tree, Operators &op) {
-  downwardPassRec1(*tree.getRoot(), op);
-  std::cout << "M2L took " << measureTime() << "s" << std::endl;
-  downwardPassRec2(*tree.getRoot(), op);
-  std::cout << "L2L and L2P took " << measureTime() << "s" << std::endl;
 }
 
 void calculateNearField(AdaptiveOctreeNode &node) {
@@ -124,6 +129,8 @@ int main(int argc, char **argv) {
   double errorTolerance = 0.01;
   int minDepth = 0;
   int maxDepth = -1;
+  bool checkResults = false;
+  bool uniform = true;
 
   bool displayHelp = false;
   int option, option_index;
@@ -135,6 +142,8 @@ int main(int argc, char **argv) {
                                          {"error-tolerance", required_argument, nullptr, 'e'},
                                          {"depth-min", required_argument, nullptr, 'm'},
                                          {"depth-max", required_argument, nullptr, 'M'},
+                                         {"check", no_argument, nullptr, 'c'},
+                                         {"non-uniform", no_argument, nullptr, 'u'},
                                          {nullptr, 0, nullptr, 0}};
   // clang-format on
 
@@ -202,6 +211,15 @@ int main(int argc, char **argv) {
         }
         break;
       }
+      case 'c': {
+        checkResults = true;
+        break;
+      }
+      case 'u': {
+        uniform = false;
+        break;
+      }
+
       default: {
         // error message handled by getopt
         displayHelp = true;
@@ -232,9 +250,8 @@ int main(int argc, char **argv) {
   std::cout << "maxDepth = " << maxDepth << std::endl;
 
   // Start timer.
-  auto tmp = autopas::utils::Timer();
-  timer = &tmp;
-  timer->start();
+  auto timer = autopas::utils::Timer();
+  timer.start();
 
   // Initialize static fields of Math3D.
   Math3D::initialize();
@@ -252,13 +269,31 @@ int main(int argc, char **argv) {
   std::mt19937 randomEngine(rd());
   std::uniform_real_distribution<double> random(0.0, 1.0);
 
+  double totalCharge = 0;
+
   // Add particles at random positions.
-  for (int i = 0; i < numberOfParticles; ++i) {
-    double x = random(randomEngine) * (highCorner[0] - lowCorner[0]) + lowCorner[0];
-    double y = random(randomEngine) * (highCorner[1] - lowCorner[1]) + lowCorner[1];
-    double z = random(randomEngine) * (highCorner[2] - lowCorner[2]) + lowCorner[2];
-    double charge = random(randomEngine) * 1.0;
-    addParticleToCont(cont, x, y, z, charge);
+  if (uniform) {
+    /*for (int i = 0; i < numberOfParticles; ++i) {
+      double x = random(randomEngine) * (highCorner[0] - lowCorner[0]) + lowCorner[0];
+      double y = random(randomEngine) * (highCorner[1] - lowCorner[1]) + lowCorner[1];
+      double z = random(randomEngine) * (highCorner[2] - lowCorner[2]) + lowCorner[2];
+      addParticleToCont(cont, x, y, z, 1);
+    }*/
+    FmmParticle defParticle({0, 0, 0}, {0, 0, 0}, 0, 1);
+    autopasTools::generators::RandomGenerator::fillWithParticles(cont, defParticle, cont.getBoxMin(), cont.getBoxMax(),
+                                                                 numberOfParticles);
+  } else {
+    FmmParticle defParticle1({0, 0, 0}, {0, 0, 0}, 0, 1);
+    FmmParticle defParticle2({0, 0, 0}, {0, 0, 0}, numberOfParticles / 2, 1);
+    autopasTools::generators::GaussianGenerator::fillWithParticles(cont, cont.getBoxMin(), cont.getBoxMax(),
+                                                                   numberOfParticles / 2, defParticle1, {2, 2, 2});
+    autopasTools::generators::GaussianGenerator::fillWithParticles(cont, cont.getBoxMin(), cont.getBoxMax(),
+                                                                   numberOfParticles / 2, defParticle2, {6, 6, 6});
+  }
+  for (auto particle = cont.begin(); particle.isValid(); ++particle) {
+    double charge = random(randomEngine) * 10.0;
+    particle->charge = charge;
+    totalCharge += charge;
   }
 
   AdaptiveOctree tree = AdaptiveOctree(cont, maxParticlesPerNode, orderOfExpansion, minDepth, maxDepth);
@@ -273,63 +308,118 @@ int main(int argc, char **argv) {
   std::cout << "interaction nodes = " << tree.totalInteractionNodes << " (total), "
             << (1.0 * tree.totalInteractionNodes / tree.numberOfNodes) << " (average)" << std::endl;
 
-  std::cout << "Init took " << measureTime() << "s" << std::endl;
+  long timeInit = timer.stop();
+  std::cout << "Init took " << (timeInit / 1000) << "ms" << std::endl;
+  timer.start();
+
+  autopas::utils::Timer timerFmm;
+  timerFmm.start();
 
   // FMM
   Operators op(orderOfExpansion);
   std::cout << "Init Operators done" << std::endl;
-  upwardPass(tree, op);
+
+  upwardPassP2M(*tree.getRoot(), op);
+  long timeP2M = timer.stop();
+
+  std::cout << "P2M took " << (timeP2M / 1000) << "ms" << std::endl;
+
+  timer.start();
+  upwardPassM2M(*tree.getRoot(), op);
+  long timeM2M = timer.stop();
+
+  std::cout << "M2M took " << (timeM2M / 1000) << "ms" << std::endl;
+
   std::cout << "UpwardPass done" << std::endl;
-  downwardPass(tree, op);
+
+  timer.start();
+  downwardPassM2L(*tree.getRoot(), op);
+  long timeM2L = timer.stop();
+  std::cout << "M2L took " << (timeM2L / 1000) << "ms" << std::endl;
+
+  timer.start();
+  downwardPassL2L(*tree.getRoot(), op);
+  long timeL2L = timer.stop();
+  std::cout << "L2L took " << (timeL2L / 1000) << "ms" << std::endl;
+
+  timer.start();
+  downwardPassL2P(*tree.getRoot(), op);
+  long timeL2P = timer.stop();
+
+  std::cout << "L2P took " << (timeL2P / 1000) << "ms" << std::endl;
+
   std::cout << "DownwardPass done" << std::endl;
 
   // Near field:
+  timer.start();
   calculateNearField(*tree.getRoot());
+  long timeNear = timer.stop();
 
-  std::cout << "Near field calculation took " << measureTime() << "s" << std::endl;
+  std::cout << "Near field calculation took " << (timeNear / 1000) << "ms" << std::endl;
 
-  // Calculate exact result by calculating all interactions directly.
-  for (auto particle = cont.begin(); particle.isValid(); ++particle) {
-    for (auto otherParticle = cont.begin(); otherParticle.isValid(); ++otherParticle) {
-      if (particle->getID() != otherParticle->getID()) {
-        double x = particle->getR()[0] - otherParticle->getR()[0];
-        double y = particle->getR()[1] - otherParticle->getR()[1];
-        double z = particle->getR()[2] - otherParticle->getR()[2];
-        auto dist = std::sqrt(x * x + y * y + z * z);
-        particle->resultExact += otherParticle->charge / dist;
-        exactCalculations++;
+  long fmmTime = timeP2M + timeM2M + timeM2L + timeL2L + timeL2P + timeNear;
+  long timeFar = fmmTime - timeNear;
+
+  std::cout << std::endl << std::endl;
+  std::cout << (fmmTime / 1000) << std::endl << std::endl;
+
+  std::cout << (timeFar / 1000) << "\t" << (timeNear / 1000) << "\t" << getRatio(timeFar, fmmTime) << "\t"
+            << getRatio(timeNear, fmmTime) << std::endl;
+
+  std::cout << getRatio(timeP2M, timeFar) << "\t" << getRatio(timeM2M, timeFar) << "\t" << getRatio(timeM2L, timeFar)
+            << "\t" << getRatio(timeL2L, timeFar) << "\t" << getRatio(timeL2P, timeFar) << "\t" << std::endl;
+
+  if (checkResults) {
+    // Calculate exact result by calculating all interactions directly.
+    double maxError = 0;
+    timer.start();
+    for (auto particle = cont.begin(); particle.isValid(); ++particle) {
+      for (auto otherParticle = cont.begin(); otherParticle.isValid(); ++otherParticle) {
+        if (particle->getID() != otherParticle->getID()) {
+          double x = particle->getR()[0] - otherParticle->getR()[0];
+          double y = particle->getR()[1] - otherParticle->getR()[1];
+          double z = particle->getR()[2] - otherParticle->getR()[2];
+          auto dist = std::sqrt(x * x + y * y + z * z);
+          particle->resultExact += otherParticle->charge / dist;
+          exactCalculations++;
+        }
       }
     }
-  }
+    long timeExact = timer.stop();
 
-  std::cout << "exact took " << measureTime() << "s" << std::endl;
+    std::cout << "exact took " << (timeExact / 1000) << "ms" << std::endl;
 
-  std::cout << "nearFieldCalculations = " << nearFieldCalculations << std::endl;
-  std::cout << "exactCalculations = " << exactCalculations << std::endl;
+    std::cout << "nearFieldCalculations = " << nearFieldCalculations << std::endl;
+    std::cout << "exactCalculations = " << exactCalculations << std::endl;
 
-  bool correctResult = true;
+    bool correctResult = true;
 
-  // Check results.
-  for (auto particle = cont.begin(); particle.isValid(); ++particle) {
-    if (particle->resultExact != 0) {
-      int id = particle->getID();
-      double error = std::abs(particle->resultFMM / particle->resultExact);
+    // Check results.
+    for (auto particle = cont.begin(); particle.isValid(); ++particle) {
+      if (particle->resultExact != 0) {
+        int id = particle->getID();
+        double relativeError = std::abs(particle->resultFMM / particle->resultExact);
+        double absoluteError = std::abs(particle->resultFMM - particle->resultExact);
+        maxError = std::max(maxError, absoluteError);
 
-      if (std::abs(error - 1.0) > errorTolerance) {
-        std::cout << "[ID=" << id << "] " << particle->getR()[0] << ", " << particle->getR()[1] << ", "
-                  << particle->getR()[2] << ", charge = " << particle->charge << std::endl;
-        std::cout << "long range " << particle->longRange << std::endl;
-        std::cout << "short range " << particle->shortRange << std::endl;
-        std::cout << "resultFMM " << particle->resultFMM << std::endl;
-        std::cout << "resultExact " << particle->resultExact << std::endl;
-        correctResult = false;
+        if (std::abs(relativeError - 1.0) > errorTolerance) {
+          std::cout << "[ID=" << id << "] " << particle->getR()[0] << ", " << particle->getR()[1] << ", "
+                    << particle->getR()[2] << ", charge = " << particle->charge << std::endl;
+          std::cout << "long range " << particle->longRange << std::endl;
+          std::cout << "short range " << particle->shortRange << std::endl;
+          std::cout << "resultFMM " << particle->resultFMM << std::endl;
+          std::cout << "resultExact " << particle->resultExact << std::endl;
+          correctResult = false;
+        }
       }
     }
+    std::cout << "maxError:" << std::endl << maxError << std::endl;
+    if (correctResult) {
+      return EXIT_SUCCESS;
+    } else {
+      std::cout << "At least 1 result of the fast multipole method is wrong." << std::endl;
+      return 1;
+    }
   }
-  if (correctResult) {
-    return EXIT_SUCCESS;
-  } else {
-    std::cout << "At least 1 result of the fast multipole method is wrong." << std::endl;
-    return 1;
-  }
+  return EXIT_SUCCESS;
 }
