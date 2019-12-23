@@ -7,6 +7,7 @@
 #pragma once
 
 #include <memory>
+
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterCells.h"

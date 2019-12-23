@@ -7,9 +7,7 @@
 #pragma once
 
 #include <vector>
-#include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
+
 #include "Objects/CubeGauss.h"
 #include "Objects/CubeGrid.h"
 #include "Objects/CubeUniform.h"
@@ -17,6 +15,9 @@
 #include "PrintableMolecule.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/GaussianGenerator.h"
+#include "autopasTools/generators/GridGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 /**
  * Class for contructing a container and generating Objects and Shapes filled with Particles
  */
@@ -70,7 +71,7 @@ void Generator::cubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, cons
   dummyParticle.setV(object.getVelocity());
   dummyParticle.setID(autopas.getNumberOfParticles());
   dummyParticle.setTypeId(object.getTypeId());
-  GridGenerator::fillWithParticles(
+  autopasTools::generators::GridGenerator::fillWithParticles(
       autopas, object.getParticlesPerDim(), dummyParticle,
       {object.getParticleSpacing(), object.getParticleSpacing(), object.getParticleSpacing()}, object.getBoxMin());
 }
@@ -81,8 +82,9 @@ void Generator::cubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas, con
   dummyParticle.setV(object.getVelocity());
   dummyParticle.setID(autopas.getNumberOfParticles());
   dummyParticle.setTypeId(object.getTypeId());
-  GaussianGenerator::fillWithParticles(autopas, object.getBoxMin(), object.getBoxMax(), object.getParticlesTotal(),
-                                       dummyParticle, object.getDistributionMean(), object.getDistributionMean());
+  autopasTools::generators::GaussianGenerator::fillWithParticles(
+      autopas, object.getBoxMin(), object.getBoxMax(), object.getParticlesTotal(), dummyParticle,
+      object.getDistributionMean(), object.getDistributionMean());
 }
 
 template <class Particle, class ParticleCell>
@@ -91,8 +93,8 @@ void Generator::cubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas, co
   dummyParticle.setV(object.getVelocity());
   dummyParticle.setTypeId(object.getTypeId());
   dummyParticle.setID(autopas.getNumberOfParticles());
-  RandomGenerator::fillWithParticles(autopas, dummyParticle, object.getBoxMin(), object.getBoxMax(),
-                                     object.getParticlesTotal());
+  autopasTools::generators::RandomGenerator::fillWithParticles(autopas, dummyParticle, object.getBoxMin(),
+                                                               object.getBoxMax(), object.getParticlesTotal());
 }
 
 template <class Particle, class ParticleCell>

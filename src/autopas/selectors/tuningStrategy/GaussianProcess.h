@@ -6,13 +6,14 @@
 
 #pragma once
 
-#include <omp.h>
 #include <Eigen/Dense>
+
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -406,7 +407,7 @@ class GaussianProcess {
       // precalculate matrices for all hyperparameters
       // @TODO find sensible chunkSize
 #ifdef AUTOPAS_OPENMP
-      const size_t chunkSize = std::max(hp_sample_size / (omp_get_max_threads() * 10), 1ul);
+      const size_t chunkSize = std::max(hp_sample_size / (autopas_get_num_threads() * 10), 1ul);
 #pragma omp parallel for schedule(dynamic, chunkSize)
 #endif
       for (size_t t = 0; t < hp_sample_size; ++t) {

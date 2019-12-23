@@ -5,14 +5,14 @@
  */
 
 #include "AutoPasInterfaceTest.h"
+
 #include "testingHelpers/commonTypedefs.h"
 
-constexpr double cutoff = 1.;
+constexpr double cutoff = 1.1;
 constexpr double skin = 0.2;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
 
-constexpr double shift = 0.1;
 constexpr std::array<double, 3> zeroArr = {0., 0., 0.};
 
 template <typename AutoPasT>
@@ -226,7 +226,7 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas, Functor *functor,
         << "wrong force calculated for particle: " << mol.toString();
   }
 
-  EXPECT_NEAR(functor->getUpot(), 16128.1 * numParticles / 2., 1e-5) << "wrong upot calculated";
+  EXPECT_NEAR(functor->getUpot(), 16128.983372449373 * numParticles / 2., 1e-5) << "wrong upot calculated";
   EXPECT_NEAR(functor->getVirial(), 195072. * numParticles / 2., 1e-5) << "wrong virial calculated";
 }
 
@@ -250,7 +250,7 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::AutoPas
         << "wrong force calculated.";
   }
 
-  EXPECT_DOUBLE_EQ(functor1->getUpot() + functor2->getUpot(), 16128.1) << "wrong upot calculated";
+  EXPECT_DOUBLE_EQ(functor1->getUpot() + functor2->getUpot(), 16128.983372449373) << "wrong upot calculated";
   EXPECT_DOUBLE_EQ(functor1->getVirial() + functor2->getVirial(), 195072.) << "wrong virial calculated";
 }
 
@@ -290,7 +290,7 @@ void testSimulationLoop(testingTuple options) {
     autoPas.addParticle(particle1);
     autoPas.addParticle(particle2);
   }
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff, shift);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor(cutoff);
   functor.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
@@ -370,7 +370,7 @@ void testHaloCalculation(testingTuple options) {
   }
 
   autopas::LJFunctor<Molecule, FMCell, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
-      cutoff, shift);
+      cutoff);
   functor.setParticleProperties(24, 1);
 
   autoPas.iteratePairwise(&functor);
@@ -378,7 +378,7 @@ void testHaloCalculation(testingTuple options) {
   doAssertions(autoPas, &functor, 26);
 }
 
-TEST_P(AutoPasInterfaceTest, SimulatonLoopTest) {
+TEST_P(AutoPasInterfaceTest, SimulationLoopTest) {
   // this test checks the correct behavior of the autopas interface.
   auto options = GetParam();
   try {
@@ -476,9 +476,9 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
       }
     }
   }
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor1(cutoff, shift);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor1(cutoff);
   functor1.setParticleProperties(24.0, 1);
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor2(cutoff, shift);
+  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, true> functor2(cutoff);
   functor2.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);

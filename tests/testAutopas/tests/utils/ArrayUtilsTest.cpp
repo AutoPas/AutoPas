@@ -5,6 +5,7 @@
  */
 
 #include <gtest/gtest.h>
+
 #include "autopas/utils/ArrayUtils.h"
 
 using namespace autopas;

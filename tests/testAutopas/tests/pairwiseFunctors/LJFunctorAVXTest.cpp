@@ -7,10 +7,11 @@
 #ifdef __AVX__
 
 #include "LJFunctorAVXTest.h"
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/particles/Particle.h"
-#include "testingHelpers/RandomGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 template <class SoAType>
 bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
@@ -85,19 +86,18 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  RandomGenerator::fillWithParticles(cell1AVX, defaultParticle, _lowCorner,
-                                     {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
-  RandomGenerator::fillWithParticles(cell2AVX, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]},
-                                     _highCorner, numParticles);
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      cell1AVX, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      cell2AVX, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
 
   // copy cells
   FMCell cell1NoAVX(cell1AVX);
   FMCell cell2NoAVX(cell2AVX);
-  autopas::LJFunctor<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff,
-                                                                                                               0.0);
+  autopas::LJFunctor<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctorAVX<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff,
-                                                                                                                0.0);
+  autopas::LJFunctorAVX<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(
+      _cutoff);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ljFunctorAVX.initTraversal();
@@ -146,15 +146,15 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner, numParticles);
+  autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
+                                                               numParticles);
 
   // copy cells
   FMCell cellNoAVX(cellAVX);
-  autopas::LJFunctor<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff,
-                                                                                                               0.0);
+  autopas::LJFunctor<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctorAVX<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff,
-                                                                                                                0.0);
+  autopas::LJFunctorAVX<Molecule, FMCell, /* mixing */ false, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(
+      _cutoff);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";

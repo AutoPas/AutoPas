@@ -7,7 +7,9 @@
 #pragma once
 
 #include <gmock/gmock-matchers.h>
+
 #include <functional>
+
 #include "AutoPasTestBase.h"
 #include "autopas/utils/StringUtils.h"
 

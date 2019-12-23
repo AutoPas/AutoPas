@@ -5,6 +5,7 @@
  */
 
 #include "TraversalTest.h"
+
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/Logger.h"
 #include "testingHelpers/NumThreadGuard.h"
@@ -19,7 +20,7 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
   TraversalTest::CountFunctor functor(cutoff);
   std::vector<FPCell> cells(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
-  GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength, edgeLength);
+  autopasTools::generators::GridGenerator::fillWithParticles(cells, edgeLength, edgeLength);
 
   NumThreadGuard numThreadGuard(4);
   // this test assumes a cell size of 1. in each direction

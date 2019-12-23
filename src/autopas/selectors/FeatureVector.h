@@ -8,6 +8,7 @@
 
 #include <Eigen/Dense>
 #include <vector>
+
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"

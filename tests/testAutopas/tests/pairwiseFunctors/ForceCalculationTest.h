@@ -7,11 +7,13 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include <algorithm>
 #include <vector>
+
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
-#include "testingHelpers/GridGenerator.h"
+#include "autopasTools/generators/GridGenerator.h"
 
 class ForceCalculationTest : public AutoPasTestBase {
  public:

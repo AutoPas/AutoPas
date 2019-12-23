@@ -5,6 +5,7 @@
  */
 
 #include "SortedCellViewTest.h"
+
 #include "autopas/cells/FullParticleCell.h"
 
 TEST_F(SortedCellViewTest, testParticleAccess) {

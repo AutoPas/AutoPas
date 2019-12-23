@@ -5,6 +5,7 @@
  */
 #pragma once
 #include <gtest/gtest.h>
+
 #include "AutoPasTestBase.h"
 #include "PrintableMolecule.h"
 #include "Simulation.h"
@@ -15,17 +16,19 @@
 
 class ParticlePropertiesLibraryTest : public AutoPasTestBase {
  public:
-  ParticlePropertiesLibraryTest()
-      : AutoPasTestBase(), epsilon{1.0}, sigma{1.0}, epsilon2{2.0}, sigma2{2.0}, mass{1.0} {}
+  ParticlePropertiesLibraryTest() : AutoPasTestBase(), PPL(cutoff) {
+    PPL.addType(0, epsilons[0], sigmas[0], masses[0]);
+    PPL.addType(1, epsilons[1], sigmas[1], masses[1]);
+  }
 
   static double mixingE(double e1, double e2);
   static double mixingS(double s1, double s2);
 
  protected:
-  double epsilon;
-  double sigma;
-  double epsilon2;
-  double sigma2;
-  double mass;
+  constexpr static double cutoff{1.};
+  std::vector<double> epsilons{1., 2.};
+  std::vector<double> sigmas{1., 2.};
+  std::vector<double> masses{1., 2.};
+  std::vector<double> shifts{0., -193536 /*precomputed*/};
   ParticlePropertiesLibrary<double, size_t> PPL;
 };

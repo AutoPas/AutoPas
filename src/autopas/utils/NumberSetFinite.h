@@ -7,6 +7,7 @@
 #pragma once
 
 #include <set>
+
 #include "NumberSet.h"
 
 namespace autopas {

@@ -7,13 +7,13 @@
 
 #pragma once
 
+#include <type_traits>
+
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAView.h"
-
-#include <type_traits>
 
 #if defined(AUTOPAS_CUDA)
 #include "autopas/pairwiseFunctors/FunctorCuda.cuh"

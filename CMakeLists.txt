@@ -69,11 +69,13 @@ include(OpenMP)
 
 include(version.cmake)
 
-# autopas
-add_subdirectory(src)
-
 # libraries
 add_subdirectory(libs)
+
+# autopas
+add_subdirectory(src)
+# autopasTools
+add_subdirectory(tools)
 
 # tests and examples
 add_subdirectory(examples)

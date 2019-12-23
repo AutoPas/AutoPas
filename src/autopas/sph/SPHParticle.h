@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include <vector>
+
 #include "autopas/particles/Particle.h"
 
 namespace autopas {

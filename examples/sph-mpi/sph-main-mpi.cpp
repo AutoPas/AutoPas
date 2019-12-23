@@ -5,9 +5,11 @@
  */
 
 #include <mpi.h>
+
 #include <array>
 #include <cmath>
 #include <iostream>
+
 #include "autopas/AutoPas.h"
 #include "autopas/sph/autopassph.h"
 

@@ -7,6 +7,7 @@
  */
 
 #include "VarVerletListsTest.h"
+
 #include "autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"

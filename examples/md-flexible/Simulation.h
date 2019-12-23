@@ -8,9 +8,6 @@
 #include <fstream>
 #include <iostream>
 
-#include "../../tests/testAutopas/testingHelpers/GaussianGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/GridGenerator.h"
-#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
 #include "BoundaryConditions.h"
 #include "Checkpoint.h"
 #include "Generator.h"
@@ -20,6 +17,9 @@
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/utils/MemoryProfiler.h"
+#include "autopasTools/generators/GaussianGenerator.h"
+#include "autopasTools/generators/GridGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "parsing/MDFlexConfig.h"
 
 template <class Particle, class ParticleCell>
@@ -147,8 +147,6 @@ class Simulation {
   std::shared_ptr<MDFlexConfig> _config;
   std::ofstream _logFile;
   std::unique_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
-  std::unique_ptr<Thermostat<AutoPasType, ParticlePropertiesLibraryType>> _thermostat;
-  std::unique_ptr<TimeDiscretization<AutoPasType, ParticlePropertiesLibraryType>> _timeDiscretization;
 
   struct timers {
     autopas::utils::Timer positionUpdate, forceUpdateTotal, forceUpdateTuning, forceUpdateNonTuning, velocityUpdate,
@@ -168,7 +166,7 @@ class Simulation {
    * @param maxTime if passed the percentage of timeMS of maxTime is appended.
    * @return formatted std::string
    */
-  std::string timerToString(std::string name, long timeMS, size_t numberWidth = 0, long maxTime = 0);
+  std::string timerToString(const std::string &name, long timeMS, size_t numberWidth = 0, long maxTime = 0);
 };
 
 template <typename Particle, typename ParticleCell>
@@ -181,7 +179,7 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
     throw std::runtime_error("Number of particle properties differ!");
   }
 
-  _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibraryType>();
+  _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibraryType>(_config->cutoff);
 
   for (auto [type, epsilon] : _config->epsilonMap) {
     _particlePropertiesLibrary->addType(type, epsilon, _config->sigmaMap.at(type), _config->massMap.at(type));
@@ -194,28 +192,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
 
   _config = std::make_shared<MDFlexConfig>(mdFlexConfig);
   initializeParticlePropertiesLibrary();
-  if (_config->deltaT != 0) {
-    _timeDiscretization = std::make_unique<typename decltype(_timeDiscretization)::element_type>(
-        _config->deltaT, *_particlePropertiesLibrary);
-  }
   auto logFileName(_config->logFileName);
-  auto verletRebuildFrequency(_config->verletRebuildFrequency);
-  auto logLevel(_config->logLevel);
-  auto &cellSizeFactors(_config->cellSizeFactors);
-  auto tuningStrategy(_config->tuningStrategyOption);
-  auto containerChoice(_config->containerOptions);
-  auto selectorStrategy(_config->selectorStrategy);
-  auto cutoff(_config->cutoff);
-  auto dataLayoutOptions(_config->dataLayoutOptions);
-  auto newton3Options(_config->newton3Options);
-  auto traversalOptions(_config->traversalOptions);
-  auto tuningInterval(_config->tuningInterval);
-  auto tuningSamples(_config->tuningSamples);
-  auto verletSkinRadius(_config->verletSkinRadius);
-  auto cubesGrid(_config->cubeGridObjects);
-  auto cubesGauss(_config->cubeGaussObjects);
-  auto cubesUniform(_config->cubeUniformObjects);
-  auto spheres(_config->sphereObjects);
 
   // select either std::out or a logfile for autopas log output.
   // This does not affect md-flex output.
@@ -227,23 +204,22 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
     streamBuf = _logFile.rdbuf();
   }
   std::ostream outputStream(streamBuf);
-  _autopas.setAllowedCellSizeFactors(*cellSizeFactors);
-  _autopas.setAllowedContainers(containerChoice);
-  _autopas.setAllowedDataLayouts(dataLayoutOptions);
-  _autopas.setAllowedNewton3Options(newton3Options);
-  _autopas.setAllowedTraversals(traversalOptions);
+  _autopas.setAllowedCellSizeFactors(*_config->cellSizeFactors);
+  _autopas.setAllowedContainers(_config->containerOptions);
+  _autopas.setAllowedDataLayouts(_config->dataLayoutOptions);
+  _autopas.setAllowedNewton3Options(_config->newton3Options);
+  _autopas.setAllowedTraversals(_config->traversalOptions);
   _autopas.setBoxMax(_config->boxMax);
   _autopas.setBoxMin(_config->boxMin);
-  _autopas.setCutoff(cutoff);
-  _autopas.setNumSamples(tuningSamples);
-  _autopas.setSelectorStrategy(selectorStrategy);
-  _autopas.setTuningInterval(tuningInterval);
-  _autopas.setTuningStrategyOption(tuningStrategy);
+  _autopas.setCutoff(_config->cutoff);
+  _autopas.setNumSamples(_config->tuningSamples);
+  _autopas.setSelectorStrategy(_config->selectorStrategy);
+  _autopas.setTuningInterval(_config->tuningInterval);
+  _autopas.setTuningStrategyOption(_config->tuningStrategyOption);
   _autopas.setVerletClusterSize(_config->verletClusterSize);
   _autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency);
-  _autopas.setVerletRebuildFrequency(verletRebuildFrequency);
-  _autopas.setVerletSkin(verletSkinRadius);
-  autopas::Logger::get()->set_level(logLevel);
+  _autopas.setVerletSkin(_config->verletSkinRadius);
+  autopas::Logger::get()->set_level(_config->logLevel);
   _autopas.init();
 
   // load checkpoint
@@ -252,24 +228,27 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   }
 
   // initializing Objects
-  for (const auto &grid : cubesGrid) {
+  for (const auto &grid : _config->cubeGridObjects) {
     Generator::cubeGrid<Particle, ParticleCell>(_autopas, grid);
   }
-  for (const auto &cube : cubesGauss) {
+  for (const auto &cube : _config->cubeGaussObjects) {
     Generator::cubeGauss<Particle, ParticleCell>(_autopas, cube);
   }
-  for (const auto &cube : cubesUniform) {
+  for (const auto &cube : _config->cubeUniformObjects) {
     Generator::cubeRandom<Particle, ParticleCell>(_autopas, cube);
   }
-  for (const auto &sphere : spheres) {
+  for (const auto &sphere : _config->sphereObjects) {
     Generator::sphere<Particle, ParticleCell>(_autopas, sphere);
   }
 
-  // initilizing Thermostat
+  // initializing system to initial temperature and Brownian motion
   if (_config->useThermostat and _config->deltaT != 0) {
-    _thermostat = std::make_unique<typename decltype(_thermostat)::element_type>(
-        _config->initTemperature, _config->targetTemperature, _config->deltaTemp, *_particlePropertiesLibrary);
-    _thermostat->addBrownianMotion(_autopas, _config->useCurrentTempForBrownianMotion);
+    if (_config->addBrownianMotion) {
+      Thermostat::addBrownianMotion(_autopas, *_particlePropertiesLibrary, _config->initTemperature);
+    }
+    // set system to initial temperature
+    Thermostat::apply(_autopas, *_particlePropertiesLibrary, _config->initTemperature,
+                      std::numeric_limits<double>::max());
   }
 
   _timers.init.stop();
@@ -280,7 +259,7 @@ template <class FunctorType>
 void Simulation<Particle, ParticleCell>::calculateForces() {
   _timers.forceUpdateTotal.start();
 
-  FunctorType functor{_autopas.getCutoff(), 0.0, *_particlePropertiesLibrary};
+  FunctorType functor{_autopas.getCutoff(), *_particlePropertiesLibrary};
   bool tuningIteration = _autopas.iteratePairwise(&functor);
 
   auto timeIteration = _timers.forceUpdateTotal.stop();
@@ -313,7 +292,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
         _timers.boundaries.stop();
       }
       _timers.positionUpdate.start();
-      _timeDiscretization->calculatePositions(_autopas);
+      TimeDiscretization::calculatePositions(_autopas, *_particlePropertiesLibrary, _config->deltaT);
       _timers.positionUpdate.stop();
     }
     switch (this->_config->functorOption) {
@@ -337,13 +316,13 @@ void Simulation<Particle, ParticleCell>::simulate() {
 
     if (_config->deltaT != 0) {
       _timers.velocityUpdate.start();
-      _timeDiscretization->calculateVelocities(_autopas);
+      TimeDiscretization::calculateVelocities(_autopas, *_particlePropertiesLibrary, _config->deltaT);
       _timers.velocityUpdate.stop();
 
       // applying Velocity scaling with Thermostat:
       if (_config->useThermostat and (iteration % _config->thermostatInterval) == 0) {
         _timers.thermostat.start();
-        _thermostat->apply(_autopas);
+        Thermostat::apply(_autopas, *_particlePropertiesLibrary, _config->targetTemperature, _config->deltaTemp);
         _timers.thermostat.stop();
       }
     }
@@ -352,7 +331,7 @@ void Simulation<Particle, ParticleCell>::simulate() {
   // update temperature for generated config output
   if (_config->useThermostat) {
     _timers.thermostat.start();
-    _config->initTemperature = _thermostat->calcTemperature(_autopas);
+    _config->initTemperature = Thermostat::calcTemperature(_autopas, *_particlePropertiesLibrary);
     _timers.thermostat.stop();
   }
 
@@ -450,7 +429,7 @@ const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &Simulation<Par
 }
 template <class Particle, class ParticleCell>
 
-std::string Simulation<Particle, ParticleCell>::timerToString(std::string name, long timeMS, size_t numberWidth,
+std::string Simulation<Particle, ParticleCell>::timerToString(const std::string &name, long timeMS, size_t numberWidth,
                                                               long maxTime) {
   // only print timers that were actually used
   if (timeMS == 0) {

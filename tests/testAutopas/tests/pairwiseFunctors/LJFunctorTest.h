@@ -7,28 +7,15 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include "AutoPasTestBase.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
-#include "testingHelpers/RandomGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 class LJFunctorTest : public AutoPasTestBase {
  public:
-  LJFunctorTest() : AutoPasTestBase() {
-    cutoff = 1.;
-    epsilon = 1.;
-    sigma = 1.;
-    epsilon2 = 2.;
-    sigma2 = 2.;
-    shift = 0.1;
-    lowCorner = {0., 0., 0.};
-    highCorner = {5., 5., 5.};
-    expectedForce = {-4547248.8989645941, -9094497.7979291882, -13641746.696893783};
-    expectedForceMixing = {-835415983.7676939964294, -1670831967.5353879928588, -2506247951.3030819892883};
-    expectedEnergy = 3178701.6514326506 / 6.;
-    expectedVirial = 6366148.4585504318;
-    absDelta = 1e-7;
-  }
+  LJFunctorTest() : AutoPasTestBase() {}
 
   void SetUp() override{};
 
@@ -48,19 +35,17 @@ class LJFunctorTest : public AutoPasTestBase {
   void testSoAGlobals(where_type where, bool newton3, bool duplicatedCalculation, InteractionType interactionType,
                       size_t additionalParticlesToVerletNumber);
 
-  double cutoff;
-  double epsilon;
-  double sigma;
-  double epsilon2;
-  double sigma2;
-  double shift;
-  std::array<double, 3> lowCorner;
-  std::array<double, 3> highCorner;
+  constexpr static double cutoff{1.};
+  constexpr static double epsilon{1.};
+  constexpr static double sigma{1.};
+  constexpr static double epsilon2{2.};
+  constexpr static double sigma2{2.};
 
-  std::array<double, 3> expectedForce;
-  std::array<double, 3> expectedForceMixing;
+  constexpr static std::array<double, 3> expectedForce{-4547248.8989645941, -9094497.7979291882, -13641746.696893783};
+  constexpr static std::array<double, 3> expectedForceMixing{-835415983.7676939964294, -1670831967.5353879928588,
+                                                             -2506247951.3030819892883};
 
-  double expectedVirial;
-  double expectedEnergy;
-  double absDelta;
+  constexpr static double expectedVirial{6366148.4585504318};
+  constexpr static double expectedEnergy{529783.50857210846};
+  constexpr static double absDelta{1e-7};
 };

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <algorithm>
+
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"

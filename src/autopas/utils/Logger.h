@@ -10,6 +10,7 @@
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+
 #include <iostream>
 
 #ifdef AUTOPAS_VERBOSE_LOG

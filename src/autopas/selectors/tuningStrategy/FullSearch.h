@@ -8,6 +8,7 @@
 
 #include <set>
 #include <sstream>
+
 #include "TuningStrategyInterface.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/OptimumSelector.h"

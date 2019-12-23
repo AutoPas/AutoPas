@@ -8,6 +8,7 @@
 #pragma once
 
 #include <vector>
+
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/iterators/ParticleIteratorInterface.h"
 #include "autopas/iterators/SingleCellIterator.h"

@@ -5,7 +5,8 @@
  */
 
 #include "LinkedCellsVersusDirectSumTest.h"
-#include "testingHelpers/RandomGenerator.h"
+
+#include "autopasTools/generators/RandomGenerator.h"
 
 LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
     : _directSum(getBoxMin(), getBoxMax(), getCutoff(), 0.),
@@ -13,8 +14,8 @@ LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
 
 void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
   Molecule defaultParticle;
-  RandomGenerator::fillWithParticles(_directSum, defaultParticle, _directSum.getBoxMin(), _directSum.getBoxMax(),
-                                     numMolecules);
+  autopasTools::generators::RandomGenerator::fillWithParticles(_directSum, defaultParticle, _directSum.getBoxMin(),
+                                                               _directSum.getBoxMax(), numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
   for (auto it = _directSum.begin(); it.isValid(); ++it) {

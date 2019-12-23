@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
@@ -59,17 +60,15 @@ class LJFunctor
 
  private:
   /**
-   * Interal, actual constructor.
+   * Internal, actual constructor.
    * @param cutoff
-   * @param shift
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    * @param dummy unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctor(double cutoff, double shift, bool duplicatedCalculation, void * /*dummy*/)
+  explicit LJFunctor(double cutoff, bool duplicatedCalculation, void * /*dummy*/)
       : Functor<Particle, ParticleCell, SoAArraysType, LJFunctor<Particle, ParticleCell>>(cutoff),
         _cutoffsquare{cutoff * cutoff},
-        _shift6{shift * 6.0},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
@@ -82,33 +81,33 @@ class LJFunctor
 
  public:
   /**
-   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   * Constructor for Functor with mixing disabled. When using this functor it is necessary to call
+   * setParticleProperties() to set internal constants because it does not use a particle properties library.
    *
    * @note Only to be used with mixing == false.
    *
    * @param cutoff
-   * @param shift
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctor(double cutoff, double shift, bool duplicatedCalculation = true)
-      : LJFunctor(cutoff, shift, duplicatedCalculation, nullptr) {
+  explicit LJFunctor(double cutoff, bool duplicatedCalculation = true)
+      : LJFunctor(cutoff, duplicatedCalculation, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
   }
 
   /**
-   * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
+   * Constructor for Functor with mixing active. This functor takes a ParticlePropertiesLibrary to look up (mixed)
+   * properties like sigma, epsilon and shift.
    * @param cutoff
-   * @param shift
    * @param particlePropertiesLibrary
    * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
    * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctor(double cutoff, double shift, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
+  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
                      bool duplicatedCalculation = true)
-      : LJFunctor(cutoff, shift, duplicatedCalculation, nullptr) {
+      : LJFunctor(cutoff, duplicatedCalculation, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -128,9 +127,11 @@ class LJFunctor
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto sigmasquare = _sigmasquare;
     auto epsilon24 = _epsilon24;
+    auto shift6 = _shift6;
     if constexpr (useMixing) {
       sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
       epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
+      shift6 = _PPLibrary->mixingShift6(i.getTypeId(), j.getTypeId());
     }
     auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
     double dr2 = utils::ArrayMath::dot(dr, dr);
@@ -151,7 +152,7 @@ class LJFunctor
     }
     if (calculateGlobals) {
       auto virial = utils::ArrayMath::mul(dr, f);
-      double upot = epsilon24 * lj12m6 + _shift6;
+      double upot = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();
       if (_duplicatedCalculations) {
@@ -196,7 +197,8 @@ class LJFunctor
 
     [[maybe_unused]] auto *const __restrict__ typeptr = soa.template begin<Particle::AttributeNames::typeId>();
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
-    const SoAFloatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
+    const SoAFloatPrecision cutoffsquare = _cutoffsquare;
+    SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmasquare = _sigmasquare;
     SoAFloatPrecision epsilon24 = _epsilon24;
     if (calculateGlobals) {
@@ -219,13 +221,16 @@ class LJFunctor
 
       std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
       std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
+      std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> shift6s;
       if constexpr (useMixing) {
         // preload all sigma and epsilons for next vectorized region
         sigmaSquares.resize(soa.getNumParticles());
         epsilon24s.resize(soa.getNumParticles());
+        shift6s.resize(soa.getNumParticles());
         for (unsigned int j = 0; j < soa.getNumParticles(); ++j) {
           sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
           epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
+          shift6s[j] = _PPLibrary->mixingShift6(typeptr[i], typeptr[j]);
         }
       }
 
@@ -236,6 +241,7 @@ class LJFunctor
         if constexpr (useMixing) {
           sigmasquare = sigmaSquares[j];
           epsilon24 = epsilon24s[j];
+          shift6 = shift6s[j];
         }
         const SoAFloatPrecision drx = xptr[i] - xptr[j];
         const SoAFloatPrecision dry = yptr[i] - yptr[j];
@@ -340,7 +346,8 @@ class LJFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
-    const SoAFloatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
+    const SoAFloatPrecision cutoffsquare = _cutoffsquare;
+    SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmasquare = _sigmasquare;
     SoAFloatPrecision epsilon24 = _epsilon24;
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
@@ -351,12 +358,15 @@ class LJFunctor
       // preload all sigma and epsilons for next vectorized region
       std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
       std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
+      std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> shift6s;
       if constexpr (useMixing) {
         sigmaSquares.resize(soa2.getNumParticles());
         epsilon24s.resize(soa2.getNumParticles());
+        shift6s.resize(soa2.getNumParticles());
         for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
           sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
           epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
+          shift6s[j] = _PPLibrary->mixingShift6(typeptr1[i], typeptr2[j]);
         }
       }
 
@@ -367,6 +377,7 @@ class LJFunctor
         if constexpr (useMixing) {
           sigmasquare = sigmaSquares[j];
           epsilon24 = epsilon24s[j];
+          shift6 = shift6s[j];
         }
 
         const SoAFloatPrecision drx = x1ptr[i] - x2ptr[j];
@@ -500,6 +511,7 @@ class LJFunctor
   void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquare) {
     _epsilon24 = epsilon24;
     _sigmasquare = sigmaSquare;
+    _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmasquare, _cutoffsquare);
 #if defined(AUTOPAS_CUDA)
     LJFunctorConstants<SoAFloatPrecision> constants(_cutoffsquare, _epsilon24 /* epsilon24 */,
                                                     _sigmasquare /* sigmasquare */, _shift6);
@@ -779,7 +791,8 @@ class LJFunctor
 
     const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
 
-    const SoAFloatPrecision cutoffsquare = _cutoffsquare, shift6 = _shift6;
+    const SoAFloatPrecision cutoffsquare = _cutoffsquare;
+    SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmasquare = _sigmasquare;
     SoAFloatPrecision epsilon24 = _epsilon24;
 
@@ -839,10 +852,12 @@ class LJFunctor
 
           [[maybe_unused]] alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> sigmaSquares;
           [[maybe_unused]] alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> epsilon24s;
+          [[maybe_unused]] alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> shift6s;
           if constexpr (useMixing) {
             for (size_t j = 0; j < vecsize; j++) {
               sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[currentList[joff + j]]);
               epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[currentList[joff + j]]);
+              shift6s[j] = _PPLibrary->mixingShift6(typeptr1[i], typeptr2[currentList[joff + j]]);
             }
           }
 
@@ -861,6 +876,7 @@ class LJFunctor
             if constexpr (useMixing) {
               sigmasquare = sigmaSquares[j];
               epsilon24 = epsilon24s[j];
+              shift6 = shift6s[j];
             }
             // const size_t j = currentList[jNeighIndex];
 
@@ -937,6 +953,7 @@ class LJFunctor
         if constexpr (useMixing) {
           sigmasquare = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
           epsilon24 = _PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
+          shift6 = _PPLibrary->mixingShift6(typeptr1[i], typeptr2[j]);
         }
 
         const SoAFloatPrecision drx = xptr[i] - xptr[j];
@@ -1046,9 +1063,9 @@ class LJFunctor
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
-  const double _cutoffsquare, _shift6;
+  const double _cutoffsquare;
   // not const because they might be reset through PPL
-  double _epsilon24, _sigmasquare;
+  double _epsilon24, _sigmasquare, _shift6;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
   // sum of the potential energy, only calculated if calculateGlobals is true

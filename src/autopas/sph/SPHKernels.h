@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {

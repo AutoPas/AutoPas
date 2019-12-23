@@ -7,7 +7,9 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include <cstdlib>
+
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "autopas/containers/verletClusterLists/VerletClusterCells.h"

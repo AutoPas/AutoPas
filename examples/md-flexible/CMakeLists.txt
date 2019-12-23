@@ -3,7 +3,6 @@ file(
     MDFlex_SRC
     "*.cpp"
     "*.h"
-    "${PROJECT_SOURCE_DIR}/tests/testAutopas/testingHelpers/RandomGenerator.cpp"
 )
 
 # remove all files from the md-flexible/tests dir
@@ -18,7 +17,9 @@ add_executable(md-flexible ${MDFlex_SRC})
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(md-flexible autopas libyaml-cpp)
+include(autopas_yaml-cpp)
+
+target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp)
 
 # --- copy script files to build dir ---
 file(

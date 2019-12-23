@@ -5,6 +5,7 @@
  */
 
 #include "utils/Timer.h"
+
 #include "ExceptionHandler.h"
 
 using namespace std::chrono;

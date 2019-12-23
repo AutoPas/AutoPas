@@ -15,13 +15,14 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class ThermostatTest : public AutoPasTestBase {
+class ThermostatTest : public AutoPasTestBase,
+                       public ::testing::WithParamInterface<std::tuple<double, double, double>> {
  public:
   using AutoPasType = autopas::AutoPas<Molecule, autopas::FullParticleCell<Molecule>>;
-  using ThermostatType = Thermostat<AutoPasType, ParticlePropertiesLibrary<double, size_t>>;
 
-  ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>()) {
-    _particlePropertiesLibrary.addType(0, 1., 1., 1.); /*initializing the default particlePropertiesLibrary*/
+  ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>(1.)) {
+    _particlePropertiesLibrary.addType(0, 1., 1., 1.);
+    _particlePropertiesLibrary.addType(1, 1., 1., 2.);
   }
 
  protected:
@@ -38,7 +39,7 @@ class ThermostatTest : public AutoPasTestBase {
    * @param dummyMolecule
    * @param useCurrentTemp
    */
-  void testBrownianMotion(const Molecule &dummyMolecule, bool useCurrentTemp);
+  void testBrownianMotion(const Molecule &dummyMolecule, double targetTemperature);
 
   ParticlePropertiesLibrary<double, size_t> _particlePropertiesLibrary;
   AutoPasType _autopas;

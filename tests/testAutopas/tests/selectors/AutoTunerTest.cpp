@@ -5,8 +5,9 @@
  */
 
 #include "AutoTunerTest.h"
-#include <autopas/selectors/tuningStrategy/FullSearch.h>
+
 #include "autopas/selectors/AutoTuner.h"
+#include "autopas/selectors/tuningStrategy/FullSearch.h"
 
 using ::testing::_;
 
@@ -52,12 +53,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VerletClusterLists:    verlet-clusters             (AoS <=> SoA, noNewton3)             = 2
   //                        verlet-clusters-coloring    (AoS, newton3 <=> noNewton3)         = 4
   // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3) = 4
-  // VerletClusterCells:    verlet-cluster-cells        (AoS , newton3 <=> noNewton3) 		 = 2
+  // VerletClusterCells:    verlet-cluster-cells        (AoS , newton3 <=> noNewton3)        = 2
   //                                                                                    --------
   //                                                                                          46
   // Additional with cuda
-  // Direct Sum:            directSum traversal         (Cuda, newton3 <=> noNewton3) 		 = 2
-  // LinkedCells:           c01Cuda traversal           (Cuda, newton3 <=> noNewton3) 		 = 2
+  // Direct Sum:            directSum traversal         (Cuda, newton3 <=> noNewton3)        = 2
+  // LinkedCells:           c01Cuda traversal           (Cuda, newton3 <=> noNewton3)        = 2
   // VerletClusterCells:    verlet-cluster-cells traversal (Cuda, newton3 <=> noNewton3)     = 2
   //                                                                                    --------
   //                                                                                          52

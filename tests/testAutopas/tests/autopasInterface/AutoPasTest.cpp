@@ -5,6 +5,7 @@
  */
 
 #include "AutoPasTest.h"
+
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;

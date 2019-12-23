@@ -5,7 +5,9 @@
  */
 
 #include <gtest/gtest.h>
+
 #include <map>
+
 #include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/NumberSetFinite.h"
