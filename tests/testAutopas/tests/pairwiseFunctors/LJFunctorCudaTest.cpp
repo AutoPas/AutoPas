@@ -92,11 +92,13 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   FMCell cell1NoCuda(cell1Cuda);
   FMCell cell2NoCuda(cell2Cuda);
 
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoCuda(_cutoff,
-                                                                                                               0.0);
+  constexpr bool shifting = true;
+  constexpr bool mixing = false;
+  autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals>
+      ljFunctorNoCuda(_cutoff);
   ljFunctorNoCuda.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorCuda(_cutoff,
-                                                                                                             0.0);
+  autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorCuda(
+      _cutoff);
   ljFunctorCuda.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ljFunctorCuda.getCudaWrapper()->setNumThreads(32);
@@ -154,13 +156,14 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
 
   // copy cells
   FMCell cellNoCuda(cellCuda);
-
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoCuda(_cutoff,
-                                                                                                               0.0);
+  constexpr bool shifting = true;
+  constexpr bool mixing = false;
+  autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals>
+      ljFunctorNoCuda(_cutoff);
   ljFunctorNoCuda.setParticleProperties(sqrt(_epsilon * _epsilon) * 24.0,
                                         ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
-  autopas::LJFunctor<Molecule, FMCell, false, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorCuda(_cutoff,
-                                                                                                             0.0);
+  autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorCuda(
+      _cutoff);
   ljFunctorCuda.setParticleProperties(sqrt(_epsilon * _epsilon) * 24.0,
                                       ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
   ljFunctorCuda.getCudaWrapper()->setNumThreads(32);

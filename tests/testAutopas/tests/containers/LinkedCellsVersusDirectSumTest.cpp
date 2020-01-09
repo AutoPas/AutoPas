@@ -22,8 +22,7 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
     _linkedCells.addParticle(*it);
   }
 
-  double shift = 0.0;
-  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), shift);
+  autopas::LJFunctor<Molecule, FMCell> func(getCutoff());
   func.setParticleProperties(24, 1);
 
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true> traversalLJ(

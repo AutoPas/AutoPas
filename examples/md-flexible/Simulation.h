@@ -142,6 +142,8 @@ class Simulation {
  private:
   using AutoPasType = autopas::AutoPas<Particle, ParticleCell>;
   using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
+  constexpr static bool _shifting = true;
+  constexpr static bool _mixing = true;
 
   AutoPasType _autopas;
   std::shared_ptr<MDFlexConfig> _config;
@@ -297,16 +299,16 @@ void Simulation<Particle, ParticleCell>::simulate() {
     }
     switch (this->_config->functorOption) {
       case MDFlexConfig::FunctorOption::lj12_6: {
-        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>>();
+        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing>>();
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true,
+        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing,
                                                  autopas::FunctorN3Modes::Both, /* globals */ true>>();
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_AVX: {
-        this->calculateForces<autopas::LJFunctorAVX<Particle, ParticleCell, /* mixing */ true>>();
+        this->calculateForces<autopas::LJFunctorAVX<Particle, ParticleCell, _shifting, _mixing>>();
         break;
       }
     }
@@ -350,16 +352,17 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
 
   switch (_config->functorOption) {
     case MDFlexConfig::FunctorOption ::lj12_6: {
-      flopsPerKernelCall = autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true>::getNumFlopsPerKernelCall();
+      flopsPerKernelCall = autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
-      flopsPerKernelCall = autopas::LJFunctor<Particle, ParticleCell, /* mixing */ true, autopas::FunctorN3Modes::Both,
+      flopsPerKernelCall = autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing, autopas::FunctorN3Modes::Both,
                                               /* globals */ true>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
-      flopsPerKernelCall = autopas::LJFunctorAVX<Particle, ParticleCell, /* mixing */ true>::getNumFlopsPerKernelCall();
+      flopsPerKernelCall =
+          autopas::LJFunctorAVX<Particle, ParticleCell, _shifting, _mixing>::getNumFlopsPerKernelCall();
       break;
     }
     default:
@@ -373,8 +376,6 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   // take total time as base for formatting since this should be the longest
   auto digitsTimeTotalMuS = std::to_string(durationTotal).length();
 
-  // time statistics
-  //  cout << "Simulation duration without initilization: " << _timers.durationSimulate << " \u03bcs" << endl;
   // Statistics
   cout << fixed << setprecision(_floatStringPrecision);
   cout << endl << "Measurements:" << endl;

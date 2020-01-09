@@ -23,8 +23,7 @@ void LinkedCellsVersusVerletListsCellsTest::test(unsigned long numMolecules, dou
   for (auto it = _verletListsCells->begin(); it.isValid(); ++it) {
     _linkedCells->addParticle(*it);
   }
-  double shift = 0.0;
-  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), shift);
+  autopas::LJFunctor<Molecule, FMCell> func(getCutoff());
   func.setParticleProperties(24, 1);
 
   autopas::C18TraversalVerlet<FMCell, decltype(func), autopas::DataLayoutOption::aos, true> traversalVerletLJ(
