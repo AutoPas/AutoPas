@@ -69,5 +69,11 @@ add_test(
     CONFIGURATIONS checkExamples
 )
 
+add_test(
+        NAME md-flex-VerletClusterCells
+        COMMAND md-flexible --container VerletClusterCells
+        CONFIGURATIONS checkExamples
+)
+
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples md-flexible)
