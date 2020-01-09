@@ -131,10 +131,10 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
   if (_currentContainer != nullptr) {
     for (auto particleIter = _currentContainer->begin(IteratorBehavior::haloAndOwned); particleIter.isValid();
          ++particleIter) {
-      // try to add every particle as inner. If it fails try as a halo.
-      try {
+      // add particle as inner if it is owned
+      if (particleIter->isOwned()) {
         container->addParticle(*particleIter);
-      } catch (const autopas::utils::ExceptionHandler::AutoPasException &) {
+      } else {
         container->addHaloParticle(*particleIter);
       }
     }
