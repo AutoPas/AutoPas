@@ -58,7 +58,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
       cudaGetDeviceCount(&nDevices);
       if (not _functor->getCudaWrapper()) return false;
 #endif
-      return nDevices > 0;
+      return nDevices > 0 and _functor->isAppropriateClusterSize(*_clusterSize);
     } else
       return true;
   }

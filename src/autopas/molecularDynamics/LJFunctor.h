@@ -131,6 +131,21 @@ class LJFunctor
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
+  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+    if (dataLayout != DataLayoutOption::cuda) {
+#if defined(AUTOPAS_CUDA)
+      auto cudaWrapper =
+          _functor->getCudaWrapper() if (cudaWrapper) return cudaWrapper->isAppropriateClusterSize(clusterSize);
+      else {
+        return false;
+      }
+#endif
+      return true;
+    } else {
+      return true;
+    }
+  }
+
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto sigmasquare = _sigmasquare;
     auto epsilon24 = _epsilon24;

@@ -281,6 +281,13 @@ class Functor {
    */
   virtual bool isRelevantForTuning() = 0;
 
+  /**
+   * Check whether the given clusterSize is appropriate and can be used by the functor.
+   * @param clusterSize The size of the clusters.
+   * @param dataLayout The used data layout.
+   */
+  virtual bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const = 0;
+
 #if defined(AUTOPAS_CUDA)
   /**
    * Provides an interface for traversals to directly access Cuda Functions

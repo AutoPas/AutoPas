@@ -84,6 +84,8 @@ class CudaWrapperInterface {
                                             cudaStream_t stream) = 0;
 
   virtual void loadLinkedCellsOffsets(unsigned int offsets_size, int *offsets) = 0;
+
+  virtual bool isAppropriateClusterSize(unsigned int clusterSize) const = 0;
 };
 
 }  // namespace autopas
