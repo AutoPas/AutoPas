@@ -329,9 +329,13 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
 
   if (not traversal->isApplicable()) {
     autopas::utils::ExceptionHandler::exception(
-        "Error: Trying to execute a traversal that is not applicable. This normally happens only if the search space "
-        "is trivial, but no traversals are applicable. Config: {}",
-        _tuningStrategy->getCurrentConfiguration().toString());
+        "Error: Trying to execute a traversal that is not applicable. Two common reasons:\n"
+        "1. The search space is trivial, but no traversals are applicable. \n"
+        "2. You are using multiple functors and one of the not first is not supporting all configuration options of the first.\n"
+        "Config: {}\n"
+        "Current functor: {}",
+        _tuningStrategy->getCurrentConfiguration().toString(),
+        typeid(*f).name());
   }
 
   // if tuning execute with time measurements
