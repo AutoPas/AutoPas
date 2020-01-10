@@ -9,11 +9,11 @@ then
     echo "Illegal number of parameters"
     echo "Usage: $0 PATH_TO_MD-Flexible <-s>"
     echo " -s Silent: no scaling files are written and number of molecules and repetitions is reduced significantly."
-    exit -1
+    exit 1
 fi
 
 EXECUTABLE=$(readlink -e "${1}")
-[[ $? -ne 0 ]] && echo "Path to md-flexible invalid!" && exit -2
+[[ $? -ne 0 ]] && echo "Path to md-flexible invalid!" && exit 2
 
 SILENT=false
 if [[ "${2}" =~ '-s' ]]
@@ -141,7 +141,8 @@ do
                             --verlet-skin-radius ${VLSkin[$iVL]} \
                             --no-flops \
                             --periodic false \
-                            --newton3 ${newton3Opt}
+                            --newton3 ${newton3Opt} \
+                            --deltaT 0.
                         )
 
                         printf '%s\n' "${output}"
