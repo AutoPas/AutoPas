@@ -134,11 +134,7 @@ class LJFunctor
   bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
     if (dataLayout == DataLayoutOption::cuda) {
 #if defined(AUTOPAS_CUDA)
-      if (cudaWrapper)
-        return _cudawrapper.isAppropriateClusterSize(clusterSize);
-      else {
-        return false;
-      }
+      return _cudawrapper.isAppropriateClusterSize(clusterSize);
 #endif
       return false;
     } else {
@@ -1117,8 +1113,10 @@ class LJFunctor
   double _epsilon24, _sigmasquare, _shift6 = 0;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
+
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _upotSum;
+
   // sum of the virial, only calculated if calculateGlobals is true
   std::array<double, 3> _virialSum;
 
