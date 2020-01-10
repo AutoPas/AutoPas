@@ -117,10 +117,8 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   /**
    * Invalidates the current configuration by reporting the worst possible performance to the harmony server.
-   * Always returns true to allow being used in boolean statements.
-   * @return true
    */
-  inline bool invalidateConfiguration();
+  inline void invalidateConfiguration();
 
   /**
    * Define the tuning parameter in the ActiveHarmony tuning definition as enum and set possible values.
@@ -194,10 +192,9 @@ void ActiveHarmony::fetchConfiguration() {
                                  cellSizeFactor, traversalOption, dataLayoutOption, newton3Option);
 }
 
-bool ActiveHarmony::invalidateConfiguration() {
+void ActiveHarmony::invalidateConfiguration() {
   auto worstPerf = std::numeric_limits<float>::max();
   addEvidence(worstPerf);
-  return true;
 }
 
 bool ActiveHarmony::tune(bool currentInvalid) {
@@ -225,10 +222,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
       utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching values from server");
     }
     fetchConfiguration();
-    if (_allowedNewton3Options.find(_currentConfig.newton3) == _allowedNewton3Options.end()) { //invalid newton3
-      invalidateConfiguration();
-      skipConfig = true;
-    } else if (_traversalTimes.find(_currentConfig) != _traversalTimes.end()) { // we already know performance for this config
+    if (_traversalTimes.find(_currentConfig) != _traversalTimes.end()) { // we already know performance for this config
       addEvidence(_traversalTimes[_currentConfig]);
       skipConfig = true;
     }
@@ -256,6 +250,7 @@ void ActiveHarmony::removeN3Option(Newton3Option option) {
         "empty!",
         option);
   }
+  resetHarmony();
 }
 
 const Configuration &ActiveHarmony::getCurrentConfiguration() const { return _currentConfig; }
