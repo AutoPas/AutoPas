@@ -117,7 +117,7 @@ class LJFunctorCudaWrapper : public CudaWrapperInterface<floatType> {
   void loadLinkedCellsOffsets(unsigned int offsets_size, int *offsets) override;
 
   bool isAppropriateClusterSize(unsigned int clusterSize) const override {
-    return clusterSize % 32 == 0 and clusterSize >= 32 and clusterSize >= 1024;
+    return clusterSize % 32 == 0 and clusterSize >= 32 and clusterSize <= 1024;
   }
 
  private:
