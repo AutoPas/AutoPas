@@ -38,7 +38,6 @@ class VerletClusterTraversalInterface {
 
   /**
    * Sets pointer to the verlet lists stored in the container
-   * @param clusterSize pointer to size of clusters in container
    * @param neighborCellIds pointer to neighbor lists in container
    * @param neighborMatrixDim pointer to cuda neighbor matrix dimension
    * @param neighborMatrix pointer to cuda neighbor matrix dimension
