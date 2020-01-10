@@ -93,9 +93,15 @@ add_test(
 )
 
 add_test(
-    NAME md-flex-VerletClusterCells
-    COMMAND md-flexible --container VerletClusterCells
+    NAME md-flex-VerletClusterCells-4
+    COMMAND md-flexible --container VerletClusterCells --verlet-cluster-size 4
     CONFIGURATIONS checkExamples
+)
+
+add_test(
+        NAME md-flex-VerletClusterCells-32
+        COMMAND md-flexible --container VerletClusterCells --verlet-cluster-size 32 --no-flops
+        CONFIGURATIONS checkExamples
 )
 
 # add the executable to checkExamples as dependency
