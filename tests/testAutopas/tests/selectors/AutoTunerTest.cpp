@@ -20,7 +20,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const double verletSkin = 0;
   const unsigned int verletClusterSize = 64;
   const unsigned int maxSamples = 2;
-  autopas::LJFunctor<Molecule, FMCell> functor(cutoff, 0.);
+  autopas::LJFunctor<Molecule, FMCell> functor(cutoff);
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
       autopas::ContainerOption::getAllOptions(), std::set<double>({cellSizeFactor}),
       autopas::TraversalOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
@@ -53,12 +53,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VerletClusterLists:    verlet-clusters             (AoS <=> SoA, noNewton3)             = 2
   //                        verlet-clusters-coloring    (AoS, newton3 <=> noNewton3)         = 4
   // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3) = 4
-  // VerletClusterCells:    verlet-cluster-cells        (AoS , newton3 <=> noNewton3) 		 = 2
+  // VerletClusterCells:    verlet-cluster-cells        (AoS , newton3 <=> noNewton3)        = 2
   //                                                                                    --------
   //                                                                                          46
   // Additional with cuda
-  // Direct Sum:            directSum traversal         (Cuda, newton3 <=> noNewton3) 		 = 2
-  // LinkedCells:           c01Cuda traversal           (Cuda, newton3 <=> noNewton3) 		 = 2
+  // Direct Sum:            directSum traversal         (Cuda, newton3 <=> noNewton3)        = 2
+  // LinkedCells:           c01Cuda traversal           (Cuda, newton3 <=> noNewton3)        = 2
   // VerletClusterCells:    verlet-cluster-cells traversal (Cuda, newton3 <=> noNewton3)     = 2
   //                                                                                    --------
   //                                                                                          52

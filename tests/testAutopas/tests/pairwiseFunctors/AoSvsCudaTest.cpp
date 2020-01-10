@@ -41,7 +41,7 @@ TEST_F(AoSvsCudaTest, testAoSvsCuda) {
   auto particlesSoA = particlesAoS;
   double epsilon = 1.0;
   double sigma = 1.0;
-  LJFunctor<Molecule, FMCell> ljFunctor(PARTICLES_PER_DIM * 10, 0);
+  LJFunctor<Molecule, FMCell> ljFunctor(PARTICLES_PER_DIM * 10);
   ljFunctor.setParticleProperties(epsilon * 24.0, sigma * sigma);
 
   // AoS
