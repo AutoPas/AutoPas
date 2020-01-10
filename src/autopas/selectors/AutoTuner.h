@@ -171,7 +171,7 @@ class AutoTuner {
    * Get the currently selected configuration.
    * @return
    */
-  const autopas::Configuration getCurrentConfig() const;
+  autopas::Configuration getCurrentConfig() const;
 
   /**
    * Get the set of all allowed configurations.
@@ -417,7 +417,8 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
     return false;
   }
 
-  _containerSelector.selectContainer(conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin));
+  _containerSelector.selectContainer(conf.container,
+                                     ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
   return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor>(
@@ -426,7 +427,7 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
 }
 
 template <class Particle, class ParticleCell>
-const autopas::Configuration AutoTuner<Particle, ParticleCell>::getCurrentConfig() const {
+autopas::Configuration AutoTuner<Particle, ParticleCell>::getCurrentConfig() const {
   return _tuningStrategy->getCurrentConfiguration();
 }
 }  // namespace autopas
