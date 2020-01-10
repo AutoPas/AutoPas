@@ -134,9 +134,8 @@ class LJFunctor
   bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
     if (dataLayout == DataLayoutOption::cuda) {
 #if defined(AUTOPAS_CUDA)
-      auto cudaWrapper = _functor->getCudaWrapper();
       if (cudaWrapper)
-        return cudaWrapper->isAppropriateClusterSize(clusterSize);
+        return _cudawrapper.isAppropriateClusterSize(clusterSize);
       else {
         return false;
       }
