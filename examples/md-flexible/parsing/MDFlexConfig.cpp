@@ -16,12 +16,10 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << left << containerOptionsStr << ":  " << passedContainerOptionsStr << endl;
 
   // if verlet lists are in the container options print verlet config data
-  if (passedContainerOptionsStr.find("erlet") != std::string::npos) {
-    os << setw(valueOffset) << left << verletRebuildFrequencyStr << ":  " << verletRebuildFrequency << endl;
-    os << setw(valueOffset) << left << verletSkinRadiusStr << ":  " << verletSkinRadius << endl;
-    if (passedContainerOptionsStr.find("luster") != std::string::npos) {
-      os << setw(valueOffset) << left << verletClusterSizeStr << ":  " << verletClusterSize << endl;
-    }
+  os << setw(valueOffset) << left << verletRebuildFrequencyStr << ":  " << verletRebuildFrequency << endl;
+  os << setw(valueOffset) << left << verletSkinRadiusStr << ":  " << verletSkinRadius << endl;
+  if (passedContainerOptionsStr.find("luster") != std::string::npos) {
+    os << setw(valueOffset) << left << verletClusterSizeStr << ":  " << verletClusterSize << endl;
   }
 
   if (containerOptions.size() > 1 or traversalOptions.size() > 1 or dataLayoutOptions.size() > 1) {
