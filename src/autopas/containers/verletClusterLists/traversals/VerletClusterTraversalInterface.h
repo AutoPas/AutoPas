@@ -43,8 +43,7 @@ class VerletClusterTraversalInterface {
    * @param neighborMatrixDim pointer to cuda neighbor matrix dimension
    * @param neighborMatrix pointer to cuda neighbor matrix dimension
    */
-  virtual void setVerletListPointer(unsigned int *clusterSize,
-                                    std::vector<std::vector<std::vector<std::pair<size_t, size_t>>>> *neighborCellIds,
+  virtual void setVerletListPointer(std::vector<std::vector<std::vector<std::pair<size_t, size_t>>>> *neighborCellIds,
                                     size_t *neighborMatrixDim,
                                     utils::CudaDeviceVector<unsigned int> *neighborMatrix) = 0;
 

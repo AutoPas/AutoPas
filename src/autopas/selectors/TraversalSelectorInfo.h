@@ -16,7 +16,7 @@ class TraversalSelectorInfo {
   /**
    * Dummy constructor such that this class can be used in maps
    */
-  TraversalSelectorInfo() : dims({0, 0, 0}), interactionLength(1.0), cellLength({0.0, 0.0, 0.0}) {}
+  TraversalSelectorInfo() : dims({0, 0, 0}), interactionLength(1.0), cellLength({0.0, 0.0, 0.0}), clusterSize{0} {}
 
   /**
    * Constructor of the TraversalSelector class.
@@ -25,8 +25,8 @@ class TraversalSelectorInfo {
    * @param cellLength cell length.
    */
   explicit TraversalSelectorInfo(const std::array<unsigned long, 3> &dims, const double interactionLength,
-                                 const std::array<double, 3> &cellLength)
-      : dims(dims), interactionLength(interactionLength), cellLength(cellLength) {}
+                                 const std::array<double, 3> &cellLength, const unsigned int clusterSize)
+      : dims(dims), interactionLength(interactionLength), cellLength(cellLength), clusterSize{clusterSize} {}
 
   /**
    * Array with the dimension lengths of the domain
@@ -43,5 +43,10 @@ class TraversalSelectorInfo {
    * cell length
    */
   const std::array<double, 3> cellLength;
+
+  /**
+   * This specifies the size of verlet clusters.
+   */
+  const unsigned int clusterSize;
 };
 }  // namespace autopas

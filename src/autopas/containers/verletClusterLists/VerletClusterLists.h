@@ -142,7 +142,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
-    return TraversalSelectorInfo(_cellsPerDim, this->getInteractionLength(), {0., 0., 0.});
+    return TraversalSelectorInfo(_cellsPerDim, this->getInteractionLength(), {0., 0., 0.}, _clusterSize);
   }
 
   ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

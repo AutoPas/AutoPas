@@ -72,7 +72,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
           "trying to use a traversal of wrong type in VerletClusterCells::iteratePairwise");
     }
 
-    traversalInterface->setVerletListPointer(&_clusterSize, &_neighborCellIds, &_neighborMatrixDim, &_neighborMatrix);
+    traversalInterface->setVerletListPointer(&_neighborCellIds, &_neighborMatrixDim, &_neighborMatrix);
 
     if (traversalInterface->getSignature() != _lastTraversalSig or (not _isValid)) {
       if (!_isValid) {
@@ -161,7 +161,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
       rebuild();
     }
 
-    traversalInterface->setVerletListPointer(&_clusterSize, &_neighborCellIds, &_neighborMatrixDim, &_neighborMatrix);
+    traversalInterface->setVerletListPointer(&_neighborCellIds, &_neighborMatrixDim, &_neighborMatrix);
 
     traversalInterface->rebuildVerlet(_cellsPerDim, this->_cells, _boundingBoxes,
                                       std::ceil(this->getInteractionLength() * _gridSideLengthReciprocal),
@@ -241,7 +241,8 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(_cellsPerDim, this->getInteractionLength(),
-                                 {_gridSideLength, _gridSideLength, this->getBoxMax()[2] - this->getBoxMin()[2]});
+                                 {_gridSideLength, _gridSideLength, this->getBoxMax()[2] - this->getBoxMin()[2]},
+                                 _clusterSize);
   }
 
   ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

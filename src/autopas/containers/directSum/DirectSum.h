@@ -140,7 +140,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     return TraversalSelectorInfo(
         {2, 0, 0},
         this->getCutoff() /*intentionally use cutoff here, as the directsumtraversal should be using the cutoff.*/,
-        utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin()));
+        utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin()), 0);
   }
 
   ParticleIteratorWrapper<ParticleType, true> begin(

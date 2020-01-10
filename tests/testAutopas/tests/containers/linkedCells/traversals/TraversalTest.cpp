@@ -23,8 +23,10 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
   autopasTools::generators::GridGenerator::fillWithParticles(cells, edgeLength, edgeLength);
 
   NumThreadGuard numThreadGuard(4);
+  // clustersize is 32 if traversal has something like cluster in it, otherwise 0.
+  unsigned int clusterSize = traversalOption.to_string().find("luster") != std::string::npos ? 32 : 0;
   // this test assumes a cell size of 1. in each direction
-  autopas::TraversalSelectorInfo tsi(edgeLength, cutoff, {1., 1., 1.});
+  autopas::TraversalSelectorInfo tsi(edgeLength, cutoff, {1., 1., 1.}, clusterSize);
   std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::c01) {
     traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,

@@ -65,6 +65,10 @@ class VerletListHelpers {
       return true;
     }
 
+    bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+      return false;  // this functor shouldn't be called with clusters!
+    }
+
     void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
       auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
 
@@ -249,6 +253,11 @@ class VerletListHelpers {
       utils::ExceptionHandler::exception(
           "VerletListGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
       return true;
+    }
+
+    bool isAppropriateClusterSize(unsigned int clusterSize,
+                                  autopas::DataLayoutOption::Value dataLayout) const override {
+      return false;  // this functor shouldn't be used with clusters!
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {

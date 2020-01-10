@@ -11,6 +11,7 @@
 #include "autopas/autopasIncludes.h"
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
+#include "autopas/options/DataLayoutOption.h"
 #if defined(AUTOPAS_CUDA)
 #include "autopas/utils/CudaSoA.h"
 #endif
@@ -88,6 +89,9 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell_t> {
 
   // virtual bool allowsNonNewton3() { return false; }
   MOCK_METHOD(bool, allowsNonNewton3, (), (override));
+
+  MOCK_METHOD(bool, isAppropriateClusterSize, (unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout),
+              (const, override));
 
   //  bool isRelevantForTuning() { return true; }
   MOCK_METHOD(bool, isRelevantForTuning, (), (override));

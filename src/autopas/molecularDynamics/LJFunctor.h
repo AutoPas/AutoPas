@@ -134,15 +134,16 @@ class LJFunctor
   bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
     if (dataLayout != DataLayoutOption::cuda) {
 #if defined(AUTOPAS_CUDA)
-      auto cudaWrapper =
-          _functor->getCudaWrapper() if (cudaWrapper) return cudaWrapper->isAppropriateClusterSize(clusterSize);
+      auto cudaWrapper = _functor->getCudaWrapper();
+      if (cudaWrapper)
+        return cudaWrapper->isAppropriateClusterSize(clusterSize);
       else {
         return false;
       }
 #endif
       return true;
     } else {
-      return true;
+      return dataLayout == DataLayoutOption::aos;  // LJFunctor does not yet support soa for clusters.
     }
   }
 

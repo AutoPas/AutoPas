@@ -205,7 +205,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<FullParticleCell
    */
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
-                                 this->getInteractionLength(), this->_linkedCells.getCellBlock().getCellLength());
+                                 this->getInteractionLength(), this->_linkedCells.getCellBlock().getCellLength(), 0);
   }
 
   /**

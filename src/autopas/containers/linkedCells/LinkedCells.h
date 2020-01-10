@@ -205,7 +205,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getInteractionLength(),
-                                 this->getCellBlock().getCellLength());
+                                 this->getCellBlock().getCellLength(), 0);
   }
 
   ParticleIteratorWrapper<ParticleType, true> begin(
