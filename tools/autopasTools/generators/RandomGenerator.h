@@ -65,7 +65,8 @@ class RandomGenerator {
                                 unsigned long numParticles = 100ul, unsigned int seed = 42);
 
   /**
-   * Fills only a given part of a container (also AutoPas object) with randomly uniformly distributed particles.
+   * Fills the halo of a container (also AutoPas object) with randomly uniformly distributed particles.
+   * Use haloAddFunction to specify how to add particles to the container!
    * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
    * @tparam Particle Type of the default particle.
    * @tparam HaloAddFunction function with signature void(Container&, Particle)
@@ -76,11 +77,28 @@ class RandomGenerator {
    * @param haloAddFunction the function of type HaloAddfunction that adds a halo particle to the container.
    * @param seed
    */
-  template <class Container, class Particle,
-            class HaloAddFunction = decltype(detail<Container, Particle>::addHaloParticleF)>
-  static void fillWithHaloParticles(
-      Container &container, const Particle &defaultParticle, double haloWidth, unsigned long numParticles = 100ul,
-      const HaloAddFunction &haloAddFunction = detail<Container, Particle>::addHaloParticleF, unsigned int seed = 42);
+  template <class Container, class Particle, class HaloAddFunction>
+  static void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
+                                    unsigned long numParticles, const HaloAddFunction &haloAddFunction,
+                                    unsigned int seed = 42);
+
+  /**
+   * Fills the halo of a container with randomly uniformly distributed particles.
+   * Container needs to support addHaloParticle(). If it does not support this, please use the version above.
+   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
+   * @tparam Particle Type of the default particle.
+   * @param container
+   * @param defaultParticle
+   * @param haloWidth
+   * @param numParticles
+   * @param seed
+   */
+  template <class Container, class Particle>
+  static void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
+                                    unsigned long numParticles, unsigned int seed = 42) {
+    fillWithHaloParticles(container, defaultParticle, haloWidth, numParticles,
+                          detail<Container, Particle>::addHaloParticleF, seed);
+  }
 };
 
 template <class Container, class Particle>
