@@ -260,15 +260,15 @@ TEST_P(IteratorTest, RangeBasedIterator) {
 }
 
 /**
- * The main idea of this test is to compare theiterators using openmp with the iterators not using openmp.
+ * The main idea of this test is to compare the iterators using openmp with the iterators not using openmp.
  */
-TEST_P(IteratorTest, testOpenMPIteratorsOwnedOnly) {
+void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption, double cellSizeFactor,
+                                       autopas::IteratorBehavior behavior) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {8, 8, 8};
   int clusterSize = 64;
   autopas::AutoPas<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> apContainer;
 
-  auto [containerOption, cellSizeFactor] = GetParam();
   apContainer.setAllowedContainers({containerOption});
   apContainer.setCellSizeFactor(cellSizeFactor);
 
@@ -289,13 +289,47 @@ TEST_P(IteratorTest, testOpenMPIteratorsOwnedOnly) {
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iter = apContainer.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = apContainer.begin(behavior); iter.isValid(); ++iter) {
     iter->touch();
+    if (behavior == autopas::IteratorBehavior::ownedOnly) {
+      EXPECT_TRUE(iter->isOwned());
+    } else if (behavior == autopas::IteratorBehavior::haloOnly) {
+      EXPECT_FALSE(iter->isOwned());
+    }
   }
 
-  for (auto iter = apContainer.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = apContainer.begin(behavior); iter.isValid(); ++iter) {
     EXPECT_EQ(1, iter->getNumTouched());
+    if (behavior == autopas::IteratorBehavior::ownedOnly) {
+      EXPECT_TRUE(iter->isOwned());
+    } else if (behavior == autopas::IteratorBehavior::haloOnly) {
+      EXPECT_FALSE(iter->isOwned());
+    }
   }
+}
+
+/**
+ * Compare the OpenMP iterator behavior for owned only.
+ */
+TEST_P(IteratorTest, testOpenMPIteratorsOwnedOnly) {
+  auto [containerOption, cellSizeFactor] = GetParam();
+  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly);
+}
+
+/**
+ * Compare the OpenMP iterator behavior for halo and owned particles.
+ */
+TEST_P(IteratorTest, testOpenMPIteratorsHaloAndOwned) {
+  auto [containerOption, cellSizeFactor] = GetParam();
+  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned);
+}
+
+/**
+ * Compare the OpenMP iterator behavior for halo only.
+ */
+TEST_P(IteratorTest, testOpenMPIteratorsHaloOnly) {
+  auto [containerOption, cellSizeFactor] = GetParam();
+  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly);
 }
 
 using ::testing::Combine;
