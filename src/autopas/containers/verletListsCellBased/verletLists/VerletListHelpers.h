@@ -255,8 +255,7 @@ class VerletListHelpers {
       return true;
     }
 
-    bool isAppropriateClusterSize(unsigned int clusterSize,
-                                  autopas::DataLayoutOption::Value dataLayout) const override {
+    bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
       return false;  // this functor shouldn't be used with clusters!
     }
 
