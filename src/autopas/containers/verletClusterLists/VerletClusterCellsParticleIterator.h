@@ -50,9 +50,14 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
     // 1. set _cellId to thread number.
     _cellId = autopas_get_thread_num();
 
+    if (_cellId >= _vectorOfCells->size()) {
+      // prevent segfaults if the _cellId is too large
+      return;
+    }
+
     // 2. set cell iterators to appropriate start
-    _iteratorWithinOneCell = (*_vectorOfCells)[0]._particles.begin();
-    _cellEnd = _iteratorWithinOneCell + getDummyStartbyIndex(0);
+    _iteratorWithinOneCell = (*_vectorOfCells)[_cellId]._particles.begin();
+    _cellEnd = _iteratorWithinOneCell + getDummyStartbyIndex(_cellId);
 
     // 3. do a -- for _iteratorWithinOneCell to be able to call operator++ and still end up at the front of everything.
     --_iteratorWithinOneCell;
