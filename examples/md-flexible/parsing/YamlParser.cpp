@@ -153,12 +153,9 @@ bool parseYamlFile(MDFlexConfig &config) {
     config.cubeGaussObjects.clear();
     config.cubeUniformObjects.clear();
     config.sphereObjects.clear();
-    // if no checkpoint will be loaded also clear default particle props.
-    if (!node[MDFlexConfig::checkpointfileStr]) {
-      config.epsilonMap.clear();
-      config.sigmaMap.clear();
-      config.massMap.clear();
-    }
+    config.epsilonMap.clear();
+    config.sigmaMap.clear();
+    config.massMap.clear();
 
     for (YAML::const_iterator objectIterator = node[MDFlexConfig::objectsStr].begin();
          objectIterator != node[MDFlexConfig::objectsStr].end(); ++objectIterator) {
