@@ -131,6 +131,18 @@ class LJFunctor
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
+  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+    if (dataLayout == DataLayoutOption::cuda) {
+#if defined(AUTOPAS_CUDA)
+      return _cudawrapper.isAppropriateClusterSize(clusterSize);
+#endif
+      return false;
+    } else {
+      return dataLayout == DataLayoutOption::aos;  // LJFunctor does not yet support soa for clusters.
+      // The reason for this is that the owned state is not handled correctly, see #396.
+    }
+  }
+
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     auto sigmasquare = _sigmasquare;
     auto epsilon24 = _epsilon24;
@@ -1101,8 +1113,10 @@ class LJFunctor
   double _epsilon24, _sigmasquare, _shift6 = 0;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
+
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _upotSum;
+
   // sum of the virial, only calculated if calculateGlobals is true
   std::array<double, 3> _virialSum;
 

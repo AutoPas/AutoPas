@@ -111,7 +111,7 @@ class MDFlexConfig {
   static inline const char *iterationsStr{"iterations"};
   size_t iterations{10};
   static inline const char *periodicStr{"periodic-boundaries"};
-  bool periodic{false};
+  bool periodic{true};
   static inline const char *measureFlopsStr{"no-flops"};
   bool measureFlops{true};
   static inline const char *deltaTStr{"deltaT"};

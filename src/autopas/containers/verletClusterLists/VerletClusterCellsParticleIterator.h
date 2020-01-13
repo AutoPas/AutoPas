@@ -46,6 +46,12 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
         _cellId(0),
         _behavior(behavior),
         _offsetToDummy(offsetToDummy) {
+    /// @todo: this is currently a workaround as we did not yet implement openmp support for this iterator.
+    if (autopas_get_thread_num() != 0) {
+      _cellId = _vectorOfCells->size();
+      // the iterator is set to invalid.
+      return;
+    }
     _cellIter = (*_vectorOfCells)[0]._particles.begin();
     _cellEnd = _cellIter + getDummyStartbyIndex(0);
     --_cellIter;
@@ -63,7 +69,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
       while (_cellIter == _cellEnd) {
         ++_cellId;
 
-        if (not(_cellId < _vectorOfCells->size())) {
+        if (_cellId >= _vectorOfCells->size()) {
           return *this;
         }
         _cellIter = (*_vectorOfCells)[_cellId]._particles.begin();

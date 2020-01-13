@@ -11,17 +11,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/autopasIncludes.h"
 #include "autopasTools/generators/RandomGenerator.h"
-
-class TouchableParticle : public autopas::Particle {
- public:
-  TouchableParticle(std::array<double, 3> pos, unsigned long id)
-      : autopas::Particle(pos, {0, 0, 0}, id), _numTouched(0){};
-  void touch() { _numTouched++; }
-  unsigned int getNumTouched() { return _numTouched; }
-
- private:
-  unsigned int _numTouched;
-};
+#include "testingHelpers/TouchableParticle.h"
 
 class RegionParticleIteratorTest : public AutoPasTestBase {
  public:

@@ -171,7 +171,7 @@ class AutoTuner {
    * Get the currently selected configuration.
    * @return
    */
-  const autopas::Configuration getCurrentConfig() const;
+  autopas::Configuration getCurrentConfig() const;
 
   /**
    * Get the set of all allowed configurations.
@@ -329,9 +329,13 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
 
   if (not traversal->isApplicable()) {
     autopas::utils::ExceptionHandler::exception(
-        "Error: Trying to execute a traversal that is not applicable. This normally happens only if the search space "
-        "is trivial, but no traversals are applicable. Config: {}",
-        _tuningStrategy->getCurrentConfiguration().toString());
+        "Error: Trying to execute a traversal that is not applicable. Two common reasons:\n"
+        "1. The search space is trivial, but no traversals are applicable. \n"
+        "2. You are using multiple functors and one of the not first is not supporting all configuration options of "
+        "the first.\n"
+        "Config: {}\n"
+        "Current functor: {}",
+        _tuningStrategy->getCurrentConfiguration().toString(), typeid(*f).name());
   }
 
   // if tuning execute with time measurements
@@ -417,7 +421,8 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
     return false;
   }
 
-  _containerSelector.selectContainer(conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin));
+  _containerSelector.selectContainer(conf.container,
+                                     ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
   return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor>(
@@ -426,7 +431,7 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
 }
 
 template <class Particle, class ParticleCell>
-const autopas::Configuration AutoTuner<Particle, ParticleCell>::getCurrentConfig() const {
+autopas::Configuration AutoTuner<Particle, ParticleCell>::getCurrentConfig() const {
   return _tuningStrategy->getCurrentConfiguration();
 }
 }  // namespace autopas

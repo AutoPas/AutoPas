@@ -60,6 +60,10 @@ class VerletListsCellsHelpers {
       return true;
     }
 
+    bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+      return false;  // this functor shouldn't be called with clusters!
+    }
+
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
       double distsquare = utils::ArrayMath::dot(dist, dist);

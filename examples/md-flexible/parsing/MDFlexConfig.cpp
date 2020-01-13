@@ -15,13 +15,11 @@ std::string MDFlexConfig::to_string() const {
   auto passedContainerOptionsStr = autopas::utils::ArrayUtils::to_string(containerOptions);
   os << setw(valueOffset) << left << containerOptionsStr << ":  " << passedContainerOptionsStr << endl;
 
-  // if verlet lists are in the container options print verlet config data
-  if (passedContainerOptionsStr.find("erlet") != std::string::npos) {
-    os << setw(valueOffset) << left << verletRebuildFrequencyStr << ":  " << verletRebuildFrequency << endl;
-    os << setw(valueOffset) << left << verletSkinRadiusStr << ":  " << verletSkinRadius << endl;
-    if (passedContainerOptionsStr.find("luster") != std::string::npos) {
-      os << setw(valueOffset) << left << verletClusterSizeStr << ":  " << verletClusterSize << endl;
-    }
+  // since all containers are rebuilt only periodically print Verlet config always.
+  os << setw(valueOffset) << left << verletRebuildFrequencyStr << ":  " << verletRebuildFrequency << endl;
+  os << setw(valueOffset) << left << verletSkinRadiusStr << ":  " << verletSkinRadius << endl;
+  if (passedContainerOptionsStr.find("luster") != std::string::npos) {
+    os << setw(valueOffset) << left << verletClusterSizeStr << ":  " << verletClusterSize << endl;
   }
 
   if (containerOptions.size() > 1 or traversalOptions.size() > 1 or dataLayoutOptions.size() > 1) {
@@ -148,7 +146,7 @@ void MDFlexConfig::addParticleType(unsigned long typeId, double epsilon, double 
     if (epsilonMap.at(typeId) == epsilon and sigmaMap.at(typeId) == sigma and massMap.at(typeId) == mass) {
       return;
     } else {  // wrong initialization:
-      throw std::runtime_error("Wrong Particle initializaition: using same typeId for different properties");
+      throw std::runtime_error("Wrong Particle initialization: using same typeId for different properties");
     }
   } else {
     epsilonMap.emplace(typeId, epsilon);

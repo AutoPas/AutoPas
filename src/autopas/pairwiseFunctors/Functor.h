@@ -10,6 +10,7 @@
 #include <type_traits>
 
 #include "autopas/cells/ParticleCell.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -280,6 +281,14 @@ class Functor {
    * @return true if and only if this functor is relevant for auto-tuning.
    */
   virtual bool isRelevantForTuning() = 0;
+
+  /**
+   * Check whether the given clusterSize is appropriate and can be used by the functor.
+   * @param clusterSize The size of the clusters.
+   * @param dataLayout The used data layout.
+   * @return true, iff the cluster size is appropriate.
+   */
+  virtual bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const = 0;
 
 #if defined(AUTOPAS_CUDA)
   /**

@@ -40,4 +40,5 @@ class VerletClusterCellsTraversalVersusDirectSumTest : public AutoPasTestBase {
 
   autopas::DirectSum<FMCell> _directSum;
   autopas::VerletClusterCells<Molecule> _verletCluster;
+  static constexpr unsigned int _clusterSize = 64;
 };

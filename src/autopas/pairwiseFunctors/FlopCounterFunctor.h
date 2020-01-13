@@ -34,6 +34,10 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
 
   bool allowsNonNewton3() override { return true; }
 
+  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+    return dataLayout == DataLayoutOption::aos;  // no support for clusters yet, unless aos.
+  }
+
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius

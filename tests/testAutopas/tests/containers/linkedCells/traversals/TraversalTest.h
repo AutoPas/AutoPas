@@ -51,6 +51,11 @@ class TraversalTest : public AutoPasTestBase,
 
     bool allowsNonNewton3() override { return true; }
 
+    bool isAppropriateClusterSize(unsigned int clusterSize,
+                                  autopas::DataLayoutOption::Value dataLayout) const override {
+      return dataLayout == autopas::DataLayoutOption::aos;  // this functor supports clusters only for aos!
+    }
+
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       const auto coordsI = i.getR();
       const auto coordsJ = j.getR();
