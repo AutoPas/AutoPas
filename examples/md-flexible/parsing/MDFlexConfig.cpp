@@ -148,7 +148,7 @@ void MDFlexConfig::addParticleType(unsigned long typeId, double epsilon, double 
     if (epsilonMap.at(typeId) == epsilon and sigmaMap.at(typeId) == sigma and massMap.at(typeId) == mass) {
       return;
     } else {  // wrong initialization:
-      throw std::runtime_error("Wrong Particle initializaition: using same typeId for different properties");
+      throw std::runtime_error("Wrong Particle initialization: using same typeId for different properties");
     }
   } else {
     epsilonMap.emplace(typeId, epsilon);
