@@ -262,9 +262,13 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     // Special iterator requires sorted cells
+#ifdef AUTOPAS_OPENMP
+#pragma omp single
+#endif
     if (not _isValid) {
       rebuild();
     }
+    // there is an implicit barrier at end of single!
 
     // restrict search area to the region where particles are
     const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _boxMinWithHalo);
