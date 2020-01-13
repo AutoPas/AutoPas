@@ -30,5 +30,5 @@ class IteratorTest : public testing::Test, public ::testing::WithParamInterface<
   };
 
   static void testOpenMPIterators(autopas::ContainerOption containerOption, double cellSizeFactor,
-                           autopas::IteratorBehavior behavior, bool testRegionIterators);
+                                  autopas::IteratorBehavior behavior, bool testRegionIterators);
 };
