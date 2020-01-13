@@ -46,16 +46,17 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
         _cellId(0),
         _behavior(behavior),
         _offsetToDummy(offsetToDummy) {
-    /// @todo: this is currently a workaround as we did not yet implement openmp support for this iterator.
-    if (autopas_get_thread_num() != 0) {
-      _cellId = _vectorOfCells->size();
-      // the iterator is set to invalid.
-      return;
-    }
-    _cellIter = (*_vectorOfCells)[0]._particles.begin();
-    _cellEnd = _cellIter + getDummyStartbyIndex(0);
-    --_cellIter;
+    // 1. set _cellId to thread number.
+    _cellId = autopas_get_thread_num();
 
+    // 2. set cell iterators to appropriate start
+    _iteratorWithinOneCell = (*_vectorOfCells)[0]._particles.begin();
+    _cellEnd = _iteratorWithinOneCell + getDummyStartbyIndex(0);
+
+    // 3. do a -- for _iteratorWithinOneCell to be able to call operator++ and still end up at the front of everything.
+    --_iteratorWithinOneCell;
+
+    // 4. call operator++
     VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>::operator++();
   }
 
@@ -64,18 +65,22 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    */
   inline VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
     do {
-      ++_cellIter;
+      // increase the cell-local iterator
+      ++_iteratorWithinOneCell;
 
-      while (_cellIter == _cellEnd) {
-        ++_cellId;
+      while (_iteratorWithinOneCell == _cellEnd) {
+        // always increase _cellId by stride if we are at the end of a cell!
+        auto stride = autopas_get_num_threads();
+        _cellId += stride;
 
         if (_cellId >= _vectorOfCells->size()) {
+          // if we are at or beyond the end of all cells, return (the iterator is now invalid)
           return *this;
         }
-        _cellIter = (*_vectorOfCells)[_cellId]._particles.begin();
-        _cellEnd = _cellIter + getDummyStartbyIndex(_cellId);
+        _iteratorWithinOneCell = (*_vectorOfCells)[_cellId]._particles.begin();
+        _cellEnd = _iteratorWithinOneCell + getDummyStartbyIndex(_cellId);
       }
-    } while (not fitsBehavior(*_cellIter));
+    } while (not fitsBehavior(*_iteratorWithinOneCell));
     return *this;
   }
 
@@ -84,7 +89,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    * this is the indirection operator
    * @return current particle
    */
-  ParticleType &operator*() const override { return *_cellIter; }
+  ParticleType &operator*() const override { return *_iteratorWithinOneCell; }
 
   /**
    * Check whether the iterator currently points to a valid particle.
@@ -97,13 +102,13 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    */
   void deleteCurrentParticleImpl() override {
     if constexpr (modifiable) {
-      auto pos = _cellIter->getR();
+      auto pos = _iteratorWithinOneCell->getR();
       pos[0] += _offsetToDummy;
-      _cellIter->setR(pos);
+      _iteratorWithinOneCell->setR(pos);
       --(_dummyStarts)[_cellId];
       --_cellEnd;
-      std::iter_swap(_cellIter, _cellEnd);
-      --_cellIter;
+      std::iter_swap(_iteratorWithinOneCell, _cellEnd);
+      --_iteratorWithinOneCell;
     }
   }
 
@@ -152,7 +157,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
   /**
    * Current iterator within a cell
    */
-  CellIteratorType _cellIter;
+  CellIteratorType _iteratorWithinOneCell;
   /**
    * end for the current cell
    */
@@ -206,9 +211,9 @@ class VerletClusterCellsRegionParticleIterator
         _skin(skin) {
     _indicesInRegion.push_back(this->_vectorOfCells->size() + 1);
     this->_cellId = _indicesInRegion[_currentRegionIndex];
-    this->_cellIter = (*this->_vectorOfCells)[this->_cellId]._particles.begin();
-    this->_cellEnd = this->_cellIter + this->getDummyStartbyIndex(this->_cellId);
-    --this->_cellIter;
+    this->_iteratorWithinOneCell = (*this->_vectorOfCells)[this->_cellId]._particles.begin();
+    this->_cellEnd = this->_iteratorWithinOneCell + this->getDummyStartbyIndex(this->_cellId);
+    --this->_iteratorWithinOneCell;
     VerletClusterCellsRegionParticleIterator<Particle, ParticleCell, modifiable>::operator++();
   }
 
@@ -217,17 +222,17 @@ class VerletClusterCellsRegionParticleIterator
    */
   inline VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
     do {
-      ++this->_cellIter;
+      ++this->_iteratorWithinOneCell;
 
-      while (this->_cellIter == this->_cellEnd) {
+      while (this->_iteratorWithinOneCell == this->_cellEnd) {
         this->_cellId = _indicesInRegion[++_currentRegionIndex];
-        if (not(this->_cellId < this->_vectorOfCells->size())) {
+        if (this->_cellId >= this->_vectorOfCells->size()) {
           return *this;
         }
         // Find lowest possible particle in the region.
         // Sorting in the array is at most off by skin/2 as the container is rebuilt if a particle moves more.
         // increasing the search area by skin guarantees particles in the region to be found.
-        this->_cellIter = std::lower_bound(
+        this->_iteratorWithinOneCell = std::lower_bound(
             (*this->_vectorOfCells)[this->_cellId]._particles.begin(),
             (*this->_vectorOfCells)[this->_cellId]._particles.begin() + this->getDummyStartbyIndex(this->_cellId),
             _startRegion[2] - _skin, [](const Particle &a, const double b) { return a.getR()[2] < b; });
@@ -237,8 +242,8 @@ class VerletClusterCellsRegionParticleIterator
             _endRegion[2] + _skin, [](const double b, const Particle &a) { return b < a.getR()[2]; });
       }
     } while (
-        (not VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>::fitsBehavior(*this->_cellIter)) or
-        utils::notInBox(this->_cellIter->getR(), _startRegion, _endRegion));
+        (not VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>::fitsBehavior(*this->_iteratorWithinOneCell)) or
+        utils::notInBox(this->_iteratorWithinOneCell->getR(), _startRegion, _endRegion));
     return *this;
   }
 
