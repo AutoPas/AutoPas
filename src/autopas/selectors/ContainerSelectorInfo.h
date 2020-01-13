@@ -24,15 +24,6 @@ class ContainerSelectorInfo {
    * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and
    * VerletListsCells).
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
-   */
-  explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkin)
-      : cellSizeFactor(cellSizeFactor), verletSkin(verletSkin), verletClusterSize(64) {}
-
-  /**
-   * Constructor.
-   * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and
-   * VerletListsCells).
-   * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletClusterSize Size of verlet Clusters
    */
   explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkin, unsigned int verletClusterSize)

@@ -288,14 +288,21 @@ void Simulation<Particle, ParticleCell>::simulate() {
         this->writeVTKFile(iteration);
       }
 
+      // calculate new positions
+      _timers.positionUpdate.start();
+      TimeDiscretization::calculatePositions(_autopas, *_particlePropertiesLibrary, _config->deltaT);
+      _timers.positionUpdate.stop();
+
+      // apply boundary conditions AFTER the position update!
       if (_config->periodic) {
         _timers.boundaries.start();
         BoundaryConditions<ParticleCell>::applyPeriodic(_autopas);
         _timers.boundaries.stop();
+      } else {
+        throw std::runtime_error(
+            "Simulation::simulate(): at least one boundary condition has to be set. Please enable the periodic "
+            "boundary conditions!");
       }
-      _timers.positionUpdate.start();
-      TimeDiscretization::calculatePositions(_autopas, *_particlePropertiesLibrary, _config->deltaT);
-      _timers.positionUpdate.stop();
     }
     switch (this->_config->functorOption) {
       case MDFlexConfig::FunctorOption::lj12_6: {

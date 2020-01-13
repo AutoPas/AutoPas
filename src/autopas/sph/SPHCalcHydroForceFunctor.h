@@ -36,6 +36,10 @@ class SPHCalcHydroForceFunctor
 
   bool allowsNonNewton3() override { return true; }
 
+  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+    return dataLayout == DataLayoutOption::aos;  // This functor does only support clusters via aos.
+  }
+
   /**
    * Calculates the contribution of the interaction of particle i and j to the
    * hydrodynamic force.

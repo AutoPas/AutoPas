@@ -10,7 +10,7 @@
 
 VerletClusterCellsTraversalVersusDirectSumTest::VerletClusterCellsTraversalVersusDirectSumTest()
     : _directSum(getBoxMin(), getBoxMax(), getCutoff(), 0.2),
-      _verletCluster(getBoxMin(), getBoxMax(), getCutoff(), 0.2, 64) {}
+      _verletCluster(getBoxMin(), getBoxMax(), getCutoff(), 0.2, _clusterSize) {}
 
 double VerletClusterCellsTraversalVersusDirectSumTest::fRand(double fMin, double fMax) const {
   double f = static_cast<double>(rand()) / RAND_MAX;
@@ -62,7 +62,7 @@ void VerletClusterCellsTraversalVersusDirectSumTest::test(unsigned long numMolec
   autopas::DirectSumTraversal<FMCell, decltype(funcDS), autopas::DataLayoutOption::aos, useNewton3> traversalDS(
       &funcDS, getCutoff());
   autopas::VerletClusterCellsTraversal<FMCell, decltype(funcVC), dataLayout, useNewton3> traversalVerletCluster(
-      &funcVC);
+      &funcVC, _clusterSize);
 
   funcDS.initTraversal();
   _directSum.iteratePairwise(&traversalDS);

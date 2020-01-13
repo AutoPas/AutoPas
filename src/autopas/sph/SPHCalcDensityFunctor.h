@@ -34,6 +34,10 @@ class SPHCalcDensityFunctor
 
   bool allowsNonNewton3() override { return true; }
 
+  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+    return dataLayout == DataLayoutOption::aos;  // This functor does only support clusters via aos.
+  }
+
   /**
    * Calculates the density contribution of the interaction of particle i and j.
    * It is not symmetric, because the smoothing lenghts of the two particles can
