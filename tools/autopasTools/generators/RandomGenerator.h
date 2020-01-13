@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <functional>
 
 #include "autopas/utils/inBox.h"
 
@@ -23,6 +24,19 @@ class RandomGenerator {
    * @return double between fMin and fMax
    */
   static double fRand(double fMin, double fMax);
+
+  /**
+   * Detail class for fillWithHaloParticles
+   * @tparam Container
+   * @tparam Particle
+   */
+  template <class Container, class Particle>
+  struct detail {
+    /**
+     * Default function to add halo particles to containers, uses function addHaloParticle().
+     */
+    constexpr static auto addHaloParticleF = [](Container &c, Particle p) { c.addHaloParticle(p); };
+  };
 
  public:
   /**
@@ -54,15 +68,19 @@ class RandomGenerator {
    * Fills only a given part of a container (also AutoPas object) with randomly uniformly distributed particles.
    * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
    * @tparam Particle Type of the default particle.
+   * @tparam HaloAddFunction function with signature void(Container&, Particle)
    * @param container
    * @param defaultParticle
    * @param haloWidth
    * @param numParticles
+   * @param haloAddFunction the function of type HaloAddfunction that adds a halo particle to the container.
    * @param seed
    */
-  template <class Container, class Particle>
-  static void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
-                                    unsigned long numParticles = 100ul, unsigned int seed = 42);
+  template <class Container, class Particle,
+            class HaloAddFunction = decltype(detail<Container, Particle>::addHaloParticleF)>
+  static void fillWithHaloParticles(
+      Container &container, const Particle &defaultParticle, double haloWidth, unsigned long numParticles = 100ul,
+      const HaloAddFunction &haloAddFunction = detail<Container, Particle>::addHaloParticleF, unsigned int seed = 42);
 };
 
 template <class Container, class Particle>
@@ -79,9 +97,10 @@ void RandomGenerator::fillWithParticles(Container &container, const Particle &de
   }
 }
 
-template <class Container, class Particle>
+template <class Container, class Particle, class HaloAddFunction>
 void RandomGenerator::fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
-                                            unsigned long numParticles, unsigned int seed) {
+                                            unsigned long numParticles, const HaloAddFunction &haloAddFunction,
+                                            unsigned int seed) {
   srand(seed);  // fixed seedpoint
 
   auto haloBoxMin = container.getBoxMin();
@@ -94,15 +113,15 @@ void RandomGenerator::fillWithHaloParticles(Container &container, const Particle
   }
 
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
-    auto pos = randomPosition(haloBoxMax, haloBoxMax);
+    auto pos = randomPosition(haloBoxMin, haloBoxMax);
     // we only want to add particles not in the actual box
     while (autopas::utils::inBox(pos, container.getBoxMin(), container.getBoxMax())) {
-      pos = randomPosition(haloBoxMax, haloBoxMax);
+      pos = randomPosition(haloBoxMin, haloBoxMax);
     }
     Particle particle(defaultParticle);
     particle.setR(pos);
     particle.setID(i);
-    container.addHaloParticle(particle);
+    haloAddFunction(container, particle);
   }
 }
 }  // namespace autopasTools::generators

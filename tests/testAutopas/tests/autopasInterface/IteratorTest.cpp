@@ -6,6 +6,9 @@
 
 #include "IteratorTest.h"
 
+#include <autopasTools/generators/RandomGenerator.h>
+#include <testingHelpers/TouchableParticle.h>
+
 #include "testingHelpers/commonTypedefs.h"
 
 constexpr double cutoff = 1.;
@@ -254,6 +257,45 @@ TEST_P(IteratorTest, ParticleAdditionAndIteratorTestNormal) {
 TEST_P(IteratorTest, RangeBasedIterator) {
   auto options = GetParam();
   testRangeBasedIterator(options);
+}
+
+/**
+ * The main idea of this test is to compare theiterators using openmp with the iterators not using openmp.
+ */
+TEST_P(IteratorTest, testOpenMPIteratorsOwnedOnly) {
+  std::array<double, 3> min = {1, 1, 1};
+  std::array<double, 3> max = {8, 8, 8};
+  int clusterSize = 64;
+  autopas::AutoPas<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> apContainer;
+
+  auto [containerOption, cellSizeFactor] = GetParam();
+  apContainer.setAllowedContainers({containerOption});
+  apContainer.setCellSizeFactor(cellSizeFactor);
+
+  apContainer.setBoxMin(min);
+  apContainer.setBoxMax(max);
+  apContainer.setCutoff(cutoff);
+  apContainer.setVerletSkin(skin);
+  apContainer.setVerletClusterSize(clusterSize);
+
+  apContainer.init();
+
+  autopasTools::generators::RandomGenerator::fillWithParticles(apContainer, TouchableParticle({0., 0., 0.}, 0),
+                                                               apContainer.getBoxMin(), apContainer.getBoxMax(), 500);
+  autopasTools::generators::RandomGenerator::fillWithHaloParticles(
+      apContainer, TouchableParticle({0., 0., 0.}, 0), cutoff, 50,
+      [](decltype(apContainer) &c, TouchableParticle p) { c.addOrUpdateHaloParticle(p); });
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+  for (auto iter = apContainer.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    iter->touch();
+  }
+
+  for (auto iter = apContainer.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    EXPECT_EQ(1, iter->getNumTouched());
+  }
 }
 
 using ::testing::Combine;

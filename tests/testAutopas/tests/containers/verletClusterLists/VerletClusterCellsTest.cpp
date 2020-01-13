@@ -523,28 +523,3 @@ TEST_F(VerletClusterCellsTest, testVerletListRegionIterator) {
           << iter->getR()[2] << ")" << std::endl;
   }
 }
-
-TEST_F(VerletClusterCellsTest, testVerletListIteratorsOpenMP) {
-  std::array<double, 3> min = {1, 1, 1};
-  std::array<double, 3> max = {8, 8, 8};
-  double cutoff = 1.;
-  double skin = 0.2;
-  int clusterSize = 64;
-  autopas::VerletClusterCells<TouchableParticle> verletLists(min, max, cutoff, skin, clusterSize);
-
-  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, TouchableParticle({0., 0., 0.}, 0),
-                                                               verletLists.getBoxMin(), verletLists.getBoxMax(), 500);
-  autopasTools::generators::RandomGenerator::fillWithHaloParticles(verletLists, TouchableParticle({0., 0., 0.}, 0),
-                                                                   cutoff, 50);
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-    iter->touch();
-  }
-
-  for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-    EXPECT_EQ(1, iter->getNumTouched());
-  }
-}
