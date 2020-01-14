@@ -236,7 +236,8 @@ class VerletClusterCellsRegionParticleIterator
     // 5. adapt _cellEnd to dummies.
     this->_cellEnd = this->_iteratorWithinOneCell + this->getDummyStartbyIndex(this->_cellId);
 
-    // 6. do a -- to be able to do a ++.
+    // 6. do a -- to be able to do a ++. The ++ is needed to ensure a valid iterator (if possible), as the initial
+    // iterator might be invalid.
     --this->_iteratorWithinOneCell;
 
     // 7. do the ++
