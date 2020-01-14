@@ -141,7 +141,7 @@ class AutoPas {
    * left the container or not.
    */
   AUTOPAS_WARN_UNUSED_RESULT
-  std::pair<std::vector<Particle>, bool> updateContainer() { return _logicHandler->updateContainer(false); }
+  std::pair<std::vector< Particle>, bool> updateContainer() { return _logicHandler->updateContainer(false); }
 
   /**
    * Forces a container update.
