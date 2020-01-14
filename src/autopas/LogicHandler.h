@@ -56,7 +56,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::addParticle()
    */
-  void addParticle(Particle &p) {
+  void addParticle(const Particle &p) {
     if (not isContainerValid()) {
       _autoTuner.getContainer()->addParticle(p);
       _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
@@ -71,7 +71,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::addOrUpdateHaloParticle()
    */
-  void addOrUpdateHaloParticle(Particle &haloParticle) {
+  void addOrUpdateHaloParticle(const Particle &haloParticle) {
     auto container = _autoTuner.getContainer();
     if (not isContainerValid()) {
       if (not utils::inBox(haloParticle.getR(), _autoTuner.getContainer()->getBoxMin(),

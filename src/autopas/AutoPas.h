@@ -158,7 +158,7 @@ class AutoPas {
    * This is only allowed if the neighbor lists are not valid.
    * @param p Reference to the particle to be added
    */
-  void addParticle(Particle &p) { _logicHandler->addParticle(p); }
+  void addParticle(const Particle &p) { _logicHandler->addParticle(p); }
 
   /**
    * Adds or updates a particle to/in the container that lies in the halo region of the container.
@@ -175,7 +175,7 @@ class AutoPas {
    *
    * @param haloParticle particle to be added or updated
    */
-  void addOrUpdateHaloParticle(Particle &haloParticle) { _logicHandler->addOrUpdateHaloParticle(haloParticle); }
+  void addOrUpdateHaloParticle(const Particle &haloParticle) { _logicHandler->addOrUpdateHaloParticle(haloParticle); }
 
   /**
    * Deletes all particles.
