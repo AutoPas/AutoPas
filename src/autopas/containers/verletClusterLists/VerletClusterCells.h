@@ -93,7 +93,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   /**
    * @copydoc VerletLists::addParticle()
    */
-  void addParticle(Particle &p) override {
+  void addParticle(const Particle &p) override {
     if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
       // removes dummy particles in first cell
@@ -110,7 +110,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   /**
    * @copydoc VerletLists::addHaloParticle()
    */
-  void addHaloParticle(Particle &haloParticle) override {
+  void addHaloParticle(const Particle &haloParticle) override {
     Particle p_copy = haloParticle;
     if (autopas::utils::notInBox(p_copy.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
@@ -131,7 +131,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
    * @param haloParticle Particle to be updated.
    * @return Returns true if the particle was updated, false if no particle could be found.
    */
-  bool updateHaloParticle(Particle &haloParticle) override {
+  bool updateHaloParticle(const Particle &haloParticle) override {
     Particle pCopy = haloParticle;
     pCopy.setOwned(false);
 

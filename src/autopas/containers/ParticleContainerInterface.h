@@ -75,20 +75,20 @@ class ParticleContainerInterface {
    * Adds a particle to the container.
    * @param p The particle to be added.
    */
-  virtual void addParticle(ParticleType &p) = 0;
+  virtual void addParticle(const ParticleType &p) = 0;
 
   /**
    * Adds a particle to the container that lies in the halo region of the container.
    * @param haloParticle Particle to be added.
    */
-  virtual void addHaloParticle(ParticleType &haloParticle) = 0;
+  virtual void addHaloParticle(const ParticleType &haloParticle) = 0;
 
   /**
    * Update a halo particle of the container with the given haloParticle.
    * @param haloParticle Particle to be updated.
    * @return Returns true if the particle was updated, false if no particle could be found.
    */
-  virtual bool updateHaloParticle(ParticleType &haloParticle) = 0;
+  virtual bool updateHaloParticle(const ParticleType &haloParticle) = 0;
 
   /**
    * Rebuilds the neighbor lists.

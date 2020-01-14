@@ -58,7 +58,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
   /**
    * @copydoc ParticleContainerInterface::addParticle()
    */
-  void addParticle(ParticleType &p) override {
+  void addParticle(const ParticleType &p) override {
     bool inBox = autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
     if (inBox) {
       ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
@@ -72,7 +72,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
   /**
    * @copydoc ParticleContainerInterface::addHaloParticle()
    */
-  void addHaloParticle(ParticleType &haloParticle) override {
+  void addHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwned(false);
     ParticleCell &cell = _cellBlock.getContainingCell(pCopy.getR());
@@ -82,7 +82,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
   /**
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
-  bool updateHaloParticle(ParticleType &haloParticle) override {
+  bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwned(false);
     auto cells = _cellBlock.getNearbyHaloCells(pCopy.getR(), this->getSkin());

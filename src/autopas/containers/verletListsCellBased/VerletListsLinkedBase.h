@@ -50,7 +50,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<FullParticleCell
    * @copydoc autopas::ParticleContainerInterface::addParticle
    * @note This function invalidates the neighbor lists.
    */
-  void addParticle(Particle &p) override {
+  void addParticle(const Particle &p) override {
     _neighborListIsValid = false;
     _linkedCells.addParticle(p);
   }
@@ -59,7 +59,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<FullParticleCell
    * @copydoc autopas::ParticleContainerInterface::addHaloParticle
    * @note This function invalidates the neighbor lists.
    */
-  void addHaloParticle(Particle &haloParticle) override {
+  void addHaloParticle(const Particle &haloParticle) override {
     _neighborListIsValid = false;
     _linkedCells.addHaloParticle(haloParticle);
   }
@@ -141,7 +141,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<FullParticleCell
    * @param particle
    * @return true if a particle was found and updated, false if it was not found.
    */
-  bool updateHaloParticle(Particle &particle) override {
+  bool updateHaloParticle(const Particle &particle) override {
     Particle pCopy = particle;
     pCopy.setOwned(false);
     auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(pCopy.getR(), this->getSkin());

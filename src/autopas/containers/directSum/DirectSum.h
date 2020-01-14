@@ -56,7 +56,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
   /**
    * @copydoc ParticleContainerInterface::addParticle()
    */
-  void addParticle(ParticleType &p) override {
+  void addParticle(const ParticleType &p) override {
     if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       getCell().addParticle(p);
     } else {
@@ -68,7 +68,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
   /**
    * @copydoc ParticleContainerInterface::addHaloParticle()
    */
-  void addHaloParticle(ParticleType &haloParticle) override {
+  void addHaloParticle(const ParticleType &haloParticle) override {
     ParticleType p_copy = haloParticle;
     p_copy.setOwned(false);
     getHaloCell().addParticle(p_copy);
@@ -77,7 +77,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
   /**
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
-  bool updateHaloParticle(ParticleType &haloParticle) override {
+  bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwned(false);
     return internal::checkParticleInCellAndUpdateByIDAndPosition(getHaloCell(), pCopy, this->getSkin());
