@@ -10,7 +10,6 @@
 #include <memory>
 #include <set>
 
-#include "autopas/autopasIncludes.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"

@@ -6,6 +6,8 @@
 
 #include "FlopCounterTest.h"
 
+#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+
 /**
  * Generates a square of four particles, iterates over it with the FlopCounter and checks its values
  * @param dataLayoutOption

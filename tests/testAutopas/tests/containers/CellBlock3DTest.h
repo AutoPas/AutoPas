@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
+#include "autopas/containers/CellBlock3D.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class CellBlock3DTest : public AutoPasTestBase {

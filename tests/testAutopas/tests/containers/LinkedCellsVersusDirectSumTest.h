@@ -9,7 +9,8 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
+#include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 

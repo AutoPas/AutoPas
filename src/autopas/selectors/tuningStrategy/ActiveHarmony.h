@@ -6,12 +6,11 @@
 
 #pragma once
 
-#include <autopas/containers/CompatibleTraversals.h>
-#include <autopas/selectors/Configuration.h>
-
 #include <string>
 
 #include "TuningStrategyInterface.h"
+#include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/selectors/Configuration.h"
 #include "hclient.h"
 
 namespace autopas {

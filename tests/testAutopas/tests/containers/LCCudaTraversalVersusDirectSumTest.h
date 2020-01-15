@@ -11,7 +11,9 @@
 #include <cstdlib>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
+#include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class LCCudaTraversalVersusDirectSumTest : public AutoPasTestBase {

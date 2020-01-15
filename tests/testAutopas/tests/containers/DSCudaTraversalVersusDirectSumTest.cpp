@@ -6,6 +6,7 @@
 
 #include "DSCudaTraversalVersusDirectSumTest.h"
 
+#include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 
 DSCudaTraversalVersusDirectSumTest::DSCudaTraversalVersusDirectSumTest()

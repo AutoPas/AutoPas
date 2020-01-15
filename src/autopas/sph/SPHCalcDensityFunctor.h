@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/sph/SPHKernels.h"
 #include "autopas/sph/SPHParticle.h"
-#include "autopas/pairwiseFunctors/Functor.h"
 
 namespace autopas {
 namespace sph {

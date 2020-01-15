@@ -9,7 +9,8 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
+#include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/TouchableParticle.h"
 

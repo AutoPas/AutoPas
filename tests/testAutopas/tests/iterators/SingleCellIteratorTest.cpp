@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 
-#include "autopas/autopasIncludes.h"
+#include "autopas/cells/RMMParticleCell3T.h"
 
 using namespace autopas;
 

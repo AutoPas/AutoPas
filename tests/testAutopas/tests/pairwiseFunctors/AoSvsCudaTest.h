@@ -13,7 +13,6 @@
 #include <chrono>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class AoSvsCudaTest : public AutoPasTestBase {

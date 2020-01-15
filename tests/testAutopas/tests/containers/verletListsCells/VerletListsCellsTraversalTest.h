@@ -12,7 +12,7 @@
 #include <cstdlib>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 

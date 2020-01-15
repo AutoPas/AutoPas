@@ -5,7 +5,7 @@
  */
 
 #pragma once
-#include <autopas/particles/Particle.h>
+#include "autopas/particles/Particle.h"
 
 /**
  * Class that extends the default autopas::Particle with a behavior to check how often the particle was touched.

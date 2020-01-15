@@ -5,6 +5,8 @@
  */
 #include "RegionParticleIteratorTest.h"
 
+#include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 

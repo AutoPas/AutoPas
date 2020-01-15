@@ -12,14 +12,12 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/verletClusterLists/VerletClusterMaths.h"
+#include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
-
-template <class Particle>
-class VerletClustersTraversalInterface;
 
 /**
  * Particles are divided into clusters.
