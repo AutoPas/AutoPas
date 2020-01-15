@@ -353,5 +353,16 @@ void checkCustom() {
             sh "grep -lrE '(NULL|[^_]assert)' . | grep '\\.cpp\\|\\.h'"
             sh "exit 1"
         }
+
+        // check that no file contains an #include <autopas/...>
+        try{
+            // if .cpp or .h files contain #include <autopas, return 2
+            sh "grep -qlrE '#include <autopas' . && exit 2 || exit 0"
+        } catch (Exception e) {
+            // change detected
+            echo 'Usage of #include <autopas/...> is discouraged, please use "". Affected files:'
+            sh "grep -lrE '#include <autopas' ."
+            sh "exit 1"
+        }
     }
 }
