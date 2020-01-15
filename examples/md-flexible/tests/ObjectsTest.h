@@ -6,18 +6,13 @@
 #pragma once
 #include <gtest/gtest.h>
 
-#include <cmath>
-#include <vector>
+#include <array>
 
 #include "AutoPasTestBase.h"
 #include "Objects/CubeGauss.h"
 #include "Objects/CubeGrid.h"
 #include "Objects/CubeUniform.h"
-#include "Objects/Objects.h"
 #include "Objects/Sphere.h"
-#include "autopas/AutoPas.h"
-#include "autopas/utils/ArrayUtils.h"
-#include "testingHelpers/commonTypedefs.h"
 
 // testet die boxMin und boxMax funktionen für alle Objects
 class ObjectsTest : public AutoPasTestBase {

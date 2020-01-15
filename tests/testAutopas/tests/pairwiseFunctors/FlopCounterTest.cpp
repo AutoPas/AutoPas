@@ -6,6 +6,7 @@
 
 #include "FlopCounterTest.h"
 
+#include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 
 /**

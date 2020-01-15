@@ -8,12 +8,10 @@
 
 #include <gtest/gtest.h>
 
-#include <vector>
+#include <array>
 
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
-#include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
-#include "autopas/utils/ArrayMath.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class TraversalRaceConditionTest : public AutoPasTestBase {
@@ -21,8 +19,6 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
   TraversalRaceConditionTest() = default;
 
   ~TraversalRaceConditionTest() override = default;
-
-  void fillWithParticles(autopas::AutoPas<Particle, FPCell> &autoPas, std::array<size_t, 3> particlesPerDim);
 
   /*
    * Simple AoS only functor which repulses paritcles from each other with a

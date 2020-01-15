@@ -5,7 +5,10 @@
  */
 #include "ParticlePropertiesLibraryTest.h"
 
+#include "Simulation.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
+#include "parsing/YamlParser.h"
+#include "testingHelpers/commonTypedefs.h"
 
 double ParticlePropertiesLibraryTest::mixingE(double e1, double e2) { return std::sqrt(e1 * e2); }
 double ParticlePropertiesLibraryTest::mixingS(double s1, double s2) { return ((s1 + s2) / 2); }

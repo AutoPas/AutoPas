@@ -6,8 +6,10 @@
 
 #include "SlicedTraversalTest.h"
 
+#include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
+#include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
 

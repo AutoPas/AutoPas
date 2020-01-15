@@ -6,9 +6,10 @@
 
 #include "C04SoATraversalTest.h"
 
+#include "autopas/containers/linkedCells/traversals/C04SoATraversal.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
-#include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
+#include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
 

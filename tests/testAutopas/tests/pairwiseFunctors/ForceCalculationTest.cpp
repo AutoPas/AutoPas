@@ -6,7 +6,9 @@
 
 #include "ForceCalculationTest.h"
 
+#include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,

@@ -5,14 +5,8 @@
  */
 #pragma once
 #include "AutoPasTestBase.h"
-#include "Generator.h"
-#include "Objects/Objects.h"
-#include "PrintableMolecule.h"
-#include "Thermostat.h"
-#include "TimeDiscretization.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
-#include "autopas/utils/ArrayUtils.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class ThermostatTest : public AutoPasTestBase,
