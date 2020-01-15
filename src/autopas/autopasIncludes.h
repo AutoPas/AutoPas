@@ -17,9 +17,6 @@
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 
-// particles
-#include "autopas/particles/Particle.h"
-
 // cells
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ParticleCell.h"
