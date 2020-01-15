@@ -9,8 +9,6 @@
 
 #pragma once
 
-// @todo separate autopas.h and autopasmd.h
-
 // utils
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/AutoPasMacros.h"
