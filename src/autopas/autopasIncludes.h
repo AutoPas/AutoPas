@@ -20,7 +20,6 @@
 #include "autopas/utils/WrapOpenMP.h"
 
 // particles
-#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/particles/Particle.h"
 
 // cells

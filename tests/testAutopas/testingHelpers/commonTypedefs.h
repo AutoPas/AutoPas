@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "mocks/MockFunctor.h"
 
