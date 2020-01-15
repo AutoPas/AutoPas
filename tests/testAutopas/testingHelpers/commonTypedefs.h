@@ -7,7 +7,7 @@
 #pragma once
 
 #include "autopas/molecularDynamics/MoleculeLJ.h"
-#include "autopas/options/DataLayoutOption.h"
+#include "autopas/particles/Particle.h"
 #include "mocks/MockFunctor.h"
 
 // a place for typedefs that are commonly used in tests
@@ -35,31 +35,3 @@ typedef autopas::FullParticleCell<Molecule> FMCell;
  * Short for Mock Functor
  */
 typedef MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> MFunctor;
-
-/**
- * Short for the Cell Functor with AoS and Newton 3
- */
-typedef autopas::internal::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor,
-                                       autopas::DataLayoutOption::aos, true>
-    CellFunctorAoSN3;
-
-/**
- * Short for the Cell Functor with AoS and no Newton 3
- */
-typedef autopas::internal::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor,
-                                       autopas::DataLayoutOption::aos, false>
-    CellFunctorAoSNoN3;
-
-/**
- * Short for the Cell Functor with SoA and Newton 3
- */
-typedef autopas::internal::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor,
-                                       autopas::DataLayoutOption::soa, true>
-    CellFunctorSoAN3;
-
-/**
- * Short for the Cell Functor with SoA and no Newton 3
- */
-typedef autopas::internal::CellFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>, MFunctor,
-                                       autopas::DataLayoutOption::soa, false>
-    CellFunctorSoANoN3;
