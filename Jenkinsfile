@@ -360,7 +360,7 @@ void checkCustom() {
             sh "grep -qlrE '#include <autopas' . && exit 2 || exit 0"
         } catch (Exception e) {
             // change detected
-            echo 'Usage of #include <autopas/...> is discouraged, please use "". Affected files:'
+            echo 'Usage of #include <autopas...> is discouraged, please use "". Affected files:'
             sh "grep -lrE '#include <autopas' ."
             sh "exit 1"
         }
