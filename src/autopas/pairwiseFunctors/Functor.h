@@ -22,6 +22,15 @@
 
 namespace autopas {
 
+/**
+ * Newton 3 modes for the LJFunctor.
+ */
+enum class FunctorN3Modes {
+  Newton3Only,
+  Newton3Off,
+  Both,
+};
+
 template <class Particle>
 class VerletListHelpers;
 

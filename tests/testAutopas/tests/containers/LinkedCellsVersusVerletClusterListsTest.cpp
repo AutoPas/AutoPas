@@ -7,6 +7,7 @@
 #include "LinkedCellsVersusVerletClusterListsTest.h"
 
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/selectors/TraversalSelector.h"
 
 template <autopas::DataLayoutOption::Value dataLayout, bool useNewton3>

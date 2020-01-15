@@ -10,8 +10,6 @@
 #include <map>
 #include <vector>
 
-#include "autopas/particles/Particle.h"
-
 /**
  * This class stores the (physical) properties of particle types.
  *

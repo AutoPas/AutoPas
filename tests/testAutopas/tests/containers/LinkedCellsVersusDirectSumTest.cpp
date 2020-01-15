@@ -6,6 +6,7 @@
 
 #include "LinkedCellsVersusDirectSumTest.h"
 
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
 LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()

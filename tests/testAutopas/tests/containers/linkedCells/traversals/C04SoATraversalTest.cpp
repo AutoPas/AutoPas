@@ -6,6 +6,7 @@
 
 #include "C04SoATraversalTest.h"
 
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
 

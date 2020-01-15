@@ -6,6 +6,8 @@
 
 #include "LinkedCellsVersusVerletListsTest.h"
 
+#include "autopas/molecularDynamics/LJFunctor.h"
+
 LinkedCellsVersusVerletListsTest::LinkedCellsVersusVerletListsTest() : _verletLists(nullptr), _linkedCells(nullptr) {}
 
 template <bool useNewton3, autopas::DataLayoutOption::Value dataLayoutOption>

@@ -55,7 +55,6 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 
 // pairwise functors
-#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/pairwiseFunctors/Functor.h"

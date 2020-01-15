@@ -15,6 +15,7 @@
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
 #include "autopas/AutoPas.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopasTools/generators/GaussianGenerator.h"

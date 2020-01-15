@@ -6,6 +6,8 @@
 
 #include "LinkedCellsVersusVerletListsCellsTest.h"
 
+#include "autopas/molecularDynamics/LJFunctor.h"
+
 LinkedCellsVersusVerletListsCellsTest::LinkedCellsVersusVerletListsCellsTest()
     : _verletListsCells(nullptr), _linkedCells(nullptr) {}
 
