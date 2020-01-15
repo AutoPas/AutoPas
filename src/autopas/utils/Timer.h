@@ -26,17 +26,17 @@ class Timer {
   void start();
 
   /**
-   * Stops the timer and returns the time elapsed in microseconds since the last call to start.
+   * Stops the timer and returns the time elapsed in nanoseconds since the last call to start.
    * It also adds the duration to the total time.
-   * @return elapsed time in seconds
+   * @return elapsed time in nanoseconds
    */
   long stop();
 
   /**
-   * Adds the given amount of microseconds to the total time.
-   * @param microseconds
+   * Adds the given amount of nanoseconds to the total time.
+   * @param nanoseconds
    */
-  void addTime(long microseconds);
+  void addTime(long nanoseconds);
 
   /**
    * Get total accumulated time.

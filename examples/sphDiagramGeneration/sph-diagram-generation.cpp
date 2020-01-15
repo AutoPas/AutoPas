@@ -166,14 +166,14 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
   double elapsedTime = t.stop();
 
-  double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-6;
+  double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-9;
 
   t.start();
   for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func);
 
   elapsedTime = t.stop();
 
-  double MFUPS_soa = numParticles * numIterations / elapsedTime * 1e-6;
+  double MFUPS_soa = numParticles * numIterations / elapsedTime * 1e-9;
 
   std::cout << numParticles << "\t" << numIterations << "\t" << MFUPS_aos << "\t" << MFUPS_soa;
   std::cout << std::endl;
