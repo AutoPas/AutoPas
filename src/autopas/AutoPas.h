@@ -524,7 +524,7 @@ class AutoPas {
    * Getter for the currently selected configuration.
    * @return Configuration object currently used.
    */
-  const Configuration getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
+  Configuration getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
 
   /**
    * Getter for the tuning strategy option.
