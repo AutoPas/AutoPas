@@ -25,7 +25,7 @@ namespace autopas {
 template <class Particle, class ParticleCell>
 class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
                                           FlopCounterFunctor<Particle, ParticleCell>> {
-  typedef typename Particle::SoAArraysType SoAArraysType;
+  using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
   bool isRelevantForTuning() override { return false; }

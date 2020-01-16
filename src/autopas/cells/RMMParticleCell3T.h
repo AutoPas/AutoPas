@@ -229,7 +229,7 @@ class RMMParticleCellIterator : public internal::SingleCellIteratorInterfaceImpl
 // provide a simpler template for RMMParticleCell, i.e.
 // RMMParticleCell<Particle>
 /**
- * typedef for simpler access to RMMParticleCell.
+ * using declaration for simpler access to RMMParticleCell.
  */
 template <class Particle>
 using RMMParticleCell =

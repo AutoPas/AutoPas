@@ -25,7 +25,7 @@ struct SoAType {
    * This is the Type of the SoAType.
    * It is a tuple of aligned vectors.
    */
-  typedef std::tuple<std::vector<soatypes, autopas::AlignedAllocator<soatypes>>...> Type;
+  using Type = std::tuple<std::vector<soatypes, autopas::AlignedAllocator<soatypes>>...>;
 };
 
 }  // namespace autopas::utils

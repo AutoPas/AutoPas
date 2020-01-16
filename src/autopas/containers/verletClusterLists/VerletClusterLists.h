@@ -32,7 +32,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   /**
    * the index type to access the particle cells
    */
-  typedef VerletClusterMaths::index_t index_t;
+  using index_t = VerletClusterMaths::index_t;
 
  public:
   /**

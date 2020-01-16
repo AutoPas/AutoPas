@@ -28,7 +28,7 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
                                         public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
-  typedef typename VerletClusterMaths::index_t index_t;
+  using index_t = typename VerletClusterMaths::index_t;
 
   /**
    * Each base step looks like this:

@@ -27,8 +27,8 @@ template <class Particle, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
     : public autopas::Functor<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                               typename VerletListHelpers<Particle>::SoAArraysType> {
-  /// typedef for soa's of verlet list's linked cells (only id and position needs to be stored)
-  typedef typename utils::SoAType<Particle *, double, double, double>::Type SoAArraysType;
+  /// using declaration for soa's of verlet list's linked cells (only id and position needs to be stored)
+  using SoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
 
   /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
   enum AttributeNames : int { ptr, posX, posY, posZ };

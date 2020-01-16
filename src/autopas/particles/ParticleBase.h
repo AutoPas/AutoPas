@@ -171,19 +171,19 @@ class ParticleBase {
   /**
    * Floating Point Type used for this particle
    */
-  typedef floatType ParticleSoAFloatPrecision;
+  using ParticleSoAFloatPrecision = floatType;
 
   /**
    * Id Type used for this particle
    */
-  typedef idType ParticleIdType;
+  using ParticleIdType = idType;
 
   /**
    * The type for the soa storage.
    * owned is currently used as a floatType to ease calculations within the functors.
    */
-  typedef typename autopas::utils::SoAType<idType, floatType, floatType, floatType, floatType, floatType, floatType,
-                                           floatType>::Type SoAArraysType;
+  using SoAArraysType = typename autopas::utils::SoAType<idType, floatType, floatType, floatType, floatType, floatType,
+                                                         floatType, floatType>::Type;
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
@@ -256,14 +256,14 @@ class ParticleBase {
   /**
    * The type for storage arrays for Cuda.
    */
-  typedef typename autopas::utils::CudaSoAType<idType, floatType, floatType, floatType, floatType, floatType, floatType,
-                                               floatType>::Type CudaDeviceArraysType;
+  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<idType, floatType, floatType, floatType, floatType,
+                                                                    floatType, floatType, floatType>::Type;
 #else
   /**
    * The type for storage arrays for Cuda.
    * empty if compiled without Cuda Support.
    */
-  typedef typename autopas::utils::CudaSoAType<>::Type CudaDeviceArraysType;
+  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
 #endif
 
  protected:
