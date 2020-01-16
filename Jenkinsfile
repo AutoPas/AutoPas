@@ -356,7 +356,7 @@ void checkCustom() {
 
         // check that no file contains an #include <autopas/...>
         try{
-            // if .cpp or .h files contain #include <autopas, return 2
+            // if any file contains #include <autopas, return 2
             sh "grep -qlrE '#include <autopas' . && exit 2 || exit 0"
         } catch (Exception e) {
             // change detected
@@ -365,9 +365,9 @@ void checkCustom() {
             sh "exit 1"
         }
 
-        // check that no file contains an #include <autopas/...>
+        // check that no file contains a typedef
         try{
-            // if .cpp or .h files contain #include <autopas, return 2
+            // if any file contains a typedef, return 2
             sh "grep -qlrE 'typedef ' . && exit 2 || exit 0"
         } catch (Exception e) {
             // change detected
