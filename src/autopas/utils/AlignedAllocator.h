@@ -50,7 +50,7 @@ class AlignedAllocator {
 
   /**
    * Equivalent allocator for other types
-   * Class whose member other is a typedef of allocator for type Type.
+   * Class whose member other is an alias of allocator for type U.
    * (from cplusplus.com)
    * @tparam U
    */
