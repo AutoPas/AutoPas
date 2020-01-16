@@ -1,6 +1,6 @@
 /**
  * @file autopasmd.h
- * main include file for all sph functionality
+ * main include file for all molecular dynamics functionality
  *
  * @author seckler
  * @date 15.01.20
