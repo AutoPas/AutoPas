@@ -92,7 +92,10 @@ std::string MDFlexConfig::to_string() const {
     os << "  " << setw(valueOffset - 2) << left << addBrownianMotionStr << ":  " << addBrownianMotion << endl;
   }
 
-  if (not vtkFileName.empty()) os << setw(valueOffset) << left << vtkFileNameStr << ":  " << vtkFileName << endl;
+  if (not vtkFileName.empty()) {
+    os << setw(valueOffset) << left << vtkFileNameStr << ":  " << vtkFileName << endl;
+    os << setw(valueOffset) << left << vtkWriteFrequencyStr << ":  " << vtkWriteFrequency << endl;
+  }
   if (not checkpointfile.empty())
     os << setw(valueOffset) << left << checkpointfileStr << ":  " << checkpointfile << endl;
 
