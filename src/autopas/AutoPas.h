@@ -12,7 +12,6 @@
 #include <type_traits>
 
 #include "autopas/LogicHandler.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/ActiveHarmony.h"
@@ -158,7 +157,7 @@ class AutoPas {
    * This is only allowed if the neighbor lists are not valid.
    * @param p Reference to the particle to be added
    */
-  void addParticle(Particle &p) { _logicHandler->addParticle(p); }
+  void addParticle(const Particle &p) { _logicHandler->addParticle(p); }
 
   /**
    * Adds or updates a particle to/in the container that lies in the halo region of the container.
@@ -175,7 +174,7 @@ class AutoPas {
    *
    * @param haloParticle particle to be added or updated
    */
-  void addOrUpdateHaloParticle(Particle &haloParticle) { _logicHandler->addOrUpdateHaloParticle(haloParticle); }
+  void addOrUpdateHaloParticle(const Particle &haloParticle) { _logicHandler->addOrUpdateHaloParticle(haloParticle); }
 
   /**
    * Deletes all particles.
@@ -524,7 +523,7 @@ class AutoPas {
    * Getter for the currently selected configuration.
    * @return Configuration object currently used.
    */
-  const Configuration getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
+  Configuration getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
 
   /**
    * Getter for the tuning strategy option.

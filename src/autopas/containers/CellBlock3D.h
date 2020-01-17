@@ -31,7 +31,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
   /**
    * the index type to access the particle cells
    */
-  typedef std::size_t index_t;
+  using index_t = std::size_t;
   /**
    * Constructor of CellBlock3D
    * @param vec vector of ParticleCells that this class manages

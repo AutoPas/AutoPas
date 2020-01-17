@@ -25,7 +25,7 @@ struct CudaSoAType {
    * This is the Type of the SoAType.
    * It is a tuple of aligned vectors.
    */
-  typedef std::tuple<autopas::utils::CudaDeviceVector<soatypes>...> Type;
+  using Type = std::tuple<autopas::utils::CudaDeviceVector<soatypes>...>;
 };
 
 }  // namespace autopas::utils

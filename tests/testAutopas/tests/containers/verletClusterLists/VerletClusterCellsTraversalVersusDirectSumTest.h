@@ -11,7 +11,7 @@
 #include <cstdlib>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
+#include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/verletClusterLists/VerletClusterCells.h"
 #include "testingHelpers/commonTypedefs.h"
 

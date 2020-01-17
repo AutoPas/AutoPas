@@ -6,6 +6,9 @@
 
 #include "ThermostatTest.h"
 
+#include "Thermostat.h"
+#include "autopasTools/generators/GridGenerator.h"
+
 void ThermostatTest::initContainer(AutoPasType &autopas, const Molecule &dummy, std::array<size_t, 3> particlesPerDim) {
   constexpr double particleSpacing = 1.;
   constexpr double cutoff = 1.;

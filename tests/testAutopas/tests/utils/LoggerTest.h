@@ -12,7 +12,6 @@
 #include <ostream>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 
 class LoggerTest : public AutoPasTestBase {
  public:

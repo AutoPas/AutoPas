@@ -401,8 +401,8 @@ class SPHParticle : public autopas::Particle {
   /**
    * SoA arrays type, cf. AttributeNames
    */
-  typedef autopas::utils::SoAType<double, double, double, double, double, double, double, double, double, double,
-                                  double, double, double, double, double, double>::Type SoAArraysType;
+  using SoAArraysType = autopas::utils::SoAType<double, double, double, double, double, double, double, double, double,
+                                                double, double, double, double, double, double, double>::Type;
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).

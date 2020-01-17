@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/autopasIncludes.h"
+#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/sph/SPHKernels.h"
 #include "autopas/sph/SPHParticle.h"
 
@@ -15,16 +15,15 @@ namespace sph {
 /**
  * Class that defines the density functor.
  * It is used to calculate the density based on the given SPH kernel.
+ * @tparam Particle
+ * @tparam ParticleCell
  */
-class SPHCalcDensityFunctor
-    : public Functor<SPHParticle, FullParticleCell<SPHParticle>, SPHParticle::SoAArraysType, SPHCalcDensityFunctor> {
+template <class Particle, class ParticleCell>
+class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
+                                             SPHCalcDensityFunctor<Particle, ParticleCell>> {
  public:
-  /// particle type
-  typedef SPHParticle Particle;
   /// soa arrays type
-  typedef SPHParticle::SoAArraysType SoAArraysType;
-  /// particle cell type
-  typedef FullParticleCell<Particle> ParticleCell;
+  using SoAArraysType = typename Particle::SoAArraysType;
 
   SPHCalcDensityFunctor() : autopas::Functor<Particle, ParticleCell, SoAArraysType, SPHCalcDensityFunctor>(0.){};
 
@@ -122,21 +121,21 @@ class SPHCalcDensityFunctor
   void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    double *const __restrict__ xptr1 = soa1.begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr1 = soa1.begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr1 = soa1.begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict__ densityptr1 = soa1.begin<Particle::AttributeNames::density>();
-    double *const __restrict__ smthptr1 = soa1.begin<Particle::AttributeNames::smth>();
-    double *const __restrict__ massptr1 = soa1.begin<Particle::AttributeNames::mass>();
+    double *const __restrict__ densityptr1 = soa1.template begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr1 = soa1.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ massptr1 = soa1.template begin<Particle::AttributeNames::mass>();
 
-    double *const __restrict__ xptr2 = soa2.begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr2 = soa2.begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr2 = soa2.begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict__ densityptr2 = soa2.begin<Particle::AttributeNames::density>();
-    double *const __restrict__ smthptr2 = soa2.begin<Particle::AttributeNames::smth>();
-    double *const __restrict__ massptr2 = soa2.begin<Particle::AttributeNames::mass>();
+    double *const __restrict__ densityptr2 = soa2.template begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr2 = soa2.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ massptr2 = soa2.template begin<Particle::AttributeNames::mass>();
 
     size_t numParticlesi = soa1.getNumParticles();
     for (unsigned int i = 0; i < numParticlesi; ++i) {

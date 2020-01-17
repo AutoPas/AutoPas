@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "autopas/autopasIncludes.h"
+#include "autopas/particles/Particle.h"
 
 using namespace autopas;
 

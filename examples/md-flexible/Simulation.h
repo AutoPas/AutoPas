@@ -15,7 +15,9 @@
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
 #include "autopas/AutoPas.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopasTools/generators/GaussianGenerator.h"
 #include "autopasTools/generators/GridGenerator.h"
@@ -163,12 +165,12 @@ class Simulation {
   /**
    * Convert a time and a name to a properly formatted string.
    * @param name incl. offset.
-   * @param timeMS in microseconds.
+   * @param timeNS in nanoseconds.
    * @param numberWidth Width to which the time should be offset.
-   * @param maxTime if passed the percentage of timeMS of maxTime is appended.
+   * @param maxTime if passed the percentage of timeNS of maxTime is appended.
    * @return formatted std::string
    */
-  std::string timerToString(const std::string &name, long timeMS, size_t numberWidth = 0, long maxTime = 0);
+  std::string timerToString(const std::string &name, long timeNS, size_t numberWidth = 0, long maxTime = 0);
 };
 
 template <typename Particle, typename ParticleCell>
@@ -381,34 +383,32 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   auto durationSimulateSec = durationSimulate * 1e-6;
 
   // take total time as base for formatting since this should be the longest
-  auto digitsTimeTotalMuS = std::to_string(durationTotal).length();
+  auto digitsTimeTotalNS = std::to_string(durationTotal).length();
 
   // Statistics
   cout << fixed << setprecision(_floatStringPrecision);
   cout << endl << "Measurements:" << endl;
-  cout << timerToString("Time total      ", durationTotal, digitsTimeTotalMuS);
-  cout << timerToString("  Initialization", _timers.init.getTotalTime(), digitsTimeTotalMuS, durationTotal);
-  cout << timerToString("  Simulation    ", durationSimulate, digitsTimeTotalMuS, durationTotal);
-  cout << timerToString("    Boundaries  ", _timers.boundaries.getTotalTime(), digitsTimeTotalMuS, durationSimulate);
-  cout << timerToString("    Position    ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalMuS,
+  cout << timerToString("Time total      ", durationTotal, digitsTimeTotalNS);
+  cout << timerToString("  Initialization", _timers.init.getTotalTime(), digitsTimeTotalNS, durationTotal);
+  cout << timerToString("  Simulation    ", durationSimulate, digitsTimeTotalNS, durationTotal);
+  cout << timerToString("    Boundaries  ", _timers.boundaries.getTotalTime(), digitsTimeTotalNS, durationSimulate);
+  cout << timerToString("    Position    ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalNS, durationSimulate);
+  cout << timerToString("    Force       ", _timers.forceUpdateTotal.getTotalTime(), digitsTimeTotalNS,
                         durationSimulate);
-  cout << timerToString("    Force       ", _timers.forceUpdateTotal.getTotalTime(), digitsTimeTotalMuS,
-                        durationSimulate);
-  cout << timerToString("      Tuning    ", _timers.forceUpdateTuning.getTotalTime(), digitsTimeTotalMuS,
+  cout << timerToString("      Tuning    ", _timers.forceUpdateTuning.getTotalTime(), digitsTimeTotalNS,
                         _timers.forceUpdateTotal.getTotalTime());
-  cout << timerToString("      NonTuning ", _timers.forceUpdateNonTuning.getTotalTime(), digitsTimeTotalMuS,
+  cout << timerToString("      NonTuning ", _timers.forceUpdateNonTuning.getTotalTime(), digitsTimeTotalNS,
                         _timers.forceUpdateTotal.getTotalTime());
-  cout << timerToString("    Velocity    ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalMuS,
-                        durationSimulate);
-  cout << timerToString("    VTK         ", _timers.vtk.getTotalTime(), digitsTimeTotalMuS, durationSimulate);
-  cout << timerToString("    Thermostat  ", _timers.thermostat.getTotalTime(), digitsTimeTotalMuS, durationSimulate);
+  cout << timerToString("    Velocity    ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalNS, durationSimulate);
+  cout << timerToString("    VTK         ", _timers.vtk.getTotalTime(), digitsTimeTotalNS, durationSimulate);
+  cout << timerToString("    Thermostat  ", _timers.thermostat.getTotalTime(), digitsTimeTotalNS, durationSimulate);
 
   auto numIterations = _config->iterations;
 
-  cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / numIterations, digitsTimeTotalMuS,
+  cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / numIterations, digitsTimeTotalNS,
                         durationTotal);
   auto mfups = _autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) * numIterations /
-               _timers.forceUpdateTotal.getTotalTime() * 1e-6;
+               _timers.forceUpdateTotal.getTotalTime() * 1e-9;
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (_config->measureFlops) {
@@ -437,19 +437,19 @@ const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &Simulation<Par
 }
 template <class Particle, class ParticleCell>
 
-std::string Simulation<Particle, ParticleCell>::timerToString(const std::string &name, long timeMS, size_t numberWidth,
+std::string Simulation<Particle, ParticleCell>::timerToString(const std::string &name, long timeNS, size_t numberWidth,
                                                               long maxTime) {
   // only print timers that were actually used
-  if (timeMS == 0) {
+  if (timeNS == 0) {
     return "";
   }
 
   std::ostringstream ss;
   ss << std::fixed << std::setprecision(_floatStringPrecision);
-  ss << name << " : " << std::setw(numberWidth) << std::right << timeMS << " \u03bcs (" << ((double)timeMS * 1e-6)
+  ss << name << " : " << std::setw(numberWidth) << std::right << timeNS << " \u03bcs (" << ((double)timeNS * 1e-9)
      << "s)";
   if (maxTime != 0) {
-    ss << " =" << std::setw(7) << std::right << ((double)timeMS / (double)maxTime * 100) << "%";
+    ss << " =" << std::setw(7) << std::right << ((double)timeNS / (double)maxTime * 100) << "%";
   }
   ss << std::endl;
   return ss.str();

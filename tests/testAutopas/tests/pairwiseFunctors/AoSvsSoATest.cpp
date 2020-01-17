@@ -6,6 +6,8 @@
 
 #include "AoSvsSoATest.h"
 
+#include "autopas/molecularDynamics/LJFunctor.h"
+
 using namespace autopas;
 
 #define PARTICLES_PER_DIM 16

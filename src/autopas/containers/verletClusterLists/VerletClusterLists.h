@@ -12,14 +12,12 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/verletClusterLists/VerletClusterMaths.h"
+#include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
-
-template <class Particle>
-class VerletClustersTraversalInterface;
 
 /**
  * Particles are divided into clusters.
@@ -34,7 +32,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   /**
    * the index type to access the particle cells
    */
-  typedef VerletClusterMaths::index_t index_t;
+  using index_t = VerletClusterMaths::index_t;
 
  public:
   /**
@@ -84,7 +82,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   /**
    * @copydoc VerletLists::addParticle()
    */
-  void addParticle(Particle &p) override {
+  void addParticle(const Particle &p) override {
     // add particle somewhere, because lists will be rebuild anyways
     this->_cells[0].addParticle(p);
   }
@@ -92,14 +90,14 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   /**
    * @copydoc VerletLists::addHaloParticle()
    */
-  void addHaloParticle(Particle &haloParticle) override {
+  void addHaloParticle(const Particle &haloParticle) override {
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::updateHaloParticle()
    */
-  bool updateHaloParticle(Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
+  bool updateHaloParticle(const Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
 
   /**
    * @copydoc VerletLists::deleteHaloParticles

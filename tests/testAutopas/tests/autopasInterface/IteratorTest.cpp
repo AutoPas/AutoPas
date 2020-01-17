@@ -6,9 +6,8 @@
 
 #include "IteratorTest.h"
 
-#include <autopasTools/generators/RandomGenerator.h>
-#include <testingHelpers/TouchableParticle.h>
-
+#include "autopasTools/generators/RandomGenerator.h"
+#include "testingHelpers/TouchableParticle.h"
 #include "testingHelpers/commonTypedefs.h"
 
 constexpr double cutoff = 1.;
@@ -261,11 +260,16 @@ TEST_P(IteratorTest, RangeBasedIterator) {
 
 /**
  * The main idea of this test is to compare the iterators using openmp with the iterators not using openmp.
+ * If OPENMP is disabled, this tests mainly that no particle is traversed twice.
  */
 void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption, double cellSizeFactor,
-                                       autopas::IteratorBehavior behavior) {
+                                       autopas::IteratorBehavior behavior, bool testRegionIterators) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {8, 8, 8};
+
+  std::array<double, 3> lowCorner = {0, 0, 0};
+  std::array<double, 3> highCorner = {3, 3, 3};
+
   int clusterSize = 64;
   autopas::AutoPas<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> apContainer;
 
@@ -289,21 +293,30 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iter = apContainer.begin(behavior); iter.isValid(); ++iter) {
-    iter->touch();
-    if (behavior == autopas::IteratorBehavior::ownedOnly) {
-      EXPECT_TRUE(iter->isOwned());
-    } else if (behavior == autopas::IteratorBehavior::haloOnly) {
-      EXPECT_FALSE(iter->isOwned());
+  {
+    // with OpenMP:
+    auto begin = testRegionIterators ? apContainer.getRegionIterator(lowCorner, highCorner, behavior)
+                                     : apContainer.begin(behavior);
+    for (auto iter = begin; iter.isValid(); ++iter) {
+      iter->touch();
+      if (behavior == autopas::IteratorBehavior::ownedOnly) {
+        EXPECT_TRUE(iter->isOwned());
+      } else if (behavior == autopas::IteratorBehavior::haloOnly) {
+        EXPECT_FALSE(iter->isOwned());
+      }
     }
   }
-
-  for (auto iter = apContainer.begin(behavior); iter.isValid(); ++iter) {
-    EXPECT_EQ(1, iter->getNumTouched());
-    if (behavior == autopas::IteratorBehavior::ownedOnly) {
-      EXPECT_TRUE(iter->isOwned());
-    } else if (behavior == autopas::IteratorBehavior::haloOnly) {
-      EXPECT_FALSE(iter->isOwned());
+  {
+    // without OpenMP:
+    auto begin = testRegionIterators ? apContainer.getRegionIterator(lowCorner, highCorner, behavior)
+                                     : apContainer.begin(behavior);
+    for (auto iter = begin; iter.isValid(); ++iter) {
+      EXPECT_EQ(1, iter->getNumTouched());
+      if (behavior == autopas::IteratorBehavior::ownedOnly) {
+        EXPECT_TRUE(iter->isOwned());
+      } else if (behavior == autopas::IteratorBehavior::haloOnly) {
+        EXPECT_FALSE(iter->isOwned());
+      }
     }
   }
 }
@@ -313,7 +326,7 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
  */
 TEST_P(IteratorTest, testOpenMPIteratorsOwnedOnly) {
   auto [containerOption, cellSizeFactor] = GetParam();
-  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly);
+  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, false);
 }
 
 /**
@@ -321,7 +334,7 @@ TEST_P(IteratorTest, testOpenMPIteratorsOwnedOnly) {
  */
 TEST_P(IteratorTest, testOpenMPIteratorsHaloAndOwned) {
   auto [containerOption, cellSizeFactor] = GetParam();
-  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned);
+  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, false);
 }
 
 /**
@@ -329,7 +342,31 @@ TEST_P(IteratorTest, testOpenMPIteratorsHaloAndOwned) {
  */
 TEST_P(IteratorTest, testOpenMPIteratorsHaloOnly) {
   auto [containerOption, cellSizeFactor] = GetParam();
-  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly);
+  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, false);
+}
+
+/**
+ * Compare the OpenMP RegionIterator behavior for owned only.
+ */
+TEST_P(IteratorTest, testOpenMPRegionIteratorsOwnedOnly) {
+  auto [containerOption, cellSizeFactor] = GetParam();
+  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, true);
+}
+
+/**
+ * Compare the OpenMP RegionIterator behavior for halo and owned particles.
+ */
+TEST_P(IteratorTest, testOpenMPRegionIteratorsHaloAndOwned) {
+  auto [containerOption, cellSizeFactor] = GetParam();
+  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, true);
+}
+
+/**
+ * Compare the OpenMP RegionIterator behavior for halo only.
+ */
+TEST_P(IteratorTest, testOpenMPRegionIteratorsHaloOnly) {
+  auto [containerOption, cellSizeFactor] = GetParam();
+  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, true);
 }
 
 using ::testing::Combine;

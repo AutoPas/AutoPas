@@ -20,17 +20,16 @@ template <class Particle>
 class VerletListsCellsHelpers {
  public:
   /// Verlet list storage
-  typedef std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> VerletList_storage_type;
+  using VerletList_storage_type = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
 
-  /// typedef for verlet-list particle cell type
-  typedef FullParticleCell<Particle> VerletListParticleCellType;
+  /// using declaration for verlet-list particle cell type
+  using VerletListParticleCellType = FullParticleCell<Particle>;
 
   /**
-   * This functor can generate verlet lists using the typical pairwise
-   * traversal.
+   * This functor can generate verlet lists using the typical pairwise traversal.
    */
   class VerletListGeneratorFunctor : public Functor<Particle, VerletListParticleCellType> {
-    typedef VerletListParticleCellType ParticleCell;
+    using ParticleCell = VerletListParticleCellType;
 
    public:
     /**

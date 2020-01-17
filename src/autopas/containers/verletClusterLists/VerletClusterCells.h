@@ -13,6 +13,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/verletClusterLists/VerletClusterCellsParticleIterator.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClusterTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
@@ -93,7 +94,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   /**
    * @copydoc VerletLists::addParticle()
    */
-  void addParticle(Particle &p) override {
+  void addParticle(const Particle &p) override {
     if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
       // removes dummy particles in first cell
@@ -110,7 +111,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   /**
    * @copydoc VerletLists::addHaloParticle()
    */
-  void addHaloParticle(Particle &haloParticle) override {
+  void addHaloParticle(const Particle &haloParticle) override {
     Particle p_copy = haloParticle;
     if (autopas::utils::notInBox(p_copy.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
@@ -131,7 +132,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
    * @param haloParticle Particle to be updated.
    * @return Returns true if the particle was updated, false if no particle could be found.
    */
-  bool updateHaloParticle(Particle &haloParticle) override {
+  bool updateHaloParticle(const Particle &haloParticle) override {
     Particle pCopy = haloParticle;
     pCopy.setOwned(false);
 
@@ -262,9 +263,13 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     // Special iterator requires sorted cells
+#ifdef AUTOPAS_OPENMP
+#pragma omp single
+#endif
     if (not _isValid) {
       rebuild();
     }
+    // there is an implicit barrier at end of single!
 
     // restrict search area to the region where particles are
     const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _boxMinWithHalo);

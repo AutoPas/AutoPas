@@ -22,23 +22,22 @@ template <class Particle>
 class VerletListHelpers {
  public:
   /// AOS verlet list storage
-  typedef std::unordered_map<Particle *, std::vector<Particle *>> AoS_verletlist_storage_type;
+  using AoS_verletlist_storage_type = std::unordered_map<Particle *, std::vector<Particle *>>;
 
-  /// typedef for soa's of verlet list's linked cells (only id and position needs to be stored)
-  typedef typename utils::SoAType<Particle *, double, double, double>::Type SoAArraysType;
+  /// using declaration for soa's of verlet list's linked cells (only id and position needs to be stored)
+  using SoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
 
   /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
   enum AttributeNames : int { ptr, posX, posY, posZ };
 
-  /// typedef for verlet-list particle cell type
-  typedef FullParticleCell<Particle, SoAArraysType> VerletListParticleCellType;
+  /// using declaration for verlet-list particle cell type
+  using VerletListParticleCellType = FullParticleCell<Particle, SoAArraysType>;
 
   /**
-   * This functor can generate verlet lists using the typical pairwise
-   * traversal.
+   * This functor can generate verlet lists using the typical pairwise traversal.
    */
   class VerletListGeneratorFunctor : public Functor<Particle, VerletListParticleCellType, SoAArraysType> {
-    typedef VerletListParticleCellType ParticleCell_t;
+    using ParticleCell_t = VerletListParticleCellType;
 
    public:
     /**

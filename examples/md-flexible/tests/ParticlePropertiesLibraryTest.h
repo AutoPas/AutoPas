@@ -6,13 +6,10 @@
 #pragma once
 #include <gtest/gtest.h>
 
+#include <vector>
+
 #include "AutoPasTestBase.h"
-#include "PrintableMolecule.h"
-#include "Simulation.h"
-#include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
-#include "parsing/YamlParser.h"
-#include "testingHelpers/commonTypedefs.h"
 
 class ParticlePropertiesLibraryTest : public AutoPasTestBase {
  public:

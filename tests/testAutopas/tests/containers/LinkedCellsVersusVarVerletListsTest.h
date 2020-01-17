@@ -12,7 +12,6 @@
 #include <memory>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
 #include "autopasTools/generators/RandomGenerator.h"

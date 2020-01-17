@@ -17,15 +17,15 @@ namespace autopas {
  */
 template <typename T>
 struct vec3 {
-  typedef T Type;
+  using Type = T;
 };
 template <>
 struct vec3<float> {
-  typedef float3 Type;
+  using Type = float3;
 };
 template <>
 struct vec3<double> {
-  typedef double3 Type;
+  using Type = double3;
 };
 
 /**
@@ -34,15 +34,15 @@ struct vec3<double> {
  */
 template <typename T>
 struct vec4 {
-  typedef T Type;
+  using Type = T;
 };
 template <>
 struct vec4<float> {
-  typedef float4 Type;
+  using Type = float4;
 };
 template <>
 struct vec4<double> {
-  typedef double4 Type;
+  using Type = double4;
 };
 
 template <typename floatingPointType>

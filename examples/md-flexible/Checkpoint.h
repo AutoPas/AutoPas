@@ -9,8 +9,6 @@
 #include <sstream>
 #include <string>
 
-#include "autopas/AutoPas.h"
-
 /**
  * In this namespace the initialization of an AutoPas container from vtk checkpoint files is implemented.
  */
@@ -49,7 +47,7 @@ std::vector<dataType> readPayload(std::ifstream &file, size_t numberOfParticles)
  * @param file
  * @param word
  */
-void findWord(std::ifstream &file, const std::string word) {
+void findWord(std::ifstream &file, const std::string &word) {
   std::string currentWord;
   while (currentWord != word) {
     file >> currentWord;

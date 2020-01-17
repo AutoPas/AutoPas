@@ -56,7 +56,7 @@ class Logger {
   /**
    * Typalias for log levels.
    */
-  typedef spdlog::level::level_enum LogLevel;
+  using LogLevel = spdlog::level::level_enum;
   /**
    * create a logger writing to the file system
    * @param filename

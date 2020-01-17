@@ -16,7 +16,6 @@
 
 #include "MDFlexConfig.h"
 #include "Objects/Objects.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/utils/NumberSet.h"
 
 /**

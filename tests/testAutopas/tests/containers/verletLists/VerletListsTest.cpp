@@ -6,7 +6,9 @@
 
 #include "VerletListsTest.h"
 
+#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 
 using ::testing::_;
 using ::testing::AtLeast;

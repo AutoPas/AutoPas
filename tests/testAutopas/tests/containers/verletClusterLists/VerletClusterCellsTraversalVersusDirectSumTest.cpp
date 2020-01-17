@@ -6,7 +6,9 @@
 
 #include "VerletClusterCellsTraversalVersusDirectSumTest.h"
 
+#include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClusterCellsTraversal.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 
 VerletClusterCellsTraversalVersusDirectSumTest::VerletClusterCellsTraversalVersusDirectSumTest()
     : _directSum(getBoxMin(), getBoxMax(), getCutoff(), 0.2),

@@ -18,6 +18,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/StaticSelectorMacros.h"
 
 namespace autopas {
 
@@ -33,9 +34,9 @@ namespace autopas {
 template <class Particle>
 class VerletListsCells
     : public VerletListsLinkedBase<Particle, typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType> {
-  typedef VerletListsCellsHelpers<Particle> verlet_internal;
-  typedef FullParticleCell<Particle> ParticleCell;
-  typedef typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
+  using verlet_internal = VerletListsCellsHelpers<Particle>;
+  using ParticleCell = FullParticleCell<Particle>;
+  using LinkedParticleCell = typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType;
 
  public:
   /**

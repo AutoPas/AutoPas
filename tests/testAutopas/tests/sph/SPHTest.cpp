@@ -6,6 +6,16 @@
 
 #include "SPHTest.h"
 
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+
+using DensityFunctorType = autopas::sph::SPHCalcDensityFunctor<autopas::sph::SPHParticle,
+                                                               autopas::FullParticleCell<autopas::sph::SPHParticle>>;
+
+using HydroForceFunctorType =
+    autopas::sph::SPHCalcHydroForceFunctor<autopas::sph::SPHParticle,
+                                           autopas::FullParticleCell<autopas::sph::SPHParticle>>;
+
 TEST_F(SPHTest, testW) {
   double value = autopas::sph::SPHKernels::W({1., 1., 1.}, 1.);
   double shouldBeValue = 0.00944773;
@@ -34,7 +44,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctor) {
   autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
   autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
-  autopas::sph::SPHCalcDensityFunctor densityFunctor;
+  DensityFunctorType densityFunctor;
   densityFunctor.AoSFunctor(sphParticle1, sphParticle2);
   // densityFunctor.AoSFunctor(sphParticle2, sphParticle1);
 
@@ -55,7 +65,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoALoadExtract) {
   auto &soa = cell._particleSoABuffer;
 
   // declare functor
-  autopas::sph::SPHCalcDensityFunctor densityFunctor;
+  DensityFunctorType densityFunctor;
 
   // load soa
   densityFunctor.SoALoader(cell, soa, 0);
@@ -120,7 +130,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoALoadExtract) {
   auto &soa = cell._particleSoABuffer;
 
   // declare functor
-  autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+  HydroForceFunctorType hydroForceFunctor;
 
   // load soa
   hydroForceFunctor.SoALoader(cell, soa, 0);
@@ -221,7 +231,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
   }
 
   // declare functor
-  autopas::sph::SPHCalcDensityFunctor densityFunctor;
+  DensityFunctorType densityFunctor;
 
   // ------------- aos ------------------ (using newton3)
   for (auto outer = cellUsingAoS.begin(); outer.isValid(); ++outer) {
@@ -285,7 +295,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
   }
 
   // declare functor
-  autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+  HydroForceFunctorType hydroForceFunctor;
 
   // ------------- aos ------------------ (using newton3)
   for (auto outer = cellUsingAoS.begin(); outer.isValid(); ++outer) {
@@ -347,7 +357,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
   }
 
   // declare functor
-  autopas::sph::SPHCalcDensityFunctor densityFunctor;
+  DensityFunctorType densityFunctor;
 
   // ------------- aos ------------------ (using newton3)
   for (auto outer = cellUsingAoS1.begin(); outer.isValid(); ++outer) {
@@ -438,7 +448,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
   }
 
   // declare functor
-  autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+  HydroForceFunctorType hydroForceFunctor;
 
   // ------------- aos ------------------ (using newton3)
   for (auto outer = cellUsingAoS1.begin(); outer.isValid(); ++outer) {
@@ -533,7 +543,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctor) {
   sphParticle1.setSoundSpeed(1.18322);
   sphParticle2.setSoundSpeed(1.18322);
 
-  autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+  HydroForceFunctorType hydroForceFunctor;
   hydroForceFunctor.AoSFunctor(sphParticle1, sphParticle2);
   // hydroForceFunctor.AoSFunctor(sphParticle2, sphParticle1);
 
@@ -556,7 +566,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorNewton3OnOff) {
   autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
   autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
-  autopas::sph::SPHCalcDensityFunctor densityFunctor;
+  DensityFunctorType densityFunctor;
   densityFunctor.AoSFunctor(sphParticle1, sphParticle2);
 
   double density1 = sphParticle1.getDensity();
@@ -589,7 +599,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
   autopas::sph::SPHParticle sphParticle3 = sphParticle1;
   autopas::sph::SPHParticle sphParticle4 = sphParticle2;
 
-  autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+  HydroForceFunctorType hydroForceFunctor;
   // using newton 3
   hydroForceFunctor.AoSFunctor(sphParticle1, sphParticle2);
   // without newton 3
@@ -737,11 +747,11 @@ TEST_P(SPHTest, testVerletVsLC) {
   auto params = GetParam();
   auto [dataLayoutOption, sphFunctorType] = params;
   if (sphFunctorType == SPHFunctorType::density) {
-    autopas::sph::SPHCalcDensityFunctor densityFunctor;
+    DensityFunctorType densityFunctor;
     testVerLetVsLC(
         densityFunctor, [](auto & /*ignored*/) {}, densityCheck, dataLayoutOption);
   } else {
-    autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+    HydroForceFunctorType hydroForceFunctor;
     testVerLetVsLC(hydroForceFunctor, hydroInit, hydroCheck, dataLayoutOption);
   }
 }

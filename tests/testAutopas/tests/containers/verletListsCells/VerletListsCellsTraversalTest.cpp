@@ -5,6 +5,10 @@
  */
 #include "VerletListsCellsTraversalTest.h"
 
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C01TraversalVerlet.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C18TraversalVerlet.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/SlicedTraversalVerlet.h"
+#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 
 VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()

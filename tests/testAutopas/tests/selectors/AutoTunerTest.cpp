@@ -6,6 +6,7 @@
 
 #include "AutoTunerTest.h"
 
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 

@@ -6,16 +6,7 @@
 
 #pragma once
 
-#include <gtest/gtest.h>
-
 #include "AutoPasTestBase.h"
-#include "autopas/AutoPas.h"
-#include "mocks/MockFunctor.h"
-#include "testingHelpers/commonTypedefs.h"
-
-#ifdef AUTOPAS_OPENMP
-#include <omp.h>
-#endif
 
 class C04SoATraversalTest : public AutoPasTestBase {
  public:

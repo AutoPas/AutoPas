@@ -9,6 +9,7 @@
 #include "LJFunctorAVXTest.h"
 
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"

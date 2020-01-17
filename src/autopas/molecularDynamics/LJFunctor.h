@@ -28,14 +28,6 @@
 namespace autopas {
 
 /**
- * Newton 3 modes for the LJFunctor.
- */
-enum class FunctorN3Modes {
-  Newton3Only,
-  Newton3Off,
-  Both,
-};
-/**
  * A functor to handle lennard-jones interactions between two particles (molecules).
  * @tparam Particle The type of particle.
  * @tparam ParticleCell The type of particlecell.
