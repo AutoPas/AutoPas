@@ -10,17 +10,16 @@
 #include <memory>
 #include <set>
 
-#include "autopas/autopasIncludes.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/Timer.h"
 
 namespace autopas {
 
@@ -340,7 +339,8 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
-    auto start = std::chrono::high_resolution_clock::now();
+    autopas::utils::Timer timer;
+    timer.start();
 
     f->initTraversal();
     if (doListRebuild) {
@@ -349,8 +349,7 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     containerPtr->iteratePairwise(traversal.get());
     f->endTraversal(useNewton3);
 
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
+    auto runtime = timer.stop();
     AutoPasLog(debug, "IteratePairwise took {} nanoseconds", runtime);
     addTimeMeasurement(*f, runtime);
   } else {

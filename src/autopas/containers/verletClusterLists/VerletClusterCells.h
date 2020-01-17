@@ -13,6 +13,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/verletClusterLists/VerletClusterCellsParticleIterator.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClusterTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"

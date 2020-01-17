@@ -9,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "testingHelpers/commonTypedefs.h"
 

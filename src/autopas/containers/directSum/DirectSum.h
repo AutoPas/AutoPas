@@ -207,7 +207,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     /**
      * the index type to access the particle cells
      */
-    typedef std::size_t index_t;
+    using index_t = std::size_t;
 
    public:
     bool cellCanContainHaloParticles(index_t index1d) const override { return index1d == 1; }

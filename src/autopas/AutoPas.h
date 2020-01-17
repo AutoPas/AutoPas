@@ -12,7 +12,6 @@
 #include <type_traits>
 
 #include "autopas/LogicHandler.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/ActiveHarmony.h"

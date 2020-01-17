@@ -6,8 +6,9 @@
 
 #include "LCCudaTraversalVersusDirectSumTest.h"
 
+#include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
-//#include "autopas/pairwiseFunctors/LJFunctor.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 
 LCCudaTraversalVersusDirectSumTest::LCCudaTraversalVersusDirectSumTest()
     : _directSum(getBoxMin(), getBoxMax(), getCutoff(), 0.),

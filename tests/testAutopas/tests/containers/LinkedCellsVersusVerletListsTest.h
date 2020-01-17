@@ -12,7 +12,8 @@
 #include <memory>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"

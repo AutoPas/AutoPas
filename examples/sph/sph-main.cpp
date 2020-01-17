@@ -12,8 +12,9 @@
 #include "autopas/sph/autopassph.h"
 #include "autopas/utils/ArrayUtils.h"
 
-typedef autopas::AutoPas<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
-    AutoPasContainer;
+using Particle = autopas::sph::SPHParticle;
+using Cell = autopas::FullParticleCell<Particle>;
+using AutoPasContainer = autopas::AutoPas<Particle, Cell>;
 
 void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
   // Place SPH particles
@@ -23,7 +24,7 @@ void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<dou
   for (double x = 0; x < bBoxMax[0] * 0.5; x += dx) {  // NOLINT
     for (double y = 0; y < bBoxMax[1]; y += dx) {      // NOLINT
       for (double z = 0; z < bBoxMax[2]; z += dx) {    // NOLINT
-        autopas::sph::SPHParticle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
+        Particle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
         ith.setDensity(1.0);
         ith.setEnergy(2.5);
         sphSystem.addParticle(ith);
@@ -33,7 +34,7 @@ void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<dou
   for (double x = bBoxMax[0] * 0.5; x < bBoxMax[0] * 1.; x += dx * 2.0) {  // NOLINT
     for (double y = 0; y < bBoxMax[1]; y += dx) {                          // NOLINT
       for (double z = 0; z < bBoxMax[2]; z += dx) {                        // NOLINT
-        autopas::sph::SPHParticle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
+        Particle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
         ith.setDensity(0.5);
         ith.setEnergy(2.5);
         sphSystem.addParticle(ith);
@@ -111,7 +112,7 @@ void setPressure(AutoPasContainer &sphSystem) {
   }
 }
 
-void addEnteringParticles(AutoPasContainer &sphSystem, std::vector<autopas::sph::SPHParticle> &invalidParticles) {
+void addEnteringParticles(AutoPasContainer &sphSystem, std::vector<Particle> &invalidParticles) {
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
 
@@ -191,7 +192,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
         for (auto iterator =
                  sphSystem.getRegionIterator(requiredHaloMin, requiredHaloMax, autopas::IteratorBehavior::ownedOnly);
              iterator.isValid(); ++iterator) {
-          autopas::sph::SPHParticle p = *iterator;
+          Particle p = *iterator;
           p.addR(shift);
           sphSystem.addOrUpdateHaloParticle(p);
         }
@@ -202,8 +203,8 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
 
 void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   // declare the used functors
-  autopas::sph::SPHCalcDensityFunctor densityFunctor;
-  autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+  autopas::sph::SPHCalcDensityFunctor<Particle, Cell> densityFunctor;
+  autopas::sph::SPHCalcHydroForceFunctor<Particle, Cell> hydroForceFunctor;
 
   std::cout << "\nhaloupdate\n" << std::endl;
 

@@ -8,7 +8,8 @@
 
 #include "AoSvsCudaTest.h"
 
-#include <testingHelpers/commonTypedefs.h>
+#include "autopas/molecularDynamics/LJFunctor.h"
+#include "testingHelpers/commonTypedefs.h"
 
 using namespace autopas;
 

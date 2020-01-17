@@ -6,6 +6,11 @@
 
 #include "ParticleIteratorTest.h"
 
+#include "autopas/cells/RMMParticleCell3T.h"
+#include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "autopas/iterators/ParticleIterator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using namespace autopas;

@@ -30,10 +30,10 @@ long autopas::utils::Timer::stop() {
   }
   _currentlyRunning = false;
 
-  const auto diff = duration_cast<microseconds>(time - _startTime).count();
+  const auto diff = duration_cast<nanoseconds>(time - _startTime).count();
 
   _totalTime += diff;
 
   return diff;
 }
-void autopas::utils::Timer::addTime(long microseconds) { _totalTime += microseconds; }
+void autopas::utils::Timer::addTime(long nanoseconds) { _totalTime += nanoseconds; }

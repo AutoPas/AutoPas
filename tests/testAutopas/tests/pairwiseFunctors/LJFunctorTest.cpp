@@ -266,7 +266,7 @@ TEST_F(LJFunctorTest, testSoAMixingFunctorNoGlobals) {
 
 TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
   bool duplicatedCalculation = true;
-  typedef autopas::utils::ExceptionHandler::AutoPasException exception_type;
+  using exception_type = autopas::utils::ExceptionHandler::AutoPasException;
 
   constexpr bool shifting = true;
   constexpr bool mixing = false;

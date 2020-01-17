@@ -10,7 +10,7 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/AutoPas.h"
+#include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"

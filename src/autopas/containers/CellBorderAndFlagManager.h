@@ -17,7 +17,7 @@ class CellBorderAndFlagManager {
   /**
    * The index type to access the particle cells.
    */
-  typedef std::size_t index_t;
+  using index_t = std::size_t;
 
  public:
   /**

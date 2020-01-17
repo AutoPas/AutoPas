@@ -9,7 +9,6 @@
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/CudaDeviceVector.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"

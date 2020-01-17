@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
 
 namespace autopas {

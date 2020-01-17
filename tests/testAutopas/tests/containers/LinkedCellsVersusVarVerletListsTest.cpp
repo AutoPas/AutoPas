@@ -9,6 +9,8 @@
 #include "LinkedCellsVersusVarVerletListsTest.h"
 
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VarVerletTraversalAsBuild.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 
 LinkedCellsVersusVarVerletListsTest::LinkedCellsVersusVarVerletListsTest()
     : _verletLists(nullptr), _linkedCells(nullptr) {}

@@ -6,6 +6,9 @@
 
 #include "C01TraversalTest.h"
 
+#include "autopas/containers/linkedCells/traversals/C01Traversal.h"
+#include "testingHelpers/commonTypedefs.h"
+
 // Place to implement special test cases, which only apply to C01 Traversal
 
 TEST_F(C01TraversalTest, testIsApplicable) {

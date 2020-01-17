@@ -7,6 +7,9 @@
 #include "TraversalTest.h"
 
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/TraversalInterface.h"
+#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/Logger.h"
 #include "testingHelpers/NumThreadGuard.h"
 

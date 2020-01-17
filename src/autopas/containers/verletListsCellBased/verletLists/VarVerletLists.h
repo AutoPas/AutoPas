@@ -21,8 +21,8 @@ template <class Particle, class NeighborList>
 class VarVerletLists
     : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                    typename VerletListHelpers<Particle>::SoAArraysType> {
-  typedef typename VerletListHelpers<Particle>::SoAArraysType SoAArraysType;
-  typedef typename VerletListHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
+  using SoAArraysType = typename VerletListHelpers<Particle>::SoAArraysType;
+  using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:
   /**

@@ -353,5 +353,27 @@ void checkCustom() {
             sh "grep -lrE '(NULL|[^_]assert)' . | grep '\\.cpp\\|\\.h'"
             sh "exit 1"
         }
+
+        // check that no file contains an #include <autopas/...>
+        try{
+            // if any file contains #include <autopas, return 2
+            sh "grep -qlrE '#include <autopas' . && exit 2 || exit 0"
+        } catch (Exception e) {
+            // change detected
+            echo 'Usage of #include <autopas...> is discouraged, please use "". Affected files:'
+            sh "grep -lrE '#include <autopas' ."
+            sh "exit 1"
+        }
+
+        // check that no file contains a typedef
+        try{
+            // if any file contains a typedef, return 2
+            sh "grep -qlrE 'typedef ' . && exit 2 || exit 0"
+        } catch (Exception e) {
+            // change detected
+            echo 'Usage of typedef is discouraged, please use using declarations instead. Affected files:'
+            sh "grep -lrE 'typedef ' ."
+            sh "exit 1"
+        }
     }
 }

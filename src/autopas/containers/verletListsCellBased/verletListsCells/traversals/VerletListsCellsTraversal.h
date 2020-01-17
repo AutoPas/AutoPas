@@ -24,7 +24,7 @@ template <class Particle>
 class VerletListsCellsTraversal {
  public:
   /// Verlet list storage
-  typedef std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> verlet_storage_type;
+  using verlet_storage_type = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
 
   /**
    * Sets the verlet list for the traversal to iterate over.

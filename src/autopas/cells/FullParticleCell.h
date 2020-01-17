@@ -129,12 +129,12 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Type of the internal iterator.
    */
-  typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>, true> iterator_t;
+  using iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>, true>;
 
   /**
    * Type of the internal const iterator.
    */
-  typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>, false> const_iterator_t;
+  using const_iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>, false>;
 
  private:
   AutoPasLock particlesLock;

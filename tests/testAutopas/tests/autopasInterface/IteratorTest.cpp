@@ -6,9 +6,8 @@
 
 #include "IteratorTest.h"
 
-#include <autopasTools/generators/RandomGenerator.h>
-#include <testingHelpers/TouchableParticle.h>
-
+#include "autopasTools/generators/RandomGenerator.h"
+#include "testingHelpers/TouchableParticle.h"
 #include "testingHelpers/commonTypedefs.h"
 
 constexpr double cutoff = 1.;

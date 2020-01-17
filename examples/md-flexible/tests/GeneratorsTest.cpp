@@ -6,7 +6,14 @@
 
 #include "GeneratorsTest.h"
 
-#include "autopas/utils/inBox.h"
+#include "Generator.h"
+#include "PrintableMolecule.h"
+#include "autopas/AutoPas.h"
+#include "autopasTools/generators/GridGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
+#include "parsing/YamlParser.h"
+#include "testingHelpers/commonTypedefs.h"
+
 // the following test only work if testParsing.yaml is well set
 // all ParticleVelocities = {0.,0.,0.}
 

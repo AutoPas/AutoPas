@@ -6,6 +6,7 @@
 
 #include "AutoPasInterfaceTest.h"
 
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 constexpr double cutoff = 1.1;

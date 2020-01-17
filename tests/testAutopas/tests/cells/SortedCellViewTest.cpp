@@ -7,6 +7,8 @@
 #include "SortedCellViewTest.h"
 
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/cells/SortedCellView.h"
+#include "testingHelpers/commonTypedefs.h"
 
 TEST_F(SortedCellViewTest, testParticleAccess) {
   auto fpc = autopas::FullParticleCell<Particle>();

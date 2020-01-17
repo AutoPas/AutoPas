@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "autopas/autopasIncludes.h"
 #include "autopas/sph/SPHKernels.h"
 #include "autopas/sph/SPHParticle.h"
 
@@ -15,16 +14,15 @@ namespace sph {
 /**
  * Class that defines the hydrodynamic force functor.
  * It is used to calculate the force based on the given SPH kernels.
+ * @tparam Particle
+ * @tparam ParticleCell
  */
-class SPHCalcHydroForceFunctor
-    : public Functor<SPHParticle, FullParticleCell<SPHParticle>, SPHParticle::SoAArraysType, SPHCalcHydroForceFunctor> {
+template <class Particle, class ParticleCell>
+class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SPHParticle>, SPHParticle::SoAArraysType,
+                                                SPHCalcHydroForceFunctor<Particle, ParticleCell>> {
  public:
-  /// particle type
-  typedef SPHParticle Particle;
   /// soa arrays type
-  typedef SPHParticle::SoAArraysType SoAArraysType;
-  /// particle cell type
-  typedef FullParticleCell<Particle> ParticleCell;
+  using SoAArraysType = typename Particle::SoAArraysType;
 
   SPHCalcHydroForceFunctor()
       // the actual cutoff used is dynamic. 0 is used to pass the sanity check.
@@ -114,23 +112,24 @@ class SPHCalcHydroForceFunctor
   void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
-    double *const __restrict__ densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
-    double *const __restrict__ smthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
+    double *const __restrict__ massptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::mass>();
+    double *const __restrict__ densityptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::density>();
+    double *const __restrict__ smthptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::smth>();
+    double *const __restrict__ soundSpeedptr =
+        soa.template begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
+    double *const __restrict__ pressureptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
+    double *const __restrict__ vsigmaxptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
+    double *const __restrict__ engDotptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
 
-    double *const __restrict__ xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velX>();
-    double *const __restrict__ velYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velY>();
-    double *const __restrict__ velZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accX>();
-    double *const __restrict__ accYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accY>();
-    double *const __restrict__ accZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+    double *const __restrict__ xptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
+    double *const __restrict__ velXptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::velX>();
+    double *const __restrict__ velYptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::velY>();
+    double *const __restrict__ velZptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
+    double *const __restrict__ accXptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accX>();
+    double *const __restrict__ accYptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accY>();
+    double *const __restrict__ accZptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       double localvsigmax = 0.;
@@ -223,41 +222,45 @@ class SPHCalcHydroForceFunctor
   void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    double *const __restrict__ massptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
-    double *const __restrict__ densityptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::density>();
-    double *const __restrict__ smthptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
+    double *const __restrict__ massptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::mass>();
+    double *const __restrict__ densityptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::density>();
+    double *const __restrict__ smthptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::smth>();
+    double *const __restrict__ soundSpeedptr1 =
+        soa1.template begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
+    double *const __restrict__ pressureptr1 =
+        soa1.template begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
+    double *const __restrict__ vsigmaxptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
+    double *const __restrict__ engDotptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
 
-    double *const __restrict__ xptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
-    double *const __restrict__ yptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
-    double *const __restrict__ zptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::velX>();
-    double *const __restrict__ velYptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::velY>();
-    double *const __restrict__ velZptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::accX>();
-    double *const __restrict__ accYptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::accY>();
-    double *const __restrict__ accZptr1 = soa1.begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+    double *const __restrict__ xptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::posX>();
+    double *const __restrict__ yptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::posY>();
+    double *const __restrict__ zptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
+    double *const __restrict__ velXptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::velX>();
+    double *const __restrict__ velYptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::velY>();
+    double *const __restrict__ velZptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
+    double *const __restrict__ accXptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::accX>();
+    double *const __restrict__ accYptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::accY>();
+    double *const __restrict__ accZptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
 
-    double *const __restrict__ massptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
-    double *const __restrict__ densityptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::density>();
-    double *const __restrict__ smthptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
+    double *const __restrict__ massptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::mass>();
+    double *const __restrict__ densityptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::density>();
+    double *const __restrict__ smthptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::smth>();
+    double *const __restrict__ soundSpeedptr2 =
+        soa2.template begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
+    double *const __restrict__ pressureptr2 =
+        soa2.template begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
+    double *const __restrict__ vsigmaxptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
+    double *const __restrict__ engDotptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
 
-    double *const __restrict__ xptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
-    double *const __restrict__ yptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
-    double *const __restrict__ zptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::velX>();
-    double *const __restrict__ velYptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::velY>();
-    double *const __restrict__ velZptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::accX>();
-    double *const __restrict__ accYptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::accY>();
-    double *const __restrict__ accZptr2 = soa2.begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+    double *const __restrict__ xptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::posX>();
+    double *const __restrict__ yptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::posY>();
+    double *const __restrict__ zptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
+    double *const __restrict__ velXptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::velX>();
+    double *const __restrict__ velYptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::velY>();
+    double *const __restrict__ velZptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
+    double *const __restrict__ accXptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::accX>();
+    double *const __restrict__ accYptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::accY>();
+    double *const __restrict__ accZptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
 
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       double localvsigmax = 0.;
@@ -356,23 +359,24 @@ class SPHCalcHydroForceFunctor
                   size_t iTo, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
-    double *const __restrict__ densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
-    double *const __restrict__ smthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
+    double *const __restrict__ massptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::mass>();
+    double *const __restrict__ densityptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::density>();
+    double *const __restrict__ smthptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::smth>();
+    double *const __restrict__ soundSpeedptr =
+        soa.template begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
+    double *const __restrict__ pressureptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
+    double *const __restrict__ vsigmaxptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
+    double *const __restrict__ engDotptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
 
-    double *const __restrict__ xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velX>();
-    double *const __restrict__ velYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velY>();
-    double *const __restrict__ velZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accX>();
-    double *const __restrict__ accYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accY>();
-    double *const __restrict__ accZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+    double *const __restrict__ xptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
+    double *const __restrict__ velXptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::velX>();
+    double *const __restrict__ velYptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::velY>();
+    double *const __restrict__ velZptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
+    double *const __restrict__ accXptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accX>();
+    double *const __restrict__ accYptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accY>();
+    double *const __restrict__ accZptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
 
     for (unsigned int i = iFrom; i < iTo; ++i) {
       double localvsigmax = 0.;

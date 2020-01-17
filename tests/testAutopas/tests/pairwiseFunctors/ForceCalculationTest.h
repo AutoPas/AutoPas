@@ -8,12 +8,10 @@
 
 #include <gtest/gtest.h>
 
-#include <algorithm>
-#include <vector>
+#include <array>
 
 #include "AutoPasTestBase.h"
-#include "autopas/AutoPas.h"
-#include "autopasTools/generators/GridGenerator.h"
+#include "autopas/options/DataLayoutOption.h"
 
 class ForceCalculationTest : public AutoPasTestBase {
  public:

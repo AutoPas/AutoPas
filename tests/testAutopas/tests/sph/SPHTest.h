@@ -11,7 +11,6 @@
 #include <tuple>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/sph/autopassph.h"
 #include "autopasTools/generators/RandomGenerator.h"
 

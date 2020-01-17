@@ -11,7 +11,6 @@
 #include <chrono>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 

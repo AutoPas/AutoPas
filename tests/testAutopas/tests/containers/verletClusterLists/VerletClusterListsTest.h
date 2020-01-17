@@ -9,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersColoringTraversal.h"
 #include "autopas/particles/Particle.h"

@@ -9,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/particles/Particle.h"
