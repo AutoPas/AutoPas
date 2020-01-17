@@ -1,10 +1,10 @@
-container                        :  [LinkedCells, VerletLists, VerletListsCells, VarVerletListsAsBuild, VerletClusterCells]
+container                        :  [LinkedCells, VerletLists, VerletListsCells, VarVerletListsAsBuild]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  0.3
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
-traversal                        :  [c08, sliced, c18, c01, verlet-sliced, verlet-c18, verlet-c01, cuda-c01, verlet-lists, c01-combined-SoA, verlet-clusters, c04, var-verlet-lists-as-build, verlet-clusters-coloring, c04SoA, verlet-cluster-cells]
+traversal                        :  [c08, sliced, c18, c01, verlet-sliced, verlet-c18, verlet-c01, cuda-c01, verlet-lists, c01-combined-SoA, c04, var-verlet-lists-as-build, c04SoA]
 tuning-strategy                  :  active-harmony
 tuning-interval                  :  1000
 tuning-samples                   :  3
