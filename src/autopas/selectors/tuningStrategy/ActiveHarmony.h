@@ -50,8 +50,8 @@ class ActiveHarmony : public TuningStrategyInterface {
         _allowedContainerOptions.emplace(*compatibleContainers.begin());
       }
     }
-    AutoPasLog(debug, "Possible container options: {}", _allowedContainerOptions);
-    AutoPasLog(debug, "Possible traversal options: {}", _allowedTraversalOptions);
+    AutoPasLog(debug, "Possible container options: {}", autopas::utils::ArrayUtils::to_string(_allowedContainerOptions));
+    AutoPasLog(debug, "Possible traversal options: {}", autopas::utils::ArrayUtils::to_string(_allowedTraversalOptions));
 
     // set HARMONY_HOME environment variable; needed by active harmony library; the macro is set by cmake
     if (getenv("HARMONY_HOME") == nullptr) {
