@@ -106,7 +106,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   Configuration _currentConfig;
 
   /**
-   * Traversal times for configurations. Used to save evidence when resetting simplex.
+   * Traversal times for configurations. Used to save evidence when resetting active-harmony server.
    */
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
 
@@ -212,7 +212,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
   }
   if (currentInvalid) {
     if (ah_converged(htask)) {
-      AutoPasLog(debug, "Active Harmony converged to invalid configuration; restarting tuning process.");
+      AutoPasLog(debug, "Active Harmony converged to invalid configuration; resetting active-harmony server.");
       resetHarmony();
     } else {
       invalidateConfiguration();
