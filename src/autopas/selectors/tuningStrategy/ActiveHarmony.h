@@ -40,7 +40,7 @@ class ActiveHarmony : public TuningStrategyInterface {
         _allowedDataLayoutOptions(allowedDataLayoutOptions),
         _allowedNewton3Options(allowedNewton3Options),
         _currentConfig() {
-    // reduce traversal and container option to possible combinations
+    AutoPasLog(debug, "Reducing traversal and container options to possible combinations");
     for (auto &traversalOption : _allowedTraversalOptions) {
       auto compatibleContainers = compatibleTraversals::allCompatibleContainers(traversalOption);
       if (compatibleContainers.empty() or
@@ -50,6 +50,9 @@ class ActiveHarmony : public TuningStrategyInterface {
         _allowedContainerOptions.emplace(*compatibleContainers.begin());
       }
     }
+    AutoPasLog(debug, "Possible container options: {}", _allowedContainerOptions);
+    AutoPasLog(debug, "Possible traversal options: {}", _allowedTraversalOptions);
+
     // set HARMONY_HOME environment variable; needed by active harmony library; the macro is set by cmake
     if (getenv("HARMONY_HOME") == nullptr) {
       putenv(const_cast<char *>(HARMONY_HOME));
@@ -108,6 +111,9 @@ class ActiveHarmony : public TuningStrategyInterface {
    */
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
 
+  /**
+   * Resets the Harmony Server but keeps evidence.
+   */
   inline void resetHarmony();
 
   /**
@@ -193,7 +199,7 @@ void ActiveHarmony::fetchConfiguration() {
 }
 
 void ActiveHarmony::invalidateConfiguration() {
-  auto worstPerf = std::numeric_limits<float>::max();
+  auto worstPerf = std::numeric_limits<double>::max();
   addEvidence(worstPerf);
 }
 
