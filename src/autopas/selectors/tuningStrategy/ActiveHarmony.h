@@ -49,8 +49,10 @@ class ActiveHarmony : public TuningStrategyInterface {
         _allowedContainerOptions.emplace(*compatibleContainers.begin());
       }
     }
-    AutoPasLog(debug, "Possible container options: {}", autopas::utils::ArrayUtils::to_string(_allowedContainerOptions));
-    AutoPasLog(debug, "Possible traversal options: {}", autopas::utils::ArrayUtils::to_string(_allowedTraversalOptions));
+    AutoPasLog(debug, "Possible container options: {}",
+               autopas::utils::ArrayUtils::to_string(_allowedContainerOptions));
+    AutoPasLog(debug, "Possible traversal options: {}",
+               autopas::utils::ArrayUtils::to_string(_allowedTraversalOptions));
 
     // set HARMONY_HOME environment variable; needed by active harmony library; the macro is set by cmake
     if (getenv("HARMONY_HOME") == nullptr) {
@@ -158,7 +160,7 @@ void ActiveHarmony::addEvidence(long time) {
     AutoPasLog(debug, "ActiveHarmony::addEvidence: Search space is {}; did not report performance",
                searchSpaceIsTrivial() ? "trivial" : "empty");
   } else {
-    auto perf = (double) time;
+    auto perf = (double)time;
     if (ah_report(htask, &perf) != 0) {
       utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error reporting performance to server");
     }
@@ -227,12 +229,12 @@ bool ActiveHarmony::tune(bool currentInvalid) {
       utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching values from server");
     }
     fetchConfiguration();
-    if (_traversalTimes.find(_currentConfig) != _traversalTimes.end()) { // we already know performance for this config
+    if (_traversalTimes.find(_currentConfig) != _traversalTimes.end()) {  // we already know performance for this config
       addEvidence(_traversalTimes[_currentConfig]);
       skipConfig = true;
     }
 
-  auto converged = ah_converged(htask);
+    auto converged = ah_converged(htask);
     if (converged) {
       // set configuration to optimum
       AutoPasLog(debug, "ActiveHarmony::tune: Reached converged state.");
