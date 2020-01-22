@@ -475,7 +475,7 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename SPHParticle::AttributeNames, 16> getNeededAttr() {
+  constexpr static std::array<typename SPHParticle::AttributeNames, 16> getNeededAttr() {
     ///@todo distinguish between N3 and notN3
     return std::array<typename SPHParticle::AttributeNames, 16>{
         SPHParticle::AttributeNames::mass,     SPHParticle::AttributeNames::density,
@@ -491,7 +491,7 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static const std::array<typename SPHParticle::AttributeNames, 11> getNeededAttr(std::false_type) {
+  constexpr static std::array<typename SPHParticle::AttributeNames, 11> getNeededAttr(std::false_type) {
     ///@todo distinguish between N3 and notN3
     return std::array<typename SPHParticle::AttributeNames, 11>{
         SPHParticle::AttributeNames::mass,     SPHParticle::AttributeNames::density,
@@ -505,7 +505,7 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename sph::SPHParticle::AttributeNames, 5> getComputedAttr() {
+  constexpr static std::array<typename sph::SPHParticle::AttributeNames, 5> getComputedAttr() {
     return std::array<typename SPHParticle::AttributeNames, 5>{
         SPHParticle::AttributeNames::vsigmax, SPHParticle::AttributeNames::engDot, SPHParticle::AttributeNames::accX,
         SPHParticle::AttributeNames::accY, SPHParticle::AttributeNames::accZ};
