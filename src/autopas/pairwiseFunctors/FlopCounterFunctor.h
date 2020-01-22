@@ -333,7 +333,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 3> getNeededAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 3> getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 3>{
         Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ};
   }
@@ -341,14 +341,14 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 3> getNeededAttr(std::false_type) {
+  constexpr static std::array<typename Particle::AttributeNames, 3> getNeededAttr(std::false_type) {
     return getNeededAttr();
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};
   }
 

@@ -46,14 +46,14 @@ class Dummy final {
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
   }
 };
@@ -115,7 +115,7 @@ class Functor {
    * @return Attributes needed for computation.
    * @todo C++20: make this function virtual
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
   }
 
@@ -124,7 +124,7 @@ class Functor {
    * @return Attributes needed for computation.
    * @todo C++20: make this function virtual
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
     return Impl_t::getNeededAttr();
   }
 
@@ -133,7 +133,7 @@ class Functor {
    * @return Attributes computed by this functor.
    * @todo C++20: make this function virtual
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
   }
 
