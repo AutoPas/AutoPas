@@ -39,7 +39,7 @@ class ActiveHarmony : public TuningStrategyInterface {
         _allowedDataLayoutOptions(allowedDataLayoutOptions),
         _allowedNewton3Options(allowedNewton3Options),
         _currentConfig() {
-    // reduce traversal and container option to possible combinations
+    AutoPasLog(debug, "Reducing traversal and container options to possible combinations");
     for (auto &traversalOption : _allowedTraversalOptions) {
       auto compatibleContainers = compatibleTraversals::allCompatibleContainers(traversalOption);
       if (compatibleContainers.empty() or
@@ -49,6 +49,11 @@ class ActiveHarmony : public TuningStrategyInterface {
         _allowedContainerOptions.emplace(*compatibleContainers.begin());
       }
     }
+    AutoPasLog(debug, "Possible container options: {}",
+               autopas::utils::ArrayUtils::to_string(_allowedContainerOptions));
+    AutoPasLog(debug, "Possible traversal options: {}",
+               autopas::utils::ArrayUtils::to_string(_allowedTraversalOptions));
+
     // set HARMONY_HOME environment variable; needed by active harmony library; the macro is set by cmake
     if (getenv("HARMONY_HOME") == nullptr) {
       putenv(const_cast<char *>(HARMONY_HOME));
@@ -103,16 +108,24 @@ class ActiveHarmony : public TuningStrategyInterface {
   Configuration _currentConfig;
 
   /**
+   * Traversal times for configurations. Used to save evidence when resetting active-harmony server.
+   */
+  std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
+
+  /**
+   * Resets the Harmony Server but keeps evidence.
+   */
+  inline void resetHarmony();
+
+  /**
    * Fetch parameter-values from harmony server and update _currentConfig.
    */
   inline void fetchConfiguration();
 
   /**
    * Invalidates the current configuration by reporting the worst possible performance to the harmony server.
-   * Always returns true to allow being used in boolean statements.
-   * @return true
    */
-  inline bool invalidateConfiguration();
+  inline void invalidateConfiguration();
 
   /**
    * Define the tuning parameter in the ActiveHarmony tuning definition as enum and set possible values.
@@ -151,6 +164,7 @@ void ActiveHarmony::addEvidence(long time) {
     if (ah_report(htask, &perf) != 0) {
       utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error reporting performance to server");
     }
+    _traversalTimes[_currentConfig] = time;
   }
 }
 
@@ -185,10 +199,9 @@ void ActiveHarmony::fetchConfiguration() {
                                  cellSizeFactor, traversalOption, dataLayoutOption, newton3Option);
 }
 
-bool ActiveHarmony::invalidateConfiguration() {
+void ActiveHarmony::invalidateConfiguration() {
   auto worstPerf = std::numeric_limits<double>::max();
   addEvidence(worstPerf);
-  return true;
 }
 
 bool ActiveHarmony::tune(bool currentInvalid) {
@@ -201,33 +214,39 @@ bool ActiveHarmony::tune(bool currentInvalid) {
   }
   if (currentInvalid) {
     if (ah_converged(htask)) {
-      AutoPasLog(debug, "Active Harmony converged to invalid configuration; restarting tuning process.");
-      reset();
+      AutoPasLog(debug, "Active Harmony converged to invalid configuration; resetting active-harmony server.");
+      resetHarmony();
     } else {
       invalidateConfiguration();
     }
   }
 
-  // get configurations from server until valid newton3 option is found
+  // get configurations from server until new configuration with valid newton3 option is found
+  bool skipConfig;
   do {
+    skipConfig = false;
     if (ah_fetch(htask) < 0) {
       utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching values from server");
     }
     fetchConfiguration();
-  } while (_allowedNewton3Options.find(_currentConfig.newton3) == _allowedNewton3Options.end() and
-           invalidateConfiguration());  // short-circuit evaluation makes this only execute if newton3 option is invalid
-
-  auto converged = ah_converged(htask);
-  if (converged) {
-    // set configuration to optimum
-    AutoPasLog(debug, "ActiveHarmony::tune: Reached converged state.");
-    if (ah_best(htask) != 0) {
-      utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching best point.");
+    if (_traversalTimes.find(_currentConfig) != _traversalTimes.end()) {  // we already know performance for this config
+      addEvidence(_traversalTimes[_currentConfig]);
+      skipConfig = true;
     }
-    fetchConfiguration();
-    AutoPasLog(debug, "ActiveHarmony::tune: Selected optimal configuration {}.", _currentConfig.toString());
-  }
-  return !converged;
+
+    auto converged = ah_converged(htask);
+    if (converged) {
+      // set configuration to optimum
+      AutoPasLog(debug, "ActiveHarmony::tune: Reached converged state.");
+      if (ah_best(htask) != 0) {
+        utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching best point.");
+      }
+      fetchConfiguration();
+      AutoPasLog(debug, "ActiveHarmony::tune: Selected optimal configuration {}.", _currentConfig.toString());
+      return false;
+    }
+  } while (skipConfig);
+  return true;
 }
 
 void ActiveHarmony::removeN3Option(Newton3Option option) {
@@ -238,6 +257,7 @@ void ActiveHarmony::removeN3Option(Newton3Option option) {
         "empty!",
         option);
   }
+  resetHarmony();
 }
 
 const Configuration &ActiveHarmony::getCurrentConfiguration() const { return _currentConfig; }
@@ -260,6 +280,11 @@ void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, con
 }
 
 void ActiveHarmony::reset() {
+  _traversalTimes.clear();
+  resetHarmony();
+}
+
+void ActiveHarmony::resetHarmony() {
   // free memory
   if (htask != nullptr) {
     ah_leave(htask);
