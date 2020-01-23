@@ -21,8 +21,7 @@ target_link_libraries(
     runTests
     autopas
     autopasTools
-    libgtest
-    libgmock
+    gmock # gmock includes the gtest target
 )
 
 # this cmake module was only introduced in 3.10
