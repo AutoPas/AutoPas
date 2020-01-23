@@ -171,12 +171,11 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType>, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &, size_t, size_t, bool)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
    */
   // clang-format on
-  void SoAFunctor(SoAView<SoAArraysType> soa,
-                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
-                  size_t iTo, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -187,36 +186,34 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
     double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
     double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
 
-    for (unsigned int i = iFrom; i < iTo; ++i) {
-      double densacc = 0;
-      auto &currentList = neighborList[i];
-      size_t listSize = currentList.size();
+    double densacc = 0;
+    auto &currentList = neighborList;
+    size_t listSize = currentList.size();
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : densacc)
-      for (unsigned int j = 0; j < listSize; ++j) {
-        const double drx = xptr[i] - xptr[currentList[j]];
-        const double dry = yptr[i] - yptr[currentList[j]];
-        const double drz = zptr[i] - zptr[currentList[j]];
+    for (unsigned int j = 0; j < listSize; ++j) {
+      const double drx = xptr[indexFirst] - xptr[currentList[j]];
+      const double dry = yptr[indexFirst] - yptr[currentList[j]];
+      const double drz = zptr[indexFirst] - zptr[currentList[j]];
 
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
+      const double drx2 = drx * drx;
+      const double dry2 = dry * dry;
+      const double drz2 = drz * drz;
 
-        const double dr2 = drx2 + dry2 + drz2;
+      const double dr2 = drx2 + dry2 + drz2;
 
-        const double density = massptr[currentList[j]] * SPHKernels::W(dr2, smthptr[i]);
-        densacc += density;
-        if (newton3) {
-          // Newton 3:
-          // W is symmetric in dr, so no -dr needed, i.e. we can reuse dr
-          const double density2 = massptr[i] * SPHKernels::W(dr2, smthptr[currentList[j]]);
-          densityptr[currentList[j]] += density2;
-        }
+      const double density = massptr[currentList[j]] * SPHKernels::W(dr2, smthptr[indexFirst]);
+      densacc += density;
+      if (newton3) {
+        // Newton 3:
+        // W is symmetric in dr, so no -dr needed, i.e. we can reuse dr
+        const double density2 = massptr[indexFirst] * SPHKernels::W(dr2, smthptr[currentList[j]]);
+        densityptr[currentList[j]] += density2;
       }
-
-      densityptr[i] += densacc;
     }
+
+    densityptr[indexFirst] += densacc;
   }
 
   /**

@@ -140,7 +140,9 @@ void VarVerletTraversalAsBuild<ParticleCell, Particle, PairwiseFunctor, dataLayo
 #endif
       for (unsigned int thread = 0; thread < soaNeighborList[color].size(); thread++) {
         const auto &threadNeighborList = soaNeighborList[color][thread];
-        _functor->SoAFunctor(*_soa, threadNeighborList, 0, threadNeighborList.size(), useNewton3);
+        for (const auto &[indexFirst, neighbors] : threadNeighborList) {
+          _functor->SoAFunctor(*_soa, indexFirst, neighbors, useNewton3);
+        }
       }
     }
   }

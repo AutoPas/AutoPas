@@ -104,22 +104,21 @@ class TraversalVerlet
       }
 
       case DataLayoutOption::soa: {
-        const size_t iFrom = 0;
-        const size_t iTo = soaNeighborLists.size();
-
 #if defined(AUTOPAS_OPENMP)
         if (not useNewton3) {
           // @todo find a sensible chunk size
-          const size_t chunkSize = std::max((iTo - iFrom) / (omp_get_max_threads() * 10), 1ul);
+          const size_t chunkSize = std::max(soaNeighborLists.size() / (omp_get_max_threads() * 10), 1ul);
 #pragma omp parallel for schedule(dynamic, chunkSize)
-          for (size_t i = iFrom; i < iTo; i++) {
-            _functor->SoAFunctor(_soa, soaNeighborLists, i, i + 1, useNewton3);
+          for (size_t i = 0; i < soaNeighborLists.size(); i++) {
+            _functor->SoAFunctor(_soa, i, soaNeighborLists[i], useNewton3);
           }
         } else
 #endif
         {
           // iterate over SoA
-          _functor->SoAFunctor(_soa, soaNeighborLists, iFrom, iTo, useNewton3);
+          for (size_t i = 0; i < soaNeighborLists.size(); i++) {
+            _functor->SoAFunctor(_soa, i, soaNeighborLists[i], useNewton3);
+          }
         }
         return;
       }
