@@ -31,7 +31,6 @@ class TraversalSelectorInfo {
 
   /**
    * Array with the dimension lengths of the domain
-   * indicating whether or not the optimalTraversalOption is already initialized
    */
   const std::array<unsigned long, 3> dims;
 
