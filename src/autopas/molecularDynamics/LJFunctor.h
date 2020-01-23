@@ -479,7 +479,7 @@ class LJFunctor
   /**
    * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
    * @note If you want to parallelize this by openmp, please ensure that there
-   * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
+   * are no dependencies, i.e. introduce colors!
    */
   // clang-format on
   void SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst,
