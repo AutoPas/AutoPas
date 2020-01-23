@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/autopasIncludes.h"
+#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/sph/SPHKernels.h"
 #include "autopas/sph/SPHParticle.h"
 
@@ -15,26 +15,27 @@ namespace sph {
 /**
  * Class that defines the density functor.
  * It is used to calculate the density based on the given SPH kernel.
+ * @tparam Particle
+ * @tparam ParticleCell
  */
-class SPHCalcDensityFunctor
-    : public Functor<SPHParticle, FullParticleCell<SPHParticle>, SPHParticle::SoAArraysType, SPHCalcDensityFunctor> {
+template <class Particle, class ParticleCell>
+class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
+                                             SPHCalcDensityFunctor<Particle, ParticleCell>> {
  public:
-  /// particle type
-  typedef SPHParticle Particle;
   /// soa arrays type
-  typedef SPHParticle::SoAArraysType SoAArraysType;
-  /// particle cell type
-  typedef FullParticleCell<Particle> ParticleCell;
+  using SoAArraysType = typename Particle::SoAArraysType;
 
-  SPHCalcDensityFunctor()
-      : autopas::Functor<Particle, ParticleCell, SoAArraysType, SPHCalcDensityFunctor>(
-            typename Particle::ParticleFloatingPointType(0.)){};
+  SPHCalcDensityFunctor() : autopas::Functor<Particle, ParticleCell, SoAArraysType, SPHCalcDensityFunctor>(0.){};
 
   bool isRelevantForTuning() override { return true; }
 
   bool allowsNewton3() override { return true; }
 
   bool allowsNonNewton3() override { return true; }
+
+  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+    return dataLayout == DataLayoutOption::aos;  // This functor does only support clusters via aos.
+  }
 
   /**
    * Calculates the density contribution of the interaction of particle i and j.
@@ -45,7 +46,7 @@ class SPHCalcDensityFunctor
    * @param newton3 defines whether or whether not to use newton 3
    */
   inline void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
-    const std::array<double, 3> dr = ArrayMath::sub(j.getR(), i.getR());  // ep_j[j].pos - ep_i[i].pos;
+    const std::array<double, 3> dr = utils::ArrayMath::sub(j.getR(), i.getR());  // ep_j[j].pos - ep_i[i].pos;
     const double density =
         j.getMass() * SPHKernels::W(dr, i.getSmoothingLength());  // ep_j[j].mass * W(dr, ep_i[i].smth)
     i.addDensity(density);
@@ -120,21 +121,21 @@ class SPHCalcDensityFunctor
   void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    double *const __restrict__ xptr1 = soa1.begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr1 = soa1.begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr1 = soa1.begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict__ densityptr1 = soa1.begin<Particle::AttributeNames::density>();
-    double *const __restrict__ smthptr1 = soa1.begin<Particle::AttributeNames::smth>();
-    double *const __restrict__ massptr1 = soa1.begin<Particle::AttributeNames::mass>();
+    double *const __restrict__ densityptr1 = soa1.template begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr1 = soa1.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ massptr1 = soa1.template begin<Particle::AttributeNames::mass>();
 
-    double *const __restrict__ xptr2 = soa2.begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr2 = soa2.begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr2 = soa2.begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict__ densityptr2 = soa2.begin<Particle::AttributeNames::density>();
-    double *const __restrict__ smthptr2 = soa2.begin<Particle::AttributeNames::smth>();
-    double *const __restrict__ massptr2 = soa2.begin<Particle::AttributeNames::mass>();
+    double *const __restrict__ densityptr2 = soa2.template begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr2 = soa2.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ massptr2 = soa2.template begin<Particle::AttributeNames::mass>();
 
     size_t numParticlesi = soa1.getNumParticles();
     for (unsigned int i = 0; i < numParticlesi; ++i) {
@@ -218,7 +219,7 @@ class SPHCalcDensityFunctor
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename SPHParticle::AttributeNames, 6> getNeededAttr() {
+  constexpr static std::array<typename SPHParticle::AttributeNames, 6> getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 6>{
         Particle::AttributeNames::mass, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ, Particle::AttributeNames::smth, Particle::AttributeNames::density};
@@ -227,7 +228,7 @@ class SPHCalcDensityFunctor
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static const std::array<typename SPHParticle::AttributeNames, 5> getNeededAttr(std::false_type) {
+  constexpr static std::array<typename SPHParticle::AttributeNames, 5> getNeededAttr(std::false_type) {
     return std::array<typename Particle::AttributeNames, 5>{
         Particle::AttributeNames::mass, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ, Particle::AttributeNames::smth};
@@ -236,7 +237,7 @@ class SPHCalcDensityFunctor
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename SPHParticle::AttributeNames, 1> getComputedAttr() {
+  constexpr static std::array<typename SPHParticle::AttributeNames, 1> getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 1>{Particle::AttributeNames::density};
   }
 };

@@ -11,14 +11,14 @@
 #include <cmath>
 #include <numeric>
 #include <vector>
+
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/inBox.h"
 
-namespace autopas {
-namespace internal {
+namespace autopas::internal {
 /**
  * Class that manages a block of ParticleCells.
  * It is used to resize the cellblock and to handle the conversion of 3d to 1d
@@ -31,7 +31,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
   /**
    * the index type to access the particle cells
    */
-  typedef std::size_t index_t;
+  using index_t = std::size_t;
   /**
    * Constructor of CellBlock3D
    * @param vec vector of ParticleCells that this class manages
@@ -43,6 +43,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin, const std::array<double, 3> bMax,
               double interactionLength, double cellSizeFactor = 1.0) {
     rebuild(vec, bMin, bMax, interactionLength, cellSizeFactor);
+
     for (int i = 0; i < 3; ++i) {
       if (bMax[i] < bMin[i] + interactionLength) {
         AutoPasLog(error, "Interaction length too large is {}, bmin {}, bmax {}", interactionLength, bMin[i], bMax[i]);
@@ -171,7 +172,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param allowedDistance the maximal distance to the position
    * @return a container of references to nearby halo cells
    */
-  std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) {
+  std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) const {
     auto index3d = get3DIndexOfPosition(position);
 
     std::vector<ParticleCell *> closeHaloCells;
@@ -191,8 +192,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
       closeHaloCells.push_back(&getCell(index3d));
     }
 
-    auto lowIndex3D = get3DIndexOfPosition(ArrayMath::subScalar(position, allowedDistance));
-    auto highIndex3D = get3DIndexOfPosition(ArrayMath::addScalar(position, allowedDistance));
+    auto lowIndex3D = get3DIndexOfPosition(utils::ArrayMath::subScalar(position, allowedDistance));
+    auto highIndex3D = get3DIndexOfPosition(utils::ArrayMath::addScalar(position, allowedDistance));
     // these indices are (already) at least 0 and at most _cellsPerDimensionWithHalo[i]-1
 
     auto currentIndex = lowIndex3D;
@@ -273,7 +274,7 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
   std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
 
   for (size_t dim = 0; dim < 3; dim++) {
-    const long int value = (static_cast<long int>(floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
+    const long int value = (static_cast<long int>(std::floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
                            _cellsPerInteractionLength;
     const index_t nonNegativeValue = static_cast<index_t>(std::max(value, 0l));
     const index_t nonLargerValue = std::min(nonNegativeValue, _cellsPerDimensionWithHalo[dim] - 1);
@@ -446,5 +447,4 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
     }
   }
 }
-}  // namespace internal
-}  // namespace autopas
+}  // namespace autopas::internal

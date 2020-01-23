@@ -3,35 +3,32 @@
 # get all project files
 set(
     INCLUDE_DIRS
-    "${PROJECT_SOURCE_DIR}/src/" "${PROJECT_SOURCE_DIR}/examples/" "${PROJECT_SOURCE_DIR}/tests/"
+    "${PROJECT_SOURCE_DIR}/src/"
+    "${PROJECT_SOURCE_DIR}/examples/"
+    "${PROJECT_SOURCE_DIR}/tests/"
+    "${PROJECT_SOURCE_DIR}/tools/"
 )
-file(
-    GLOB_RECURSE
-    ALL_SOURCE_FILES
-    "*.cpp"
-    "*.h"
-    "*.cuh"
-    "*.cu"
-)
-foreach (TMP_PATH ${ALL_SOURCE_FILES})
-    set(_found FALSE)
-    foreach (_incdir ${INCLUDE_DIRS})
-        string(FIND ${TMP_PATH} ${_incdir} INCLUDE_DIR_FOUND)
-        if (${INCLUDE_DIR_FOUND} EQUAL 0)
-            set(_found TRUE)
-        endif ()
-    endforeach (_incdir)
-    if (NOT ${_found})
-        list(REMOVE_ITEM ALL_SOURCE_FILES ${TMP_PATH})
-    endif ()
+# reset CF_ALL_SOURCE_FILES
+foreach (TMP_PATH ${INCLUDE_DIRS})
+    # search for files for each path in INCLUDE_DIRS and append them to CF_ALL_SOURCE_FILES
+    file(
+        GLOB_RECURSE
+        CF_ALL_SOURCE_FILES_TMP
+        "${TMP_PATH}/*.cpp"
+        "${TMP_PATH}/*.h"
+        "${TMP_PATH}/*.cuh"
+        "${TMP_PATH}/*.cu"
+    )
+    list(APPEND CF_ALL_SOURCE_FILES ${CF_ALL_SOURCE_FILES_TMP})
 endforeach (TMP_PATH)
 
-find_program(CLANG_FORMAT NAMES clang-format clang-format-6.0)
+set(DESIRED_CLANG_FORMAT clang-format-9)
+find_program(CLANG_FORMAT NAMES ${DESIRED_CLANG_FORMAT})
 
 if (CLANG_FORMAT)
     message(STATUS "clang format found, added clangformat target")
     set(dummyfiles)
-    foreach (_file ${ALL_SOURCE_FILES})
+    foreach (_file ${CF_ALL_SOURCE_FILES})
         string(
             REPLACE
                 "."
@@ -63,6 +60,6 @@ if (CLANG_FORMAT)
 else ()
     message(
         STATUS
-            "clang-format-6 not found, not adding clang format target. Other Versions not supported!"
+            "${DESIRED_CLANG_FORMAT} not found, not adding clang format target. Other Versions not supported!"
     )
 endif ()

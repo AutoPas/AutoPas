@@ -21,7 +21,7 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class C18BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
  public:
   /**
@@ -40,20 +40,30 @@ class C18BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
  protected:
   /**
    * The main traversal of the C18Traversal.
+   *
    * @copydetails C01BasedTraversal::c01Traversal()
+   *
+   * @tparam allCells Defines whether or not to iterate over all cells with the loop body given as argument. By default
+   * (allCells=false) it will not iterate over all cells and instead skip the last few cells, because they will be
+   * covered by the base step. If you plan to use the default base step of the traversal on this function, use
+   * allCells=false, if you plan to just iterate over all cells, e.g., to iterate over verlet lists saved within the
+   * cells, use allCells=true. For the c18 step if allCells is false, iteration will not occur over the last layer of
+   * cells (for overlap=1) (in x, y and z direction).
    */
-  template <typename LoopBody>
+  template <bool allCells = false, typename LoopBody>
   inline void c18Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
-template <typename LoopBody>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <bool allCells, typename LoopBody>
 inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::c18Traversal(
     LoopBody &&loopBody) {
   const std::array<unsigned long, 3> stride = {2ul * this->_overlap[0] + 1ul, 2ul * this->_overlap[1] + 1ul,
                                                this->_overlap[2] + 1ul};
   auto end(this->_cellsPerDimension);
-  end[2] -= this->_overlap[2];
+  if (not allCells) {
+    end[2] -= this->_overlap[2];
+  }
   this->cTraversal(std::forward<LoopBody>(loopBody), end, stride);
 }
 

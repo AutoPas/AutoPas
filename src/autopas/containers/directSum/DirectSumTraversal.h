@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+
 #include "DirectSumTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -26,7 +27,7 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public DirectSumTraversalInterface<ParticleCell> {
  public:
   /**
@@ -90,7 +91,7 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void DirectSumTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
   // Assume cell[0] is the main domain and cell[1] is the halo

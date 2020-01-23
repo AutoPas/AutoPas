@@ -4,18 +4,21 @@
  * @author seckler
  */
 
-#include <autopas/AutoPas.h>
-#include <autopas/sph/autopassph.h>
 #include <array>
 #include <iostream>
-#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
+
+#include "autopas/AutoPas.h"
+#include "autopas/sph/autopassph.h"
+#include "autopasTools/generators/RandomGenerator.h"
+
+using Particle = autopas::sph::SPHParticle;
+using Cell = autopas::FullParticleCell<Particle>;
+using AutoPasContainer = autopas::AutoPas<Particle, Cell>;
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations);
 
-void addParticles(
-    autopas::AutoPas<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &sph_system,
-    int numParticles) {
+void addParticles(AutoPasContainer &sph_system, int numParticles) {
   // Place SPH particles
 
   srand(42);  // fixed seedpoint
@@ -24,8 +27,8 @@ void addParticles(
 
   for (int i = 0; i < numParticles; ++i) {
     auto id = static_cast<unsigned long>(i);
-    autopas::sph::SPHParticle particle(RandomGenerator::randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75, 0.012,
-                                       0.);
+    Particle particle(autopasTools::generators::RandomGenerator::randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75,
+                      0.012, 0.);
     sph_system.addParticle(particle);
   }
 
@@ -43,8 +46,8 @@ int main(int argc, char *argv[]) {
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
   double cutoff = .03;
 
-  autopas::sph::SPHCalcDensityFunctor densfunc;
-  autopas::sph::SPHCalcHydroForceFunctor hydrofunc;
+  autopas::sph::SPHCalcDensityFunctor<Particle, Cell> densfunc;
+  autopas::sph::SPHCalcHydroForceFunctor<Particle, Cell> hydrofunc;
 
   int numParticles;
   int numIterations;
@@ -70,7 +73,7 @@ int main(int argc, char *argv[]) {
       functorTypeInt = std::stoi(argv[4]);
     }
     if (argc >= 4) {
-      containerOptions = autopas::utils::StringUtils::parseContainerOptions(argv[3]);
+      containerOptions = autopas::ContainerOption::parseOptions(argv[3]);
       numIterations = std::stoi(argv[2]);
       numParticles = std::stoi(argv[1]);
       if (containerOptions.size() != 1) {
@@ -100,7 +103,7 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
 
-  autopas::AutoPas<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> autoPas;
+  AutoPasContainer autoPas;
 
   autoPas.setBoxMin(boxMin);
   autoPas.setBoxMax(boxMax);
@@ -111,7 +114,7 @@ int main(int argc, char *argv[]) {
   autoPas.setAllowedNewton3Options({useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled});
   autoPas.setAllowedDataLayouts({autopas::DataLayoutOption::aos});  // currently aos only!
 
-  auto traversalType = autopas::TraversalOption(-1);
+  autopas::TraversalOption traversalType;
   switch (*containerOptions.begin()) {
     case autopas::ContainerOption::linkedCells: {
       traversalType = autopas::TraversalOption::c08;
@@ -134,8 +137,8 @@ int main(int argc, char *argv[]) {
       break;
     }
     default:
-      std::cerr << "Error: containerType " << autopas::utils::StringUtils::to_string(*containerOptions.begin())
-                << " not yet supported." << std::endl;
+      std::cerr << "Error: containerType " << containerOptions.begin()->to_string() << " not yet supported."
+                << std::endl;
       exit(2);
   }
   autoPas.setAllowedTraversals({traversalType});
@@ -163,14 +166,14 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 
   double elapsedTime = t.stop();
 
-  double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-6;
+  double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-9;
 
   t.start();
   for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func);
 
   elapsedTime = t.stop();
 
-  double MFUPS_soa = numParticles * numIterations / elapsedTime * 1e-6;
+  double MFUPS_soa = numParticles * numIterations / elapsedTime * 1e-9;
 
   std::cout << numParticles << "\t" << numIterations << "\t" << MFUPS_aos << "\t" << MFUPS_soa;
   std::cout << std::endl;

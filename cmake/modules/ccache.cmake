@@ -1,4 +1,4 @@
-option(CCACHE "Use ccache for accellerated compilation through caching" OFF)
+option(CCACHE "Use ccache for accelerated compilation through caching" OFF)
 if (CCACHE)
     find_program(CCACHE_FOUND ccache)
     if (CCACHE_FOUND)

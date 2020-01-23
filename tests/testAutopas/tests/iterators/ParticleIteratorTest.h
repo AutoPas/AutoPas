@@ -7,9 +7,10 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class ParticleIteratorTest : public AutoPasTestBase {
  public:
@@ -34,6 +35,6 @@ class ParticleIteratorTest : public AutoPasTestBase {
   // needs to be protected, because the test fixtures generate a derived class
   // for each unit test.
 
-  std::vector<autopas::MoleculeLJ> _vecOfMolecules;
+  std::vector<Molecule> _vecOfMolecules;
   unsigned long _currentIndex;
 };

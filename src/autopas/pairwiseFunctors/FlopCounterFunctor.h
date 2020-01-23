@@ -25,8 +25,6 @@ namespace autopas {
 template <class Particle, class ParticleCell>
 class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
                                           FlopCounterFunctor<Particle, ParticleCell>> {
-  typedef typename Particle::SoAArraysType SoAArraysType;
-
  public:
   bool isRelevantForTuning() override { return false; }
 
@@ -34,11 +32,15 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
 
   bool allowsNonNewton3() override { return true; }
 
+  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+    return dataLayout == DataLayoutOption::aos;  // no support for clusters yet, unless aos.
+  }
+
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ParticleCell>(typename Particle::ParticleFloatingPointType cutoffRadius)
+  explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
       : autopas::Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
                          FlopCounterFunctor<Particle, ParticleCell>>(cutoffRadius),
         _cutoffSquare(cutoffRadius * cutoffRadius),
@@ -46,8 +48,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
         _kernelCalls(0ul) {}
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    auto dr = ArrayMath::sub(i.getR(), j.getR());
-    double dr2 = ArrayMath::dot(dr, dr);
+    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+    double dr2 = utils::ArrayMath::dot(dr, dr);
 #ifdef AUTOPAS_OPENMP
 #pragma omp critical
 #endif
@@ -58,7 +60,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     };
   }
 
-  void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctor(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -97,7 +99,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     }
   }
 
-  void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
+  void SoAFunctor(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
+                  bool newton3) override {
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
@@ -139,7 +142,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     }
   }
 
-  void SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctor(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
                   const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) override {
     auto numParts = soa.getNumParticles();
 
@@ -280,7 +283,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
   /**
    * @copydoc Functor::deviceSoALoader
    */
-  void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
+  void deviceSoALoader(::autopas::SoA<typename Particle::SoAArraysType> &soa,
                        CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
 #if defined(AUTOPAS_CUDA)
     size_t size = soa.getNumParticles();
@@ -307,7 +310,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
   /**
    * @copydoc Functor::deviceSoAExtractor
    */
-  void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
+  void deviceSoAExtractor(::autopas::SoA<typename Particle::SoAArraysType> &soa,
                           CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
 #if defined(AUTOPAS_CUDA)
     size_t size = soa.getNumParticles();
@@ -327,7 +330,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 3> getNeededAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 3> getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 3>{
         Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ};
   }
@@ -335,14 +338,14 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 3> getNeededAttr(std::false_type) {
+  constexpr static std::array<typename Particle::AttributeNames, 3> getNeededAttr(std::false_type) {
     return getNeededAttr();
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};
   }
 

@@ -9,16 +9,17 @@
 #include <array>
 #include <memory>
 #include <set>
-#include "autopas/autopasIncludes.h"
+
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/Timer.h"
 
 namespace autopas {
 
@@ -40,20 +41,22 @@ class AutoTuner {
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
    * @param verletSkin Length added to the cutoff for the Verlet lists' skin.
+   * @param verletClusterSize Number of particles in a cluster to use in verlet list.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
-            std::unique_ptr<TuningStrategyInterface> tuningStrategy, SelectorStrategyOption selectorStrategy,
-            unsigned int tuningInterval, unsigned int maxSamples)
+            unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
+            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff),
         _verletSkin(verletSkin),
+        _verletClusterSize(verletClusterSize),
         _maxSamples(maxSamples),
         _samples(maxSamples) {
     if (_tuningStrategy->searchSpaceIsEmpty()) {
@@ -77,7 +80,15 @@ class AutoTuner {
    * Getter for the current container.
    * @return Smart pointer to the current container.
    */
-  std::shared_ptr<autopas::ParticleContainer<ParticleCell>> getContainer() {
+  std::shared_ptr<autopas::ParticleContainerInterface<ParticleCell>> getContainer() {
+    return _containerSelector.getCurrentContainer();
+  }
+
+  /**
+   * Getter for the current container.
+   * @return Smart pointer to the current container.
+   */
+  std::shared_ptr<const autopas::ParticleContainerInterface<ParticleCell>> getContainer() const {
     return _containerSelector.getCurrentContainer();
   }
 
@@ -135,7 +146,7 @@ class AutoTuner {
         // if this was the last sample:
         if (_samples.size() == _maxSamples) {
           auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
-          _tuningStrategy->addEvidence(time);
+          _tuningStrategy->addEvidence(reducedValue);
 
           // print config, times and reduced value
           if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
@@ -143,7 +154,7 @@ class AutoTuner {
             // print all configs
             ss << std::endl << _tuningStrategy->getCurrentConfiguration().toString() << " : [ ";
             // print all timings
-            ss << ArrayUtils::to_string(_samples, " ");
+            ss << utils::ArrayUtils::to_string(_samples, " ");
             ss << " ] ";
             ss << "Reduced value: " << reducedValue;
             AutoPasLog(debug, "Collected times for  {}", ss.str());
@@ -159,7 +170,7 @@ class AutoTuner {
    * Get the currently selected configuration.
    * @return
    */
-  const autopas::Configuration getCurrentConfig() const;
+  autopas::Configuration getCurrentConfig() const;
 
   /**
    * Get the set of all allowed configurations.
@@ -173,7 +184,7 @@ class AutoTuner {
    */
   void selectCurrentContainer();
 
-  template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool inTuningPhase>
+  template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
   void iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild);
 
   /**
@@ -195,6 +206,7 @@ class AutoTuner {
   unsigned int _tuningInterval, _iterationsSinceTuning;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
   double _verletSkin;
+  unsigned int _verletClusterSize;
 
   /**
    * How many times each configuration should be tested.
@@ -210,7 +222,8 @@ class AutoTuner {
 template <class Particle, class ParticleCell>
 void AutoTuner<Particle, ParticleCell>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
-  _containerSelector.selectContainer(conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin));
+  _containerSelector.selectContainer(conf.container,
+                                     ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize));
 }
 
 template <class Particle, class ParticleCell>
@@ -305,24 +318,29 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool
 }
 
 template <class Particle, class ParticleCell>
-template <class PairwiseFunctor, DataLayoutOption DataLayout, bool useNewton3, bool inTuningPhase>
+template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
 void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild) {
   auto containerPtr = getContainer();
   AutoPasLog(debug, "Iterating with configuration: {}", _tuningStrategy->getCurrentConfiguration().toString());
 
-  auto traversal = TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayout, useNewton3>(
+  auto traversal = TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, dataLayout, useNewton3>(
       _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
 
   if (not traversal->isApplicable()) {
     autopas::utils::ExceptionHandler::exception(
-        "Error: Trying to execute a traversal that is not applicable. This normally happens only if the search space "
-        "is trivial, but no traversals are applicable. Config: {}",
-        _tuningStrategy->getCurrentConfiguration().toString());
+        "Error: Trying to execute a traversal that is not applicable. Two common reasons:\n"
+        "1. The search space is trivial, but no traversals are applicable. \n"
+        "2. You are using multiple functors and one of the not first is not supporting all configuration options of "
+        "the first.\n"
+        "Config: {}\n"
+        "Current functor: {}",
+        _tuningStrategy->getCurrentConfiguration().toString(), typeid(*f).name());
   }
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
-    auto start = std::chrono::high_resolution_clock::now();
+    autopas::utils::Timer timer;
+    timer.start();
 
     f->initTraversal();
     if (doListRebuild) {
@@ -331,8 +349,7 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
     containerPtr->iteratePairwise(traversal.get());
     f->endTraversal(useNewton3);
 
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto runtime = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
+    auto runtime = timer.stop();
     AutoPasLog(debug, "IteratePairwise took {} nanoseconds", runtime);
     addTimeMeasurement(*f, runtime);
   } else {
@@ -370,7 +387,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
         (_tuningStrategy->getCurrentConfiguration().newton3 == Newton3Option::disabled and
          not pairwiseFunctor.allowsNonNewton3())) {
       AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
-                 utils::StringUtils::to_string(_tuningStrategy->getCurrentConfiguration().newton3));
+                 _tuningStrategy->getCurrentConfiguration().newton3.to_string());
 
       _tuningStrategy->removeN3Option(_tuningStrategy->getCurrentConfiguration().newton3);
     } else {
@@ -403,7 +420,8 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
     return false;
   }
 
-  _containerSelector.selectContainer(conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin));
+  _containerSelector.selectContainer(conf.container,
+                                     ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
   return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor>(
@@ -412,7 +430,7 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
 }
 
 template <class Particle, class ParticleCell>
-const autopas::Configuration AutoTuner<Particle, ParticleCell>::getCurrentConfig() const {
+autopas::Configuration AutoTuner<Particle, ParticleCell>::getCurrentConfig() const {
   return _tuningStrategy->getCurrentConfiguration();
 }
 }  // namespace autopas

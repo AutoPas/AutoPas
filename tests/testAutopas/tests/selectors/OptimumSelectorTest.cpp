@@ -5,6 +5,7 @@
  */
 
 #include "OptimumSelectorTest.h"
+
 #include "autopas/selectors/OptimumSelector.h"
 
 TEST(OptimumSelectorTest, min) {

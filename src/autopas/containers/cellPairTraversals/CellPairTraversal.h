@@ -9,6 +9,7 @@
 
 #include <array>
 #include <vector>
+
 #include "autopas/containers/TraversalInterface.h"
 
 namespace autopas {

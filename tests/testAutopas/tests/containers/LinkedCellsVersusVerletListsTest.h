@@ -6,14 +6,16 @@
 
 #pragma once
 
+#include <gtest/gtest.h>
+
 #include <cstdlib>
 #include <memory>
 
-#include <gtest/gtest.h>
-
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
-#include "testingHelpers/RandomGenerator.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
@@ -27,11 +29,11 @@ class LinkedCellsVersusVerletListsTest : public AutoPasTestBase {
   double getCutoff() const { return .9; }
 
  protected:
-  template <bool useNewton3, autopas::DataLayoutOption dataLayoutOption>
+  template <bool useNewton3, autopas::DataLayoutOption::Value dataLayoutOption>
   void test(unsigned long numMolecules, double rel_err_tolerance, std::array<double, 3> boxMax);
 
-  using vltype = autopas::VerletLists<autopas::MoleculeLJ>;
-  using lctype = autopas::LinkedCells<autopas::FullParticleCell<autopas::MoleculeLJ>>;
+  using vltype = autopas::VerletLists<Molecule>;
+  using lctype = autopas::LinkedCells<FMCell>;
   std::unique_ptr<vltype> _verletLists;
   std::unique_ptr<lctype> _linkedCells;
 };

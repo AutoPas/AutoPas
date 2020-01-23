@@ -6,8 +6,10 @@
 
 #if defined(AUTOPAS_CUDA)
 
-#include <tests/utils/CudaDeviceVectorTest.h>
+#include "tests/utils/CudaDeviceVectorTest.h"
+
 #include <vector>
+
 #include "autopas/utils/CudaDeviceVector.h"
 
 TEST_F(CudaDeviceVectorTest, CopyTest) {

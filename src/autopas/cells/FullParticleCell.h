@@ -8,6 +8,7 @@
 
 #include <mutex>
 #include <vector>
+
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/utils/CudaSoA.h"
@@ -45,8 +46,12 @@ class FullParticleCell : public ParticleCell<Particle> {
     particlesLock.unlock();
   }
 
-  SingleCellIteratorWrapper<Particle> begin() override {
-    return SingleCellIteratorWrapper<Particle>(new iterator_t(this));
+  SingleCellIteratorWrapper<Particle, true> begin() override {
+    return SingleCellIteratorWrapper<Particle, true>(new iterator_t(this));
+  }
+
+  SingleCellIteratorWrapper<Particle, false> begin() const override {
+    return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
   unsigned long numParticles() const override { return _particles.size(); }
@@ -124,7 +129,12 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Type of the internal iterator.
    */
-  typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>> iterator_t;
+  using iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>, true>;
+
+  /**
+   * Type of the internal const iterator.
+   */
+  using const_iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>, false>;
 
  private:
   AutoPasLock particlesLock;

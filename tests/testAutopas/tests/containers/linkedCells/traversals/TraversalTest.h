@@ -8,12 +8,12 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <testingHelpers/commonTypedefs.h>
+
 #include "AutoPasTestBase.h"
-#include "autopas/AutoPas.h"
+#include "autopas/options/TraversalOption.h"
+#include "autopasTools/generators/GridGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
-#include "testingHelpers/GridGenerator.h"
-#include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**
@@ -30,7 +30,7 @@ class TraversalTest : public AutoPasTestBase,
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       auto inputTuple = static_cast<ParamType>(info.param);
-      std::string traversal(autopas::utils::StringUtils::to_string(std::get<0>(inputTuple)));
+      auto traversal(std::get<0>(inputTuple).to_string());
       // replace all '-' with '_', otherwise the test name is invalid
       std::replace(traversal.begin(), traversal.end(), '-', '_');
       return traversal + "_" + (std::get<1>(inputTuple) ? "N3on" : "N3off");
@@ -41,7 +41,7 @@ class TraversalTest : public AutoPasTestBase,
    public:
     using SoAArraysType = Particle::SoAArraysType;
     using ParticleCell = FPCell;
-    using floatType = typename Particle::ParticleFloatingPointType;
+    using floatType = double;
 
     CountFunctor(floatType cutoff) : autopas::Functor<Particle, ParticleCell>(cutoff), _cutoffSquare(cutoff * cutoff){};
 
@@ -51,12 +51,17 @@ class TraversalTest : public AutoPasTestBase,
 
     bool allowsNonNewton3() override { return true; }
 
+    bool isAppropriateClusterSize(unsigned int clusterSize,
+                                  autopas::DataLayoutOption::Value dataLayout) const override {
+      return dataLayout == autopas::DataLayoutOption::aos;  // this functor supports clusters only for aos!
+    }
+
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       const auto coordsI = i.getR();
       const auto coordsJ = j.getR();
 
-      std::array<double, 3> dr = autopas::ArrayMath::sub(coordsI, coordsJ);
-      const double dr2 = autopas::ArrayMath::dot(dr, dr);
+      std::array<double, 3> dr = autopas::utils::ArrayMath::sub(coordsI, coordsJ);
+      const double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
       if (dr2 > _cutoffSquare) return;
 

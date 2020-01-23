@@ -5,7 +5,8 @@
  */
 
 #include "FullParticleCellTest.h"
-#include "../../testingHelpers/commonTypedefs.h"
+
+#include "testingHelpers/commonTypedefs.h"
 
 TEST_F(FullParticleCellTest, testRangeBasedLoop) {
   autopas::FullParticleCell<Particle> cell({1., 1., 1.});

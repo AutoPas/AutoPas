@@ -7,24 +7,16 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
-#include "testingHelpers/RandomGenerator.h"
-
-class TouchableParticle : public autopas::Particle {
- public:
-  TouchableParticle(std::array<double, 3> pos, unsigned long id)
-      : autopas::Particle(pos, {0, 0, 0}, id), _numTouched(0){};
-  void touch() { _numTouched++; }
-  unsigned int getNumTouched() { return _numTouched; }
-
- private:
-  unsigned int _numTouched;
-};
+#include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopasTools/generators/RandomGenerator.h"
+#include "testingHelpers/TouchableParticle.h"
 
 class RegionParticleIteratorTest : public AutoPasTestBase {
  public:
-  typedef autopas::LinkedCells<autopas::FullParticleCell<TouchableParticle>> LCTouch;
+  using LCTouch = autopas::LinkedCells<autopas::FullParticleCell<TouchableParticle>>;
 
   RegionParticleIteratorTest()
       : _boxMin{0., 0., 0.}, _boxMax{5., 5., 5.}, _regionMin{1., 1., 1.}, _regionMax{3., 3., 3.}, _cutoff{.9} {}
@@ -42,7 +34,7 @@ class RegionParticleIteratorTest : public AutoPasTestBase {
    * @param regionMin
    * @param regionMax
    */
-  void checkTouches(LCTouch &lcContainer, std::array<double, 3> &regionMin, std::array<double, 3> &regionMax);
+  static void checkTouches(LCTouch &lcContainer, std::array<double, 3> &regionMin, std::array<double, 3> &regionMax);
 
  protected:
   void testLinkedCellsRegionParticleIteratorBehaviorOwned();

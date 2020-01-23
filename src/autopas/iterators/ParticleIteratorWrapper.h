@@ -7,7 +7,9 @@
 #pragma once
 
 #include <memory>
+
 #include "autopas/iterators/ParticleIteratorInterface.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
@@ -20,9 +22,13 @@ namespace autopas {
  * Without the wrapper class and using the ParticleIteratorInterface the calls would look like:
  * (*iteratorInterface)->getR() or "++(*iteratorWrapper)"
  * @tparam Particle type of the particle that is accessed
+ * @tparam modifiable Defines whether the ParticleIterator is modifiable or not. If it is false, it points to a const
+ * Particle.
  */
-template <class Particle>
-class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
+template <class Particle, bool modifiable>
+class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modifiable> {
+  using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
+
  public:
   ParticleIteratorWrapper() : _particleIterator(nullptr) {}
 
@@ -33,8 +39,8 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
    */
   template <class InterfacePtrType>
   explicit ParticleIteratorWrapper(InterfacePtrType *particleIteratorInterface)
-      : _particleIterator(static_cast<internal::ParticleIteratorInterfaceImpl<Particle> *>(particleIteratorInterface)) {
-  }
+      : _particleIterator(
+            static_cast<internal::ParticleIteratorInterfaceImpl<Particle, modifiable> *>(particleIteratorInterface)) {}
 
   /**
    * copy operator
@@ -49,19 +55,17 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
    * @return *this
    */
   inline ParticleIteratorWrapper &operator=(const ParticleIteratorWrapper &otherParticleIteratorWrapper) {
-    _particleIterator = std::unique_ptr<internal::ParticleIteratorInterfaceImpl<Particle>>(
+    _particleIterator = std::unique_ptr<internal::ParticleIteratorInterfaceImpl<Particle, modifiable>>(
         otherParticleIteratorWrapper._particleIterator->clone());
     return *this;
   }
 
-  inline ParticleIteratorWrapper<Particle> &operator++() override final {
+  inline ParticleIteratorWrapper<Particle, modifiable> &operator++() override final {
     _particleIterator->operator++();
     return *this;
   }
 
-  inline Particle &operator*() const override final { return _particleIterator->operator*(); }
-
-  inline void deleteCurrentParticle() override final { _particleIterator->deleteCurrentParticle(); }
+  inline ParticleType &operator*() const override final { return _particleIterator->operator*(); }
 
   inline bool isValid() const override final {
     if (_particleIterator) {
@@ -87,8 +91,35 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle> {
    */
   bool operator!=(const bool &input) const { return not(*this == input); }
 
+ protected:
+  inline void deleteCurrentParticleImpl() override final {
+    if constexpr (modifiable) {
+      internal::deleteParticle(*_particleIterator);
+    } else {
+      utils::ExceptionHandler::exception("Error: Trying to delete a particle through a const iterator.");
+    }
+  }
+
  private:
-  std::unique_ptr<autopas::internal::ParticleIteratorInterfaceImpl<Particle>> _particleIterator;
+  std::unique_ptr<autopas::internal::ParticleIteratorInterfaceImpl<Particle, modifiable>> _particleIterator;
+};
+
+/**
+ * Provides type aliases for iterator types, to provide a fixed interface that is not influenced by changes in the
+ * iterator classes.
+ * @tparam Particle The type of the particle.
+ */
+template <typename Particle>
+class IteratorTraits {
+ public:
+  /**
+   * Alias for normal (non-const) iterator.
+   */
+  using iterator_t = autopas::ParticleIteratorWrapper<Particle, true>;
+  /**
+   * Alias for const iterator.
+   */
+  using const_iterator_t = autopas::ParticleIteratorWrapper<Particle, false>;
 };
 
 }  // namespace autopas

@@ -11,6 +11,7 @@
 #endif
 
 #include <malloc.h>
+
 #include <cstdlib>
 #include <limits>
 #include <new>
@@ -35,28 +36,28 @@ class AlignedAllocator {
  public:
   // needed for compatibility with stl::allocator
   /// value type
-  typedef T value_type;
+  using value_type = T;
   /// pointer type
-  typedef T *pointer;
+  using pointer = T *;
   /// const pointer type
-  typedef const T *const_pointer;
+  using const_pointer = const T *;
   /// reference type
-  typedef T &reference;
+  using reference = T &;
   /// const reference type
-  typedef const T &const_reference;
+  using const_reference = const T &;
   /// size type
-  typedef size_t size_type;
+  using size_type = size_t;
 
   /**
    * Equivalent allocator for other types
-   * Class whose member other is a typedef of allocator for type Type.
+   * Class whose member other is an alias of allocator for type U.
    * (from cplusplus.com)
    * @tparam U
    */
   template <class U>
   struct rebind {
     /// other
-    typedef AlignedAllocator<U, Alignment> other;
+    using other = AlignedAllocator<U, Alignment>;
   };
 
   /**

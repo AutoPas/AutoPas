@@ -17,16 +17,17 @@ class ContainerSelectorInfo {
   /**
    * Default Constructor.
    */
-  ContainerSelectorInfo() : cellSizeFactor(1.), verletSkin(0.) {}
+  ContainerSelectorInfo() : cellSizeFactor(1.), verletSkin(0.), verletClusterSize(64) {}
 
   /**
    * Constructor.
    * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and
    * VerletListsCells).
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
+   * @param verletClusterSize Size of verlet Clusters
    */
-  explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkin)
-      : cellSizeFactor(cellSizeFactor), verletSkin(verletSkin) {}
+  explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkin, unsigned int verletClusterSize)
+      : cellSizeFactor(cellSizeFactor), verletSkin(verletSkin), verletClusterSize(verletClusterSize) {}
 
   /**
    * Equality between ContainerSelectorInfo
@@ -34,7 +35,8 @@ class ContainerSelectorInfo {
    * @return True iff all member equal
    */
   bool operator==(const ContainerSelectorInfo &other) const {
-    return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin;
+    return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin and
+           verletClusterSize == other.verletClusterSize;
   }
 
   /**
@@ -52,7 +54,8 @@ class ContainerSelectorInfo {
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkin) < std::tie(other.cellSizeFactor, other.verletSkin);
+    return std::tie(cellSizeFactor, verletSkin, verletClusterSize) <
+           std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize);
   }
 
   /**
@@ -63,6 +66,11 @@ class ContainerSelectorInfo {
    * Length added to the cutoff for the verlet lists' skin.
    */
   double verletSkin;
+
+  /**
+   * Size of Verlet Clusters
+   */
+  unsigned int verletClusterSize;
 };
 
 }  // namespace autopas

@@ -7,19 +7,29 @@
 
 #pragma once
 
+#include <type_traits>
+
 #include "autopas/cells/ParticleCell.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAView.h"
-
-#include <type_traits>
 
 #if defined(AUTOPAS_CUDA)
 #include "autopas/pairwiseFunctors/FunctorCuda.cuh"
 #endif
 
 namespace autopas {
+
+/**
+ * Newton 3 modes for the LJFunctor.
+ */
+enum class FunctorN3Modes {
+  Newton3Only,
+  Newton3Off,
+  Both,
+};
 
 template <class Particle>
 class VerletListHelpers;
@@ -36,14 +46,14 @@ class Dummy final {
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
   }
 };
@@ -69,7 +79,7 @@ class Functor {
    * Constructor
    * @param cutoff
    */
-  Functor(typename Particle::ParticleFloatingPointType cutoff) : _cutoff(cutoff){};
+  Functor(double cutoff) : _cutoff(cutoff){};
 
   virtual ~Functor() = default;
 
@@ -105,7 +115,7 @@ class Functor {
    * @return Attributes needed for computation.
    * @todo C++20: make this function virtual
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
   }
 
@@ -114,7 +124,7 @@ class Functor {
    * @return Attributes needed for computation.
    * @todo C++20: make this function virtual
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
     return Impl_t::getNeededAttr();
   }
 
@@ -123,7 +133,7 @@ class Functor {
    * @return Attributes computed by this functor.
    * @todo C++20: make this function virtual
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
   }
 
@@ -273,20 +283,28 @@ class Functor {
    */
   virtual bool isRelevantForTuning() = 0;
 
+  /**
+   * Check whether the given clusterSize is appropriate and can be used by the functor.
+   * @param clusterSize The size of the clusters.
+   * @param dataLayout The used data layout.
+   * @return true, iff the cluster size is appropriate.
+   */
+  virtual bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const = 0;
+
 #if defined(AUTOPAS_CUDA)
   /**
    * Provides an interface for traversals to directly access Cuda Functions
    * @return Pointer to CudaWrapper of the Functor
    */
-  virtual CudaWrapperInterface<typename Particle::ParticleFloatingPointType> *getCudaWrapper() { return nullptr; }
+  virtual CudaWrapperInterface<typename Particle::ParticleSoAFloatPrecision> *getCudaWrapper() { return nullptr; }
 
   /**
    * Creates Cuda SoA object containing all the relevant pointers from the generic Cuda SoA
    * @return unique pointer to the object
    */
-  virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>> createFunctorCudaSoA(
+  virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleSoAFloatPrecision>> createFunctorCudaSoA(
       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
-    return std::make_unique<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>>();
+    return std::make_unique<FunctorCudaSoA<typename Particle::ParticleSoAFloatPrecision>>();
   }
 #endif
 
@@ -294,7 +312,7 @@ class Functor {
    * Getter for the functor's cutoff
    * @return
    */
-  typename Particle::ParticleFloatingPointType getCutoff() const { return _cutoff; }
+  double getCutoff() const { return _cutoff; }
 
  private:
   /**
@@ -367,7 +385,7 @@ class Functor {
     }
   }
 
-  typename Particle::ParticleFloatingPointType _cutoff;
+  double _cutoff;
 };
 
 }  // namespace autopas

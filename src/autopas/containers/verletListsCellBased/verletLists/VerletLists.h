@@ -35,10 +35,10 @@ template <class Particle>
 class VerletLists
     : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                    typename VerletListHelpers<Particle>::SoAArraysType> {
-  typedef VerletListHelpers<Particle> verlet_internal;
-  typedef FullParticleCell<Particle> ParticleCell;
-  typedef typename VerletListHelpers<Particle>::SoAArraysType SoAArraysType;
-  typedef typename VerletListHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
+  using verlet_internal = VerletListHelpers<Particle>;
+  using ParticleCell = FullParticleCell<Particle>;
+  using SoAArraysType = typename VerletListHelpers<Particle>::SoAArraysType;
+  using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:
   /**
@@ -70,7 +70,7 @@ class VerletLists
   ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+    AutoPasLog(debug, "Using traversal {}.", traversal->getTraversalType().to_string());
 
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *verletTraversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell> *>(traversal);

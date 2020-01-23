@@ -5,7 +5,12 @@
  */
 
 #include <gtest/gtest.h>
+
+#include <map>
+
+#include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/NumberSetFinite.h"
 
 using namespace autopas;
 
@@ -137,11 +142,9 @@ TEST(NumberSetTest, testClone) {
 TEST(NumberSetTest, testStringRepresentation) {
   // Empty set
   NumberSetFinite<double> emptyfSet;
-  NumberSet<double> &emptySet = emptyfSet;
-  EXPECT_EQ("{}", static_cast<std::string>(emptySet));
+  EXPECT_EQ("[]", emptyfSet.to_string());
 
   // Filled set
   NumberSetFinite<double> fSet({1., 2., 3.});
-  NumberSet<double> &Set = fSet;
-  EXPECT_EQ("{1, 2, 3}", static_cast<std::string>(Set));
+  EXPECT_EQ("[1, 2, 3]", fSet.to_string());
 }

@@ -5,9 +5,9 @@
  */
 
 #include "TraversalRaceConditionTest.h"
+
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/utils/StringUtils.h"
-#include "testingHelpers/GridGenerator.h"
+#include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
 
 /**
@@ -48,7 +48,8 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
       }
 
       // @TODO: extend Simple Functor for SoA
-      for (auto &dataLayout : /*autopas::allDataLayoutOptions*/ {autopas::DataLayoutOption::aos}) {
+      for (auto &dataLayout :
+           /*autopas::DataLayoutOption::getAllOptions()*/ {autopas::DataLayoutOption(autopas::DataLayoutOption::aos)}) {
         autopas::AutoPas<Particle, FPCell> autoPas;
 
         // generates one cell per particle + 1 halo layer
@@ -61,7 +62,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
         autoPas.init();
 
         auto defaultParticle = Particle({0, 0, 0}, {0, 0, 0}, 0);
-        GridGenerator::fillWithParticles(autoPas, particlesPerDimension, defaultParticle);
+        autopasTools::generators::GridGenerator::fillWithParticles(autoPas, particlesPerDimension, defaultParticle);
 
         SimpleFunctor functor(cellLength);
 
@@ -77,14 +78,11 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
 
           // although these are doubles this should be exactly zero
           ASSERT_EQ(particleIterator->getF()[0], 0)
-              << "in traversal: " << autopas::utils::StringUtils::to_string(traversal)
-              << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
+              << "in traversal: " << traversal.to_string() << " data layout: " << dataLayout.to_string();
           ASSERT_EQ(particleIterator->getF()[1], 0)
-              << "in traversal: " << autopas::utils::StringUtils::to_string(traversal)
-              << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
+              << "in traversal: " << traversal.to_string() << " data layout: " << dataLayout.to_string();
           ASSERT_EQ(particleIterator->getF()[2], 0)
-              << "in traversal: " << autopas::utils::StringUtils::to_string(traversal)
-              << " data layout: " << autopas::utils::StringUtils::to_string(dataLayout);
+              << "in traversal: " << traversal.to_string() << " data layout: " << dataLayout.to_string();
         }
       }
     }

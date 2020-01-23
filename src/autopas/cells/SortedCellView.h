@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
@@ -36,7 +37,7 @@ class SortedCellView : public ParticleCell<Particle> {
   SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
     _particles.reserve(cell.numParticles());
     for (auto p = getStaticCellIter(cell); p.isValid(); ++p) {
-      _particles.push_back(std::make_pair(ArrayMath::dot(p->getR(), r), &(*p)));
+      _particles.push_back(std::make_pair(utils::ArrayMath::dot(p->getR(), r), &(*p)));
     }
     std::sort(_particles.begin(), _particles.end(),
               [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
@@ -47,7 +48,9 @@ class SortedCellView : public ParticleCell<Particle> {
    */
   void addParticle(const Particle &p) override {}
 
-  SingleCellIteratorWrapper<Particle> begin() override { return _cell->begin(); }
+  SingleCellIteratorWrapper<Particle, true> begin() override { return _cell->begin(); }
+
+  SingleCellIteratorWrapper<Particle, false> begin() const override { return std::as_const(*_cell).begin(); }
 
   unsigned long numParticles() const override { return _particles.size(); }
 
@@ -70,11 +73,6 @@ class SortedCellView : public ParticleCell<Particle> {
   void setCellLength(std::array<double, 3> &cellLength) override { _cell->setCellLength(cellLength); }
 
   std::array<double, 3> getCellLength() const override { return _cell->getCellLength(); }
-
-  /**
-   * Type of the internal iterator.
-   */
-  typedef internal::SingleCellIterator<Particle, SortedCellView<Particle, ParticleCellType>> iterator_t;
 
   /**
    * Sorted vector of projected positions and particle pointers.
