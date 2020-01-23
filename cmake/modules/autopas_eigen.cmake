@@ -30,13 +30,13 @@ include(FetchContent)
 
 # Build spdlog and make the cmake targets available
 FetchContent_Declare(
-        Eigen3
-        URL
-        # eigen-master:
-        # https://bitbucket.org/eigen/eigen/get/default.zip
-        # eigen-3.3.90:
-        ${CMAKE_SOURCE_DIR}/libs/eigen-eigen-66be6c76fc01.zip
-        URL_HASH MD5=faaf36185ad92b039f7b3f641340dc28
+    Eigen3
+    URL
+    # eigen-master:
+    # https://bitbucket.org/eigen/eigen/get/default.zip
+    # eigen-3.3.90:
+    ${CMAKE_SOURCE_DIR}/libs/eigen-eigen-66be6c76fc01.zip
+    URL_HASH MD5=faaf36185ad92b039f7b3f641340dc28
 )
 
 # Check if population has already been performed

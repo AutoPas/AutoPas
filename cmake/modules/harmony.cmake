@@ -29,29 +29,29 @@ if(NOT harmony_POPULATED)
         find_program(MAKE_EXE NAMES gmake nmake make)
         message(STATUS "harmony - building library...")
         execute_process(
-                COMMAND ${MAKE_EXE} CFLAGS=-w
-                WORKING_DIRECTORY ${harmony_SOURCE_DIR}
-                OUTPUT_FILE       ${harmony_BINARY_DIR}/build_output.log
-                ERROR_FILE        ${harmony_BINARY_DIR}/build_output.log
-                RESULT_VARIABLE   result
+            COMMAND ${MAKE_EXE} CFLAGS=-w
+            WORKING_DIRECTORY ${harmony_SOURCE_DIR}
+            OUTPUT_FILE       ${harmony_BINARY_DIR}/build_output.log
+            ERROR_FILE        ${harmony_BINARY_DIR}/build_output.log
+            RESULT_VARIABLE   result
         )
 
         if(result)
             message(FATAL_ERROR "Failed harmony build, see build log at:\n"
-                    "    ${harmony_BINARY_DIR}/build_output.log")
+                "    ${harmony_BINARY_DIR}/build_output.log")
         endif()
 
         execute_process(
-                COMMAND ${MAKE_EXE} install DESTDIR=${harmony_PREFIX}
-                WORKING_DIRECTORY ${harmony_SOURCE_DIR}
-                OUTPUT_FILE       ${harmony_BINARY_DIR}/install_output.log
-                ERROR_FILE        ${harmony_BINARY_DIR}/install_output.log
-                RESULT_VARIABLE   result
+            COMMAND ${MAKE_EXE} install DESTDIR=${harmony_PREFIX}
+            WORKING_DIRECTORY ${harmony_SOURCE_DIR}
+            OUTPUT_FILE       ${harmony_BINARY_DIR}/install_output.log
+            ERROR_FILE        ${harmony_BINARY_DIR}/install_output.log
+            RESULT_VARIABLE   result
         )
 
         if(result)
             message(FATAL_ERROR "Failed harmony install, see install log at:\n"
-                    "    ${harmony_BINARY_DIR}/install_output.log")
+                "    ${harmony_BINARY_DIR}/install_output.log")
         endif()
 
         message(STATUS "harmony - build complete")
@@ -61,7 +61,8 @@ if(NOT harmony_POPULATED)
     add_library(harmony STATIC IMPORTED GLOBAL)
 
     target_link_libraries(harmony INTERFACE
-            ${harmony_SOURCE_DIR}/lib/libharmony.a)
+        ${harmony_SOURCE_DIR}/lib/libharmony.a
+    )
 
     set_target_properties(
         harmony
@@ -76,6 +77,5 @@ if(NOT harmony_POPULATED)
     target_compile_definitions(
         harmony INTERFACE HARMONY_HOME="HARMONY_HOME=${harmony_SOURCE_DIR}"
     )
-
 
 endif()
