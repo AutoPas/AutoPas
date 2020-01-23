@@ -35,16 +35,19 @@ FetchContent_Declare(
         ${CMAKE_SOURCE_DIR}/libs/yaml-cpp-master.zip
         URL_HASH MD5=6186f7ea92b907e9128bc74c96c1f791
         # needed to compile with ninja
-        # Disable everything we don't need and set build type to release. Also disable warnings.
-        CMAKE_ARGS
-            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-            -DCMAKE_BUILD_TYPE=RELEASE
-            -DBUILD_TESTING=OFF
-            -DYAML_CPP_BUILD_TESTS=OFF
-            -DYAML_CPP_BUILD_CONTRIB=OFF
-            -DYAML_CPP_BUILD_TOOLS=OFF
-            -DCMAKE_CXX_FLAGS=-w
 )
+
+# Disable everything we don't need and set build type to release. Also disable warnings.
+set(YAML_CPP_BUILD_TESTS CACHE BOOL OFF)
+set(YAML_CPP_BUILD_CONTRIB CACHE BOOL OFF)
+set(YAML_CPP_BUILD_TOOLS CACHE BOOL OFF)
+
+# Things that were previously set, but we can't set now because the library is no longer
+# a sub-build and we can't pass seperate CMake args
+# Maybe this will be possible with this feature from CMake 3.17.0
+# https://gitlab.kitware.com/cmake/cmake/issues/19854
+# BUILD_TESTING=OFF
+# CMAKE_BUILD_TYPE=RELEASE
+# CMAKE_CXX_FLAGS=-w
 
 FetchContent_MakeAvailable(yaml-cpp)

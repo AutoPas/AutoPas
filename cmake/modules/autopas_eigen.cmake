@@ -37,9 +37,6 @@ FetchContent_Declare(
         # eigen-3.3.90:
         ${CMAKE_SOURCE_DIR}/libs/eigen-eigen-66be6c76fc01.zip
         URL_HASH MD5=faaf36185ad92b039f7b3f641340dc28
-        CMAKE_ARGS
-            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 )
 
 # Check if population has already been performed

@@ -33,14 +33,17 @@ FetchContent_Declare(
         # spdlog commit 79259fd:
         ${CMAKE_SOURCE_DIR}/libs/spdlog-1.x.zip
         URL_HASH MD5=7415a9768f3433bd93d78c1c87fd0576
-        # Disable stuff we don't need. Especially warnings.
-        CMAKE_ARGS
-            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-            -DCMAKE_BUILD_TYPE=RELEASE
-            -DSPDLOG_BUILD_EXAMPLE=OFF
-            -DSPDLOG_BUILD_TESTS=OFF
-            -DCMAKE_CXX_FLAGS=-w
 )
+
+# Disable stuff we don't need. Especially warnings.
+set(SPDLOG_BUILD_EXAMPLE CACHE BOOL OFF)
+set(SPDLOG_BUILD_TESTS CACHE BOOL OFF)
+
+# Things that were previously set, but we can't set now because the library is no longer
+# a sub-build and we can't pass seperate CMake args
+# Maybe this will be possible with this feature from CMake 3.17.0
+# https://gitlab.kitware.com/cmake/cmake/issues/19854
+# CMAKE_BUILD_TYPE=RELEASE
+# CMAKE_CXX_FLAGS=-w
 
 FetchContent_MakeAvailable(spdlog)
