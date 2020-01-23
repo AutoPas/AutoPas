@@ -31,7 +31,7 @@ FetchContent_Declare(
     # spdlog master:
     # https://github.com/gabime/spdlog/archive/v1.x.zip
     # spdlog commit 79259fd:
-    ${CMAKE_SOURCE_DIR}/libs/spdlog-1.x.zip
+    ${AUTOPAS_SOURCE_DIR}/libs/spdlog-1.x.zip
     URL_HASH MD5=7415a9768f3433bd93d78c1c87fd0576
 )
 

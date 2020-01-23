@@ -7,7 +7,7 @@ include(FetchContent)
 # Extract and build harmony
 FetchContent_Declare(
     harmony
-    URL ${CMAKE_SOURCE_DIR}/libs/harmony.zip
+    URL ${AUTOPAS_SOURCE_DIR}/libs/harmony.zip
     URL_HASH MD5=a8768c2886bdc2e44e3b6b7d4f94729c
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/harmony
     # since we only unpack a header lib src == include

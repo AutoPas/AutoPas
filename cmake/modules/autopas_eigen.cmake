@@ -35,7 +35,7 @@ FetchContent_Declare(
     # eigen-master:
     # https://bitbucket.org/eigen/eigen/get/default.zip
     # eigen-3.3.90:
-    ${CMAKE_SOURCE_DIR}/libs/eigen-eigen-66be6c76fc01.zip
+    ${AUTOPAS_SOURCE_DIR}/libs/eigen-eigen-66be6c76fc01.zip
     URL_HASH MD5=faaf36185ad92b039f7b3f641340dc28
 )
 
