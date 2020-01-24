@@ -263,22 +263,16 @@ int main(int argc, char **argv) {
   cont.setAllowedContainers(std::set<autopas::ContainerOption>{autopas::ContainerOption::linkedCells});
   cont.setBoxMin(lowCorner);
   cont.setBoxMax(highCorner);
+  cont.setCutoff(1);
+  cont.setVerletSkin(0);
   cont.init();
 
   std::random_device rd;
-  std::mt19937 randomEngine(rd());
+  std::default_random_engine randomEngine(42);
   std::uniform_real_distribution<double> random(0.0, 1.0);
-
-  double totalCharge = 0;
 
   // Add particles at random positions.
   if (uniform) {
-    /*for (int i = 0; i < numberOfParticles; ++i) {
-      double x = random(randomEngine) * (highCorner[0] - lowCorner[0]) + lowCorner[0];
-      double y = random(randomEngine) * (highCorner[1] - lowCorner[1]) + lowCorner[1];
-      double z = random(randomEngine) * (highCorner[2] - lowCorner[2]) + lowCorner[2];
-      addParticleToCont(cont, x, y, z, 1);
-    }*/
     FmmParticle defParticle({0, 0, 0}, {0, 0, 0}, 0, 1);
     autopasTools::generators::RandomGenerator::fillWithParticles(cont, defParticle, cont.getBoxMin(), cont.getBoxMax(),
                                                                  numberOfParticles);
@@ -293,7 +287,6 @@ int main(int argc, char **argv) {
   for (auto particle = cont.begin(); particle.isValid(); ++particle) {
     double charge = random(randomEngine) * 10.0;
     particle->charge = charge;
-    totalCharge += charge;
   }
 
   AdaptiveOctree tree = AdaptiveOctree(cont, maxParticlesPerNode, orderOfExpansion, minDepth, maxDepth);
@@ -371,7 +364,11 @@ int main(int argc, char **argv) {
 
   if (checkResults) {
     // Calculate exact result by calculating all interactions directly.
-    double maxError = 0;
+    double maxAbsError = 0;
+    double totalAbsError = 0;
+    double maxRelError = 0;
+    double totalRelError = 0;
+
     timer.start();
     for (auto particle = cont.begin(); particle.isValid(); ++particle) {
       for (auto otherParticle = cont.begin(); otherParticle.isValid(); ++otherParticle) {
@@ -398,11 +395,18 @@ int main(int argc, char **argv) {
     for (auto particle = cont.begin(); particle.isValid(); ++particle) {
       if (particle->resultExact != 0) {
         int id = particle->getID();
-        double relativeError = std::abs(particle->resultFMM / particle->resultExact);
-        double absoluteError = std::abs(particle->resultFMM - particle->resultExact);
-        maxError = std::max(maxError, absoluteError);
 
-        if (std::abs(relativeError - 1.0) > errorTolerance) {
+        double absoluteError = std::abs(particle->resultFMM - particle->resultExact);
+
+        double relativeError = absoluteError / std::abs(particle->resultExact);
+
+        totalAbsError += absoluteError;
+        maxAbsError = std::max(maxAbsError, absoluteError);
+
+        totalRelError += relativeError;
+        maxRelError = std::max(maxRelError, relativeError);
+
+        if (relativeError > errorTolerance) {
           std::cout << "[ID=" << id << "] " << particle->getR()[0] << ", " << particle->getR()[1] << ", "
                     << particle->getR()[2] << ", charge = " << particle->charge << std::endl;
           std::cout << "long range " << particle->longRange << std::endl;
@@ -413,7 +417,10 @@ int main(int argc, char **argv) {
         }
       }
     }
-    std::cout << "maxError:" << std::endl << maxError << std::endl;
+    double avgAbsError = totalAbsError / numberOfParticles;
+    double avgRelError = totalRelError / numberOfParticles;
+    std::cout << "errors:" << std::endl
+              << maxAbsError << "\t" << avgAbsError << "\t" << maxRelError << "\t" << avgRelError << std::endl;
     if (correctResult) {
       return EXIT_SUCCESS;
     } else {
