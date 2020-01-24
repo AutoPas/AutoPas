@@ -60,8 +60,9 @@ AdaptiveOctreeNode::AdaptiveOctreeNode(AdaptiveOctree &tree, AdaptiveOctreeNode 
       bool zOffset = u & 0x4u;
       std::array<double, 3> offset = std::array<double, 3>(
           {xOffset ? nodeSize[0] / 2 : 0, yOffset ? nodeSize[1] / 2 : 0, zOffset ? nodeSize[2] / 2 : 0});
-      child[i] = std::make_unique<AdaptiveOctreeNode>(tree, this, i, autopas::utils::ArrayMath::add(nodeMinCorner, offset),
-                                                      autopas::utils::ArrayMath::add(nodeCenter, offset));
+      child[i] =
+          std::make_unique<AdaptiveOctreeNode>(tree, this, i, autopas::utils::ArrayMath::add(nodeMinCorner, offset),
+                                               autopas::utils::ArrayMath::add(nodeCenter, offset));
     }
   } else {
     _isLeaf = true;
@@ -193,22 +194,20 @@ void AdaptiveOctreeNode::initNearFieldList() {
 void AdaptiveOctreeNode::initInteractionList() {
   interactionList = std::set<AdaptiveOctreeNode *>();
   if (parent != nullptr) {
-    for (AdaptiveOctreeNode *parentNeighbour : parent->getNeighbourList()) {
-      if (!parentNeighbour->isLeaf() && parentNeighbour->depth == parent->depth) {
+    for (AdaptiveOctreeNode *parentNearFieldCell : parent->getNearFieldList()) {
+      if (!parentNearFieldCell->isLeaf()) {
         for (int c = 0; c < 8; ++c) {
           AdaptiveOctreeNode *insert;
-          insert = parentNeighbour->getChild(c);
-          if (neighbourList.find(insert) == neighbourList.end()) {
+          insert = parentNearFieldCell->getChild(c);
+          if (nearFieldList.find(insert) == nearFieldList.end()) {
             interactionList.insert(insert);
           }
         }
       } else {
-        if (neighbourList.find(parentNeighbour) == neighbourList.end()) {
-          if (nearFieldList.find(parentNeighbour) == nearFieldList.end()) {
-            nearFieldList.insert(parentNeighbour);
-            nearFieldListString += parentNeighbour->name + ", ";
-            getTree()->totalNearFieldNodes++;
-          }
+        if (nearFieldList.find(parentNearFieldCell) == nearFieldList.end()) {
+          nearFieldList.insert(parentNearFieldCell);
+          nearFieldListString += parentNearFieldCell->name + ", ";
+          getTree()->totalNearFieldNodes++;
         }
       }
     }
