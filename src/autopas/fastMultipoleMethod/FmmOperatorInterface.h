@@ -44,6 +44,7 @@ class FmmOperatorInterface {
     std::cout << std::setfill(' ') << std::setw(9) << std::fixed
               << (100 * static_cast<double>(time) / static_cast<double>(total));
     std::cout << "%" << std::endl;
+    std::cout.unsetf(std::ios_base::floatfield);
   }
 
   void runFmm(FmmTree &fmmTree, long orderOfExpansion, AutoPas<Particle, ParticleCell> &container) {
@@ -97,8 +98,8 @@ class FmmOperatorInterface {
 
     downwardPass(root, [&](FmmTreeNode &node) {
       if (node.isLeaf()) {
-        for (auto p1 = container.getRegionIterator(node.getBoxMin(), node.getBoxMax()); p1.isValid(); ++p1) {
-          for (auto nearCell : node.getNearFieldList()) {
+        for (auto nearCell : node.getNearFieldList()) {
+          for (auto p1 = container.getRegionIterator(node.getBoxMin(), node.getBoxMax()); p1.isValid(); ++p1) {
             for (auto p2 = container.getRegionIterator(nearCell->getBoxMin(), nearCell->getBoxMax()); p2.isValid();
                  ++p2) {
               if (p1->getID() != p2->getID()) {
@@ -119,6 +120,12 @@ class FmmOperatorInterface {
     printTime("l2l", l2lTime, totalTime);
     printTime("l2p", l2pTime, totalTime);
     printTime("near", nearFieldTime, totalTime);
+    printTime("far", initTime + p2mTime + m2mTime + m2lTime + l2lTime + l2pTime, totalTime);
+
+    std::cout << std::endl << std::endl;
+    std::cout << (initTime + p2mTime + m2mTime + m2lTime + l2lTime + l2pTime) / 1000 << "\t" << nearFieldTime / 1000
+              << std::endl;
+    // std::cout << std::endl << std::endl;
   }
 };
 }  // namespace autopas::fmm

@@ -20,15 +20,15 @@ using AutoPasCont = autopas::AutoPas<autopas::fmm::FmmParticle, autopas::FullPar
 int main(int argc, char **argv) {
   long orderOfExpansion = 5;
   double domainSize = 5;
-  double particleDensity = 1;
+  long numberOfParticles = 1000;
+  bool checkResults = false;
 
-  if (argc == 4) {
+  if (argc == 5) {
     orderOfExpansion = std::stol(argv[1]);
-    domainSize = std::stod(argv[2]);
-    particleDensity = std::stod(argv[3]);
+    domainSize = (std::stod(argv[2]) + 0.5);
+    numberOfParticles = std::stol(argv[3]);
+    checkResults = std::stol(argv[4]) > 0;
   }
-
-  long numberOfParticles = std::lround(domainSize * domainSize * domainSize * particleDensity);
 
   std::array<double, 3> boxMin = {0, 0, 0};
   std::array<double, 3> boxMax = {domainSize, domainSize, domainSize};
@@ -36,7 +36,6 @@ int main(int argc, char **argv) {
   // Print parameters.
   std::cout << "orderOfExpansion = " << orderOfExpansion << std::endl;
   std::cout << "domainSize = " << domainSize << std::endl;
-  std::cout << "particleDensity = " << particleDensity << std::endl;
   std::cout << "numberOfParticles = " << numberOfParticles << std::endl;
   std::cout << "boxMin = " << autopas::utils::ArrayUtils::to_string(boxMin) << std::endl;
   std::cout << "boxMax = " << autopas::utils::ArrayUtils::to_string(boxMax) << std::endl;
@@ -48,10 +47,20 @@ int main(int argc, char **argv) {
   cont.setAllowedContainers({autopas::ContainerOption::linkedCells});
   cont.setBoxMin(boxMin);
   cont.setBoxMax(boxMax);
+  cont.setCutoff(1.0);
+  cont.setVerletSkin(0.0);
   cont.init();
 
   RandomGenerator::fillWithParticles(cont, autopas::fmm::FmmParticle(), cont.getBoxMin(), cont.getBoxMax(),
                                      numberOfParticles);
+
+  std::random_device rd;
+  std::default_random_engine randomEngine(42);
+  std::uniform_real_distribution<double> random(0.0, 1.0);
+
+  for (auto particle = cont.begin(); particle.isValid(); ++particle) {
+    particle->charge = random(randomEngine) * 10.0;
+  }
 
   autopas::fmm::PotentialOperators<autopas::fmm::FmmParticle, autopas::FullParticleCell<autopas::fmm::FmmParticle>> op;
   long initTime = timer.stop();
@@ -68,53 +77,39 @@ int main(int argc, char **argv) {
 
   op.runFmm(*fmmTree, orderOfExpansion, cont);
 
-  /*for (auto particle = cont.begin(); particle.isValid(); ++particle) {
-    for (auto otherParticle = cont.begin(); otherParticle.isValid(); ++otherParticle) {
-      if (particle->getID() != otherParticle->getID()) {
-        double x = particle->getR()[0] - otherParticle->getR()[0];
-        double y = particle->getR()[1] - otherParticle->getR()[1];
-        double z = particle->getR()[2] - otherParticle->getR()[2];
-        auto dist = 1.0 / std::sqrt(x * x + y * y + z * z);
-        particle->resultExact += otherParticle->charge * dist;
+  if (checkResults) {
+    for (auto particle = cont.begin(); particle.isValid(); ++particle) {
+      for (auto otherParticle = cont.begin(); otherParticle.isValid(); ++otherParticle) {
+        if (particle->getID() != otherParticle->getID()) {
+          double x = particle->getR()[0] - otherParticle->getR()[0];
+          double y = particle->getR()[1] - otherParticle->getR()[1];
+          double z = particle->getR()[2] - otherParticle->getR()[2];
+          auto dist = 1.0 / std::sqrt(x * x + y * y + z * z);
+          particle->resultExact += otherParticle->charge * dist;
+        }
       }
     }
-  }
 
-  bool isCorrect = true;
-  for (auto particle = cont.begin(); particle.isValid(); ++particle) {
-    double error = std::abs(particle->resultFMM - particle->resultExact);
-    if (error > 0.01) {
-      isCorrect = false;
+    double maxRelError = 0;
+    double avgRelError = 0;
+    double maxAbsError = 0;
+    double avgAbsError = 0;
 
-      std::cout << "[ID=" << particle->getID() << "] " << particle->getR()[0] << ", " << particle->getR()[1] << ", "
-                << particle->getR()[2] << ", charge = " << particle->charge << std::endl;
-      std::cout << "long range " << particle->longRange << std::endl;
-      std::cout << "short range " << particle->shortRange << std::endl;
-      std::cout << "resultFMM " << particle->resultFMM << std::endl;
-      std::cout << "resultExact " << particle->resultExact << std::endl;
+    // bool isCorrect = true;
+    for (auto particle = cont.begin(); particle.isValid(); ++particle) {
+      double absoluteError = std::abs(particle->resultFMM - particle->resultExact);
+      double relativeError = absoluteError / std::abs(particle->resultExact);
+
+      avgAbsError += absoluteError;
+      avgRelError += relativeError;
+
+      maxAbsError = std::max(maxAbsError, absoluteError);
+      maxRelError = std::max(maxRelError, relativeError);
     }
+
+    avgAbsError /= static_cast<double>(numberOfParticles);
+    avgRelError /= static_cast<double>(numberOfParticles);
+
+    std::cout << maxAbsError << "\t" << avgAbsError << "\t" << maxRelError << "\t" << avgRelError << "\t" << std::endl;
   }
-  std::cout << std::flush;
-  if (not isCorrect) {
-    std::cerr << "wrong result" << std::endl;
-  }*/
-
-  long runFmmTime = timer.stop();
-  std::cout << "runFmm: " << runFmmTime << "us" << std::endl;
-
-  long totalTime = initTime + fmmTreeTime + runFmmTime;
-
-  double initPercentage = 100 * static_cast<double>(initTime) / static_cast<double>(totalTime);
-  double treePercentage = 100 * static_cast<double>(fmmTreeTime) / static_cast<double>(totalTime);
-  double fmmPercentage = 100 * static_cast<double>(runFmmTime) / static_cast<double>(totalTime);
-
-  std::cout << "Init: " << initPercentage << "%" << std::endl;
-  std::cout << "Tree: " << treePercentage << "%" << std::endl;
-  std::cout << " Fmm: " << fmmPercentage << "%" << std::endl;
-
-  std::cout << std::endl;
-  std::cout << "totalTime (us) (ms)" << std::endl;
-
-  std::cout << totalTime << std::endl;
-  std::cout << totalTime / 1000 << std::endl;
 }
