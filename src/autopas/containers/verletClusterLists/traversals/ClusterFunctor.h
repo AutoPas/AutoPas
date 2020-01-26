@@ -10,9 +10,9 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace autopas {
+namespace autopas::internal {
 /**
- * Provides methods to traversal a single cluster and a pair of clusters.
+ * Provides methods to traverse a single cluster and a pair of clusters.
  *
  * @tparam Particle The type of particle the clusters contain.
  * @tparam PairwiseFunctor The type of the functor the ClusterFunctor should use.
@@ -30,7 +30,7 @@ class ClusterFunctor {
   explicit ClusterFunctor(PairwiseFunctor *functor) : _functor(functor) {}
 
   /**
-   * Traverses pairs of all particles in the given cluster. Always uses newton 3.
+   * Traverses pairs of all particles in the given cluster. Always uses newton 3 in the AoS data layout.
    * @param cluster The cluster to traverse.
    */
   void traverseCluster(internal::Cluster<Particle, clusterSize> &cluster) {
@@ -68,4 +68,4 @@ class ClusterFunctor {
   PairwiseFunctor *_functor;
 };
 
-}  // namespace autopas
+}  // namespace autopas::internal

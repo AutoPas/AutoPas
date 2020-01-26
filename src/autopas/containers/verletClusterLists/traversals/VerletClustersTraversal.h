@@ -71,6 +71,6 @@ class VerletClustersTraversal : public TraversalInterface,
 
  private:
   PairwiseFunctor *_functor;
-  ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, clusterSize> _clusterFunctor;
+  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, clusterSize> _clusterFunctor;
 };
 }  // namespace autopas

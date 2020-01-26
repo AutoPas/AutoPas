@@ -105,7 +105,7 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
 
  private:
   PairwiseFunctor *_functor;
-  ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, clusterSize> _clusterFunctor;
+  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, clusterSize> _clusterFunctor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>

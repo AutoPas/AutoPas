@@ -31,7 +31,7 @@ template <class Particle>
 class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<Particle>> {
  public:
   /**
-   * The number of particles in a full cluster. If necessary, constexpr can be removed it can be made a member variable.
+   * The number of particles in a full cluster. Currently, constexpr is necessary so it can be passed to ClusterTower as a template parameter.
    */
   static constexpr size_t clusterSize = 4;
 
@@ -71,7 +71,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     traversal->endTraversal();
   }
 
-  // TODO: Somehow make the iterator also iterating over the _particlesToAdd. Otherwise, e.g. ContainerSelectorTest will
+  // @TODO: Somehow make the iterator also iterating over the _particlesToAdd. Otherwise, e.g. ContainerSelectorTest will
   // work but have all particles removed after it switches from this container to another.
   /**
    * Adds the given particle to the container. rebuildVerletLists() has to be called to have it actually sorted in.
@@ -106,7 +106,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   AUTOPAS_WARN_UNUSED_RESULT
   std::vector<Particle> updateContainer() override {
-    // TODO What happens when some particles are just deleted here?
+    // @TODO What happens when some particles are just deleted here?
     AutoPasLog(debug, "updating container");
     // first delete all particles
     this->deleteHaloParticles();
@@ -135,7 +135,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
 
   ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<Particle>(
-        new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, 4>>(&(this->_towers)));
+        new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>>(&(this->_towers)));
   }
 
   ParticleIteratorWrapper<Particle> getRegionIterator(

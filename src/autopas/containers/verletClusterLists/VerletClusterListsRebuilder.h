@@ -339,7 +339,7 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Calculates the distance of two bounding boxes in one dimension.
+   * Calculates the distance of two bounding boxes in one dimension. Assumes disjoint bounding boxes.
    * @param min1 minimum coordinate of first bbox in tested dimension
    * @param max1 maximum coordinate of first bbox in tested dimension
    * @param min2 minimum coordinate of second bbox in tested dimension
@@ -365,24 +365,24 @@ class VerletClusterListsRebuilder {
    * @return The tower that should contain a particle at the given location.
    */
   auto &getTowerForParticleLocation(std::array<double, 3> location) {
-    std::array<size_t, 2> cellIndex{};
+    std::array<size_t, 2> towerIndex{};
 
     for (int dim = 0; dim < 2; dim++) {
-      const long int value =
+      const auto towerDimIndex =
           (static_cast<long int>(floor((location[dim] - _boxMin[dim]) * _towerSideLengthReciprocal))) + 1l;
-      const size_t nonNegativeValue = static_cast<size_t>(std::max(value, 0l));
-      const size_t nonLargerValue = std::min(nonNegativeValue, _towersPerDim[dim] - 1);
-      cellIndex[dim] = nonLargerValue;
+      const auto towerDimIndexNonNegative = static_cast<size_t>(std::max(towerDimIndex, 0l));
+      const auto towerDimIndexNonLargerValue = std::min(towerDimIndexNonNegative, _towersPerDim[dim] - 1);
+      towerIndex[dim] = towerDimIndexNonLargerValue;
       // @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
       // flag manager
       if (location[dim] >= _boxMax[dim]) {
-        cellIndex[dim] = _towersPerDim[dim] - 1;
+        towerIndex[dim] = _towersPerDim[dim] - 1;
       } else if (location[dim] < _boxMin[dim]) {
-        cellIndex[dim] = 0;
+        towerIndex[dim] = 0;
       }
     }
 
-    return getTowerAtCoordinates(cellIndex[0], cellIndex[1]);
+    return getTowerAtCoordinates(towerIndex[0], towerIndex[1]);
   }
 
   /**
