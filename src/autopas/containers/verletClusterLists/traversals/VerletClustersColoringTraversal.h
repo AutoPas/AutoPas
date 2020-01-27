@@ -24,12 +24,11 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                                         public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
-  static constexpr size_t clusterSize = VerletClusterLists<Particle>::clusterSize;
 
   /**
    * Each base step looks like this:
@@ -70,14 +69,14 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
   }
 
   void initTraversal() override {
-    if (dataLayout != DataLayoutOption::soa) return;
+    if constexpr (dataLayout != DataLayoutOption::soa) return;
 
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
     clusterList.loadParticlesIntoSoAs(_functor);
   }
 
   void endTraversal() override {
-    if (dataLayout != DataLayoutOption::soa) return;
+    if constexpr (dataLayout != DataLayoutOption::soa) return;
 
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
     clusterList.extractParticlesFromSoAs(_functor);
@@ -105,10 +104,11 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
 
  private:
   PairwiseFunctor *_functor;
-  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, clusterSize> _clusterFunctor;
+  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, VerletClusterLists<Particle>::clusterSize>
+      _clusterFunctor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processColorCell(
     unsigned long xColorCell, unsigned long yColorCell, unsigned long zColorCell, int towersPerColoringCell) {
   // We are only doing a 2D coloring.

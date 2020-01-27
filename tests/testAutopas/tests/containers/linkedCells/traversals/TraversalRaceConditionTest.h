@@ -7,11 +7,11 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <vector>
+
+#include <array>
+
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
-#include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
-#include "autopas/utils/ArrayMath.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class TraversalRaceConditionTest : public AutoPasTestBase {
@@ -19,8 +19,6 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
   TraversalRaceConditionTest() = default;
 
   ~TraversalRaceConditionTest() override = default;
-
-  void fillWithParticles(autopas::AutoPas<Particle, FPCell> &autoPas, std::array<size_t, 3> particlesPerDim);
 
   /*
    * Simple AoS only functor which repulses paritcles from each other with a
@@ -30,7 +28,7 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
    public:
     using SoAArraysType = Particle::SoAArraysType;
     using ParticleCell = FPCell;
-    using floatType = typename Particle::ParticleFloatingPointType;
+    using floatType = double;
 
     SimpleFunctor(floatType cutoff)
         : autopas::Functor<Particle, ParticleCell>(cutoff), _cutoffSquare(cutoff * cutoff){};
@@ -41,12 +39,17 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
 
     bool allowsNonNewton3() override { return false; }
 
+    bool isAppropriateClusterSize(unsigned int clusterSize,
+                                  autopas::DataLayoutOption::Value dataLayout) const override {
+      return dataLayout == autopas::DataLayoutOption::aos;  // this functor supports clusters only for aos!
+    }
+
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       auto coordsI = i.getR();
       auto coordsJ = j.getR();
 
-      std::array<double, 3> dr = autopas::ArrayMath::sub(coordsI, coordsJ);
-      double dr2 = autopas::ArrayMath::dot(dr, dr);
+      std::array<double, 3> dr = autopas::utils::ArrayMath::sub(coordsI, coordsJ);
+      double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
       // in a grid with separation 1 this includes all neighbors with a Chebyshev distance of 1
       if (dr2 > _cutoffSquare) return;
 

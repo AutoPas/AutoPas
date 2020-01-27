@@ -192,9 +192,18 @@ class ClusterTower : public ParticleCell<Particle> {
        * Returns an iterator over all non-dummy particles contained in this tower.
        * @return an iterator over all non-dummy particles contained in this tower.
        */
-      [[nodiscard]] SingleCellIteratorWrapper<Particle> begin() override {
-    return SingleCellIteratorWrapper<Particle>{
-        new SingleCellIterator<Particle, ClusterTower<Particle, clusterSize>>(this)};
+      [[nodiscard]] SingleCellIteratorWrapper<Particle, true> begin() override {
+    return SingleCellIteratorWrapper<Particle, true>{
+        new SingleCellIterator<Particle, ClusterTower<Particle, clusterSize>, true>(this)};
+  }
+
+  /**
+   * Returns an iterator over all non-dummy particles contained in this tower.
+   * @return an iterator over all non-dummy particles contained in this tower.
+   */
+  [[nodiscard]] SingleCellIteratorWrapper<Particle, false> begin() const override {
+    return SingleCellIteratorWrapper<Particle, false>{
+        new SingleCellIterator<Particle, ClusterTower<Particle, clusterSize>, false>(this)};
   }
 
   /**
@@ -203,6 +212,13 @@ class ClusterTower : public ParticleCell<Particle> {
    * @return the particle at position index.
    */
   decltype(auto) getParticle(size_t index) { return _particles._particles.at(index); }
+
+  /**
+   * Returns the const particle at position index. Needed by SingleCellIterator.
+   * @param index the position of the particle to return.
+   * @return the particle at position index.
+   */
+  decltype(auto) getParticle(size_t index) const { return _particles._particles.at(index); }
 
   // Methods from here on: Only to comply with ParticleCell interface. SingleCellIterators work on ParticleCells, and
   // while those methods would not be needed, still complying to the whole interface should be helpful, if
@@ -239,6 +255,7 @@ class ClusterTower : public ParticleCell<Particle> {
   size_t _numDummyParticles{};
 };
 
+// Requires all particle classes to have a constructor that takes position, velocity, and id
 template <class Particle, size_t clusterSize>
 const Particle ClusterTower<Particle, clusterSize>::dummy{
     {std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()},

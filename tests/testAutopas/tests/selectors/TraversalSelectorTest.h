@@ -7,6 +7,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include "AutoPasTestBase.h"
 #include "autopas/particles/Particle.h"
 #include "autopas/selectors/TraversalSelector.h"

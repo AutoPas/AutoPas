@@ -10,6 +10,7 @@
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+
 #include <iostream>
 
 #ifdef AUTOPAS_VERBOSE_LOG
@@ -55,7 +56,7 @@ class Logger {
   /**
    * Typalias for log levels.
    */
-  typedef spdlog::level::level_enum LogLevel;
+  using LogLevel = spdlog::level::level_enum;
   /**
    * create a logger writing to the file system
    * @param filename

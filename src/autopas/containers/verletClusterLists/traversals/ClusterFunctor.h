@@ -20,7 +20,8 @@ namespace autopas::internal {
  * @tparam useNewton3 If newton 3 should be used or not.
  * @tparam clusterSize The number of particles in each cluster.
  */
-template <class Particle, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3, size_t clusterSize>
+template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          size_t clusterSize>
 class ClusterFunctor {
  public:
   /**

@@ -6,9 +6,10 @@
 
 #pragma once
 
-#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
-
 namespace autopas {
+
+template <class Particle>
+class VerletClusterLists;
 
 /**
  * Interface for traversals of the VerletClusterLists container.

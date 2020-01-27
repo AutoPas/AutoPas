@@ -5,6 +5,7 @@
  */
 
 #include "LinkedCellsTest.h"
+
 #include <gmock/gmock-generated-matchers.h>
 
 LinkedCellsTest::LinkedCellsTest() : _linkedCells({0., 0., 0.}, {10., 10., 10.}, 1., 0., 1.) {}
@@ -128,8 +129,8 @@ TEST_F(LinkedCellsTest, testIsContainerUpdateNeeded) {
 }
 
 TEST_F(LinkedCellsTest, testUpdateContainer) {
-  autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
-      {0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
+  autopas::LinkedCells<autopas::FullParticleCell<autopas::Particle>> linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0.,
+                                                                                 1.);
 
   autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
   autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
@@ -240,8 +241,8 @@ TEST_F(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
 }
 
 TEST_F(LinkedCellsTest, testUpdateContainerHalo) {
-  autopas::LinkedCells<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> linkedCells(
-      {0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
+  autopas::LinkedCells<autopas::FullParticleCell<autopas::Particle>> linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0.,
+                                                                                 1.);
 
   autopas::Particle p({-0.5, -0.5, -0.5}, {0, 0, 0}, 42);
   linkedCells.addHaloParticle(p);
@@ -257,4 +258,26 @@ TEST_F(LinkedCellsTest, testUpdateContainerHalo) {
   // no particle should remain
   auto iter = linkedCells.begin();
   EXPECT_FALSE(iter.isValid());
+}
+
+TEST_F(LinkedCellsTest, testRangeBasedLoop) {
+  EXPECT_EQ(_linkedCells.getNumParticles(), 0);
+
+  std::array<double, 3> r = {2, 2, 2};
+  Particle p(r, {0., 0., 0.}, 0);
+  _linkedCells.addParticle(p);
+
+  std::array<double, 3> r2 = {1.5, 2, 2};
+  Particle p2(r2, {0., 0., 0.}, 1);
+  _linkedCells.addParticle(p2);
+  EXPECT_EQ(_linkedCells.getNumParticles(), 2);
+
+  for (Particle &particle : _linkedCells) {
+    particle.setF({42., 42., 42.});
+  }
+
+  for (auto iter = _linkedCells.begin(); iter.isValid(); ++iter) {
+    decltype(iter->getF()) comparison = {42., 42., 42};
+    ASSERT_EQ(iter->getF(), comparison);
+  }
 }

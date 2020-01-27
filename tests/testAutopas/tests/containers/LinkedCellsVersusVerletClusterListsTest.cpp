@@ -5,37 +5,38 @@
  */
 
 #include "LinkedCellsVersusVerletClusterListsTest.h"
-#include <autopas/selectors/TraversalSelector.h>
-#include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
 
-template <autopas::DataLayoutOption dataLayout, bool useNewton3>
+#include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+#include "autopas/selectors/TraversalSelector.h"
+
+template <autopas::DataLayoutOption::Value dataLayout, bool useNewton3>
 void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, double rel_err_tolerance,
                                                    autopas::TraversalOption traversalOption,
                                                    std::array<double, 3> boxMax) {
   Verlet _verletLists{getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff()};
   Linked _linkedCells{getBoxMin(), boxMax, getCutoff(), 1. /*cell size factor*/};
 
-  RandomGenerator::fillWithParticles(_linkedCells, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
+  autopasTools::generators::RandomGenerator::fillWithParticles(_linkedCells, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0),
+                                                               _linkedCells.getBoxMin(), _linkedCells.getBoxMax(),
+                                                               numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
   for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
     _verletLists.addParticle(*it);
   }
 
-  double eps = 1.0;
-  double sig = 1.0;
-  double shift = 0.0;
-  autopas::MoleculeLJ::setEpsilon(eps);
-  autopas::MoleculeLJ::setSigma(sig);
-  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
+  autopas::LJFunctor<Molecule, FMCell> func(getCutoff());
+  func.setParticleProperties(24, 1);
 
   auto verletTraversal = autopas::TraversalSelector<FMCell>::generateTraversal(
       traversalOption, func, _verletLists.getTraversalSelectorInfo(), dataLayout,
       useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled);
 
-  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, dataLayout, useNewton3> traversalLinkedLJ(
-      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
-
+  autopas::C08Traversal<FMCell, decltype(func), dataLayout, useNewton3> traversalLinkedLJ(
+      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func, _linkedCells.getInteractionLength(),
+      _linkedCells.getCellBlock().getCellLength());
   _verletLists.rebuildNeighborLists(verletTraversal.get());
   _verletLists.iteratePairwise(verletTraversal.get());
   _linkedCells.iteratePairwise(&traversalLinkedLJ);
@@ -43,12 +44,12 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
   std::vector<std::array<double, 3>> forcesVerlet{numMolecules}, forcesLinked{numMolecules};
   // get and sort by id, skip id=0 to avoid dummy particles
   for (auto it = _verletLists.begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
+    Molecule &m = *it;
     forcesVerlet.at(m.getID()) = m.getF();
   }
 
   for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
+    Molecule &m = *it;
     forcesLinked.at(m.getID()) = m.getF();
   }
 
@@ -62,8 +63,9 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsVerlet(getCutoff()), flopsLinked(getCutoff());
 
-  autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, dataLayout, useNewton3> traversalFLOPS(
-      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
+  autopas::C08Traversal<FMCell, decltype(flopsLinked), dataLayout, useNewton3> traversalFLOPS(
+      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked, _linkedCells.getInteractionLength(),
+      _linkedCells.getCellBlock().getCellLength());
 
   auto traversalFLOPSVerlet = autopas::TraversalSelector<FMCell>::generateTraversal(
       traversalOption, flopsVerlet, _verletLists.getTraversalSelectorInfo(), dataLayout,

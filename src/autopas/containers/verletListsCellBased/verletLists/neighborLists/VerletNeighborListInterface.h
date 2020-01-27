@@ -8,6 +8,7 @@
 #pragma once
 
 #include <vector>
+
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/TraversalOption.h"
@@ -37,7 +38,7 @@ class VerletNeighborListInterface {
    * @param linkedCells The linked cells to use for building the neighbor list.
    * @param useNewton3 If true, use newton 3 for the neighbor list.
    */
-  virtual void buildNeighborList(LinkedCells<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
+  virtual void buildNeighborList(LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                              typename VerletListHelpers<Particle>::SoAArraysType> &linkedCells,
                                  bool useNewton3) = 0;
 

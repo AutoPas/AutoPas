@@ -17,8 +17,9 @@ TEST_F(SoATest, SoATypeTest) {
                 "type must be same");
 }
 
+using soatype = autopas::utils::SoAType<size_t, double, double, double>::Type;
+
 TEST_F(SoATest, SoAStorageTestGet) {
-  typedef autopas::utils::SoAType<size_t, double, double, double>::Type soatype;
   autopas::utils::SoAStorage<soatype> soAStorage;
 
   EXPECT_EQ(soAStorage.get<0>().size(), 0);
@@ -46,7 +47,6 @@ TEST_F(SoATest, SoAStorageTestGet) {
 }
 
 TEST_F(SoATest, SoAStorageTestAlignment) {
-  typedef autopas::utils::SoAType<size_t, double, double, double>::Type soatype;
   autopas::utils::SoAStorage<soatype> soAStorage;
 
   // check alignment to autopas::DEFAULT_CACHE_LINE_SIZE
@@ -68,7 +68,6 @@ TEST_F(SoATest, SoAStorageTestAlignment) {
 }
 
 TEST_F(SoATest, SoAStorageTestApply) {
-  typedef autopas::utils::SoAType<size_t, double, double, double>::Type soatype;
   autopas::utils::SoAStorage<soatype> soAStorage;
 
   EXPECT_EQ(soAStorage.get<0>().size(), 0);

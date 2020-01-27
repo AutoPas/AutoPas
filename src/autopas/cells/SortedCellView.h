@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
@@ -18,8 +19,9 @@
 namespace autopas {
 
 /**
- * This class defines a sorted view on a given ParticleCell. Particles are sorted along the normalized vector r. The
- * projected position of a particle as well as a pointer to the underlying particle are stored in a vector, which is
+ * This class defines a sorted view on a given ParticleCell. Particles are sorted along the normalized vector r.
+ * \image html SortingPrinciple.png "Projection of particles in 2D"
+ * The projected position of a particle as well as a pointer to the underlying particle are stored in a vector, which is
  * sorted by the projected positions.
  * @note Insertion, deletion and change of position of particles invalidates the view.
  * @tparam Particle
@@ -35,7 +37,7 @@ class SortedCellView : public ParticleCell<Particle> {
   SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
     _particles.reserve(cell.numParticles());
     for (auto p = getStaticCellIter(cell); p.isValid(); ++p) {
-      _particles.push_back(std::make_pair(ArrayMath::dot(p->getR(), r), &(*p)));
+      _particles.push_back(std::make_pair(utils::ArrayMath::dot(p->getR(), r), &(*p)));
     }
     std::sort(_particles.begin(), _particles.end(),
               [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
@@ -46,7 +48,9 @@ class SortedCellView : public ParticleCell<Particle> {
    */
   void addParticle(const Particle &p) override {}
 
-  SingleCellIteratorWrapper<Particle> begin() override { return _cell->begin(); }
+  SingleCellIteratorWrapper<Particle, true> begin() override { return _cell->begin(); }
+
+  SingleCellIteratorWrapper<Particle, false> begin() const override { return std::as_const(*_cell).begin(); }
 
   unsigned long numParticles() const override { return _particles.size(); }
 
@@ -78,9 +82,11 @@ class SortedCellView : public ParticleCell<Particle> {
   decltype(auto) getParticle(size_t index) { return _particles.at(index); }
 
   /**
-   * Type of the internal iterator.
+   * Returns the const particle at position index. Needed by SingleCellIterator.
+   * @param index the position of the particle to return.
+   * @return the particle at position index.
    */
-  typedef internal::SingleCellIterator<Particle, SortedCellView<Particle, ParticleCellType>> iterator_t;
+  decltype(auto) getParticle(size_t index) const { return _particles.at(index); }
 
   /**
    * Sorted vector of projected positions and particle pointers.

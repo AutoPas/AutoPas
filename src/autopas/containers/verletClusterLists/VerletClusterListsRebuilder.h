@@ -102,7 +102,7 @@ class VerletClusterListsRebuilder {
       numParticles += vector.size();
     }
 
-    auto boxSize = ArrayMath::sub(_boxMax, _boxMin);
+    auto boxSize = utils::ArrayMath::sub(_boxMax, _boxMin);
 
     _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSize);
     _interactionLengthInTowers = static_cast<int>(std::ceil(_interactionLength / _towerSideLength));

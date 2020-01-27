@@ -10,6 +10,7 @@
 #include <array>
 #include <sstream>
 #include <tuple>
+
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/CudaSoAType.h"
 #include "autopas/utils/SoAStorage.h"
@@ -22,6 +23,7 @@ namespace autopas {
  *
  * If a different Particle class should be used with AutoPas this class must be used as a base to build your own
  * Particle class.
+ * @tparam Floating point type to be used for the SoAs.
  */
 template <typename floatType, typename idType>
 class ParticleBase {
@@ -34,7 +36,7 @@ class ParticleBase {
    * @param v Velocity of the particle.
    * @param id Id of the particle.
    */
-  ParticleBase(std::array<floatType, 3> r, std::array<floatType, 3> v, idType id)
+  ParticleBase(std::array<double, 3> r, std::array<double, 3> v, idType id)
       : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id), _isOwned{true} {}
 
   /**
@@ -62,25 +64,25 @@ class ParticleBase {
    * get the force acting on the particle
    * @return force
    */
-  const std::array<floatType, 3> &getF() const { return _f; }
+  const std::array<double, 3> &getF() const { return _f; }
 
   /**
    * Set the force acting on the particle
    * @param f force
    */
-  void setF(const std::array<floatType, 3> &f) { _f = f; }
+  void setF(const std::array<double, 3> &f) { _f = f; }
 
   /**
    * Add a partial force to the force acting on the particle
    * @param f partial force to be added
    */
-  void addF(const std::array<floatType, 3> &f) { _f = ArrayMath::add(_f, f); }
+  void addF(const std::array<double, 3> &f) { _f = utils::ArrayMath::add(_f, f); }
 
   /**
    * Substract a partial force from the force acting on the particle
    * @param f partial force to be substracted
    */
-  void subF(const std::array<floatType, 3> &f) { _f = ArrayMath::sub(_f, f); }
+  void subF(const std::array<double, 3> &f) { _f = utils::ArrayMath::sub(_f, f); }
 
   /**
    * Get the id of the particle
@@ -98,43 +100,43 @@ class ParticleBase {
    * Get the position of the particle
    * @return current position
    */
-  const std::array<floatType, 3> &getR() const { return _r; }
+  const std::array<double, 3> &getR() const { return _r; }
 
   /**
    * Set the position of the particle
    * @param r new position
    */
-  void setR(const std::array<floatType, 3> &r) { _r = r; }
+  void setR(const std::array<double, 3> &r) { _r = r; }
 
   /**
    * Add a distance vector to the position of the particle
    * @param r vector to be added
    */
-  void addR(const std::array<floatType, 3> &r) { _r = ArrayMath::add(_r, r); }
+  void addR(const std::array<double, 3> &r) { _r = utils::ArrayMath::add(_r, r); }
 
   /**
    * Get the velocity of the particle
    * @return current velocity
    */
-  const std::array<floatType, 3> &getV() const { return _v; }
+  const std::array<double, 3> &getV() const { return _v; }
 
   /**
    * Set the velocity of the particle
    * @param v new velocity
    */
-  void setV(const std::array<floatType, 3> &v) { _v = v; }
+  void setV(const std::array<double, 3> &v) { _v = v; }
 
   /**
    * Add a vector to the current velocity of the particle
    * @param v vector to be added
    */
-  void addV(const std::array<floatType, 3> &v) { _v = ArrayMath::add(_v, v); }
+  void addV(const std::array<double, 3> &v) { _v = utils::ArrayMath::add(_v, v); }
 
   /**
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
-  virtual std::string toString() {
+  virtual std::string toString() const {
     std::ostringstream text;
     // clang-format off
     text << "Particle"
@@ -169,19 +171,19 @@ class ParticleBase {
   /**
    * Floating Point Type used for this particle
    */
-  typedef floatType ParticleFloatingPointType;
+  using ParticleSoAFloatPrecision = floatType;
 
   /**
    * Id Type used for this particle
    */
-  typedef idType ParticleIdType;
+  using ParticleIdType = idType;
 
   /**
    * The type for the soa storage.
    * owned is currently used as a floatType to ease calculations within the functors.
    */
-  typedef typename autopas::utils::SoAType<idType, floatType, floatType, floatType, floatType, floatType, floatType,
-                                           floatType>::Type SoAArraysType;
+  using SoAArraysType = typename autopas::utils::SoAType<idType, floatType, floatType, floatType, floatType, floatType,
+                                                         floatType, floatType>::Type;
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
@@ -252,31 +254,31 @@ class ParticleBase {
 
 #if defined(AUTOPAS_CUDA)
   /**
-   * The type for storage arrays for Cuda
+   * The type for storage arrays for Cuda.
    */
-  typedef typename autopas::utils::CudaSoAType<idType, floatType, floatType, floatType, floatType, floatType,
-                                               floatType>::Type CudaDeviceArraysType;
+  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<idType, floatType, floatType, floatType, floatType,
+                                                                    floatType, floatType, floatType>::Type;
 #else
   /**
-   * The type for storage arrays for Cuda
-   * empty if compiled without Cuda Support
+   * The type for storage arrays for Cuda.
+   * empty if compiled without Cuda Support.
    */
-  typedef typename autopas::utils::CudaSoAType<>::Type CudaDeviceArraysType;
+  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
 #endif
 
  protected:
   /**
    * Particle position as 3D coordinates.
    */
-  std::array<floatType, 3> _r;
+  std::array<double, 3> _r;
   /**
    * Particle velocity as 3D vector.
    */
-  std::array<floatType, 3> _v;
+  std::array<double, 3> _v;
   /**
    * Force the particle experiences as 3D vector.
    */
-  std::array<floatType, 3> _f;
+  std::array<double, 3> _f;
   /**
    * Particle id.
    */

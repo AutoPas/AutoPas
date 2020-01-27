@@ -17,5 +17,5 @@ class LinkedCellsTest : public AutoPasTestBase {
   LinkedCellsTest();
 
  protected:
-  autopas::LinkedCells<Particle, FPCell> _linkedCells;
+  autopas::LinkedCells<FPCell> _linkedCells;
 };

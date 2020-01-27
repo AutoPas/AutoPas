@@ -5,7 +5,11 @@
  */
 
 #include "TraversalTest.h"
+
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/TraversalInterface.h"
+#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/Logger.h"
 #include "testingHelpers/NumThreadGuard.h"
 
@@ -19,11 +23,13 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
   TraversalTest::CountFunctor functor(cutoff);
   std::vector<FPCell> cells(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
-  GridGenerator::fillWithParticles<autopas::Particle>(cells, edgeLength, edgeLength);
+  autopasTools::generators::GridGenerator::fillWithParticles(cells, edgeLength, edgeLength);
 
   NumThreadGuard numThreadGuard(4);
-
-  autopas::TraversalSelectorInfo tsi(edgeLength, cutoff);
+  // clustersize is 32 if traversal has something like cluster in it, otherwise 0.
+  unsigned int clusterSize = traversalOption.to_string().find("luster") != std::string::npos ? 32 : 0;
+  // this test assumes a cell size of 1. in each direction
+  autopas::TraversalSelectorInfo tsi(edgeLength, cutoff, {1., 1., 1.}, clusterSize);
   std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::c01) {
     traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
@@ -41,7 +47,7 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
     overlap[d] = std::ceil(cutoff / 1.0);
   }
 
-  const auto boxMax = autopas::ArrayMath::sub(edgeLength, overlap);
+  const auto boxMax = autopas::utils::ArrayMath::sub(edgeLength, overlap);
 
   for (unsigned int z = 0; z < edgeLength[2]; ++z) {
     for (unsigned int y = 0; y < edgeLength[1]; ++y) {

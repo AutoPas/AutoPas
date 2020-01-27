@@ -7,11 +7,11 @@
 #pragma once
 
 #include <algorithm>
-#include <cassert>
 #include <initializer_list>
 #include <map>
 #include <tuple>
 #include <vector>
+
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"
@@ -135,7 +135,7 @@ class SoA {
    * @return Array of attributes ordered by given attribute order.
    */
   template <int... attributes>
-  std::array<double, sizeof...(attributes)> readMultiple(size_t particleId) {
+  std::array<double, sizeof...(attributes)> readMultiple(size_t particleId) const {
     std::array<double, sizeof...(attributes)> retArray;
     if (particleId >= getNumParticles()) {
       autopas::utils::ExceptionHandler::exception(
@@ -154,7 +154,7 @@ class SoA {
    * @return Attribute value.
    */
   template <std::size_t attribute>
-  auto read(size_t particleId) {
+  auto read(size_t particleId) const {
     return soaStorage.template get<attribute>().at(particleId);
   }
 
@@ -221,14 +221,14 @@ class SoA {
  private:
   // actual implementation of read
   template <int attribute, int... attributes, class ValueArrayType>
-  void read_impl(size_t particleId, ValueArrayType &values, int _current = 0) {
+  void read_impl(size_t particleId, ValueArrayType &values, int _current = 0) const {
     values[_current] = soaStorage.template get<attribute>().at(particleId);
     read_impl<attributes...>(particleId, values, _current + 1);
   }
 
   // stop of recursive read call
   template <class ValueArrayType>
-  void read_impl(size_t particleId, ValueArrayType &values, int _current = 0) {}
+  void read_impl(size_t particleId, ValueArrayType &values, int _current = 0) const {}
 
   // actual implementation of the write function.
   // uses a recursive call.

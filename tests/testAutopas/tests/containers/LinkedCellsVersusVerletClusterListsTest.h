@@ -7,10 +7,14 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include <cstdlib>
+
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
-#include "testingHelpers/RandomGenerator.h"
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class LinkedCellsVersusVerletClusterListsTest : public AutoPasTestBase {
@@ -25,10 +29,10 @@ class LinkedCellsVersusVerletClusterListsTest : public AutoPasTestBase {
   double getCutoff() const { return 1.0; }
 
  protected:
-  template <autopas::DataLayoutOption dataLayout, bool useNewton3>
+  template <autopas::DataLayoutOption::Value dataLayout, bool useNewton3>
   void test(unsigned long numMolecules, double rel_err_tolerance, autopas::TraversalOption traversalOption,
             std::array<double, 3> boxMax);
 
-  using Verlet = autopas::VerletClusterLists<autopas::MoleculeLJ>;
-  using Linked = autopas::LinkedCells<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>>;
+  using Verlet = autopas::VerletClusterLists<Molecule>;
+  using Linked = autopas::LinkedCells<FMCell>;
 };

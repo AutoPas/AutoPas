@@ -7,11 +7,12 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include <tuple>
+
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/sph/autopassph.h"
-#include "testingHelpers/RandomGenerator.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 enum SPHFunctorType { density, hydro };
 
@@ -26,7 +27,7 @@ class SPHTest : public AutoPasTestBase,
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       auto [dataLayoutOption, sphFunctorType] = static_cast<ParamType>(info.param);
-      std::string dataLayoutOptionStr(autopas::utils::StringUtils::to_string(dataLayoutOption));
+      std::string dataLayoutOptionStr(dataLayoutOption.to_string());
       std::string sphFunctorTypeStr(sphFunctorType == hydro ? "hydro" : "density");
       // replace all '-' with '_', otherwise the test name is invalid
       // std::replace(traversal.begin(), traversal.end(), '-', '_');

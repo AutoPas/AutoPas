@@ -5,14 +5,17 @@
  */
 
 #include <mpi.h>
+
 #include <array>
 #include <cmath>
 #include <iostream>
+
 #include "autopas/AutoPas.h"
 #include "autopas/sph/autopassph.h"
 
-typedef autopas::AutoPas<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
-    AutoPasContainer;
+using Particle = autopas::sph::SPHParticle;
+using Cell = autopas::FullParticleCell<Particle>;
+using AutoPasContainer = autopas::AutoPas<Particle, Cell>;
 
 void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
   // Place SPH particles
@@ -22,7 +25,7 @@ void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<dou
   for (double x = 0; x < bBoxMax[0] * 0.5; x += dx) {  // NOLINT
     for (double y = 0; y < bBoxMax[1]; y += dx) {      // NOLINT
       for (double z = 0; z < bBoxMax[2]; z += dx) {    // NOLINT
-        autopas::sph::SPHParticle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
+        Particle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
         ith.setDensity(1.0);
         ith.setEnergy(2.5);
         if (autopas::utils::inBox(ith.getR(), sphSystem.getBoxMin(), sphSystem.getBoxMax())) {
@@ -34,7 +37,7 @@ void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<dou
   for (double x = bBoxMax[0] * 0.5; x < bBoxMax[0] * 1.; x += dx * 2.0) {  // NOLINT
     for (double y = 0; y < bBoxMax[1]; y += dx) {                          // NOLINT
       for (double z = 0; z < bBoxMax[2]; z += dx) {                        // NOLINT
-        autopas::sph::SPHParticle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
+        Particle ith({x, y, z}, {0, 0, 0}, i++, 0.75, 0.012, 0.);
         ith.setDensity(0.5);
         ith.setEnergy(2.5);
         if (autopas::utils::inBox(ith.getR(), sphSystem.getBoxMin(), sphSystem.getBoxMax())) {
@@ -87,8 +90,8 @@ double getTimeStepGlobal(AutoPasContainer &sphSystem, MPI_Comm &comm) {
 
 void leapfrogInitialKick(AutoPasContainer &sphSystem, const double dt) {
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
-    part->setVel_half(
-        autopas::ArrayMath::add(part->getV(), autopas::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
+    part->setVel_half(autopas::utils::ArrayMath::add(
+        part->getV(), autopas::utils::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
     part->setEng_half(part->getEnergy() + 0.5 * dt * part->getEngDot());
   }
 }
@@ -96,21 +99,21 @@ void leapfrogInitialKick(AutoPasContainer &sphSystem, const double dt) {
 void leapfrogFullDrift(AutoPasContainer &sphSystem, const double dt) {
   // time becomes t + dt;
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
-    part->addR(autopas::ArrayMath::mulScalar(part->getVel_half(), dt));
+    part->addR(autopas::utils::ArrayMath::mulScalar(part->getVel_half(), dt));
   }
 }
 
 void leapfrogPredict(AutoPasContainer &sphSystem, const double dt) {
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
-    part->addV(autopas::ArrayMath::mulScalar(part->getAcceleration(), dt));
+    part->addV(autopas::utils::ArrayMath::mulScalar(part->getAcceleration(), dt));
     part->addEnergy(part->getEngDot() * dt);
   }
 }
 
 void leapfrogFinalKick(AutoPasContainer &sphSystem, const double dt) {
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
-    part->setV(
-        autopas::ArrayMath::add(part->getVel_half(), autopas::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
+    part->setV(autopas::utils::ArrayMath::add(part->getVel_half(),
+                                              autopas::utils::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
     part->setEnergy(part->getEng_half() + 0.5 * dt * part->getEngDot());
   }
 }
@@ -140,7 +143,7 @@ int getSendRecvPartner(const std::array<int, 3> diff, MPI_Comm &comm, bool recvP
 
 int getReceivePartner(const std::array<int, 3> diff, MPI_Comm &comm) { return getSendRecvPartner(diff, comm, true); }
 
-void issueSend(std::vector<autopas::sph::SPHParticle> &sendParticles, const std::array<int, 3> diff, MPI_Comm &comm,
+void issueSend(std::vector<Particle> &sendParticles, const std::array<int, 3> diff, MPI_Comm &comm,
                MPI_Request &sendRequest, std::vector<double> &buffer) {
   int neighbor = getSendRecvPartner(diff, comm, false);
 
@@ -151,7 +154,7 @@ void issueSend(std::vector<autopas::sph::SPHParticle> &sendParticles, const std:
   MPI_Isend(buffer.data(), buffer.size(), MPI_DOUBLE, neighbor, 3, comm, &sendRequest);
 }
 
-void receive(std::vector<autopas::sph::SPHParticle> &receiveParticles, const std::array<int, 3> diff, MPI_Comm &comm) {
+void receive(std::vector<Particle> &receiveParticles, const std::array<int, 3> diff, MPI_Comm &comm) {
   int neighbor = getReceivePartner(diff, comm);
 
   int length;
@@ -162,7 +165,7 @@ void receive(std::vector<autopas::sph::SPHParticle> &receiveParticles, const std
   MPI_Recv(recvBuffer.data(), length, MPI_DOUBLE, neighbor, 3, comm, MPI_STATUS_IGNORE);
 
   for (size_t i = 0; i < (size_t)length;) {
-    auto p = autopas::sph::SPHParticle::deserialize(recvBuffer.data(), i);
+    auto p = Particle::deserialize(recvBuffer.data(), i);
     receiveParticles.push_back(p);
   }
 }
@@ -270,7 +273,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
     for (diff[1] = -1; diff[1] < 2; diff[1]++) {
       for (diff[2] = -1; diff[2] < 2; diff[2]++) {
-        std::vector<autopas::sph::SPHParticle> sendParticles;
+        std::vector<Particle> sendParticles;
         if (not diff[0] and not diff[1] and not diff[2]) {
           // at least one dimension has to be non-zero
           continue;
@@ -284,14 +287,14 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
         for (auto iterator =
                  sphSystem.getRegionIterator(requiredHaloMin, requiredHaloMax, autopas::IteratorBehavior::ownedOnly);
              iterator.isValid(); ++iterator) {
-          autopas::sph::SPHParticle p = *iterator;  // copies Particle
+          Particle p = *iterator;  // copies Particle
           p.addR(shift);
           sendParticles.push_back(p);
         }
         MPI_Request sendRequest;
         issueSend(sendParticles, diff, comm, sendRequest, buffer);
 
-        std::vector<autopas::sph::SPHParticle> receiveParticles;
+        std::vector<Particle> receiveParticles;
         receive(receiveParticles, diff, comm);
         for (auto &particle : receiveParticles) {
           sphSystem.addOrUpdateHaloParticle(particle);
@@ -303,8 +306,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
   }
 }
 
-void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm,
-                            const std::vector<autopas::sph::SPHParticle> &invalidParticles,
+void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const std::vector<Particle> &invalidParticles,
                             std::array<double, 3> globalBoxMin, std::array<double, 3> globalBoxMax) {
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
@@ -317,7 +319,7 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm,
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
     for (diff[1] = -1; diff[1] < 2; diff[1]++) {
       for (diff[2] = -1; diff[2] < 2; diff[2]++) {
-        std::vector<autopas::sph::SPHParticle> sendParticles;
+        std::vector<Particle> sendParticles;
         if (not diff[0] and not diff[1] and not diff[2]) {
           // at least one dimension has to be non-zero
           continue;
@@ -339,7 +341,7 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm,
         MPI_Request sendRequest;
         issueSend(sendParticles, diff, comm, sendRequest, buffer);
 
-        std::vector<autopas::sph::SPHParticle> receiveParticles;
+        std::vector<Particle> receiveParticles;
         receive(receiveParticles, diff, comm);
         for (auto &particle : receiveParticles) {
           for (int i = 0; i < 3; i++) {
@@ -363,8 +365,8 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm,
 void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, const std::array<double, 3> &globalBoxMin,
                                const std::array<double, 3> &globalBoxMax) {
   // declare the used functors
-  autopas::sph::SPHCalcDensityFunctor densityFunctor;
-  autopas::sph::SPHCalcHydroForceFunctor hydroForceFunctor;
+  autopas::sph::SPHCalcDensityFunctor<Particle, Cell> densityFunctor;
+  autopas::sph::SPHCalcHydroForceFunctor<Particle, Cell> hydroForceFunctor;
 
   // 1.first calculate density
   // 1.1 to calculate the density we need the halo particles
@@ -403,8 +405,8 @@ void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
   double energySum = 0.;                        // total energy
   for (auto it = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); it.isValid(); ++it) {
-    momSum = autopas::ArrayMath::add(momSum, autopas::ArrayMath::mulScalar(it->getV(), it->getMass()));
-    energySum += (it->getEnergy() + 0.5 * autopas::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
+    momSum = autopas::utils::ArrayMath::add(momSum, autopas::utils::ArrayMath::mulScalar(it->getV(), it->getMass()));
+    energySum += (it->getEnergy() + 0.5 * autopas::utils::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
   }
 
   // MPI: global reduction
@@ -485,7 +487,7 @@ int main(int argc, char *argv[]) {
                                                        autopas::ContainerOption::verletListsCells};
   sphSystem.setAllowedContainers(allowedContainers);
 
-  auto dataLayouts = autopas::allDataLayoutOptions;
+  auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
   if (dataLayouts.find(autopas::DataLayoutOption::cuda) != dataLayouts.end()) {
     dataLayouts.erase(dataLayouts.find(autopas::DataLayoutOption::cuda));
   }

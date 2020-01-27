@@ -6,12 +6,14 @@
 
 #include "ForceCalculationTest.h"
 
+#include "autopas/AutoPas.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopasTools/generators/GridGenerator.h"
+#include "testingHelpers/commonTypedefs.h"
+
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
                                   std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
-  autopas::AutoPas<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> autoPas;
-
-  double epsilon = 1.;
-  double sigma = 1.;
+  autopas::AutoPas<Molecule, FMCell> autoPas;
   std::array<double, 3> boxMin = {0., 0., 0.};
   std::array<double, 3> boxMax = {3., 3., 3.};
 
@@ -24,16 +26,13 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   autoPas.setAllowedDataLayouts({dataLayoutOption});
 
   autoPas.init();
-  autopas::MoleculeLJ defaultParticle;
+  Molecule defaultParticle;
 
-  GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
-                                   {particleSpacing, particleSpacing, particleSpacing});
+  autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
+                                                             {particleSpacing, particleSpacing, particleSpacing});
 
-  autopas::MoleculeLJ::setEpsilon(epsilon);
-  autopas::MoleculeLJ::setSigma(sigma);
-
-  autopas::LJFunctor<autopas::MoleculeLJ, autopas::FullParticleCell<autopas::MoleculeLJ>> functor(cutoff, epsilon,
-                                                                                                  sigma, 0.0);
+  autopas::LJFunctor<Molecule, FMCell> functor(cutoff);
+  functor.setParticleProperties(24, 1);
 
   autoPas.iteratePairwise(&functor);
 
@@ -52,7 +51,7 @@ TEST_F(ForceCalculationTest, testLJwithU0AoS) {
   std::array<std::array<double, 3>, 4> expectedForces = {{{-24, -24, 0}, {24, -24, 0}, {-24, 24, 0}, {24, 24, 0}}};
   double tolerance = 1e-13;
 
-  testLJ(spacing, cutoff, autopas::aos, expectedForces, tolerance);
+  testLJ(spacing, cutoff, autopas::DataLayoutOption::aos, expectedForces, tolerance);
 }
 
 TEST_F(ForceCalculationTest, testLJwithU0SoA) {
@@ -62,7 +61,7 @@ TEST_F(ForceCalculationTest, testLJwithU0SoA) {
   std::array<std::array<double, 3>, 4> expectedForces = {{{-24, -24, 0}, {24, -24, 0}, {-24, 24, 0}, {24, 24, 0}}};
   double tolerance = 1e-13;
 
-  testLJ(spacing, cutoff, autopas::soa, expectedForces, tolerance);
+  testLJ(spacing, cutoff, autopas::DataLayoutOption::soa, expectedForces, tolerance);
 }
 
 TEST_F(ForceCalculationTest, testLJwithF0AoS) {
@@ -72,7 +71,7 @@ TEST_F(ForceCalculationTest, testLJwithF0AoS) {
   std::array<std::array<double, 3>, 4> expectedForces = {{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}};
   double tolerance = 1e-13;
 
-  testLJ(spacing, cutoff, autopas::aos, expectedForces, tolerance);
+  testLJ(spacing, cutoff, autopas::DataLayoutOption::aos, expectedForces, tolerance);
 }
 
 TEST_F(ForceCalculationTest, testLJwithF0SoA) {
@@ -82,5 +81,5 @@ TEST_F(ForceCalculationTest, testLJwithF0SoA) {
   std::array<std::array<double, 3>, 4> expectedForces = {{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}};
   double tolerance = 1e-13;
 
-  testLJ(spacing, cutoff, autopas::soa, expectedForces, tolerance);
+  testLJ(spacing, cutoff, autopas::DataLayoutOption::soa, expectedForces, tolerance);
 }
