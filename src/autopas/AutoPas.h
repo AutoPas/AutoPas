@@ -38,6 +38,7 @@ static unsigned int _instanceCounter = 0;
 template <class Particle, class ParticleCell>
 class AutoPas {
  public:
+
   using Particle_t = Particle;
 
   /**
