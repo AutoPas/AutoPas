@@ -27,6 +27,23 @@ pipeline{
                         // get doxygen warnings
                         recordIssues filters: [excludeFile('.*README.*')], tools: [doxygen(pattern: 'build-doxygen/DoxygenWarningLog.txt')], failedTotalAll: 1
                     }
+                    post {
+                        changed {
+                            echo "change"
+                        }
+                        unstable {
+                            echo "unstable"
+                        }
+                        success {
+                            echo "success"
+                        }
+                        failure {
+                            echo "failure"
+                        }
+                        aborted {
+                            echo "aborted"
+                        }
+                    }
                 }
                 stage ("clang and cmake format") {
                     steps {
