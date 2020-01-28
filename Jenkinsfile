@@ -67,7 +67,7 @@ pipeline{
                         }
                     }
                 }
-            )
+            }
         }
         stage('build and test'){
             options {
