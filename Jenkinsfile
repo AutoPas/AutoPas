@@ -29,7 +29,6 @@ pipeline{
                     }
                     post {
                         failure {
-                            echo "failure"
                             error "warnings in doxygen documentation"
                         }
                     }
