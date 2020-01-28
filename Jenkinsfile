@@ -13,9 +13,9 @@ pipeline{
         }
         stage("style check") {
             parallel(
-                stage("build documentation) {
+                stage("build documentation") {
                     steps {
-                        container('autopas-cmake-doxygen-make'){
+                        container('autopas-cmake-doxygen-make') {
                             dir("build-doxygen") {
                                 sh 'entrypoint.sh ccache -s'
                                 sh 'cmake ..'
@@ -31,7 +31,7 @@ pipeline{
                 stage ("clang and cmake format") {
                     steps {
                         dir("format"){
-                            container('autopas-clang6-cmake-ninja-make'){
+                            container('autopas-clang6-cmake-ninja-make') {
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_OPENMP=ON .."
                                 sh "ninja clangformat"
                                 sh "ninja cmakeformat"
