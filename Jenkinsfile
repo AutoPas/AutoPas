@@ -12,7 +12,7 @@ pipeline{
             }
         }
         stage("style check") {
-            parallel(
+            parallel {
                 stage("build documentation") {
                     steps {
                         container('autopas-cmake-doxygen-make') {
