@@ -12,9 +12,9 @@ pipeline{
             }
         }
         stage("style check") {
-            steps{
-                parallel(
-                    "build documentation": {
+            parallel(
+                stage("build documentation) {
+                    steps {
                         container('autopas-cmake-doxygen-make'){
                             dir("build-doxygen") {
                                 sh 'entrypoint.sh ccache -s'
@@ -26,8 +26,10 @@ pipeline{
 
                         // get doxygen warnings
                         recordIssues filters: [excludeFile('.*README.*')], tools: [doxygen(pattern: 'build-doxygen/DoxygenWarningLog.txt')], failedTotalAll: 1
-                    },
-                    "clang and cmake format": {
+                    }
+                }
+                stage ("clang and cmake format") {
+                    steps {
                         dir("format"){
                             container('autopas-clang6-cmake-ninja-make'){
                                 sh "CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_OPENMP=ON .."
@@ -47,8 +49,10 @@ pipeline{
                                 }
                             }
                         }
-                    },
-                    "custom checks": {
+                    }
+                }
+                stage ("custom checks") {
+                    steps {
                         echo 'Testing src folder'
                         dir("src"){
                             checkCustom()
@@ -62,8 +66,8 @@ pipeline{
                             checkCustom()
                         }
                     }
-                )
-            }
+                }
+            )
         }
         stage('build and test'){
             options {
