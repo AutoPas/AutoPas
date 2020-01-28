@@ -38,9 +38,7 @@ static unsigned int _instanceCounter = 0;
 template <class Particle, class ParticleCell>
 class AutoPas {
  public:
-  /**
-   * Particle type to be accessible after initialization.
-   */
+
   using Particle_t = Particle;
 
   /**
