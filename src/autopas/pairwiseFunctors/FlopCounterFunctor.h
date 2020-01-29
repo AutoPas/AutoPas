@@ -25,8 +25,6 @@ namespace autopas {
 template <class Particle, class ParticleCell>
 class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
                                           FlopCounterFunctor<Particle, ParticleCell>> {
-  typedef typename Particle::SoAArraysType SoAArraysType;
-
  public:
   bool isRelevantForTuning() override { return false; }
 
@@ -34,11 +32,15 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
 
   bool allowsNonNewton3() override { return true; }
 
+  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+    return dataLayout == DataLayoutOption::aos;  // no support for clusters yet, unless aos.
+  }
+
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ParticleCell>(typename Particle::ParticleFloatingPointType cutoffRadius)
+  explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
       : autopas::Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
                          FlopCounterFunctor<Particle, ParticleCell>>(cutoffRadius),
         _cutoffSquare(cutoffRadius * cutoffRadius),
@@ -46,8 +48,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
         _kernelCalls(0ul) {}
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    auto dr = ArrayMath::sub(i.getR(), j.getR());
-    double dr2 = ArrayMath::dot(dr, dr);
+    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+    double dr2 = utils::ArrayMath::dot(dr, dr);
 #ifdef AUTOPAS_OPENMP
 #pragma omp critical
 #endif
@@ -58,7 +60,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     };
   }
 
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void SoAFunctor(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -97,7 +99,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     }
   }
 
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) override {
+  void SoAFunctor(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
+                  bool newton3) override {
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
@@ -139,9 +142,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     }
   }
 
-  void SoAFunctor(SoA<SoAArraysType> &soa,
-                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
-                  size_t iTo, bool newton3) override {
+  void SoAFunctor(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
+                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) override {
     auto numParts = soa.getNumParticles();
 
     if (numParts == 0) return;
@@ -150,108 +152,106 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    for (size_t i = iFrom; i < iTo; ++i) {
-      const size_t listSizeI = neighborList[i].size();
-      const size_t *const __restrict__ currentList = neighborList[i].data();
+    const size_t listSizeI = neighborList.size();
+    const size_t *const __restrict__ currentList = neighborList.data();
 
-      // this is a magic number, that should correspond to at least
-      // vectorization width*N have testet multiple sizes:
-      // 4: small speedup compared to AoS
-      // 8: small speedup compared to AoS
-      // 12: small but best speedup compared to Aos
-      // 16: smaller speedup
-      // in theory this is a variable, we could auto-tune over...
+    // this is a magic number, that should correspond to at least
+    // vectorization width*N have testet multiple sizes:
+    // 4: small speedup compared to AoS
+    // 8: small speedup compared to AoS
+    // 12: small but best speedup compared to Aos
+    // 16: smaller speedup
+    // in theory this is a variable, we could auto-tune over...
 #ifdef __AVX512F__
-      // use a multiple of 8 for avx
-      const size_t vecsize = 16;
+    // use a multiple of 8 for avx
+    const size_t vecsize = 16;
 #else
-      // for everything else 12 is faster
-      const size_t vecsize = 12;
+    // for everything else 12 is faster
+    const size_t vecsize = 12;
 #endif
-      size_t joff = 0;
+    size_t joff = 0;
 
-      // if the size of the verlet list is larger than the given size vecsize,
-      // we will use a vectorized version.
-      if (listSizeI >= vecsize) {
-        alignas(64) std::array<double, vecsize> xtmp{}, ytmp{}, ztmp{}, xArr{}, yArr{}, zArr{};
-        // broadcast of the position of particle i
-        for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-          xtmp[tmpj] = xptr[i];
-          ytmp[tmpj] = yptr[i];
-          ztmp[tmpj] = zptr[i];
-        }
-        // loop over the verlet list from 0 to x*vecsize
-        for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
-          unsigned long distanceCalculationsAcc = 0;
-          unsigned long kernelCallsAcc = 0;
-          // in each iteration we calculate the interactions of particle i with
-          // vecsize particles in the neighborlist of particle i starting at
-          // particle joff
+    // if the size of the verlet list is larger than the given size vecsize,
+    // we will use a vectorized version.
+    if (listSizeI >= vecsize) {
+      alignas(64) std::array<double, vecsize> xtmp{}, ytmp{}, ztmp{}, xArr{}, yArr{}, zArr{};
+      // broadcast of the position of particle i
+      for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+        xtmp[tmpj] = xptr[indexFirst];
+        ytmp[tmpj] = yptr[indexFirst];
+        ztmp[tmpj] = zptr[indexFirst];
+      }
+      // loop over the verlet list from 0 to x*vecsize
+      for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
+        unsigned long distanceCalculationsAcc = 0;
+        unsigned long kernelCallsAcc = 0;
+        // in each iteration we calculate the interactions of particle i with
+        // vecsize particles in the neighborlist of particle i starting at
+        // particle joff
 
-          // gather position of particle j
+        // gather position of particle j
 #pragma omp simd safelen(vecsize)
-          for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-            xArr[tmpj] = xptr[currentList[joff + tmpj]];
-            yArr[tmpj] = yptr[currentList[joff + tmpj]];
-            zArr[tmpj] = zptr[currentList[joff + tmpj]];
-          }
+        for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
+          xArr[tmpj] = xptr[currentList[joff + tmpj]];
+          yArr[tmpj] = yptr[currentList[joff + tmpj]];
+          zArr[tmpj] = zptr[currentList[joff + tmpj]];
+        }
 
-          // do omp simd with reduction of the interaction
+        // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc) safelen(vecsize)
-          for (size_t j = 0; j < vecsize; j++) {
-            ++distanceCalculationsAcc;
-            const double drx = xtmp[j] - xArr[j];
-            const double dry = ytmp[j] - yArr[j];
-            const double drz = ztmp[j] - zArr[j];
+        for (size_t j = 0; j < vecsize; j++) {
+          ++distanceCalculationsAcc;
+          const double drx = xtmp[j] - xArr[j];
+          const double dry = ytmp[j] - yArr[j];
+          const double drz = ztmp[j] - zArr[j];
 
-            const double drx2 = drx * drx;
-            const double dry2 = dry * dry;
-            const double drz2 = drz * drz;
+          const double drx2 = drx * drx;
+          const double dry2 = dry * dry;
+          const double drz2 = drz * drz;
 
-            const double dr2 = drx2 + dry2 + drz2;
+          const double dr2 = drx2 + dry2 + drz2;
 
-            const unsigned long mask = (dr2 <= _cutoffSquare) ? 1 : 0;
+          const unsigned long mask = (dr2 <= _cutoffSquare) ? 1 : 0;
 
-            kernelCallsAcc += mask;
-          }
+          kernelCallsAcc += mask;
+        }
 #ifdef AUTOPAS_OPENMP
 #pragma omp critical
 #endif
-          {
-            _distanceCalculations += distanceCalculationsAcc;
-            _kernelCalls += kernelCallsAcc;
-          }
+        {
+          _distanceCalculations += distanceCalculationsAcc;
+          _kernelCalls += kernelCallsAcc;
         }
       }
-      unsigned long distanceCalculationsAcc = 0;
-      unsigned long kernelCallsAcc = 0;
-      // this loop goes over the remainder and uses no optimizations
-      for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
-        size_t j = neighborList[i][jNeighIndex];
-        if (i == j) continue;
+    }
+    unsigned long distanceCalculationsAcc = 0;
+    unsigned long kernelCallsAcc = 0;
+    // this loop goes over the remainder and uses no optimizations
+    for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
+      size_t j = neighborList[jNeighIndex];
+      if (indexFirst == j) continue;
 
-        ++distanceCalculationsAcc;
-        const double drx = xptr[i] - xptr[j];
-        const double dry = yptr[i] - yptr[j];
-        const double drz = zptr[i] - zptr[j];
+      ++distanceCalculationsAcc;
+      const double drx = xptr[indexFirst] - xptr[j];
+      const double dry = yptr[indexFirst] - yptr[j];
+      const double drz = zptr[indexFirst] - zptr[j];
 
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
+      const double drx2 = drx * drx;
+      const double dry2 = dry * dry;
+      const double drz2 = drz * drz;
 
-        const double dr2 = drx2 + dry2 + drz2;
+      const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 <= _cutoffSquare) {
-          ++kernelCallsAcc;
-        }
+      if (dr2 <= _cutoffSquare) {
+        ++kernelCallsAcc;
       }
+    }
 #ifdef AUTOPAS_OPENMP
 #pragma omp critical
 #endif
-      {
-        _distanceCalculations += distanceCalculationsAcc;
-        _kernelCalls += kernelCallsAcc;
-      }
+    {
+      _distanceCalculations += distanceCalculationsAcc;
+      _kernelCalls += kernelCallsAcc;
     }
   }
 
@@ -283,7 +283,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
   /**
    * @copydoc Functor::deviceSoALoader
    */
-  void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
+  void deviceSoALoader(::autopas::SoA<typename Particle::SoAArraysType> &soa,
                        CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
 #if defined(AUTOPAS_CUDA)
     size_t size = soa.getNumParticles();
@@ -310,7 +310,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
   /**
    * @copydoc Functor::deviceSoAExtractor
    */
-  void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
+  void deviceSoAExtractor(::autopas::SoA<typename Particle::SoAArraysType> &soa,
                           CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
 #if defined(AUTOPAS_CUDA)
     size_t size = soa.getNumParticles();
@@ -330,7 +330,7 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 3> getNeededAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 3> getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 3>{
         Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ};
   }
@@ -338,14 +338,14 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 3> getNeededAttr(std::false_type) {
+  constexpr static std::array<typename Particle::AttributeNames, 3> getNeededAttr(std::false_type) {
     return getNeededAttr();
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};
   }
 

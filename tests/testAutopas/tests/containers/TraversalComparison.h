@@ -7,10 +7,15 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include <cstdlib>
+
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
-#include "testingHelpers/RandomGenerator.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/Newton3Option.h"
+#include "autopas/options/TraversalOption.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**
@@ -30,30 +35,14 @@ class TraversalComparison
                                                             autopas::Newton3Option newton3Option,
                                                             unsigned long numMolecules, std::array<double, 3> boxMax);
 
-  static std::array<double, 3> _boxMin;
-  static std::vector<std::array<double, 3>> _boxMaxVector;
-  static double _cutoff;
+  static inline std::array<double, 3> _boxMin{0, 0, 0};
+  static inline std::array<std::array<double, 3>, 2> _boxMaxVector{{{3, 3, 3}, {10, 10, 10}}};
+  static inline double _cutoff{1.};
 
-  static double _eps;
-  static double _sig;
-  static double _shift;
-  static autopas::LJFunctor<Molecule, FMCell> _functor;
+  static inline double _eps{1.};
+  static inline double _sig{1.};
 
-  static std::map<std::pair<int, std::array<double, 3>>, std::vector<std::array<double, 3>>> _forcesReference;
+  static inline std::map<std::pair<int, std::array<double, 3>>, std::vector<std::array<double, 3>>> _forcesReference{};
 
-  static std::vector<int> _numParticlesVector;
+  static inline std::array<int, 3> _numParticlesVector{100, 1000, 2000};
 };
-
-std::array<double, 3> TraversalComparison::_boxMin{0, 0, 0};
-std::vector<std::array<double, 3>> TraversalComparison::_boxMaxVector{{3, 3, 3}, {10, 10, 10}};
-double TraversalComparison::_cutoff = 1.0;
-
-double TraversalComparison::_eps = 1.0;
-double TraversalComparison::_sig = 1.0;
-double TraversalComparison::_shift = 0.0;
-autopas::LJFunctor<Molecule, FMCell> TraversalComparison::_functor{_cutoff, _eps, _sig, _shift};
-
-std::vector<int> TraversalComparison::_numParticlesVector{100, 1000, 2000};
-
-std::map<std::pair<int, std::array<double, 3>>, std::vector<std::array<double, 3>>>
-    TraversalComparison::_forcesReference{};

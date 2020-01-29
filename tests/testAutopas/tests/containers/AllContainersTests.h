@@ -7,7 +7,6 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -17,7 +16,7 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
  public:
   static auto getParamToStringFunction() {
     static const auto paramToString = [](const testing::TestParamInfo<ParamType> &info) {
-      return autopas::utils::StringUtils::to_string(info.param);
+      return info.param.to_string();
     };
     return paramToString;
   }
@@ -32,11 +31,11 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
     double cellSizeFactor = 1;
 
     autopas::ContainerSelector<Particle, FPCell> selector{boxMin, boxMax, cutoff};
-    autopas::ContainerSelectorInfo selectorInfo{cellSizeFactor, skin};
+    autopas::ContainerSelectorInfo selectorInfo{cellSizeFactor, skin, 32};
     selector.selectContainer(containerOptionToTest, selectorInfo);
     _container = selector.getCurrentContainer();
   }
 
  protected:
-  std::shared_ptr<autopas::ParticleContainer<Particle, FPCell>> _container{};
+  std::shared_ptr<autopas::ParticleContainerInterface<FPCell>> _container{};
 };

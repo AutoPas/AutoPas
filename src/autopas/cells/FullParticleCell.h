@@ -6,7 +6,9 @@
 
 #pragma once
 
+#include <mutex>
 #include <vector>
+
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/utils/CudaSoA.h"
@@ -33,7 +35,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    * Constructs a new FullParticleCell with the given cell side length.
    * @param cellLength cell side length
    */
-  FullParticleCell(std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
+  FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
 
   /**
    * @copydoc ParticleCell::addParticle()
@@ -44,8 +46,12 @@ class FullParticleCell : public ParticleCell<Particle> {
     particlesLock.unlock();
   }
 
-  SingleCellIteratorWrapper<Particle> begin() override {
-    return SingleCellIteratorWrapper<Particle>(new iterator_t(this));
+  SingleCellIteratorWrapper<Particle, true> begin() override {
+    return SingleCellIteratorWrapper<Particle, true>(new iterator_t(this));
+  }
+
+  SingleCellIteratorWrapper<Particle, false> begin() const override {
+    return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
   unsigned long numParticles() const override { return _particles.size(); }
@@ -69,14 +75,15 @@ class FullParticleCell : public ParticleCell<Particle> {
   void clear() override { _particles.clear(); }
 
   void deleteByIndex(size_t index) override {
-    particlesLock.lock();
-    assert(index < numParticles());
+    std::lock_guard<AutoPasLock> lock(particlesLock);
+    if (index >= numParticles()) {
+      utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
+    }
 
     if (index < numParticles() - 1) {
       std::swap(_particles[index], _particles[numParticles() - 1]);
     }
     _particles.pop_back();
-    particlesLock.unlock();
   }
 
   void setCellLength(std::array<double, 3> &cellLength) override { _cellLength = cellLength; }
@@ -122,7 +129,12 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Type of the internal iterator.
    */
-  typedef internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>> iterator_t;
+  using iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>, true>;
+
+  /**
+   * Type of the internal const iterator.
+   */
+  using const_iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>, false>;
 
  private:
   AutoPasLock particlesLock;

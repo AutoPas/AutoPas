@@ -20,28 +20,27 @@ template <class Particle>
 class VerletListsCellsHelpers {
  public:
   /// Verlet list storage
-  typedef std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> VerletList_storage_type;
+  using VerletList_storage_type = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
 
-  /// typedef for verlet-list particle cell type
-  typedef FullParticleCell<Particle> VerletListParticleCellType;
+  /// using declaration for verlet-list particle cell type
+  using VerletListParticleCellType = FullParticleCell<Particle>;
 
   /**
-   * This functor can generate verlet lists using the typical pairwise
-   * traversal.
+   * This functor can generate verlet lists using the typical pairwise traversal.
    */
   class VerletListGeneratorFunctor : public Functor<Particle, VerletListParticleCellType> {
-    typedef VerletListParticleCellType ParticleCell;
+    using ParticleCell = VerletListParticleCellType;
 
    public:
     /**
      * Constructor
      * @param verletLists a verletlist for each cell
      * @param cellMap used to get the verletlist of a particle
-     * @param cutoffskin
+     * @param cutoffskin cutoff + skin
      */
     VerletListGeneratorFunctor(VerletList_storage_type &verletLists,
                                std::unordered_map<Particle *, std::pair<size_t, size_t>> &cellMap, double cutoffskin)
-        : Functor<Particle, VerletListParticleCellType>(typename Particle::ParticleFloatingPointType(0.)),
+        : Functor<Particle, VerletListParticleCellType>(0.),
           _verletLists(verletLists),
           _cellMap(cellMap),
           _cutoffskinsquared(cutoffskin * cutoffskin) {}
@@ -60,9 +59,13 @@ class VerletListsCellsHelpers {
       return true;
     }
 
+    bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+      return false;  // this functor shouldn't be called with clusters!
+    }
+
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-      auto dist = ArrayMath::sub(i.getR(), j.getR());
-      double distsquare = ArrayMath::dot(dist, dist);
+      auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+      double distsquare = utils::ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared) {
         // this is thread safe, only if particle i is accessed by only one
         // thread at a time. which is ensured, as particle i resides in a

@@ -7,15 +7,14 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersColoringTraversal.h"
 #include "autopas/particles/Particle.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
-#include "mocks/MockVerletLists.h"
-#include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class VerletClusterListsTest : public AutoPasTestBase {};
@@ -48,6 +47,10 @@ class CollectParticlesPerThreadFunctor
 
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
+
+  bool isAppropriateClusterSize(unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout) const override {
+    return dataLayout == autopas::DataLayoutOption::aos;  // this functor supports clusters only for aos!
+  }
 
   static void nextColor(int newColor) { _currentColor = newColor; }
 };

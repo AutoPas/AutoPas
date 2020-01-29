@@ -7,19 +7,29 @@
 
 #pragma once
 
+#include <type_traits>
+
 #include "autopas/cells/ParticleCell.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/SoA.h"
-
-#include <type_traits>
+#include "autopas/utils/SoAView.h"
 
 #if defined(AUTOPAS_CUDA)
 #include "autopas/pairwiseFunctors/FunctorCuda.cuh"
 #endif
 
 namespace autopas {
+
+/**
+ * Newton 3 modes for the LJFunctor.
+ */
+enum class FunctorN3Modes {
+  Newton3Only,
+  Newton3Off,
+  Both,
+};
 
 template <class Particle>
 class VerletListHelpers;
@@ -36,14 +46,14 @@ class Dummy final {
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
   }
 };
@@ -69,7 +79,7 @@ class Functor {
    * Constructor
    * @param cutoff
    */
-  Functor(typename Particle::ParticleFloatingPointType cutoff) : _cutoff(cutoff){};
+  Functor(double cutoff) : _cutoff(cutoff){};
 
   virtual ~Functor() = default;
 
@@ -105,7 +115,7 @@ class Functor {
    * @return Attributes needed for computation.
    * @todo C++20: make this function virtual
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
   }
 
@@ -114,7 +124,7 @@ class Functor {
    * @return Attributes needed for computation.
    * @todo C++20: make this function virtual
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
     return Impl_t::getNeededAttr();
   }
 
@@ -123,7 +133,7 @@ class Functor {
    * @return Attributes computed by this functor.
    * @todo C++20: make this function virtual
    */
-  constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
   }
 
@@ -137,7 +147,7 @@ class Functor {
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) {
+  virtual void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(one soa): not yet implemented");
   }
 
@@ -145,24 +155,16 @@ class Functor {
    * @brief Functor for structure of arrays (SoA) for neighbor lists
    *
    * This functor should calculate the forces or any other pair-wise interaction
-   * between the particles in the SoA that are marked by the verlet list
+   * between the particle in the SoA with index indexFirst and all particles with indices in the neighborList.
    * This should include a cutoff check if needed!
    *
-   * iFrom an iTo define the range inside of the neighborList that should be
-   * iterated over. The starting index is i = iFrom. The iteration will continue
-   * while i < iTo.
-   *
    * @param soa Structure of arrays
+   * @param indexFirst The index of the first particle for each interaction
    * @param neighborList The list of neighbors
-   * @param iFrom the starting index of the vector neighborList that should be
-   * iterated over
-   * @param iTo the first index that should not be iterated over. (Should be at
-   * least iFrom and less than soa.size())
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa,
-                          const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList,
-                          size_t iFrom, size_t iTo, bool newton3) {
+  virtual void SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                          const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(verlet): not yet implemented");
   }
 
@@ -177,7 +179,7 @@ class Functor {
    * @param soa2 Second structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool newton3) {
+  virtual void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctor(two soa): not yet implemented");
   }
 
@@ -281,20 +283,28 @@ class Functor {
    */
   virtual bool isRelevantForTuning() = 0;
 
+  /**
+   * Check whether the given clusterSize is appropriate and can be used by the functor.
+   * @param clusterSize The size of the clusters.
+   * @param dataLayout The used data layout.
+   * @return true, iff the cluster size is appropriate.
+   */
+  virtual bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const = 0;
+
 #if defined(AUTOPAS_CUDA)
   /**
    * Provides an interface for traversals to directly access Cuda Functions
    * @return Pointer to CudaWrapper of the Functor
    */
-  virtual CudaWrapperInterface<typename Particle::ParticleFloatingPointType> *getCudaWrapper() { return NULL; }
+  virtual CudaWrapperInterface<typename Particle::ParticleSoAFloatPrecision> *getCudaWrapper() { return nullptr; }
 
   /**
    * Creates Cuda SoA object containing all the relevant pointers from the generic Cuda SoA
    * @return unique pointer to the object
    */
-  virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>> createFunctorCudaSoA(
+  virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleSoAFloatPrecision>> createFunctorCudaSoA(
       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
-    return std::make_unique<FunctorCudaSoA<typename Particle::ParticleFloatingPointType>>();
+    return std::make_unique<FunctorCudaSoA<typename Particle::ParticleSoAFloatPrecision>>();
   }
 #endif
 
@@ -302,7 +312,7 @@ class Functor {
    * Getter for the functor's cutoff
    * @return
    */
-  typename Particle::ParticleFloatingPointType getCutoff() const { return _cutoff; }
+  double getCutoff() const { return _cutoff; }
 
  private:
   /**
@@ -375,7 +385,7 @@ class Functor {
     }
   }
 
-  typename Particle::ParticleFloatingPointType _cutoff;
+  double _cutoff;
 };
 
 }  // namespace autopas

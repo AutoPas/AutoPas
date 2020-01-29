@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "../../../../linkedCells/traversals/C08Traversal.h"
 #include "ColorChangeObserver.h"
+#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 
 namespace autopas {
 
@@ -16,7 +16,7 @@ namespace autopas {
  *
  * It furthermore notifies an observer when color changes during the traversal happen.
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class C08TraversalColorChangeNotify : public C08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
  public:
   /**
@@ -24,11 +24,15 @@ class C08TraversalColorChangeNotify : public C08Traversal<ParticleCell, Pairwise
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param interactionLength Interaction length (cutoff + skin).
+   * @param cellLength cell length.
    * @param observer The observer to notify when a color change happens during the traversal.
    */
   C08TraversalColorChangeNotify(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                                const double interactionLength, const std::array<double, 3> &cellLength,
                                 ColorChangeObserver *observer)
-      : C08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor),
+      : C08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, interactionLength,
+                                                                            cellLength),
         _observer(observer) {}
 
  protected:

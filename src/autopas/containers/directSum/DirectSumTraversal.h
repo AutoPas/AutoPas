@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+
 #include "DirectSumTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -26,17 +27,17 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public DirectSumTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor for the DirectSum traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param cutoff cutoff (this is enough for the directsum traversal, please don't use the interaction length here.)
    */
-  explicit DirectSumTraversal(PairwiseFunctor *pairwiseFunctor)
+  explicit DirectSumTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
-        _cellFunctor(internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor,
-                                           dataLayout, useNewton3, true>(pairwiseFunctor)),
+        _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
         _dataLayoutConverter(pairwiseFunctor) {}
 
   TraversalOption getTraversalType() const override { return TraversalOption::directSumTraversal; }
@@ -90,7 +91,7 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void DirectSumTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
   // Assume cell[0] is the main domain and cell[1] is the halo

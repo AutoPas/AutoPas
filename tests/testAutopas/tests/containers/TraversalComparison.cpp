@@ -6,11 +6,12 @@
 
 #include "TraversalComparison.h"
 
-#include <autopas/selectors/ContainerSelector.h>
-#include <autopas/selectors/TraversalSelector.h>
-#include "autopas/utils/StringUtils.h"
-
 #include <string>
+
+#include "autopas/selectors/ContainerSelector.h"
+#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/utils/StringUtils.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 using ::testing::_;  // anything is ok
 using ::testing::Bool;
@@ -26,33 +27,33 @@ std::vector<std::array<double, 3>> TraversalComparison::calculateForces(autopas:
                                                                         std::array<double, 3> boxMax) {
   // Construct container
   autopas::ContainerSelector<Molecule, FMCell> selector{_boxMin, boxMax, _cutoff};
-  selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{1.0, _cutoff * 0.1});
+  selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{1.0, _cutoff * 0.1, 32});
   auto container = selector.getCurrentContainer();
+  autopas::LJFunctor<Molecule, FMCell> functor{_cutoff};
+  functor.setParticleProperties(_eps*24,_sig*_sig);
 
   auto traversal = autopas::TraversalSelector<FMCell>::generateTraversal(
-      traversalOption, _functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+      traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
   if (not traversal->isApplicable()) {
     return {};
   }
 
-  RandomGenerator::fillWithParticles(*container, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), numMolecules);
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      *container, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), container->getBoxMin(), container->getBoxMax(),
+      numMolecules);
 
   container->rebuildNeighborLists(traversal.get());
   container->iteratePairwise(traversal.get());
 
   std::vector<std::array<double, 3>> forces(numMolecules);
   for (auto it = container->begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
-    forces.at(m.getID()) = m.getF();
+    forces.at(it->getID()) = it->getF();
   }
 
   return forces;
 }
 void TraversalComparison::SetUpTestSuite() {
   autopas::Logger::create();
-
-  autopas::MoleculeLJ::setEpsilon(_eps);
-  autopas::MoleculeLJ::setSigma(_sig);
 
   // Calculate reference forces
   for (auto numParticles : _numParticlesVector) {
@@ -99,8 +100,8 @@ static auto toString = [](testing::TestParamInfo<std::tuple<autopas::ContainerOp
                               param) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option] = param.param;
   std::string res{};
-  res += autopas::utils::StringUtils::to_string(containerOption);
-  res += autopas::utils::StringUtils::to_string(traversalOption);
+  res += containerOption.to_string();
+  res += traversalOption.to_string();
   res += dataLayoutOption == autopas::DataLayoutOption::aos ? "AoS" : "SoA";
   res += newton3Option == autopas::Newton3Option::enabled ? "Newton3" : "NoNewton3";
   res.erase(std::remove(res.begin(), res.end(), '-'), res.end());
@@ -111,7 +112,7 @@ static auto getTestParams() {
   std::vector<
       std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption, autopas::Newton3Option>>
       params{};
-  auto containerOptions = autopas::allContainerOptions;
+  auto containerOptions = autopas::ContainerOption::getAllOptions();
   // @todo: Readd verlet cluster lists as soon as the iterator works without dummy particles.
   containerOptions.erase(autopas::ContainerOption::verletClusterLists);
   for (auto containerOption : containerOptions) {

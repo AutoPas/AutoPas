@@ -5,8 +5,9 @@
  */
 
 #include "AllContainersTests.h"
+
 #include <gtest/gtest.h>
-#include "autopas/autopasIncludes.h"
+
 #include "autopas/utils/StringUtils.h"
 
 using ::testing::_;
@@ -17,7 +18,7 @@ using ::testing::Invoke;
 using ::testing::Values;
 
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests, testing::ValuesIn([]() {
-                           auto allOptions = std::set<autopas::ContainerOption>{autopas::allContainerOptions};
+                           auto allOptions = std::set<autopas::ContainerOption>{autopas::ContainerOption::getAllOptions()};
                            allOptions.erase(autopas::ContainerOption::verletClusterLists);
                            return allOptions;
                          }()),

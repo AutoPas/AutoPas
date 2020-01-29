@@ -7,7 +7,6 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
-#include "autopas/AutoPas.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class FlopCounterTest : public AutoPasTestBase {

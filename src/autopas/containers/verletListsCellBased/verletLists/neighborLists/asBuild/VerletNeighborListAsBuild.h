@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "../VerletNeighborListInterface.h"
 #include "AsBuildPairGeneratorFunctor.h"
 #include "C08TraversalColorChangeNotify.h"
+#include "autopas/containers/verletListsCellBased/verletLists/neighborLists/VerletNeighborListInterface.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -42,11 +42,12 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   void startFunctor(double cutoff) {
     internal::AsBuildPairGeneratorFunctor<Particle, callCheckInstead> functor(*this, cutoff);
     // Use SoA traversal for generation and AoS traversal for validation check.
-    constexpr DataLayoutOption dataLayout = callCheckInstead ? DataLayoutOption::aos : DataLayoutOption::soa;
+    constexpr auto dataLayout = callCheckInstead ? DataLayoutOption::aos : DataLayoutOption::soa;
     auto traversal = C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                                    internal::AsBuildPairGeneratorFunctor<Particle, callCheckInstead>,
                                                    dataLayout, useNewton3>(
-        _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor, this);
+        _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor,
+        _baseLinkedCells->getInteractionLength(), _baseLinkedCells->getCellBlock().getCellLength(), this);
     _baseLinkedCells->iteratePairwise(&traversal);
   }
 
@@ -63,7 +64,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * This type represents the SoA neighbor list that each thread has for each color.
    */
-  using SoAThreadNeighborList = std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>>;
+  using SoAThreadNeighborList = std::vector<std::pair<size_t, std::vector<size_t, autopas::AlignedAllocator<size_t>>>>;
   /**
    * This type represents the SoA thread lists for all colors.
    */
@@ -82,7 +83,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    * It executes C08 on the passed LinkedCells container and saves the resulting pairs in the neighbor list, remembering
    * the thread and current color for each pair.
    */
-  void buildNeighborList(LinkedCells<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
+  void buildNeighborList(LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                      typename VerletListHelpers<Particle>::SoAArraysType> &linkedCells,
                          bool useNewton3) override {
     _soaListIsValid = false;
@@ -134,7 +135,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    *
    * The internal SoA neighbor list is a vector of the SoA neighbor lists of each color. Each of those SoA neighbor
    * lists is a vector that contains one SoA neighbor list for each thread. Each of those SoA neighbor lists is a vector
-   * of vectors where the i-th vector contains the indices of all neighbors of particle i in the SoA.
+   * of pairs. Each pair contains an index in the SoA and a vector of the indices of all its neighbors in the SoA.
    *
    * @return the internal SoA neighbor list.
    */
@@ -168,13 +169,15 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
       for (unsigned int thread = 0; thread < numThreads; thread++) {
         auto &currentThreadList = _soaNeighborList[color][thread];
         currentThreadList.clear();
-        currentThreadList.resize(_aos2soaMap.size());
         for (const auto &pair : _neighborList[color][thread]) {
           size_t indexFirst = _aos2soaMap[pair.first];
+          std::vector<size_t, AlignedAllocator<size_t>> neighbors;
+          neighbors.reserve(pair.second.size());
           for (const auto &second : pair.second) {
             size_t indexSecond = _aos2soaMap[second];
-            currentThreadList[indexFirst].push_back(indexSecond);
+            neighbors.push_back(indexSecond);
           }
+          currentThreadList.push_back({indexFirst, std::move(neighbors)});
         }
       }
     }
@@ -277,7 +280,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * The LinkedCells object this neighbor list should use to build.
    */
-  LinkedCells<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
+  LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
               typename VerletListHelpers<Particle>::SoAArraysType> *_baseLinkedCells;
 
   /**

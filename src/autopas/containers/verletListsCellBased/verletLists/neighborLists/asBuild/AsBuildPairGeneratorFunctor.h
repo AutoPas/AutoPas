@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "autopas/utils/ArrayMath.h"
+
 namespace autopas {
 
 template <class Particle>
@@ -25,8 +27,8 @@ template <class Particle, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
     : public autopas::Functor<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                               typename VerletListHelpers<Particle>::SoAArraysType> {
-  /// typedef for soa's of verlet list's linked cells (only id and position needs to be stored)
-  typedef typename utils::SoAType<Particle *, double, double, double>::Type SoAArraysType;
+  /// using declaration for soa's of verlet list's linked cells (only id and position needs to be stored)
+  using SoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
 
   /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
   enum AttributeNames : int { ptr, posX, posY, posZ };
@@ -34,6 +36,10 @@ class AsBuildPairGeneratorFunctor
  public:
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
+
+  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+    return false;  // this functor shouldn't be called with clusters!
+  }
 
   /**
    * Constructor of the functor.
@@ -55,8 +61,8 @@ class AsBuildPairGeneratorFunctor
    * @param newton3 Not used!
    */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    auto dist = ArrayMath::sub(i.getR(), j.getR());
-    double distsquare = ArrayMath::dot(dist, dist);
+    auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+    double distsquare = utils::ArrayMath::dot(dist, dist);
     if (distsquare < _cutoffskinsquared) {
       if (callCheckInstead) {
         _list.checkPair(&i, &j);
@@ -71,7 +77,7 @@ class AsBuildPairGeneratorFunctor
    * @param soa The SoA to add.
    * @param newton3 Whether to use newton 3 or not.
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     auto **const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
@@ -107,7 +113,7 @@ class AsBuildPairGeneratorFunctor
    * @param soa1
    * @param soa2
    */
-  void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     auto **const __restrict__ ptrptr1 = soa1.template begin<AttributeNames::ptr>();
@@ -148,7 +154,9 @@ class AsBuildPairGeneratorFunctor
    * @param offset
    */
   void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
-    assert(offset == 0);
+    if (offset != 0ul) {
+      utils::ExceptionHandler::exception("offset must be 0, is: {}", offset);
+    }
     soa.resizeArrays(cell.numParticles());
 
     if (cell.numParticles() == 0) return;

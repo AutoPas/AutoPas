@@ -16,7 +16,9 @@
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/StaticSelectorMacros.h"
 
 namespace autopas {
 
@@ -32,9 +34,9 @@ namespace autopas {
 template <class Particle>
 class VerletListsCells
     : public VerletListsLinkedBase<Particle, typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType> {
-  typedef VerletListsCellsHelpers<Particle> verlet_internal;
-  typedef FullParticleCell<Particle> ParticleCell;
-  typedef typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
+  using verlet_internal = VerletListsCellsHelpers<Particle>;
+  using ParticleCell = FullParticleCell<Particle>;
+  using LinkedParticleCell = typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType;
 
  public:
   /**
@@ -53,10 +55,10 @@ class VerletListsCells
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _buildTraversal(buildTraversal) {}
 
-  ContainerOption getContainerType() override { return ContainerOption::verletListsCells; }
+  ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+    AutoPasLog(debug, "Using traversal {}.", traversal->getTraversalType().to_string());
 
     // Check if traversal is allowed for this container and give it the data it needs.
     auto vTraversal = dynamic_cast<autopas::VerletListsCellsTraversal<Particle> *>(traversal);
@@ -101,46 +103,38 @@ class VerletListsCells
       }
     }
 
-    typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap, this->getCutoff());
+    typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap,
+                                                           this->getCutoff() + this->getSkin());
 
-    switch (_buildTraversal) {
-      case c08: {
-        if (useNewton3) {
-          auto buildTraversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                             DataLayoutOption::aos, true>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-
+    // clang compiler bug requires static cast
+    switch (static_cast<TraversalOption>(_buildTraversal)) {
+        //    switch (_buildTraversal) {
+      case TraversalOption::c08: {
+        autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
+          auto buildTraversal = C08Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&buildTraversal);
-        } else {
-          auto buildTraversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                             DataLayoutOption::aos, false>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&buildTraversal);
-        }
+        });
         break;
       }
-      case c18: {
-        if (useNewton3) {
-          auto buildTraversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                             DataLayoutOption::aos, true>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+      case TraversalOption::c18: {
+        autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
+          auto buildTraversal = C18Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&buildTraversal);
-        } else {
-          auto buildTraversal = C18Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                             DataLayoutOption::aos, false>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&buildTraversal);
-        }
+        });
         break;
       }
-      case c01: {
-        if (not useNewton3) {
-          auto buildTraversal = C01Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                             DataLayoutOption::aos, false>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
-          this->_linkedCells.iteratePairwise(&buildTraversal);
-        } else {
+      case TraversalOption::c01: {
+        if (useNewton3) {
           utils::ExceptionHandler::exception("VerletListsCells::updateVerletLists(): c01 does not support newton3");
+        } else {
+          auto buildTraversal = C01Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, false>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength());
+          this->_linkedCells.iteratePairwise(&buildTraversal);
         }
         break;
       }
@@ -149,10 +143,15 @@ class VerletListsCells
                                            _buildTraversal);
         break;
     }
-
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
   }
+
+  /**
+   * Return the cell length of the underlying linked cells structure, normally needed only for unit tests.
+   * @return
+   */
+  const std::array<double, 3> &getCellLength() const { return this->_linkedCells.getCellBlock().getCellLength(); }
 
  private:
   /// verlet lists for each particle for each cell

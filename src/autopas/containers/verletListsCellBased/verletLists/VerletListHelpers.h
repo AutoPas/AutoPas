@@ -7,6 +7,7 @@
 #pragma once
 
 #include <atomic>
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"
@@ -21,23 +22,22 @@ template <class Particle>
 class VerletListHelpers {
  public:
   /// AOS verlet list storage
-  typedef std::unordered_map<Particle *, std::vector<Particle *>> AoS_verletlist_storage_type;
+  using AoS_verletlist_storage_type = std::unordered_map<Particle *, std::vector<Particle *>>;
 
-  /// typedef for soa's of verlet list's linked cells (only id and position needs to be stored)
-  typedef typename utils::SoAType<Particle *, double, double, double>::Type SoAArraysType;
+  /// using declaration for soa's of verlet list's linked cells (only id and position needs to be stored)
+  using SoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
 
   /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
   enum AttributeNames : int { ptr, posX, posY, posZ };
 
-  /// typedef for verlet-list particle cell type
-  typedef FullParticleCell<Particle, SoAArraysType> VerletListParticleCellType;
+  /// using declaration for verlet-list particle cell type
+  using VerletListParticleCellType = FullParticleCell<Particle, SoAArraysType>;
 
   /**
-   * This functor can generate verlet lists using the typical pairwise
-   * traversal.
+   * This functor can generate verlet lists using the typical pairwise traversal.
    */
   class VerletListGeneratorFunctor : public Functor<Particle, VerletListParticleCellType, SoAArraysType> {
-    typedef VerletListParticleCellType ParticleCell_t;
+    using ParticleCell_t = VerletListParticleCellType;
 
    public:
     /**
@@ -64,9 +64,14 @@ class VerletListHelpers {
       return true;
     }
 
+    bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+      return false;  // this functor shouldn't be called with clusters!
+    }
+
     void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
-      auto dist = ArrayMath::sub(i.getR(), j.getR());
-      double distsquare = ArrayMath::dot(dist, dist);
+      auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+
+      double distsquare = utils::ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared) {
         // this is thread safe, only if particle i is accessed by only one
         // thread at a time. which is ensured, as particle i resides in a
@@ -84,7 +89,7 @@ class VerletListHelpers {
      * @param soa the soa
      * @param newton3 whether to use newton 3
      */
-    void SoAFunctor(SoA<SoAArraysType> &soa, bool newton3) override {
+    void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
       if (soa.getNumParticles() == 0) return;
 
       auto **const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
@@ -124,7 +129,7 @@ class VerletListHelpers {
      * @param soa2 soa of second cell
      * @note: newton3 is ignored here, as for newton3=false SoAFunctor(soa2, soa1) will also be called.
      */
-    void SoAFunctor(SoA<SoAArraysType> &soa1, SoA<SoAArraysType> &soa2, bool /*newton3*/) override {
+    void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
       auto **const __restrict__ ptr1ptr = soa1.template begin<AttributeNames::ptr>();
@@ -195,7 +200,7 @@ class VerletListHelpers {
     /**
      * @copydoc Functor::getNeededAttr()
      */
-    constexpr static const std::array<typename Particle::AttributeNames, 4> getNeededAttr() {
+    constexpr static std::array<typename Particle::AttributeNames, 4> getNeededAttr() {
       return std::array<typename Particle::AttributeNames, 4>{AttributeNames::ptr, AttributeNames::posX,
                                                               AttributeNames::posY, AttributeNames::posZ};
     }
@@ -203,7 +208,7 @@ class VerletListHelpers {
     /**
      * @copydoc Functor::getComputedAttr()
      */
-    constexpr static const std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+    constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
       return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};
     }
 
@@ -249,9 +254,13 @@ class VerletListHelpers {
       return true;
     }
 
+    bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+      return false;  // this functor shouldn't be used with clusters!
+    }
+
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-      auto dist = ArrayMath::sub(i.getR(), j.getR());
-      double distsquare = ArrayMath::dot(dist, dist);
+      auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+      double distsquare = utils::ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffsquared) {
         // this is thread safe, we have variables on the stack
         auto found = std::find(_verletListsAoS[&i].begin(), _verletListsAoS[&i].end(), &j);

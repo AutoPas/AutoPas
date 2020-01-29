@@ -5,8 +5,13 @@
  */
 
 #include "C04SoATraversalTest.h"
-#include "testingHelpers/GridGenerator.h"
+
+#include "autopas/containers/linkedCells/traversals/C04SoATraversal.h"
+#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
+#include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
 
@@ -15,30 +20,30 @@ using ::testing::_;
  */
 TEST_F(C04SoATraversalTest, testTraversal) {
   std::array<size_t, 3> edgeLength = {6, 6, 6};
-
-  autopas::LJFunctor<autopas::Particle, FPCell> functor(1., 1., 1., 1.);
-  std::vector<FPCell> cells1;
-  std::vector<FPCell> cells2;
+  autopas::LJFunctor<Molecule, FMCell> functor(1.);
+  functor.setParticleProperties(24, 1);
+  std::vector<FMCell> cells1;
+  std::vector<FMCell> cells2;
   cells1.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
   cells2.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
-  autopas::Particle defaultParticle;
-  GridGenerator::fillWithParticles(cells1, edgeLength, {3ul, 3ul, 3ul}, defaultParticle, {0.5, 0.5, 0.5},
-                                   {0.75, 0.75, 0.75});
-  GridGenerator::fillWithParticles(cells2, edgeLength, {3ul, 3ul, 3ul}, defaultParticle, {0.5, 0.5, 0.5},
-                                   {0.75, 0.75, 0.75});
+  Molecule defaultParticle;
+  autopasTools::generators::GridGenerator::fillWithParticles(cells1, edgeLength, {3ul, 3ul, 3ul}, defaultParticle,
+                                                             {0.5, 0.5, 0.5}, {0.75, 0.75, 0.75});
+  autopasTools::generators::GridGenerator::fillWithParticles(cells2, edgeLength, {3ul, 3ul, 3ul}, defaultParticle,
+                                                             {0.5, 0.5, 0.5}, {0.75, 0.75, 0.75});
 
   NumThreadGuard numThreadGuard(1);
 
-  autopas::C04SoATraversal<FPCell, autopas::LJFunctor<autopas::Particle, FPCell>, autopas::DataLayoutOption::soa, true>
-      c04SoATraversal(edgeLength, &functor, 2);
+  autopas::C04SoATraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, true>
+      c04SoATraversal(edgeLength, &functor, 2, {1., 1., 1.});
   c04SoATraversal.setCellsToTraverse(cells1);
   c04SoATraversal.initTraversal();
   c04SoATraversal.traverseParticlePairs();
   c04SoATraversal.endTraversal();
 
-  autopas::C08Traversal<FPCell, autopas::LJFunctor<autopas::Particle, FPCell>, autopas::DataLayoutOption::soa, true>
-      c08Traversal(edgeLength, &functor, 2);
+  autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, true>
+      c08Traversal(edgeLength, &functor, 2, {1., 1., 1.});
   c08Traversal.setCellsToTraverse(cells2);
   c08Traversal.initTraversal();
   c08Traversal.traverseParticlePairs();

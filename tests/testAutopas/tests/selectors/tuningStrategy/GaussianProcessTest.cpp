@@ -8,27 +8,39 @@
 
 using namespace autopas;
 
-TEST(GaussianProcessTest, noEvidence) {
+TEST_F(GaussianProcessTest, wrongDimension) {
+  Random rng(32);
+  GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
+
+  Eigen::VectorXd f1 = Eigen::VectorXd::Ones(1);
+  Eigen::VectorXd f2 = Eigen::VectorXd::Zero(3);
+
+  EXPECT_THROW(gp.addEvidence(f1, 0), utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW(gp.addEvidence(f2, 1), utils::ExceptionHandler::AutoPasException);
+}
+
+TEST_F(GaussianProcessTest, noEvidence) {
+  Random rng(32);
+
   double epsilon = 0.05;  // allowed error for tests
 
-  double theta = 2.;     // default variance
   double sigma = 0.001;  // noise
-  GaussianProcess<Eigen::VectorXd> gp(theta, {1.}, sigma);
+  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << 0.;
 
   // predict without information -> should return default values
-  ASSERT_NEAR(gp.predictMean(f1), 0., epsilon);
-  ASSERT_NEAR(gp.predictVar(f1), theta, epsilon);
+  EXPECT_NEAR(gp.predictMean(f1), 0., epsilon);
+  EXPECT_NEAR(gp.predictVar(f1), 1., epsilon);
 }
 
-TEST(GaussianProcessTest, oneEvidence) {
-  double epsilon = 0.05;
+TEST_F(GaussianProcessTest, oneEvidence) {
+  Random rng(32);
 
-  double theta = 4.;
+  double epsilon = 0.05;
   double sigma = 0.001;
-  GaussianProcess<Eigen::VectorXd> gp(theta, {1.}, sigma);
+  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << 0.;
@@ -40,20 +52,19 @@ TEST(GaussianProcessTest, oneEvidence) {
   gp.addEvidence(f1, out1);
 
   // predicting point same as evidence -> should expect same output as evidence
-  ASSERT_NEAR(gp.predictMean(f1), out1, epsilon);
-  ASSERT_NEAR(gp.predictVar(f1), 0., epsilon);
+  EXPECT_NEAR(gp.predictMean(f1), out1, epsilon);
+  EXPECT_NEAR(gp.predictVar(f1), 0., epsilon);
 
-  // prediction far away from evidence should expect default.
-  ASSERT_NEAR(gp.predictMean(f2), 0., epsilon);
-  ASSERT_NEAR(gp.predictVar(f2), theta, epsilon);
+  // not enough information, so other inputs lead to same mean
+  EXPECT_NEAR(gp.predictMean(f2), out1, epsilon);
 }
 
-TEST(GaussianProcessTest, twoEvidence) {
-  double epsilon = 0.05;  // allowed error for tests
+TEST_F(GaussianProcessTest, twoEvidence) {
+  Random rng;
 
-  double theta = 5.;     // default variance
-  double sigma = 0.001;  // noise
-  GaussianProcess<Eigen::VectorXd> gp(theta, {1.}, sigma);
+  double epsilon = 0.05;  // allowed error for tests
+  double sigma = 0.001;   // noise
+  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << -100.;
@@ -70,24 +81,20 @@ TEST(GaussianProcessTest, twoEvidence) {
   gp.addEvidence(f2, out2);
 
   // predicting point same as evidence
-  // should expect same output as evidence because greate distance between inputs
-  ASSERT_NEAR(gp.predictMean(f1), out1, epsilon);
-  ASSERT_NEAR(gp.predictVar(f1), 0., epsilon);
+  // should expect same output as evidence because great distance between inputs
+  EXPECT_NEAR(gp.predictMean(f1), out1, epsilon);
+  EXPECT_NEAR(gp.predictVar(f1), 0., epsilon);
 
-  ASSERT_NEAR(gp.predictMean(f2), out2, epsilon);
-  ASSERT_NEAR(gp.predictVar(f2), 0., epsilon);
-
-  // prediction far away from evidence should expect default.
-  ASSERT_NEAR(gp.predictMean(f3), 0., epsilon);
-  ASSERT_NEAR(gp.predictVar(f3), theta, epsilon);
+  EXPECT_NEAR(gp.predictMean(f2), out2, epsilon);
+  EXPECT_NEAR(gp.predictVar(f2), 0., epsilon);
 }
 
-TEST(GaussianProcessTest, clear) {
-  double epsilon = 0.05;  // allowed error for tests
+TEST_F(GaussianProcessTest, clear) {
+  Random rng;
 
-  double theta = 5.;     // default variance
-  double sigma = 0.001;  // noise
-  GaussianProcess<Eigen::VectorXd> gp(theta, {1.}, sigma);
+  double epsilon = 0.05;  // allowed error for tests
+  double sigma = 0.001;   // noise
+  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << -100.;
@@ -103,38 +110,39 @@ TEST(GaussianProcessTest, clear) {
 
   // predicting points as deleted evidence
   // they should not have effect on the prediction anymore
-  ASSERT_NEAR(gp.predictMean(f1), 0., epsilon);
-  ASSERT_NEAR(gp.predictVar(f1), theta, epsilon);
+  EXPECT_NEAR(gp.predictMean(f1), 0., epsilon);
+  EXPECT_NEAR(gp.predictVar(f1), 1., epsilon);
 
-  ASSERT_NEAR(gp.predictMean(f2), 0., epsilon);
-  ASSERT_NEAR(gp.predictVar(f2), theta, epsilon);
+  EXPECT_NEAR(gp.predictMean(f2), 0., epsilon);
+  EXPECT_NEAR(gp.predictVar(f2), 1., epsilon);
 
   // test new evidence at deleted point
   out2 = 10.;
   gp.addEvidence(f2, out2);
 
-  ASSERT_NEAR(gp.predictMean(f1), 0., epsilon);
-  ASSERT_NEAR(gp.predictVar(f1), theta, epsilon);
+  EXPECT_NEAR(gp.predictMean(f1), out2, epsilon);
 
-  ASSERT_NEAR(gp.predictMean(f2), out2, epsilon);
-  ASSERT_NEAR(gp.predictVar(f2), 0., epsilon);
+  EXPECT_NEAR(gp.predictMean(f2), out2, epsilon);
+  EXPECT_NEAR(gp.predictVar(f2), 0., epsilon);
 }
 
-TEST(GaussianProcessTest, sine) {
+TEST_F(GaussianProcessTest, sine) {
+  Random rng(42);
+
   // gp should try to approximate the sine as blackbox function
   auto functor = [](double input) { return std::sin(input); };
-  double epsilon = 0.02;           // allowed error
-  unsigned numEvidence = 9;        // number of evidence to provide
-  unsigned numPredictions = 1000;  // number of predictions to make
-  double domainStart = 0.;         // start of tested domain
-  double domainEnd = 2 * M_PI;     // end of tested domain
+  constexpr double epsilon = 0.05;        // allowed error
+  constexpr size_t numEvidence = 6;       // number of evidence to provide
+  constexpr size_t numPredictions = 500;  // number of predictions to make
+  constexpr double domainStart = 0.;      // start of tested domain
+  constexpr double domainEnd = 2 * M_PI;  // end of tested domain
 
-  GaussianProcess<Eigen::VectorXd> gp(0.5, {0.2}, 0.001);
+  GaussianProcess<Eigen::VectorXd> gp(1, 0.001, rng);
 
   // create equidistant evidence over the domain
   double evidenceStep = (domainEnd - domainStart) / (numEvidence - 1);
-  for (unsigned i = 0; i < numEvidence; ++i) {
-    double input = domainStart + evidenceStep * i;
+  for (unsigned indexFirst = 0; indexFirst < numEvidence; ++indexFirst) {
+    double input = domainStart + evidenceStep * indexFirst;
     Eigen::VectorXd f(1);
     f << input;
     double output = functor(input);
@@ -144,140 +152,150 @@ TEST(GaussianProcessTest, sine) {
 
   // make equidistant prediction over the domain
   double predictStep = (domainEnd - domainStart) / (numPredictions - 1);
-  for (unsigned i = 0; i < numPredictions; ++i) {
-    double input = domainStart + predictStep * i;
+  for (unsigned indexFirst = 0; indexFirst < numPredictions; ++indexFirst) {
+    double input = domainStart + predictStep * indexFirst;
     Eigen::VectorXd f(1);
     f << input;
     double output = functor(input);
 
-    ASSERT_NEAR(gp.predictMean(f), output, epsilon);
+    EXPECT_NEAR(gp.predictMean(f), output, epsilon);
   }
 }
 
-TEST(GaussianProcessTest, 2dMax) {
-  Random rng(72);  // random generator
-
+TEST_F(GaussianProcessTest, 2dMax) {
   // try to find the max of -(i1 + 1)^2 - (i2 - 1)^2
   auto functor = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
-  double epsilon = 0.05;  // allowed error
-  std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
-                                             NumberInterval<double>(-2, 2)};  // domain of function
+  std::pair domain{NumberInterval<double>(-2, 2), NumberInterval<double>(-2, 2)};
+  constexpr double maxError = 0.2;
 
   // max of function
   Eigen::VectorXd max(2);
   max << -1, 1;
-  unsigned numEvidence = 40;      // number of samples allowed to make
-  unsigned lhsNumSamples = 1000;  // number of sample to find max of acquisition function
-  AcquisitionFunctionOption af = AcquisitionFunctionOption::ucb;      // use upper confidence bound as af
-  AcquisitionFunctionOption lastAf = AcquisitionFunctionOption::lcb;  // use lower confidence bound for final prediction
 
-  GaussianProcess<Eigen::VectorXd> gp(6, {0.2, 0.2}, 0.001);
-
-  // add first evidence
-  Eigen::VectorXd first(2);
-  first << 0, 0;
-  gp.addEvidence(first, functor(0, 0));
-
-  for (unsigned i = 1; i < numEvidence; ++i) {
-    // create lhs samples
-    std::vector<Eigen::VectorXd> lhsSamples;
-    lhsSamples.reserve(lhsNumSamples);
-
-    auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
-    auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
-    for (size_t i = 0; i < lhsNumSamples; ++i) {
-      Eigen::VectorXd sample(2);
-      sample << xSamples[i], ySamples[i];
-      lhsSamples.push_back(sample);
-    }
-
-    // sample max of acquisition function
-    Eigen::VectorXd am = gp.sampleAquisitionMax(af, lhsSamples);
-    double amOut = functor(am[0], am[1]);
-
-    gp.addEvidence(am, amOut);
-  }
-
-  // last lhs sample for predicted max
-  auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
-  auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
-  std::vector<Eigen::VectorXd> lhsSamples;
-  lhsSamples.reserve(lhsNumSamples);
-  for (size_t i = 0; i < lhsNumSamples; ++i) {
-    Eigen::VectorXd sample(2);
-    sample << xSamples[i], ySamples[i];
-    lhsSamples.push_back(sample);
-  }
-
-  // final sample
-  Eigen::VectorXd am = gp.sampleAquisitionMax(lastAf, lhsSamples);
-
-  // check if predicted max is near real max
-  double predMax = functor(am[0], am[1]);
-  double realMax = functor(max[0], max[1]);
-  ASSERT_NEAR(predMax, realMax, epsilon);
+  test2DFunction(functor, max, maxError, domain, AcquisitionFunctionOption::upperConfidenceBound, minMax::max,
+                 minMax::max, false);
 }
 
-TEST(GaussianProcessTest, 2dMin) {
-  Random rng(73);  // random generator
-
+TEST_F(GaussianProcessTest, 2dMin) {
   // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
   auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
-  double epsilon = 0.05;  // allowed error
-  std::vector<NumberInterval<double>> domain{NumberInterval<double>(-2, 2),
-                                             NumberInterval<double>(-2, 2)};  // domain of function
+  std::pair domain{NumberInterval<double>(-2, 2), NumberInterval<double>(-2, 2)};
+  constexpr double maxError = 0.2;
 
   // min of function
   Eigen::VectorXd min(2);
   min << 1, 1;
-  unsigned numEvidence = 40;      // number of samples allowed to make
-  unsigned lhsNumSamples = 1000;  // number of sample to find min of acquisition function
-  AcquisitionFunctionOption af = AcquisitionFunctionOption::lcb;      // use lower confidence bound as af
-  AcquisitionFunctionOption lastAf = AcquisitionFunctionOption::ucb;  // use upper confidence bound for final prediction
 
-  GaussianProcess<Eigen::VectorXd> gp(6, {0.2, 0.2}, 0.001);
+  test2DFunction(functor, min, maxError, domain, AcquisitionFunctionOption::expectedDecrease, minMax::min, minMax::max,
+                 false);
+}
 
-  // add first evidence
-  Eigen::VectorXd first(2);
-  first << 0, 0;
-  gp.addEvidence(first, functor(0, 0));
+TEST_F(GaussianProcessTest, 2dMinGrid) {
+  // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
+  auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
+  // discrete domain of function
+  int domHalf = 10;
+  std::set<double> domSet;
+  for (int i = -domHalf; i <= domHalf; ++i) {
+    domSet.insert(i * 2. / domHalf);
+  }
+  std::pair domain{NumberSetFinite<double>(domSet), NumberSetFinite<double>(domSet)};
+  constexpr double maxError = 0.2;
 
-  for (unsigned i = 1; i < numEvidence; ++i) {
-    // create lhs samples
-    std::vector<Eigen::VectorXd> lhsSamples;
-    lhsSamples.reserve(lhsNumSamples);
+  // min of function
+  Eigen::VectorXd min(2);
+  min << 1, 1;
+  test2DFunction(functor, min, maxError, domain, AcquisitionFunctionOption::lowerConfidenceBound, minMax::min,
+                 minMax::min, false);
+}
 
-    auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
-    auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
-    for (size_t i = 0; i < lhsNumSamples; ++i) {
-      Eigen::VectorXd sample(2);
-      sample << xSamples[i], ySamples[i];
-      lhsSamples.push_back(sample);
+TEST_F(GaussianProcessTest, 2dMinGridBig) {
+  // functor to find min of
+  auto functor = [](double i1, double i2) {
+    return std::pow((std::abs(i1 - 1) + 1), 5) + std::pow((std::abs(i2 - 1) + 1), 5);
+  };
+  // discrete domain of function
+  int domHalf = 10;
+  std::set<double> domSet;
+  for (int i = -domHalf; i <= domHalf; ++i) {
+    domSet.insert(i * 2. / domHalf);
+  }
+  std::pair domain{NumberSetFinite<double>(domSet), NumberSetFinite<double>(domSet)};
+  constexpr double maxError = 10;
+
+  // min of function
+  Eigen::VectorXd min(2);
+  min << 1, 1;
+  test2DFunction(functor, min, maxError, domain, AcquisitionFunctionOption::lowerConfidenceBound, minMax::min,
+                 minMax::min, false);
+}
+
+void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::NumberSet<double> &domainX,
+                                   const autopas::NumberSet<double> &domainY,
+                                   const autopas::GaussianProcess<Eigen::VectorXd> &gp,
+                                   autopas::AcquisitionFunctionOption af, double colorFactor) {
+  // get distance between chunks
+  double xSpace = (domainX.getMax() - domainX.getMin()) / (xChunks - 1);
+  double ySpace = (domainY.getMax() - domainY.getMin()) / (yChunks - 1);
+
+  // precalculate acqMap
+  std::vector<std::vector<double>> acqMap;
+  double acqMin = std::numeric_limits<double>::max();
+  double acqMax = std::numeric_limits<double>::min();
+  for (int y = 0; y < xChunks; ++y) {
+    // calculate a row
+    std::vector<double> row;
+    for (int x = 0; x < xChunks; ++x) {
+      // calculate value of chunk
+      Eigen::Vector2d sample(x * xSpace + domainX.getMin(), (y * ySpace + domainY.getMin()));
+      double val = gp.calcAcquisition(af, sample);
+
+      // negate for special case lcb
+      if (af == autopas::AcquisitionFunctionOption::lowerConfidenceBound) val = -val;
+
+      row.push_back(val);
+
+      // keep track min and max value
+      acqMin = std::min(val, acqMin);
+      acqMax = std::max(val, acqMax);
     }
 
-    // sample min of acquisition function
-    Eigen::VectorXd am = gp.sampleAquisitionMin(af, lhsSamples);
-    double amOut = functor(am[0], am[1]);
-
-    gp.addEvidence(am, amOut);
+    acqMap.push_back(row);
   }
 
-  // last lhs sample for predicted min
-  auto xSamples = domain[0].uniformSample(lhsNumSamples, rng);
-  auto ySamples = domain[1].uniformSample(lhsNumSamples, rng);
-  std::vector<Eigen::VectorXd> lhsSamples;
-  lhsSamples.reserve(lhsNumSamples);
-  for (size_t i = 0; i < lhsNumSamples; ++i) {
-    Eigen::VectorXd sample(2);
-    sample << xSamples[i], ySamples[i];
-    lhsSamples.push_back(sample);
+  // get scaling such that acqMax=1 and acqMin=0
+  double acqScale = 1 / (acqMax - acqMin);
+
+  // print map
+  for (int y = yChunks - 1; y >= 0; --y) {
+    // acquisiton row
+    for (int x = 0; x < xChunks; ++x) {
+      // map value between 0 to 1 and square for clearer differences of high values
+      double val = std::pow((acqMap[y][x] - acqMin) * acqScale, 2);
+
+      // map value to color
+      int color = static_cast<int>(232 + 23 * val);
+      color = std::clamp(color, 232, 255);
+
+      // print two spaces of that color
+      std::cout << "\033[48;5;" << color << "m  ";
+    }
+    // reset color, print a space
+    std::cout << "\033[0m ";
+
+    // mean row
+    for (int x = 0; x < xChunks; ++x) {
+      Eigen::Vector2d sample(x * xSpace + domainX.getMin(), (y * ySpace + domainY.getMin()));
+      double val = gp.predictMean(sample) * colorFactor;
+
+      // map value to color
+      int color = static_cast<int>(255 - val);
+      color = std::clamp(color, 232, 255);
+
+      // print two spaces of that color
+      std::cout << "\033[48;5;" << color << "m  ";
+    }
+    // reset color, print a space
+    std::cout << "\033[0m" << std::endl;
   }
-
-  // final sample
-  Eigen::VectorXd am = gp.sampleAquisitionMin(lastAf, lhsSamples);
-
-  // check if predicted min is near real min
-  double predMin = functor(am[0], am[1]);
-  double realMin = functor(min[0], min[1]);
-  ASSERT_NEAR(predMin, realMin, epsilon);
 }

@@ -10,7 +10,7 @@ TEST_F(DirectSumContainerTest, testIsContainerUpdateNeeded) {
   std::array<double, 3> boxMin{0, 0, 0};
   std::array<double, 3> boxMax{10, 10, 10};
   double cutoff = 1.;
-  autopas::DirectSum<Particle, FPCell> container(boxMin, boxMax, cutoff, 0.);
+  autopas::DirectSum<FPCell> container(boxMin, boxMax, cutoff, 0.);
 
   EXPECT_FALSE(container.isContainerUpdateNeeded());
 
@@ -28,8 +28,7 @@ TEST_F(DirectSumContainerTest, testIsContainerUpdateNeeded) {
 }
 
 TEST_F(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
-  autopas::DirectSum<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> directSum(
-      {0., 0., 0.}, {10., 10., 10.}, 1., 0.);
+  autopas::DirectSum<autopas::FullParticleCell<autopas::Particle>> directSum({0., 0., 0.}, {10., 10., 10.}, 1., 0.);
   int id = 1;
   for (double x : {0., 5., 9.999}) {
     for (double y : {0., 5., 9.999}) {
