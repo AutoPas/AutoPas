@@ -30,7 +30,7 @@ std::vector<std::array<double, 3>> TraversalComparison::calculateForces(autopas:
   selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{1.0, _cutoff * 0.1, 32});
   auto container = selector.getCurrentContainer();
   autopas::LJFunctor<Molecule, FMCell> functor{_cutoff};
-  functor.setParticleProperties(_eps*24,_sig*_sig);
+  functor.setParticleProperties(_eps * 24, _sig * _sig);
 
   auto traversal = autopas::TraversalSelector<FMCell>::generateTraversal(
       traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);

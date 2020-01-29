@@ -8,8 +8,6 @@
 
 #include <gtest/gtest.h>
 
-#include "autopas/utils/StringUtils.h"
-
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Each;
@@ -18,7 +16,8 @@ using ::testing::Invoke;
 using ::testing::Values;
 
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests, testing::ValuesIn([]() {
-                           auto allOptions = std::set<autopas::ContainerOption>{autopas::ContainerOption::getAllOptions()};
+                           auto allOptions =
+                               std::set<autopas::ContainerOption>{autopas::ContainerOption::getAllOptions()};
                            allOptions.erase(autopas::ContainerOption::verletClusterLists);
                            return allOptions;
                          }()),
