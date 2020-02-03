@@ -37,17 +37,17 @@ FetchContent_Declare(
     # needed to compile with ninja
 )
 
-# Disable everything we don't need and set build type to release. Also disable warnings.
-set(YAML_CPP_BUILD_TESTS CACHE BOOL OFF)
-set(YAML_CPP_BUILD_CONTRIB CACHE BOOL OFF)
-set(YAML_CPP_BUILD_TOOLS CACHE BOOL OFF)
+# Disable everything we don't need
+option(YAML_CPP_BUILD_TESTS "" OFF)
+option(YAML_CPP_BUILD_CONTRIB "" OFF)
+option(YAML_CPP_BUILD_TOOLS "" OFF)
+# hide options from ccmake
+mark_as_advanced(YAML_CPP_BUILD_TESTS)
+mark_as_advanced(YAML_CPP_BUILD_CONTRIB)
+mark_as_advanced(YAML_CPP_BUILD_TOOLS)
 
-# Things that were previously set, but we can't set now because the library is no longer
-# a sub-build and we can't pass seperate CMake args
-# Maybe this will be possible with this feature from CMake 3.17.0
-# https://gitlab.kitware.com/cmake/cmake/issues/19854
-# BUILD_TESTING=OFF
-# CMAKE_BUILD_TYPE=RELEASE
-# CMAKE_CXX_FLAGS=-w
 
 FetchContent_MakeAvailable(yaml-cpp)
+
+# Disable warnings
+target_compile_options(yaml-cpp PRIVATE -w)

@@ -35,15 +35,14 @@ FetchContent_Declare(
     URL_HASH MD5=7415a9768f3433bd93d78c1c87fd0576
 )
 
-# Disable stuff we don't need. Especially warnings.
-set(SPDLOG_BUILD_EXAMPLE CACHE BOOL OFF)
-set(SPDLOG_BUILD_TESTS CACHE BOOL OFF)
-
-# Things that were previously set, but we can't set now because the library is no longer
-# a sub-build and we can't pass seperate CMake args
-# Maybe this will be possible with this feature from CMake 3.17.0
-# https://gitlab.kitware.com/cmake/cmake/issues/19854
-# CMAKE_BUILD_TYPE=RELEASE
-# CMAKE_CXX_FLAGS=-w
+# Disable stuff we don't need
+option(SPDLOG_BUILD_EXAMPLE "" OFF)
+option(SPDLOG_BUILD_TESTS "" OFF)
+# hide options from ccmake
+mark_as_advanced(SPDLOG_BUILD_EXAMPLE)
+mark_as_advanced(SPDLOG_BUILD_TESTS)
 
 FetchContent_MakeAvailable(spdlog)
+
+# Disable warnings
+target_compile_options(spdlog PRIVATE -w)
