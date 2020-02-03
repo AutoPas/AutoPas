@@ -38,11 +38,33 @@ FetchContent_Declare(
 # Disable stuff we don't need
 option(SPDLOG_BUILD_EXAMPLE "" OFF)
 option(SPDLOG_BUILD_TESTS "" OFF)
+option(SPDLOG_INSTALL "" OFF)
+
 # hide options from ccmake
-mark_as_advanced(SPDLOG_BUILD_EXAMPLE)
-mark_as_advanced(SPDLOG_BUILD_TESTS)
+mark_as_advanced(
+    SPDLOG_BUILD_BENCH
+    SPDLOG_BUILD_EXAMPLE
+    SPDLOG_BUILD_EXAMPLE_HO
+    SPDLOG_BUILD_SHARED
+    SPDLOG_BUILD_TESTS
+    SPDLOG_BUILD_TESTS_HO
+    SPDLOG_CLOCK_COARSE
+    SPDLOG_FMT_EXTERNAL
+    SPDLOG_INSTALL
+    SPDLOG_NO_ATOMIC_LEVELS
+    SPDLOG_NO_EXCEPTIONS
+    SPDLOG_NO_THREAD_ID
+    SPDLOG_NO_TLS
+    SPDLOG_PREVENT_CHILD_FD
+    SPDLOG_SANITIZE_ADDRESS
+)
 
 FetchContent_MakeAvailable(spdlog)
 
+if(IS_DIRECTORY "${spdlog_SOURCE_DIR}")
+    set_property(DIRECTORY ${spdlog_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
+endif()
+
 # Disable warnings
 target_compile_options(spdlog PRIVATE -w)
+

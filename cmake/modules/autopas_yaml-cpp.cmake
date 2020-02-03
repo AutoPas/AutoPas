@@ -41,13 +41,21 @@ FetchContent_Declare(
 option(YAML_CPP_BUILD_TESTS "" OFF)
 option(YAML_CPP_BUILD_CONTRIB "" OFF)
 option(YAML_CPP_BUILD_TOOLS "" OFF)
-# hide options from ccmake
-mark_as_advanced(YAML_CPP_BUILD_TESTS)
-mark_as_advanced(YAML_CPP_BUILD_CONTRIB)
-mark_as_advanced(YAML_CPP_BUILD_TOOLS)
 
+# hide options from ccmake
+mark_as_advanced(
+    YAML_BUILD_SHARED_LIBS
+    YAML_CPP_BUILD_CONTRIB
+    YAML_CPP_BUILD_TESTS
+    YAML_CPP_BUILD_TOOLS
+    YAML_CPP_CLANG_FORMAT_EXE
+)
 
 FetchContent_MakeAvailable(yaml-cpp)
+
+if(IS_DIRECTORY "${yaml-cpp_SOURCE_DIR}")
+    set_property(DIRECTORY ${yaml-cpp_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
+endif()
 
 # Disable warnings
 target_compile_options(yaml-cpp PRIVATE -w)
