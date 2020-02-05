@@ -95,7 +95,7 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
-   * Replaces the copies of the last particle made in generateClusters() with dummies.
+   * Replaces the copies of the last particle made in generateClusters() with dummies. Dummy particles have ID 0.
    *
    * @param dummyStartX The x-coordinate for all dummies.
    * @param dummyDistZ The distance in z-direction that all generated dummies will have from each other.
