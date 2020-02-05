@@ -24,7 +24,7 @@ class TouchableParticle : public autopas::Particle {
   /**
    * Constructor with position, velocity, and id.
    * @param pos position
-   * @param vel velocity
+   * @param velocity velocity
    * @param id id of the particle
    */
   TouchableParticle(std::array<double, 3> pos, std::array<double, 3> velocity, unsigned long id)

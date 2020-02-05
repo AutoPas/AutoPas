@@ -11,12 +11,15 @@
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas::internal {
+
+//@TODO Besides the methods of ParticleCell, a method Particle& getParticle(size_t index) and Particle&
+//    * getParticle(size_t index) const is needed for the template type ParticleCell. It might be possible to add them
+//    to the ParticleCell class.
 /**
  * SingleCellIterator class to loop over particles of a single cell.
  *
  * @tparam Particle type of the Particles
- * @tparam ParticleCell type of the ParticleCell. Besides the methods of ParticleCell, a method Particle&
- * getParticle(size_t index) and Particle& getParticle(size_t index) const is needed.
+ * @tparam ParticleCell type of the ParticleCell.
  * @tparam modifiable Defines whether the ParticleIterator is modifiable or not. If it is false, it points to a const
  * Particle.
  */

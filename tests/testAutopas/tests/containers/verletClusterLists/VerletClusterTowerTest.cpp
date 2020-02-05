@@ -1,3 +1,9 @@
+/**
+ * @file VerletClusterTowerTest.cpp
+ * @author humig
+ * @date 05.02.2020
+ */
+
 #include "VerletClusterTowerTest.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "testingHelpers/commonTypedefs.h"
