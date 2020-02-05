@@ -51,7 +51,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
                      double skin = 0)
       : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _numClusters(0),
-        _interactionLengthInTowers(0),
+        _numTowersPerInteractionLength(0),
         _neighborListIsNewton3(false) {}
 
   ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
@@ -91,7 +91,10 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   /**
    * @copydoc autopas::ParticleContainerInterface::updateHaloParticle()
    */
-  bool updateHaloParticle(const Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
+  bool updateHaloParticle(const Particle &haloParticle) override {
+    autopas::utils::ExceptionHandler::exception("VerletClusterLists.updateHaloParticle not yet implemented.");
+    return false;
+  }
 
   /**
    * @copydoc VerletLists::deleteHaloParticles
@@ -172,7 +175,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     internal::VerletClusterListsRebuilder<Particle> builder{*this, _particlesToAdd, traversal->getUseNewton3()};
     auto res = builder.rebuild();
-    std::tie(_towerSideLength, _interactionLengthInTowers, _towersPerDim, _numClusters, _neighborListIsNewton3) = {
+    std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters, _neighborListIsNewton3) = {
         res._towerSideLength, res._interactionLengthInTowers, res._towersPerDim, res._numClusters,
         res._neighborListIsNewton3};
   }
@@ -232,10 +235,10 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   constexpr auto getClusterSize() const { return clusterSize; }
 
   /**
-   * Returns the interaction length in towers. That is how many towers fit into one interaction length rounded up.
-   * @return the interaction length in towers.
+   * Returns the towers per interaction length. That is how many towers fit into one interaction length rounded up.
+   * @return the number of towers per interaction length.
    */
-  auto getInteractionLengthInTowers() const { return _interactionLengthInTowers; }
+  auto getNumTowersPerInteractionLength() const { return _numTowersPerInteractionLength; }
 
   /**
    * Loads all particles of the container in their correct SoA and generates the SoAViews for the clusters.
@@ -272,20 +275,20 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   /**
-   * Returns the tower for the given 2D-coordinates.
-   * @param x The x-coordinate of the tower.
-   * @param y The y-coordinate of the tower.
-   * @return The tower for the given 2D-coordinates.
+   * Returns the tower for the given tower grid coordinates.
+   * @param x The x-th tower in x direction.
+   * @param y The y-th tower in y direction.
+   * @return The tower for the given tower grid coordinates.
    */
   auto &getTowerAtCoordinates(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
 
   /**
-   * Returns the 1D index for the given 2D-coordinates of a tower.
+   * Returns the 1D index for the given tower grid coordinates of a tower.
    *
    * @param x The x-coordinate of the tower.
    * @param y The y-coordinate of the tower.
    * @param towersPerDim The number of towers in each dimension.
-   * @return the 1D index for the given 2D-coordinates of a tower.
+   * @return the 1D index for the given tower grid coordinates of a tower.
    */
   static auto towerIndex2DTo1D(const size_t x, const size_t y, const std::array<size_t, 2> towersPerDim) {
     return x + y * towersPerDim[0];
@@ -373,7 +376,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    * The interaction length in number of towers it reaches.
    * static_cast<int>(std::ceil((this->getInteractionLength()) * _towerSideLengthReciprocal))
    */
-  int _interactionLengthInTowers;
+  int _numTowersPerInteractionLength;
 
   /**
    * Specifies if the saved neighbors use newton 3 or not.

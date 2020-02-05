@@ -85,7 +85,7 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
   void traverseParticlePairs() override {
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
 
-    const auto towersPerColoringCell = clusterList.getInteractionLengthInTowers();
+    const auto towersPerColoringCell = clusterList.getNumTowersPerInteractionLength();
     std::array<unsigned long, 2> coloringCellsPerDim{};
     for (int i = 0; i < 2; i++) {
       coloringCellsPerDim[i] =

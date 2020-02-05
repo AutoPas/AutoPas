@@ -227,7 +227,7 @@ class ClusterTower : public ParticleCell<Particle> {
   [[nodiscard]] bool isNotEmpty() const override { return getNumActualParticles() > 0; }
 
   void deleteByIndex(size_t index) override {
-    // TODO support deletion of particles somehow
+    // @TODO support deletion of particles somehow
     autopas::utils::ExceptionHandler::exception("Not supported!");
   }
 

@@ -53,7 +53,7 @@ class VerletClusterListsRebuilder {
       : _particlesToAdd(particlesToAdd),
         _towers(clusterList.getTowers()),
         _towerSideLength(clusterList.getTowerSideLength()),
-        _interactionLengthInTowers(clusterList.getInteractionLengthInTowers()),
+        _interactionLengthInTowers(clusterList.getNumTowersPerInteractionLength()),
         _towerSideLengthReciprocal(1 / _towerSideLength),
         _towersPerDim(clusterList.getTowersPerDimension()),
         _neighborListIsNewton3(newton3),
@@ -88,7 +88,8 @@ class VerletClusterListsRebuilder {
     bool _neighborListIsNewton3;
   };
   /**
-   * Rebuilds the towers, clusters, and neighbor lists.
+   * Rebuilds the towers, clusters, and neighbor lists. Clusters are filled with dummies as described in
+   * ClusterTower::fillUpWithDummyParticles.
    *
    * @return all new values for VerletClusterLists member variables.
    */
@@ -105,8 +106,8 @@ class VerletClusterListsRebuilder {
     auto boxSize = utils::ArrayMath::sub(_boxMax, _boxMin);
 
     _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSize);
-    _interactionLengthInTowers = static_cast<int>(std::ceil(_interactionLength / _towerSideLength));
     _towerSideLengthReciprocal = 1 / _towerSideLength;
+    _interactionLengthInTowers = static_cast<int>(std::ceil(_interactionLength * _towerSideLengthReciprocal));
 
     _towersPerDim = calculateTowersPerDim(boxSize);
     size_t numTowers = _towersPerDim[0] * _towersPerDim[1];
