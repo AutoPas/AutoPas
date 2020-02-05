@@ -5,6 +5,7 @@
  */
 
 #include "VerletClusterTowerTest.h"
+
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "testingHelpers/commonTypedefs.h"
 

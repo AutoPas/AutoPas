@@ -149,13 +149,11 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   [[nodiscard]] size_t getNumDummyParticles() const { return _numDummyParticles; }
 
-      /**
-       * Returns the number of particles in the tower that are not dummies.
-       * @return the number of particles in the tower that are not dummies.
-       */
-      [[nodiscard]] size_t getNumActualParticles() const {
-    return _particles.numParticles() - _numDummyParticles;
-  }
+  /**
+   * Returns the number of particles in the tower that are not dummies.
+   * @return the number of particles in the tower that are not dummies.
+   */
+  [[nodiscard]] size_t getNumActualParticles() const { return _particles.numParticles() - _numDummyParticles; }
 
   /**
    * Returns the number of clusters in the tower.
@@ -163,13 +161,11 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   [[nodiscard]] size_t getNumClusters() const { return _clusters.size(); }
 
-      /**
-       * Returns a reference to the std::vector holding the clusters of this container.
-       * @return a reference to the std::vector holding the clusters of this container.
-       */
-      [[nodiscard]] auto &getClusters() {
-    return _clusters;
-  }
+  /**
+   * Returns a reference to the std::vector holding the clusters of this container.
+   * @return a reference to the std::vector holding the clusters of this container.
+   */
+  [[nodiscard]] auto &getClusters() { return _clusters; }
 
   /**
    * Returns the cluster at position index.
@@ -188,11 +184,11 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   [[nodiscard]] unsigned long numParticles() const override { return getNumActualParticles(); }
 
-      /**
-       * Returns an iterator over all non-dummy particles contained in this tower.
-       * @return an iterator over all non-dummy particles contained in this tower.
-       */
-      [[nodiscard]] SingleCellIteratorWrapper<Particle, true> begin() override {
+  /**
+   * Returns an iterator over all non-dummy particles contained in this tower.
+   * @return an iterator over all non-dummy particles contained in this tower.
+   */
+  [[nodiscard]] SingleCellIteratorWrapper<Particle, true> begin() override {
     return SingleCellIteratorWrapper<Particle, true>{
         new SingleCellIterator<Particle, ClusterTower<Particle, clusterSize>, true>(this)};
   }
@@ -240,11 +236,11 @@ class ClusterTower : public ParticleCell<Particle> {
     return {0, 0, 0};
   }
 
-  private :
-      /**
-       * The clusters that are contained in this tower.
-       */
-      std::vector<Cluster<Particle, clusterSize>> _clusters;
+ private:
+  /**
+   * The clusters that are contained in this tower.
+   */
+  std::vector<Cluster<Particle, clusterSize>> _clusters;
   /**
    * The particle cell to store the particles and SoA for this tower.
    */

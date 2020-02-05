@@ -34,16 +34,13 @@ class CubeGauss : public Object {
         boxLength(boxLength),
         distributionMean(distributionMean),
         distributionStdDev(distributionStdDev),
-        bottomLeftCorner(bottomLeftCorner){}
+        bottomLeftCorner(bottomLeftCorner) {}
 
-                /**
-                 * Getter for distribution mean
-                 * @return distributionMean
-                 */
-                [[nodiscard]] const std::array<double, 3> &
-            getDistributionMean() const {
-    return distributionMean;
-  }
+  /**
+   * Getter for distribution mean
+   * @return distributionMean
+   */
+  [[nodiscard]] const std::array<double, 3> &getDistributionMean() const { return distributionMean; }
 
   /**
    * Getter for distributionStdDev
@@ -51,9 +48,7 @@ class CubeGauss : public Object {
    */
   [[nodiscard]] const std::array<double, 3> &getDistributionStdDev() const { return distributionStdDev; }
 
-      [[nodiscard]] size_t getParticlesTotal() const override {
-    return numParticles;
-  }
+  [[nodiscard]] size_t getParticlesTotal() const override { return numParticles; }
 
   const std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
 

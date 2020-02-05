@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+
 #include "autopas/utils/SoAView.h"
 
 namespace autopas::internal {

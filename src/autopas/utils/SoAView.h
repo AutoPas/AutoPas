@@ -82,11 +82,11 @@ class SoAView {
    */
   [[nodiscard]] size_t getNumParticles() const { return _endIndex - _startIndex; }
 
-  private :
-      /**
-       * The underlying SoA.
-       */
-      SoA<SoAArraysType> *_soa;
+ private:
+  /**
+   * The underlying SoA.
+   */
+  SoA<SoAArraysType> *_soa;
 
   /**
    * The start index of the view in the SoA. (Inclusive)

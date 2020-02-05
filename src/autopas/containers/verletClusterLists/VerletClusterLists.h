@@ -305,14 +305,14 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     return towerIndex2DTo1D(x, y, _towersPerDim);
   }
 
-  protected :
-      /**
-       * Helper method to sequentially iterate over all clusters.
-       * @tparam LoopBody The type of the lambda to execute for all clusters.
-       * @param loopBody The lambda to execute for all clusters. Parameters given is internal::Cluster& cluster.
-       */
-      template <class LoopBody>
-      void traverseClustersSequential(LoopBody &&loopBody) {
+ protected:
+  /**
+   * Helper method to sequentially iterate over all clusters.
+   * @tparam LoopBody The type of the lambda to execute for all clusters.
+   * @param loopBody The lambda to execute for all clusters. Parameters given is internal::Cluster& cluster.
+   */
+  template <class LoopBody>
+  void traverseClustersSequential(LoopBody &&loopBody) {
     for (size_t x = 0; x < _towersPerDim[0]; x++) {
       for (size_t y = 0; y < _towersPerDim[1]; y++) {
         auto &tower = getTowerAtCoordinates(x, y);
