@@ -7,9 +7,9 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CBasedTraversal.h"
+#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/ClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
-#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 
 namespace autopas {
 
