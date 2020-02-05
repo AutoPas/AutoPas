@@ -535,21 +535,20 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
+   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
   // clang-format on
-  void SoAFunctor(SoAView<SoAArraysType> soa,
-                  const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborList, size_t iFrom,
-                  size_t iTo, bool newton3) override {
+  void SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) override {
     utils::ExceptionHandler::exception("Verlet SoA functor not implemented!");
   }
 
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static const auto getNeededAttr() {
+  constexpr static auto getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 8>{
         Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
@@ -559,7 +558,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static const auto getNeededAttr(std::false_type) {
+  constexpr static auto getNeededAttr(std::false_type) {
     return std::array<typename Particle::AttributeNames, 5>{
         Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
@@ -568,7 +567,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static const auto getComputedAttr() {
+  constexpr static auto getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 3>{
         Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
   }

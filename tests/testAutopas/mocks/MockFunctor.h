@@ -35,9 +35,8 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell_t> {
   // virtual void SoAFunctor(SoAView &soa, const std::vector, (override)<std::vector<size_t,
   // AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
   MOCK_METHOD(void, SoAFunctor,
-              (autopas::SoAView<typename Particle::SoAArraysType> soa,
-               (const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &), size_t, size_t,
-               bool newton3),
+              (autopas::SoAView<typename Particle::SoAArraysType> soa, size_t indexFirst,
+               (const std::vector<size_t, autopas::AlignedAllocator<size_t>> &), bool newton3),
               (override));
 
   // virtual void SoALoader(ParticleCell &cell, autopas::SoA &soa, size_t

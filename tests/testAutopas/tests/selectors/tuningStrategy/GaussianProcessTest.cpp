@@ -141,8 +141,8 @@ TEST_F(GaussianProcessTest, sine) {
 
   // create equidistant evidence over the domain
   double evidenceStep = (domainEnd - domainStart) / (numEvidence - 1);
-  for (unsigned i = 0; i < numEvidence; ++i) {
-    double input = domainStart + evidenceStep * i;
+  for (unsigned indexFirst = 0; indexFirst < numEvidence; ++indexFirst) {
+    double input = domainStart + evidenceStep * indexFirst;
     Eigen::VectorXd f(1);
     f << input;
     double output = functor(input);
@@ -152,8 +152,8 @@ TEST_F(GaussianProcessTest, sine) {
 
   // make equidistant prediction over the domain
   double predictStep = (domainEnd - domainStart) / (numPredictions - 1);
-  for (unsigned i = 0; i < numPredictions; ++i) {
-    double input = domainStart + predictStep * i;
+  for (unsigned indexFirst = 0; indexFirst < numPredictions; ++indexFirst) {
+    double input = domainStart + predictStep * indexFirst;
     Eigen::VectorXd f(1);
     f << input;
     double output = functor(input);
