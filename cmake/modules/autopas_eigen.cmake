@@ -32,21 +32,21 @@ include(FetchContent)
 FetchContent_Declare(
     Eigen3
     URL
-    # eigen-master:
-    # https://bitbucket.org/eigen/eigen/get/default.zip
-    # eigen-3.3.90:
-    ${AUTOPAS_SOURCE_DIR}/libs/eigen-eigen-66be6c76fc01.zip
+        # eigen-master:
+        # https://bitbucket.org/eigen/eigen/get/default.zip
+        # eigen-3.3.90:
+        ${AUTOPAS_SOURCE_DIR}/libs/eigen-eigen-66be6c76fc01.zip
     URL_HASH MD5=faaf36185ad92b039f7b3f641340dc28
 )
 
 # Check if population has already been performed
 FetchContent_GetProperties(Eigen3)
-if(NOT eigen3_POPULATED) # must be lowercase "eigen3"
-    # Fetch the content using previously declared details
+if (NOT eigen3_POPULATED) # must be lowercase "eigen3" Fetch the content using previously declared
+                          # details
     FetchContent_Populate(Eigen3)
 
-    # Do not add_subdirectory, else we would run configure, build and install
-    # Just define a library from the sources
+    # Do not add_subdirectory, else we would run configure, build and install Just define a library
+    # from the sources
     add_library(
         Eigen3
         OBJECT # this is a header only lib therefore object type is needed
@@ -56,4 +56,4 @@ if(NOT eigen3_POPULATED) # must be lowercase "eigen3"
     target_include_directories(Eigen3 SYSTEM INTERFACE "${eigen3_SOURCE_DIR}")
 
     # add_subdirectory(${eigen3_SOURCE_DIR} ${eigen3_BINARY_DIR})
-endif()
+endif ()

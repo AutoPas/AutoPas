@@ -29,7 +29,7 @@ target_link_libraries(
     PUBLIC
         autopas
         autopasTools
-        gmock  # gmock includes the gtest target
+        gmock # gmock includes the gtest target
         yaml-cpp
 )
 

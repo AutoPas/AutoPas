@@ -28,10 +28,10 @@ include(FetchContent)
 FetchContent_Declare(
     spdlog
     URL
-    # spdlog master:
-    # https://github.com/gabime/spdlog/archive/v1.x.zip
-    # spdlog commit 79259fd:
-    ${AUTOPAS_SOURCE_DIR}/libs/spdlog-1.x.zip
+        # spdlog master:
+        # https://github.com/gabime/spdlog/archive/v1.x.zip
+        # spdlog commit 79259fd:
+        ${AUTOPAS_SOURCE_DIR}/libs/spdlog-1.x.zip
     URL_HASH MD5=7415a9768f3433bd93d78c1c87fd0576
 )
 
@@ -61,9 +61,9 @@ mark_as_advanced(
 
 FetchContent_MakeAvailable(spdlog)
 
-if(IS_DIRECTORY "${spdlog_SOURCE_DIR}")
+if (IS_DIRECTORY "${spdlog_SOURCE_DIR}")
     set_property(DIRECTORY ${spdlog_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
-endif()
+endif ()
 
 # Disable warnings
 target_compile_options(spdlog PRIVATE -w)

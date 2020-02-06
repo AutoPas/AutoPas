@@ -4,7 +4,6 @@ find_package(Threads REQUIRED)
 # Enable FetchContent CMake module
 include(FetchContent)
 
-
 # Build GoogleTest and make the cmake targets available
 FetchContent_Declare(
     gtest
@@ -15,14 +14,10 @@ FetchContent_Declare(
 option(INSTALL_GTEST "" OFF)
 
 # hide options from ccmake
-mark_as_advanced(
-    BUILD_GMOCK
-    INSTALL_GTEST
-)
-
+mark_as_advanced(BUILD_GMOCK INSTALL_GTEST)
 
 FetchContent_MakeAvailable(gtest)
 
-if(IS_DIRECTORY "${gtest_SOURCE_DIR}")
+if (IS_DIRECTORY "${gtest_SOURCE_DIR}")
     set_property(DIRECTORY ${gtest_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
-endif()
+endif ()
