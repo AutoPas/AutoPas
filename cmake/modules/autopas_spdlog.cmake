@@ -68,3 +68,5 @@ endif()
 # Disable warnings
 target_compile_options(spdlog PRIVATE -w)
 
+get_target_property(propval spdlog INTERFACE_INCLUDE_DIRECTORIES)
+target_include_directories(spdlog SYSTEM PUBLIC "${propval}")
