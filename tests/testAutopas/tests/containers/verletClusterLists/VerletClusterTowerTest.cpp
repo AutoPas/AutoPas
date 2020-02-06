@@ -51,7 +51,7 @@ static void testClusterGenerationAndDummies() {
         // Since the last particle is copied in the last cluster to fill it up, use minimum of expected index and
         // maximal index.
         unsigned long expectedParticleID = std::min(clusterIndex * clusterSize + particleIndex, numParticles - 1);
-        EXPECT_EQ(expectedParticleID, cluster.getParticle(particleIndex).getID());
+        EXPECT_EQ(expectedParticleID, cluster.at(particleIndex).getID());
       }
     }
 
@@ -62,7 +62,7 @@ static void testClusterGenerationAndDummies() {
     tower.fillUpWithDummyParticles(0, 0);
     const auto &lastCluster = tower.getCluster(tower.getNumClusters() - 1);
     for (size_t i = 1; i <= tower.getNumDummyParticles(); i++) {
-      EXPECT_EQ(lastCluster.getParticle(clusterSize - i).getID(), 0);
+      EXPECT_EQ(lastCluster.at(clusterSize - i).getID(), 0);
     }
   }
 }

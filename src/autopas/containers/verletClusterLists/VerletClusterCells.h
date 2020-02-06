@@ -353,7 +353,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   unsigned long getNumParticles() const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
-    // @todo: find a sensible value for magic number
+    /// @todo: find a sensible value for magic number
     // numThreads should be at least 1 and maximal max_threads
     int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 1000)));
     AutoPasLog(trace, "Using {} threads", numThreads);

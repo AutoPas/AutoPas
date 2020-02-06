@@ -103,8 +103,8 @@ class ClusterTower : public ParticleCell<Particle> {
   void fillUpWithDummyParticles(double dummyStartX, double dummyDistZ) {
     auto &lastCluster = getCluster(getNumClusters() - 1);
     for (size_t index = 1; index <= _numDummyParticles; index++) {
-      lastCluster.getParticle(clusterSize - index) = dummy;
-      lastCluster.getParticle(clusterSize - index).setR({dummyStartX, 0, dummyDistZ * index});
+      lastCluster.at(clusterSize - index) = dummy;
+      lastCluster.at(clusterSize - index).setR({dummyStartX, 0, dummyDistZ * index});
     }
   }
 
@@ -207,14 +207,14 @@ class ClusterTower : public ParticleCell<Particle> {
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  decltype(auto) getParticle(size_t index) { return _particles._particles.at(index); }
+  Particle &at(size_t index) { return _particles._particles.at(index); }
 
   /**
    * Returns the const particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  decltype(auto) getParticle(size_t index) const { return _particles._particles.at(index); }
+  const Particle &at(size_t index) const { return _particles._particles.at(index); }
 
   // Methods from here on: Only to comply with ParticleCell interface. SingleCellIterators work on ParticleCells, and
   // while those methods would not be needed, still complying to the whole interface should be helpful, if

@@ -73,8 +73,9 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     traversal->endTraversal();
   }
 
-  // @TODO: Somehow make the iterator also iterating over the _particlesToAdd. Otherwise, e.g. ContainerSelectorTest
-  // will work but have all particles removed after it switches from this container to another.
+  /// @TODO: Somehow make the iterator also iterate over the _particlesToAdd. Otherwise, e.g. ContainerSelectorTest
+  /// will work but have all particles removed after it switches from this container to another.
+  /// see: https://github.com/AutoPas/AutoPas/issues/155
   /**
    * Adds the given particle to the container. rebuildVerletLists() has to be called to have it actually sorted in.
    * @param p The particle to add.
@@ -101,7 +102,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    */
   void deleteHaloParticles() override {
     // quick and dirty: iterate over all particles and delete halo particles
-    // @todo: make this proper
+    /// @todo: make this proper
     for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
       if (not iter->isOwned()) {
         internal::deleteParticle(iter);
@@ -114,14 +115,14 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    */
   AUTOPAS_WARN_UNUSED_RESULT
   std::vector<Particle> updateContainer() override {
-    // @TODO What happens when some particles are just deleted here?
+    /// @TODO What happens when some particles are just deleted here?
     AutoPasLog(debug, "updating container");
     // first delete all particles
     this->deleteHaloParticles();
 
     // next find invalid particles
     std::vector<Particle> invalidParticles;
-    // @todo: parallelize
+    /// @todo: parallelize
     for (auto iter = this->begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
         invalidParticles.push_back(*iter);
@@ -159,7 +160,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    // @todo implement this if bounding boxes are here
+    /// @todo implement this if bounding boxes are here
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
     return ParticleIteratorWrapper<Particle, true>();
   }
@@ -167,7 +168,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   ParticleIteratorWrapper<Particle, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    // @todo implement this if bounding boxes are here
+    /// @todo implement this if bounding boxes are here
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
     return ParticleIteratorWrapper<Particle, false>();
   }
@@ -249,7 +250,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   void loadParticlesIntoSoAs(Functor *functor) {
     const auto numTowers = _towers.size();
 #if defined(AUTOPAS_OPENMP)
-    // @todo: find sensible chunksize
+    /// @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t index = 0; index < numTowers; index++) {
@@ -266,7 +267,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   void extractParticlesFromSoAs(Functor *functor) {
     const auto numTowers = _towers.size();
 #if defined(AUTOPAS_OPENMP)
-    // @todo: find sensible chunksize
+    /// @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t index = 0; index < numTowers; index++) {
@@ -337,7 +338,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     const auto towersPerDimX = _towersPerDim[0];
     const auto towersPerDimY = _towersPerDim[1];
 #if defined(AUTOPAS_OPENMP)
-    // @todo: find sensible chunksize
+    /// @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic) collapse(2)
 #endif
     for (size_t x = 0; x < towersPerDimX; x++) {

@@ -298,7 +298,7 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
 
   return cellIndex;
   // in very rare cases rounding is stupid, thus we need a check...
-  // @todo when the border and flag manager is there
+  /// @todo when the border and flag manager is there
 }
 
 template <class ParticleCell>

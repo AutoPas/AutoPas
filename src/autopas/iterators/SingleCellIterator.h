@@ -12,9 +12,6 @@
 
 namespace autopas::internal {
 
-//@TODO Besides the methods of ParticleCell, a method Particle& getParticle(size_t index) and Particle&
-//    * getParticle(size_t index) const is needed for the template type ParticleCell. It might be possible to add them
-//    to the ParticleCell class.
 /**
  * SingleCellIterator class to loop over particles of a single cell.
  *
@@ -51,7 +48,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle, modi
    * this is the indirection operator
    * @return current particle
    */
-  inline ParticleType &operator*() const override { return _cell->getParticle(_index); }
+  inline ParticleType &operator*() const override { return _cell->at(_index); }
 
   /**
    * increment operator to get the next particle

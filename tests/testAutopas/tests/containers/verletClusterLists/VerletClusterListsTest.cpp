@@ -170,9 +170,9 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
 auto getClusterNeighbors(autopas::VerletClusterLists<Particle> &verletLists) {
   std::unordered_map<size_t, std::vector<size_t>> neighbors;
   verletLists.traverseClusters<false>([&neighbors](auto &cluster) {
-    auto idFirstParticleInCluster = cluster.getParticle(0).getID();
+    auto idFirstParticleInCluster = cluster.at(0).getID();
     for (const auto &neighborCluster : cluster.getNeighbors()) {
-      neighbors[idFirstParticleInCluster].push_back(neighborCluster->getParticle(0).getID());
+      neighbors[idFirstParticleInCluster].push_back(neighborCluster->at(0).getID());
     }
   });
   return neighbors;

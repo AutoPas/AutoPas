@@ -39,7 +39,7 @@ class ClusterFunctor {
       for (size_t i = 0; i < clusterSize; i++) {
         // Always use newton 3 for interactions within one cluster.
         for (size_t j = i + 1; j < clusterSize; j++) {
-          _functor->AoSFunctor(cluster.getParticle(i), cluster.getParticle(j), true);
+          _functor->AoSFunctor(cluster.at(i), cluster.at(j), true);
         }
       }
     } else {
@@ -57,7 +57,7 @@ class ClusterFunctor {
     if constexpr (dataLayout == DataLayoutOption::aos) {
       for (size_t i = 0; i < clusterSize; i++) {
         for (size_t j = 0; j < clusterSize; j++) {
-          _functor->AoSFunctor(cluster.getParticle(i), neighborCluster.getParticle(j), useNewton3);
+          _functor->AoSFunctor(cluster.at(i), neighborCluster.at(j), useNewton3);
         }
       }
     } else {

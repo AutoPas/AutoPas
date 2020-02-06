@@ -189,7 +189,7 @@ class VerletClusterListsRebuilder {
   void sortParticlesIntoTowers(const std::vector<std::vector<Particle>> &particles) {
     const auto numVectors = particles.size();
 #if defined(AUTOPAS_OPENMP)
-    // @todo: find sensible chunksize
+    /// @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t index = 0; index < numVectors; index++) {
@@ -212,7 +212,7 @@ class VerletClusterListsRebuilder {
 
     // for all towers
 #if defined(AUTOPAS_OPENMP)
-    // @todo: find sensible chunksize
+    /// @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic) collapse(2)
 #endif
     for (int towerIndexY = 0; towerIndexY <= maxTowerIndexY; towerIndexY++) {
@@ -318,8 +318,8 @@ class VerletClusterListsRebuilder {
     for (size_t towerIndex = 0; towerIndex < tower.getNumClusters(); towerIndex++) {
       auto startIndexNeighbor = _neighborListIsNewton3 and isSameTower ? towerIndex + 1 : 0;
       auto &towerCluster = tower.getCluster(towerIndex);
-      double towerClusterBoxBottom = towerCluster.getParticle(0).getR()[2];
-      double towerClusterBoxTop = towerCluster.getParticle(clusterSize - 1).getR()[2];
+      double towerClusterBoxBottom = towerCluster.at(0).getR()[2];
+      double towerClusterBoxTop = towerCluster.at(clusterSize - 1).getR()[2];
 
       for (size_t neighborIndex = startIndexNeighbor; neighborIndex < neighborTower.getNumClusters(); neighborIndex++) {
         const bool isSameCluster = towerIndex == neighborIndex;
@@ -327,8 +327,8 @@ class VerletClusterListsRebuilder {
           continue;
         }
         auto &neighborCluster = neighborTower.getCluster(neighborIndex);
-        double neighborClusterBoxBottom = neighborCluster.getParticle(0).getR()[2];
-        double neighborClusterBoxTop = neighborCluster.getParticle(clusterSize - 1).getR()[2];
+        double neighborClusterBoxBottom = neighborCluster.at(0).getR()[2];
+        double neighborClusterBoxTop = neighborCluster.at(clusterSize - 1).getR()[2];
 
         double distZ =
             bboxDistance(towerClusterBoxBottom, towerClusterBoxTop, neighborClusterBoxBottom, neighborClusterBoxTop);
@@ -374,7 +374,7 @@ class VerletClusterListsRebuilder {
       const auto towerDimIndexNonNegative = static_cast<size_t>(std::max(towerDimIndex, 0l));
       const auto towerDimIndexNonLargerValue = std::min(towerDimIndexNonNegative, _towersPerDim[dim] - 1);
       towerIndex[dim] = towerDimIndexNonLargerValue;
-      // @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
+      /// @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
       // flag manager
       if (location[dim] >= _boxMax[dim]) {
         towerIndex[dim] = _towersPerDim[dim] - 1;

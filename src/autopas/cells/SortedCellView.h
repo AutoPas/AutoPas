@@ -79,14 +79,14 @@ class SortedCellView : public ParticleCell<Particle> {
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  decltype(auto) getParticle(size_t index) { return _particles.at(index); }
+  Particle &at(size_t index) { return _particles.at(index); }
 
   /**
    * Returns the const particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  decltype(auto) getParticle(size_t index) const { return _particles.at(index); }
+  const Particle &at(size_t index) const { return _particles.at(index); }
 
   /**
    * Sorted vector of projected positions and particle pointers.
