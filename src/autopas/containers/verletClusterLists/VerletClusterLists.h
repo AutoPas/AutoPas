@@ -73,7 +73,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     traversal->endTraversal();
   }
 
-  /// @TODO: Somehow make the iterator also iterate over the _particlesToAdd. Otherwise, e.g. ContainerSelectorTest
+  /// @todo: Somehow make the iterator also iterate over the _particlesToAdd. Otherwise, e.g. ContainerSelectorTest
   /// will work but have all particles removed after it switches from this container to another.
   /// see: https://github.com/AutoPas/AutoPas/issues/155
   /**
@@ -115,7 +115,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    */
   AUTOPAS_WARN_UNUSED_RESULT
   std::vector<Particle> updateContainer() override {
-    /// @TODO What happens when some particles are just deleted here?
+    /// @todo What happens when some particles are just deleted here?
     AutoPasLog(debug, "updating container");
     // first delete all particles
     this->deleteHaloParticles();
