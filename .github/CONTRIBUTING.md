@@ -23,7 +23,7 @@ Please keep in mind the following notes while working.
 * Class names start with a capital letter.
 * Use camelCase over snake_case.
 * Google code style is enforced by the CI server.
-* Clang format version 6.0 is enforced (Other versions might format slightly differently).
+* Clang format version 9 is enforced (Other versions might format slightly differently).
 * Use `make clangformat` before submitting a PR.
 * [cmake format](https://github.com/cheshirekow/cmake_format/tree/master/cmake_format) is enforced.
 * Use `make cmakeformat` before submitting a PR.
@@ -94,7 +94,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Add the enum to every compatible container in `src/autopas/containers/CompatibleTraversals.h`.
 * Add a case for the new traversal in `src/autopas/selectors/TraversalSelector.h::generateTraversal()`.
 * Check that the new option is working in the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseTraversalOptionsTest`).
+* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `OptionTest::parseTraversalOptionsTest`).
 * Add new unit tests for your traversal.
 
 ### Adding a new Container
