@@ -69,9 +69,9 @@ if(NOT harmony_POPULATED)
         PROPERTIES
             "IMPORTED_LOCATION"
             "${harmony_SOURCE_DIR}/lib/libharmony.a"
-            "INTERFACE_SYSTEM_INCLUDE_DIRECTORIES"
-            "${harmony_SOURCE_DIR}/include"
     )
+
+    target_include_directories(harmony SYSTEM INTERFACE "${harmony_SOURCE_DIR}/include")
 
     # Set macro needed to set environment variable for ActiveHarmony
     target_compile_definitions(
