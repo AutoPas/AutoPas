@@ -53,7 +53,7 @@ if(NOT eigen3_POPULATED) # must be lowercase "eigen3"
         IMPORTED GLOBAL
     )
 
-    set_target_properties(Eigen3 PROPERTIES "INTERFACE_SYSTEM_INCLUDE_DIRECTORIES" "${eigen3_SOURCE_DIR}")
+    target_include_directories(Eigen3 SYSTEM INTERFACE "${eigen3_SOURCE_DIR}")
 
     # add_subdirectory(${eigen3_SOURCE_DIR} ${eigen3_BINARY_DIR})
 endif()
