@@ -69,7 +69,7 @@ if(NOT harmony_POPULATED)
         PROPERTIES
             "IMPORTED_LOCATION"
             "${harmony_SOURCE_DIR}/lib/libharmony.a"
-            "INTERFACE_INCLUDE_DIRECTORIES"
+            "INTERFACE_SYSTEM_INCLUDE_DIRECTORIES"
             "${harmony_SOURCE_DIR}/include"
     )
 
