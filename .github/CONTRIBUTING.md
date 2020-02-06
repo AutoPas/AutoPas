@@ -94,7 +94,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Add the enum to every compatible container in `src/autopas/containers/CompatibleTraversals.h`.
 * Add a case for the new traversal in `src/autopas/selectors/TraversalSelector.h::generateTraversal()`.
 * Check that the new option is working in the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseTraversalOptionsTest`).
+* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `OptionTest::parseTraversalOptionsTest`).
 * Add new unit tests for your traversal.
 
 ### Adding a new Container
