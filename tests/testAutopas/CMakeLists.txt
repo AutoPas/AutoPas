@@ -21,7 +21,10 @@ target_link_libraries(
     runTests
     autopas
     autopasTools
-    gmock # gmock includes the gtest target
+    gmock # gmock includes the gtest target includes of libraries that are normally not needed when
+          # building AutoPas, but are needed for some tests:
+    Eigen3
+    harmony
 )
 
 # this cmake module was only introduced in 3.10

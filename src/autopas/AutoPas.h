@@ -12,12 +12,10 @@
 #include <type_traits>
 
 #include "autopas/LogicHandler.h"
+#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
-#include "autopas/selectors/tuningStrategy/ActiveHarmony.h"
-#include "autopas/selectors/tuningStrategy/BayesianSearch.h"
-#include "autopas/selectors/tuningStrategy/FullSearch.h"
-#include "autopas/selectors/tuningStrategy/RandomSearch.h"
+#include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
 #include "autopas/utils/NumberSet.h"
 
 namespace autopas {
@@ -123,7 +121,10 @@ class AutoPas {
    */
   void init() {
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
-        _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize, std::move(generateTuningStrategy()),
+        _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
+        std::move(TuningStrategyFactory::generateTuningStrategy(
+            _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
+            _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _acquisitionFunctionOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
         std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
@@ -540,45 +541,6 @@ class AutoPas {
   }
 
  private:
-  /**
-   * Generates a new Tuning Strategy object from the member variables of this autopas object.
-   * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
-   */
-  std::unique_ptr<TuningStrategyInterface> generateTuningStrategy() {
-    // clang compiler bug requires static cast
-    switch (static_cast<TuningStrategyOption>(_tuningStrategyOption)) {
-      case TuningStrategyOption::randomSearch: {
-        return std::make_unique<RandomSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
-                                              _allowedDataLayouts, _allowedNewton3Options, _maxEvidence);
-      }
-      case TuningStrategyOption::fullSearch: {
-        if (not _allowedCellSizeFactors->isFinite()) {
-          autopas::utils::ExceptionHandler::exception(
-              "AutoPas::generateTuningStrategy: fullSearch can not handle infinite cellSizeFactors!");
-          return nullptr;
-        }
-
-        return std::make_unique<FullSearch>(_allowedContainers, _allowedCellSizeFactors->getAll(), _allowedTraversals,
-                                            _allowedDataLayouts, _allowedNewton3Options);
-      }
-
-      case TuningStrategyOption::bayesianSearch: {
-        return std::make_unique<BayesianSearch>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
-                                                _allowedDataLayouts, _allowedNewton3Options, _maxEvidence,
-                                                _acquisitionFunctionOption);
-      }
-
-      case TuningStrategyOption::activeHarmony: {
-        return std::make_unique<ActiveHarmony>(_allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
-                                               _allowedDataLayouts, _allowedNewton3Options);
-      }
-    }
-
-    autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
-                                                _tuningStrategyOption);
-    return nullptr;
-  }
-
   /**
    * Lower corner of the container.
    */
