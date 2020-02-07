@@ -22,7 +22,9 @@ target_link_libraries(
                                   # openmp when using archer
         $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${ARCHER}>>>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
-    PRIVATE harmony Eigen3
+    PRIVATE
+        # harmony and Eigen3 are only needed privately when building AutoPas.
+        harmony Eigen3
 )
 
 # Ompstuff needs to be here because OpenMP.cmake needs to run before this file to create to OpenMP
