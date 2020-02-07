@@ -43,7 +43,7 @@ class Cluster {
   Particle &operator[](size_t index) { return *(_firstParticle + index); }
 
   /**
-   * @copydoc operator [](size_t)
+   * @copydoc operator[](size_t)
    */
   const Particle &operator[](size_t index) const { return *(_firstParticle + index); }
 
