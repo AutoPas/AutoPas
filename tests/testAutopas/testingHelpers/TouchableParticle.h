@@ -22,6 +22,15 @@ class TouchableParticle : public autopas::Particle {
       : autopas::Particle(pos, {0, 0, 0}, id), _numTouched(0){};
 
   /**
+   * Constructor with position, velocity, and id.
+   * @param pos position
+   * @param velocity velocity
+   * @param id id of the particle
+   */
+  TouchableParticle(std::array<double, 3> pos, std::array<double, 3> velocity, unsigned long id)
+      : autopas::Particle(pos, velocity, id), _numTouched(0){};
+
+  /**
    * Default constructor
    */
   TouchableParticle() : TouchableParticle({0., 0., 0.}, 0ul) {}

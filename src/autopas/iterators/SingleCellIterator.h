@@ -11,11 +11,12 @@
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas::internal {
+
 /**
  * SingleCellIterator class to loop over particles of a single cell.
  *
  * @tparam Particle type of the Particles
- * @tparam ParticleCell type of the ParticleCell
+ * @tparam ParticleCell type of the ParticleCell.
  * @tparam modifiable Defines whether the ParticleIterator is modifiable or not. If it is false, it points to a const
  * Particle.
  */
@@ -47,7 +48,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle, modi
    * this is the indirection operator
    * @return current particle
    */
-  inline ParticleType &operator*() const override { return _cell->_particles.at(_index); }
+  inline ParticleType &operator*() const override { return _cell->at(_index); }
 
   /**
    * increment operator to get the next particle

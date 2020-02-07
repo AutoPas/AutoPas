@@ -70,6 +70,20 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   const Particle &operator[](size_t n) const { return _particles[n]; }
 
+  /**
+   * Returns the particle at position index. Needed by SingleCellIterator.
+   * @param index the position of the particle to return.
+   * @return the particle at position index.
+   */
+  Particle &at(size_t index) { return _particles.at(index); }
+
+  /**
+   * Returns the const particle at position index. Needed by SingleCellIterator.
+   * @param index the position of the particle to return.
+   * @return the particle at position index.
+   */
+  const Particle &at(size_t index) const { return _particles.at(index); }
+
   bool isNotEmpty() const override { return numParticles() > 0; }
 
   void clear() override { _particles.clear(); }

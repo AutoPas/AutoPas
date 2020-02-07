@@ -15,7 +15,7 @@ template <autopas::DataLayoutOption::Value dataLayout, bool useNewton3>
 void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, double rel_err_tolerance,
                                                    autopas::TraversalOption traversalOption,
                                                    std::array<double, 3> boxMax) {
-  Verlet _verletLists{getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff(), 4};
+  Verlet _verletLists{getBoxMin(), boxMax, getCutoff(), 0.1 * getCutoff()};
   Linked _linkedCells{getBoxMin(), boxMax, getCutoff(), 1. /*cell size factor*/};
 
   autopasTools::generators::RandomGenerator::fillWithParticles(_linkedCells, Molecule({0., 0., 0.}, {0., 0., 0.}, 0, 0),
@@ -41,19 +41,17 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
   _verletLists.iteratePairwise(verletTraversal.get());
   _linkedCells.iteratePairwise(&traversalLinkedLJ);
 
-  std::vector<std::array<double, 3>> forcesVerlet(numMolecules), forcesLinked(numMolecules);
-  // get and sort by id, skip id=0 to avoid dummy particles
+  std::vector<std::array<double, 3>> forcesVerlet{numMolecules}, forcesLinked{numMolecules};
+
   for (auto it = _verletLists.begin(); it.isValid(); ++it) {
     Molecule &m = *it;
-    if (m.getID() != 0) forcesVerlet.at(m.getID()) = m.getF();
+    forcesVerlet.at(m.getID()) = m.getF();
   }
-  forcesVerlet.at(0) = {1.0, 1.0, 1.0};
 
   for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
     Molecule &m = *it;
-    if (m.getID() != 0) forcesLinked.at(m.getID()) = m.getF();
+    forcesLinked.at(m.getID()) = m.getF();
   }
-  forcesLinked.at(0) = {1.0, 1.0, 1.0};
 
   for (unsigned long i = 0; i < numMolecules; ++i) {
     for (int d = 0; d < 3; ++d) {
@@ -82,10 +80,9 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
     unsigned long linkedKernelCalls = flopsLinked.getKernelCalls();
     unsigned long verletKernelCalls = flopsVerlet.getKernelCalls();
 
-    // Special case: The coloring traversal always uses newton 3 for particles inside the same cluster, so the number of
+    // Special case: The traversals always use newton 3 for particles inside the same cluster, so the number of
     // kernel calls of the verlet cluster list here might be lower.
-    if (traversalOption == autopas::TraversalOption::verletClustersColoring and not useNewton3 and
-        dataLayout == autopas::DataLayoutOption::aos) {
+    if (not useNewton3 and dataLayout == autopas::DataLayoutOption::aos) {
       int maxNumKernelCallsInsideOneCluster = _verletLists.getClusterSize() * (_verletLists.getClusterSize() - 1);
       auto maxVerletLeftOutKernelCalls = _verletLists.getNumClusters() * (maxNumKernelCallsInsideOneCluster / 2);
       auto linkedVerletKernelCallsDiff = linkedKernelCalls - verletKernelCalls;

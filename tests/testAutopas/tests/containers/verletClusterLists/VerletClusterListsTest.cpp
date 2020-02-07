@@ -37,91 +37,187 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
   verletLists.addParticle(p2);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
-  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(AtLeast(1));
+  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, _)).Times(AtLeast(1));
   autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
       &emptyFunctor);
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
 }
 
-int sumNumClusterNeighbors(
-    const std::vector<std::vector<std::vector<autopas::ParticleBase<double, unsigned long> *>>> &neighborList) {
-  int sum = 0;
-  for (const auto &elem : neighborList) {
-    for (const auto &inner : elem) {
-      sum += inner.size();
+TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
+  std::array<double, 3> min = {1, 1, 1};
+  std::array<double, 3> max = {3, 3, 3};
+  double cutoff = 1.;
+  double skin = 0.2;
+  unsigned long numParticles = 271;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
+
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+
+  MockFunctor<Particle, FPCell> emptyFunctor;
+  autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
+      &emptyFunctor);
+  verletLists.rebuildNeighborLists(&verletTraversal);
+  EXPECT_EQ(verletLists.getNumParticles(), numParticles);
+  verletLists.rebuildNeighborLists(&verletTraversal);
+  EXPECT_EQ(verletLists.getNumParticles(), numParticles);
+}
+
+TEST_F(VerletClusterListsTest, testIterator) {
+  std::array<double, 3> min = {1, 1, 1};
+  std::array<double, 3> max = {3, 3, 3};
+  double cutoff = 1.;
+  double skin = 0.2;
+  unsigned long numParticles = 271;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
+
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+
+  MockFunctor<Particle, FPCell> emptyFunctor;
+  autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
+      &emptyFunctor);
+  verletLists.rebuildNeighborLists(&verletTraversal);
+
+  int numParticlesInIterator = 0;
+  for (auto it = verletLists.begin(); it.isValid(); ++it) {
+    // Make sure that the iterator iterates over real particles, not dummies outside of the domain
+    EXPECT_TRUE(autopas::utils::inBox((*it).getR(), min, max));
+    numParticlesInIterator++;
+  }
+  EXPECT_EQ(numParticlesInIterator, numParticles);
+}
+
+auto calculateValidPairs(const std::vector<autopas::Particle *> &particles, double cutoffSqr) {
+  std::vector<std::pair<autopas::Particle *, autopas::Particle *>> particlePairs;
+  for (auto particlePtr : particles) {
+    for (auto neighborPtr : particles) {
+      if (particlePtr != neighborPtr) {
+        auto dist = autopas::utils::ArrayMath::sub(particlePtr->getR(), neighborPtr->getR());
+        if (autopas::utils::ArrayMath::dot(dist, dist) <= cutoffSqr) {
+          particlePairs.emplace_back(particlePtr, neighborPtr);
+        }
+      }
     }
+  }
+  return particlePairs;
+}
+
+void compareParticlePairs(const std::vector<std::pair<autopas::Particle *, autopas::Particle *>> &first,
+                          const std::vector<std::pair<autopas::Particle *, autopas::Particle *>> &second) {
+  EXPECT_EQ(first.size(), second.size());
+  for (auto pair : first) {
+    EXPECT_TRUE(std::find(second.begin(), second.end(), pair) != second.end());
+  }
+}
+
+TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin) {
+  std::array<double, 3> min = {1, 1, 1};
+  std::array<double, 3> max = {3, 3, 3};
+  double cutoff = 1.;
+  double cutoffSqr = cutoff * cutoff;
+  double skin = 0.2;
+  unsigned long numParticles = 271;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
+
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+  CollectParticlePairsFunctor functor{cutoff, min, max};
+  autopas::VerletClustersTraversal<FPCell, CollectParticlePairsFunctor, autopas::DataLayoutOption::aos, false>
+      verletTraversal(&functor);
+  verletLists.rebuildNeighborLists(&verletTraversal);
+
+  std::vector<autopas::Particle *> particles;
+  for (auto it = verletLists.begin(); it.isValid(); ++it) {
+    particles.push_back(&(*it));
+  }
+
+  auto referenceParticlePairs = calculateValidPairs(particles, cutoffSqr);
+
+  functor.initTraversal();
+  verletLists.iteratePairwise(&verletTraversal);
+  functor.endTraversal(false);
+  auto calculatedParticlePairs = functor.getParticlePairs();
+  compareParticlePairs(referenceParticlePairs, calculatedParticlePairs);
+
+  // Move particles
+  int i = -130;
+  for (auto it = verletLists.begin(); it.isValid(); ++it, ++i) {
+    auto &particle = *it;
+    // generate some different directions
+    std::array<double, 3> direction = {(double)(i % 2), (double)(i % 3),
+                                       (double)(i % numParticles) / (double)numParticles};
+    auto offset = autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::normalize(direction), skin / 2.1);
+    particle.addR(offset);
+    // Upper corner is excluded
+    constexpr double smallValue = 0.000001;
+    auto x = std::clamp(particle.getR()[0], min[0], max[0] - smallValue);
+    auto y = std::clamp(particle.getR()[1], min[1], max[1] - smallValue);
+    auto z = std::clamp(particle.getR()[2], min[2], max[2] - smallValue);
+    particle.setR({x, y, z});
+  }
+
+  auto referenceParticlePairsAfterMove = calculateValidPairs(particles, cutoffSqr);
+
+  functor.initTraversal();
+  verletLists.iteratePairwise(&verletTraversal);
+  functor.endTraversal(false);
+  auto calculatedParticlePairsAfterMove = functor.getParticlePairs();
+  compareParticlePairs(referenceParticlePairsAfterMove, calculatedParticlePairsAfterMove);
+}
+
+auto getClusterNeighbors(autopas::VerletClusterLists<Particle> &verletLists) {
+  std::unordered_map<size_t, std::vector<size_t>> neighbors;
+  verletLists.traverseClusters<false>([&neighbors](auto &cluster) {
+    auto idFirstParticleInCluster = cluster[0].getID();
+    for (const auto &neighborCluster : cluster.getNeighbors()) {
+      neighbors[idFirstParticleInCluster].push_back((*neighborCluster)[0].getID());
+    }
+  });
+  return neighbors;
+}
+
+size_t getNumNeighbors(const std::unordered_map<size_t, std::vector<size_t>> &neighborList) {
+  size_t sum = 0;
+  for (auto [id, neighbors] : neighborList) {
+    sum += neighbors.size();
   }
   return sum;
 }
 
-TEST_F(VerletClusterListsTest, testVerletListNewton3Build) {
+TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
   std::array<double, 3> min = {0, 0, 0};
-  std::array<double, 3> max = {8, 8, 8};
+  std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.1;
-  autopas::VerletClusterLists<Particle> verletListsNoNewton3(min, max, cutoff, skin);
-  autopas::VerletClusterLists<Particle> verletListsNewton3(min, max, cutoff, skin);
 
-  autopasTools::generators::RandomGenerator::fillWithParticles(verletListsNoNewton3, autopas::Particle{},
-                                                               verletListsNoNewton3.getBoxMin(),
-                                                               verletListsNoNewton3.getBoxMax(), 100);
-  // now fill second container with the molecules from the first one, because
-  // otherwise we generate new particles
-  for (auto it = verletListsNoNewton3.begin(); it.isValid(); ++it) {
-    verletListsNewton3.addParticle(*it);
-  }
+  int numParticles = 2431;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
 
-  // Generate neighbor list without newton 3.
-  MockFunctor<Particle, FPCell> emptyFunctor;
-  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, _)).Times(AtLeast(1));
-  autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> noNewton3Traversal(
-      &emptyFunctor);
-  verletListsNoNewton3.rebuildNeighborLists(&noNewton3Traversal);
-  verletListsNoNewton3.iteratePairwise(&noNewton3Traversal);
-  const auto &noNewton3NeighborLists = verletListsNoNewton3.getNeighborLists();
-  const auto &noNewton3ClusterIndices = verletListsNoNewton3.getClusterIndexMap();
-  int noNewton3NumNeighorClusters = sumNumClusterNeighbors(noNewton3NeighborLists);
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
-  // Generate neighbor list with newton 3.
-  autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> newton3Traversal(
-      &emptyFunctor);
-  verletListsNewton3.rebuildNeighborLists(&newton3Traversal);
-  verletListsNewton3.iteratePairwise(&newton3Traversal);
-  const auto &newton3NeighborLists = verletListsNewton3.getNeighborLists();
-  const auto &newton3ClusterIndices = verletListsNewton3.getClusterIndexMap();
-  int newton3NumNeighorClusters = sumNumClusterNeighbors(newton3NeighborLists);
+  MockFunctor<Particle, FPCell> functor;
+  autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> traversalNoN3(
+      &functor);
+  verletLists.rebuildNeighborLists(&traversalNoN3);
+  auto neighborsNoN3 = getClusterNeighbors(verletLists);
 
-  // Subtract the neighbors of each cluster with itself.
-  unsigned long noNewton3NumWithoutOwn = noNewton3NumNeighorClusters - verletListsNoNewton3.getNumClusters();
-  unsigned long newton3NumWithoutOwn = newton3NumNeighorClusters - verletListsNewton3.getNumClusters();
+  autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversalN3(
+      &functor);
+  verletLists.rebuildNeighborLists(&traversalN3);
+  auto neighborsN3 = getClusterNeighbors(verletLists);
 
-  // Neighbor list without newton 3 should have double the inter-grid connections than with newton 3.
-  EXPECT_TRUE(noNewton3NumWithoutOwn % 2 == 0);
-  EXPECT_EQ(noNewton3NumWithoutOwn / 2, newton3NumWithoutOwn);
+  EXPECT_EQ(getNumNeighbors(neighborsNoN3), getNumNeighbors(neighborsN3) * 2);
 
-  // Both neighbor lists should contain the same number of grids.
-  EXPECT_EQ(noNewton3NeighborLists.size(), newton3NeighborLists.size());
-
-  for (unsigned long gridIndex = 0; gridIndex < noNewton3NeighborLists.size(); gridIndex++) {
-    // Every grid from both neighbor lists should contain the same number of clusters.
-    EXPECT_EQ(noNewton3NeighborLists[gridIndex].size(), newton3NeighborLists[gridIndex].size());
-
-    for (unsigned long clusterIndex = 0; clusterIndex < noNewton3NeighborLists[gridIndex].size(); clusterIndex++) {
-      const auto &noNewton3Neighbors = noNewton3NeighborLists[gridIndex][clusterIndex];
-      const auto &newton3Neighbors = newton3NeighborLists[gridIndex][clusterIndex];
-      // For each cluster in both neighbor lists, the list with no newton 3 should have more entries.
-      EXPECT_GE(noNewton3Neighbors.size(), newton3Neighbors.size());
-
-      for (const auto &neighborPointer : newton3Neighbors) {
-        // Each entry of the list with newton 3 should be in the list without newton 3.
-        unsigned int neighborIndex = newton3ClusterIndices.at(neighborPointer);
-        auto noNewton3It = std::find_if(noNewton3Neighbors.begin(), noNewton3Neighbors.end(),
-                                        [neighborIndex, &noNewton3ClusterIndices](auto neighbor) {
-                                          return neighborIndex == noNewton3ClusterIndices.at(neighbor);
-                                        });
-        EXPECT_TRUE(noNewton3It != noNewton3Neighbors.end());
-      }
+  for (auto [idN3, neighbors] : neighborsN3) {
+    for (auto idN3Neighbor : neighbors) {
+      const auto &idNoN3Neighbors = neighborsNoN3[idN3];
+      const auto &idNoN3NeighborNeighbors = neighborsNoN3[idN3Neighbor];
+      EXPECT_TRUE(std::find(idNoN3Neighbors.begin(), idNoN3Neighbors.end(), idN3Neighbor) != idNoN3Neighbors.end());
+      EXPECT_TRUE(std::find(idNoN3NeighborNeighbors.begin(), idNoN3NeighborNeighbors.end(), idN3) !=
+                  idNoN3NeighborNeighbors.end());
     }
   }
 }
@@ -160,4 +256,5 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
     }
   }
 }
+
 #endif  // AUTOPAS_OPENMP

@@ -94,7 +94,8 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
            utils::inBox(this->operator*().getR(), _startRegion, _endRegion);
   }
 
-  // @todo add test of clone
+  /// @copydoc ParticleIteratorInterfaceImpl::clone
+  /// @todo add test of clone
   inline ParticleIteratorInterfaceImpl<Particle, modifiable> *clone() const override {
     return new RegionParticleIterator<Particle, ParticleCell, modifiable>(*this);
   }
