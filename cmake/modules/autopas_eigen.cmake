@@ -28,7 +28,7 @@ message(STATUS "Eigen3 - using bundled version 3.3.90 (commit 66be6c7)")
 # Enable FetchContent CMake module
 include(FetchContent)
 
-# Build spdlog and make the cmake targets available
+# Build Eigen3 and make the cmake targets available
 FetchContent_Declare(
     Eigen3
     URL
