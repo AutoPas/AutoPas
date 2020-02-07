@@ -124,7 +124,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
   bool isContainerUpdateNeeded() const override {
     std::atomic<bool> outlierFound(false);
 #ifdef AUTOPAS_OPENMP
-    // @todo: find a sensible value for ???
+    /// @todo: find a sensible value for ???
 #pragma omp parallel shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
 #endif
     for (auto iter = this->begin(); iter.isValid() && (not outlierFound); ++iter) {

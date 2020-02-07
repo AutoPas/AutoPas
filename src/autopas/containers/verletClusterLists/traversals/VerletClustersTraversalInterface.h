@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "autopas/containers/verletClusterLists/VerletClusterMaths.h"
-
 namespace autopas {
 
 template <class Particle>

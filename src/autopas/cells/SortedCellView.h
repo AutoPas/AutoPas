@@ -75,6 +75,20 @@ class SortedCellView : public ParticleCell<Particle> {
   std::array<double, 3> getCellLength() const override { return _cell->getCellLength(); }
 
   /**
+   * Returns the particle at position index. Needed by SingleCellIterator.
+   * @param index the position of the particle to return.
+   * @return the particle at position index.
+   */
+  Particle &at(size_t index) { return _particles.at(index); }
+
+  /**
+   * Returns the const particle at position index. Needed by SingleCellIterator.
+   * @param index the position of the particle to return.
+   * @return the particle at position index.
+   */
+  const Particle &at(size_t index) const { return _particles.at(index); }
+
+  /**
    * Sorted vector of projected positions and particle pointers.
    */
   std::vector<std::pair<double, Particle *>> _particles;

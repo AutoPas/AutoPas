@@ -47,7 +47,7 @@ inline unsigned long medianValue(std::vector<unsigned long> values) {
   if (values.empty()) return 0;
 
   std::sort(values.begin(), values.end());
-  // @todo C++20: replace by std::midpoint
+  /// @todo C++20: replace by std::midpoint
   return values[(values.size() - 1) / 2];
 }
 
