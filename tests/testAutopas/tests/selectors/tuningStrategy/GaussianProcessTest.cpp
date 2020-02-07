@@ -10,7 +10,7 @@ using namespace autopas;
 
 TEST_F(GaussianProcessTest, wrongDimension) {
   Random rng(32);
-  GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
+  GaussianProcess gp(2, 0.001, rng);
 
   Eigen::VectorXd f1 = Eigen::VectorXd::Ones(1);
   Eigen::VectorXd f2 = Eigen::VectorXd::Zero(3);
@@ -25,7 +25,7 @@ TEST_F(GaussianProcessTest, noEvidence) {
   double epsilon = 0.05;  // allowed error for tests
 
   double sigma = 0.001;  // noise
-  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
+  GaussianProcess gp(1, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << 0.;
@@ -40,7 +40,7 @@ TEST_F(GaussianProcessTest, oneEvidence) {
 
   double epsilon = 0.05;
   double sigma = 0.001;
-  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
+  GaussianProcess gp(1, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << 0.;
@@ -64,7 +64,7 @@ TEST_F(GaussianProcessTest, twoEvidence) {
 
   double epsilon = 0.05;  // allowed error for tests
   double sigma = 0.001;   // noise
-  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
+  GaussianProcess gp(1, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << -100.;
@@ -94,7 +94,7 @@ TEST_F(GaussianProcessTest, clear) {
 
   double epsilon = 0.05;  // allowed error for tests
   double sigma = 0.001;   // noise
-  GaussianProcess<Eigen::VectorXd> gp(1, sigma, rng);
+  GaussianProcess gp(1, sigma, rng);
 
   Eigen::VectorXd f1(1);
   f1 << -100.;
@@ -137,7 +137,7 @@ TEST_F(GaussianProcessTest, sine) {
   constexpr double domainStart = 0.;      // start of tested domain
   constexpr double domainEnd = 2 * M_PI;  // end of tested domain
 
-  GaussianProcess<Eigen::VectorXd> gp(1, 0.001, rng);
+  GaussianProcess gp(1, 0.001, rng);
 
   // create equidistant evidence over the domain
   double evidenceStep = (domainEnd - domainStart) / (numEvidence - 1);
@@ -231,8 +231,7 @@ TEST_F(GaussianProcessTest, 2dMinGridBig) {
 }
 
 void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::NumberSet<double> &domainX,
-                                   const autopas::NumberSet<double> &domainY,
-                                   const autopas::GaussianProcess<Eigen::VectorXd> &gp,
+                                   const autopas::NumberSet<double> &domainY, const autopas::GaussianProcess &gp,
                                    autopas::AcquisitionFunctionOption af, double colorFactor) {
   // get distance between chunks
   double xSpace = (domainX.getMax() - domainX.getMin()) / (xChunks - 1);
