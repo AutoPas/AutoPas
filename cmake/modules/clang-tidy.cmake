@@ -5,10 +5,10 @@ if (AUTOPAS_ENABLE_CLANG_TIDY)
     if (CLANG_TIDY_EXE)
         message(STATUS "clang-tidy found: ${CLANG_TIDY_EXE}")
         set(CLANG_TIDY_CHECKS "-*,modernize-*,-clang-analyzer-alpha.*")
-        message(STATUS "cmake source dir: ${CMAKE_SOURCE_DIR}")
+        message(STATUS "cmake source dir: ${AUTOPAS_SOURCE_DIR}")
         set(
             CMAKE_CXX_CLANG_TIDY
-            "${CLANG_TIDY_EXE};-checks=${CLANG_TIDY_CHECKS};-header-filter='${CMAKE_SOURCE_DIR}/*'"
+            "${CLANG_TIDY_EXE};-checks=${CLANG_TIDY_CHECKS};-header-filter='${AUTOPAS_SOURCE_DIR}/*'"
             CACHE STRING "" FORCE
         )
     else ()

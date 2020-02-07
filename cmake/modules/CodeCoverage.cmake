@@ -34,7 +34,7 @@ find_package(PythonInterp 2.7 REQUIRED)
 find_program(GCOV_PATH gcov)
 find_program(LCOV_PATH lcov)
 find_program(GENHTML_PATH genhtml)
-find_program(GCOVR_PATH gcovr PATHS ${CMAKE_SOURCE_DIR}/tests)
+find_program(GCOVR_PATH gcovr PATHS ${AUTOPAS_SOURCE_DIR}/tests)
 
 if (NOT GCOV_PATH)
     message(FATAL_ERROR "gcov not found! Aborting...")
@@ -143,7 +143,7 @@ function (
             remove
             ${_outputname}.info
             ${_outputname}.info.cleaned
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${AUTOPAS_BINARY_DIR}
         COMMENT
             "Resetting code coverage counters to zero.\nProcessing code coverage counters and generating report."
     )
@@ -199,18 +199,18 @@ function (
             ${GCOVR_PATH}
             -x
             -r
-            ${CMAKE_SOURCE_DIR}
+            ${AUTOPAS_SOURCE_DIR}
             -e
-            '${CMAKE_SOURCE_DIR}/tests/'
+            '${AUTOPAS_SOURCE_DIR}/tests/'
             -e
-            '${CMAKE_SOURCE_DIR}/build/'
+            '${AUTOPAS_SOURCE_DIR}/build/'
             -e
-            '${CMAKE_SOURCE_DIR}/libs/'
+            '${AUTOPAS_SOURCE_DIR}/libs/'
             -e
             ${COVERAGE_CUSTOMEXCLUDE}
             -o
             ${_outputname}.xml
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${AUTOPAS_BINARY_DIR}
         COMMENT "Running gcovr to produce Cobertura code coverage report."
     )
 

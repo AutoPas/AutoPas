@@ -21,53 +21,52 @@ endif ()
 # system version not found -> install bundled version
 message(STATUS "spdlog - using bundled version 1.4.3 (commit 79259fd)")
 
-include(ExternalProject)
-ExternalProject_Add(
-    spdlog_bundled
+# Enable FetchContent CMake module
+include(FetchContent)
+
+# Build spdlog and make the cmake targets available
+FetchContent_Declare(
+    spdlog
     URL
         # spdlog master:
         # https://github.com/gabime/spdlog/archive/v1.x.zip
         # spdlog commit 79259fd:
-        ${CMAKE_SOURCE_DIR}/libs/spdlog-1.x.zip
+        ${AUTOPAS_SOURCE_DIR}/libs/spdlog-1.x.zip
     URL_HASH MD5=7415a9768f3433bd93d78c1c87fd0576
-    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/spdlog/src/spdlog_bundled-build/libspdlog.a
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/spdlog
-    # Disable stuff we don't need. Especially warnings.
-    CMAKE_ARGS
-        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-        -DCMAKE_BUILD_TYPE=RELEASE
-        -DSPDLOG_BUILD_EXAMPLE=OFF
-        -DSPDLOG_BUILD_TESTS=OFF
-        -DCMAKE_CXX_FLAGS=-w
-        # Disable install step
-    INSTALL_COMMAND ""
-)
-ExternalProject_Get_Property(
-    spdlog_bundled
-    source_dir
-    binary_dir
-    install_dir
 )
 
-add_library(
-    spdlog::spdlog
-    STATIC
-    IMPORTED
-    GLOBAL
-)
-add_dependencies(spdlog::spdlog spdlog_bundled)
+# Disable stuff we don't need
+option(SPDLOG_BUILD_EXAMPLE "" OFF)
+option(SPDLOG_BUILD_TESTS "" OFF)
+option(SPDLOG_INSTALL "" OFF)
 
-# create directory otherwise cmake will complain during generate step bc it would only be created by
-# make
-file(MAKE_DIRECTORY "${install_dir}/src/spdlog_bundled/include")
-
-# define interesting
-set_target_properties(
-    spdlog::spdlog
-    PROPERTIES
-        "IMPORTED_LOCATION"
-        "${binary_dir}/libspdlog.a"
-        "INTERFACE_INCLUDE_DIRECTORIES"
-        "${install_dir}/src/spdlog_bundled/include"
+# hide options from ccmake
+mark_as_advanced(
+    SPDLOG_BUILD_BENCH
+    SPDLOG_BUILD_EXAMPLE
+    SPDLOG_BUILD_EXAMPLE_HO
+    SPDLOG_BUILD_SHARED
+    SPDLOG_BUILD_TESTS
+    SPDLOG_BUILD_TESTS_HO
+    SPDLOG_CLOCK_COARSE
+    SPDLOG_FMT_EXTERNAL
+    SPDLOG_INSTALL
+    SPDLOG_NO_ATOMIC_LEVELS
+    SPDLOG_NO_EXCEPTIONS
+    SPDLOG_NO_THREAD_ID
+    SPDLOG_NO_TLS
+    SPDLOG_PREVENT_CHILD_FD
+    SPDLOG_SANITIZE_ADDRESS
 )
+
+FetchContent_MakeAvailable(spdlog)
+
+if (IS_DIRECTORY "${spdlog_SOURCE_DIR}")
+    set_property(DIRECTORY ${spdlog_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
+endif ()
+
+# Disable warnings
+target_compile_options(spdlog PRIVATE -w)
+
+get_target_property(propval spdlog INTERFACE_INCLUDE_DIRECTORIES)
+target_include_directories(spdlog SYSTEM PUBLIC "${propval}")
