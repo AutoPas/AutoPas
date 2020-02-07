@@ -44,17 +44,15 @@ class VerletClustersTraversal : public TraversalInterface,
   }
 
   void initTraversal() override {
-    if (dataLayout != DataLayoutOption::soa) return;
-
-    auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
-    clusterList.loadParticlesIntoSoAs(_functor);
+    if constexpr (dataLayout == DataLayoutOption::soa) {
+      VerletClustersTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
+    }
   }
 
   void endTraversal() override {
-    if (dataLayout != DataLayoutOption::soa) return;
-
-    auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
-    clusterList.extractParticlesFromSoAs(_functor);
+    if constexpr (dataLayout == DataLayoutOption::soa) {
+      VerletClustersTraversalInterface<Particle>::_verletClusterLists->extractParticlesFromSoAs(_functor);
+    }
   }
 
   void traverseParticlePairs() override {

@@ -47,8 +47,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    * @param cutoff the cutoff radius of the interaction
    * @param skin the skin radius
    */
-  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
-                     double skin = 0)
+  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
       : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _numClusters(0),
         _numTowersPerInteractionLength(0),
@@ -116,7 +115,6 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   AUTOPAS_WARN_UNUSED_RESULT
   std::vector<Particle> updateContainer() override {
     /// @todo What happens when some particles are just deleted here?
-    AutoPasLog(debug, "updating container");
     // first delete all particles
     this->deleteHaloParticles();
 
@@ -224,8 +222,8 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   auto getTowersPerDimension() const { return _towersPerDim; }
 
   /**
-   * Returns the 2D grid for the XY-plane of this container that defines the cluster towers.
-   * @return the grids of this container for usage in traversals.
+   * Returns a reference to the 2D grid for the XY-plane of this container that defines the cluster towers.
+   * @return a reference to the grids of this container for usage in traversals.
    */
   auto &getTowers() { return _towers; }
 
@@ -276,10 +274,10 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   /**
-   * Returns the tower for the given tower grid coordinates.
+   * Returns a reference to the tower for the given tower grid coordinates.
    * @param x The x-th tower in x direction.
    * @param y The y-th tower in y direction.
-   * @return The tower for the given tower grid coordinates.
+   * @return a reference to the tower for the given tower grid coordinates.
    */
   auto &getTowerAtCoordinates(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
 

@@ -70,17 +70,15 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
   }
 
   void initTraversal() override {
-    if constexpr (dataLayout != DataLayoutOption::soa) return;
-
-    auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
-    clusterList.loadParticlesIntoSoAs(_functor);
+    if constexpr (dataLayout == DataLayoutOption::soa) {
+      VerletClustersTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
+    }
   }
 
   void endTraversal() override {
-    if constexpr (dataLayout != DataLayoutOption::soa) return;
-
-    auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
-    clusterList.extractParticlesFromSoAs(_functor);
+    if constexpr (dataLayout == DataLayoutOption::soa) {
+      VerletClustersTraversalInterface<Particle>::_verletClusterLists->extractParticlesFromSoAs(_functor);
+    }
   }
 
   void traverseParticlePairs() override {
