@@ -25,37 +25,35 @@ endif ()
 # system version not found -> install bundled version
 message(STATUS "Eigen3 - using bundled version 3.3.90 (commit 66be6c7)")
 
-# Enable ExternalProject CMake module
-include(ExternalProject)
+# Enable FetchContent CMake module
+include(FetchContent)
 
-# Extract Eigen3
-ExternalProject_Add(
-    Eigen3_bundled
+# Build Eigen3 and make the cmake targets available
+FetchContent_Declare(
+    Eigen3
     URL
         # eigen-master:
         # https://bitbucket.org/eigen/eigen/get/default.zip
         # eigen-3.3.90:
-        ${CMAKE_SOURCE_DIR}/libs/eigen-eigen-66be6c76fc01.zip
+        ${AUTOPAS_SOURCE_DIR}/libs/eigen-eigen-66be6c76fc01.zip
     URL_HASH MD5=faaf36185ad92b039f7b3f641340dc28
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/eigen-3
-    # since we only unpack a header lib src == include
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/eigen-3/include
-    # Disable build & install steps
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-    INSTALL_COMMAND ""
 )
 
-# Get GTest source and binary directories from CMake project
-ExternalProject_Get_Property(Eigen3_bundled source_dir)
+# Check if population has already been performed
+FetchContent_GetProperties(Eigen3)
+if (NOT eigen3_POPULATED) # must be lowercase "eigen3" Fetch the content using previously declared
+                          # details
+    FetchContent_Populate(Eigen3)
 
-add_library(
-    Eigen3
-    OBJECT # this is a header only lib therefore object type is needed
-    IMPORTED GLOBAL
-)
+    # Do not add_subdirectory, else we would run configure, build and install Just define a library
+    # from the sources
+    add_library(
+        Eigen3
+        OBJECT # this is a header only lib therefore object type is needed
+        IMPORTED GLOBAL
+    )
 
-add_dependencies(Eigen3 Eigen3_bundled)
+    target_include_directories(Eigen3 SYSTEM INTERFACE "${eigen3_SOURCE_DIR}")
 
-# Set libgtest properties
-set_target_properties(Eigen3 PROPERTIES "INTERFACE_INCLUDE_DIRECTORIES" "${source_dir}")
+    # add_subdirectory(${eigen3_SOURCE_DIR} ${eigen3_BINARY_DIR})
+endif ()
