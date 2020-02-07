@@ -51,7 +51,13 @@ class Cluster {
    * Returns the SoAView for this cluster.
    * @return the SoAView for this cluster.
    */
-  auto &getSoAView() { return _soaView; }
+  auto getSoAView() { return _soaView; }
+
+  /**
+   * Set the SoAView for this cluster.
+   * @param view the new SoAView for this cluster.
+   */
+  void setSoAView(SoAView<typename Particle::SoAArraysType> view) { _soaView = view; }
 
   /**
    * Returns the neighbor list for this cluster.
