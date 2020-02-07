@@ -173,10 +173,8 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     internal::VerletClusterListsRebuilder<Particle> builder{*this, _particlesToAdd, traversal->getUseNewton3()};
-    auto res = builder.rebuild();
-    std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters, _neighborListIsNewton3) = {
-        res._towerSideLength, res._interactionLengthInTowers, res._towersPerDim, res._numClusters,
-        res._neighborListIsNewton3};
+    std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters, _neighborListIsNewton3) =
+        builder.rebuild();
   }
 
   /**

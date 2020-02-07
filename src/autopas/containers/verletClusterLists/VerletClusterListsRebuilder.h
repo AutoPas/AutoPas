@@ -63,37 +63,19 @@ class VerletClusterListsRebuilder {
         _boxMax(clusterList.getBoxMax()) {}
 
   /**
-   * Aggregate to provide names for the return values of rebuild().
-   */
-  struct BuildingReturnValues {
-    /**
-     * The new side length of each tower in xy-direction.
-     */
-    double _towerSideLength;
-    /**
-     * The interaction length in towers using the new tower side length.
-     */
-    int _interactionLengthInTowers;
-    /**
-     * The number of towers in each dimension using the new tower side length.
-     */
-    std::array<size_t, 2> _towersPerDim;
-    /**
-     * The new number of clusters in the container.
-     */
-    size_t _numClusters;
-    /**
-     * If the neighbor lists use newton 3.
-     */
-    bool _neighborListIsNewton3;
-  };
-  /**
    * Rebuilds the towers, clusters, and neighbor lists. Clusters are filled with dummies as described in
    * ClusterTower::fillUpWithDummyParticles.
    *
-   * @return all new values for VerletClusterLists member variables.
+   * @return new values for VerletClusterLists member variables. They are returned as tuple consisting of:
+   * {
+   *  double:                The new side length of each tower in xy-direction,
+   *  int:                   The interaction length in towers using the new tower side length,
+   *  std::array<size_t, 2>: The number of towers in each dimension using the new tower side length,
+   *  size_t:                The new number of clusters in the container,
+   *  bool:                  If the neighbor lists use newton 3.
+   * }
    */
-  BuildingReturnValues rebuild() {
+  auto rebuild() {
     auto invalidParticles = collectAllParticlesFromTowers();
     invalidParticles.push_back(std::move(_particlesToAdd));
     _particlesToAdd.clear();
@@ -130,7 +112,8 @@ class VerletClusterListsRebuilder {
       _towers[index].fillUpWithDummyParticles(startDummiesX + index * dummyParticleDistance, dummyParticleDistance);
     }
 
-    return {_towerSideLength, _interactionLengthInTowers, _towersPerDim, numClusters, _neighborListIsNewton3};
+    return std::make_tuple(_towerSideLength, _interactionLengthInTowers, _towersPerDim, numClusters,
+                           _neighborListIsNewton3);
   }
 
  protected:
