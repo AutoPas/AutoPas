@@ -40,12 +40,12 @@ class Cluster {
    * @param index The index of the particle to return.
    * @return the particle at position index in the cluster.
    */
-  Particle &at(size_t index) { return *(_firstParticle + index); }
+  Particle &operator[](size_t index) { return *(_firstParticle + index); }
 
   /**
-   * @copydoc at(size_t)
+   * @copydoc operator [](size_t)
    */
-  const Particle &at(size_t index) const { return *(_firstParticle + index); }
+  const Particle &operator[](size_t index) const { return *(_firstParticle + index); }
 
   /**
    * Returns the SoAView for this cluster.

@@ -103,8 +103,8 @@ class ClusterTower : public ParticleCell<Particle> {
   void fillUpWithDummyParticles(double dummyStartX, double dummyDistZ) {
     auto &lastCluster = getCluster(getNumClusters() - 1);
     for (size_t index = 1; index <= _numDummyParticles; index++) {
-      lastCluster.at(clusterSize - index) = dummy;
-      lastCluster.at(clusterSize - index).setR({dummyStartX, 0, dummyDistZ * index});
+      lastCluster[clusterSize - index] = dummy;
+      lastCluster[clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
     }
   }
 
