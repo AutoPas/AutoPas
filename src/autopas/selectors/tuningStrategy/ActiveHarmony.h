@@ -315,7 +315,7 @@ void ActiveHarmony::resetHarmony() {
     }
 
     if (ah_def_name(hdef, "AutoPas") != 0) {
-      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error settings search name");
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error setting search name");
     }
 
     if (_allowedCellSizeFactors->isFinite()) {  // finite cell-size factors => define parameter as enum
