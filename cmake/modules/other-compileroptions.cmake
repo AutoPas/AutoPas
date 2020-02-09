@@ -22,11 +22,11 @@ target_compile_options(
         $<$<AND:$<NOT:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fp-model
         precise>
         # Warnings:
+    PRIVATE
         # no warnings for intel because it's mainly spam, but we disable one, because of a compiler
         # bug:
         # https://software.intel.com/en-us/forums/intel-c-compiler/topic/814098
         $<$<CXX_COMPILER_ID:Intel>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-wd13212>
-    PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:
         $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wsuggest-override
         $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wall
