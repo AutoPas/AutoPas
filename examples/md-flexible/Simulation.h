@@ -157,6 +157,8 @@ class Simulation {
         simulate, vtk, init, total, thermostat, boundaries;
   } _timers;
 
+  size_t numTuningIterations = 0;
+
   /**
    * Precision of floating point numbers printed.
    */
@@ -269,6 +271,7 @@ void Simulation<Particle, ParticleCell>::calculateForces() {
   auto timeIteration = _timers.forceUpdateTotal.stop();
   if (tuningIteration) {
     _timers.forceUpdateTuning.addTime(timeIteration);
+    ++numTuningIterations;
   } else {
     _timers.forceUpdateNonTuning.addTime(timeIteration);
   }
@@ -409,6 +412,8 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
                         durationTotal);
   auto mfups = _autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) * numIterations /
                _timers.forceUpdateTotal.getTotalTime() * 1e-9;
+  cout << "Tuning iterations: " << numTuningIterations << " / " << numIterations << " = "
+       << ((double)numTuningIterations / numIterations * 100) << "%" << endl;
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (_config->measureFlops) {
