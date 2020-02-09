@@ -139,7 +139,7 @@ class BayesianSearch : public TuningStrategyInterface {
   std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
 
   Random _rng;
-  GaussianProcess<Eigen::VectorXd> _gaussianProcess;
+  GaussianProcess _gaussianProcess;
   size_t _maxEvidence;
   AcquisitionFunctionOption _predAcqFunction;
   size_t _predNumLHSamples;

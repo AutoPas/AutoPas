@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
+#include <utility>
 
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -24,10 +25,10 @@ namespace autopas {
  *
  * Currently the squared exponential kernel is used.
  * TODO: maybe offer some options.
- * @tparam Vector class should be subtractable and convertible to Eigen::VectorXd
  */
-template <class Vector>
 class GaussianProcess {
+  using Vector = Eigen::VectorXd;
+
   // number of samples to find optimal hyperparameters
   static constexpr size_t hp_sample_size = 10000;
   // number of hyperparameters
@@ -74,13 +75,13 @@ class GaussianProcess {
           weights(Eigen::VectorXd::Ones(1)) {}
 
     /**
-     * Contructor
+     * Constructor
      * @param mean prior mean of Gaussian process
      * @param theta prior variance
      * @param dimScales scale for each input dimension
      */
-    Hyperparameters(double mean, double theta, const Eigen::VectorXd &dimScales)
-        : mean(mean), theta(theta), dimScales(dimScales) {}
+    Hyperparameters(double mean, double theta, Eigen::VectorXd dimScales)
+        : mean(mean), theta(theta), dimScales(std::move(dimScales)) {}
 
     /**
      * Precalculate matrices needed for predictions
@@ -88,36 +89,7 @@ class GaussianProcess {
      * @param inputs evidence input
      * @param outputs evidence output
      */
-    void precalculate(double sigma, const std::vector<Vector> &inputs, const Eigen::VectorXd &outputs) {
-      size_t size = outputs.size();
-      // mean of output shifted to zero
-      Eigen::VectorXd outputCentered = outputs - mean * Eigen::VectorXd::Ones(size);
-
-      Eigen::MatrixXd covMat(size, size);
-      // calculate covariance matrix
-      for (size_t i = 0; i < size; ++i) {
-        covMat(i, i) = kernel(inputs[i], inputs[i], theta, dimScales) + sigma;
-        for (size_t j = i + 1; j < size; ++j) {
-          covMat(i, j) = covMat(j, i) = kernel(inputs[i], inputs[j], theta, dimScales);
-        }
-      }
-
-      // cholesky decomposition
-      Eigen::LLT<Eigen::MatrixXd> llt = covMat.llt();
-      Eigen::MatrixXd l = llt.matrixL();
-
-      // precalculate inverse of covMat and weights for predictions
-      covMatInv = llt.solve(Eigen::MatrixXd::Identity(size, size));
-      weights = covMatInv * outputCentered;
-
-      // likelihood of evidence given parameters
-      score = std::exp(-0.5 * outputCentered.dot(weights)) / l.diagonal().prod();
-
-      if (std::isnan(score)) {
-        // error score calculation failed
-        utils::ExceptionHandler::exception("GaussianProcess: invalid score ", score);
-      }
-    }
+    void precalculate(double sigma, const std::vector<Eigen::VectorXd> &inputs, const Eigen::VectorXd &outputs);
   };
 
  public:
