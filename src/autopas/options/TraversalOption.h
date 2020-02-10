@@ -83,7 +83,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::verletClusterCells, "verlet-cluster-cells"},
         {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
     };
-};
+  };
 
  private:
   Value _value{Value(-1)};
