@@ -234,7 +234,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    * Returns the cluster-thread-partition.
    * @return The cluster-thread-partition.
    */
-  auto &getClusterThreadPartition() { return _clusterThreadPartition; }
+  const auto &getClusterThreadPartition() const { return _clusterThreadPartition; }
 
   /**
    * Returns the number of clusters in this container.
@@ -385,7 +385,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
 
   /**
    * Calculates a cluster thread partition that aims to give each thread about the same amount of cluster pair
-   * interactions, if each thread handles the neigbhors of all clusters it gets assigned.
+   * interactions, if each thread handles the neighbors of all clusters it gets assigned.
    */
   void calculateClusterThreadPartition() {
     size_t numClusterPairs = 0;
