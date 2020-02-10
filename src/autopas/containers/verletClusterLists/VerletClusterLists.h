@@ -442,7 +442,11 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     }
     // Make sure the last cluster range contains the rest of the clusters, even if there is not the perfect number left.
     if (numClustersThisThread != 0) {
-      _clusterThreadPartition.back().numClusters = numClustersThisThread;
+      _clusterThreadPartition[currentThread].numClusters = numClustersThisThread;
+    }
+    // Theoretically, some threads may still remain. This ensures that their numClusters are set to 0.
+    while (++currentThread < numThreads) {
+      _clusterThreadPartition[currentThread].numClusters = 0;
     }
   }
 
