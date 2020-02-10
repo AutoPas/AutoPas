@@ -68,7 +68,7 @@ class VerletClustersStaticTraversal : public TraversalInterface, public VerletCl
     {
       auto threadNum = autopas_get_thread_num();
       const auto &clusterRange = clusterThreadPartition[threadNum];
-      auto &towers = clusterList.getTowers();
+      auto &towers = *VerletClustersTraversalInterface<Particle>::_towers;
       size_t clusterCount = 0;
       for (size_t towerIndex = clusterRange.startTowerIndex; clusterCount < clusterRange.numClusters; towerIndex++) {
         auto &currentTower = towers[towerIndex];

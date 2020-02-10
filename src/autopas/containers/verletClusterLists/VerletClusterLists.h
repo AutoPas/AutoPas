@@ -79,6 +79,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setClusterLists(*this);
+      traversalInterface->setTowers(_towers);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletClusterLists::iteratePairwise. TraversalID: {}",
@@ -190,7 +191,8 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    internal::VerletClusterListsRebuilder<Particle> builder{*this, _particlesToAdd, traversal->getUseNewton3()};
+    internal::VerletClusterListsRebuilder<Particle> builder{*this, _towers, _particlesToAdd,
+                                                            traversal->getUseNewton3()};
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters, _neighborListIsNewton3) =
         builder.rebuild();
 
@@ -253,18 +255,6 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    * @return the number of grids per dimension on the container.
    */
   auto getTowersPerDimension() const { return _towersPerDim; }
-
-  /**
-   * Returns a reference to the 2D grid for the XY-plane of this container that defines the cluster towers.
-   * @return a reference to the grids of this container for usage in traversals.
-   */
-  auto &getTowers() { return _towers; }
-
-  /**
-   * Returns a const reference to the 2D grid for the XY-plane of this container that defines the cluster towers.
-   * @return a const reference to the grids of this container for usage in traversals.
-   */
-  const auto &getTowers() const { return _towers; }
 
   /**
    * Returns the number of particles in each cluster.
@@ -419,10 +409,9 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     size_t numClustersThisThread = 0;
     size_t numClusterPairsTotal = 0;
 
-    const auto &towers = getTowers();
     // Iterate over the clusters of all towers
-    for (size_t currentTowerIndex = 0; currentTowerIndex < towers.size(); currentTowerIndex++) {
-      auto &currentTower = towers[currentTowerIndex];
+    for (size_t currentTowerIndex = 0; currentTowerIndex < _towers.size(); currentTowerIndex++) {
+      auto &currentTower = _towers[currentTowerIndex];
       for (size_t currentClusterInTower = 0; currentClusterInTower < currentTower.getNumClusters();
            currentClusterInTower++) {
         auto &currentCluster = currentTower.getCluster(currentClusterInTower);

@@ -42,16 +42,16 @@ class VerletClusterListsRebuilder {
   /**
    * Constructs the builder from the cluster list.
    *
-   * It uses clusterList.getTowers() to work on the cluster list.
-   *
    * @param clusterList The cluster list to rebuild the neighbor lists for.
+   * @param towers The towers from the cluster list to rebuild.
    * @param particlesToAdd New particles to add.
    * @param newton3 If the neighbor lists should use newton 3.
    */
-  VerletClusterListsRebuilder(VerletClusterLists<Particle> &clusterList, std::vector<Particle> &particlesToAdd,
-                              bool newton3)
+  VerletClusterListsRebuilder(const VerletClusterLists<Particle> &clusterList,
+                              std::vector<ClusterTower<Particle, clusterSize>> &towers,
+                              std::vector<Particle> &particlesToAdd, bool newton3)
       : _particlesToAdd(particlesToAdd),
-        _towers(clusterList.getTowers()),
+        _towers(towers),
         _towerSideLength(clusterList.getTowerSideLength()),
         _interactionLengthInTowers(clusterList.getNumTowersPerInteractionLength()),
         _towerSideLengthReciprocal(1 / _towerSideLength),
