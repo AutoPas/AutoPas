@@ -35,7 +35,7 @@ class VerletClustersTraversalInterface {
 
   /**
    * Sets the towers of the cluster list for the traversal to iterate over.
-   * @param verletClusterLists the cluster list to iterate over.
+   * @param towers towers of the cluster list for the traversal to iterate over.
    */
   virtual void setTowers(std::vector<internal::ClusterTower<Particle, clusterSize>> &towers) { _towers = &towers; }
   /**
