@@ -16,7 +16,6 @@
  * Extend when necessary.
  */
 
-#include <cassert>
 #if defined(AUTOPAS_OPENMP)
 #include <omp.h>
 #else

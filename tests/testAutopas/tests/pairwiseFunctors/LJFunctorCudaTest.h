@@ -11,7 +11,8 @@
 #include "autopas/utils/SoA.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class LJFunctorCudaTest : public AutoPasTestBase {
+class LJFunctorCudaTest : public AutoPasTestBase,
+                          public ::testing::WithParamInterface<std::tuple<bool, bool, int, int>> {
  public:
   LJFunctorCudaTest()
       : AutoPasTestBase(), _cutoff{1.}, _epsilon{2}, _sigma{0.05}, _lowCorner{0, 0, 0}, _highCorner{2, 1, 1} {}
@@ -27,10 +28,10 @@ class LJFunctorCudaTest : public AutoPasTestBase {
    * In all comparisons first is AVX2, second non-AVX2
    *
    * Checks CudaFunctor(soa1, soa2, newton3)
-   *
+   * LJFunctor works only with MoleculeLJ
    * @param newton3
    */
-  template <typename ParticleType, bool useNewton3>
+  template <typename ParticleType, bool useNewton3, bool calculateGlobals>
   void testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2);
 
   /**
@@ -39,21 +40,22 @@ class LJFunctorCudaTest : public AutoPasTestBase {
    * In all comparisons first is AVX2, second non-AVX2
    *
    * Checks CudaFunctor(soa, newton3)
-   *
+   * LJFunctor only works with MoleculeLJ
    * @param newton3
    */
-  template <typename ParticleType, bool useNewton3>
+  template <typename ParticleType, bool useNewton3, bool calculateGlobals>
   void testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles);
 
   /**
    * Checks that two non empty SoAs' particles are equal
-   * @tparam SoAType
+   * @tparam Particle
    * @param soa1
    * @param soa2
    * @return
    */
-  template <class SoAType>
-  bool SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2);
+  template <class Particle>
+  bool SoAParticlesEqual(autopas::SoA<typename Particle::SoAArraysType> &soa1,
+                         autopas::SoA<typename Particle::SoAArraysType> &soa2);
 
   /**
    * Check that two non empty AoSs' (=Cells) particles are equal.
@@ -61,7 +63,7 @@ class LJFunctorCudaTest : public AutoPasTestBase {
    * @param cell2
    * @return
    */
-  bool AoSParticlesEqual(FPCell &cell1, FPCell &cell2);
+  bool AoSParticlesEqual(FMCell &cell1, FMCell &cell2);
 
   /**
    * Check that two particles are equal.
@@ -72,8 +74,8 @@ class LJFunctorCudaTest : public AutoPasTestBase {
   bool particleEqual(Particle &p1, Particle &p2);
 
   const double _cutoff;
-  const double _epsilon;
-  const double _sigma;
+  double _epsilon;
+  double _sigma;
   const std::array<double, 3> _lowCorner;
   const std::array<double, 3> _highCorner;
 };

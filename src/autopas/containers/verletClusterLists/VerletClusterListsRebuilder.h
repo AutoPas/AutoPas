@@ -53,7 +53,7 @@ class VerletClusterListsRebuilder {
       : _particlesToAdd(particlesToAdd),
         _towers(clusterList.getTowers()),
         _towerSideLength(clusterList.getTowerSideLength()),
-        _interactionLengthInTowers(clusterList.getInteractionLengthInTowers()),
+        _interactionLengthInTowers(clusterList.getNumTowersPerInteractionLength()),
         _towerSideLengthReciprocal(1 / _towerSideLength),
         _towersPerDim(clusterList.getTowersPerDimension()),
         _neighborListIsNewton3(newton3),
@@ -63,36 +63,19 @@ class VerletClusterListsRebuilder {
         _boxMax(clusterList.getBoxMax()) {}
 
   /**
-   * Aggregate to provide names for the return values of rebuild().
-   */
-  struct BuildingReturnValues {
-    /**
-     * The new side length of each tower in xy-direction.
-     */
-    double _towerSideLength;
-    /**
-     * The interaction length in towers using the new tower side length.
-     */
-    int _interactionLengthInTowers;
-    /**
-     * The number of towers in each dimension using the new tower side length.
-     */
-    std::array<size_t, 2> _towersPerDim;
-    /**
-     * The new number of clusters in the container.
-     */
-    size_t _numClusters;
-    /**
-     * If the neighbor lists use newton 3.
-     */
-    bool _neighborListIsNewton3;
-  };
-  /**
-   * Rebuilds the towers, clusters, and neighbor lists.
+   * Rebuilds the towers, clusters, and neighbor lists. Clusters are filled with dummies as described in
+   * ClusterTower::fillUpWithDummyParticles.
    *
-   * @return all new values for VerletClusterLists member variables.
+   * @return new values for VerletClusterLists member variables. They are returned as tuple consisting of:
+   * {
+   *  double:                The new side length of each tower in xy-direction,
+   *  int:                   The interaction length in towers using the new tower side length,
+   *  std::array<size_t, 2>: The number of towers in each dimension using the new tower side length,
+   *  size_t:                The new number of clusters in the container,
+   *  bool:                  If the neighbor lists use newton 3.
+   * }
    */
-  BuildingReturnValues rebuild() {
+  auto rebuild() {
     auto invalidParticles = collectAllParticlesFromTowers();
     invalidParticles.push_back(std::move(_particlesToAdd));
     _particlesToAdd.clear();
@@ -102,11 +85,11 @@ class VerletClusterListsRebuilder {
       numParticles += vector.size();
     }
 
-    auto boxSize = ArrayMath::sub(_boxMax, _boxMin);
+    auto boxSize = utils::ArrayMath::sub(_boxMax, _boxMin);
 
     _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSize);
-    _interactionLengthInTowers = static_cast<int>(std::ceil(_interactionLength / _towerSideLength));
     _towerSideLengthReciprocal = 1 / _towerSideLength;
+    _interactionLengthInTowers = static_cast<int>(std::ceil(_interactionLength * _towerSideLengthReciprocal));
 
     _towersPerDim = calculateTowersPerDim(boxSize);
     size_t numTowers = _towersPerDim[0] * _towersPerDim[1];
@@ -129,7 +112,8 @@ class VerletClusterListsRebuilder {
       _towers[index].fillUpWithDummyParticles(startDummiesX + index * dummyParticleDistance, dummyParticleDistance);
     }
 
-    return {_towerSideLength, _interactionLengthInTowers, _towersPerDim, numClusters, _neighborListIsNewton3};
+    return std::make_tuple(_towerSideLength, _interactionLengthInTowers, _towersPerDim, numClusters,
+                           _neighborListIsNewton3);
   }
 
  protected:
@@ -188,7 +172,7 @@ class VerletClusterListsRebuilder {
   void sortParticlesIntoTowers(const std::vector<std::vector<Particle>> &particles) {
     const auto numVectors = particles.size();
 #if defined(AUTOPAS_OPENMP)
-    // @todo: find sensible chunksize
+    /// @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t index = 0; index < numVectors; index++) {
@@ -211,7 +195,7 @@ class VerletClusterListsRebuilder {
 
     // for all towers
 #if defined(AUTOPAS_OPENMP)
-    // @todo: find sensible chunksize
+    /// @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic) collapse(2)
 #endif
     for (int towerIndexY = 0; towerIndexY <= maxTowerIndexY; towerIndexY++) {
@@ -317,8 +301,8 @@ class VerletClusterListsRebuilder {
     for (size_t towerIndex = 0; towerIndex < tower.getNumClusters(); towerIndex++) {
       auto startIndexNeighbor = _neighborListIsNewton3 and isSameTower ? towerIndex + 1 : 0;
       auto &towerCluster = tower.getCluster(towerIndex);
-      double towerClusterBoxBottom = towerCluster.getParticle(0).getR()[2];
-      double towerClusterBoxTop = towerCluster.getParticle(clusterSize - 1).getR()[2];
+      double towerClusterBoxBottom = towerCluster[0].getR()[2];
+      double towerClusterBoxTop = towerCluster[clusterSize - 1].getR()[2];
 
       for (size_t neighborIndex = startIndexNeighbor; neighborIndex < neighborTower.getNumClusters(); neighborIndex++) {
         const bool isSameCluster = towerIndex == neighborIndex;
@@ -326,8 +310,8 @@ class VerletClusterListsRebuilder {
           continue;
         }
         auto &neighborCluster = neighborTower.getCluster(neighborIndex);
-        double neighborClusterBoxBottom = neighborCluster.getParticle(0).getR()[2];
-        double neighborClusterBoxTop = neighborCluster.getParticle(clusterSize - 1).getR()[2];
+        double neighborClusterBoxBottom = neighborCluster[0].getR()[2];
+        double neighborClusterBoxTop = neighborCluster[clusterSize - 1].getR()[2];
 
         double distZ =
             bboxDistance(towerClusterBoxBottom, towerClusterBoxTop, neighborClusterBoxBottom, neighborClusterBoxTop);
@@ -339,7 +323,7 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Calculates the distance of two bounding boxes in one dimension.
+   * Calculates the distance of two bounding boxes in one dimension. Assumes disjoint bounding boxes.
    * @param min1 minimum coordinate of first bbox in tested dimension
    * @param max1 maximum coordinate of first bbox in tested dimension
    * @param min2 minimum coordinate of second bbox in tested dimension
@@ -365,24 +349,24 @@ class VerletClusterListsRebuilder {
    * @return The tower that should contain a particle at the given location.
    */
   auto &getTowerForParticleLocation(std::array<double, 3> location) {
-    std::array<size_t, 2> cellIndex{};
+    std::array<size_t, 2> towerIndex{};
 
     for (int dim = 0; dim < 2; dim++) {
-      const long int value =
+      const auto towerDimIndex =
           (static_cast<long int>(floor((location[dim] - _boxMin[dim]) * _towerSideLengthReciprocal))) + 1l;
-      const size_t nonNegativeValue = static_cast<size_t>(std::max(value, 0l));
-      const size_t nonLargerValue = std::min(nonNegativeValue, _towersPerDim[dim] - 1);
-      cellIndex[dim] = nonLargerValue;
-      // @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
+      const auto towerDimIndexNonNegative = static_cast<size_t>(std::max(towerDimIndex, 0l));
+      const auto towerDimIndexNonLargerValue = std::min(towerDimIndexNonNegative, _towersPerDim[dim] - 1);
+      towerIndex[dim] = towerDimIndexNonLargerValue;
+      /// @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
       // flag manager
       if (location[dim] >= _boxMax[dim]) {
-        cellIndex[dim] = _towersPerDim[dim] - 1;
+        towerIndex[dim] = _towersPerDim[dim] - 1;
       } else if (location[dim] < _boxMin[dim]) {
-        cellIndex[dim] = 0;
+        towerIndex[dim] = 0;
       }
     }
 
-    return getTowerAtCoordinates(cellIndex[0], cellIndex[1]);
+    return getTowerAtCoordinates(towerIndex[0], towerIndex[1]);
   }
 
   /**

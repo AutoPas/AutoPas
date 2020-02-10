@@ -95,7 +95,7 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
-   * Replaces the copies of the last particle made in generateClusters() with dummies.
+   * Replaces the copies of the last particle made in generateClusters() with dummies. Dummy particles have ID 0.
    *
    * @param dummyStartX The x-coordinate for all dummies.
    * @param dummyDistZ The distance in z-direction that all generated dummies will have from each other.
@@ -103,8 +103,8 @@ class ClusterTower : public ParticleCell<Particle> {
   void fillUpWithDummyParticles(double dummyStartX, double dummyDistZ) {
     auto &lastCluster = getCluster(getNumClusters() - 1);
     for (size_t index = 1; index <= _numDummyParticles; index++) {
-      lastCluster.getParticle(clusterSize - index) = dummy;
-      lastCluster.getParticle(clusterSize - index).setR({dummyStartX, 0, dummyDistZ * index});
+      lastCluster[clusterSize - index] = dummy;
+      lastCluster[clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
     }
   }
 
@@ -118,7 +118,7 @@ class ClusterTower : public ParticleCell<Particle> {
     functor->SoALoader(_particles, _particles._particleSoABuffer);
     for (size_t index = 0; index < getNumClusters(); index++) {
       auto &cluster = getCluster(index);
-      cluster.getSoAView() = {&(_particles._particleSoABuffer), index * clusterSize, (index + 1) * clusterSize};
+      cluster.setSoAView({&(_particles._particleSoABuffer), index * clusterSize, (index + 1) * clusterSize});
     }
   }
 
@@ -149,13 +149,11 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   [[nodiscard]] size_t getNumDummyParticles() const { return _numDummyParticles; }
 
-      /**
-       * Returns the number of particles in the tower that are not dummies.
-       * @return the number of particles in the tower that are not dummies.
-       */
-      [[nodiscard]] size_t getNumActualParticles() const {
-    return _particles.numParticles() - _numDummyParticles;
-  }
+  /**
+   * Returns the number of particles in the tower that are not dummies.
+   * @return the number of particles in the tower that are not dummies.
+   */
+  [[nodiscard]] size_t getNumActualParticles() const { return _particles.numParticles() - _numDummyParticles; }
 
   /**
    * Returns the number of clusters in the tower.
@@ -163,13 +161,11 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   [[nodiscard]] size_t getNumClusters() const { return _clusters.size(); }
 
-      /**
-       * Returns a reference to the std::vector holding the clusters of this container.
-       * @return a reference to the std::vector holding the clusters of this container.
-       */
-      [[nodiscard]] auto &getClusters() {
-    return _clusters;
-  }
+  /**
+   * Returns a reference to the std::vector holding the clusters of this container.
+   * @return a reference to the std::vector holding the clusters of this container.
+   */
+  [[nodiscard]] auto &getClusters() { return _clusters; }
 
   /**
    * Returns the cluster at position index.
@@ -188,13 +184,22 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   [[nodiscard]] unsigned long numParticles() const override { return getNumActualParticles(); }
 
-      /**
-       * Returns an iterator over all non-dummy particles contained in this tower.
-       * @return an iterator over all non-dummy particles contained in this tower.
-       */
-      [[nodiscard]] SingleCellIteratorWrapper<Particle> begin() override {
-    return SingleCellIteratorWrapper<Particle>{
-        new SingleCellIterator<Particle, ClusterTower<Particle, clusterSize>>(this)};
+  /**
+   * Returns an iterator over all non-dummy particles contained in this tower.
+   * @return an iterator over all non-dummy particles contained in this tower.
+   */
+  [[nodiscard]] SingleCellIteratorWrapper<Particle, true> begin() override {
+    return SingleCellIteratorWrapper<Particle, true>{
+        new SingleCellIterator<Particle, ClusterTower<Particle, clusterSize>, true>(this)};
+  }
+
+  /**
+   * Returns an iterator over all non-dummy particles contained in this tower.
+   * @return an iterator over all non-dummy particles contained in this tower.
+   */
+  [[nodiscard]] SingleCellIteratorWrapper<Particle, false> begin() const override {
+    return SingleCellIteratorWrapper<Particle, false>{
+        new SingleCellIterator<Particle, ClusterTower<Particle, clusterSize>, false>(this)};
   }
 
   /**
@@ -202,7 +207,14 @@ class ClusterTower : public ParticleCell<Particle> {
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  decltype(auto) getParticle(size_t index) { return _particles._particles.at(index); }
+  Particle &at(size_t index) { return _particles._particles.at(index); }
+
+  /**
+   * Returns the const particle at position index. Needed by SingleCellIterator.
+   * @param index the position of the particle to return.
+   * @return the particle at position index.
+   */
+  const Particle &at(size_t index) const { return _particles._particles.at(index); }
 
   // Methods from here on: Only to comply with ParticleCell interface. SingleCellIterators work on ParticleCells, and
   // while those methods would not be needed, still complying to the whole interface should be helpful, if
@@ -211,7 +223,7 @@ class ClusterTower : public ParticleCell<Particle> {
   [[nodiscard]] bool isNotEmpty() const override { return getNumActualParticles() > 0; }
 
   void deleteByIndex(size_t index) override {
-    // TODO support deletion of particles somehow
+    // @TODO support deletion of particles somehow
     autopas::utils::ExceptionHandler::exception("Not supported!");
   }
 
@@ -224,11 +236,11 @@ class ClusterTower : public ParticleCell<Particle> {
     return {0, 0, 0};
   }
 
-  private :
-      /**
-       * The clusters that are contained in this tower.
-       */
-      std::vector<Cluster<Particle, clusterSize>> _clusters;
+ private:
+  /**
+   * The clusters that are contained in this tower.
+   */
+  std::vector<Cluster<Particle, clusterSize>> _clusters;
   /**
    * The particle cell to store the particles and SoA for this tower.
    */
@@ -239,6 +251,7 @@ class ClusterTower : public ParticleCell<Particle> {
   size_t _numDummyParticles{};
 };
 
+// Requires all particle classes to have a constructor that takes position, velocity, and id
 template <class Particle, size_t clusterSize>
 const Particle ClusterTower<Particle, clusterSize>::dummy{
     {std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()},

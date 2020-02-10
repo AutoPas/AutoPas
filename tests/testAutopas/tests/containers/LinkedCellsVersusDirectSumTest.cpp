@@ -5,32 +5,35 @@
  */
 
 #include "LinkedCellsVersusDirectSumTest.h"
-#include "testingHelpers/RandomGenerator.h"
+
+#include "autopas/containers/directSum/DirectSumTraversal.h"
+#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 LinkedCellsVersusDirectSumTest::LinkedCellsVersusDirectSumTest()
     : _directSum(getBoxMin(), getBoxMax(), getCutoff(), 0.),
       _linkedCells(getBoxMin(), getBoxMax(), getCutoff(), 0., 1.) {}
 
 void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel_err_tolerance) {
-  autopas::MoleculeLJ defaultParticle;
-  RandomGenerator::fillWithParticles(_directSum, defaultParticle, numMolecules);
+  Molecule defaultParticle;
+  autopasTools::generators::RandomGenerator::fillWithParticles(_directSum, defaultParticle, _directSum.getBoxMin(),
+                                                               _directSum.getBoxMax(), numMolecules);
   // now fill second container with the molecules from the first one, because
   // otherwise we generate new particles
   for (auto it = _directSum.begin(); it.isValid(); ++it) {
     _linkedCells.addParticle(*it);
   }
 
-  double eps = 1.0;
-  double sig = 1.0;
-  double shift = 0.0;
-  autopas::MoleculeLJ::setEpsilon(eps);
-  autopas::MoleculeLJ::setSigma(sig);
-  autopas::LJFunctor<Molecule, FMCell> func(getCutoff(), eps, sig, shift);
+  autopas::LJFunctor<Molecule, FMCell> func(getCutoff());
+  func.setParticleProperties(24, 1);
 
   autopas::C08Traversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true> traversalLJ(
-      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func);
+      _linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &func, _linkedCells.getInteractionLength(),
+      _linkedCells.getCellBlock().getCellLength());
   autopas::DirectSumTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
-      traversalDS(&func);
+      traversalDS(&func, getCutoff());
   _directSum.iteratePairwise(&traversalDS);
   _linkedCells.iteratePairwise(&traversalLJ);
 
@@ -40,12 +43,12 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
   std::vector<std::array<double, 3>> forcesDirect(numMolecules), forcesLinked(numMolecules);
   // get and sort by id, the
   for (auto it = _directSum.begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
+    Molecule &m = *it;
     forcesDirect.at(m.getID()) = m.getF();
   }
 
   for (auto it = _linkedCells.begin(); it.isValid(); ++it) {
-    autopas::MoleculeLJ &m = *it;
+    Molecule &m = *it;
     forcesLinked.at(m.getID()) = m.getF();
   }
 
@@ -61,10 +64,11 @@ void LinkedCellsVersusDirectSumTest::test(unsigned long numMolecules, double rel
 
   autopas::FlopCounterFunctor<Molecule, FMCell> flopsDirect(getCutoff()), flopsLinked(getCutoff());
   autopas::C08Traversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, true>
-      traversalFLOPSLC(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked);
+      traversalFLOPSLC(_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &flopsLinked,
+                       _linkedCells.getInteractionLength(), _linkedCells.getCellBlock().getCellLength());
   autopas::DirectSumTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos,
                               true>
-      traversalFLOPSDS(&flopsDirect);
+      traversalFLOPSDS(&flopsDirect, getCutoff());
   _directSum.iteratePairwise(&traversalFLOPSDS);
   _linkedCells.iteratePairwise(&traversalFLOPSLC);
 

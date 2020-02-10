@@ -22,7 +22,7 @@ namespace autopas {
  * @tparam useNewton3
  * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3,
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
           int collapseDepth = 3>
 class CBasedTraversal : public CellPairTraversal<ParticleCell> {
  protected:
@@ -58,7 +58,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
     if (this->_cells) {
       auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
-      // @todo find a condition on when to use omp or when it is just overhead
+      /// @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
       for (size_t i = 0; i < cells.size(); ++i) {
@@ -74,7 +74,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
     if (this->_cells) {
       auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
-      // @todo find a condition on when to use omp or when it is just overhead
+      /// @todo find a condition on when to use omp or when it is just overhead
 #pragma omp parallel for
 #endif
       for (size_t i = 0; i < cells.size(); ++i) {
@@ -89,9 +89,9 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @tparam LoopBody type of the loop body
    * @param loopBody The body of the loop as a function. Normally a lambda function, that takes as as parameters
    * (x,y,z). If you need additional input from outside, please use captures (by reference).
-   * @param end 3D index until interactions are processed (exclusive)
-   * @param stride dimension of stride (depends on coloring)
-   * @param offset initial offset
+   * @param end 3D index until interactions are processed (exclusive).
+   * @param stride Distance (in cells) to the next cell of the same color.
+   * @param offset initial offset (in cells) in which cell to start the traversal.
    */
   template <typename LoopBody>
   inline void cTraversal(LoopBody &&loopBody, const std::array<unsigned long, 3> &end,
@@ -127,7 +127,8 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3, int collapseDepth>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          int collapseDepth>
 template <typename LoopBody>
 inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::cTraversal(
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
@@ -140,7 +141,7 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
     for (unsigned long col = 0; col < numColors; ++col) {
       notifyColorChange(col);
       std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
-      std::array<unsigned long, 3> start(ArrayMath::add(startWithoutOffset, offset));
+      std::array<unsigned long, 3> start(utils::ArrayMath::add(startWithoutOffset, offset));
 
       // intel compiler demands following:
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];

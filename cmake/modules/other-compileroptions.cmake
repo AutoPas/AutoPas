@@ -17,11 +17,12 @@ target_compile_options(
         # fast math for better vectorization
         $<$<AND:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-ffast-math>
         # Clang: set OpenMP version to 4.5
-        $<$<CXX_COMPILER_ID:Clang>:-fopenmp-version=45>
+        $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fopenmp-version=45>
         # INTEL: per default fast math is on. Disable via fp-model precise
         $<$<AND:$<NOT:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fp-model
         precise>
         # Warnings:
+    PRIVATE
         # no warnings for intel because it's mainly spam, but we disable one, because of a compiler
         # bug:
         # https://software.intel.com/en-us/forums/intel-c-compiler/topic/814098

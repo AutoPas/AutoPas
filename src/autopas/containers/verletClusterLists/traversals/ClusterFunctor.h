@@ -10,9 +10,9 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace autopas {
+namespace autopas::internal {
 /**
- * Provides methods to traversal a single cluster and a pair of clusters.
+ * Provides methods to traverse a single cluster and a pair of clusters.
  *
  * @tparam Particle The type of particle the clusters contain.
  * @tparam PairwiseFunctor The type of the functor the ClusterFunctor should use.
@@ -20,7 +20,8 @@ namespace autopas {
  * @tparam useNewton3 If newton 3 should be used or not.
  * @tparam clusterSize The number of particles in each cluster.
  */
-template <class Particle, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3, size_t clusterSize>
+template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          size_t clusterSize>
 class ClusterFunctor {
  public:
   /**
@@ -30,7 +31,7 @@ class ClusterFunctor {
   explicit ClusterFunctor(PairwiseFunctor *functor) : _functor(functor) {}
 
   /**
-   * Traverses pairs of all particles in the given cluster. Always uses newton 3.
+   * Traverses pairs of all particles in the given cluster. Always uses newton 3 in the AoS data layout.
    * @param cluster The cluster to traverse.
    */
   void traverseCluster(internal::Cluster<Particle, clusterSize> &cluster) {
@@ -38,7 +39,7 @@ class ClusterFunctor {
       for (size_t i = 0; i < clusterSize; i++) {
         // Always use newton 3 for interactions within one cluster.
         for (size_t j = i + 1; j < clusterSize; j++) {
-          _functor->AoSFunctor(cluster.getParticle(i), cluster.getParticle(j), true);
+          _functor->AoSFunctor(cluster[i], cluster[j], true);
         }
       }
     } else {
@@ -56,7 +57,7 @@ class ClusterFunctor {
     if constexpr (dataLayout == DataLayoutOption::aos) {
       for (size_t i = 0; i < clusterSize; i++) {
         for (size_t j = 0; j < clusterSize; j++) {
-          _functor->AoSFunctor(cluster.getParticle(i), neighborCluster.getParticle(j), useNewton3);
+          _functor->AoSFunctor(cluster[i], neighborCluster[j], useNewton3);
         }
       }
     } else {
@@ -68,4 +69,4 @@ class ClusterFunctor {
   PairwiseFunctor *_functor;
 };
 
-}  // namespace autopas
+}  // namespace autopas::internal

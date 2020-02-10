@@ -35,10 +35,10 @@ template <class Particle>
 class VerletLists
     : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                    typename VerletListHelpers<Particle>::SoAArraysType> {
-  typedef VerletListHelpers<Particle> verlet_internal;
-  typedef FullParticleCell<Particle> ParticleCell;
-  typedef typename VerletListHelpers<Particle>::SoAArraysType SoAArraysType;
-  typedef typename VerletListHelpers<Particle>::VerletListParticleCellType LinkedParticleCell;
+  using verlet_internal = VerletListHelpers<Particle>;
+  using ParticleCell = FullParticleCell<Particle>;
+  using SoAArraysType = typename VerletListHelpers<Particle>::SoAArraysType;
+  using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:
   /**
@@ -67,10 +67,10 @@ class VerletLists
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
 
-  ContainerOption getContainerType() override { return ContainerOption::verletLists; }
+  ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+    AutoPasLog(debug, "Using traversal {}.", traversal->getTraversalType().to_string());
 
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *verletTraversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell> *>(traversal);
@@ -121,7 +121,8 @@ class VerletLists
         C08Traversal<LinkedParticleCell,
                      typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell>,
                      DataLayoutOption::aos, true>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
-                                                  &validityCheckerFunctor);
+                                                  &validityCheckerFunctor, this->getInteractionLength(),
+                                                  this->_linkedCells.getCellBlock().getCellLength());
     this->_linkedCells.iteratePairwise(&traversal);
 
     return validityCheckerFunctor.neighborlistsAreValid();
@@ -156,21 +157,23 @@ class VerletLists
     /// @todo autotune traversal
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS: {
-        AUTOPAS_WITH_STATIC_BOOL(useNewton3, {
+        utils::withStaticBool(useNewton3, [&](auto theBool) {
           auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::aos, c_useNewton3>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+                                        DataLayoutOption::aos, theBool>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&traversal);
-        })
+        });
         break;
       }
       case BuildVerletListType::VerletSoA: {
-        AUTOPAS_WITH_STATIC_BOOL(useNewton3, {
+        utils::withStaticBool(useNewton3, [&](auto theBool) {
           auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::soa, c_useNewton3>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f);
+                                        DataLayoutOption::soa, theBool>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&traversal);
-        })
+        });
         break;
       }
       default:
@@ -178,6 +181,7 @@ class VerletLists
                                            _buildVerletListType);
         break;
     }
+
     _soaListIsValid = false;
   }
 

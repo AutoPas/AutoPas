@@ -7,17 +7,18 @@
 #pragma once
 
 #include <cmath>
+
+#include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
+#include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
 
 namespace autopas {
-
-template <class Particle>
-class VerletClustersTraversalInterface;
 
 /**
  * Particles are divided into clusters.
@@ -28,10 +29,11 @@ class VerletClustersTraversalInterface;
  * @tparam Particle
  */
 template <class Particle>
-class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<Particle>> {
+class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> {
  public:
   /**
-   * The number of particles in a full cluster. If necessary, constexpr can be removed it can be made a member variable.
+   * The number of particles in a full cluster. Currently, constexpr is necessary so it can be passed to ClusterTower as
+   * a template parameter.
    */
   static constexpr size_t clusterSize = 4;
 
@@ -63,17 +65,16 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * @param cutoff the cutoff radius of the interaction
    * @param skin the skin radius
    */
-  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
-                     double skin = 0)
-      : ParticleContainer<Particle, FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
+  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
+      : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _numClusters(0),
-        _interactionLengthInTowers(0),
+        _numTowersPerInteractionLength(0),
         _neighborListIsNewton3(false) {}
 
-  ContainerOption getContainerType() override { return ContainerOption::verletClusterLists; }
+  ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    AutoPasLog(debug, "Using traversal {}.", utils::StringUtils::to_string(traversal->getTraversalType()));
+    AutoPasLog(debug, "Using traversal {}.", traversal->getTraversalType().to_string());
 
     auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
     if (traversalInterface) {
@@ -89,32 +90,39 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     traversal->endTraversal();
   }
 
-  // TODO: Somehow make the iterator also iterating over the _particlesToAdd. Otherwise, e.g. ContainerSelectorTest will
-  // work but have all particles removed after it switches from this container to another.
+  /// @todo: Somehow make the iterator also iterate over the _particlesToAdd. Otherwise, e.g. ContainerSelectorTest
+  /// will work but have all particles removed after it switches from this container to another.
+  /// see: https://github.com/AutoPas/AutoPas/issues/155
   /**
    * Adds the given particle to the container. rebuildVerletLists() has to be called to have it actually sorted in.
    * @param p The particle to add.
    */
-  void addParticle(Particle &p) override { _particlesToAdd.push_back(p); }
+  void addParticle(const Particle &p) override { _particlesToAdd.push_back(p); }
 
   /**
    * @copydoc VerletLists::addHaloParticle()
    */
-  void addHaloParticle(Particle &haloParticle) override {
+  void addHaloParticle(const Particle &haloParticle) override {
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
 
-  bool updateHaloParticle(Particle &haloParticle) override { throw std::runtime_error("not yet implemented"); }
+  /**
+   * @copydoc autopas::ParticleContainerInterface::updateHaloParticle()
+   */
+  bool updateHaloParticle(const Particle &haloParticle) override {
+    autopas::utils::ExceptionHandler::exception("VerletClusterLists.updateHaloParticle not yet implemented.");
+    return false;
+  }
 
   /**
    * @copydoc VerletLists::deleteHaloParticles
    */
   void deleteHaloParticles() override {
     // quick and dirty: iterate over all particles and delete halo particles
-    // @todo: make this proper
+    /// @todo: make this proper
     for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
       if (not iter->isOwned()) {
-        iter.deleteCurrentParticle();
+        internal::deleteParticle(iter);
       }
     }
   }
@@ -124,52 +132,67 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    */
   AUTOPAS_WARN_UNUSED_RESULT
   std::vector<Particle> updateContainer() override {
-    // TODO What happens when some particles are just deleted here?
-    AutoPasLog(debug, "updating container");
+    /// @todo What happens when some particles are just deleted here?
     // first delete all particles
     this->deleteHaloParticles();
 
     // next find invalid particles
     std::vector<Particle> invalidParticles;
-    // @todo: parallelize
+    /// @todo: parallelize
     for (auto iter = this->begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
         invalidParticles.push_back(*iter);
-        iter.deleteCurrentParticle();
+        internal::deleteParticle(iter);
       }
     }
 
     return invalidParticles;
   }
 
-  bool isContainerUpdateNeeded() override {
+  bool isContainerUpdateNeeded() const override {
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.isContainerUpdateNeeded not yet implemented");
     return false;
   }
 
-  TraversalSelectorInfo getTraversalSelectorInfo() override {
-    return TraversalSelectorInfo({_towersPerDim[0], _towersPerDim[1], 1});
+  TraversalSelectorInfo getTraversalSelectorInfo() const override {
+    std::array<double, 3> towerSize = {_towerSideLength, _towerSideLength, this->getBoxMax()[2] - this->getBoxMin()[2]};
+    std::array<unsigned long, 3> towerDimensions = {_towersPerDim[0], _towersPerDim[1], 1};
+    return TraversalSelectorInfo(towerDimensions, this->getInteractionLength(), towerSize, clusterSize);
   }
 
-  ParticleIteratorWrapper<Particle> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIteratorWrapper<Particle>(
-        new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, 4>>(&(this->_towers)));
+  ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    return ParticleIteratorWrapper<Particle, true>(
+        new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, true>(
+            &(this->_towers)));
   }
 
-  ParticleIteratorWrapper<Particle> getRegionIterator(
+  ParticleIteratorWrapper<Particle, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+    return ParticleIteratorWrapper<Particle, false>(
+        new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
+            &(this->_towers)));
+  }
+
+  ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    // @todo implement this if bounding boxes are here
+    /// @todo implement this if bounding boxes are here
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
-    return ParticleIteratorWrapper<Particle>();
+    return ParticleIteratorWrapper<Particle, true>();
+  }
+
+  ParticleIteratorWrapper<Particle, false> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+    /// @todo implement this if bounding boxes are here
+    autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
+    return ParticleIteratorWrapper<Particle, false>();
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     internal::VerletClusterListsRebuilder<Particle> builder{*this, _particlesToAdd, traversal->getUseNewton3()};
-    auto res = builder.rebuild();
-    std::tie(_towerSideLength, _interactionLengthInTowers, _towersPerDim, _numClusters, _neighborListIsNewton3) = {
-        res._towerSideLength, res._interactionLengthInTowers, res._towersPerDim, res._numClusters,
-        res._neighborListIsNewton3};
+    std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters, _neighborListIsNewton3) =
+        builder.rebuild();
 
     auto *clusterTraversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
     if (clusterTraversalInterface) {
@@ -199,7 +222,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     }
   }
 
-  unsigned long getNumParticles() override {
+  unsigned long getNumParticles() const override {
     unsigned long sum = 0;
     for (size_t index = 0; index < _towers.size(); index++) {
       sum += _towers[index].getNumActualParticles();
@@ -232,8 +255,8 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   auto getTowersPerDimension() const { return _towersPerDim; }
 
   /**
-   * Returns the 2D grid for the XY-plane of this container that defines the cluster towers.
-   * @return the grids of this container for usage in traversals.
+   * Returns a reference to the 2D grid for the XY-plane of this container that defines the cluster towers.
+   * @return a reference to the grids of this container for usage in traversals.
    */
   auto &getTowers() { return _towers; }
 
@@ -244,10 +267,10 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   constexpr auto getClusterSize() const { return clusterSize; }
 
   /**
-   * Returns the interaction length in towers. That is how many towers fit into one interaction length rounded up.
-   * @return the interaction length in towers.
+   * Returns the towers per interaction length. That is how many towers fit into one interaction length rounded up.
+   * @return the number of towers per interaction length.
    */
-  auto getInteractionLengthInTowers() const { return _interactionLengthInTowers; }
+  auto getNumTowersPerInteractionLength() const { return _numTowersPerInteractionLength; }
 
   /**
    * Loads all particles of the container in their correct SoA and generates the SoAViews for the clusters.
@@ -258,7 +281,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   void loadParticlesIntoSoAs(Functor *functor) {
     const auto numTowers = _towers.size();
 #if defined(AUTOPAS_OPENMP)
-    // @todo: find sensible chunksize
+    /// @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t index = 0; index < numTowers; index++) {
@@ -275,7 +298,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   void extractParticlesFromSoAs(Functor *functor) {
     const auto numTowers = _towers.size();
 #if defined(AUTOPAS_OPENMP)
-    // @todo: find sensible chunksize
+    /// @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t index = 0; index < numTowers; index++) {
@@ -284,20 +307,20 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
   }
 
   /**
-   * Returns the tower for the given 2D-coordinates.
-   * @param x The x-coordinate of the tower.
-   * @param y The y-coordinate of the tower.
-   * @return The tower for the given 2D-coordinates.
+   * Returns a reference to the tower for the given tower grid coordinates.
+   * @param x The x-th tower in x direction.
+   * @param y The y-th tower in y direction.
+   * @return a reference to the tower for the given tower grid coordinates.
    */
   auto &getTowerAtCoordinates(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
 
   /**
-   * Returns the 1D index for the given 2D-coordinates of a tower.
+   * Returns the 1D index for the given tower grid coordinates of a tower.
    *
    * @param x The x-coordinate of the tower.
    * @param y The y-coordinate of the tower.
    * @param towersPerDim The number of towers in each dimension.
-   * @return the 1D index for the given 2D-coordinates of a tower.
+   * @return the 1D index for the given tower grid coordinates of a tower.
    */
   static auto towerIndex2DTo1D(const size_t x, const size_t y, const std::array<size_t, 2> towersPerDim) {
     return x + y * towersPerDim[0];
@@ -314,14 +337,14 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     return towerIndex2DTo1D(x, y, _towersPerDim);
   }
 
-  protected :
-      /**
-       * Helper method to sequentially iterate over all clusters.
-       * @tparam LoopBody The type of the lambda to execute for all clusters.
-       * @param loopBody The lambda to execute for all clusters. Parameters given is internal::Cluster& cluster.
-       */
-      template <class LoopBody>
-      void traverseClustersSequential(LoopBody &&loopBody) {
+ protected:
+  /**
+   * Helper method to sequentially iterate over all clusters.
+   * @tparam LoopBody The type of the lambda to execute for all clusters.
+   * @param loopBody The lambda to execute for all clusters. Parameters given is internal::Cluster& cluster.
+   */
+  template <class LoopBody>
+  void traverseClustersSequential(LoopBody &&loopBody) {
     for (size_t x = 0; x < _towersPerDim[0]; x++) {
       for (size_t y = 0; y < _towersPerDim[1]; y++) {
         auto &tower = getTowerAtCoordinates(x, y);
@@ -346,7 +369,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
     const auto towersPerDimX = _towersPerDim[0];
     const auto towersPerDimY = _towersPerDim[1];
 #if defined(AUTOPAS_OPENMP)
-    // @todo: find sensible chunksize
+    /// @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic) collapse(2)
 #endif
     for (size_t x = 0; x < towersPerDimX; x++) {
@@ -448,7 +471,7 @@ class VerletClusterLists : public ParticleContainer<Particle, FullParticleCell<P
    * The interaction length in number of towers it reaches.
    * static_cast<int>(std::ceil((this->getInteractionLength()) * _towerSideLengthReciprocal))
    */
-  int _interactionLengthInTowers;
+  int _numTowersPerInteractionLength;
 
   /**
    * Specifies if the saved neighbors use newton 3 or not.

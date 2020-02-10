@@ -13,6 +13,8 @@ Please keep in mind the following notes while working.
 * `#include` of files from within AutoPas shall be given with the full path (starting with `autopas/`) and using `""`. 
 * `constexpr` instead of `#define`. Use it wherever possible.
 * `const` wherever possible. 
+* `nullptr` instead of `NULL`.
+* `using` instead of `typedef`.
 * Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Descriptive error message")` instead.
 
 ### Code Style
@@ -21,8 +23,10 @@ Please keep in mind the following notes while working.
 * Class names start with a capital letter.
 * Use camelCase over snake_case.
 * Google code style is enforced by the CI server.
-* Clang format version 6.0 (Other versions might format slightly differently).
+* Clang format version 9 is enforced (Other versions might format slightly differently).
 * Use `make clangformat` before submitting a PR.
+* [cmake format](https://github.com/cheshirekow/cmake_format/tree/master/cmake_format) is enforced.
+* Use `make cmakeformat` before submitting a PR.
 
 ### Comment Style
 * Please write full sentences starting with a capital letter and ending with a period.
@@ -84,37 +88,41 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 ### Adding a new Traversal
 * Create a new traversal class under `src/autopas/containers/[Container]/traversals` for the container the traversal is intended.
 * Think about inheriting from a similar traversal. At least derive your new traversal from `src/autopas/containers/cellPairTraversals/TraversalInterface.h`.
-* Add a new enum entry to `src/autopas/options/TraversalOption.h`.
+* Go to `src/autopas/options/TraversalOption.h`.
+  * Add a new enum in `TraversalOption::Value`.
+  * Add a new string representation in the `map` of `TraversalOption::getOptionNames()`.
 * Add the enum to every compatible container in `src/autopas/containers/CompatibleTraversals.h`.
-* Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`.
 * Add a case for the new traversal in `src/autopas/selectors/TraversalSelector.h::generateTraversal()`.
-* Check that the new option is added to the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseTraversalOptionsTest`).
+* Check that the new option is working in the md-flexible example.
+* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `OptionTest::parseTraversalOptionsTest`).
 * Add new unit tests for your traversal.
 
 ### Adding a new Container
 * Create a new container class under `src/autopas/containers/`.
 * Derive your new container from `src/autopas/containers/ParticleContainer.h` or a more similar one.
-* Add a new enum entry to `src/autopas/options/ContainerOption.h`.
+* Go to `src/autopas/options/ContainerOption.h`.
+  * Add a new enum in `ContainerOption::Value`.
+  * Add a new string representation in the `map` of `ContainerOption::getOptionNames()`.
 * Create a new set of compatible traversals in `src/autopas/containers/CompatibleTraversals.h`.
 * Create a new `case` statement in `src/autopas/utils/StaticSelectors.h`.
-* Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`.
 * Add a case for the new container in `src/autopas/selectors/ContainerSelector.h::generateContainer()`.
-* Check that the new option is added to the md-flexible example.
+* Check that the new option is working in the md-flexible example.
 * Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseContainerOptionsTest`).
 * Add new unit tests for your container.
 
 ### Adding a new Tuning Strategy
 * Create a new tuning strategy class under `src/autopas/selectors/tuningStrategy`.
 * Derive your new strategy from `src/autopas/selectors/tuningStrategy/TuningStrategyInterface.h` or a more similar one.
-* Add a new enum entry to `src/autopas/options/TuningStrategyOption.h` along with a brief description.
-* Add new parsing and toString cases to `src/autopas/utils/StringUtils.h`.
-* Add a case for the new strategy in `src/autopas/AutoPas.h::generateTuningStrategy()`.
-* Check that the new option is added to the md-flexible example.
+* Go to `src/autopas/options/TuningStrategyOption.h`.
+  * Add a new enum in `TuningStrategyOption::Value`.
+  * Add a new string representation in the `map` of `TuningStrategyOption::getOptionNames()`.
+* Add a `case` for the new strategy in `src/autopas/AutoPas.h::generateTuningStrategy()`.
+* Check that the new option is working in the md-flexible example.
 * Add new unit tests for your strategy.
 
 ### Adding a new Option
 * If applicable add a new setter to `src/autopas/AutoPas.h`.
 * Check that the new option is added to the md-flexible example. Parser and main.
 * Global options, which are represented by an enum, should be defined in an additional file in `src/autopas/options`.
-* Add new unit tests for your option.
+* Inherit from `src/autopas/options/Option.h`. This will also generate functions for conversion from and to strings.
+* Add new unit tests for your option, mainly in `tests/testAutopas/tests/options/OptionTest.cpp`.

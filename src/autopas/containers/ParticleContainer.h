@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/TraversalInterface.h"
 
@@ -21,22 +22,11 @@ namespace autopas {
 /**
  * The ParticleContainer class stores particles in some object and provides
  * methods to iterate over its particles.
- * @tparam Particle Class for particles
  * @tparam ParticleCell Class for the particle cells
  */
-template <class Particle, class ParticleCell, class SoAArraysType = typename Particle::SoAArraysType>
-class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCell> {
+template <class ParticleCell, class SoAArraysType = typename ParticleCell::ParticleType::SoAArraysType>
+class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
  public:
-  /**
-   *  Type of the Particle.
-   */
-  typedef Particle ParticleType;
-
-  /**
-   * Type of the ParticleCell.
-   */
-  typedef ParticleCell ParticleCellType;
-
   /**
    * Constructor of ParticleContainer
    * @param boxMin
@@ -49,7 +39,7 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
       : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
   /**
-   * destructor of ParticleContainer
+   * Destructor of ParticleContainer.
    */
   ~ParticleContainer() override = default;
 
@@ -114,23 +104,12 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
   double getInteractionLength() const override final { return _cutoff + _skin; }
 
   /**
-   * Checks if the given traversals are applicable to this container.
-   * @param traversalOptions
-   * @return True iff traversalOptions is a subset of _applicableTraversals
-   */
-  bool checkIfTraversalsAreApplicable(std::set<TraversalOption> traversalOptions) {
-    auto applicableTraversals = compatibleTraversals::allCompatibleTraversals(this->getContainerType());
-    return std::includes(applicableTraversals.begin(), applicableTraversals.end(), traversalOptions.begin(),
-                         traversalOptions.end());
-  }
-
-  /**
    * Deletes all particles from the container.
    */
   void deleteAllParticles() override {
 #ifdef AUTOPAS_OPENMP
-    // @todo: find a sensible value for magic number
-    // numThreads should be at least 1 and maximal max_threads
+    /// @todo: find a sensible value for magic number
+    /// numThreads should be at least 1 and maximal max_threads
     int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 1000)));
     AutoPasLog(trace, "Using {} threads", numThreads);
 #pragma omp parallel for num_threads(numThreads)
@@ -144,11 +123,11 @@ class ParticleContainer : public ParticleContainerInterface<Particle, ParticleCe
    * Get the number of particles saved in the container.
    * @return Number of particles in the container.
    */
-  unsigned long getNumParticles() override {
+  unsigned long getNumParticles() const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
-    // @todo: find a sensible value for magic number
-    // numThreads should be at least 1 and maximal max_threads
+    /// @todo: find a sensible value for magic number
+    /// numThreads should be at least 1 and maximal max_threads
     int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 1000)));
     AutoPasLog(trace, "Using {} threads", numThreads);
 #pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)

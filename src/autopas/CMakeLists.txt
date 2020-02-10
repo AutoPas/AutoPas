@@ -21,6 +21,10 @@ target_link_libraries(
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler Do not link against
                                   # openmp when using archer
         $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${ARCHER}>>>:OpenMP::OpenMP_CXX>
+        spdlog::spdlog
+    PRIVATE
+        # harmony and Eigen3 are only needed privately when building AutoPas.
+        harmony Eigen3
 )
 
 # Ompstuff needs to be here because OpenMP.cmake needs to run before this file to create to OpenMP

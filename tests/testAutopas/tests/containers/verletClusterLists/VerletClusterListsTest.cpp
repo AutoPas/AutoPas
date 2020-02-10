@@ -5,6 +5,8 @@
  */
 
 #include "VerletClusterListsTest.h"
+
+#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersColoringTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
 
@@ -50,7 +52,8 @@ TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
   unsigned long numParticles = 271;
   autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
 
-  RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, numParticles);
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
   autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
@@ -69,7 +72,8 @@ TEST_F(VerletClusterListsTest, testIterator) {
   unsigned long numParticles = 271;
   autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
 
-  RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, numParticles);
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
   autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
@@ -90,8 +94,8 @@ auto calculateValidPairs(const std::vector<autopas::Particle *> &particles, doub
   for (auto particlePtr : particles) {
     for (auto neighborPtr : particles) {
       if (particlePtr != neighborPtr) {
-        auto dist = autopas::ArrayMath::sub(particlePtr->getR(), neighborPtr->getR());
-        if (autopas::ArrayMath::dot(dist, dist) <= cutoffSqr) {
+        auto dist = autopas::utils::ArrayMath::sub(particlePtr->getR(), neighborPtr->getR());
+        if (autopas::utils::ArrayMath::dot(dist, dist) <= cutoffSqr) {
           particlePairs.emplace_back(particlePtr, neighborPtr);
         }
       }
@@ -117,7 +121,8 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
   unsigned long numParticles = 271;
   autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
 
-  RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, numParticles);
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
   CollectParticlePairsFunctor functor{cutoff, min, max};
   autopas::VerletClustersTraversal<FPCell, CollectParticlePairsFunctor, autopas::DataLayoutOption::aos, false>
       verletTraversal(&functor);
@@ -143,7 +148,7 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
     // generate some different directions
     std::array<double, 3> direction = {(double)(i % 2), (double)(i % 3),
                                        (double)(i % numParticles) / (double)numParticles};
-    auto offset = autopas::ArrayMath::mulScalar(autopas::ArrayMath::normalize(direction), skin / 2.1);
+    auto offset = autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::normalize(direction), skin / 2.1);
     particle.addR(offset);
     // Upper corner is excluded
     constexpr double smallValue = 0.000001;
@@ -165,9 +170,9 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
 auto getClusterNeighbors(autopas::VerletClusterLists<Particle> &verletLists) {
   std::unordered_map<size_t, std::vector<size_t>> neighbors;
   verletLists.traverseClusters<false>([&neighbors](auto &cluster) {
-    auto idFirstParticleInCluster = cluster.getParticle(0).getID();
+    auto idFirstParticleInCluster = cluster[0].getID();
     for (const auto &neighborCluster : cluster.getNeighbors()) {
-      neighbors[idFirstParticleInCluster].push_back(neighborCluster->getParticle(0).getID());
+      neighbors[idFirstParticleInCluster].push_back((*neighborCluster)[0].getID());
     }
   });
   return neighbors;
@@ -186,10 +191,12 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.1;
+
   int numParticles = 2431;
   autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
 
-  RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, numParticles);
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
   MockFunctor<Particle, FPCell> functor;
   autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> traversalNoN3(
@@ -224,7 +231,8 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
   int numParticles = 5000;
   autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
 
-  RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, numParticles);
+  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, min, max,
+                                                               numParticles);
 
   CollectParticlesPerThreadFunctor functor;
   ColoringTraversalWithColorChangeNotify traversal(

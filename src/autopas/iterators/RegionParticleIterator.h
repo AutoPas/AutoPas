@@ -8,6 +8,7 @@
 
 #include <array>
 #include <vector>
+
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/inBox.h"
@@ -19,9 +20,16 @@ namespace autopas::internal {
  * particles
  * @tparam Particle Particle type over which the iterator iterates
  * @tparam ParticleCell Cell type over which the iterator iterates
+ * @tparam modifiable Defines whether the ParticleIterator is modifiable or not. If it is false, it points to a const
+ * Particle.
  */
-template <class Particle, class ParticleCell>
-class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
+template <class Particle, class ParticleCell, bool modifiable>
+class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, modifiable> {
+  using CellVecType = std::conditional_t<modifiable, std::vector<ParticleCell>, const std::vector<ParticleCell>>;
+  using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
+  using CellBorderAndFlagManagerType =
+      std::conditional_t<modifiable, internal::CellBorderAndFlagManager, const internal::CellBorderAndFlagManager>;
+
  public:
   /**
    * Constructor of the RegionParticleIterator.
@@ -34,11 +42,11 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
    * Can be nullptr if the behavior is haloAndOwned.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    */
-  explicit RegionParticleIterator(std::vector<ParticleCell> *cont, std::array<double, 3> startRegion,
-                                  std::array<double, 3> endRegion, std::vector<size_t> &indicesInRegion,
-                                  internal::CellBorderAndFlagManager *flagManager = nullptr,
+  explicit RegionParticleIterator(CellVecType *cont, std::array<double, 3> startRegion, std::array<double, 3> endRegion,
+                                  std::vector<size_t> &indicesInRegion,
+                                  CellBorderAndFlagManagerType *flagManager = nullptr,
                                   IteratorBehavior behavior = haloAndOwned)
-      : ParticleIterator<Particle, ParticleCell>(cont, flagManager, behavior),
+      : ParticleIterator<Particle, ParticleCell, modifiable>(cont, flagManager, behavior),
         _startRegion(startRegion),
         _endRegion(endRegion),
         _indicesInRegion(indicesInRegion),
@@ -58,7 +66,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
 
     // The iterator might still be invalid (because the cell is empty or the owned-state of the particle is wrong), so
     // we check it here!
-    if (ParticleIterator<Particle, ParticleCell>::isValid()) {
+    if (ParticleIterator<Particle, ParticleCell, modifiable>::isValid()) {
       // The iterator is valid, so there is a particle, now we need to check whether it's actually in the box!
       if (utils::notInBox(this->operator*().getR(), _startRegion, _endRegion)) {
         operator++();
@@ -72,23 +80,24 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
   /**
    * @copydoc ParticleIteratorInterface::operator++
    */
-  inline RegionParticleIterator<Particle, ParticleCell> &operator++() override {
+  inline RegionParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
     do {
-      ParticleIterator<Particle, ParticleCell>::operator++();
-    } while (ParticleIterator<Particle, ParticleCell>::isValid() &&
+      ParticleIterator<Particle, ParticleCell, modifiable>::operator++();
+    } while (ParticleIterator<Particle, ParticleCell, modifiable>::isValid() &&
              utils::notInBox(this->operator*().getR(), _startRegion, _endRegion) &&
              this->getCurrentCellId() <= *(_indicesInRegion.end() - 1));
     return *this;
   }
 
   bool isValid() const override {
-    return ParticleIterator<Particle, ParticleCell>::isValid() &&
+    return ParticleIterator<Particle, ParticleCell, modifiable>::isValid() &&
            utils::inBox(this->operator*().getR(), _startRegion, _endRegion);
   }
 
-  // @todo add test of clone
-  inline ParticleIteratorInterfaceImpl<Particle> *clone() const override {
-    return new RegionParticleIterator<Particle, ParticleCell>(*this);
+  /// @copydoc ParticleIteratorInterfaceImpl::clone
+  /// @todo add test of clone
+  inline ParticleIteratorInterfaceImpl<Particle, modifiable> *clone() const override {
+    return new RegionParticleIterator<Particle, ParticleCell, modifiable>(*this);
   }
 
  private:
@@ -124,9 +133,9 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell> {
     }
   }
 
-  std::array<double, 3> _startRegion;
-  std::array<double, 3> _endRegion;
-  std::vector<size_t> _indicesInRegion;
+  const std::array<double, 3> _startRegion;
+  const std::array<double, 3> _endRegion;
+  const std::vector<size_t> _indicesInRegion;
   size_t _currentRegionIndex;
 };
 }  // namespace autopas::internal

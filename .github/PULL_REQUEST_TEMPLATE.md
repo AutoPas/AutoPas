@@ -8,7 +8,7 @@ Please include a summary of the changes.
 
 ## Resolved Issues
 
-- [ ] #Issue
+- [ ] fixes #Issue
 
 # How Has This Been Tested?
 

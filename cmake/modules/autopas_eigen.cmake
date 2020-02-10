@@ -1,29 +1,59 @@
-message(STATUS "eigen3 - using bundled version")
+option(Eigen3_ForceBundled "Do not look for an installed version, always use bundled." OFF)
 
-# Enable ExternalProject CMake module
-include(ExternalProject)
+if (NOT ${Eigen3_ForceBundled})
+    set(expectedVersion 3.3.4)
+    # capital E actually required...
+    find_package(Eigen3 ${expectedVersion} QUIET)
+    # actually I don't know our minimal supported version but this is the one I tested.
+    if (Eigen3_FOUND)
+        message(STATUS "Eigen3 - using installed system version ${Eigen3_VERSION}")
+        # to later add the alias Eigen3::Eigen needs to be promoted to global visibility
+        set_target_properties(Eigen3::Eigen PROPERTIES "IMPORTED_GLOBAL" "TRUE")
+        # we need to alias this because aparently make sometimes breaks on '::'
+        add_library(Eigen3 ALIAS Eigen3::Eigen)
+        # return, as we have found the target
+        return()
+    else ()
+        message(STATUS "Eigen3 - no system version compatible to version ${expectedVersion} found")
+        message(
+            STATUS
+                "Eigen3 - if you want to use your version point the cmake variable Eigen3_DIR to the directory containing Eigen3Config.cmake in order to pass hints to find_package"
+        )
+    endif ()
+endif ()
 
-# Extract eigen3
-ExternalProject_Add(
-    eigen3
+# system version not found -> install bundled version
+message(STATUS "Eigen3 - using bundled version 3.3.90 (commit 66be6c7)")
+
+# Enable FetchContent CMake module
+include(FetchContent)
+
+# Build Eigen3 and make the cmake targets available
+FetchContent_Declare(
+    Eigen3
     URL
         # eigen-master:
         # https://bitbucket.org/eigen/eigen/get/default.zip
-        # eigen-3.3.7:
-        ${CMAKE_SOURCE_DIR}/libs/eigen-eigen-323c052e1731.zip
-    URL_HASH MD5=0d9c8496922d5c07609b9f3585f00e49
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/eigen-3
-    # since we only unpack a header lib src == include
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/eigen-3/include
-    # Disable build & install steps
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-    INSTALL_COMMAND ""
+        # eigen-3.3.90:
+        ${AUTOPAS_SOURCE_DIR}/libs/eigen-eigen-66be6c76fc01.zip
+    URL_HASH MD5=faaf36185ad92b039f7b3f641340dc28
 )
 
-# Get GTest source and binary directories from CMake project
-ExternalProject_Get_Property(eigen3 source_dir)
+# Check if population has already been performed
+FetchContent_GetProperties(Eigen3)
+if (NOT eigen3_POPULATED) # must be lowercase "eigen3" Fetch the content using previously declared
+                          # details
+    FetchContent_Populate(Eigen3)
 
-add_dependencies(autopas eigen3)
+    # Do not add_subdirectory, else we would run configure, build and install Just define a library
+    # from the sources
+    add_library(
+        Eigen3
+        OBJECT # this is a header only lib therefore object type is needed
+        IMPORTED GLOBAL
+    )
 
-target_include_directories(autopas SYSTEM PUBLIC ${source_dir})
+    target_include_directories(Eigen3 SYSTEM INTERFACE "${eigen3_SOURCE_DIR}")
+
+    # add_subdirectory(${eigen3_SOURCE_DIR} ${eigen3_BINARY_DIR})
+endif ()

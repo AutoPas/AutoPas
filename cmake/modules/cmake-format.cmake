@@ -7,28 +7,22 @@ set(
     "${PROJECT_SOURCE_DIR}/src/"
     "${PROJECT_SOURCE_DIR}/examples/"
     "${PROJECT_SOURCE_DIR}/tests/"
-    "${PROJECT_SOURCE_DIR}/CMakeLists.txt"
-    "${PROJECT_SOURCE_DIR}/version.cmake"
+    "${PROJECT_SOURCE_DIR}/tools/"
 )
 
-file(
-    GLOB_RECURSE
-    ALL_CMake_FILES
-    "CMakeLists.txt"
-    "*.cmake"
-)
+# set ALL_CMake_FILES to cmake files in PROJECT_SOURCE_DIR, as we cannot do a recurse there.
+set(ALL_CMake_FILES "${PROJECT_SOURCE_DIR}/CMakeLists.txt" "${PROJECT_SOURCE_DIR}/version.cmake")
 
-foreach (TMP_PATH ${ALL_CMake_FILES})
-    set(_found FALSE)
-    foreach (_incdir ${INCLUDE_DIRS})
-        string(FIND ${TMP_PATH} ${_incdir} INCLUDE_DIR_FOUND)
-        if (${INCLUDE_DIR_FOUND} EQUAL 0)
-            set(_found TRUE)
-        endif ()
-    endforeach (_incdir)
-    if (NOT ${_found})
-        list(REMOVE_ITEM ALL_CMake_FILES ${TMP_PATH})
-    endif ()
+foreach (TMP_PATH ${INCLUDE_DIRS})
+    # search for files for each path in INCLUDE_DIRS and append them to ALL_CMake_FILES
+    file(
+        GLOB_RECURSE
+        ALL_CMake_FILES_TMP
+        "${TMP_PATH}/CMakeLists.txt"
+        "${TMP_PATH}/*.cmake"
+    )
+
+    list(APPEND ALL_CMake_FILES ${ALL_CMake_FILES_TMP})
 endforeach (TMP_PATH)
 
 find_program(CMAKE_FORMAT NAMES cmake-format)

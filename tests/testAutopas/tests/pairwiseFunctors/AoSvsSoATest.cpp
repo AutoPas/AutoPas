@@ -6,6 +6,8 @@
 
 #include "AoSvsSoATest.h"
 
+#include "autopas/molecularDynamics/LJFunctor.h"
+
 using namespace autopas;
 
 #define PARTICLES_PER_DIM 16
@@ -14,7 +16,7 @@ using namespace autopas;
  * @brief Generates a reproducible set of particles
  * @param particles Vector where particles will be stored.
  */
-void AoSvsSoATest::generateParticles(std::vector<autopas::Particle> *particles) {
+void AoSvsSoATest::generateParticles(std::vector<Molecule> *particles) {
   particles->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
@@ -32,12 +34,11 @@ void AoSvsSoATest::generateParticles(std::vector<autopas::Particle> *particles) 
  * same set of particles.
  */
 TEST_F(AoSvsSoATest, testAoSvsSoA) {
-  auto particlesAoS = std::vector<autopas::Particle>();
+  auto particlesAoS = std::vector<Molecule>();
   generateParticles(&particlesAoS);
   auto particlesSoA = particlesAoS;
-
-  LJFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> ljFunctor(PARTICLES_PER_DIM * 10, 1, 1, 0);
-
+  LJFunctor<Molecule, FMCell> ljFunctor(PARTICLES_PER_DIM * 10);
+  ljFunctor.setParticleProperties(1., 1.);
   // AoS
   std::chrono::high_resolution_clock::time_point start, stop;
   start = std::chrono::high_resolution_clock::now();
@@ -54,7 +55,7 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   std::cout << "AoS : " << duration << " \u03bcs" << std::endl;
 
   // SoA
-  autopas::FullParticleCell<autopas::Particle> cell;
+  FMCell cell;
   for (auto &&p : particlesSoA) {
     cell.addParticle(p);
   }

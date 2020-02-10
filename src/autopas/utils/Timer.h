@@ -23,16 +23,41 @@ class Timer {
   /**
    * start the timer.
    */
-  void start() noexcept;
+  void start();
 
   /**
-   * stops the timer and returns the time elapsed in seconds since the last call
-   * to start
-   * @return elapsed time in seconds
+   * Stops the timer and returns the time elapsed in nanoseconds since the last call to start.
+   * It also adds the duration to the total time.
+   * @return elapsed time in nanoseconds
    */
-  double stop();
+  long stop();
+
+  /**
+   * Adds the given amount of nanoseconds to the total time.
+   * @param nanoseconds
+   */
+  void addTime(long nanoseconds);
+
+  /**
+   * Get total accumulated time.
+   * @return
+   */
+  long getTotalTime() const { return _totalTime; }
 
  private:
+  /**
+   * Time point of last call of start().
+   */
   std::chrono::high_resolution_clock::time_point _startTime;
+
+  /**
+   * Accumulated total time.
+   */
+  long _totalTime = 0;
+
+  /**
+   * Indicator if this timer currently is measuring.
+   */
+  bool _currentlyRunning = false;
 };
 }  // namespace autopas::utils

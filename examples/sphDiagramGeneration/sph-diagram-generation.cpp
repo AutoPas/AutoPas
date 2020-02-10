@@ -4,24 +4,21 @@
  * @author seckler
  */
 
-#include <autopas/selectors/TraversalSelector.h>
 #include <array>
 #include <iostream>
-#include "../../tests/testAutopas/testingHelpers/RandomGenerator.h"
-#include "autopas/autopasIncludes.h"
+
+#include "autopas/AutoPas.h"
 #include "autopas/sph/autopassph.h"
-#include "autopas/utils/Timer.h"
+#include "autopasTools/generators/RandomGenerator.h"
+
+using Particle = autopas::sph::SPHParticle;
+using Cell = autopas::FullParticleCell<Particle>;
+using AutoPasContainer = autopas::AutoPas<Particle, Cell>;
 
 template <class Container, class Functor>
-void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3);
+void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations);
 
-template <class Container, class Functor, class Traversal>
-void measureContainerTraversal(Container *cont, Functor *func, Traversal *traversal, int numParticles,
-                               int numIterations);
-
-void addParticles(
-    autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> &sph_system,
-    int numParticles) {
+void addParticles(AutoPasContainer &sph_system, int numParticles) {
   // Place SPH particles
 
   srand(42);  // fixed seedpoint
@@ -30,21 +27,14 @@ void addParticles(
 
   for (int i = 0; i < numParticles; ++i) {
     auto id = static_cast<unsigned long>(i);
-    autopas::sph::SPHParticle particle(RandomGenerator::randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75, 0.012,
-                                       0.);
-    // autopas::sph::SPHParticle ith(randomPosition(boxMin, boxMax), {0, 0, 0},
-    // i++, 0.75, 0.012, 0. );
+    Particle particle(autopasTools::generators::RandomGenerator::randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75,
+                      0.012, 0.);
     sph_system.addParticle(particle);
   }
-
-  //	for (auto it = cont->begin(); it.isValid(); ++it) {
-  //		it->print();
-  //	}
 
   for (auto part = sph_system.begin(); part.isValid(); ++part) {
     part->setMass(part->getMass() * boxMax[0] * boxMax[1] * boxMax[2] / (double)(numParticles));
   }
-  // std::cout << "# of ptcls is... " << numParticles << std::endl;
 
   // Set the end time
 }
@@ -56,73 +46,53 @@ int main(int argc, char *argv[]) {
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
   double cutoff = .03;
 
-  autopas::sph::SPHCalcDensityFunctor densfunc;
-  autopas::sph::SPHCalcHydroForceFunctor hydrofunc;
+  autopas::sph::SPHCalcDensityFunctor<Particle, Cell> densfunc;
+  autopas::sph::SPHCalcHydroForceFunctor<Particle, Cell> hydrofunc;
 
   int numParticles;
   int numIterations;
-  int containerTypeInt = 0;
-  enum ContainerType { linkedCells, directSum, verletLists, verletListsCells } containerType = linkedCells;
+  std::set<autopas::ContainerOption> containerOptions;
   int functorTypeInt = 0;
   enum FunctorType { densityFunctor, hydroForceFunctor } functorType = densityFunctor;
 
   double skin = 0.;
   int rebuildFrequency = 10;
   bool useNewton3 = true;
-  if (argc == 9) {
-    numParticles = std::stoi(argv[1]);
-    numIterations = std::stoi(argv[2]);
-    containerTypeInt = std::stoi(argv[3]);
-    functorTypeInt = std::stoi(argv[4]);
-    skin = std::stod(argv[5]);
-    rebuildFrequency = std::stoi(argv[6]);
-    useNewton3 = std::stoi(argv[7]);
-    boxMax[0] = boxMax[1] = boxMax[2] = std::stod(argv[8]);
-  } else if (argc == 8) {
-    numParticles = std::stoi(argv[1]);
-    numIterations = std::stoi(argv[2]);
-    containerTypeInt = std::stoi(argv[3]);
-    functorTypeInt = std::stoi(argv[4]);
-    skin = std::stod(argv[5]);
-    rebuildFrequency = std::stoi(argv[6]);
-    useNewton3 = std::stoi(argv[7]);
-  } else if (argc == 7) {
-    numParticles = std::stoi(argv[1]);
-    numIterations = std::stoi(argv[2]);
-    containerTypeInt = std::stoi(argv[3]);
-    functorTypeInt = std::stoi(argv[4]);
-    skin = std::stod(argv[5]);
-    rebuildFrequency = std::stoi(argv[6]);
-  } else if (argc == 5) {
-    numParticles = std::stoi(argv[1]);
-    numIterations = std::stoi(argv[2]);
-    containerTypeInt = std::stoi(argv[3]);
-    functorTypeInt = std::stoi(argv[4]);
-  } else if (argc == 4) {
-    numParticles = std::stoi(argv[1]);
-    numIterations = std::stoi(argv[2]);
-    containerTypeInt = std::stoi(argv[3]);
-  } else {
+  try {
+    if (argc >= 9) {
+      boxMax[0] = boxMax[1] = boxMax[2] = std::stod(argv[8]);
+    }
+    if (argc >= 8) {
+      useNewton3 = std::stoi(argv[7]);
+    }
+    if (argc >= 7) {
+      rebuildFrequency = std::stoi(argv[6]);
+      skin = std::stod(argv[5]);
+    }
+    if (argc >= 5) {
+      functorTypeInt = std::stoi(argv[4]);
+    }
+    if (argc >= 4) {
+      containerOptions = autopas::ContainerOption::parseOptions(argv[3]);
+      numIterations = std::stoi(argv[2]);
+      numParticles = std::stoi(argv[1]);
+      if (containerOptions.size() != 1) {
+        throw std::runtime_error(
+            "Currently choosing of multiple containers is not allowed, please select only one container!");
+      }
+    } else {
+      throw std::runtime_error("too few arguments");
+    }
+  } catch (const std::exception &e) {
     std::cerr
-        << "ERROR: wrong number of arguments given. " << std::endl
+        << "ERROR parsing the input arguments: " << e.what() << std::endl
         << "sph-diagram-generation requires the following arguments:" << std::endl
         << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3 [boxSize]]]]:"
         << std::endl
         << std::endl
-        << "containerType should be either 0 (linked-cells), 1 (direct sum), 2 (verlet lists) or 3 (verlet lists cells)"
-        << std::endl
+        << "containerType should be either linked-cells, direct sum, verlet lists or verlet lists cells" << std::endl
         << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
     exit(1);
-  }
-
-  if (containerTypeInt <= verletListsCells) {
-    containerType = static_cast<ContainerType>(containerTypeInt);
-  } else {
-    std::cerr
-        << "Error: wrong containerType " << containerTypeInt << std::endl
-        << "containerType should be either 0 (linked-cells), 1 (direct sum), 2 (verlet lists) or 3 (verlet lists cells)"
-        << std::endl;
-    exit(2);
   }
 
   if (functorTypeInt <= hydroForceFunctor) {
@@ -133,82 +103,25 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
 
-  std::cout << "rebuildFrequency " << rebuildFrequency << " currently unused!" << std::endl;
+  AutoPasContainer autoPas;
 
-  autopas::LinkedCells<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> lcCont(
-      boxMin, boxMax, cutoff, skin * cutoff);
-  autopas::DirectSum<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>> dirCont(
-      boxMin, boxMax, cutoff, skin * cutoff);
-  autopas::VerletLists<autopas::sph::SPHParticle> verletCont(boxMin, boxMax, cutoff, skin * cutoff);
-  autopas::VerletListsCells<autopas::sph::SPHParticle> verletCellCont(boxMin, boxMax, cutoff,
-                                                                      autopas::TraversalOption::c08, skin * cutoff);
+  autoPas.setBoxMin(boxMin);
+  autoPas.setBoxMax(boxMax);
+  autoPas.setCutoff(cutoff);
+  autoPas.setVerletSkin(skin * cutoff);
+  autoPas.setVerletRebuildFrequency(rebuildFrequency);
+  autoPas.setAllowedContainers(containerOptions);
+  autoPas.setAllowedNewton3Options({useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled});
+  autoPas.setAllowedDataLayouts({autopas::DataLayoutOption::aos});  // currently aos only!
 
-  addParticles(lcCont, numParticles);
-
-  for (auto it = lcCont.begin(); it.isValid(); ++it) {
-    dirCont.addParticle(*it);
-    verletCont.addParticle(*it);
-    verletCellCont.addParticle(*it);
-  }
-
-  if (containerType == linkedCells) {
-    if (functorType == densityFunctor) {
-      measureContainer(&lcCont, &densfunc, numParticles, numIterations, useNewton3);
-    } else if (functorType == hydroForceFunctor) {
-      measureContainer(&lcCont, &hydrofunc, numParticles, numIterations, useNewton3);
-    } else {
-      std::cout << "wrong functor given" << std::endl;
-      exit(2);
-    }
-  } else if (containerType == directSum) {
-    if (functorType == densityFunctor) {
-      measureContainer(&dirCont, &densfunc, numParticles, numIterations, useNewton3);
-    } else if (functorType == hydroForceFunctor) {
-      measureContainer(&dirCont, &hydrofunc, numParticles, numIterations, useNewton3);
-    } else {
-      std::cout << "wrong functor given" << std::endl;
-      exit(2);
-    }
-  } else if (containerType == verletLists) {
-    if (functorType == densityFunctor) {
-      measureContainer(&verletCont, &densfunc, numParticles, numIterations, useNewton3);
-    } else if (functorType == hydroForceFunctor) {
-      measureContainer(&verletCont, &hydrofunc, numParticles, numIterations, useNewton3);
-    } else {
-      std::cout << "wrong functor given" << std::endl;
-      exit(2);
-    }
-  } else if (containerType == verletListsCells) {
-    if (functorType == densityFunctor) {
-      measureContainer(&verletCellCont, &densfunc, numParticles, numIterations, useNewton3);
-    } else if (functorType == hydroForceFunctor) {
-      measureContainer(&verletCellCont, &hydrofunc, numParticles, numIterations, useNewton3);
-    } else {
-      std::cout << "wrong functor given" << std::endl;
-      exit(2);
-    }
-  } else {
-    std::cout << "invalid container id" << std::endl;
-    exit(3);
-  }
-}
-
-template <class Container, class Functor>
-void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations, bool useNewton3) {
-  using CellType = autopas::FullParticleCell<autopas::sph::SPHParticle>;
-  // initialize to dummy values
-  auto traversalInfo = cont->getTraversalSelectorInfo();
-  std::cout << "Cells: " << traversalInfo.dims[0] << " x " << traversalInfo.dims[1] << " x " << traversalInfo.dims[2]
-            << std::endl;
-  auto traversalType = autopas::TraversalOption(-1);
-  switch (cont->getContainerType()) {
+  autopas::TraversalOption traversalType;
+  switch (*containerOptions.begin()) {
     case autopas::ContainerOption::linkedCells: {
       traversalType = autopas::TraversalOption::c08;
       break;
     }
     case autopas::ContainerOption::directSum: {
       traversalType = autopas::TraversalOption::directSumTraversal;
-      //@todo @reviewer ds traversal was previously always with N3 off, ignoring the function arg. Is this intended?
       break;
     }
     case autopas::ContainerOption::verletListsCells: {
@@ -219,51 +132,49 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
       }
       break;
     }
-    default: {}
+    case autopas::ContainerOption::verletLists: {
+      traversalType = autopas::TraversalOption::verletTraversal;
+      break;
+    }
+    default:
+      std::cerr << "Error: containerType " << containerOptions.begin()->to_string() << " not yet supported."
+                << std::endl;
+      exit(2);
   }
-  auto traversal = autopas::TraversalSelector<CellType>::template generateTraversal<Functor>(
-      traversalType, *func, traversalInfo, autopas::DataLayoutOption::aos,
-      useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled);
-  measureContainerTraversal(cont, func, dynamic_cast<autopas::CellPairTraversal<CellType> *>(traversal.get()),
-                            numParticles, numIterations);
+  autoPas.setAllowedTraversals({traversalType});
+
+  autoPas.init();
+
+  addParticles(autoPas, numParticles);
+
+  if (functorType == densityFunctor) {
+    measureContainer(&autoPas, &densfunc, numParticles, numIterations);
+  } else if (functorType == hydroForceFunctor) {
+    measureContainer(&autoPas, &hydrofunc, numParticles, numIterations);
+  } else {
+    std::cout << "wrong functor given" << std::endl;
+    exit(2);
+  }
 }
 
-template <class Container, class Functor, class Traversal>
-void measureContainerTraversal(Container *cont, Functor *func, Traversal *traversal, int numParticles,
-                               int numIterations) {
-  // autopas::FlopCounterFunctor<autopas::sph::SPHParticle, autopas::FullParticleCell<autopas::sph::SPHParticle>>
-  //    flopFunctor(cont->getCutoff());
-
+template <class Container, class Functor>
+void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations) {
   autopas::utils::Timer t;
 
-  // cont->iteratePairwiseAoS(&flopFunctor);
-  // double flopsPerIteration = flopFunctor.getFlops(func.getNumFlopsPerKernelCall());
-
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(traversal);
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func);
 
   double elapsedTime = t.stop();
 
-  // double flops = flopsPerIteration * numIterations;
-
-  double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-6;
+  double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-9;
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(traversal);
+  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func);
 
   elapsedTime = t.stop();
 
-  // double flops = flopsPerIteration * numIterations;
-
-  double MFUPS_soa = numParticles * numIterations / elapsedTime * 1e-6;
+  double MFUPS_soa = numParticles * numIterations / elapsedTime * 1e-9;
 
   std::cout << numParticles << "\t" << numIterations << "\t" << MFUPS_aos << "\t" << MFUPS_soa;
-  // std::cout << numParticles << "\t" << numIterations << "\t" << elapsedTime / numIterations << "\t" << MFUPS;
-  // std::cout << "\t" << flops;
-  // std::cout << "\t" << flopFunctor.getHitRate();
-  // std::cout << "\t" << flops / elapsedTime * 1e-9 << std::endl;
-
-  // std::cout << "measuring done" << std::endl;
-
   std::cout << std::endl;
 }

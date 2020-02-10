@@ -6,6 +6,13 @@ cmake_policy(SET CMP0054 NEW)
 cmake_policy(SET CMP0057 NEW)
 cmake_policy(SET CMP0079 NEW)
 
+# Always use AUTOPAS_[SOURCE/BINARY]_DIR instead of CMAKE_[SOURCE/BINARY]_DIR or use
+# CMAKE_CURRENT_[SOURCE/BINARY]_DIR directly for relative paths to allow including AutoPas via
+# FetchContent as a subproject otherwise paths break because CMAKE_[SOURCE/BINARY]_DIR is defined by
+# the parent project
+set(AUTOPAS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(AUTOPAS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 14)
 if (NOT CYGWIN)
@@ -49,14 +56,13 @@ option(AUTOPAS_ENABLE_CUDA "Activates Cuda Components" OFF)
 if (AUTOPAS_ENABLE_CUDA)
     message(STATUS "Cuda enabled.")
     enable_language(CUDA)
-    set(CUDA_SEPARABLE_COMPILATION ON)
 else ()
     message(STATUS "Cuda disabled.")
 endif ()
 
 enable_testing()
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
 
 include(ccache)
 include(clang-format)
@@ -70,11 +76,13 @@ include(OpenMP)
 
 include(version.cmake)
 
-# autopas
-add_subdirectory(src)
-
 # libraries
 add_subdirectory(libs)
+
+# autopas
+add_subdirectory(src)
+# autopasTools
+add_subdirectory(tools)
 
 # tests and examples
 add_subdirectory(examples)

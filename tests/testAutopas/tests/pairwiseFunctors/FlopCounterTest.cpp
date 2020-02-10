@@ -6,6 +6,9 @@
 
 #include "FlopCounterTest.h"
 
+#include "autopas/AutoPas.h"
+#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+
 /**
  * Generates a square of four particles, iterates over it with the FlopCounter and checks its values
  * @param dataLayoutOption
@@ -54,11 +57,11 @@ TEST_F(FlopCounterTest, testFlopCounterSoA4Mol) { test(autopas::DataLayoutOption
 
 TEST_F(FlopCounterTest, testFlopCounterAoSOpenMP) {
   bool newton3 = true;
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
 
-  Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0);
-  Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1, 0);
 
   double cutoff = 1.;
 
@@ -88,17 +91,17 @@ TEST_F(FlopCounterTest, testFlopCounterAoSOpenMP) {
 
 TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
   bool newton3 = true;
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
 
-  Molecule p3({0., 1., 0.}, {0., 0., 0.}, 0);
-  Molecule p4({0.1, 1.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p3({0., 1., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p4({0.1, 1.2, 0.3}, {0., 0., 0.}, 1, 0);
 
-  Molecule p5({1., 1., 0.}, {0., 0., 0.}, 0);
-  Molecule p6({1.1, 1.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p5({1., 1., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p6({1.1, 1.2, 0.3}, {0., 0., 0.}, 1, 0);
 
-  Molecule p7({1., 0., 0.}, {0., 0., 0.}, 0);
-  Molecule p8({1.1, 0.2, 0.3}, {0., 0., 0.}, 1);
+  Molecule p7({1., 0., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p8({1.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
 
   double cutoff = 1.;
 

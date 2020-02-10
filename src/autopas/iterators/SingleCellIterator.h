@@ -8,17 +8,23 @@
 #pragma once
 
 #include "autopas/iterators/SingleCellIteratorInterface.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas::internal {
+
 /**
  * SingleCellIterator class to loop over particles of a single cell.
  *
  * @tparam Particle type of the Particles
- * @tparam ParticleCell type of the ParticleCell. Besides the methods of ParticleCell, a method Particle&
- * getParticle(size_t index) is needed.
+ * @tparam ParticleCell type of the ParticleCell.
+ * @tparam modifiable Defines whether the ParticleIterator is modifiable or not. If it is false, it points to a const
+ * Particle.
  */
-template <class Particle, class ParticleCell>
-class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
+template <class Particle, class ParticleCell, bool modifiable>
+class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle, modifiable> {
+  using CellType = std::conditional_t<modifiable, ParticleCell, const ParticleCell>;
+  using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
+
  public:
   /**
    * default constructor of SingleCellIterator
@@ -30,7 +36,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * @param cell_arg pointer to the cell of particles
    * @param ind index of the first particle
    */
-  explicit SingleCellIterator(ParticleCell *cell_arg, size_t ind = 0) : _cell(cell_arg), _index(ind), _deleted(false) {}
+  explicit SingleCellIterator(CellType *cell_arg, size_t ind = 0) : _cell(cell_arg), _index(ind), _deleted(false) {}
 
   /**
    * destructor of SingleCellIterator
@@ -42,7 +48,7 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * this is the indirection operator
    * @return current particle
    */
-  inline Particle &operator*() const override { return _cell->getParticle(_index); }
+  inline ParticleType &operator*() const override { return _cell->at(_index); }
 
   /**
    * increment operator to get the next particle
@@ -62,8 +68,8 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * @return true if the iterators point to the same particle (in the same
    * cell), false otherwise
    */
-  inline bool operator==(const SingleCellIteratorInterface<Particle> &rhs) const override {
-    if (auto other = dynamic_cast<const SingleCellIterator<Particle, ParticleCell> *>(&rhs)) {
+  inline bool operator==(const SingleCellIteratorInterface<Particle, modifiable> &rhs) const override {
+    if (auto other = dynamic_cast<const SingleCellIterator<Particle, ParticleCell, modifiable> *>(&rhs)) {
       return (not rhs.isValid() and not this->isValid()) or (_cell == other->_cell && _index == other->_index);
     } else {
       return false;
@@ -76,7 +82,9 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    * @param rhs
    * @return
    */
-  inline bool operator!=(const SingleCellIteratorInterface<Particle> &rhs) const override { return !(rhs == *this); }
+  inline bool operator!=(const SingleCellIteratorInterface<Particle, modifiable> &rhs) const override {
+    return !(rhs == *this);
+  }
   /**
    * Check whether the iterator is valid
    * @return returns whether the iterator is valid
@@ -89,20 +97,22 @@ class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle> {
    */
   inline size_t getIndex() const override { return _index; }
 
-  /**
-   * Deletes the current particle
-   */
-  inline void deleteCurrentParticle() override {
-    _cell->deleteByIndex(_index);
-    _deleted = true;
+  inline SingleCellIteratorInterfaceImpl<Particle, modifiable> *clone() const override {
+    return new SingleCellIterator<Particle, ParticleCell, modifiable>(*this);
   }
 
-  inline SingleCellIteratorInterfaceImpl<Particle> *clone() const override {
-    return new SingleCellIterator<Particle, ParticleCell>(*this);
+ protected:
+  inline void deleteCurrentParticleImpl() override {
+    if constexpr (modifiable) {
+      _cell->deleteByIndex(_index);
+      _deleted = true;
+    } else {
+      utils::ExceptionHandler::exception("Error: Trying to delete a particle through a const iterator.");
+    }
   }
 
  private:
-  ParticleCell *_cell;
+  CellType *_cell;
   size_t _index;
   bool _deleted;
 };

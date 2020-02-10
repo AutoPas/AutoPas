@@ -21,7 +21,7 @@ namespace autopas {
  * @tparam dataLayout The data layout to use.
  * @tparam useNewton3 If newton 3 should be used. Only false is supported.
  */
-template <class Particle, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VerletClustersStaticTraversal : public TraversalInterface, public VerletClustersTraversalInterface<Particle> {
  private:
   static constexpr size_t clusterSize = VerletClusterLists<Particle>::clusterSize;
@@ -90,6 +90,6 @@ class VerletClustersStaticTraversal : public TraversalInterface, public VerletCl
 
  private:
   PairwiseFunctor *_functor;
-  ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, clusterSize> _clusterFunctor;
+  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, clusterSize> _clusterFunctor;
 };
 }  // namespace autopas

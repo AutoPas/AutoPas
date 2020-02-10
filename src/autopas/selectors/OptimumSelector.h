@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <numeric>
 #include <vector>
+
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -24,8 +25,8 @@ namespace OptimumSelector {
  * @param values
  * @return Smallest value of the vector.
  */
-inline unsigned long minValue(std::vector<unsigned long> values) {
-  return *std::min_element(values.begin(), values.end());
+inline unsigned long minValue(const std::vector<unsigned long> &values) {
+  return *std::min_element(values.cbegin(), values.cend());
 }
 
 /**
@@ -33,8 +34,8 @@ inline unsigned long minValue(std::vector<unsigned long> values) {
  * @param values
  * @return Arithmetic mean of the vector.
  */
-inline unsigned long meanValue(std::vector<unsigned long> values) {
-  return std::accumulate(values.begin(), values.end(), 0l) / values.size();
+inline unsigned long meanValue(const std::vector<unsigned long> &values) {
+  return std::accumulate(values.cbegin(), values.cend(), 0l) / values.size();
 }
 
 /**
@@ -46,6 +47,7 @@ inline unsigned long medianValue(std::vector<unsigned long> values) {
   if (values.empty()) return 0;
 
   std::sort(values.begin(), values.end());
+  /// @todo C++20: replace by std::midpoint
   return values[(values.size() - 1) / 2];
 }
 

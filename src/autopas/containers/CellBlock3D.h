@@ -11,13 +11,14 @@
 #include <cmath>
 #include <numeric>
 #include <vector>
+
 #include "autopas/containers/CellBorderAndFlagManager.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/inBox.h"
 
-namespace autopas {
-namespace internal {
+namespace autopas::internal {
 /**
  * Class that manages a block of ParticleCells.
  * It is used to resize the cellblock and to handle the conversion of 3d to 1d
@@ -30,7 +31,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
   /**
    * the index type to access the particle cells
    */
-  typedef std::size_t index_t;
+  using index_t = std::size_t;
   /**
    * Constructor of CellBlock3D
    * @param vec vector of ParticleCells that this class manages
@@ -42,6 +43,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin, const std::array<double, 3> bMax,
               double interactionLength, double cellSizeFactor = 1.0) {
     rebuild(vec, bMin, bMax, interactionLength, cellSizeFactor);
+
     for (int i = 0; i < 3; ++i) {
       if (bMax[i] < bMin[i] + interactionLength) {
         AutoPasLog(error, "Interaction length too large is {}, bmin {}, bmax {}", interactionLength, bMin[i], bMax[i]);
@@ -116,7 +118,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param boxmin the lower corner (out)
    * @param boxmax the upper corner (out)
    */
-  void getCellBoundingBox(index_t index1d, std::array<double, 3> &boxmin, std::array<double, 3> &boxmax);
+  void getCellBoundingBox(index_t index1d, std::array<double, 3> &boxmin, std::array<double, 3> &boxmax) const;
 
   /**
    * Get the lower and upper corner of the cell at the 3d index index3d
@@ -125,7 +127,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param boxmax the upper corner (out)
    */
   void getCellBoundingBox(const std::array<index_t, 3> &index3d, std::array<double, 3> &boxmin,
-                          std::array<double, 3> &boxmax);
+                          std::array<double, 3> &boxmax) const;
 
   /**
    * get the 3d index of the cellblock for a given position
@@ -170,43 +172,42 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param allowedDistance the maximal distance to the position
    * @return a container of references to nearby halo cells
    */
-  std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) {
+  std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) const {
     auto index3d = get3DIndexOfPosition(position);
-    std::array<int, 3> diff = {0, 0, 0};
-    auto currentIndex = index3d;
+
     std::vector<ParticleCell *> closeHaloCells;
-    for (diff[0] = -1; diff[0] < 2; diff[0]++) {
-      currentIndex[0] = index3d[0] + diff[0];
-      for (diff[1] = -1; diff[1] < 2; diff[1]++) {
-        currentIndex[1] = index3d[1] + diff[1];
-        for (diff[2] = -1; diff[2] < 2; diff[2]++) {
-          currentIndex[2] = index3d[2] + diff[2];
-          // check if there exists a cell with the specified coordinates
-          bool isPossibleHaloCell = false;
-          bool isValidCell = true;
-          for (int i = 0; i < 3; i++) {
-            isPossibleHaloCell |= currentIndex[i] < _cellsPerInteractionLength ||
-                                  currentIndex[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength;
-            isValidCell &= currentIndex[i] < _cellsPerDimensionWithHalo[i] && currentIndex[i] >= 0;
+
+    auto isHaloCell = [&](const auto &index) {
+      for (size_t i = 0; i < 3; ++i) {
+        if (index[i] < _cellsPerInteractionLength or
+            index[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // always add the cell the particle is currently in first, for that we test if it is a halo cell.
+    if (isHaloCell(index3d)) {
+      closeHaloCells.push_back(&getCell(index3d));
+    }
+
+    auto lowIndex3D = get3DIndexOfPosition(utils::ArrayMath::subScalar(position, allowedDistance));
+    auto highIndex3D = get3DIndexOfPosition(utils::ArrayMath::addScalar(position, allowedDistance));
+    // these indices are (already) at least 0 and at most _cellsPerDimensionWithHalo[i]-1
+
+    auto currentIndex = lowIndex3D;
+
+    for (currentIndex[0] = lowIndex3D[0]; currentIndex[0] <= highIndex3D[0]; ++currentIndex[0]) {
+      for (currentIndex[1] = lowIndex3D[1]; currentIndex[1] <= highIndex3D[1]; ++currentIndex[1]) {
+        for (currentIndex[2] = lowIndex3D[2]; currentIndex[2] <= highIndex3D[2]; ++currentIndex[2]) {
+          // we have already added the cell which normally would belong to the particle, so skip here:
+          if (currentIndex == index3d) {
+            continue;
           }
-          if (isPossibleHaloCell && isValidCell) {
-            std::array<std::array<double, 3>, 2> boxBound{};
-            getCellBoundingBox(index3d, boxBound[0], boxBound[1]);
-            bool close = true;
-            for (int i = 0; i < 3; i++) {
-              if (diff[i] < 0) {
-                if (position[i] - boxBound[1][i] > allowedDistance) {
-                  close = false;
-                }
-              } else if (diff[i] > 0) {
-                if (boxBound[0][i] - position[i] > allowedDistance) {
-                  close = false;
-                }
-              }
-            }
-            if (close) {
-              closeHaloCells.push_back(&getCell(currentIndex));
-            }
+          // we need to return the cell is it is a halo cell.
+          if (isHaloCell(currentIndex)) {
+            closeHaloCells.push_back(&getCell(currentIndex));
           }
         }
       }
@@ -273,7 +274,7 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
   std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
 
   for (size_t dim = 0; dim < 3; dim++) {
-    const long int value = (static_cast<long int>(floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
+    const long int value = (static_cast<long int>(std::floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
                            _cellsPerInteractionLength;
     const index_t nonNegativeValue = static_cast<index_t>(std::max(value, 0l));
     const index_t nonLargerValue = std::min(nonNegativeValue, _cellsPerDimensionWithHalo[dim] - 1);
@@ -297,7 +298,7 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
 
   return cellIndex;
   // in very rare cases rounding is stupid, thus we need a check...
-  // @todo when the border and flag manager is there
+  /// @todo when the border and flag manager is there
 }
 
 template <class ParticleCell>
@@ -344,14 +345,14 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
 
 template <class ParticleCell>
 inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const index_t index1d, std::array<double, 3> &boxmin,
-                                                          std::array<double, 3> &boxmax) {
+                                                          std::array<double, 3> &boxmax) const {
   this->getCellBoundingBox(this->index3D(index1d), boxmin, boxmax);
 }
 
 template <class ParticleCell>
 inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const std::array<index_t, 3> &index3d,
                                                           std::array<double, 3> &boxmin,
-                                                          std::array<double, 3> &boxmax) {
+                                                          std::array<double, 3> &boxmax) const {
   for (int d = 0; d < 3; d++) {
     // defaults
     boxmin[d] = index3d[d] * this->_cellLength[d] + _haloBoxMin[d];
@@ -446,5 +447,4 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
     }
   }
 }
-}  // namespace internal
-}  // namespace autopas
+}  // namespace autopas::internal

@@ -7,6 +7,7 @@
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+import matplotlib.ticker as plticker
 
 mpl.rcParams['legend.fontsize'] = 10
 
@@ -70,5 +71,9 @@ for (p, points, dep) in zip(plots, [points1, points2], [dep1, dep2]):
     p.set_ylabel('y')
     p.set_zlabel('z')
 
+    locator = plticker.MultipleLocator(1.0)
+    p.xaxis.set_major_locator(locator)
+    p.yaxis.set_major_locator(locator)
+    p.zaxis.set_major_locator(locator)
+
 plt.show()
-plt.savefig("pairs.pdf")

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/ClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
 
@@ -19,7 +20,7 @@ namespace autopas {
  * @tparam dataLayout The data layout to use. Currently, only AoS is supported.
  * @tparam useNewton3 If newton 3 should be used. Currently, only false is supported.
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VerletClustersTraversal : public TraversalInterface,
                                 public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
@@ -43,17 +44,15 @@ class VerletClustersTraversal : public TraversalInterface,
   }
 
   void initTraversal() override {
-    if (dataLayout != DataLayoutOption::soa) return;
-
-    auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
-    clusterList.loadParticlesIntoSoAs(_functor);
+    if constexpr (dataLayout == DataLayoutOption::soa) {
+      VerletClustersTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
+    }
   }
 
   void endTraversal() override {
-    if (dataLayout != DataLayoutOption::soa) return;
-
-    auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
-    clusterList.extractParticlesFromSoAs(_functor);
+    if constexpr (dataLayout == DataLayoutOption::soa) {
+      VerletClustersTraversalInterface<Particle>::_verletClusterLists->extractParticlesFromSoAs(_functor);
+    }
   }
 
   void traverseParticlePairs() override {
@@ -71,6 +70,6 @@ class VerletClustersTraversal : public TraversalInterface,
 
  private:
   PairwiseFunctor *_functor;
-  ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, clusterSize> _clusterFunctor;
+  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, clusterSize> _clusterFunctor;
 };
 }  // namespace autopas

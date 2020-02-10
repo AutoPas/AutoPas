@@ -7,15 +7,14 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include "AutoPasTestBase.h"
-#include "autopas/autopasIncludes.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersColoringTraversal.h"
 #include "autopas/particles/Particle.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
-#include "mocks/MockVerletLists.h"
-#include "testingHelpers/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class VerletClusterListsTest : public AutoPasTestBase {};
@@ -34,8 +33,8 @@ class CollectParticlePairsFunctor
   void initTraversal() override { _pairs.clear(); }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    auto dist = autopas::ArrayMath::sub(i.getR(), j.getR());
-    if (autopas::ArrayMath::dot(dist, dist) > getCutoff() * getCutoff() or
+    auto dist = autopas::utils::ArrayMath::sub(i.getR(), j.getR());
+    if (autopas::utils::ArrayMath::dot(dist, dist) > getCutoff() * getCutoff() or
         not autopas::utils::inBox(i.getR(), _min, _max) or not autopas::utils::inBox(j.getR(), _min, _max))
       return;
 
@@ -52,6 +51,10 @@ class CollectParticlePairsFunctor
 
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
+
+  bool isAppropriateClusterSize(unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout) const override {
+    return true;
+  }
 
   auto getParticlePairs() { return _pairs; }
 };
@@ -84,6 +87,10 @@ class CollectParticlesPerThreadFunctor
 
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
+
+  bool isAppropriateClusterSize(unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout) const override {
+    return dataLayout == autopas::DataLayoutOption::aos;  // this functor supports clusters only for aos!
+  }
 
   static void nextColor(int newColor) { _currentColor = newColor; }
 };

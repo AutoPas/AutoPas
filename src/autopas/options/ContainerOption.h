@@ -8,25 +8,68 @@
 
 #include <set>
 
+#include "autopas/options/Option.h"
+
 namespace autopas {
 
 /**
- * Possible choices for the particle container type.
+ * Class representing the container choices.
  */
-enum ContainerOption {
-  directSum = 0,
-  linkedCells = 1,
-  verletLists = 2,
-  verletListsCells = 3,
-  verletClusterLists = 4,
-  varVerletListsAsBuild = 5,
+class ContainerOption : public Option<ContainerOption> {
+ public:
+  /**
+   * Possible choices for the particle container type.
+   */
+  enum Value {
+    directSum = 0,
+    linkedCells = 1,
+    verletLists = 2,
+    verletListsCells = 3,
+    verletClusterLists = 4,
+    varVerletListsAsBuild = 5,
+    verletClusterCells = 6,
+  };
+
+  /**
+   * Constructor.
+   */
+  ContainerOption() = default;
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
+  constexpr ContainerOption(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
+  constexpr operator Value() const { return _value; }
+
+  /**
+   * No cast to bool.
+   * @return
+   */
+  explicit operator bool() = delete;
+
+  /**
+   * Provides a way to iterate over the possible choices of ContainerOption.
+   * @return map option -> string representation
+   */
+  static std::map<ContainerOption, std::string> getOptionNames() {
+    return {
+        {ContainerOption::directSum, "DirectSum"},
+        {ContainerOption::linkedCells, "LinkedCells"},
+        {ContainerOption::verletLists, "VerletLists"},
+        {ContainerOption::verletListsCells, "VerletListsCells"},
+        {ContainerOption::verletClusterLists, "VerletClusterLists"},
+        {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
+        {ContainerOption::verletClusterCells, "VerletClusterCells"},
+    };
+  };
+
+ private:
+  Value _value{Value(-1)};
 };
-
-/**
- * Provides a way to iterate over the possible choices of ContainerOption.
- */
-static const std::set<ContainerOption> allContainerOptions = {
-    ContainerOption::directSum,        ContainerOption::linkedCells,        ContainerOption::verletLists,
-    ContainerOption::verletListsCells, ContainerOption::verletClusterLists, ContainerOption::varVerletListsAsBuild};
-
 }  // namespace autopas

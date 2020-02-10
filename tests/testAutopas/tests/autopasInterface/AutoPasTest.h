@@ -7,7 +7,9 @@
 #pragma once
 
 #include <gtest/gtest.h>
+
 #include "autopas/AutoPas.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class AutoPasTest : public testing::Test {
  public:
@@ -18,5 +20,8 @@ class AutoPasTest : public testing::Test {
     autoPas.init();
   }
 
-  autopas::AutoPas<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> autoPas;
+ protected:
+  void expectedParticles(size_t expectedOwned, size_t expectedHalo);
+
+  autopas::AutoPas<Particle, FPCell> autoPas;
 };

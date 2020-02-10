@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include <vector>
+
 #include "autopas/particles/Particle.h"
 
 namespace autopas {
@@ -291,7 +292,7 @@ class SPHParticle : public autopas::Particle {
    * function to serialize an SPHParticle
    * @return serialized vector of bytes (char)
    */
-  std::vector<double> serialize() {
+  std::vector<double> serialize() const {
     std::vector<double> stream;
     for (int i = 0; i < 3; i++) {
       stream.push_back(this->getR()[i]);
@@ -400,8 +401,8 @@ class SPHParticle : public autopas::Particle {
   /**
    * SoA arrays type, cf. AttributeNames
    */
-  typedef autopas::utils::SoAType<double, double, double, double, double, double, double, double, double, double,
-                                  double, double, double, double, double, double>::Type SoAArraysType;
+  using SoAArraysType = autopas::utils::SoAType<double, double, double, double, double, double, double, double, double,
+                                                double, double, double, double, double, double, double>::Type;
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+
 #include "autopas/utils/SoAView.h"
 
 namespace autopas::internal {
@@ -39,18 +40,24 @@ class Cluster {
    * @param index The index of the particle to return.
    * @return the particle at position index in the cluster.
    */
-  auto &getParticle(size_t index) { return *(_firstParticle + index); }
+  Particle &operator[](size_t index) { return *(_firstParticle + index); }
 
   /**
-   * @copydoc getParticle(size_t)
+   * @copydoc operator[](size_t)
    */
-  const auto &getParticle(size_t index) const { return *(_firstParticle + index); }
+  const Particle &operator[](size_t index) const { return *(_firstParticle + index); }
 
   /**
    * Returns the SoAView for this cluster.
    * @return the SoAView for this cluster.
    */
-  auto &getSoAView() { return _soaView; }
+  auto getSoAView() { return _soaView; }
+
+  /**
+   * Set the SoAView for this cluster.
+   * @param view the new SoAView for this cluster.
+   */
+  void setSoAView(SoAView<typename Particle::SoAArraysType> view) { _soaView = view; }
 
   /**
    * Returns the neighbor list for this cluster.
