@@ -410,7 +410,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
 
     size_t currentThread = 0;
     size_t numClustersThisThread = 0;
-    size_t numClusterPairsThisThread = 0;
+    size_t numClusterPairsTotal = 0;
 
     auto &towers = getTowers();
     // Iterate over the clusters of all towers
@@ -426,12 +426,10 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
         }
 
         numClustersThisThread++;
-        numClusterPairsThisThread += currentCluster.getNeighbors().size();
+        numClusterPairsTotal += currentCluster.getNeighbors().size();
 
         // If the thread is finished, write number of clusters and start new thread.
-        if (numClusterPairsThisThread >= numClusterPairsPerThread) {
-          numClusterPairsThisThread = 0;
-
+        if (numClusterPairsTotal >= numClusterPairsPerThread * (currentThread + 1)) {
           // Set the number of clusters for the finished thread.
           _clusterThreadPartition[currentThread].numClusters = numClustersThisThread;
           numClustersThisThread = 0;
