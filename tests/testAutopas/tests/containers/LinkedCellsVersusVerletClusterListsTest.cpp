@@ -71,8 +71,8 @@ void LinkedCellsVersusVerletClusterListsTest::test(unsigned long numMolecules, d
       traversalOption, flopsVerlet, _verletLists.getTraversalSelectorInfo(), dataLayout,
       useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled);
 
-  _verletLists.rebuildNeighborLists(&*traversalFLOPSVerlet);
-  _verletLists.iteratePairwise(&*traversalFLOPSVerlet);
+  _verletLists.rebuildNeighborLists(traversalFLOPSVerlet.get());
+  _verletLists.iteratePairwise(traversalFLOPSVerlet.get());
   _linkedCells.iteratePairwise(&traversalFLOPS);
 
   // LinkedCells always uses newton 3 for particles inside the same cell when using soa, so the kernel calls cannot be

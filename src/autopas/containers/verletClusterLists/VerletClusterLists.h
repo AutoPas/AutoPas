@@ -261,6 +261,12 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   auto &getTowers() { return _towers; }
 
   /**
+   * Returns a const reference to the 2D grid for the XY-plane of this container that defines the cluster towers.
+   * @return a const reference to the grids of this container for usage in traversals.
+   */
+  const auto &getTowers() const { return _towers; }
+
+  /**
    * Returns the number of particles in each cluster.
    * @return the number of particles in each cluster.
    */
@@ -401,7 +407,8 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   /**
-   * Fills in the cluster ranges of the cluster thread partition.
+   * Fills in the cluster ranges of the cluster thread partition. It aims to assign each thread appropriately the same
+   * number of cluster pairs.
    * @param numClusterPairsPerThread The approximate number of cluster pairs per thread.
    * @param numThreads The number of threads to use.
    */
@@ -412,7 +419,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     size_t numClustersThisThread = 0;
     size_t numClusterPairsTotal = 0;
 
-    auto &towers = getTowers();
+    const auto &towers = getTowers();
     // Iterate over the clusters of all towers
     for (size_t currentTowerIndex = 0; currentTowerIndex < towers.size(); currentTowerIndex++) {
       auto &currentTower = towers[currentTowerIndex];

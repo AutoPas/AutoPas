@@ -45,16 +45,16 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        c01                         (AoS <=> SoA, noNewton3)             = 2
   //                        c01-combined-SoA            (SoA, noNewton3)                     = 1
   //                        c04                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
-  //                        c04-combined-SoA            (SoA, newton3 <=> noNewton3)         = 2
+  //                        c04SoA                      (SoA, newton3 <=> noNewton3)         = 2
   // VerletLists:           verlet-lists                (AoS <=> SoA, newton3 <=> noNewton3) = 4
   // VerletListsCells:      verlet-sliced               (AoS, newton3 <=> noNewton3)         = 2
   //                        verlet-c18                  (AoS, newton3 <=> noNewton3)         = 2
   //                        verlet-c01                  (AoS, noNewton3)                     = 1
   // VerletClusterLists:    verlet-clusters             (AoS <=> SoA, noNewton3)             = 2
-  //                        verlet-clusters-coloring    (AoS, newton3 <=> noNewton3)         = 4
+  //                        verlet-clusters-coloring    (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        verlet-clusters-static      (AoS <=> SoA, noNewton3)             = 2
   // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3) = 4
-  // VerletClusterCells:    verlet-cluster-cells        (AoS , newton3 <=> noNewton3)        = 2
+  // VerletClusterCells:    verlet-cluster-cells        (AoS, newton3 <=> noNewton3)         = 2
   //                                                                                    --------
   //                                                                                          48
   // Additional with cuda
@@ -83,7 +83,6 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
     ++iterations;
     ++collectedSamples;
     auto currentConfig = autoTuner.getCurrentConfig();
-    std::cout << "currentConfig:" << currentConfig.toString() << std::endl;
     if (stillTuning) {
       if (collectedSamples == 1) {
         EXPECT_NE(currentConfig, prevConfig)

@@ -40,7 +40,7 @@ class VerletClustersStaticTraversal : public TraversalInterface, public VerletCl
   bool getUseNewton3() const override { return useNewton3; }
 
   bool isApplicable() const override {
-    return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa) and not useNewton3;
+    return (dataLayout == DataLayoutOption::aos or dataLayout == DataLayoutOption::soa) and not useNewton3;
   }
 
   void initTraversal() override {
