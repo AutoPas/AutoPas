@@ -52,6 +52,7 @@ std::vector<std::array<double, 3>> TraversalComparison::calculateForces(autopas:
 
   return forces;
 }
+
 void TraversalComparison::SetUpTestSuite() {
   autopas::Logger::create();
 
