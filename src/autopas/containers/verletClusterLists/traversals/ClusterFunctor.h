@@ -39,7 +39,12 @@ class ClusterFunctor {
       for (size_t i = 0; i < clusterSize; i++) {
         // Always use newton 3 for interactions within one cluster.
         for (size_t j = i + 1; j < clusterSize; j++) {
-          _functor->AoSFunctor(cluster[i], cluster[j], true);
+          if constexpr (useNewton3) {
+            _functor->AoSFunctor(cluster[i], cluster[j], true);
+          } else {
+            _functor->AoSFunctor(cluster[i], cluster[j], false);
+            _functor->AoSFunctor(cluster[j], cluster[i], false);
+          }
         }
       }
     } else {
