@@ -20,7 +20,7 @@ if (AUTOPAS_ENABLE_CUDA)
         set(CUDAFILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/detectCudaComputeCapabilty.cu)
         execute_process(
             COMMAND
-                nvcc
+                ${CMAKE_CUDA_COMPILER}
                 -lcuda
                 ${CUDAFILE}
                 -o
