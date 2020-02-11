@@ -37,7 +37,6 @@ class ClusterFunctor {
   void traverseCluster(internal::Cluster<Particle, clusterSize> &cluster) {
     if constexpr (dataLayout == DataLayoutOption::aos) {
       for (size_t i = 0; i < clusterSize; i++) {
-        // Always use newton 3 for interactions within one cluster.
         for (size_t j = i + 1; j < clusterSize; j++) {
           if constexpr (useNewton3) {
             _functor->AoSFunctor(cluster[i], cluster[j], true);
