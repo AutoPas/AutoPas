@@ -23,6 +23,7 @@
 #include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClusterCellsTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersColoringTraversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VerletClustersStaticTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VarVerletTraversalAsBuild.h"
@@ -156,6 +157,11 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     case TraversalOption::varVerletTraversalAsBuild: {
       return std::make_unique<VarVerletTraversalAsBuild<ParticleCell, typename ParticleCell::ParticleType,
                                                         PairwiseFunctor, dataLayout, useNewton3>>(&pairwiseFunctor);
+    }
+    case TraversalOption::verletClustersStatic: {
+      return std::make_unique<
+          VerletClustersStaticTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
+          &pairwiseFunctor);
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());

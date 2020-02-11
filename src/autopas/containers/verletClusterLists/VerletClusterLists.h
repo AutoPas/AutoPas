@@ -38,6 +38,24 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   static constexpr size_t clusterSize = 4;
 
   /**
+   * Defines a cluster range used in the static cluster-thread-partition.
+   */
+  struct ClusterRange {
+    /**
+     * The index of the tower that contains the first cluster.
+     */
+    size_t startTowerIndex;
+    /**
+     * The index of the first cluster in its tower.
+     */
+    size_t startIndexInTower;
+    /**
+     * The number of clusters in the range.
+     */
+    size_t numClusters;
+  };
+
+  /**
    * Constructor of the VerletClusterLists class.
    * The neighbor lists are build using a estimated density.
    * The box is divided into cuboids with roughly the
@@ -61,6 +79,7 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setClusterLists(*this);
+      traversalInterface->setTowers(_towers);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletClusterLists::iteratePairwise. TraversalID: {}",
@@ -172,9 +191,21 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    internal::VerletClusterListsRebuilder<Particle> builder{*this, _particlesToAdd, traversal->getUseNewton3()};
+    internal::VerletClusterListsRebuilder<Particle> builder{*this, _towers, _particlesToAdd,
+                                                            traversal->getUseNewton3()};
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters, _neighborListIsNewton3) =
         builder.rebuild();
+
+    auto *clusterTraversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
+    if (clusterTraversalInterface) {
+      if (clusterTraversalInterface->needsStaticClusterThreadPartition()) {
+        calculateClusterThreadPartition();
+      }
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in VerletClusterLists::rebuildNeighborLists. TraversalID: {}",
+          traversal->getTraversalType());
+    }
   }
 
   /**
@@ -202,6 +233,12 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   /**
+   * Returns the cluster-thread-partition.
+   * @return The cluster-thread-partition.
+   */
+  const auto &getClusterThreadPartition() const { return _clusterThreadPartition; }
+
+  /**
    * Returns the number of clusters in this container.
    * @return The number of clusters in this container.
    */
@@ -218,12 +255,6 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    * @return the number of grids per dimension on the container.
    */
   auto getTowersPerDimension() const { return _towersPerDim; }
-
-  /**
-   * Returns a reference to the 2D grid for the XY-plane of this container that defines the cluster towers.
-   * @return a reference to the grids of this container for usage in traversals.
-   */
-  auto &getTowers() { return _towers; }
 
   /**
    * Returns the number of particles in each cluster.
@@ -348,6 +379,71 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     }
   }
 
+  /**
+   * Calculates a cluster thread partition that aims to give each thread about the same amount of cluster pair
+   * interactions, if each thread handles the neighbors of all clusters it gets assigned.
+   */
+  void calculateClusterThreadPartition() {
+    size_t numClusterPairs = 0;
+    this->template traverseClusters<false>(
+        [&numClusterPairs](auto &cluster) { numClusterPairs += cluster.getNeighbors().size(); });
+
+    constexpr int minNumClusterPairsPerThread = 1000;
+    auto numThreads =
+        std::clamp(static_cast<int>(numClusterPairs / minNumClusterPairsPerThread), 1, autopas_get_max_threads());
+
+    size_t numClusterPairsPerThread = numClusterPairs / numThreads;
+    fillClusterRanges(numClusterPairsPerThread, numThreads);
+  }
+
+  /**
+   * Fills in the cluster ranges of the cluster thread partition. It aims to assign each thread appropriately the same
+   * number of cluster pairs.
+   * @param numClusterPairsPerThread The approximate number of cluster pairs per thread.
+   * @param numThreads The number of threads to use.
+   */
+  void fillClusterRanges(size_t numClusterPairsPerThread, int numThreads) {
+    _clusterThreadPartition.resize(numThreads);
+
+    size_t currentThread = 0;
+    size_t numClustersThisThread = 0;
+    size_t numClusterPairsTotal = 0;
+
+    // Iterate over the clusters of all towers
+    for (size_t currentTowerIndex = 0; currentTowerIndex < _towers.size(); currentTowerIndex++) {
+      auto &currentTower = _towers[currentTowerIndex];
+      for (size_t currentClusterInTower = 0; currentClusterInTower < currentTower.getNumClusters();
+           currentClusterInTower++) {
+        auto &currentCluster = currentTower.getCluster(currentClusterInTower);
+
+        // If on a new thread, start with the clusters for this thread here.
+        if (numClustersThisThread == 0) {
+          _clusterThreadPartition[currentThread] = {currentTowerIndex, currentClusterInTower, 0};
+        }
+
+        numClustersThisThread++;
+        numClusterPairsTotal += currentCluster.getNeighbors().size();
+
+        // If the thread is finished, write number of clusters and start new thread.
+        if (numClusterPairsTotal >= numClusterPairsPerThread * (currentThread + 1)) {
+          // Set the number of clusters for the finished thread.
+          _clusterThreadPartition[currentThread].numClusters = numClustersThisThread;
+          numClustersThisThread = 0;
+          // Go to next thread!
+          currentThread++;
+        }
+      }
+    }
+    // Make sure the last cluster range contains the rest of the clusters, even if there is not the perfect number left.
+    if (numClustersThisThread != 0) {
+      _clusterThreadPartition[currentThread].numClusters = numClustersThisThread;
+    }
+    // Theoretically, some threads may still remain. This ensures that their numClusters are set to 0.
+    while (++currentThread < numThreads) {
+      _clusterThreadPartition[currentThread].numClusters = 0;
+    }
+  }
+
  private:
   /**
    * internal storage, particles are split into a grid in xy-dimension
@@ -384,6 +480,11 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    * Contains all particles that should be added to the container during the next rebuild.
    */
   std::vector<Particle> _particlesToAdd;
+
+  /**
+   * Defines a partition of the clusters to a number of threads.
+   */
+  std::vector<ClusterRange> _clusterThreadPartition;
 };
 
 }  // namespace autopas
