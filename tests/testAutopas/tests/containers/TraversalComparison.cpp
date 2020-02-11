@@ -94,10 +94,9 @@ TEST_P(TraversalComparison, traversalTest) {
 static auto toString = [](const auto &info) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax] = info.param;
   std::stringstream resStream;
-  resStream << containerOption.to_string() << traversalOption.to_string()
-            << (dataLayoutOption == autopas::DataLayoutOption::aos ? "AoS" : "SoA")
-            << (newton3Option == autopas::Newton3Option::enabled ? "Newton3" : "NoNewton3") << "_" << numParticles
-            << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << "";
+  resStream << containerOption.to_string() << traversalOption.to_string() << dataLayoutOption.to_string()
+            << newton3Option.to_string() << "_" << numParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_"
+            << boxMax[2] << "";
   std::string res = resStream.str();
   std::replace(res.begin(), res.end(), '-', '_');
   return res;
