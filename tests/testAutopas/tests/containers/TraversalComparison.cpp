@@ -105,13 +105,10 @@ static auto toString = [](const auto &info) {
 
 auto TraversalComparison::getTestParams() {
   std::vector<TestingTuple> params{};
-  auto containerOptions = autopas::ContainerOption::getAllOptions();
-  // @todo: Readd verlet cluster lists as soon as the iterator works without dummy particles.
-  containerOptions.erase(autopas::ContainerOption::verletClusterLists);
-  for (auto containerOption : containerOptions) {
+  for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
     for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(containerOption)) {
-      for (auto dataLayoutOption : {autopas::DataLayoutOption::aos, autopas::DataLayoutOption::soa}) {
-        for (auto newton3Option : {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}) {
+      for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
+        for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
           for (auto numParticles : _numParticlesVector) {
             for (auto boxMax : _boxMaxVector) {
               params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
