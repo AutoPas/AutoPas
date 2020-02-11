@@ -26,6 +26,8 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
  public:
   static void SetUpTestSuite();
 
+  static auto getTestParams();
+
  protected:
   static std::vector<std::array<double, 3>> calculateForces(autopas::ContainerOption containerOption,
                                                             autopas::TraversalOption traversalOption,

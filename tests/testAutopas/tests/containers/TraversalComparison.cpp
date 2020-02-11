@@ -91,7 +91,7 @@ TEST_P(TraversalComparison, traversalTest) {
   }
 }
 
-static auto toString = [](const auto& info) {
+static auto toString = [](const auto &info) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax] = info.param;
   std::stringstream resStream;
   resStream << containerOption.to_string() << traversalOption.to_string()
@@ -103,7 +103,7 @@ static auto toString = [](const auto& info) {
   return res;
 };
 
-static auto getTestParams() {
+auto TraversalComparison::getTestParams() {
   std::vector<TestingTuple> params{};
   auto containerOptions = autopas::ContainerOption::getAllOptions();
   // @todo: Readd verlet cluster lists as soon as the iterator works without dummy particles.
@@ -112,8 +112,8 @@ static auto getTestParams() {
     for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(containerOption)) {
       for (auto dataLayoutOption : {autopas::DataLayoutOption::aos, autopas::DataLayoutOption::soa}) {
         for (auto newton3Option : {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}) {
-          for (auto numParticles : {100, 1000, 2000}) {
-            for (auto boxMax : std::array<std::array<double, 3>, 2>{{{3, 3, 3}, {10, 10, 10}}}) {
+          for (auto numParticles : _numParticlesVector) {
+            for (auto boxMax : _boxMaxVector) {
               params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
                                   boxMax);
             }
@@ -125,4 +125,5 @@ static auto getTestParams() {
   return params;
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, TraversalComparison, ::testing::ValuesIn(getTestParams()), toString);
+INSTANTIATE_TEST_SUITE_P(Generated, TraversalComparison, ::testing::ValuesIn(TraversalComparison::getTestParams()),
+                         toString);
