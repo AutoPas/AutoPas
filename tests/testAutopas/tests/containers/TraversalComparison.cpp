@@ -98,7 +98,7 @@ TEST_P(TraversalComparison, traversalTest) {
 
   auto &globalValuesReferenceRef = _globalValuesReference[{numParticles, boxMax}];
   for (size_t index : {0, 1}) {
-    EXPECT_NE(calculatedGlobals[index], index);
+    EXPECT_NE(calculatedGlobals[index], 0);
     EXPECT_NEAR(calculatedGlobals[index], globalValuesReferenceRef[index],
                 rel_err_tolerance_globals * globalValuesReferenceRef[index]);
   }
