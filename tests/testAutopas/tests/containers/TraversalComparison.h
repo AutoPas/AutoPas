@@ -17,14 +17,12 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
-
+using TestingTuple = std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption,
+                                autopas::Newton3Option, size_t /*numParticles*/, std::array<double, 3> /*boxMaxVec*/>;
 /**
  * The tests in this class compare the calculated forces from all aos and soa traversals with a reference result.
  */
-class TraversalComparison
-    : public AutoPasTestBase,
-      public ::testing::WithParamInterface<std::tuple<autopas::ContainerOption, autopas::TraversalOption,
-                                                      autopas::DataLayoutOption, autopas::Newton3Option>> {
+class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamInterface<TestingTuple> {
  public:
   static void SetUpTestSuite();
 

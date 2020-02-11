@@ -69,49 +69,42 @@ void TraversalComparison::SetUpTestSuite() {
 }
 
 TEST_P(TraversalComparison, traversalTest) {
-  auto [containerOption, traversalOption, dataLayoutOption, newton3Option] = GetParam();
+  auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax] = GetParam();
 
   // empirically determined and set near the minimal possible value for 2000 particles
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
   double rel_err_tolerance = 1.0e-10;
 
-  for (auto numParticles : _numParticlesVector) {
-    for (auto boxMax : _boxMaxVector) {
-      auto calculatedForces =
-          calculateForces(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax);
-      if (calculatedForces.empty()) {
-        GTEST_SKIP_("Not applicable!");
-      }
+  auto calculatedForces =
+      calculateForces(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax);
+  if (calculatedForces.empty()) {
+    GTEST_SKIP_("Not applicable!");
+  }
 
-      for (int i = 0; i < numParticles; ++i) {
-        for (int d = 0; d < 3; ++d) {
-          double calculatedForce = calculatedForces[i][d];
-          double referenceForce = _forcesReference[{numParticles, boxMax}][i][d];
-          EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance));
-        }
-      }
+  for (int i = 0; i < numParticles; ++i) {
+    for (int d = 0; d < 3; ++d) {
+      double calculatedForce = calculatedForces[i][d];
+      double referenceForce = _forcesReference[{numParticles, boxMax}][i][d];
+      EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance));
     }
   }
 }
 
-static auto toString = [](testing::TestParamInfo<std::tuple<autopas::ContainerOption, autopas::TraversalOption,
-                                                            autopas::DataLayoutOption, autopas::Newton3Option>>
-                              param) {
-  auto [containerOption, traversalOption, dataLayoutOption, newton3Option] = param.param;
-  std::string res{};
-  res += containerOption.to_string();
-  res += traversalOption.to_string();
-  res += dataLayoutOption == autopas::DataLayoutOption::aos ? "AoS" : "SoA";
-  res += newton3Option == autopas::Newton3Option::enabled ? "Newton3" : "NoNewton3";
-  res.erase(std::remove(res.begin(), res.end(), '-'), res.end());
+static auto toString = [](const auto& info) {
+  auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax] = info.param;
+  std::stringstream resStream;
+  resStream << containerOption.to_string() << traversalOption.to_string()
+            << (dataLayoutOption == autopas::DataLayoutOption::aos ? "AoS" : "SoA")
+            << (newton3Option == autopas::Newton3Option::enabled ? "Newton3" : "NoNewton3") << "_" << numParticles
+            << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << "";
+  std::string res = resStream.str();
+  std::replace(res.begin(), res.end(), '-', '_');
   return res;
 };
 
 static auto getTestParams() {
-  std::vector<
-      std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption, autopas::Newton3Option>>
-      params{};
+  std::vector<TestingTuple> params{};
   auto containerOptions = autopas::ContainerOption::getAllOptions();
   // @todo: Readd verlet cluster lists as soon as the iterator works without dummy particles.
   containerOptions.erase(autopas::ContainerOption::verletClusterLists);
@@ -119,7 +112,12 @@ static auto getTestParams() {
     for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(containerOption)) {
       for (auto dataLayoutOption : {autopas::DataLayoutOption::aos, autopas::DataLayoutOption::soa}) {
         for (auto newton3Option : {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}) {
-          params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option);
+          for (auto numParticles : {100, 1000, 2000}) {
+            for (auto boxMax : std::array<std::array<double, 3>, 2>{{{3, 3, 3}, {10, 10, 10}}}) {
+              params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
+                                  boxMax);
+            }
+          }
         }
       }
     }
