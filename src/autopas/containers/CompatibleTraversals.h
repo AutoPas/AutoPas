@@ -47,7 +47,8 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
  */
 static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
   // traversal not used but prevents usage of newton3
-  static const std::set<TraversalOption> s{TraversalOption::verletClusters, TraversalOption::verletClustersColoring};
+  static const std::set<TraversalOption> s{TraversalOption::verletClusters, TraversalOption::verletClustersColoring,
+                                           TraversalOption::verletClustersStatic};
   return s;
 }
 

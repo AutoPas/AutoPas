@@ -315,7 +315,7 @@ void ActiveHarmony::resetHarmony() {
     }
 
     if (ah_def_name(hdef, "AutoPas") != 0) {
-      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error settings search name");
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error setting search name");
     }
 
     if (_allowedCellSizeFactors->isFinite()) {  // finite cell-size factors => define parameter as enum
@@ -338,7 +338,7 @@ void ActiveHarmony::resetHarmony() {
     } else {  // infinite cell-size factors => define parameter as real
       AutoPasLog(debug, "ActiveHarmony::reset: Infinite cell-size factors; defining parameter as real");
       if (ah_def_real(hdef, cellSizeFactorsName, _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(),
-                      (_allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax()) / cellSizeSamples,
+                      (_allowedCellSizeFactors->getMax() - _allowedCellSizeFactors->getMin()) / cellSizeSamples,
                       nullptr) != 0) {
         utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining real \"{}\"", cellSizeFactorsName);
       }

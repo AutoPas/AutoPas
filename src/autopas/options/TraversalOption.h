@@ -38,6 +38,7 @@ class TraversalOption : public Option<TraversalOption> {
     verletClustersColoring = 14,
     c04SoA = 15,
     verletClusterCells = 16,
+    verletClustersStatic = 17,
   };
 
   /**
@@ -80,6 +81,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::verletClustersColoring, "verlet-clusters-coloring"},
         {TraversalOption::c04SoA, "c04SoA"},
         {TraversalOption::verletClusterCells, "verlet-cluster-cells"},
+        {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
     };
   };
 

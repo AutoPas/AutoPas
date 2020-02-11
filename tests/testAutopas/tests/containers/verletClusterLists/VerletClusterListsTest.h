@@ -19,6 +19,46 @@
 
 class VerletClusterListsTest : public AutoPasTestBase {};
 
+class CollectParticlePairsFunctor
+    : public autopas::Functor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> {
+ public:
+  std::vector<std::pair<Particle *, Particle *>> _pairs{};
+  std::array<double, 3> _min;
+  std::array<double, 3> _max;
+
+ public:
+  CollectParticlePairsFunctor(double cutoff, std::array<double, 3> min, std::array<double, 3> max)
+      : Functor(cutoff), _min(min), _max(max) {}
+
+  void initTraversal() override { _pairs.clear(); }
+
+  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    auto dist = autopas::utils::ArrayMath::sub(i.getR(), j.getR());
+    if (autopas::utils::ArrayMath::dot(dist, dist) > getCutoff() * getCutoff() or
+        not autopas::utils::inBox(i.getR(), _min, _max) or not autopas::utils::inBox(j.getR(), _min, _max))
+      return;
+
+#if defined(AUTOPAS_OPENMP)
+#pragma omp critical
+#endif
+    {
+      _pairs.emplace_back(&i, &j);
+      if (newton3) _pairs.emplace_back(&j, &i);
+    };
+  }
+
+  bool isRelevantForTuning() override { return false; }
+
+  bool allowsNewton3() override { return true; }
+  bool allowsNonNewton3() override { return true; }
+
+  bool isAppropriateClusterSize(unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout) const override {
+    return true;
+  }
+
+  auto getParticlePairs() { return _pairs; }
+};
+
 #if defined(AUTOPAS_OPENMP)
 class CollectParticlesPerThreadFunctor
     : public autopas::Functor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> {

@@ -42,7 +42,7 @@ class GaussianProcessTest : public AutoPasTestBase {
     constexpr size_t numEvidence = 7;      // number of samples allowed to make
     constexpr size_t lhsNumSamples = 850;  // number of samples to find min of acquisition function
 
-    autopas::GaussianProcess<Eigen::VectorXd> gp(2, 0.001, rng);
+    autopas::GaussianProcess gp(2, 0.001, rng);
 
     // add first evidence
     Eigen::VectorXd firstEvidence(2);
@@ -93,6 +93,6 @@ class GaussianProcessTest : public AutoPasTestBase {
    * @param colorFactor Multiplies the mean by this factor to gain the color
    */
   static void printMap(int xChunks, int yChunks, const autopas::NumberSet<double> &domainX,
-                       const autopas::NumberSet<double> &domainY, const autopas::GaussianProcess<Eigen::VectorXd> &gp,
+                       const autopas::NumberSet<double> &domainY, const autopas::GaussianProcess &gp,
                        autopas::AcquisitionFunctionOption af, double colorFactor);
 };

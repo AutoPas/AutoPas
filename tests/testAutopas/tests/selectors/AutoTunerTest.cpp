@@ -43,31 +43,31 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        sliced                      (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        c18                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        c01                         (AoS <=> SoA, noNewton3)             = 2
+  //                        c01-combined-SoA            (SoA, noNewton3)                     = 1
   //                        c04                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        c04SoA                      (SoA, newton3 <=> noNewton3)         = 2
-  //                        c01-combined-SoA            (SoA, noNewton3)                     = 1
-  //                        c04-combined-SoA            (SoA, newton3 <=> noNewton3)         = 2
   // VerletLists:           verlet-lists                (AoS <=> SoA, newton3 <=> noNewton3) = 4
   // VerletListsCells:      verlet-sliced               (AoS, newton3 <=> noNewton3)         = 2
   //                        verlet-c18                  (AoS, newton3 <=> noNewton3)         = 2
   //                        verlet-c01                  (AoS, noNewton3)                     = 1
   // VerletClusterLists:    verlet-clusters             (AoS <=> SoA, noNewton3)             = 2
-  //                        verlet-clusters-coloring    (AoS, newton3 <=> noNewton3)         = 4
+  //                        verlet-clusters-coloring    (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        verlet-clusters-static      (AoS <=> SoA, noNewton3)             = 2
   // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3) = 4
-  // VerletClusterCells:    verlet-cluster-cells        (AoS , newton3 <=> noNewton3)        = 2
+  // VerletClusterCells:    verlet-cluster-cells        (AoS, newton3 <=> noNewton3)         = 2
   //                                                                                    --------
-  //                                                                                          46
+  //                                                                                          48
   // Additional with cuda
   // Direct Sum:            directSum traversal         (Cuda, newton3 <=> noNewton3)        = 2
   // LinkedCells:           c01Cuda traversal           (Cuda, newton3 <=> noNewton3)        = 2
   // VerletClusterCells:    verlet-cluster-cells traversal (Cuda, newton3 <=> noNewton3)     = 2
   //                                                                                    --------
-  //                                                                                          52
+  //                                                                                          54
 
 #ifndef AUTOPAS_CUDA
-  const size_t expectedNumberOfIterations = 46 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 48 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 52 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 54 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;
@@ -83,14 +83,13 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
     ++iterations;
     ++collectedSamples;
     auto currentConfig = autoTuner.getCurrentConfig();
-
     if (stillTuning) {
       if (collectedSamples == 1) {
         EXPECT_NE(currentConfig, prevConfig)
-            << "current:" << currentConfig.toString() << ", previous: " << currentConfig.toString() << std::endl;
+            << "current:" << currentConfig.toString() << ", previous: " << prevConfig.toString() << std::endl;
       } else {
         EXPECT_EQ(currentConfig, prevConfig)
-            << "current:" << currentConfig.toString() << ", previous: " << currentConfig.toString() << std::endl;
+            << "current:" << currentConfig.toString() << ", previous: " << prevConfig.toString() << std::endl;
       }
     }
     prevConfig = currentConfig;

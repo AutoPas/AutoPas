@@ -77,7 +77,7 @@ class TraversalVerlet
 #if defined(AUTOPAS_OPENMP)
         if (not useNewton3) {
           size_t buckets = aosNeighborLists.bucket_count();
-          // @todo find a sensible chunk size
+          /// @todo find a sensible chunk size
 #pragma omp parallel for schedule(dynamic)
           for (size_t b = 0; b < buckets; b++) {
             auto endIter = aosNeighborLists.end(b);
@@ -106,7 +106,7 @@ class TraversalVerlet
       case DataLayoutOption::soa: {
 #if defined(AUTOPAS_OPENMP)
         if (not useNewton3) {
-          // @todo find a sensible chunk size
+          /// @todo find a sensible chunk size
           const size_t chunkSize = std::max(soaNeighborLists.size() / (omp_get_max_threads() * 10), 1ul);
 #pragma omp parallel for schedule(dynamic, chunkSize)
           for (size_t i = 0; i < soaNeighborLists.size(); i++) {
