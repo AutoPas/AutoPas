@@ -19,17 +19,17 @@ using ::testing::Combine;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-std::vector<std::array<double, 3>> TraversalComparison::calculateForces(autopas::ContainerOption containerOption,
-                                                                        autopas::TraversalOption traversalOption,
-                                                                        autopas::DataLayoutOption dataLayoutOption,
-                                                                        autopas::Newton3Option newton3Option,
-                                                                        unsigned long numMolecules,
-                                                                        std::array<double, 3> boxMax) {
+std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalComparison::calculateForces(
+    autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
+    autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, unsigned long numMolecules,
+    std::array<double, 3> boxMax) {
   // Construct container
   autopas::ContainerSelector<Molecule, FMCell> selector{_boxMin, boxMax, _cutoff};
   selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{1.0, _cutoff * 0.1, 32});
   auto container = selector.getCurrentContainer();
-  autopas::LJFunctor<Molecule, FMCell> functor{_cutoff};
+  autopas::LJFunctor<Molecule, FMCell, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+                     true /*calculateGlobals*/>
+      functor{_cutoff};
   functor.setParticleProperties(_eps * 24, _sig * _sig);
 
   auto traversal = autopas::TraversalSelector<FMCell>::generateTraversal(
@@ -43,14 +43,17 @@ std::vector<std::array<double, 3>> TraversalComparison::calculateForces(autopas:
       numMolecules);
 
   container->rebuildNeighborLists(traversal.get());
+
+  functor.initTraversal();
   container->iteratePairwise(traversal.get());
+  functor.endTraversal(newton3Option);
 
   std::vector<std::array<double, 3>> forces(numMolecules);
   for (auto it = container->begin(); it.isValid(); ++it) {
     forces.at(it->getID()) = it->getF();
   }
 
-  return forces;
+  return {forces, {functor.getUpot(), functor.getVirial()}};
 }
 
 void TraversalComparison::SetUpTestSuite() {
@@ -59,10 +62,11 @@ void TraversalComparison::SetUpTestSuite() {
   // Calculate reference forces
   for (auto numParticles : _numParticlesVector) {
     for (auto boxMax : _boxMaxVector) {
-      auto calculatedForces =
+      auto [calculatedForces, calculatedGlobals] =
           calculateForces(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
                           autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles, boxMax);
       _forcesReference[{numParticles, boxMax}] = calculatedForces;
+      _globalValuesReference[{numParticles, boxMax}] = calculatedGlobals;
     }
   }
 
@@ -76,19 +80,27 @@ TEST_P(TraversalComparison, traversalTest) {
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
   double rel_err_tolerance = 1.0e-10;
+  double rel_err_tolerance_globals = 1.0e-10;
 
-  auto calculatedForces =
+  auto [calculatedForces, calculatedGlobals] =
       calculateForces(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax);
   if (calculatedForces.empty()) {
     GTEST_SKIP_("Not applicable!");
   }
 
-  for (int i = 0; i < numParticles; ++i) {
-    for (int d = 0; d < 3; ++d) {
+  for (size_t i = 0; i < numParticles; ++i) {
+    for (unsigned int d = 0; d < 3; ++d) {
       double calculatedForce = calculatedForces[i][d];
       double referenceForce = _forcesReference[{numParticles, boxMax}][i][d];
       EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance));
     }
+  }
+
+  auto &globalValuesReferenceRef = _globalValuesReference[{numParticles, boxMax}];
+  for (size_t index : {0, 1}) {
+    EXPECT_NE(calculatedGlobals[index], index);
+    EXPECT_NEAR(calculatedGlobals[index], globalValuesReferenceRef[index],
+                rel_err_tolerance_globals * globalValuesReferenceRef[index]);
   }
 }
 

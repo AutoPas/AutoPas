@@ -29,11 +29,10 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static auto getTestParams();
 
  protected:
-  static std::vector<std::array<double, 3>> calculateForces(autopas::ContainerOption containerOption,
-                                                            autopas::TraversalOption traversalOption,
-                                                            autopas::DataLayoutOption dataLayoutOption,
-                                                            autopas::Newton3Option newton3Option,
-                                                            unsigned long numMolecules, std::array<double, 3> boxMax);
+  static std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> calculateForces(
+      autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
+      autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, unsigned long numMolecules,
+      std::array<double, 3> boxMax);
 
   static inline std::array<double, 3> _boxMin{0, 0, 0};
   static inline std::array<std::array<double, 3>, 2> _boxMaxVector{{{3, 3, 3}, {10, 10, 10}}};
@@ -42,7 +41,9 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static inline double _eps{1.};
   static inline double _sig{1.};
 
-  static inline std::map<std::pair<int, std::array<double, 3>>, std::vector<std::array<double, 3>>> _forcesReference{};
+  static inline std::map<std::pair<size_t, std::array<double, 3>>, std::vector<std::array<double, 3>>>
+      _forcesReference{};
+  static inline std::map<std::pair<size_t, std::array<double, 3>>, std::array<double, 2>> _globalValuesReference{};
 
-  static inline std::array<int, 3> _numParticlesVector{100, 1000, 2000};
+  static inline std::array<size_t, 3> _numParticlesVector{100, 1000, 2000};
 };
