@@ -99,8 +99,13 @@ __device__ inline double getInfinity<double>() {
   return CUDART_INF;
 }
 
-__device__ constexpr uint32_t nextPowerOfTwo(uint32_t x){
-  // magic function taken from: http://locklessinc.com/articles/next_pow2/
+/**
+ * Calculates the next power of two higher than or equal to the given number.
+ * This function is taken from: http://locklessinc.com/articles/next_pow2/
+ * @param x
+ * @return
+ */
+__device__ constexpr uint32_t nextPowerOfTwo(uint32_t x) {
   x -= 1;
   x |= (x >> 1);
   x |= (x >> 2);
