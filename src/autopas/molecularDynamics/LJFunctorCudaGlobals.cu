@@ -99,10 +99,23 @@ __device__ inline double getInfinity<double>() {
   return CUDART_INF;
 }
 
+__device__ constexpr uint32_t nextPowerOfTwo(uint32_t x){
+  // magic function taken from: http://locklessinc.com/articles/next_pow2/
+  x -= 1;
+  x |= (x >> 1);
+  x |= (x >> 2);
+  x |= (x >> 4);
+  x |= (x >> 8);
+  x |= (x >> 16);
+
+  return x + 1;
+}
+
 template <typename floatType, int blockSize>
 __device__ inline void reduceGlobalsShared(typename vec4<floatType>::Type *globals_shared) {
-  for (unsigned int s = blockSize / 2; s > 0; s >>= 1) {
-    if (threadIdx.x < s) {
+  constexpr uint32_t nextPowerOfTwoVal = nextPowerOfTwo(blockSize);
+  for (uint32_t s = nextPowerOfTwoVal / 2; s > 0; s >>= 1) {
+    if (threadIdx.x < s and threadIdx.x + s < blockSize) {
       globals_shared[threadIdx.x].x += globals_shared[threadIdx.x + s].x;
       globals_shared[threadIdx.x].y += globals_shared[threadIdx.x + s].y;
       globals_shared[threadIdx.x].z += globals_shared[threadIdx.x + s].z;
