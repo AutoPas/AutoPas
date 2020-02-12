@@ -89,8 +89,8 @@ TEST_P(AllContainersTests, testParticleAdding) {
           EXPECT_NO_THROW(_container->addHaloParticle(p));  // outside, therefore ok!
         } else {
           EXPECT_NO_THROW(_container->addParticle(p));  // inside, therefore ok!
-          EXPECT_NO_THROW(
-              _container->addHaloParticle(p));  // inside, but still ok, as halo particle can be inside of the domain!
+          EXPECT_ANY_THROW(
+              _container->addHaloParticle(p));  // inside, and not ok, as halo particles cannot be added inside of the domain!
         }
       }
     }
