@@ -46,5 +46,5 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
       _forcesReference{};
   static inline std::map<std::pair<size_t, std::array<double, 3>>, std::array<double, 2>> _globalValuesReference{};
 
-  static constexpr auto _numParticlesVector = {100, 1000, 2000};
+  static constexpr auto _numParticlesVector = {103};
 };
