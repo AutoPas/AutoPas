@@ -127,6 +127,12 @@ auto TraversalComparison::getTestParams() {
           for (auto numParticles : _numParticlesVector) {
             for (auto boxMax : _boxMaxVector) {
               for (double cellSizeFactor : {0.5, 1., 2.}) {
+                if (dataLayoutOption == autopas::DataLayoutOption::Value::cuda and
+                    traversalOption == autopas::TraversalOption::Value::c01Cuda and boxMax[0] < 5. and
+                    numParticles > 500) {
+                  // LJFunctor for cuda doesn't support this, yet: see https://github.com/AutoPas/AutoPas/issues/419
+                  continue;
+                }
                 params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
                                     boxMax, cellSizeFactor);
               }
