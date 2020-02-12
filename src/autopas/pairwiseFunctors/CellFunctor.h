@@ -111,7 +111,7 @@ class CellFunctor {
   /**
    * Min. number of particles to start sorting.
    */
-  constexpr static unsigned long _startSorting = 8;
+  constexpr static unsigned long _startSorting = 1;
 };
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
@@ -280,6 +280,8 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
 
       for (auto &inner : outerSorted._particles) {
         if (std::abs(outer.first - inner.first) > _sortingCutoff) {
+          std::cout << inner.second->toString() << std::endl;
+          std::cout << outer.second->toString() << std::endl;
           break;
         }
         Particle &p2 = *inner.second;

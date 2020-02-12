@@ -343,6 +343,17 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
           bool combineSoA>
 inline void C01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, combineSoA>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
+
+  std::cout << std::endl << "Particles: "<<std::endl;
+  for(auto& cell:cells){
+    if(cell.numParticles()==0) continue;
+    std::cout << "numParticles: " << cell.numParticles() << std::endl;
+    for(auto& particle : cell){
+      std::cout << particle.toString() << std::endl;
+    }
+  }
+
+
   if (not this->isApplicable()) {
     if constexpr (combineSoA) {
       utils::ExceptionHandler::exception(
