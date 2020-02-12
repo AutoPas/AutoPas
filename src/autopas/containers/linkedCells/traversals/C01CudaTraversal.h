@@ -36,9 +36,15 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param interactionLength The interaction length.
+   * @param cellLengths The lengths of the cell.
    */
-  explicit C01CudaTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims), _functor(pairwiseFunctor) {
+  explicit C01CudaTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                            double interactionLength, std::array<double, 3> cellLengths)
+      : CellPairTraversal<ParticleCell>(dims),
+        _functor{pairwiseFunctor},
+        _interactionLength{interactionLength},
+        _cellLengths{cellLengths} {
     computeOffsets();
   }
 
@@ -63,7 +69,15 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
 #if defined(AUTOPAS_CUDA)
     int nDevices;
     cudaGetDeviceCount(&nDevices);
-    return (dataLayout == DataLayoutOption::cuda) && (nDevices > 0);
+    // cuda only:
+    bool applicable = dataLayout == DataLayoutOption::cuda;
+    // only if we actually have some devices:
+    applicable &= nDevices > 0;
+    for (auto cellLength : _cellLengths) {
+      // we only interact neighboring cells, therefore the cell length has to be bigger than the interaction length.
+      applicable &= cellLength >= _interactionLength;
+    }
+    return applicable;
 #else
     return false;
 #endif
@@ -98,6 +112,16 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
    * device cell sizes storage
    */
   utils::CudaDeviceVector<size_t> _deviceCellSizes;
+
+  /**
+   * Interaction length.
+   */
+  double _interactionLength;
+
+  /**
+   * Cell lengths.
+   */
+  std::array<double, 3> _cellLengths;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
