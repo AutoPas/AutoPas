@@ -816,7 +816,7 @@ void LJFunctorCudaGlobalsWrapper<floatType>::LinkedCellsTraversalNoN3Wrapper(Fun
     CREATESWITCHCASES(cids_size, 0, LinkedCellsTraversalNoN3, (cell1, cids, cellSizes));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "Linked Cells NoN3: cuda Kernel size not available for Linked cells available. Too many particles "
+          "Linked Cells NoN3: cuda Kernel size not available for Linked cells. Too many particles "
           "in a cell. Requested: {}",
           reqThreads);
       break;
@@ -847,7 +847,7 @@ void LJFunctorCudaGlobalsWrapper<floatType>::LinkedCellsTraversalN3Wrapper(Funct
     CREATESWITCHCASES(cids_size, 0, LinkedCellsTraversalN3, (cell1, cids, cellSizes));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "Linked Cells N3:cuda Kernel size not available for Linked cells available. Too many particles in "
+          "Linked Cells N3:cuda Kernel size not available for Linked cells. Too many particles in "
           "a cell. Requested: {}",
           reqThreads);
       break;
@@ -924,7 +924,7 @@ void LJFunctorCudaGlobalsWrapper<floatType>::CellVerletTraversalNoN3Wrapper(
     CREATESWITCHCASES(ncells, 0, CellVerletTraversalNoN3, (cell1, others_size, other_ids));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "cuda Kernel size not available for Verlet cells available. Too many particles in a cell. "
+          "cuda Kernel size not available for Verlet cells. Too many particles in a cell. "
           "Requested: {}",
           clusterSize);
       break;
@@ -1037,7 +1037,7 @@ void LJFunctorCudaGlobalsWrapper<floatType>::CellVerletTraversalN3Wrapper(Functo
     CREATESWITCHCASES(ncells, 0, CellVerletTraversalN3, (cell1, others_size, other_ids));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "cuda Kernel size not available for Verlet cells available. Too many particles in a cell. "
+          "cuda Kernel size not available for Verlet cells. Too many particles in a cell. "
           "Requested: {}",
           clusterSize);
       break;
