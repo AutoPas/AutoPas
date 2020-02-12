@@ -35,16 +35,16 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
       autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, unsigned long numMolecules,
       std::array<double, 3> boxMax, double cellSizeFactor);
 
-  static inline std::array<double, 3> _boxMin{0, 0, 0};
-  static inline std::array<std::array<double, 3>, 2> _boxMaxVector{{{3, 3, 3}, {10, 10, 10}}};
-  static inline double _cutoff{1.};
+  static constexpr std::array<double, 3> _boxMin{0, 0, 0};
+  static constexpr std::array<std::array<double, 3>, 2> _boxMaxVector{{{3, 3, 3}, {10, 10, 10}}};
+  static constexpr double _cutoff{1.};
 
-  static inline double _eps{1.};
-  static inline double _sig{1.};
+  static constexpr double _eps{1.};
+  static constexpr double _sig{1.};
 
   static inline std::map<std::pair<size_t, std::array<double, 3>>, std::vector<std::array<double, 3>>>
       _forcesReference{};
   static inline std::map<std::pair<size_t, std::array<double, 3>>, std::array<double, 2>> _globalValuesReference{};
 
-  static inline std::array<size_t, 3> _numParticlesVector{100, 1000, 2000};
+  static constexpr auto _numParticlesVector = {100, 1000, 2000};
 };
