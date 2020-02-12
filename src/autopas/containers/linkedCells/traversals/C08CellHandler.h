@@ -151,9 +151,16 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
           // check whether cell is within interaction length
           auto distVec = utils::ArrayMath::mul(
               {std::max(zero, x - one), std::max(zero, y - one), std::max(zero, z - one)}, _cellLength);
+          auto middlePointDistVec =
+              std::array<double, 3>{static_cast<double>(x), static_cast<double>(y), static_cast<double>(z)};
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
-            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[z], offset, utils::ArrayMath::normalize(distVec)));
+            auto sortingDir = utils::ArrayMath::normalize(middlePointDistVec);
+            if ((x != 0 or y != 0 or z != 0) and
+                (std::isnan(sortingDir[0]) or std::isnan(sortingDir[1]) or std::isnan(sortingDir[2]))) {
+              throw std::runtime_error("bad norm!");
+            }
+            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[z], offset, sortingDir));
           }
         }
         // back left
@@ -161,10 +168,15 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
           // check whether cell is within interaction length
           auto distVec = utils::ArrayMath::mul(
               {std::max(zero, x - one), std::max(zero, _overlap[1] - y - one), std::max(zero, z - one)}, _cellLength);
+          auto middlePointDistVec = std::array<double, 3>{static_cast<double>(x), static_cast<double>(_overlap[1] - y),
+                                                          static_cast<double>(z)};
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
-            _cellPairOffsets.push_back(
-                std::make_tuple(cellOffsets[ov1_squared - ov1 + z], offset, utils::ArrayMath::normalize(distVec)));
+            auto sortingDir = utils::ArrayMath::normalize(middlePointDistVec);
+            if (std::isnan(sortingDir[0]) or std::isnan(sortingDir[1]) or std::isnan(sortingDir[2])) {
+              throw std::runtime_error("bad norm!");
+            }
+            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[ov1_squared - ov1 + z], offset, sortingDir));
           }
         }
         // front right
@@ -172,10 +184,15 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
           // check whether cell is within interaction length
           auto distVec = utils::ArrayMath::mul(
               {std::max(zero, _overlap[0] - x - one), std::max(zero, y - one), std::max(zero, z - one)}, _cellLength);
+          auto middlePointDistVec = std::array<double, 3>{static_cast<double>(_overlap[0] - x), static_cast<double>(y),
+                                                          static_cast<double>(z)};
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
-            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[ov1_squared * _overlap[0] + z], offset,
-                                                       utils::ArrayMath::normalize(distVec)));
+            auto sortingDir = utils::ArrayMath::normalize(middlePointDistVec);
+            if (std::isnan(sortingDir[0]) or std::isnan(sortingDir[1]) or std::isnan(sortingDir[2])) {
+              throw std::runtime_error("bad norm!");
+            }
+            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[ov1_squared * _overlap[0] + z], offset, sortingDir));
           }
         }
         // back right
@@ -184,10 +201,15 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
           auto distVec = utils::ArrayMath::mul(
               {std::max(zero, _overlap[0] - x - one), std::max(zero, _overlap[1] - y - one), std::max(zero, z - one)},
               _cellLength);
+          auto middlePointDistVec = std::array<double, 3>{static_cast<double>(_overlap[0] - x),
+                                                          static_cast<double>(_overlap[1] - y), static_cast<double>(z)};
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
-            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[ov1_squared * ov1 - ov1 + z], offset,
-                                                       utils::ArrayMath::normalize(distVec)));
+            auto sortingDir = utils::ArrayMath::normalize(middlePointDistVec);
+            if (std::isnan(sortingDir[0]) or std::isnan(sortingDir[1]) or std::isnan(sortingDir[2])) {
+              throw std::runtime_error("bad norm!");
+            }
+            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[ov1_squared * ov1 - ov1 + z], offset, sortingDir));
           }
         }
       }
