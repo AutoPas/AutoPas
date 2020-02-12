@@ -17,8 +17,9 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
-using TestingTuple = std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption,
-                                autopas::Newton3Option, size_t /*numParticles*/, std::array<double, 3> /*boxMaxVec*/>;
+using TestingTuple =
+    std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption, autopas::Newton3Option,
+               size_t /*numParticles*/, std::array<double, 3> /*boxMaxVec*/, double /*cellSizeFactor*/>;
 /**
  * The tests in this class compare the calculated forces from all aos and soa traversals with a reference result.
  */
@@ -32,7 +33,7 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> calculateForces(
       autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
       autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, unsigned long numMolecules,
-      std::array<double, 3> boxMax);
+      std::array<double, 3> boxMax, double cellSizeFactor);
 
   static inline std::array<double, 3> _boxMin{0, 0, 0};
   static inline std::array<std::array<double, 3>, 2> _boxMaxVector{{{3, 3, 3}, {10, 10, 10}}};

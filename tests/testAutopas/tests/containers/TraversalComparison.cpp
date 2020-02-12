@@ -22,10 +22,10 @@ using ::testing::ValuesIn;
 std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalComparison::calculateForces(
     autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, unsigned long numMolecules,
-    std::array<double, 3> boxMax) {
+    std::array<double, 3> boxMax, double cellSizeFactor) {
   // Construct container
   autopas::ContainerSelector<Molecule, FMCell> selector{_boxMin, boxMax, _cutoff};
-  selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{1.0, _cutoff * 0.1, 32});
+  selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, _cutoff * 0.1, 32});
   auto container = selector.getCurrentContainer();
   autopas::LJFunctor<Molecule, FMCell, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
                      true /*calculateGlobals*/>
@@ -64,7 +64,7 @@ void TraversalComparison::SetUpTestSuite() {
     for (auto boxMax : _boxMaxVector) {
       auto [calculatedForces, calculatedGlobals] =
           calculateForces(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
-                          autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles, boxMax);
+                          autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles, boxMax, 1.);
       _forcesReference[{numParticles, boxMax}] = calculatedForces;
       _globalValuesReference[{numParticles, boxMax}] = calculatedGlobals;
     }
@@ -74,7 +74,8 @@ void TraversalComparison::SetUpTestSuite() {
 }
 
 TEST_P(TraversalComparison, traversalTest) {
-  auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax] = GetParam();
+  auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax, cellSizeFactor] =
+      GetParam();
 
   // empirically determined and set near the minimal possible value for 2000 particles
   // i.e. if something changes, it may be needed to increase value
@@ -82,8 +83,8 @@ TEST_P(TraversalComparison, traversalTest) {
   double rel_err_tolerance = 1.0e-10;
   double rel_err_tolerance_globals = 1.0e-10;
 
-  auto [calculatedForces, calculatedGlobals] =
-      calculateForces(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax);
+  auto [calculatedForces, calculatedGlobals] = calculateForces(containerOption, traversalOption, dataLayoutOption,
+                                                               newton3Option, numParticles, boxMax, cellSizeFactor);
   if (calculatedForces.empty()) {
     GTEST_SKIP_("Not applicable!");
   }
@@ -105,13 +106,15 @@ TEST_P(TraversalComparison, traversalTest) {
 }
 
 static auto toString = [](const auto &info) {
-  auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax] = info.param;
+  auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax, cellSizeFactor] =
+      info.param;
   std::stringstream resStream;
   resStream << containerOption.to_string() << traversalOption.to_string() << dataLayoutOption.to_string()
             << newton3Option.to_string() << "_" << numParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_"
-            << boxMax[2] << "";
+            << boxMax[2] << "_CSF_" << cellSizeFactor;
   std::string res = resStream.str();
   std::replace(res.begin(), res.end(), '-', '_');
+  std::replace(res.begin(), res.end(), '.', '_');
   return res;
 };
 
@@ -123,8 +126,10 @@ auto TraversalComparison::getTestParams() {
         for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
           for (auto numParticles : _numParticlesVector) {
             for (auto boxMax : _boxMaxVector) {
-              params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
-                                  boxMax);
+              for (double cellSizeFactor : {0.5, 1., 2.}) {
+                params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
+                                    boxMax, cellSizeFactor);
+              }
             }
           }
         }
