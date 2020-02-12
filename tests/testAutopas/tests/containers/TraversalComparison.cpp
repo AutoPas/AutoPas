@@ -42,28 +42,16 @@ std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalC
   //    *container, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), container->getBoxMin(), container->getBoxMax(),
   //    numMolecules, 42);
   size_t id = 0;
-  container->addParticle(autopas::MoleculeLJ({0.506842, 1.69005, 2.33747}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({0.824299, 2.48879, 2.74104}, {0., 0., 0.}, id++));
   container->addParticle(autopas::MoleculeLJ({0.398906, 1.32114, 1.93465}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({0.646592, 2.66593, 2.9507}, {0., 0., 0.}, id++));
-
-
-  container->addParticle(autopas::MoleculeLJ({0.725419, 2.77819, 2.7126}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({0.660775, 2.33143, 2.36529}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({0.306954, 1.59373, 1.8959}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({1.13764, 1.04753, 2.8295}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({1.07298, 2.6236, 2.63311}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({1.44268, 2.28373, 2.86338}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({0.0217254, 2.21437, 2.43631}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({1.50209, 1.93996, 2.71296}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({1.51406, 1.79946, 2.74137}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({0.844731, 1.84206, 1.85891}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({0.151851, 2.78614, 2.59682}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({1.47433, 0.984085, 2.90235}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({1.80213, 1.77652, 2.14015}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({1.09205, 2.53501, 2.93414}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({0.126096, 2.44497, 2.264}, {0., 0., 0.}, id++));
   container->addParticle(autopas::MoleculeLJ({0.306245, 1.72199, 2.18384}, {0., 0., 0.}, id++));
+  container->addParticle(autopas::MoleculeLJ({0.506842, 1.69005, 2.33747}, {0., 0., 0.}, id++));
+  container->addParticle(autopas::MoleculeLJ({0.306954, 1.59373, 1.8959}, {0., 0., 0.}, id++));
+
+  container->addParticle(autopas::MoleculeLJ({0.646592, 2.66593, 2.9507}, {0., 0., 0.}, id++));
+  container->addParticle(autopas::MoleculeLJ({0.824299, 2.48879, 2.74104}, {0., 0., 0.}, id++));
+  container->addParticle(autopas::MoleculeLJ({0.725419, 2.77819, 2.7126}, {0., 0., 0.}, id++));
+  container->addParticle(autopas::MoleculeLJ({1.07298, 2.6236, 2.63311}, {0., 0., 0.}, id++));
+  container->addParticle(autopas::MoleculeLJ({1.09205, 2.53501, 2.93414}, {0., 0., 0.}, id++));
 
   container->rebuildNeighborLists(traversal.get());
 
