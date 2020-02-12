@@ -8,13 +8,6 @@
 
 #include <gtest/gtest.h>
 
-using ::testing::_;
-using ::testing::AtLeast;
-using ::testing::Each;
-using ::testing::Eq;
-using ::testing::Invoke;
-using ::testing::Values;
-
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests, testing::ValuesIn([]() {
                            auto allOptions =
                                std::set<autopas::ContainerOption>{autopas::ContainerOption::getAllOptions()};
