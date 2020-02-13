@@ -47,7 +47,7 @@ void TraversalComparison::executeSlightShift(Container &container, double magnit
     it->addR(shiftVectorByID[it->getID()]);
     ++numIteratedParticles;
   }
-  ASSERT_EQ(numIteratedParticles, totalNumParticles);
+  EXPECT_EQ(numIteratedParticles, totalNumParticles);
 }
 
 std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalComparison::calculateForces(
