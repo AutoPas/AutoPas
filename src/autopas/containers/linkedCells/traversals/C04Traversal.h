@@ -37,7 +37,7 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param interactionLength Cutoff radius.
+   * @param interactionLength Interaction length.
    * @param cellLength cell length.
    */
   C04Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,

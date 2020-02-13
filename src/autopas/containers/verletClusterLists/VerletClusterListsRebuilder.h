@@ -234,7 +234,7 @@ class VerletClusterListsRebuilder {
 
         double distBetweenTowersX = std::max(0, std::abs(towerIndexX - neighborIndexX) - 1) * _towerSideLength;
 
-        // calculate distance in xy-plane and skip if already longer than cutoff
+        // calculate distance in xy-plane and skip if already longer than interactionLength
         auto distBetweenTowersXYsqr = distBetweenTowersX * distBetweenTowersX + distBetweenTowersY * distBetweenTowersY;
         if (distBetweenTowersXYsqr <= _interactionLengthSqr) {
           auto &neighborTower = getTowerAtCoordinates(neighborIndexX, neighborIndexY);
