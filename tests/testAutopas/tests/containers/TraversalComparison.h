@@ -44,7 +44,6 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
       unsigned long numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift);
 
   static constexpr std::array<double, 3> _boxMin{0, 0, 0};
-  static constexpr std::array<std::array<double, 3>, 2> _boxMaxVector{{{3, 3, 3}, {10, 10, 10}}};
   static constexpr double _cutoff{1.};
 
   static constexpr double _eps{1.};
@@ -53,6 +52,4 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static inline std::map<mykey_t, std::vector<std::array<double, 3>>> _forcesReference{};
   static inline std::map<mykey_t, std::array<double, 2>> _globalValuesReference{};
 
-  static constexpr auto _numParticlesVector = {100ul, 2000ul};
-  static constexpr auto _numHaloVector = {0ul, 200ul};
 };
