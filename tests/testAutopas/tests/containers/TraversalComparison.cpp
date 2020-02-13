@@ -172,6 +172,11 @@ auto TraversalComparison::getTestParams() {
                       // LJFunctor for cuda doesn't support this, yet: see https://github.com/AutoPas/AutoPas/issues/419
                       continue;
                     }
+                    if (containerOption == autopas::ContainerOption::Value::verletClusterLists and numHalo != 0) {
+                      // VerletClusterLists do not support halo particles, yet: see
+                      // https://github.com/AutoPas/AutoPas/issues/155
+                      continue;
+                    }
                     params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
                                         numHalo, boxMax, cellSizeFactor, slightMove);
                   }
