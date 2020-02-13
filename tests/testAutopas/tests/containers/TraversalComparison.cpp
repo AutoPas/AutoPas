@@ -146,8 +146,8 @@ static auto toString = [](const auto &info) {
   std::stringstream resStream;
   resStream << containerOption.to_string() << traversalOption.to_string() << dataLayoutOption.to_string()
             << newton3Option.to_string() << "_NP" << numParticles << "_NH" << numHaloParticles << "_" << boxMax[0]
-            << "_" << boxMax[1] << "_" << boxMax[2] << "_CSF_" << cellSizeFactor << "_shift"
-            << (doSlightShift ? "true" : "false");
+            << "_" << boxMax[1] << "_" << boxMax[2] << "_CSF_" << cellSizeFactor << "_"
+            << (doSlightShift ? "shift" : "noshift");
   std::string res = resStream.str();
   std::replace(res.begin(), res.end(), '-', '_');
   std::replace(res.begin(), res.end(), '.', '_');
