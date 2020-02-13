@@ -52,8 +52,9 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
 
   /**
    * c04SoA traversals are only usable with dataLayout SoA.
-   * @note Currently there is a bug when cellsize factor is smaller than 1:
+   * @todo Currently there is a bug when cellsize factor is smaller than 1:
    * https://github.com/AutoPas/AutoPas/issues/354
+   * once this bug is fixed, reenable this traversal again for arbitrary `_overlap`s.
    * @return
    */
   bool isApplicable() const override {
