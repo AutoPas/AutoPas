@@ -230,7 +230,7 @@ __device__ inline typename vec3<floatType>::Type bodyBodyFN3(
   globalsi.x += drx * dfx * iOwnMask;
   globalsi.y += dry * dfy * iOwnMask;
   globalsi.z += drz * dfz * iOwnMask;
-  globalsi.w += getConstants<floatType>().epsilon24 * lj12m6 + getConstants<floatType>().shift6 * iOwnMask;
+  globalsi.w += (getConstants<floatType>().epsilon24 * lj12m6 + getConstants<floatType>().shift6) * iOwnMask;
 
   if (n3AdditionSafe) {
     fj->x -= dfx;
