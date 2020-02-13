@@ -150,11 +150,6 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     return invalidParticles;
   }
 
-  bool isContainerUpdateNeeded() const override {
-    autopas::utils::ExceptionHandler::exception("VerletClusterLists.isContainerUpdateNeeded not yet implemented");
-    return false;
-  }
-
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
     std::array<double, 3> towerSize = {_towerSideLength, _towerSideLength, this->getBoxMax()[2] - this->getBoxMin()[2]};
     std::array<unsigned long, 3> towerDimensions = {_towersPerDim[0], _towersPerDim[1], 1};

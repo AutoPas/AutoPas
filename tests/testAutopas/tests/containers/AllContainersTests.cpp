@@ -99,25 +99,6 @@ TEST_P(AllContainersTests, testParticleAdding) {
 }
 
 /**
- * Checks if the containers report that they need an update if a particle moved to halo.
- *
- * @Reviewer: Meant to partially replace (only the halo update, other conditions when it is necessary differ, right?)
- *      VerletListsTest::testIsContainerUpdateNeeded LinkedCellsTest::testIsContainerUpdateNeeded
- *	DirectSumContainerTest::testIsContainerUpdateNeeded
- */
-TEST_P(AllContainersTests, testIsContainerUpdateNeededHalo) {
-  EXPECT_FALSE(_container->isContainerUpdateNeeded());
-
-  Particle p({1, 1, 1}, {0, 0, 0}, 0);
-  _container->addParticle(p);
-  EXPECT_FALSE(_container->isContainerUpdateNeeded());
-
-  // Particle moves to halo cell -> needs update
-  _container->begin()->setR({-1, -1, -1});
-  EXPECT_TRUE(_container->isContainerUpdateNeeded());
-}
-
-/**
  * Checks if updateContainer() deletes particles in halo.
  *
  * @Reviewer: Meant to replace

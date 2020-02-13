@@ -283,13 +283,6 @@ class ParticleContainerInterface {
   virtual std::vector<ParticleType> updateContainer() = 0;
 
   /**
-   * Check whether a container is valid, i.e. whether it is safe to use
-   * pair-wise interactions or the RegionParticleIteraor right now.
-   * @return true if an update is needed, false otherwise
-   */
-  virtual bool isContainerUpdateNeeded() const = 0;
-
-  /**
    * Generates a traversal selector info for this container.
    * @return Traversal selector info for this container.
    */

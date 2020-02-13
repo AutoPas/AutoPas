@@ -213,33 +213,6 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     return outsideParticles;
   }
 
-  bool isContainerUpdateNeeded() const override {
-    if (not _isValid) {
-      return true;
-    }
-    for (size_t i = 0; i < this->_cells.size(); ++i) {
-      size_t pid = 0;
-      const size_t end = (_boundingBoxes[i].size() > 0) ? _boundingBoxes[i].size() - 1 : 0;
-
-      for (size_t cid = 0; cid < end; ++cid) {
-        for (unsigned int pic = 0; pic < _clusterSize; ++pic) {
-          if (not particleInSkinOfBox(_boundingBoxes[i][cid], this->_cells[i][pid])) {
-            return true;
-          }
-          ++pid;
-        }
-      }
-      for (unsigned int pic = 0; pic < _clusterSize && pid < _dummyStarts[i]; ++pic) {
-        if (not particleInSkinOfBox(_boundingBoxes[i][_boundingBoxes[i].size() - 1], this->_cells[i][pid])) {
-          return true;
-        }
-        ++pid;
-      }
-    }
-
-    return false;
-  }
-
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(_cellsPerDim, this->getInteractionLength(),
                                  {_gridSideLength, _gridSideLength, this->getBoxMax()[2] - this->getBoxMin()[2]},

@@ -114,20 +114,6 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     return invalidParticles;
   }
 
-  bool isContainerUpdateNeeded() const override {
-    std::atomic<bool> outlierFound(false);
-#ifdef AUTOPAS_OPENMP
-    /// @todo: find a sensible value for ???
-#pragma omp parallel shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
-#endif
-    for (auto iter = this->begin(); iter.isValid() && (not outlierFound); ++iter) {
-      if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
-        outlierFound = true;
-      }
-    }
-    return outlierFound;
-  }
-
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
     // direct sum technically consists of two cells (owned + halo)
     return TraversalSelectorInfo(

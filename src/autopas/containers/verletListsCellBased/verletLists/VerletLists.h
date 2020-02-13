@@ -94,41 +94,6 @@ class VerletLists
   typename verlet_internal::AoS_verletlist_storage_type &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
-   * Checks whether the neighbor lists are valid.
-   * A neighbor list is valid if all pairs of particles whose interaction should
-   * be calculated are represented in the neighbor lists.
-   * @param useNewton3 specified whether newton 3 should be used
-   * @return whether the list is valid
-   * @note This check involves pair-wise interaction checks and is thus
-   * relatively costly.
-   */
-  bool checkNeighborListsAreValid(bool useNewton3 = true) {
-    // if a particle was added or deleted, ... the list is definitely invalid
-    if (not this->_neighborListIsValid) {
-      return false;
-    }
-    // if a particle moved more than skin/2 outside of its cell the list is
-    // invalid
-    if (this->isContainerUpdateNeeded()) {
-      return false;
-    }
-
-    // particles can also simply be very close already:
-    typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell> validityCheckerFunctor(
-        _aosNeighborLists, (this->getCutoff()));
-
-    auto traversal =
-        C08Traversal<LinkedParticleCell,
-                     typename verlet_internal::template VerletListValidityCheckerFunctor<LinkedParticleCell>,
-                     DataLayoutOption::aos, true>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
-                                                  &validityCheckerFunctor, this->getInteractionLength(),
-                                                  this->_linkedCells.getCellBlock().getCellLength());
-    this->_linkedCells.iteratePairwise(&traversal);
-
-    return validityCheckerFunctor.neighborlistsAreValid();
-  }
-
-  /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
    * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
    * @param traversal

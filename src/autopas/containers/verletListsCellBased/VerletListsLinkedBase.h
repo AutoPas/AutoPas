@@ -101,42 +101,6 @@ class VerletListsLinkedBase : public ParticleContainerInterface<FullParticleCell
   }
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::isContainerUpdateNeeded()
-   */
-  bool isContainerUpdateNeeded() const override {
-    std::atomic<bool> outlierFound(false);
-#ifdef AUTOPAS_OPENMP
-    // TODO: find a sensible value for ???
-#pragma omp parallel for shared(outlierFound)  // if (this->_cells.size() / omp_get_max_threads() > ???)
-#endif
-    for (size_t cellIndex1d = 0; cellIndex1d < _linkedCells.getCells().size(); ++cellIndex1d) {
-      std::array<double, 3> boxmin{0., 0., 0.};
-      std::array<double, 3> boxmax{0., 0., 0.};
-      _linkedCells.getCellBlock().getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-      boxmin = utils::ArrayMath::subScalar(boxmin, this->getSkin() / 2.);
-      boxmax = utils::ArrayMath::addScalar(boxmax, this->getSkin() / 2.);
-      for (auto iter = _linkedCells.getCells()[cellIndex1d].begin(); iter.isValid(); ++iter) {
-        if (not utils::inBox(iter->getR(), boxmin, boxmax)) {
-          outlierFound = true;  // we need an update
-          break;
-        }
-      }
-      if (outlierFound) cellIndex1d = _linkedCells.getCells().size();
-    }
-    if (outlierFound) {
-      AutoPasLog(debug,
-                 "VerletLists: containerUpdate needed! Particles are fast. You "
-                 "might want to increase the skin radius or decrease the rebuild "
-                 "frequency.");
-    } else {
-      AutoPasLog(debug,
-                 "VerletLists: containerUpdate not yet needed. Particles are slow "
-                 "enough.");
-    }
-    return outlierFound;
-  }
-
-  /**
    * Searches the provided halo particle and updates the found particle.
    * Searches for the provided particle within the halo cells of the container
    * and overwrites the found particle with the provided particle.

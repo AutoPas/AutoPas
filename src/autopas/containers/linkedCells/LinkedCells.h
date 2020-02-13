@@ -170,33 +170,6 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
     return invalidParticles;
   }
 
-  bool isContainerUpdateNeeded() const override {
-    std::atomic<bool> outlierFound(false);
-#ifdef AUTOPAS_OPENMP
-    /// @todo: find a sensible value for magic number
-    // numThreads should be at least 1 and maximal max_threads
-    int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 500)));
-    AutoPasLog(trace, "Using {} threads", numThreads);
-#pragma omp parallel for shared(outlierFound) num_threads(numThreads)
-#endif
-    for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
-      std::array<double, 3> boxmin{0., 0., 0.};
-      std::array<double, 3> boxmax{0., 0., 0.};
-      _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-
-      for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
-        if (not utils::inBox(iter->getR(), boxmin, boxmax)) {
-          outlierFound = true;  // we need an update
-          break;
-        }
-      }
-      // abort loop (for all threads) by moving loop index to end
-      if (outlierFound) cellIndex1d = this->_cells.size();
-    }
-
-    return outlierFound;
-  }
-
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getInteractionLength(),
                                  this->getCellBlock().getCellLength(), 0);
