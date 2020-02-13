@@ -30,20 +30,24 @@ std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
 }
 
 template <class Container>
-void executeSlightShift(Container &container, double magnitude, unsigned long totalNumParticles) {
+void TraversalComparison::executeSlightShift(Container &container, double magnitude, unsigned long totalNumParticles) {
   std::vector<std::array<double, 3>> shiftVectorByID(totalNumParticles);
   unsigned seed = 42;
   std::mt19937 generator(seed);
   for (auto &elem : shiftVectorByID) {
     elem = randomShift(magnitude, generator);
   }
+  unsigned long numIteratedParticles = 0;
   for (auto it = container->begin(autopas::IteratorBehavior::ownedOnly); it.isValid(); ++it) {
     it->addR(shiftVectorByID[it->getID()]);
+    ++numIteratedParticles;
   }
   // assumes that halo particles have other IDs than owned particles!
   for (auto it = container->begin(autopas::IteratorBehavior::haloOnly); it.isValid(); ++it) {
     it->addR(shiftVectorByID[it->getID()]);
+    ++numIteratedParticles;
   }
+  ASSERT_EQ(numIteratedParticles, totalNumParticles);
 }
 
 std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalComparison::calculateForces(
