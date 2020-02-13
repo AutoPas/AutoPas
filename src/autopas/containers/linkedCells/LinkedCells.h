@@ -56,23 +56,17 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
   ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
   /**
-   * @copydoc ParticleContainerInterface::addParticle()
+   * @copydoc ParticleContainerInterface::addParticleImpl()
    */
-  void addParticle(const ParticleType &p) override {
-    bool inBox = autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
-    if (inBox) {
-      ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
-      cell.addParticle(p);
-    } else {
-      utils::ExceptionHandler::exception(
-          "LinkedCells: Trying to add a particle that is not inside the bounding box.\n" + p.toString());
-    }
+  void addParticleImpl(const ParticleType &p) override {
+    ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
+    cell.addParticle(p);
   }
 
   /**
-   * @copydoc ParticleContainerInterface::addHaloParticle()
+   * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
-  void addHaloParticle(const ParticleType &haloParticle) override {
+  void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwned(false);
     ParticleCell &cell = _cellBlock.getContainingCell(pCopy.getR());
@@ -159,7 +153,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
       for (auto &&p : myInvalidParticles) {
         // if not in halo
         if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-          addParticle(p);
+          this->template addParticle<true>(p);
         } else {
           myInvalidNotOwnedParticles.push_back(p);
         }

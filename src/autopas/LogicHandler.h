@@ -76,7 +76,7 @@ class LogicHandler {
     if (not isContainerValid()) {
       if (not utils::inBox(haloParticle.getR(), _autoTuner.getContainer()->getBoxMin(),
                            _autoTuner.getContainer()->getBoxMax())) {
-        container->addHaloParticle(haloParticle);
+        container->template addHaloParticle<true>(haloParticle);
         _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
       } else {
         utils::ExceptionHandler::exception("Trying to add a halo particle that is not OUTSIDE of the bounding box.\n" +

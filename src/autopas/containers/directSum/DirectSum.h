@@ -54,21 +54,14 @@ class DirectSum : public ParticleContainer<ParticleCell> {
   ContainerOption getContainerType() const override { return ContainerOption::directSum; }
 
   /**
-   * @copydoc ParticleContainerInterface::addParticle()
+   * @copydoc ParticleContainerInterface::addParticleImpl()
    */
-  void addParticle(const ParticleType &p) override {
-    if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-      getCell().addParticle(p);
-    } else {
-      utils::ExceptionHandler::exception("DirectSum: trying to add a particle that is not in the bounding box.\n" +
-                                         p.toString());
-    }
-  }
+  void addParticleImpl(const ParticleType &p) override { getCell().addParticle(p); }
 
   /**
-   * @copydoc ParticleContainerInterface::addHaloParticle()
+   * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
-  void addHaloParticle(const ParticleType &haloParticle) override {
+  void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType p_copy = haloParticle;
     p_copy.setOwned(false);
     getHaloCell().addParticle(p_copy);

@@ -47,21 +47,23 @@ class VerletListsLinkedBase : public ParticleContainerInterface<FullParticleCell
   }
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::addParticle
+   * @copydoc autopas::ParticleContainerInterface::addParticleImpl
    * @note This function invalidates the neighbor lists.
    */
-  void addParticle(const Particle &p) override {
+  void addParticleImpl(const Particle &p) override {
     _neighborListIsValid = false;
-    _linkedCells.addParticle(p);
+    // position is already checked, so call impl directly.
+    _linkedCells.addParticleImpl(p);
   }
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::addHaloParticle
+   * @copydoc autopas::ParticleContainerInterface::addHaloParticleImpl
    * @note This function invalidates the neighbor lists.
    */
-  void addHaloParticle(const Particle &haloParticle) override {
+  void addHaloParticleImpl(const Particle &haloParticle) override {
     _neighborListIsValid = false;
-    _linkedCells.addHaloParticle(haloParticle);
+    // position is already checked, so call impl directly.
+    _linkedCells.addHaloParticleImpl(haloParticle);
   }
 
   /**

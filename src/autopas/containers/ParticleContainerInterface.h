@@ -17,6 +17,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 
@@ -74,15 +75,62 @@ class ParticleContainerInterface {
   /**
    * Adds a particle to the container.
    * @param p The particle to be added.
+   * @tparam inBoxChecked specifies whether a boundary check has already been performed. If it already was performed it
+   * is not checked again.
    */
-  virtual void addParticle(const ParticleType &p) = 0;
+  template <bool inBoxChecked = false>
+  void addParticle(const ParticleType &p) {
+    if constexpr (inBoxChecked) {
+      addParticleImpl(p);
+    } else {
+      if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
+        addParticleImpl(p);
+      } else {
+        utils::ExceptionHandler::exception("trying to add a particle that is not in the bounding box.\n" +
+                                           p.toString());
+      }
+    }
+  };
 
+ protected:
+  /**
+   * Adds a particle to the container.
+   * @param p The particle to be added. This particle is already checked to be inside of the bounding box.
+   * @note only call this function if the position of the particle is inside of the bounding box!
+   */
+  virtual void addParticleImpl(const ParticleType &p) = 0;
+
+ public:
   /**
    * Adds a particle to the container that lies in the halo region of the container.
    * @param haloParticle Particle to be added.
+   * @tparam inBoxChecked specifies whether a boundary check has already been performed. If it already was performed it
+   * is not checked again.
    */
-  virtual void addHaloParticle(const ParticleType &haloParticle) = 0;
+  template <bool inBoxChecked = false>
+  void addHaloParticle(const ParticleType &haloParticle) {
+    if constexpr (inBoxChecked) {
+      addHaloParticleImpl(haloParticle);
+    } else {
+      /// @todo do we want a check of the particle not being too far away in here as well?
+      if (utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
+        utils::ExceptionHandler::exception("trying to add a halo particle that is inside of the bounding box.\n" +
+                                           haloParticle.toString());
+      } else {
+        addHaloParticleImpl(haloParticle);
+      }
+    }
+  }
 
+ protected:
+  /**
+   * Adds a particle to the container that lies in the halo region of the container.
+   * @param haloParticle Particle to be added. This particle is already checked to be outside of the bounding box.
+   * @note only call this function if the position of the particle is outside of the bounding box!
+   */
+  virtual void addHaloParticleImpl(const ParticleType &haloParticle) = 0;
+
+ public:
   /**
    * Update a halo particle of the container with the given haloParticle.
    * @param haloParticle Particle to be updated.
