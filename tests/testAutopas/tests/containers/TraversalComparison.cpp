@@ -86,6 +86,7 @@ std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalC
 
   std::vector<std::array<double, 3>> forces(numMolecules);
   for (auto it = container->begin(autopas::IteratorBehavior::ownedOnly); it.isValid(); ++it) {
+    EXPECT_TRUE(it->isOwned());
     forces.at(it->getID()) = it->getF();
   }
 
