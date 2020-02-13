@@ -80,8 +80,8 @@ TEST_P(TraversalComparison, traversalTest) {
   // empirically determined and set near the minimal possible value for 2000 particles
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
-  double rel_err_tolerance = 1.0e-10;
-  double rel_err_tolerance_globals = 1.0e-10;
+  double rel_err_tolerance = 1.0e-11;
+  double rel_err_tolerance_globals = 1.0e-12;
 
   auto [calculatedForces, calculatedGlobals] = calculateForces(containerOption, traversalOption, dataLayoutOption,
                                                                newton3Option, numParticles, boxMax, cellSizeFactor);
