@@ -51,5 +51,4 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
 
   static inline std::map<mykey_t, std::vector<std::array<double, 3>>> _forcesReference{};
   static inline std::map<mykey_t, std::array<double, 2>> _globalValuesReference{};
-
 };
