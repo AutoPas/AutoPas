@@ -139,9 +139,10 @@ TEST_P(TraversalComparison, traversalTest) {
 
   auto &globalValuesReferenceRef = _globalValuesReference[key];
   for (size_t index : {0, 1}) {
-    EXPECT_NE(calculatedGlobals[index], 0);
+    EXPECT_NE(calculatedGlobals[index], 0) << "index:" << index;
     EXPECT_NEAR(calculatedGlobals[index], globalValuesReferenceRef[index],
-                rel_err_tolerance_globals * globalValuesReferenceRef[index]);
+                rel_err_tolerance_globals * globalValuesReferenceRef[index])
+        << "index:" << index;
   }
 }
 
