@@ -458,7 +458,7 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
     case InteractionType::pair:
       functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3, true);
       if (not newton3) {
-        functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3, false);
+        functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3, true);
       }
       break;
   }
