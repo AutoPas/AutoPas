@@ -119,7 +119,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool, bool)
    */
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3,
-                      bool /*cellWiseOwnedState*/) override {
+                      bool cellWiseOwnedState) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr1 = soa1.template begin<Particle::AttributeNames::posX>();

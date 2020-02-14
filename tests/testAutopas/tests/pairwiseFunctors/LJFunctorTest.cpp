@@ -361,8 +361,8 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
 }
 
 void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation,
-                     InteractionType interactionType, size_t additionalParticlesToVerletNumber,
-                     bool cellWiseOwnedState) {
+                                   InteractionType interactionType, size_t additionalParticlesToVerletNumber,
+                                   bool cellWiseOwnedState) {
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(

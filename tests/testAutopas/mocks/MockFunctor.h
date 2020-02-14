@@ -24,7 +24,8 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell_t> {
   MOCK_METHOD(void, AoSFunctor, (Particle & i, Particle &j, bool newton3), (override));
 
   // virtual void SoAFunctorSingle(SoAView &soa, bool newton3)
-  MOCK_METHOD(void, SoAFunctorSingle, (autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3), (override));
+  MOCK_METHOD(void, SoAFunctorSingle, (autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3),
+              (override));
 
   // virtual void SoAFunctorPair(SoAView &soa1, SoAView &soa2, bool newton3)
   MOCK_METHOD(void, SoAFunctorPair,

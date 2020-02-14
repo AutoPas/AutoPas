@@ -164,7 +164,8 @@ class Functor {
    * @param newton3 defines whether or whether not to use newton 3
    */
   virtual void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                          const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) {
+                                const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                                bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctorVerlet: not yet implemented");
   }
 
@@ -182,7 +183,7 @@ class Functor {
    * information can be used for optimizing functors, but can also be ignored.
    */
   virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3,
-                          const bool cellWiseOwnedState) {
+                              const bool cellWiseOwnedState) {
     utils::ExceptionHandler::exception("Functor::SoAFunctorPair: not yet implemented");
   }
 

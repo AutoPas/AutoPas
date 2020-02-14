@@ -324,11 +324,11 @@ class LJFunctor
       _aosThreadData[threadnum].virialSum[2] += virialSumZ * (newton3 ? 1. : 2.);
     }
   }
-
+  // clang-format off
   /**
-   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3, bool
-   * cellWiseOwnedState)
+   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3, bool cellWiseOwnedState)
    */
+  // clang-format on
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3,
                       const bool cellWiseOwnedState) override {
     utils::withStaticBool(newton3, [&](auto newton3) {

@@ -131,7 +131,7 @@ class VerletListHelpers {
      * @note cellWiseOwnedState is ignored.
      */
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/,
-                    bool /*cellWiseOwnedState*/) override {
+                        bool /*cellWiseOwnedState*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
       auto **const __restrict__ ptr1ptr = soa1.template begin<AttributeNames::ptr>();

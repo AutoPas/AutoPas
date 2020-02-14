@@ -113,7 +113,8 @@ class AsBuildPairGeneratorFunctor
    * @param soa1
    * @param soa2
    */
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/, bool /*cellWiseOwnedState*/) override {
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/,
+                      bool /*cellWiseOwnedState*/) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     auto **const __restrict__ ptrptr1 = soa1.template begin<AttributeNames::ptr>();

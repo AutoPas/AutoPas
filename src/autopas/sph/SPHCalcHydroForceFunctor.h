@@ -220,7 +220,8 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   /**
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool, bool)
    */
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3, bool /*cellWiseOwnedState*/) override {
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3,
+                      bool cellWiseOwnedState) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ massptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::mass>();
@@ -357,7 +358,8 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
    */
   // clang-format on
   void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) override {
+                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                        bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ massptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::mass>();
