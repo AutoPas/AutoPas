@@ -330,7 +330,7 @@ class LJFunctor
    * cellWiseOwnedState)
    */
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3,
-                  const bool cellWiseOwnedState) override {
+                      const bool cellWiseOwnedState) override {
     utils::withStaticBool(newton3, [&](auto newton3) {
       utils::withStaticBool(cellWiseOwnedState, [&](auto cellWiseOwnedState) {
         utils::withStaticBool(_duplicatedCalculations, [&](auto duplicatedCalculations) {
@@ -482,7 +482,11 @@ class LJFunctor
             // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
             // that we do not add the energy multiple times!
             // Here, a cell-wise optimization is not possible, as cellWiseOwnedState is false.
-            double energyFactor = isOwnedI + ownedPtr2[j];
+            double energyFactor = isOwnedI;
+            if constexpr (newton3) {
+              energyFactor += ownedPtr2[j];
+            }
+
             // if newton3 is enabled, we multiply by 0.5 at the end of this function call when adding up the values to
             // the threadData.
             upotSum += upot * energyFactor;
@@ -534,7 +538,8 @@ class LJFunctor
    */
   // clang-format on
   void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) override {
+                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                        bool newton3) override {
     if (newton3) {
       if (_duplicatedCalculations) {
         SoAFunctorImpl<true, true>(soa, indexFirst, neighborList);
