@@ -133,7 +133,8 @@ TEST_P(TraversalComparison, traversalTest) {
     for (unsigned int d = 0; d < 3; ++d) {
       double calculatedForce = calculatedForces[i][d];
       double referenceForce = _forcesReference[key][i][d];
-      EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance));
+      EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance))
+          << "Particle id: " << i;
     }
   }
 
