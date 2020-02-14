@@ -43,7 +43,7 @@ class ClusterFunctor {
         }
       }
     } else {
-      _functor->SoAFunctor(cluster.getSoAView(), useNewton3);
+      _functor->SoAFunctorSingle(cluster.getSoAView(), useNewton3);
     }
   }
 
@@ -61,7 +61,8 @@ class ClusterFunctor {
         }
       }
     } else {
-      _functor->SoAFunctor(cluster.getSoAView(), neighborCluster.getSoAView(), useNewton3);
+      // assumptions for owned state can probably not be made here, therefore false
+      _functor->SoAFunctorPair(cluster.getSoAView(), neighborCluster.getSoAView(), useNewton3, false);
     }
   }
 

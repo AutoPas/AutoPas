@@ -140,10 +140,10 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, bool newton3)
+   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
 #ifdef __AVX__
     if (soa.getNumParticles() == 0) return;
 
@@ -248,7 +248,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
  private:
   /**
-   * Actual inner kernel of the SoAFunctor.
+   * Actual inner kernel of the SoAFunctors.
    *
    * @tparam newton3
    * @tparam masked If false the full vector length is used. Else the last entries are masked away depending on the
@@ -392,9 +392,14 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
  public:
   /**
-   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
+   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3, bool
+   * cellWiseOwnedState)
    */
-  void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3,
+                      const bool cellWiseOwnedState) override {
+    if (not cellWiseOwnedState) {
+      autopas::utils::ExceptionHandler::exception("cellWiseOwnedState=false not yet supported!");
+    }
 #ifdef __AVX__
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
@@ -535,13 +540,14 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
   // clang-format on
-  void SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) override {
+  void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                        bool newton3) override {
     utils::ExceptionHandler::exception("Verlet SoA functor not implemented!");
   }
 

@@ -151,11 +151,11 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
   switch (interactionType) {
     case InteractionType::own:
       // Interation of one cell with itself
-      functor->SoAFunctor(cell1._particleSoABuffer, newton3);
+      functor->SoAFunctorSingle(cell1._particleSoABuffer, newton3);
       break;
     case InteractionType::pair:
       // Interation of a cell pair
-      functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+      functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3, true);
       break;
     case InteractionType::verlet:
       // Build verlet list
@@ -164,8 +164,8 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
       if (not newton3) {
         neighborList[1].push_back(0);
       }
-      functor->SoAFunctor(cell1._particleSoABuffer, 0, neighborList[0], newton3);
-      functor->SoAFunctor(cell1._particleSoABuffer, 1, neighborList[1], newton3);
+      functor->SoAFunctorVerlet(cell1._particleSoABuffer, 0, neighborList[0], newton3);
+      functor->SoAFunctorVerlet(cell1._particleSoABuffer, 1, neighborList[1], newton3);
   }
 
   // Extract the particles from the soa
@@ -216,7 +216,7 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
   if (interactionType == InteractionType::pair) {
     functor->SoALoader(cell1, cell1._particleSoABuffer);
     functor->SoALoader(cell2, cell2._particleSoABuffer);
-    functor->SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
+    functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3, true);
     functor->SoAExtractor(cell1, cell1._particleSoABuffer);
     functor->SoAExtractor(cell2, cell2._particleSoABuffer);
 
@@ -449,16 +449,16 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
           neighborList[1].push_back(2 + i);
         }
       }
-      functor.SoAFunctor(cell1._particleSoABuffer, 0, neighborList[0], newton3);
-      functor.SoAFunctor(cell1._particleSoABuffer, 1, neighborList[1], newton3);
+      functor.SoAFunctorVerlet(cell1._particleSoABuffer, 0, neighborList[0], newton3);
+      functor.SoAFunctorVerlet(cell1._particleSoABuffer, 1, neighborList[1], newton3);
     } break;
     case InteractionType::own:
-      functor.SoAFunctor(cell1._particleSoABuffer, newton3);
+      functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
       break;
     case InteractionType::pair:
-      functor.SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+      functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3, true);
       if (not newton3) {
-        functor.SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
+        functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3, false);
       }
       break;
   }
@@ -596,8 +596,8 @@ TEST_F(LJFunctorTest, testSetPropertiesVSPPLSoA) {
   FMCell cell1PPL(cell1NoPPL);
   FMCell cell2PPL(cell2NoPPL);
 
-  funNoPPL.SoAFunctor(cell1NoPPL._particleSoABuffer, cell2NoPPL._particleSoABuffer, true);
-  funPPL.SoAFunctor(cell1PPL._particleSoABuffer, cell2PPL._particleSoABuffer, true);
+  funNoPPL.SoAFunctorPair(cell1NoPPL._particleSoABuffer, cell2NoPPL._particleSoABuffer, true, true);
+  funPPL.SoAFunctorPair(cell1PPL._particleSoABuffer, cell2PPL._particleSoABuffer, true, true);
 
   funPPL.SoAExtractor(cell1PPL, cell1PPL._particleSoABuffer);
   funPPL.SoAExtractor(cell2PPL, cell2PPL._particleSoABuffer);

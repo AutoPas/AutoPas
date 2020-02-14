@@ -118,7 +118,7 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   ljFunctorCuda.deviceSoALoader(cell2Cuda._particleSoABuffer, cell2Cuda._particleSoABufferDevice);
 
   // Functor calls
-  ljFunctorNoCuda.SoAFunctor(cell1NoCuda._particleSoABuffer, cell2NoCuda._particleSoABuffer, useNewton3);
+  ljFunctorNoCuda.SoAFunctorPair(cell1NoCuda._particleSoABuffer, cell2NoCuda._particleSoABuffer, useNewton3, true);
   ljFunctorCuda.CudaFunctor(cell1Cuda._particleSoABufferDevice, cell2Cuda._particleSoABufferDevice, useNewton3);
 
   ljFunctorCuda.deviceSoAExtractor(cell1Cuda._particleSoABuffer, cell1Cuda._particleSoABufferDevice);
@@ -178,7 +178,7 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
   ljFunctorCuda.deviceSoALoader(cellCuda._particleSoABuffer, cellCuda._particleSoABufferDevice);
 
   // functor calls
-  ljFunctorNoCuda.SoAFunctor(cellNoCuda._particleSoABuffer, useNewton3);
+  ljFunctorNoCuda.SoAFunctorSingle(cellNoCuda._particleSoABuffer, useNewton3);
   ljFunctorCuda.CudaFunctor(cellCuda._particleSoABufferDevice, useNewton3);
 
   ljFunctorCuda.deviceSoAExtractor(cellCuda._particleSoABuffer, cellCuda._particleSoABufferDevice);
