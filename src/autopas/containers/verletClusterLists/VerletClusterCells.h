@@ -76,13 +76,9 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     traversalInterface->setVerletListPointer(&_neighborCellIds, &_neighborMatrixDim, &_neighborMatrix);
 
     if (traversalInterface->getSignature() != _lastTraversalSig or (not _isValid)) {
-      if (!_isValid) {
-        rebuild();
-      }
-      traversalInterface->rebuildVerlet(_cellsPerDim, this->_cells, _boundingBoxes,
-                                        std::ceil(this->getInteractionLength() * _gridSideLengthReciprocal),
-                                        this->getInteractionLength());
-      _lastTraversalSig = traversalInterface->getSignature();
+      utils::ExceptionHandler::exception(
+          "VerletClusterCells::iteratePairwise called even though the state is not valid or the traversal has "
+          "changed.");
     }
 
     cellPairTraversal->setCellsToTraverse(this->_cells);
@@ -240,7 +236,8 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 #pragma omp single
 #endif
     if (not _isValid) {
-      rebuild();
+      utils::ExceptionHandler::exception(
+          "VerletClusterCells::getRegionIterator called even though the state is not valid.");
     }
     // there is an implicit barrier at end of single!
 
