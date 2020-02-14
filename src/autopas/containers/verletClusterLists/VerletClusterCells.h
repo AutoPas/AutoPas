@@ -155,7 +155,11 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
           "trying to use a traversal of wrong type in VerletClusterCells::iteratePairwise");
     }
     if (not _isValid) {
-      rebuild();
+      auto invalidParticles = rebuild();
+      if (not invalidParticles.empty()) {
+        autopas::utils::ExceptionHandler::exception(
+            "halo particles removed in VerletClusterCells::rebuildNeighborLists they will be lost.");
+      }
     }
 
     traversalInterface->setVerletListPointer(&_neighborCellIds, &_neighborMatrixDim, &_neighborMatrix);
@@ -360,7 +364,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
    * build verlet lists and pad clusters.
    * @return Vector of particles containing particles no longer in the box
    */
-  std::vector<Particle> rebuild() {
+  [[nodiscard]] std::vector<Particle> rebuild() {
     deleteDummyParticles();
     _boundingBoxes.clear();
     // get the dimensions and volumes of the box
