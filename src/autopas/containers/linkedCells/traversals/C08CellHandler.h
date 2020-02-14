@@ -74,6 +74,7 @@ class C08CellHandler {
 
   /**
    * Pair sets for processBaseCell().
+   * Values are: offset of first cell, offset of second cell, sorting direction.
    */
   std::vector<std::tuple<unsigned long, unsigned long, std::array<double, 3>>> _cellPairOffsets;
 
