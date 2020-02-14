@@ -400,7 +400,7 @@ class LJFunctor
 
       SoAFloatPrecision isOwnedI;
       if constexpr (calculateGlobals and not cellWiseOwnedState and duplicatedCalculations) {
-        isOwnedI = ownedPtr1[0];
+        isOwnedI = ownedPtr1[i];
       }
 
       // preload all sigma and epsilons for next vectorized region
@@ -482,7 +482,7 @@ class LJFunctor
             // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
             // that we do not add the energy multiple times!
             // Here, a cell-wise optimization is not possible, as cellWiseOwnedState is false.
-            double energyFactor = isOwnedI + ownedPtr2[0];
+            double energyFactor = isOwnedI + ownedPtr2[j];
             // if newton3 is enabled, we multiply by 0.5 at the end of this function call when adding up the values to
             // the threadData.
             upotSum += upot * energyFactor;
