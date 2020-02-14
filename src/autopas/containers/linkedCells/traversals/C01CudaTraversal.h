@@ -75,8 +75,12 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
     applicable &= nDevices > 0;
     for (auto cellLength : _cellLengths) {
       // we only interact neighboring cells, therefore the cell length has to be bigger than the interaction length.
+      /// @todo reenable when https://github.com/AutoPas/AutoPas/issues/417 is done.
       applicable &= cellLength >= _interactionLength;
     }
+    // currently newton3 support for this traversal is buggy
+    /// @todo reenable when fixed, see: https://github.com/AutoPas/AutoPas/issues/420
+    applicable &= not useNewton3;
     return applicable;
 #else
     return false;
@@ -131,8 +135,12 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
       for (int x = -1; x <= 1; ++x) {
         int offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
         if (not useNewton3) {
+          // all offsets for useNewton3 == false
           _cellOffsets.push_back(offset);
         } else {
+          // only positive offsets for useNewton3 == true
+          /// @todo this is wrong! especially for halo cells and has to be adapted for correct calculations!
+          /// see https://github.com/AutoPas/AutoPas/issues/420
           if (offset > 0) {
             _cellOffsets.push_back(offset);
           }
