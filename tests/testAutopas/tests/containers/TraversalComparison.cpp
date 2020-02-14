@@ -29,8 +29,9 @@ std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
   return {x, y, z};
 }
 
-template <class Container>
-void TraversalComparison::executeSlightShift(Container &container, double magnitude, unsigned long totalNumParticles) {
+template <class ContainerPtrType>
+void TraversalComparison::executeSlightShift(ContainerPtrType containerPtr, double magnitude,
+                                             unsigned long totalNumParticles) {
   std::vector<std::array<double, 3>> shiftVectorByID(totalNumParticles);
   unsigned seed = 42;
   std::mt19937 generator(seed);
@@ -38,13 +39,8 @@ void TraversalComparison::executeSlightShift(Container &container, double magnit
     elem = randomShift(magnitude, generator);
   }
   unsigned long numIteratedParticles = 0;
-  for (auto it = container->begin(autopas::IteratorBehavior::ownedOnly); it.isValid(); ++it) {
-    it->addR(shiftVectorByID[it->getID()]);
-    ++numIteratedParticles;
-  }
-  // assumes that halo particles have other IDs than owned particles!
-  for (auto it = container->begin(autopas::IteratorBehavior::haloOnly); it.isValid(); ++it) {
-    it->addR(shiftVectorByID[it->getID()]);
+  for (auto &mol : *containerPtr) {
+    mol.addR(shiftVectorByID[mol.getID()]);
     ++numIteratedParticles;
   }
   EXPECT_EQ(numIteratedParticles, totalNumParticles);
