@@ -361,7 +361,8 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
 }
 
 void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation,
-                                   InteractionType interactionType, size_t additionalParticlesToVerletNumber) {
+                     InteractionType interactionType, size_t additionalParticlesToVerletNumber,
+                     bool cellWiseOwnedState) {
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(
@@ -456,9 +457,9 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
       functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
       break;
     case InteractionType::pair:
-      functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3, true);
+      functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3, cellWiseOwnedState);
       if (not newton3) {
-        functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3, true);
+        functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3, cellWiseOwnedState);
       }
       break;
   }
@@ -486,11 +487,13 @@ TEST_F(LJFunctorTest, testSoAFunctorGlobalsOwn) {
     // either both inside the process or neither of them is)
     for (where_type where : {inside, outside}) {
       for (bool newton3 : {false, true}) {
-        if (where == outside && not duplicatedCalculation) {
-          // this case does not happen and the test is not made to check this, i.e., it will fail.
-          continue;
+        for (bool cellWiseOwnedState : {false, true}) {
+          if (where == outside && not duplicatedCalculation) {
+            // this case does not happen and the test is not made to check this, i.e., it will fail.
+            continue;
+          }
+          testSoAGlobals(where, newton3, duplicatedCalculation, own, 0, cellWiseOwnedState);
         }
-        testSoAGlobals(where, newton3, duplicatedCalculation, own, 0);
       }
     }
   }
@@ -503,7 +506,9 @@ TEST_F(LJFunctorTest, testSoAFunctorGlobalsVerlet) {
       // either both inside the process or neither of them is)
       for (where_type where : {inside, boundary, outside}) {
         for (bool newton3 : {false, true}) {
-          testSoAGlobals(where, newton3, duplicatedCalculation, verlet, additionalDummyParticles);
+          for (bool cellWiseOwnedState : {false, true}) {
+            testSoAGlobals(where, newton3, duplicatedCalculation, verlet, additionalDummyParticles, cellWiseOwnedState);
+          }
         }
       }
     }
@@ -514,7 +519,9 @@ TEST_F(LJFunctorTest, testSoAFunctorGlobalsPair) {
   for (bool duplicatedCalculation : {false, true}) {
     for (where_type where : {inside, boundary, outside}) {
       for (bool newton3 : {false, true}) {
-        testSoAGlobals(where, newton3, duplicatedCalculation, pair, 0);
+        for (bool cellWiseOwnedState : {false, true}) {
+          testSoAGlobals(where, newton3, duplicatedCalculation, pair, 0, cellWiseOwnedState);
+        }
       }
     }
   }
