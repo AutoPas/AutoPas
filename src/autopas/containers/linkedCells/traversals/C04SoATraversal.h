@@ -58,8 +58,10 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
    * @return
    */
   bool isApplicable() const override {
-    return dataLayout == DataLayoutOption::soa and
-           (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1);
+    /// @todo: globals are wrong with halo, reenable once https://github.com/AutoPas/AutoPas/issues/422 is fixed.
+    return false;
+    // return dataLayout == DataLayoutOption::soa and
+    //       (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1);
   }
 
  private:
