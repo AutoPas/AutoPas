@@ -170,7 +170,7 @@ auto TraversalComparison::getTestParams() {
           for (auto numParticles : {100ul, 2000ul}) {
             for (auto boxMax : std::vector<std::array<double, 3>>{{{3., 3., 3.}, {10., 10., 10.}}}) {
               for (double cellSizeFactor : {0.5, 1., 2.}) {
-                for (double numHalo : {0ul, 200ul}) {
+                for (auto numHalo : {0ul, 200ul}) {
                   for (bool slightMove : {true, false}) {
                     if (dataLayoutOption == autopas::DataLayoutOption::Value::cuda and
                         traversalOption == autopas::TraversalOption::Value::c01Cuda and boxMax[0] < 5. and
