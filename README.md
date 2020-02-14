@@ -237,9 +237,6 @@ This will invalidate the internal neighbor lists and containers.
 Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
 
 ## Acknowledgements
-* TaLPas BMBF
-
-## Papers to cite
 This work was financially supported by:
 * the Federal Ministry of Education and Research, Germany, project “Task-based load balancing and auto-tuning in particle simulations” (TaLPas) 8 , grant numbers 01IH16008A and 01IH16008B.
 
