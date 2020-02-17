@@ -9,10 +9,11 @@ extraction:
     after_prepare:    # Customizable step used by all languages.
       - wget -O cmake.tar.gz https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz
       - tar zxf cmake.tar.gz
-      - cd cmake*
+      - cd cmake-*/
       - mkdir build
       - cd build
       - cmake -DCMAKE_INSTALL_PREFIX:PATH=~/.local/ -DCMAKE_BUILD_TYPE=Release ..
       - make install
       - ls ~/.local/bin
+      - export PATH=~/.local/bin:$PATH
       - cmake --version
