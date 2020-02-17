@@ -537,8 +537,8 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaGlobalsSoA<floatType> cell1, LJFun
       atomicAdd(cell2._forceX + idx, cell2_forces_shared[threadIdx.x].x);
       atomicAdd(cell2._forceY + idx, cell2_forces_shared[threadIdx.x].y);
       atomicAdd(cell2._forceZ + idx, cell2_forces_shared[threadIdx.x].z);
-      __syncthreads();
     }
+    __syncthreads();
   }
 
   // reduce globals
