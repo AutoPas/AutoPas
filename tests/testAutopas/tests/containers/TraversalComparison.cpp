@@ -66,13 +66,12 @@ std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalC
     return {};
   }
 
-  autopasTools::generators::RandomGenerator::fillWithParticles(
-      *container, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), container->getBoxMin(), container->getBoxMax(),
-      numMolecules);
+  autopasTools::generators::RandomGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
+                                                               container->getBoxMin(), container->getBoxMax(),
+                                                               numMolecules);
 
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(
-      *container, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, numMolecules), container->getCutoff(),
-      numHaloMolecules);
+      *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules), container->getCutoff(), numHaloMolecules);
 
   container->rebuildNeighborLists(traversal.get());
 
