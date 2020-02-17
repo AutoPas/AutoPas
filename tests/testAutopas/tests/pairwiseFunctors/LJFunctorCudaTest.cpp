@@ -216,7 +216,7 @@ TEST_P(LJFunctorCudaTest, testLJFunctorVSLJFunctorCuda) {
         testLJFunctorVSLJFunctorCudaOneCell<Particle, newton3C, calculateGlobalsC>(numParticlesFirstCell);
       } else {
         testLJFunctorVSLJFunctorCudaTwoCells<Particle, newton3C, calculateGlobalsC>(numParticlesFirstCell,
-                                                                                  numParticlesSecondCell);
+                                                                                    numParticlesSecondCell);
       }
     });
   });
