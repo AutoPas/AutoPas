@@ -169,7 +169,7 @@ auto TraversalComparison::getTestParams() {
                   for (bool slightMove : {true, false}) {
                     if (dataLayoutOption == autopas::DataLayoutOption::Value::cuda and
                         traversalOption == autopas::TraversalOption::Value::c01Cuda and boxMax[0] < 5. and
-                        numParticles > 500) {
+                        (numParticles > 500)) {
                       // LJFunctor for cuda doesn't support this, yet: see https://github.com/AutoPas/AutoPas/issues/419
                       /// @todo reenable
                       continue;
