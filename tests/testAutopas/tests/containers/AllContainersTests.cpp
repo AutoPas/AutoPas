@@ -8,6 +8,7 @@
 
 #include <gtest/gtest.h>
 
+/// @todo reenable for verletClusterLists, once they are finished. See: https://github.com/AutoPas/AutoPas/issues/155
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests, testing::ValuesIn([]() {
                            auto allOptions =
                                std::set<autopas::ContainerOption>{autopas::ContainerOption::getAllOptions()};
