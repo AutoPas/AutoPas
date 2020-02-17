@@ -201,33 +201,34 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
 }
 
 TEST_P(LJFunctorCudaTest, testLJFunctorVSLJFunctorCuda) {
+  auto [newton3, calculateGlobals, numParticlesFirstCell, numParticlesSecondCell] = GetParam();
   auto options = GetParam();
-  if (std::get<3>(options) < 0) {
-    if (std::get<0>(options)) {
-      if (std::get<1>(options)) {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, true, true>(std::get<2>(options));
+  if (numParticlesSecondCell == 0) {
+    if (newton3) {
+      if (calculateGlobals) {
+        testLJFunctorVSLJFunctorCudaOneCell<Particle, true, true>(numParticlesFirstCell);
       } else {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, true, false>(std::get<2>(options));
+        testLJFunctorVSLJFunctorCudaOneCell<Particle, true, false>(numParticlesFirstCell);
       }
     } else {
-      if (std::get<1>(options)) {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, false, true>(std::get<2>(options));
+      if (calculateGlobals) {
+        testLJFunctorVSLJFunctorCudaOneCell<Particle, false, true>(numParticlesFirstCell);
       } else {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, false, false>(std::get<2>(options));
+        testLJFunctorVSLJFunctorCudaOneCell<Particle, false, false>(numParticlesFirstCell);
       }
     }
   } else {
-    if (std::get<0>(options)) {
-      if (std::get<1>(options)) {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, true, true>(std::get<2>(options), std::get<3>(options));
+    if (newton3) {
+      if (calculateGlobals) {
+        testLJFunctorVSLJFunctorCudaTwoCells<Particle, true, true>(numParticlesFirstCell, numParticlesSecondCell);
       } else {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, true, false>(std::get<2>(options), std::get<3>(options));
+        testLJFunctorVSLJFunctorCudaTwoCells<Particle, true, false>(numParticlesFirstCell, numParticlesSecondCell);
       }
     } else {
-      if (std::get<1>(options)) {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, false, true>(std::get<2>(options), std::get<3>(options));
+      if (calculateGlobals) {
+        testLJFunctorVSLJFunctorCudaTwoCells<Particle, false, true>(numParticlesFirstCell, numParticlesSecondCell);
       } else {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, false, false>(std::get<2>(options), std::get<3>(options));
+        testLJFunctorVSLJFunctorCudaTwoCells<Particle, false, false>(numParticlesFirstCell, numParticlesSecondCell);
       }
     }
   }
@@ -236,6 +237,6 @@ TEST_P(LJFunctorCudaTest, testLJFunctorVSLJFunctorCuda) {
 INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorCudaTest,
                          ::testing::Combine(::testing::Bool(), ::testing::Bool(),
                                             ::testing::ValuesIn({1, 2, 4, 16, 31, 32, 33, 55, 64, 65}),
-                                            ::testing::ValuesIn({-1, 1, 4, 16, 31, 32, 33, 55, 64, 65})));
+                                            ::testing::ValuesIn({0, 1, 4, 16, 31, 32, 33, 55, 64, 65})));
 
 #endif  // AUTOPAS_CUDA
