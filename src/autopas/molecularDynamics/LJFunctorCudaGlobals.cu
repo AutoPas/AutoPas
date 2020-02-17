@@ -508,7 +508,7 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaGlobalsSoA<floatType> cell1, LJFun
         offset = (j + threadIdx.x) % block_size;
       }
       myf = bodyBodyFN3<floatType, false>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset,
-                                         myglobals, isOwned);
+                                          myglobals, isOwned);
     }
     __syncthreads();
 
