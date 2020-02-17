@@ -10,6 +10,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/utils/StaticSelectorMacros.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
 template <class Particle>
@@ -201,42 +202,41 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
 }
 
 TEST_P(LJFunctorCudaTest, testLJFunctorVSLJFunctorCuda) {
-  auto [newton3, calculateGlobals, numParticlesFirstCell, numParticlesSecondCell] = GetParam();
+  /// @todo c++20: replace below std::get<> with structured bindings. c++20 allows captured values in lambdas.
+  // auto [newton3, calculateGlobals, numParticlesFirstCell, numParticlesSecondCell] = GetParam();
   auto options = GetParam();
-  if (numParticlesSecondCell == 0) {
-    if (newton3) {
-      if (calculateGlobals) {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, true, true>(numParticlesFirstCell);
+  auto newton3 = std::get<0>(options);
+  auto calculateGlobals = std::get<1>(options);
+  auto numParticlesFirstCell = std::get<2>(options);
+  auto numParticlesSecondCell = std::get<3>(options);
+
+  autopas::utils::withStaticBool(newton3, [&](auto newton3) {
+    autopas::utils::withStaticBool(calculateGlobals, [&](auto calculateGlobals) {
+      if (numParticlesSecondCell == 0) {
+        testLJFunctorVSLJFunctorCudaOneCell<Particle, newton3, calculateGlobals>(numParticlesFirstCell);
       } else {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, true, false>(numParticlesFirstCell);
+        testLJFunctorVSLJFunctorCudaTwoCells<Particle, newton3, calculateGlobals>(numParticlesFirstCell,
+                                                                                  numParticlesSecondCell);
       }
-    } else {
-      if (calculateGlobals) {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, false, true>(numParticlesFirstCell);
-      } else {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, false, false>(numParticlesFirstCell);
-      }
-    }
-  } else {
-    if (newton3) {
-      if (calculateGlobals) {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, true, true>(numParticlesFirstCell, numParticlesSecondCell);
-      } else {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, true, false>(numParticlesFirstCell, numParticlesSecondCell);
-      }
-    } else {
-      if (calculateGlobals) {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, false, true>(numParticlesFirstCell, numParticlesSecondCell);
-      } else {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, false, false>(numParticlesFirstCell, numParticlesSecondCell);
-      }
-    }
-  }
+    });
+  });
 }
+
+static auto toString = [](const auto &info) {
+  auto [newton3, calculateGlobals, numParticlesFirstCell, numParticlesSecondCell] = info.param;
+  std::stringstream resStream;
+  resStream << (newton3 ? "N3" : "noN3") << (calculateGlobals ? "globals" : "noGlobals") << numParticlesFirstCell << "x"
+            << numParticlesSecondCell;
+  std::string res = resStream.str();
+  std::replace(res.begin(), res.end(), '-', '_');
+  std::replace(res.begin(), res.end(), '.', '_');
+  return res;
+};
 
 INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorCudaTest,
                          ::testing::Combine(::testing::Bool(), ::testing::Bool(),
                                             ::testing::ValuesIn({1, 2, 4, 16, 31, 32, 33, 55, 64, 65}),
-                                            ::testing::ValuesIn({0, 1, 4, 16, 31, 32, 33, 55, 64, 65})));
+                                            ::testing::ValuesIn({0, 1, 4, 16, 31, 32, 33, 55, 64, 65})),
+                         toString);
 
 #endif  // AUTOPAS_CUDA
