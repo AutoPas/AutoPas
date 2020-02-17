@@ -35,7 +35,7 @@ class RandomGenerator {
     /**
      * Default function to add halo particles to containers, uses function addHaloParticle().
      */
-    constexpr static auto addHaloParticleF = [](Container &c, Particle p) { c.addHaloParticle(p); };
+    constexpr static auto addHaloParticleF = [](Container &c, const Particle &p) { c.addHaloParticle(p); };
   };
 
  public:
