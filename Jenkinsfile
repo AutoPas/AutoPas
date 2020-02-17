@@ -84,7 +84,6 @@ pipeline{
                     steps{
                         container('cuda-10') {
                             dir("build-cuda") {
-                                sh "sleep 5h"
                                 sh "cmake -DAUTOPAS_ENABLE_CUDA=ON -DCCACHE=OFF .."
                                 sh "entrypoint.sh make -j 4 > buildlog-cuda.txt 2>&1 || (cat buildlog-cuda.txt && exit 1)"
                                 sh "./tests/testAutopas/runTests"
