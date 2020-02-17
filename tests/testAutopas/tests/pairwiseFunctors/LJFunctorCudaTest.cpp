@@ -210,12 +210,12 @@ TEST_P(LJFunctorCudaTest, testLJFunctorVSLJFunctorCuda) {
   auto numParticlesFirstCell = std::get<2>(options);
   auto numParticlesSecondCell = std::get<3>(options);
 
-  autopas::utils::withStaticBool(newton3, [&](auto newton3) {
-    autopas::utils::withStaticBool(calculateGlobals, [&](auto calculateGlobals) {
+  autopas::utils::withStaticBool(newton3, [&](auto newton3C) {
+    autopas::utils::withStaticBool(calculateGlobals, [&](auto calculateGlobalsC) {
       if (numParticlesSecondCell == 0) {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, newton3, calculateGlobals>(numParticlesFirstCell);
+        testLJFunctorVSLJFunctorCudaOneCell<Particle, newton3C, calculateGlobalsC>(numParticlesFirstCell);
       } else {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, newton3, calculateGlobals>(numParticlesFirstCell,
+        testLJFunctorVSLJFunctorCudaTwoCells<Particle, newton3C, calculateGlobalsC>(numParticlesFirstCell,
                                                                                   numParticlesSecondCell);
       }
     });
