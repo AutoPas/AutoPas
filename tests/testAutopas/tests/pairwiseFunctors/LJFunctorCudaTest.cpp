@@ -210,16 +210,26 @@ TEST_P(LJFunctorCudaTest, testLJFunctorVSLJFunctorCuda) {
   auto numParticlesFirstCell = std::get<2>(options);
   auto numParticlesSecondCell = std::get<3>(options);
 
-  autopas::utils::withStaticBool(newton3, [&](auto newton3C) {
+  // using nested withStaticBool is not possible because of bug in gcc7 and gcc8
+  if (newton3) {
     autopas::utils::withStaticBool(calculateGlobals, [&](auto calculateGlobalsC) {
       if (numParticlesSecondCell == 0) {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, newton3C, calculateGlobalsC>(numParticlesFirstCell);
+        testLJFunctorVSLJFunctorCudaOneCell<Particle, true /*newton3*/, calculateGlobalsC>(numParticlesFirstCell);
       } else {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, newton3C, calculateGlobalsC>(numParticlesFirstCell,
-                                                                                    numParticlesSecondCell);
+        testLJFunctorVSLJFunctorCudaTwoCells<Particle, true /*newton3*/, calculateGlobalsC>(numParticlesFirstCell,
+                                                                                            numParticlesSecondCell);
       }
     });
-  });
+  } else {
+    autopas::utils::withStaticBool(calculateGlobals, [&](auto calculateGlobalsC) {
+      if (numParticlesSecondCell == 0) {
+        testLJFunctorVSLJFunctorCudaOneCell<Particle, false /*newton3*/, calculateGlobalsC>(numParticlesFirstCell);
+      } else {
+        testLJFunctorVSLJFunctorCudaTwoCells<Particle, false /*newton3*/, calculateGlobalsC>(numParticlesFirstCell,
+                                                                                             numParticlesSecondCell);
+      }
+    });
+  }
 }
 
 static auto toString = [](const auto &info) {
