@@ -26,7 +26,12 @@ target_link_libraries(
     harmony # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
 )
 
-# this cmake module was only introduced in 3.10
 include(GoogleTest)
-# more robust, queries the compiled executable
-gtest_discover_tests(runTests TEST_PREFIX "testAutopas/")
+# queries the compiled executable for tests, this requires the executable to be runnable.
+gtest_discover_tests(
+    runTests
+    TEST_PREFIX
+    "testAutopas/"
+    DISCOVERY_TIMEOUT
+    20
+)
