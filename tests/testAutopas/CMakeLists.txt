@@ -28,6 +28,7 @@ target_link_libraries(
 
 include(GoogleTest)
 # queries the compiled executable for tests, this requires the executable to be runnable.
+# if you are cross compiling, make sure to properly set CMAKE_CROSSCOMPILING_EMULATOR.
 gtest_discover_tests(
     runTests
     TEST_PREFIX
