@@ -24,10 +24,6 @@ INSTANTIATE_TEST_SUITE_P(DISABLED_Generated, AllContainersTests,
 /**
  * Checks if ParticleContainer::getNumParticle() returns the correct number of particles.
  *
- * @Reviewer: Meant to replace
- *      VerletListsTest::testAddParticleNumParticle
- *      LinkedCellsTest::testGetNumParticles
- *      DirectSumContainerTest::testGetNumParticles
  */
 TEST_P(AllContainersTests, testGetNumParticles) {
   EXPECT_EQ(_container->getNumParticles(), 0);
@@ -45,11 +41,6 @@ TEST_P(AllContainersTests, testGetNumParticles) {
 
 /**
  * Checks if ParticleContainer::deleteAllParticles() deletes all particles.
- *
- * @Reviewer: Meant to replace
- * 	VerletListsTest::testDeleteAllParticles
- *      LinkedCellsTest::testDeleteAllParticles
- *      DirectSumContainerTest::testDeleteAllParticles
  */
 TEST_P(AllContainersTests, testDeleteAllParticles) {
   EXPECT_EQ(_container->getNumParticles(), 0);
@@ -70,10 +61,6 @@ TEST_P(AllContainersTests, testDeleteAllParticles) {
 /**
  * Checks if addParticle() only accepts particles in the domain and throws otherwise, and if addHaloParticle() never
  * throws.
- *
- * @Reviewer: Meant to replace
- *      LinkedCellsTest::testParticleAdding
- *      DirectSumContainerTest::testParticleAdding
  */
 TEST_P(AllContainersTests, testParticleAdding) {
   int id = 1;
@@ -101,10 +88,6 @@ TEST_P(AllContainersTests, testParticleAdding) {
 
 /**
  * Checks if updateContainer() deletes particles in halo.
- *
- * @Reviewer: Meant to replace
- *      LinkedCellsTest::testUpdateContainerHalo
- *	DirectSumContainerTest::testUpdateContainerHalo
  */
 TEST_P(AllContainersTests, testUpdateContainerHalo) {
   autopas::Particle p({-0.5, -0.5, -0.5}, {0, 0, 0}, 42);
