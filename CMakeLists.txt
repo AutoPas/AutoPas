@@ -13,8 +13,16 @@ cmake_policy(SET CMP0079 NEW)
 set(AUTOPAS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(AUTOPAS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CUDA_STANDARD 14)
+# starting with cmake 3.17 this is set using target_compile_features.
+if (CMAKE_VERSION VERSION_LESS 3.17)
+    message(
+        STATUS
+            "Setting CMAKE_CXX_STANDARD and CMAKE_CUDA_STANDARD globally because cmake < 3.17 is used."
+    )
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD 14)
+endif ()
+
 if (NOT CYGWIN)
     set(CMAKE_CXX_EXTENSIONS OFF)
 endif ()

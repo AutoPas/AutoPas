@@ -39,6 +39,13 @@ if (AUTOPAS_ENABLE_CUDA)
         file(REMOVE ${CUDAPROGRAM})
     endif ()
 
+    # cuda as of 10.2 does not support c++17, so set this to 14 here. If cmake < 3.17 is used this
+    # is set globally in the top level CMakeLists.txt
+    if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.17)
+        message(STATUS "Setting cuda_std_14 via compile features because cmake >= 3.17 is used.")
+        target_compile_features(autopas PRIVATE cuda_std_14)
+    endif ()
+
     target_compile_options(
         autopas
         PUBLIC
