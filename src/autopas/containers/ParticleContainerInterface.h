@@ -86,7 +86,7 @@ class ParticleContainerInterface {
       if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
         addParticleImpl(p);
       } else {
-        utils::ExceptionHandler::exception("trying to add a particle that is not in the bounding box.\n" +
+        utils::ExceptionHandler::exception("Trying to add a particle that is not in the bounding box.\n" +
                                            p.toString());
       }
     }
@@ -95,8 +95,9 @@ class ParticleContainerInterface {
  protected:
   /**
    * Adds a particle to the container.
+   * This is an unsafe version of addParticle() and does not perform a boundary check.
    * @param p The particle to be added. This particle is already checked to be inside of the bounding box.
-   * @note only call this function if the position of the particle is inside of the bounding box!
+   * @note Only call this function if the position of the particle is guaranteed to be inside of the bounding box!
    */
   virtual void addParticleImpl(const ParticleType &p) = 0;
 
@@ -114,7 +115,7 @@ class ParticleContainerInterface {
     } else {
       /// @todo do we want a check of the particle not being too far away in here as well?
       if (utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
-        utils::ExceptionHandler::exception("trying to add a halo particle that is inside of the bounding box.\n" +
+        utils::ExceptionHandler::exception("Trying to add a halo particle that is inside of the bounding box.\n" +
                                            haloParticle.toString());
       } else {
         addHaloParticleImpl(haloParticle);
@@ -125,8 +126,9 @@ class ParticleContainerInterface {
  protected:
   /**
    * Adds a particle to the container that lies in the halo region of the container.
+   * This is an unsafe version of addParticle() and does not perform a boundary check.
    * @param haloParticle Particle to be added. This particle is already checked to be outside of the bounding box.
-   * @note only call this function if the position of the particle is outside of the bounding box!
+   * @note Only call this function if the position of the particle is guaranteed to be outside of the bounding box!
    */
   virtual void addHaloParticleImpl(const ParticleType &haloParticle) = 0;
 
