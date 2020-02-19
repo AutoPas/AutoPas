@@ -84,7 +84,7 @@ pipeline{
                     steps{
                         container('cuda-10') {
                             dir("build-cuda") {
-                                sh "cmake -DAUTOPAS_ENABLE_CUDA=ON -DCCACHE=OFF .."
+                                sh "cmake -DAUTOPAS_ENABLE_CUDA=ON -DCCACHE=ON .."
                                 sh "entrypoint.sh make -j 4 > buildlog-cuda.txt 2>&1 || (cat buildlog-cuda.txt && exit 1)"
                                 sh "./tests/testAutopas/runTests"
                             }
@@ -104,7 +104,7 @@ pipeline{
                     steps{
                         container('cuda-10') {
                             dir("build-cuda") {
-                                sh "CC=clang CXX=clang++ cmake -DCCACHE=OFF -DAUTOPAS_ENABLE_CUDA=ON .."
+                                sh "CC=clang CXX=clang++ cmake -DCCACHE=ON -DAUTOPAS_ENABLE_CUDA=ON .."
                                 sh "entrypoint.sh make -j 4 > buildlog-cuda-clang.txt 2>&1 || (cat buildlog-cuda-clang.txt && exit 1)"
                                 sh "./tests/testAutopas/runTests"
                                 // cuda variants of valgrind:
