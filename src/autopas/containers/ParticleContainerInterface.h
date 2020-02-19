@@ -75,12 +75,12 @@ class ParticleContainerInterface {
   /**
    * Adds a particle to the container.
    * @param p The particle to be added.
-   * @tparam inBoxChecked specifies whether a boundary check has already been performed. If it already was performed it
-   * is not checked again.
+   * @tparam checkInBox Specifies whether a boundary check should be performed. Only disable this if the check has
+   * already been performed.
    */
-  template <bool inBoxChecked = false>
+  template <bool checkInBox = true>
   void addParticle(const ParticleType &p) {
-    if constexpr (inBoxChecked) {
+    if constexpr (not checkInBox) {
       addParticleImpl(p);
     } else {
       if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
@@ -104,12 +104,12 @@ class ParticleContainerInterface {
   /**
    * Adds a particle to the container that lies in the halo region of the container.
    * @param haloParticle Particle to be added.
-   * @tparam inBoxChecked specifies whether a boundary check has already been performed. If it already was performed it
-   * is not checked again.
+   * @tparam checkInBox Specifies whether a boundary check should be performed. Only disable this if the check has
+   * already been performed.
    */
-  template <bool inBoxChecked = false>
+  template <bool checkInBox = true>
   void addHaloParticle(const ParticleType &haloParticle) {
-    if constexpr (inBoxChecked) {
+    if constexpr (not checkInBox) {
       addHaloParticleImpl(haloParticle);
     } else {
       /// @todo do we want a check of the particle not being too far away in here as well?
