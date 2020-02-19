@@ -18,7 +18,7 @@
  * magnitude.
  * @param magnitude
  * @param generator
- * @return
+ * @return shift vector
  */
 std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
   std::uniform_real_distribution<double> uniform01(0.0, 1.0);
