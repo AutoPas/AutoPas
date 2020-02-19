@@ -243,10 +243,11 @@ static auto toString = [](const auto &info) {
   return res;
 };
 
-INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorCudaTest,
-                         ::testing::Combine(::testing::Bool(), ::testing::Bool(),
-                                            ::testing::ValuesIn({1, 2, 4, 16, 31, 32, 33, 55, 64, 65}),
-                                            ::testing::ValuesIn({0, 1, 4, 16, 31, 32, 33, 55, 64, 65})),
-                         toString);
+INSTANTIATE_TEST_SUITE_P(
+    Generated, LJFunctorCudaTest,
+    ::testing::Combine(::testing::Bool(), ::testing::Bool(),
+                       ::testing::ValuesIn({1, 2, 4, 16, 31, 32, 33, 55, 64, 65}) /* numParticlesFirstCell */,
+                       ::testing::ValuesIn({0, 1, 4, 16, 31, 32, 33, 55, 64, 65}) /* numParticlesSecondCell */),
+    toString);
 
 #endif  // AUTOPAS_CUDA

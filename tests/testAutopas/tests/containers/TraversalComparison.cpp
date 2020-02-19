@@ -39,15 +39,14 @@ std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
  * @param totalNumParticles
  */
 template <class ContainerPtrType>
-void TraversalComparison::executeSlightShift(ContainerPtrType containerPtr, double magnitude,
-                                             unsigned long totalNumParticles) {
+void TraversalComparison::executeShift(ContainerPtrType containerPtr, double magnitude, size_t totalNumParticles) {
   std::vector<std::array<double, 3>> shiftVectorByID(totalNumParticles);
-  unsigned seed = 42;
+  constexpr unsigned seed = 42;
   std::mt19937 generator(seed);
   for (auto &elem : shiftVectorByID) {
     elem = randomShift(magnitude, generator);
   }
-  unsigned long numIteratedParticles = 0;
+  size_t numIteratedParticles = 0;
   for (auto &mol : *containerPtr) {
     mol.addR(shiftVectorByID[mol.getID()]);
     ++numIteratedParticles;
@@ -67,15 +66,15 @@ void TraversalComparison::executeSlightShift(ContainerPtrType containerPtr, doub
  * @param cellSizeFactor The cell size factor.
  * @param doSlightShift Specifies whether to add random shifts of size skin/2 to all particles after the neighbor list
  * generation.
- * @return Tuple of forces for all particles, ordered by particle id, and array of the globals values (upot, double).
+ * @return Tuple of forces for all particles, ordered by particle id, and global values.
  */
-std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalComparison::calculateForces(
+std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> TraversalComparison::calculateForces(
     autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
-    autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, unsigned long numMolecules,
-    unsigned long numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift) {
+    autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, size_t numMolecules,
+    size_t numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift) {
   // Construct container
   autopas::ContainerSelector<Molecule, FMCell> selector{_boxMin, boxMax, _cutoff};
-  double skin = _cutoff * 0.1;
+  constexpr double skin = _cutoff * 0.1;
   selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, 32});
   auto container = selector.getCurrentContainer();
   autopas::LJFunctor<Molecule, FMCell, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
@@ -99,7 +98,7 @@ std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalC
   container->rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
-    executeSlightShift(container, skin / 2, numMolecules + numHaloMolecules);
+    executeShift(container, skin / 2, numMolecules + numHaloMolecules);
   }
 
   functor.initTraversal();
@@ -140,8 +139,8 @@ TEST_P(TraversalComparison, traversalTest) {
   // empirically determined and set near the minimal possible value for 2000 particles
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
-  double rel_err_tolerance = 1.0e-11;
-  double rel_err_tolerance_globals = 1.0e-12;
+  constexpr double rel_err_tolerance = 1.0e-11;
+  constexpr double rel_err_tolerance_globals = 1.0e-12;
 
   auto [calculatedForces, calculatedGlobals] =
       calculateForces(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles,
@@ -165,12 +164,14 @@ TEST_P(TraversalComparison, traversalTest) {
   }
 
   auto &globalValuesReferenceRef = _globalValuesReference[key];
-  for (size_t index : {0, 1}) {
-    EXPECT_NE(calculatedGlobals[index], 0) << "index:" << index;
-    EXPECT_NEAR(calculatedGlobals[index], globalValuesReferenceRef[index],
-                rel_err_tolerance_globals * globalValuesReferenceRef[index])
-        << "index:" << index;
-  }
+
+  EXPECT_NE(calculatedGlobals.upot, 0);
+  EXPECT_NEAR(calculatedGlobals.upot, globalValuesReferenceRef.upot,
+              rel_err_tolerance_globals * globalValuesReferenceRef.upot);
+
+  EXPECT_NE(calculatedGlobals.virial, 0);
+  EXPECT_NEAR(calculatedGlobals.virial, globalValuesReferenceRef.virial,
+              rel_err_tolerance_globals * globalValuesReferenceRef.virial);
 }
 
 /**

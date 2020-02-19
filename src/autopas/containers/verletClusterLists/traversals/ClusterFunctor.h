@@ -38,6 +38,7 @@ class ClusterFunctor {
     if constexpr (dataLayout == DataLayoutOption::aos) {
       for (size_t i = 0; i < clusterSize; i++) {
         for (size_t j = i + 1; j < clusterSize; j++) {
+          // this if else branch is needed because of https://github.com/AutoPas/AutoPas/issues/426
           if constexpr (useNewton3) {
             _functor->AoSFunctor(cluster[i], cluster[j], true);
           } else {

@@ -17,13 +17,13 @@ INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests, testing::ValuesIn([]() {
                          }()),
                          AllContainersTests::getParamToStringFunction());
 
+/// @todo reenable for verletClusterLists, once they are finished. See: https://github.com/AutoPas/AutoPas/issues/155
 INSTANTIATE_TEST_SUITE_P(DISABLED_Generated, AllContainersTests,
                          testing::Values(autopas::ContainerOption::verletClusterLists),
                          AllContainersTests::getParamToStringFunction());
 
 /**
  * Checks if ParticleContainer::getNumParticle() returns the correct number of particles.
- *
  */
 TEST_P(AllContainersTests, testGetNumParticles) {
   EXPECT_EQ(_container->getNumParticles(), 0);

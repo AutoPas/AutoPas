@@ -118,8 +118,8 @@ __device__ constexpr uint32_t nextPowerOfTwo(uint32_t x) {
 
 template <typename floatType, int blockSize>
 __device__ inline void reduceGlobalsShared(typename vec4<floatType>::Type *globals_shared) {
-  constexpr uint32_t nextPowerOfTwoVal = nextPowerOfTwo(blockSize);
-  for (uint32_t s = nextPowerOfTwoVal / 2; s > 0; s >>= 1) {
+  constexpr uint32_t nextSmallerPowerOfTwoVal = nextPowerOfTwo(blockSize) / 2;
+  for (uint32_t s = nextSmallerPowerOfTwoVal; s > 0; s >>= 1) {
     if (threadIdx.x < s and threadIdx.x + s < blockSize) {
       globals_shared[threadIdx.x].x += globals_shared[threadIdx.x + s].x;
       globals_shared[threadIdx.x].y += globals_shared[threadIdx.x + s].y;
