@@ -13,12 +13,13 @@
 #include "autopas/utils/StringUtils.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
-using ::testing::_;  // anything is ok
-using ::testing::Bool;
-using ::testing::Combine;
-using ::testing::Values;
-using ::testing::ValuesIn;
-
+/**
+ * Generates a random 3d shift with the given magnitude. The shift is uniformly distributed on a sphere with radius
+ * magnitude.
+ * @param magnitude
+ * @param generator
+ * @return
+ */
 std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
   std::uniform_real_distribution<double> uniform01(0.0, 1.0);
   double theta = 2 * M_PI * uniform01(generator);
@@ -29,6 +30,14 @@ std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
   return {x, y, z};
 }
 
+/**
+ * Adds shifts with the given magnitude to all particles.
+ * The shifts are generated in order of the particle id and with a fixed seed to ensure a reproducible behavior.
+ * @tparam ContainerPtrType
+ * @param containerPtr
+ * @param magnitude
+ * @param totalNumParticles
+ */
 template <class ContainerPtrType>
 void TraversalComparison::executeSlightShift(ContainerPtrType containerPtr, double magnitude,
                                              unsigned long totalNumParticles) {
@@ -46,6 +55,20 @@ void TraversalComparison::executeSlightShift(ContainerPtrType containerPtr, doub
   EXPECT_EQ(numIteratedParticles, totalNumParticles);
 }
 
+/**
+ * Calculates the forces for a given configuration.
+ * @param containerOption Specifies the container.
+ * @param traversalOption Specifies the traversal.
+ * @param dataLayoutOption Specifies the data layout.
+ * @param newton3Option Specifies whether the newton3 optimization should be used or not.
+ * @param numMolecules The number of molecules.
+ * @param numHaloMolecules The number of halo molecules.
+ * @param boxMax The maximum of the simulation box. The minimum is {0.,0.,0.}
+ * @param cellSizeFactor The cell size factor.
+ * @param doSlightShift Specifies whether to add random shifts of size skin/2 to all particles after the neighbor list
+ * generation.
+ * @return Tuple of forces for all particles, ordered by particle id, and array of the globals values (upot, double).
+ */
 std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalComparison::calculateForces(
     autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, unsigned long numMolecules,
@@ -92,6 +115,11 @@ std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalC
   return {forces, {functor.getUpot(), functor.getVirial()}};
 }
 
+/**
+ * Generates the reference for a simulation configuration that is specified by the given key.
+ * For the reference a linked cells algorithm is used.
+ * @param key The key that specifies the simulation.
+ */
 void TraversalComparison::generateReference(mykey_t key) {
   auto [numParticles, numHaloParticles, boxMax, doSlightShift] = key;
   // Calculate reference forces
@@ -102,6 +130,9 @@ void TraversalComparison::generateReference(mykey_t key) {
   _globalValuesReference[key] = calculatedGlobals;
 }
 
+/**
+ * This tests a given configuration against a reference configuration.
+ */
 TEST_P(TraversalComparison, traversalTest) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
         cellSizeFactor, doSlightShift] = GetParam();
@@ -142,6 +173,9 @@ TEST_P(TraversalComparison, traversalTest) {
   }
 }
 
+/**
+ * Lambda to generate a readable string out of the parameters of this test.
+ */
 static auto toString = [](const auto &info) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
         cellSizeFactor, doSlightShift] = info.param;
@@ -156,6 +190,10 @@ static auto toString = [](const auto &info) {
   return res;
 };
 
+/**
+ * Function to generate all possible configurations.
+ * @return
+ */
 auto TraversalComparison::getTestParams() {
   std::vector<TestingTuple> params{};
   for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
