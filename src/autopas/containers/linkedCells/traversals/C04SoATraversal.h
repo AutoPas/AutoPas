@@ -33,14 +33,14 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param cutoff Cutoff radius.
+   * @param interactionLength Interaction length.
    * @param cellLength cell length.
    */
   explicit C04SoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                           const double cutoff, const std::array<double, 3> &cellLength)
-      : C04BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, 2>(dims, pairwiseFunctor, cutoff,
-                                                                                    cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, cutoff, cellLength, this->_overlap) {}
+                           const double interactionLength, const std::array<double, 3> &cellLength)
+      : C04BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, 2>(dims, pairwiseFunctor,
+                                                                                    interactionLength, cellLength),
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 
   void traverseParticlePairs() override;
 
@@ -52,13 +52,16 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
 
   /**
    * c04SoA traversals are only usable with dataLayout SoA.
-   * @note Currently there is a bug when cellsize factor is smaller than 1:
+   * @todo Currently there is a bug when cellsize factor is smaller than 1:
    * https://github.com/AutoPas/AutoPas/issues/354
+   * once this bug is fixed, reenable this traversal again for arbitrary `_overlap`s.
    * @return
    */
   bool isApplicable() const override {
-    return dataLayout == DataLayoutOption::soa and
-           (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1);
+    /// @todo: globals are wrong with halo, reenable once https://github.com/AutoPas/AutoPas/issues/422 is fixed.
+    return false;
+    // return dataLayout == DataLayoutOption::soa and
+    //       (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1);
   }
 
  private:

@@ -92,9 +92,9 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   /**
-   * @copydoc VerletLists::addParticle()
+   * @copydoc VerletLists::addParticleImpl()
    */
-  void addParticle(const Particle &p) override {
+  void addParticleImpl(const Particle &p) override {
     if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
       // removes dummy particles in first cell
@@ -109,9 +109,9 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   }
 
   /**
-   * @copydoc VerletLists::addHaloParticle()
+   * @copydoc VerletLists::addHaloParticleImpl()
    */
-  void addHaloParticle(const Particle &haloParticle) override {
+  void addHaloParticleImpl(const Particle &haloParticle) override {
     Particle p_copy = haloParticle;
     if (autopas::utils::notInBox(p_copy.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
@@ -211,33 +211,6 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     }
 
     return outsideParticles;
-  }
-
-  bool isContainerUpdateNeeded() const override {
-    if (not _isValid) {
-      return true;
-    }
-    for (size_t i = 0; i < this->_cells.size(); ++i) {
-      size_t pid = 0;
-      const size_t end = (_boundingBoxes[i].size() > 0) ? _boundingBoxes[i].size() - 1 : 0;
-
-      for (size_t cid = 0; cid < end; ++cid) {
-        for (unsigned int pic = 0; pic < _clusterSize; ++pic) {
-          if (not particleInSkinOfBox(_boundingBoxes[i][cid], this->_cells[i][pid])) {
-            return true;
-          }
-          ++pid;
-        }
-      }
-      for (unsigned int pic = 0; pic < _clusterSize && pid < _dummyStarts[i]; ++pic) {
-        if (not particleInSkinOfBox(_boundingBoxes[i][_boundingBoxes[i].size() - 1], this->_cells[i][pid])) {
-          return true;
-        }
-        ++pid;
-      }
-    }
-
-    return false;
   }
 
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
