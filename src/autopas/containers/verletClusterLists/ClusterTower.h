@@ -38,11 +38,6 @@ namespace autopas::internal {
  */
 template <class Particle, size_t clusterSize>
 class ClusterTower : public ParticleCell<Particle> {
-  /**
-   * A prototype for the dummy particle to use.
-   */
-  static inline const Particle dummy{};
-
  public:
   /**
    * Adds a particle to the cluster tower. If generateClusters() has already been called on this ClusterTower, clear()
@@ -103,8 +98,9 @@ class ClusterTower : public ParticleCell<Particle> {
   void fillUpWithDummyParticles(double dummyStartX, double dummyDistZ) {
     auto &lastCluster = getCluster(getNumClusters() - 1);
     for (size_t index = 1; index <= _numDummyParticles; index++) {
-      lastCluster[clusterSize - index] = dummy;
+      lastCluster[clusterSize - index] = lastCluster[0];  // use first Particle in last cluster as dummy particle!
       lastCluster[clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
+      lastCluster[clusterSize - index].setID(std::numeric_limits<size_t>::max());
     }
   }
 
@@ -139,7 +135,10 @@ class ClusterTower : public ParticleCell<Particle> {
    * @return
    */
   std::vector<Particle> &&collectAllActualParticles() {
-    _particles._particles.resize(getNumActualParticles());
+    if (not _particles._particles.empty()) {
+      // workaround to remove requirement of default constructible particles.
+      _particles._particles.resize(getNumActualParticles(), _particles._particles[0]);
+    }
     return std::move(_particles._particles);
   }
 
