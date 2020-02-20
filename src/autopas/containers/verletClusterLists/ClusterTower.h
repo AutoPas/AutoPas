@@ -41,7 +41,7 @@ class ClusterTower : public ParticleCell<Particle> {
   /**
    * A prototype for the dummy particle to use.
    */
-  static const Particle dummy;
+  static inline const Particle dummy{};
 
  public:
   /**
@@ -250,12 +250,5 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   size_t _numDummyParticles{};
 };
-
-// Requires all particle classes to have a constructor that takes position, velocity, and id
-template <class Particle, size_t clusterSize>
-const Particle ClusterTower<Particle, clusterSize>::dummy{
-    {std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()},
-    {0, 0, 0},
-    0};
 
 }  // namespace autopas::internal
