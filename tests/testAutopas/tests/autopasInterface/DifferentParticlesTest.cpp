@@ -10,48 +10,28 @@
 #include "testingHelpers/commonTypedefs.h"
 
 /**
- * A particle class with only a default constructor.
+ * A particle class without an actual constructor (only copy, etc.).
  */
-class OnlyDefaultConstructibleParticle : public Particle {
+class NonConstructibleParticle : public Particle {
  public:
   /**
    * Default constructor.
    */
-  OnlyDefaultConstructibleParticle() = default;
+  NonConstructibleParticle() = default;
 };
 
 /**
- * Tests if AutoPas still compiles with a Particle that implements the normal interface, BUT implements a different
- * compiler.
+ * Tests if AutoPas still compiles with a Particle that implements the normal interface, BUT no constructor.
  */
-TEST_F(DifferentParticlesTest, testOnlyDefaultConstructibleParticle) {
-  autopas::AutoPas<OnlyDefaultConstructibleParticle, autopas::FullParticleCell<OnlyDefaultConstructibleParticle>>
-      autoPas;
+TEST_F(DifferentParticlesTest, testNonConstructibleParticle) {
+  autopas::AutoPas<NonConstructibleParticle, autopas::FullParticleCell<NonConstructibleParticle>> autoPas;
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1.);
   autoPas.init();
-}
 
-/**
- * A particle class with only a non-default constructor.
- */
-class NonDefaultConstructibleParticle : public Particle {
- public:
-  /**
-   * Non-default constructor.
-   */
-  NonDefaultConstructibleParticle(int, int){};
-};
-
-/**
- * Tests if AutoPas still compiles with a Particle that implements the normal interface, BUT implements a different
- * compiler.
- */
-TEST_F(DifferentParticlesTest, testNonDefaultConstructibleParticle) {
-  autopas::AutoPas<NonDefaultConstructibleParticle, autopas::FullParticleCell<NonDefaultConstructibleParticle>> autoPas;
-  autoPas.setBoxMin({0., 0., 0.});
-  autoPas.setBoxMax({10., 10., 10.});
-  autoPas.setCutoff(1.);
-  autoPas.init();
+  // We also check if iteratePairwise can be instantiated.
+  MockFunctor<NonConstructibleParticle, autopas::FullParticleCell<NonConstructibleParticle>> functor;
+  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(false));
+  autoPas.iteratePairwise(&functor);
 }
