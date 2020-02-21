@@ -63,7 +63,10 @@ bool parseYamlFile(MDFlexConfig &config) {
     config.iterations = node[MDFlexConfig::iterationsStr].as<unsigned long>();
   }
   if (node[MDFlexConfig::measureFlopsStr]) {
-    config.measureFlops = node[MDFlexConfig::measureFlopsStr].as<bool>();
+    config.measureFlops = not node[MDFlexConfig::measureFlopsStr].as<bool>();
+  }
+  if (node[MDFlexConfig::createEndConfigStr]) {
+    config.createEndConfig = not node[MDFlexConfig::createEndConfigStr].as<bool>();
   }
   if (node[MDFlexConfig::newton3OptionsStr]) {
     config.newton3Options = autopas::Newton3Option::parseOptions(
