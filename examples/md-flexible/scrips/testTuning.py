@@ -78,14 +78,14 @@ def testScenario(yamlFile):
     selectedTime=int(getStringFromFile(outputFile, selected + ".* Reduced value: ([0-9]+)"))
     if expected == selected:
         print(GREEN + "Expected Configuration selected!" + ENDCOLOR)
-    elif expectedTime < selectedTime:
-        print(YELLOW + "Selected configuration faster than expected! Estimates probably invalid for this hardware!" + ENDCOLOR)
+    elif expectedTime > selectedTime:
+        print(YELLOW + "Selected configuration faster than expected! Estimates maybe invalid for this hardware!" + ENDCOLOR)
     elif (expectedTime - selectedTime) < (expectedTime / 100):
         print(YELLOW + "Selected configuration less than 1% slower than expected one!" + ENDCOLOR)
     else:
         print(RED + "Inefficient configuration selected!" + ENDCOLOR)
-    print("Selected: " + selected)
-    print("Expected: " + expected)
+    print("Selected: " + selected + " : " + str(selectedTime))
+    print("Expected: " + expected + " : " + str(expectedTime))
     print()
 
 
