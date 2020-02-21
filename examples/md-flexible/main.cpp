@@ -38,13 +38,15 @@ int main(int argc, char **argv) {
   simulation.printStatistics();
 
   // print config.yaml file of current run
-  auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-  std::ostringstream nowStrStr;
-  tm unused;
-  nowStrStr << std::put_time(localtime_r(&now, &unused), "%Y-%m-%d_%H-%M-%S");
-  std::ofstream configFileEnd("MDFlex_end_" + nowStrStr.str() + ".yaml");
-  configFileEnd << config;
-  configFileEnd.close();
+  if (config.createEndConfig) {
+    auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::ostringstream nowStrStr;
+    tm unused;
+    nowStrStr << std::put_time(localtime_r(&now, &unused), "%Y-%m-%d_%H-%M-%S");
+    std::ofstream configFileEnd("MDFlex_end_" + nowStrStr.str() + ".yaml");
+    configFileEnd << config;
+    configFileEnd.close();
+  }
 
   return EXIT_SUCCESS;
 }

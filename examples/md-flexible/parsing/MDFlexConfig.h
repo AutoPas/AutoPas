@@ -114,6 +114,8 @@ class MDFlexConfig {
   bool periodic{true};
   static inline const char *measureFlopsStr{"no-flops"};
   bool measureFlops{true};
+  static inline const char *createEndConfigStr{"no-end-config"};
+  bool createEndConfig{true};
   static inline const char *deltaTStr{"deltaT"};
   double deltaT{0.001};
   static inline const char *epsilonStr{"particle-epsilon"};

@@ -20,6 +20,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {MDFlexConfig::cellSizeFactorsStr, required_argument, nullptr, 'a'},
                                          {MDFlexConfig::checkpointfileStr, required_argument, nullptr, '4'},
                                          {MDFlexConfig::containerOptionsStr, required_argument, nullptr, 'c'},
+                                         {MDFlexConfig::createEndConfigStr, no_argument, nullptr, 'e'},
                                          {MDFlexConfig::cutoffStr, required_argument, nullptr, 'C'},
                                          {MDFlexConfig::dataLayoutOptionsStr, required_argument, nullptr, 'd'},
                                          {MDFlexConfig::deltaTStr, required_argument, nullptr, 'D'},
@@ -133,6 +134,10 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
           cerr << "Unknown data layouts: " << strArg << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case 'e': {
+        config.createEndConfig = false;
         break;
       }
       case 'E': {
