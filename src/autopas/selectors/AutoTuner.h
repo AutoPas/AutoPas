@@ -151,8 +151,8 @@ class AutoTuner {
           // print config, times and reduced value
           if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
             std::ostringstream ss;
-            // print all configs
-            ss << std::endl << _tuningStrategy->getCurrentConfiguration().toString() << " : ";
+            // print config
+            ss << _tuningStrategy->getCurrentConfiguration().toString() << " : ";
             // print all timings
             ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
             ss << " Reduced value: " << reducedValue;
