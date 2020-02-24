@@ -97,10 +97,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   void addParticleImpl(const Particle &p) override {
     if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
-      // removes dummy particles in first cell, if the cell is not empty!
-      if (this->_cells[0].begin().isValid()) {
-        this->_cells[0].resize(_dummyStarts[0], *(this->_cells[0].begin()));
-      }
+      removeDummiesFromFirstCell();
       // add particle somewhere, because lists will be rebuild anyways
       this->_cells[0].addParticle(p);
       ++_dummyStarts[0];
@@ -117,10 +114,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     Particle p_copy = haloParticle;
     if (autopas::utils::notInBox(p_copy.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
-      // removes dummy particles in first cell, if the cell is not empty!
-      if (this->_cells[0].begin().isValid()) {
-        this->_cells[0].resize(_dummyStarts[0], *(this->_cells[0].begin()));
-      }
+      removeDummiesFromFirstCell();
       p_copy.setOwned(false);
       // add particle somewhere, because lists will be rebuild anyways
       this->_cells[0].addParticle(p_copy);
@@ -500,6 +494,17 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     }
     return true;
   }
+
+  /**
+   * Removes dummy particles from the first cell.
+   */
+  void removeDummiesFromFirstCell() {
+    // removes dummy particles in first cell, if the cell is not empty!
+    if (this->_cells[0].begin().isValid()) {
+      this->_cells[0].resize(_dummyStarts[0], *(this->_cells[0].begin()));
+    }
+  }
+
   std::array<double, 3> _boxMinWithHalo, _boxMaxWithHalo;
 
   /// indices where dummy particles in the cells start

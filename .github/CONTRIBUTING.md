@@ -72,7 +72,7 @@ You will not be able to completely compile the unit tests with CUDA without a GP
 
 ### General Notes
 * Try to require as few things from the `Particle` classes and from functors as possible.
-* This includes that we do not make restrictions on the constructors of the Particle class.
+* This includes that we do not make restrictions on the constructors of the Particle class, this is tested with `DifferentParticlesTest`. 
 
 ### Namespaces
 * Code in folder `src` should belong to namespace `autopas`.
