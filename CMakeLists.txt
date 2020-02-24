@@ -102,3 +102,12 @@ include(logging)
 include(other-compileroptions)
 include(vectorization)
 include(cuda)
+# write version information
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    AutoPasConfigVersion.cmake
+    VERSION ${AutoPas_VERSION}
+    COMPATIBILITY ExactVersion
+    # for now ExactVersion is used, as the interface might change.
+)
+
