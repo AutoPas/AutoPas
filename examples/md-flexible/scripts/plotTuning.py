@@ -55,7 +55,11 @@ fig.add_trace(go.Scatter(
             hovertext=configs,
             marker=dict(
                 color=["#%0.6X" % (hash(c["Container"]) % (256**3)) for c in configs],
-                )
+                showscale=True,
+                ),
+            line=dict(
+                color='#AAAAAA',
+                dash='dash',
             ),
-        )
+        ))
 fig.show()
