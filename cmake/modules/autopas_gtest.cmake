@@ -16,8 +16,8 @@ option(INSTALL_GTEST "" OFF)
 # hide options from ccmake
 mark_as_advanced(BUILD_GMOCK INSTALL_GTEST)
 
-FetchContent_MakeAvailable(gtest)
-
-if (IS_DIRECTORY "${gtest_SOURCE_DIR}")
-    set_property(DIRECTORY ${gtest_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
-endif ()
+FetchContent_GetProperties(gtest)
+if(NOT gtest_POPULATED)
+    FetchContent_Populate(gtest)
+    add_subdirectory(${gtest_SOURCE_DIR} ${gtest_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
