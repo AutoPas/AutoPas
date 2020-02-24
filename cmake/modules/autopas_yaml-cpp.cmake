@@ -52,10 +52,10 @@ mark_as_advanced(
 )
 
 FetchContent_GetProperties(yaml-cpp)
-if(NOT yaml-cpp_POPULATED)
+if (NOT yaml-cpp_POPULATED)
     FetchContent_Populate(yaml-cpp)
     add_subdirectory(${yaml-cpp_SOURCE_DIR} ${yaml-cpp_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
+endif ()
 
 # Disable warnings
 target_compile_options(yaml-cpp PRIVATE -w)
