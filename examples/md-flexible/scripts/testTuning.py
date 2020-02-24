@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/python3
 
 import os
 import re
@@ -6,8 +6,10 @@ import sys
 import subprocess
 from datetime import datetime
 
+
 # ---------------------------------------- Global parameters and input ----------------------------------------
 
+# some definitions for colored text
 GREEN='\033[32m'
 YELLOW='\033[93m'
 RED='\033[31m'
@@ -55,28 +57,47 @@ outputDir="testTuning_"+datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 # ------------------------------------------------- Functions -------------------------------------------------
 
+# extracts first match of substring from a file
 def getStringFromFile(filename, regex):
     with open(filename) as f:
         for line in f.readlines():
-            # print(line, end='')
             match=re.search(regex, line)
             if match:
                 return match.group(1)
                 
+# runs a given scenario and checks if the tuning result matches the expectation
 def testScenario(yamlFile):
+    # pretty print scenario name
     scenarioName=yamlFile.split('/')[-1].split('.', 1)[0]
     print("Testing Scenario " + scenarioName)
     yamlFile=os.path.abspath(yamlFile)
-    expected=getStringFromFile(yamlFile, '.* Expected Configuration +: +({.*})')
+
+    # parse what configuration we expect to be optimal
+    expected=getStringFromFile(yamlFile, '.* [eE]xpect.*({.*})')
+
+    # build and execute command for simulation
     command=[simulation, "--log-level", "debug" , "--no-end-config" , "--yaml-filename" , yamlFile] + tuningArg
     print(" ".join(command))
     outputFile=outputDir + '/' + scenarioName + '.out'
     with open(outputFile, 'w+') as outputLocation:
         subprocess.call(command, stdout=outputLocation)
-    expectedTime=int(getStringFromFile(outputFile, expected + ".* Reduced value: ([0-9]+)"))
+
+    # scenario might not include expectation
+    if expected:
+        # parse time of expected config
+        expectedTime=int(getStringFromFile(outputFile, expected + ".* Reduced value: ([0-9]+)"))
+    else:
+        expectedTime=-1
+
+    # parse time of selected config
     selected=getStringFromFile(outputFile, '.* Selected Configuration +({.*})')
     selectedTime=int(getStringFromFile(outputFile, selected + ".* Reduced value: ([0-9]+)"))
-    if expected == selected:
+
+    # print result
+    if not expected:
+        print(RED + "Scenario did not contain expected configuration!" + ENDCOLOR)
+        expected="{ }"
+    elif expected == selected:
         print(GREEN + "Expected Configuration selected!" + ENDCOLOR)
     elif expectedTime > selectedTime:
         print(YELLOW + "Selected configuration faster than expected! Estimates maybe invalid for this hardware!" + ENDCOLOR)
