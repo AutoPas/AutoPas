@@ -110,4 +110,3 @@ write_basic_package_version_file(
     COMPATIBILITY ExactVersion
     # for now ExactVersion is used, as the interface might change.
 )
-
