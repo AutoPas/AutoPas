@@ -107,8 +107,9 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Resizes the container so that it contains n elements.
    * @param n New container size
+   * @param toInsert Particle to insert. This is needed to allow for non-default-constructible particles.
    */
-  void resize(size_t n) { _particles.resize(n); }
+  void resize(size_t n, const Particle &toInsert) { _particles.resize(n, toInsert); }
 
   /**
    * Sort the particles in the cell by a dimension.
