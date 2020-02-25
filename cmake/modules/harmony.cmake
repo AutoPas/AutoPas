@@ -18,7 +18,9 @@ ExternalProject_Add(
     # tell cmake to run make inside the source folder and suppress all warnings
     BUILD_IN_SOURCE TRUE
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND CFLAGS=-w ${MAKE_EXE}
+    LOG_BUILD ON
+    LOG_INSTALL ON
+    BUILD_COMMAND ${MAKE_EXE}
 )
 
 # Get GTest source and binary directories from CMake project
