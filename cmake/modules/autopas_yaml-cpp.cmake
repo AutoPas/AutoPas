@@ -33,7 +33,7 @@ FetchContent_Declare(
         # https://github.com/jbeder/yaml-cpp/archive/master.zip
         # commit 72f699f:
         ${AUTOPAS_SOURCE_DIR}/libs/yaml-cpp-master.zip
-    URL_HASH MD5=6186f7ea92b907e9128bc74c96c1f791
+    URL_HASH MD5=1beaff71d0f24ff2b4b56ead1f3b58c4
     # needed to compile with ninja
 )
 
