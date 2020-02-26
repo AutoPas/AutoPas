@@ -70,7 +70,7 @@ endif ()
 
 enable_testing()
 
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules/)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/)
 
 include(ccache)
 include(clang-format)
@@ -102,3 +102,11 @@ include(logging)
 include(other-compileroptions)
 include(vectorization)
 include(cuda)
+# write version information
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    AutoPasConfigVersion.cmake
+    VERSION ${AutoPas_VERSION}
+    COMPATIBILITY ExactVersion
+    # for now ExactVersion is used, as the interface might change.
+)

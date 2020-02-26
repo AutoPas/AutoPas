@@ -51,10 +51,10 @@ mark_as_advanced(
     YAML_CPP_CLANG_FORMAT_EXE
 )
 
-FetchContent_MakeAvailable(yaml-cpp)
-
-if (IS_DIRECTORY "${yaml-cpp_SOURCE_DIR}")
-    set_property(DIRECTORY ${yaml-cpp_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
+FetchContent_GetProperties(yaml-cpp)
+if (NOT yaml-cpp_POPULATED)
+    FetchContent_Populate(yaml-cpp)
+    add_subdirectory(${yaml-cpp_SOURCE_DIR} ${yaml-cpp_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif ()
 
 # Disable warnings
