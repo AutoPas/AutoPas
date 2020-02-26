@@ -6,6 +6,10 @@ include(ExternalProject)
 # harmony is a make file project
 find_program(MAKE_EXE NAMES gmake nmake make)
 
+# Prefer using ExternalProject for harmony over FetchContent. FetchContent is only really useful for
+# other cmake projects as it allows the export of their cmake targets. As harmony is a Makefile
+# project, FetchContent is not useful here.
+
 # Extract and build harmony
 ExternalProject_Add(
     harmony_bundled
@@ -32,9 +36,6 @@ add_library(
     IMPORTED
     GLOBAL
 )
-
-# target_link_libraries(harmony INTERFACE
-# ${CMAKE_CURRENT_BINARY_DIR}/harmony/include/lib/libharmony.a)
 
 add_dependencies(harmony harmony_bundled)
 
