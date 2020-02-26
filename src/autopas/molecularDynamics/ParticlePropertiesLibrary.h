@@ -124,7 +124,7 @@ class ParticlePropertiesLibrary {
    * @return shift * 6
    */
   inline floatType mixingShift6(intType i, intType j) const {
-    auto key = std::make_pair((i < j) ? i : j, (j > i) ? j : i);  // key in preprocessed maps: (i,j) with i<j
+    auto key = std::make_pair((i < j) ? i : j, (i < j) ? j : i);  // key in preprocessed maps: (i,j) with i<j
     return _computedMixingShift6.at(key);
   }
 
