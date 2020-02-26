@@ -136,7 +136,8 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   std::vector<Particle> &&collectAllActualParticles() {
     if (not _particles._particles.empty()) {
-      // workaround to remove requirement of default constructible particles.
+      // Workaround to remove requirement of default constructible particles.
+      // This function will always only shrink the array, particles are not actually inserted.
       _particles._particles.resize(getNumActualParticles(), _particles._particles[0]);
     }
     return std::move(_particles._particles);

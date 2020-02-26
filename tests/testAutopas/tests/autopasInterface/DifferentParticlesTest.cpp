@@ -25,9 +25,7 @@ class NonConstructibleParticle : public Particle {
  */
 TEST_F(DifferentParticlesTest, testNonConstructibleParticle) {
   autopas::AutoPas<NonConstructibleParticle, autopas::FullParticleCell<NonConstructibleParticle>> autoPas;
-  autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
-  autoPas.setCutoff(1.);
   autoPas.init();
 
   // We also check if iteratePairwise can be instantiated.
