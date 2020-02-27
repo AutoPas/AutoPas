@@ -46,7 +46,7 @@ for datafile in datafiles:
     regexIterTook='.* IteratePairwise took +([0-9]+) .*'
     regexIter='.*Iteration +([0-9]+)'
     regexTuning='.*Tuning: +([a-z]+)'
-    
+
     # parse file
     with open(datafile) as f:
         tuning=True
@@ -137,39 +137,39 @@ for datafile in datafiles:
     # create figure and define layout
     fig = go.Figure(
             layout=dict(
-                    showlegend=False,
-                    title_text=datafile,
-                    xaxis_title_text="Iteration",
-                    yaxis_title_text="Time per Iteration [ns]",
+                showlegend=False,
+                title_text=datafile,
+                xaxis_title_text="Iteration",
+                yaxis_title_text="Time per Iteration [ns]",
                 ),
             )
 
     # add data
     fig.add_trace(go.Scatter(
-                x=iterationNr,
-                y=values,
-                mode="lines+markers",
-                error_y=dict(
-                    type='data',
-                    symmetric=False,
-                    array=valuesErrorPlus,
-                    arrayminus=valuesErrorMinus,
-                    ),
-                hovertext=configs,
-                marker=dict(
-                    color=[allContainers.index(c["Container"]) for c in configs],
-                    showscale=True,
-                    colorscale=colorscale,
-                    colorbar=dict(
-                        tickmode="array",
-                        # center the labels of the colorscale
-                        tickvals=[(1-1/len(allContainers))*(x+.5) for x in range(0, len(allContainers))],
-                        ticktext=allContainers,
-                        ),
-                    ),
-                line=dict(
-                    color='#AAAAAA',
-                    dash='dash',
+        x=iterationNr,
+        y=values,
+        mode="lines+markers",
+        error_y=dict(
+            type='data',
+            symmetric=False,
+            array=valuesErrorPlus,
+            arrayminus=valuesErrorMinus,
+            ),
+        hovertext=configs,
+        marker=dict(
+            color=[allContainers.index(c["Container"]) for c in configs],
+            showscale=True,
+            colorscale=colorscale,
+            colorbar=dict(
+                tickmode="array",
+                # center the labels of the colorscale
+                tickvals=[(1-1/len(allContainers))*(x+.5) for x in range(0, len(allContainers))],
+                ticktext=allContainers,
                 ),
-            ))
+            ),
+        line=dict(
+            color='#AAAAAA',
+            dash='dash',
+            ),
+        ))
     fig.show()
