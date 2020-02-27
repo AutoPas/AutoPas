@@ -65,7 +65,7 @@ def getStringFromFile(filename, regex):
             match=re.search(regex, line)
             if match:
                 return match.group(1)
-                
+
 # runs a given scenario and checks if the tuning result matches the expectation
 def testScenario(yamlFile):
     # pretty print scenario name
