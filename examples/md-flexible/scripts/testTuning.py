@@ -15,14 +15,15 @@ YELLOW='\033[93m'
 RED='\033[31m'
 ENDCOLOR='\033[0m'
 
-# string to identify the argument identifying...
+# Script variables can be overwritten:
+# String to identify the argument identifying...
 # the simulation binary
 simulationIdentifierString='sim='
 # the tuning strategy
 tuningIdentifierString='tune='
 
-# path to the testing binary
-simulation='../../../cmake-build-manually/examples/md-flexible/md-flexible'
+# path to the testing binary. This path is correct after cmake copied this script to the build dir.
+simulation='./md-flexible'
 # placeholder for a globally set tuning strategy
 tuningArg=[]
 # list of input files or directories
