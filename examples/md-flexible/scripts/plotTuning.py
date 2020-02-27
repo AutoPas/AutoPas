@@ -138,6 +138,9 @@ for datafile in datafiles:
     fig = go.Figure(
             layout=dict(
                     showlegend=False,
+                    title_text=datafile,
+                    xaxis_title_text="Iteration",
+                    yaxis_title_text="Time per Iteration [ns]",
                 ),
             )
 
@@ -146,12 +149,12 @@ for datafile in datafiles:
                 x=iterationNr,
                 y=values,
                 mode="lines+markers",
-                # error_y=dict(
-                #     type='data',
-                #     symmetric=False,
-                #     array=valuesErrorPlus,
-                #     arrayminus=valuesErrorMinus,
-                #     ),
+                error_y=dict(
+                    type='data',
+                    symmetric=False,
+                    array=valuesErrorPlus,
+                    arrayminus=valuesErrorMinus,
+                    ),
                 hovertext=configs,
                 marker=dict(
                     color=[allContainers.index(c["Container"]) for c in configs],
