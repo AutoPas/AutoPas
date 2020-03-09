@@ -82,7 +82,7 @@ def testScenario(yamlFile):
     print(" ".join(command))
     outputFile=os.path.join(outputDir, scenarioName + '.out')
     with open(outputFile, 'w+') as outputLocation:
-        subprocess.call(command, stdout=outputLocation)
+        subprocess.call(command, stdout=outputLocation, shell=False)
 
     # scenario might not include expectation
     if expected:
