@@ -69,7 +69,7 @@ def getStringFromFile(filename, regex):
 # runs a given scenario and checks if the tuning result matches the expectation
 def testScenario(yamlFile):
     # pretty print scenario name
-    scenarioName=yamlFile.split('/')[-1].split('.', 1)[0]
+    scenarioName=os.path.splitext(os.path.basename(yamlFile))[0]
     print("Testing Scenario " + scenarioName)
     yamlFile=os.path.abspath(yamlFile)
 
@@ -77,9 +77,10 @@ def testScenario(yamlFile):
     expected=getStringFromFile(yamlFile, '.* [eE]xpect.*({.*})')
 
     # build and execute command for simulation
+    # append tuningArg list (if nothing is set this is empty)
     command=[simulation, "--log-level", "debug" , "--no-end-config" , "--yaml-filename" , yamlFile] + tuningArg
     print(" ".join(command))
-    outputFile=outputDir + '/' + scenarioName + '.out'
+    outputFile=os.path.join(outputDir, scenarioName + '.out')
     with open(outputFile, 'w+') as outputLocation:
         subprocess.call(command, stdout=outputLocation)
 
@@ -129,7 +130,7 @@ for arg in configsDirs:
         for f in os.listdir(arg):
             if f.endswith('.yaml'):
                 inputsFound=True
-                testScenario(arg + f)
+                testScenario(os.path.join(arg, f))
         if not inputsFound:
             print("No yaml files found in " + arg)
     elif os.path.isfile(arg):
