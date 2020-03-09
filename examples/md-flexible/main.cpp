@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
   simulation.printStatistics();
 
   // print config.yaml file of current run
-  if (config.createEndConfig) {
+  if (config.dontCreateEndConfig) {
     auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::ostringstream nowStrStr;
     tm unused;

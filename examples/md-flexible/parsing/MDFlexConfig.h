@@ -115,8 +115,9 @@ class MDFlexConfig {
   // this starts with a don't such that it can be used as a flag with a sane default.
   static inline const char *dontMeasureFlopsStr{"no-flops"};
   bool dontMeasureFlops{true};
-  static inline const char *createEndConfigStr{"no-end-config"};
-  bool createEndConfig{true};
+  // this starts with a don't such that it can be used as a flag with a sane default.
+  static inline const char *dontCreateEndConfigStr{"no-end-config"};
+  bool dontCreateEndConfig{true};
   static inline const char *deltaTStr{"deltaT"};
   double deltaT{0.001};
   static inline const char *epsilonStr{"particle-epsilon"};
