@@ -420,7 +420,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
        << ((double)numTuningIterations / numIterations * 100) << "%" << endl;
   cout << "MFUPs/sec    : " << mfups << endl;
 
-  if (_config->measureFlops) {
+  if (_config->dontMeasureFlops) {
     autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> flopCounterFunctor(
         _autopas.getCutoff());
     _autopas.iteratePairwise(&flopCounterFunctor);

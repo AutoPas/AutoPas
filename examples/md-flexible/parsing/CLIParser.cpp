@@ -31,7 +31,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {MDFlexConfig::iterationsStr, required_argument, nullptr, 'i'},
                                          {MDFlexConfig::logFileNameStr, required_argument, nullptr, 'L'},
                                          {MDFlexConfig::logLevelStr, required_argument, nullptr, 'l'},
-                                         {MDFlexConfig::measureFlopsStr, no_argument, nullptr, 'F'},
+                                         {MDFlexConfig::dontMeasureFlopsStr, no_argument, nullptr, 'F'},
                                          {MDFlexConfig::newton3OptionsStr, required_argument, nullptr, '3'},
                                          {MDFlexConfig::particlesPerDimStr, required_argument, nullptr, 'n'},
                                          {MDFlexConfig::particlesSpacingStr, required_argument, nullptr, 's'},
@@ -168,7 +168,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'F': {
-        config.measureFlops = false;
+        config.dontMeasureFlops = false;
         break;
       }
       case 'g': {

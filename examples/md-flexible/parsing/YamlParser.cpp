@@ -62,8 +62,8 @@ bool parseYamlFile(MDFlexConfig &config) {
   if (node[MDFlexConfig::iterationsStr]) {
     config.iterations = node[MDFlexConfig::iterationsStr].as<unsigned long>();
   }
-  if (node[MDFlexConfig::measureFlopsStr]) {
-    config.measureFlops = not node[MDFlexConfig::measureFlopsStr].as<bool>();
+  if (node[MDFlexConfig::dontMeasureFlopsStr]) {
+    config.dontMeasureFlops = not node[MDFlexConfig::dontMeasureFlopsStr].as<bool>();
   }
   if (node[MDFlexConfig::createEndConfigStr]) {
     config.createEndConfig = not node[MDFlexConfig::createEndConfigStr].as<bool>();

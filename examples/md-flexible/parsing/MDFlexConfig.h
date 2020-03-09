@@ -112,8 +112,9 @@ class MDFlexConfig {
   size_t iterations{10};
   static inline const char *periodicStr{"periodic-boundaries"};
   bool periodic{true};
-  static inline const char *measureFlopsStr{"no-flops"};
-  bool measureFlops{true};
+  // this starts with a don't such that it can be used as a flag with a sane default.
+  static inline const char *dontMeasureFlopsStr{"no-flops"};
+  bool dontMeasureFlops{true};
   static inline const char *createEndConfigStr{"no-end-config"};
   bool createEndConfig{true};
   static inline const char *deltaTStr{"deltaT"};
