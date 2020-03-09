@@ -267,6 +267,7 @@ void Simulation<Particle, ParticleCell>::calculateForces() {
 
   FunctorType functor{_autopas.getCutoff(), *_particlePropertiesLibrary};
   bool tuningIteration = _autopas.iteratePairwise(&functor);
+  // only generate this output if the logger is set to debug
   if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
     std::cout << "Tuning: " << std::boolalpha << tuningIteration << std::endl;
   }
