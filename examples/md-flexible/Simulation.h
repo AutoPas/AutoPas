@@ -267,6 +267,10 @@ void Simulation<Particle, ParticleCell>::calculateForces() {
 
   FunctorType functor{_autopas.getCutoff(), *_particlePropertiesLibrary};
   bool tuningIteration = _autopas.iteratePairwise(&functor);
+  // only generate this output if the logger is set to debug
+  if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+    std::cout << "Tuning: " << std::boolalpha << tuningIteration << std::endl;
+  }
 
   auto timeIteration = _timers.forceUpdateTotal.stop();
   if (tuningIteration) {
@@ -416,7 +420,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
        << ((double)numTuningIterations / numIterations * 100) << "%" << endl;
   cout << "MFUPs/sec    : " << mfups << endl;
 
-  if (_config->measureFlops) {
+  if (_config->dontMeasureFlops) {
     autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> flopCounterFunctor(
         _autopas.getCutoff());
     _autopas.iteratePairwise(&flopCounterFunctor);

@@ -20,6 +20,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {MDFlexConfig::cellSizeFactorsStr, required_argument, nullptr, 'a'},
                                          {MDFlexConfig::checkpointfileStr, required_argument, nullptr, '4'},
                                          {MDFlexConfig::containerOptionsStr, required_argument, nullptr, 'c'},
+                                         {MDFlexConfig::dontCreateEndConfigStr, no_argument, nullptr, 'e'},
                                          {MDFlexConfig::cutoffStr, required_argument, nullptr, 'C'},
                                          {MDFlexConfig::dataLayoutOptionsStr, required_argument, nullptr, 'd'},
                                          {MDFlexConfig::deltaTStr, required_argument, nullptr, 'D'},
@@ -30,7 +31,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {MDFlexConfig::iterationsStr, required_argument, nullptr, 'i'},
                                          {MDFlexConfig::logFileNameStr, required_argument, nullptr, 'L'},
                                          {MDFlexConfig::logLevelStr, required_argument, nullptr, 'l'},
-                                         {MDFlexConfig::measureFlopsStr, no_argument, nullptr, 'F'},
+                                         {MDFlexConfig::dontMeasureFlopsStr, no_argument, nullptr, 'F'},
                                          {MDFlexConfig::newton3OptionsStr, required_argument, nullptr, '3'},
                                          {MDFlexConfig::particlesPerDimStr, required_argument, nullptr, 'n'},
                                          {MDFlexConfig::particlesSpacingStr, required_argument, nullptr, 's'},
@@ -135,6 +136,10 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         }
         break;
       }
+      case 'e': {
+        config.dontCreateEndConfig = false;
+        break;
+      }
       case 'E': {
         try {
           config.tuningMaxEvidence = (unsigned int)stoul(strArg);
@@ -163,7 +168,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'F': {
-        config.measureFlops = false;
+        config.dontMeasureFlops = false;
         break;
       }
       case 'g': {
