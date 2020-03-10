@@ -24,7 +24,7 @@ target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp)
 # --- copy script files to build dir ---
 file(
     GLOB_RECURSE SCRIPTS
-    RELATIVE ${CMAKE_SOURCE_DIR}
+    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "*.sh"
     "*.gp"
     "*.py"
@@ -32,7 +32,7 @@ file(
 )
 
 foreach (script ${SCRIPTS})
-    configure_file(${CMAKE_SOURCE_DIR}/${script} ${CMAKE_BINARY_DIR}/examples/md-flexible COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${script} ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 endforeach (script)
 
 # -----------------test-----------------

@@ -78,7 +78,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
       _iteratorWithinOneCell = _iteratorAcrossCells->begin();
     } else {
       _iteratorAcrossCells = cont->end();
-      AutoPasLog(warn, "More threads than cells. No work left for thread {}!", myThreadId);
+      AutoPasLog(trace, "More threads than cells. No work left for thread {}!", myThreadId);
       return;
     }
 

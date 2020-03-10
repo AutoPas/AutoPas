@@ -7,3 +7,6 @@ venv/
 CMakeLists.txt.user
 cmake.check_cache
 *.synctex.gz
+*testTuning_*/
+*compile_commands.json
+

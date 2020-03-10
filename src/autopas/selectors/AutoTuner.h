@@ -151,12 +151,11 @@ class AutoTuner {
           // print config, times and reduced value
           if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
             std::ostringstream ss;
-            // print all configs
-            ss << std::endl << _tuningStrategy->getCurrentConfiguration().toString() << " : [ ";
+            // print config
+            ss << _tuningStrategy->getCurrentConfiguration().toString() << " : ";
             // print all timings
-            ss << utils::ArrayUtils::to_string(_samples, " ");
-            ss << " ] ";
-            ss << "Reduced value: " << reducedValue;
+            ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
+            ss << " Reduced value: " << reducedValue;
             AutoPasLog(debug, "Collected times for  {}", ss.str());
           }
         }
@@ -337,28 +336,22 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
         _tuningStrategy->getCurrentConfiguration().toString(), typeid(*f).name());
   }
 
+  autopas::utils::Timer timer;
+  timer.start();
+
+  f->initTraversal();
+  if (doListRebuild) {
+    containerPtr->rebuildNeighborLists(traversal.get());
+  }
+  containerPtr->iteratePairwise(traversal.get());
+  f->endTraversal(useNewton3);
+
+  auto runtime = timer.stop();
+  AutoPasLog(debug, "IteratePairwise took {} nanoseconds", runtime);
+
   // if tuning execute with time measurements
   if (inTuningPhase) {
-    autopas::utils::Timer timer;
-    timer.start();
-
-    f->initTraversal();
-    if (doListRebuild) {
-      containerPtr->rebuildNeighborLists(traversal.get());
-    }
-    containerPtr->iteratePairwise(traversal.get());
-    f->endTraversal(useNewton3);
-
-    auto runtime = timer.stop();
-    AutoPasLog(debug, "IteratePairwise took {} nanoseconds", runtime);
     addTimeMeasurement(*f, runtime);
-  } else {
-    f->initTraversal();
-    if (doListRebuild) {
-      containerPtr->rebuildNeighborLists(traversal.get());
-    }
-    containerPtr->iteratePairwise(traversal.get());
-    f->endTraversal(useNewton3);
   }
 }
 
