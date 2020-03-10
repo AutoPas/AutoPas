@@ -334,7 +334,7 @@ class LJFunctor
     utils::withStaticBool(newton3, [&](auto newton3) {
       utils::withStaticBool(cellWiseOwnedState, [&](auto cellWiseOwnedState) {
         utils::withStaticBool(_duplicatedCalculations, [&](auto duplicatedCalculations) {
-          SoAFunctorImpl<newton3, cellWiseOwnedState, duplicatedCalculations>(soa1, soa2);
+          SoAFunctorPairImpl<newton3, cellWiseOwnedState, duplicatedCalculations>(soa1, soa2);
         });
       });
     });
@@ -350,7 +350,7 @@ class LJFunctor
    * @param soa2
    */
   template <bool newton3, bool cellWiseOwnedState, bool duplicatedCalculations>
-  void SoAFunctorImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
+  void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     const auto *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
