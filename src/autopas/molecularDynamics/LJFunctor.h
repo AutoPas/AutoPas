@@ -215,9 +215,10 @@ class LJFunctor
     SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmasquare = _sigmasquare;
     SoAFloatPrecision epsilon24 = _epsilon24;
-    if (calculateGlobals) {
-      // Checks if the cell is a halo cell, if it is, we skip it.
+    const bool duplicatedCalculations = _duplicatedCalculations;
+    if (calculateGlobals and cellWiseOwnedState and _duplicatedCalculations) {
       bool isHaloCell = ownedPtr[0] ? false : true;
+      // Checks if the cell is a halo cell, if it is, we skip it.
       if (isHaloCell) {
         return;
       }
@@ -229,6 +230,14 @@ class LJFunctor
     SoAFloatPrecision virialSumZ = 0.;
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
+      SoAFloatPrecision isOwnedI;
+      if (calculateGlobals and not cellWiseOwnedState and duplicatedCalculations) {
+        // save the owned state of particle i. This is only needed if we calculate globals (calculateGlobals), the owned
+        // state is not constant throughout the cell (not cellWiseOwnedState) and there are duplicated calculations
+        // (duplicatedCalculations)
+        isOwnedI = ownedPtr[i];
+      }
+
       SoAFloatPrecision fxacc = 0.;
       SoAFloatPrecision fyacc = 0.;
       SoAFloatPrecision fzacc = 0.;
@@ -302,11 +311,23 @@ class LJFunctor
           const SoAFloatPrecision virialz = drz * fz;
           const SoAFloatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
 
-          // these calculations assume that this functor is not called for halo cells!
-          upotSum += upot;
-          virialSumX += virialx;
-          virialSumY += virialy;
-          virialSumZ += virialz;
+          if (cellWiseOwnedState or not duplicatedCalculations) {
+            // these calculations are only safe if it is called for an owned cell of if no duplicated calculations are
+            // happening.
+            upotSum += upot;
+            virialSumX += virialx;
+            virialSumY += virialy;
+            virialSumZ += virialz;
+          } else {
+            // In this functor, all pairs are only traversed once (newton3-scheme!).
+            // In this case,
+            // The calculations are later divided by two!
+            double energyFactor = isOwnedI + ownedPtr[j];
+            upotSum += upot * energyFactor;
+            virialSumX += virialx * energyFactor;
+            virialSumY += virialy * energyFactor;
+            virialSumZ += virialz * energyFactor;
+          }
         }
       }
 
@@ -316,14 +337,20 @@ class LJFunctor
     }
     if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
+      double factor = 1.;
       // we assume newton3 to be enabled in this functor call, thus we multiply by two if the value of newton3 is false,
       // since for newton3 disabled we divide by two later on.
-      _aosThreadData[threadnum].upotSum += upotSum * (newton3 ? 1. : 2.);
-      _aosThreadData[threadnum].virialSum[0] += virialSumX * (newton3 ? 1. : 2.);
-      _aosThreadData[threadnum].virialSum[1] += virialSumY * (newton3 ? 1. : 2.);
-      _aosThreadData[threadnum].virialSum[2] += virialSumZ * (newton3 ? 1. : 2.);
+      factor *= newton3 ? 1. : 2.;
+      // In case we have a non-cell-wise owned state and duplicated_calculations is false, we have multiplied everything
+      // by two, so we divide it by 2 again.
+      factor *= (not cellWiseOwnedState and duplicatedCalculations) ? .5 : 1.;
+      _aosThreadData[threadnum].upotSum += upotSum * factor;
+      _aosThreadData[threadnum].virialSum[0] += virialSumX * factor;
+      _aosThreadData[threadnum].virialSum[1] += virialSumY * factor;
+      _aosThreadData[threadnum].virialSum[2] += virialSumZ * factor;
     }
   }
+
   // clang-format off
   /**
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3, bool cellWiseOwnedState)
@@ -340,6 +367,7 @@ class LJFunctor
     });
   }
 
+ private:
   /**
    * Implementation function of SoAFunctorPair(soa1, soa2, newton3, cellWiseOwnedState)
    *
@@ -530,6 +558,7 @@ class LJFunctor
     }
   }
 
+ public:
   // clang-format off
   /**
    * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
