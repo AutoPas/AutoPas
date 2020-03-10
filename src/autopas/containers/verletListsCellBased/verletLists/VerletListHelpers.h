@@ -89,7 +89,7 @@ class VerletListHelpers {
      * @param soa the soa
      * @param newton3 whether to use newton 3
      */
-    void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+    void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool /*cellWiseOwnedstate*/) override {
       if (soa.getNumParticles() == 0) return;
 
       auto **const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
@@ -115,7 +115,7 @@ class VerletListHelpers {
           if (dr2 < _cutoffskinsquared) {
             currentList.push_back(ptrptr[j]);
             if (not newton3) {
-              // we need this here, as SoAFunctorSingle(soa) will only be called once for both newton3=true and false.
+              // we need this here, as SoAFunctorSingle will only be called once for both newton3=true and false.
               _verletListsAoS.at(ptrptr[j]).push_back(ptrptr[i]);
             }
           }

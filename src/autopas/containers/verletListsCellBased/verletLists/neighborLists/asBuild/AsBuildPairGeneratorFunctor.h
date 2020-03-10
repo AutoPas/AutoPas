@@ -77,7 +77,7 @@ class AsBuildPairGeneratorFunctor
    * @param soa The SoA to add.
    * @param newton3 Whether to use newton 3 or not.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool /*cellWiseOwnedState*/) override {
     if (soa.getNumParticles() == 0) return;
 
     auto **const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();

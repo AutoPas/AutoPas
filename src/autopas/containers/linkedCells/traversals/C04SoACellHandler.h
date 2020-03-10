@@ -210,8 +210,9 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewt
         cell1 = &combinationSlice[currentSlice];
         auto stripeView = cell1->_particleSoABuffer.constructView(0, numParticlesBaseCell);
         if (slice == currentSlice) {
-          // process stripe with itself
-          _pairwiseFunctor->SoAFunctorSingle(stripeView, useNewton3);
+          // Process stripe with itself, this contains particles of a single cell, so all particles have the same owned
+          // state.
+          _pairwiseFunctor->SoAFunctorSingle(stripeView, useNewton3, true);
 
           auto restView = cell1->_particleSoABuffer.constructView(numParticlesBaseCell,
                                                                   cell1->_particleSoABuffer.getNumParticles());

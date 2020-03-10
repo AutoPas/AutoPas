@@ -151,7 +151,7 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
   switch (interactionType) {
     case InteractionType::own:
       // Interation of one cell with itself
-      functor->SoAFunctorSingle(cell1._particleSoABuffer, newton3);
+      functor->SoAFunctorSingle(cell1._particleSoABuffer, newton3, true);
       break;
     case InteractionType::pair:
       // Interation of a cell pair
@@ -469,7 +469,7 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
       }
     } break;
     case InteractionType::own:
-      functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
+      functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3, cellWiseOwnedState);
       break;
     case InteractionType::pair:
       functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3, cellWiseOwnedState);

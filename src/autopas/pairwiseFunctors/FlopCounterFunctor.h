@@ -60,7 +60,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     };
   }
 
-  void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3,
+                        bool /*cellWiseOwnedState*/) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();

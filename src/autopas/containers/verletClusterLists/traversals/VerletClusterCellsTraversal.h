@@ -323,7 +323,8 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         // same cluster
         SoAView clusterSelf(&(*cells)[i]._particleSoABuffer, clusterId * clusterSize,
                             clusterId * clusterSize + clusterSize);
-        _functor->SoAFunctorSingle(clusterSelf, useNewton3);
+        // assumptions for owned state can probably not be made here, therefore false
+        _functor->SoAFunctorSingle(clusterSelf, useNewton3, false);
       }
     }
   }

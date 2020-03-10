@@ -143,19 +143,19 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
+      functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3, true);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctorSingle(cell2._particleSoABuffer, newton3);
+      functor.SoAFunctorSingle(cell2._particleSoABuffer, newton3, true);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctorSingle(cell3._particleSoABuffer, newton3);
+      functor.SoAFunctorSingle(cell3._particleSoABuffer, newton3, true);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctorSingle(cell4._particleSoABuffer, newton3);
+      functor.SoAFunctorSingle(cell4._particleSoABuffer, newton3, true);
     }
   }
 

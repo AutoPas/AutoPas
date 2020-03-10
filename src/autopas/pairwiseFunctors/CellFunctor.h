@@ -323,14 +323,15 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellSoAN3(
     ParticleCell &cell) {
-  _functor->SoAFunctorSingle(cell._particleSoABuffer, true);
+  _functor->SoAFunctorSingle(cell._particleSoABuffer, true, true /*cellWiseOwnedState*/);
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
           bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellSoANoN3(
     ParticleCell &cell) {
-  _functor->SoAFunctorSingle(cell._particleSoABuffer, false);  // the functor has to enable this...
+  _functor->SoAFunctorSingle(cell._particleSoABuffer, false,
+                             true /*cellWiseOwnedState*/);  // the functor has to enable this...
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,

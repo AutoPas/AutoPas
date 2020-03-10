@@ -140,10 +140,10 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
+   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState) override {
 #ifdef __AVX__
     if (soa.getNumParticles() == 0) return;
 

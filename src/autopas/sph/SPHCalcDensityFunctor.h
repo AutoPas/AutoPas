@@ -72,10 +72,10 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType>, bool)
+   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType>, bool, bool)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool /*cellWiseOwnedState*/) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();

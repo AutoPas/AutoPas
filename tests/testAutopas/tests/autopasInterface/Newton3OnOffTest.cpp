@@ -148,7 +148,7 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
   switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // single cell
-      EXPECT_CALL(mockFunctor, SoAFunctorSingle(_, useNewton3))
+      EXPECT_CALL(mockFunctor, SoAFunctorSingle(_, useNewton3, _))
           .Times(testing::AtLeast(1))
           .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsSC++; }));
 

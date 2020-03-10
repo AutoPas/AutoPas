@@ -193,11 +193,11 @@ class LJFunctor
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
+   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState)
    * This functor ignores will use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState) override {
     if (soa.getNumParticles() == 0) return;
 
     const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
