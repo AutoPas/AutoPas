@@ -63,11 +63,22 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VerletClusterCells:    verlet-cluster-cells traversal (Cuda, newton3 <=> noNewton3)     = 2
   //                                                                                    --------
   //                                                                                          54
+  //
+  // currently disabled:
+  // NORMAL:
+  // C04SoATraversal completely, see #422                                                     -2
+  //                                                                                    --------
+  // TOTAL:                                                                                   46
+  //
+  // CUDA:
+  // C01CudaTraversal for enabled N3, see #420                                                -1
+  //                                                                                    --------
+  // TOTAL:                                                                                   51
 
 #ifndef AUTOPAS_CUDA
-  const size_t expectedNumberOfIterations = 48 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 46 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 54 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 51 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;

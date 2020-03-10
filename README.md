@@ -188,9 +188,9 @@ One simulation loop should always consist of the following phases:
 
 2. Handling the leaving particles
    * Apply boundary conditions on them
-   
+
    * Potentially send them to other mpi-processes, skip this if MPI is not needed
-   
+
    * Add them to the containers using
       ```C++
       autoPas.addParticle(particle)
@@ -199,7 +199,7 @@ One simulation loop should always consist of the following phases:
 3. Handle halo particles:
    * Identify the halo particles by use of AutoPas' iterators and send them in a similar way as the leaving particles.
 
-   * Add the particles as haloParticles using 
+   * Add the particles as haloParticles using
       ```C++
       autoPas.addOrUpdateHaloParticle(haloParticle)
       ```
@@ -222,22 +222,24 @@ There exist some things you have to be careful about when using multiple functor
   autoPas.setAllowedNewton3Options({false});
   ```
 
-* If you have `n` functors within one iteration and update the particle position only at the end or start of the iteration, the rebuildFrequency and the samplingRate have to be a multiple of `n`.   
+* If you have `n` functors within one iteration and update the particle position only at the end or start of the iteration, the rebuildFrequency and the samplingRate have to be a multiple of `n`.
 
 ### Inserting additional particles
-Before inserting additional particles (e.g. through a grand-canonical thermostat ), 
-you always have to enforce a containerUpdate on ALL AutoPas instances, i.e., 
-on all mpi processes, by calling  
+Before inserting additional particles (e.g. through a grand-canonical thermostat ),
+you always have to enforce a containerUpdate on ALL AutoPas instances, i.e.,
+on all mpi processes, by calling
 ```C++
 autoPas.updateContainerForced();
-``` 
+```
 This will invalidate the internal neighbor lists and containers.
 
 ## Developing AutoPas
 Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
 
 ## Acknowledgements
-* TaLPas BMBF
+This work was financially supported by:
+* the Federal Ministry of Education and Research, Germany, project “Task-based load balancing and auto-tuning in particle simulations” (TaLPas) 8 , grant numbers 01IH16008A and 01IH16008B.
 
 ## Papers to cite
-* TODO: Add papers
+* F. A. Gratl, S. Seckler, N. Tchipev, H.-J. Bungartz and P. Neumann: [AutoPas: Auto-Tuning for Particle Simulations](https://ieeexplore.ieee.org/document/8778280) [BibTeX](https://mediatum.ub.tum.de/services/export/node/1535848/?format=template_test&mask=bibtex&lang=de&template=$$[defaultexport]$$&mimetype=text/plain) [MediaTum](https://mediatum.ub.tum.de/1535848), In 2019 IEEE International Parallel and Distributed Processing Symposium Workshops (IPDPSW), Rio de Janeiro, May 2019.
+

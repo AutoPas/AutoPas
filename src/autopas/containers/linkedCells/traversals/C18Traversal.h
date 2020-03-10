@@ -89,8 +89,8 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, dat
 
   /**
    * Type of an array containing offsets relative to the base cell and correspondent normalized 3d relationship vectors.
-   * The vectors describe the imaginative line connecting the center of the base cell and the center of the cell defined
-   * by the offset.
+   * The vectors (aka std::array<double,3>) describe the imaginative line connecting the center of the base cell and the
+   * center of the cell defined by the offset. It is used for sorting.
    */
   using offsetArray_t = std::vector<std::pair<unsigned long, std::array<double, 3>>>;
 

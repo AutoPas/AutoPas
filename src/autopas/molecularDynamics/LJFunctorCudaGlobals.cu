@@ -99,10 +99,28 @@ __device__ inline double getInfinity<double>() {
   return CUDART_INF;
 }
 
+/**
+ * Calculates the next power of two higher than or equal to the given number.
+ * This function is taken from: http://locklessinc.com/articles/next_pow2/
+ * @param x
+ * @return
+ */
+__device__ constexpr uint32_t nextPowerOfTwo(uint32_t x) {
+  x -= 1;
+  x |= (x >> 1);
+  x |= (x >> 2);
+  x |= (x >> 4);
+  x |= (x >> 8);
+  x |= (x >> 16);
+
+  return x + 1;
+}
+
 template <typename floatType, int blockSize>
 __device__ inline void reduceGlobalsShared(typename vec4<floatType>::Type *globals_shared) {
-  for (unsigned int s = blockSize / 2; s > 0; s >>= 1) {
-    if (threadIdx.x < s) {
+  constexpr uint32_t nextSmallerPowerOfTwoVal = nextPowerOfTwo(blockSize) / 2;
+  for (uint32_t s = nextSmallerPowerOfTwoVal; s > 0; s >>= 1) {
+    if (threadIdx.x < s and threadIdx.x + s < blockSize) {
       globals_shared[threadIdx.x].x += globals_shared[threadIdx.x + s].x;
       globals_shared[threadIdx.x].y += globals_shared[threadIdx.x + s].y;
       globals_shared[threadIdx.x].z += globals_shared[threadIdx.x + s].z;
@@ -212,7 +230,7 @@ __device__ inline typename vec3<floatType>::Type bodyBodyFN3(
   globalsi.x += drx * dfx * iOwnMask;
   globalsi.y += dry * dfy * iOwnMask;
   globalsi.z += drz * dfz * iOwnMask;
-  globalsi.w += getConstants<floatType>().epsilon24 * lj12m6 + getConstants<floatType>().shift6 * iOwnMask;
+  globalsi.w += (getConstants<floatType>().epsilon24 * lj12m6 + getConstants<floatType>().shift6) * iOwnMask;
 
   if (n3AdditionSafe) {
     fj->x -= dfx;
@@ -489,8 +507,8 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaGlobalsSoA<floatType> cell1, LJFun
       } else {
         offset = (j + threadIdx.x) % block_size;
       }
-      myf = bodyBodyFN3<floatType, true>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset,
-                                         myglobals, isOwned);
+      myf = bodyBodyFN3<floatType, false>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset,
+                                          myglobals, isOwned);
     }
     __syncthreads();
 
@@ -519,8 +537,8 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaGlobalsSoA<floatType> cell1, LJFun
       atomicAdd(cell2._forceX + idx, cell2_forces_shared[threadIdx.x].x);
       atomicAdd(cell2._forceY + idx, cell2_forces_shared[threadIdx.x].y);
       atomicAdd(cell2._forceZ + idx, cell2_forces_shared[threadIdx.x].z);
-      __syncthreads();
     }
+    __syncthreads();
   }
 
   // reduce globals
@@ -798,7 +816,7 @@ void LJFunctorCudaGlobalsWrapper<floatType>::LinkedCellsTraversalNoN3Wrapper(Fun
     CREATESWITCHCASES(cids_size, 0, LinkedCellsTraversalNoN3, (cell1, cids, cellSizes));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "Linked Cells NoN3: cuda Kernel size not available for Linked cells available. Too many particles "
+          "Linked Cells NoN3: cuda Kernel size not available for Linked cells. Too many particles "
           "in a cell. Requested: {}",
           reqThreads);
       break;
@@ -829,7 +847,7 @@ void LJFunctorCudaGlobalsWrapper<floatType>::LinkedCellsTraversalN3Wrapper(Funct
     CREATESWITCHCASES(cids_size, 0, LinkedCellsTraversalN3, (cell1, cids, cellSizes));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "Linked Cells N3:cuda Kernel size not available for Linked cells available. Too many particles in "
+          "Linked Cells N3:cuda Kernel size not available for Linked cells. Too many particles in "
           "a cell. Requested: {}",
           reqThreads);
       break;
@@ -906,7 +924,7 @@ void LJFunctorCudaGlobalsWrapper<floatType>::CellVerletTraversalNoN3Wrapper(
     CREATESWITCHCASES(ncells, 0, CellVerletTraversalNoN3, (cell1, others_size, other_ids));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "cuda Kernel size not available for Verlet cells available. Too many particles in a cell. "
+          "cuda Kernel size not available for Verlet cells. Too many particles in a cell. "
           "Requested: {}",
           clusterSize);
       break;
@@ -1019,7 +1037,7 @@ void LJFunctorCudaGlobalsWrapper<floatType>::CellVerletTraversalN3Wrapper(Functo
     CREATESWITCHCASES(ncells, 0, CellVerletTraversalN3, (cell1, others_size, other_ids));
     default:
       autopas::utils::ExceptionHandler::exception(
-          "cuda Kernel size not available for Verlet cells available. Too many particles in a cell. "
+          "cuda Kernel size not available for Verlet cells. Too many particles in a cell. "
           "Requested: {}",
           clusterSize);
       break;

@@ -98,12 +98,12 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    * Adds the given particle to the container. rebuildVerletLists() has to be called to have it actually sorted in.
    * @param p The particle to add.
    */
-  void addParticle(const Particle &p) override { _particlesToAdd.push_back(p); }
+  void addParticleImpl(const Particle &p) override { _particlesToAdd.push_back(p); }
 
   /**
    * @copydoc VerletLists::addHaloParticle()
    */
-  void addHaloParticle(const Particle &haloParticle) override {
+  void addHaloParticleImpl(const Particle &haloParticle) override {
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
   }
 
@@ -148,11 +148,6 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     }
 
     return invalidParticles;
-  }
-
-  bool isContainerUpdateNeeded() const override {
-    autopas::utils::ExceptionHandler::exception("VerletClusterLists.isContainerUpdateNeeded not yet implemented");
-    return false;
   }
 
   TraversalSelectorInfo getTraversalSelectorInfo() const override {

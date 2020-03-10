@@ -33,7 +33,7 @@ FetchContent_Declare(
         # https://github.com/jbeder/yaml-cpp/archive/master.zip
         # commit 72f699f:
         ${AUTOPAS_SOURCE_DIR}/libs/yaml-cpp-master.zip
-    URL_HASH MD5=6186f7ea92b907e9128bc74c96c1f791
+    URL_HASH MD5=1beaff71d0f24ff2b4b56ead1f3b58c4
     # needed to compile with ninja
 )
 
@@ -51,10 +51,10 @@ mark_as_advanced(
     YAML_CPP_CLANG_FORMAT_EXE
 )
 
-FetchContent_MakeAvailable(yaml-cpp)
-
-if (IS_DIRECTORY "${yaml-cpp_SOURCE_DIR}")
-    set_property(DIRECTORY ${yaml-cpp_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
+FetchContent_GetProperties(yaml-cpp)
+if (NOT yaml-cpp_POPULATED)
+    FetchContent_Populate(yaml-cpp)
+    add_subdirectory(${yaml-cpp_SOURCE_DIR} ${yaml-cpp_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif ()
 
 # Disable warnings

@@ -17,6 +17,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 
@@ -74,15 +75,64 @@ class ParticleContainerInterface {
   /**
    * Adds a particle to the container.
    * @param p The particle to be added.
+   * @tparam checkInBox Specifies whether a boundary check should be performed. Only disable this if the check has
+   * already been performed.
    */
-  virtual void addParticle(const ParticleType &p) = 0;
+  template <bool checkInBox = true>
+  void addParticle(const ParticleType &p) {
+    if constexpr (not checkInBox) {
+      addParticleImpl(p);
+    } else {
+      if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
+        addParticleImpl(p);
+      } else {
+        utils::ExceptionHandler::exception("Trying to add a particle that is not in the bounding box.\n" +
+                                           p.toString());
+      }
+    }
+  };
 
+ protected:
+  /**
+   * Adds a particle to the container.
+   * This is an unsafe version of addParticle() and does not perform a boundary check.
+   * @param p The particle to be added. This particle is already checked to be inside of the bounding box.
+   * @note Only call this function if the position of the particle is guaranteed to be inside of the bounding box!
+   */
+  virtual void addParticleImpl(const ParticleType &p) = 0;
+
+ public:
   /**
    * Adds a particle to the container that lies in the halo region of the container.
    * @param haloParticle Particle to be added.
+   * @tparam checkInBox Specifies whether a boundary check should be performed. Only disable this if the check has
+   * already been performed.
    */
-  virtual void addHaloParticle(const ParticleType &haloParticle) = 0;
+  template <bool checkInBox = true>
+  void addHaloParticle(const ParticleType &haloParticle) {
+    if constexpr (not checkInBox) {
+      addHaloParticleImpl(haloParticle);
+    } else {
+      /// @todo do we want a check of the particle not being too far away in here as well?
+      if (utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
+        utils::ExceptionHandler::exception("Trying to add a halo particle that is inside of the bounding box.\n" +
+                                           haloParticle.toString());
+      } else {
+        addHaloParticleImpl(haloParticle);
+      }
+    }
+  }
 
+ protected:
+  /**
+   * Adds a particle to the container that lies in the halo region of the container.
+   * This is an unsafe version of addParticle() and does not perform a boundary check.
+   * @param haloParticle Particle to be added. This particle is already checked to be outside of the bounding box.
+   * @note Only call this function if the position of the particle is guaranteed to be outside of the bounding box!
+   */
+  virtual void addHaloParticleImpl(const ParticleType &haloParticle) = 0;
+
+ public:
   /**
    * Update a halo particle of the container with the given haloParticle.
    * @param haloParticle Particle to be updated.
@@ -233,13 +283,6 @@ class ParticleContainerInterface {
    */
   AUTOPAS_WARN_UNUSED_RESULT
   virtual std::vector<ParticleType> updateContainer() = 0;
-
-  /**
-   * Check whether a container is valid, i.e. whether it is safe to use
-   * pair-wise interactions or the RegionParticleIteraor right now.
-   * @return true if an update is needed, false otherwise
-   */
-  virtual bool isContainerUpdateNeeded() const = 0;
 
   /**
    * Generates a traversal selector info for this container.

@@ -383,7 +383,7 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorCud
       } else {
         offset = (j + threadIdx.x) % block_size;
       }
-      myf = bodyBodyFN3<floatType, true>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset);
+      myf = bodyBodyFN3<floatType, false>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset);
     }
     __syncthreads();
 
@@ -410,8 +410,8 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaSoA<floatType> cell1, LJFunctorCud
       atomicAdd(cell2._forceX + idx, cell2_forces_shared[threadIdx.x].x);
       atomicAdd(cell2._forceY + idx, cell2_forces_shared[threadIdx.x].y);
       atomicAdd(cell2._forceZ + idx, cell2_forces_shared[threadIdx.x].z);
-      __syncthreads();
     }
+    __syncthreads();
   }
 
   atomicAdd(cell1._forceX + tid, myf.x);

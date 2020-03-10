@@ -59,23 +59,6 @@ class VarVerletLists
   }
 
   /**
-   * @copydoc VerletLists::checkNeighborListsAreValid
-   */
-  bool checkNeighborListsAreValid(bool useNewton3 = true) {
-    // if a particle was added or deleted, ... the list is definitely invalid
-    if (not this->_neighborListIsValid) {
-      return false;
-    }
-    // if a particle moved more than skin/2 outside of its cell the list is
-    // invalid
-    if (this->isContainerUpdateNeeded()) {
-      return false;
-    }
-
-    return _neighborList.checkNeighborListValidity(useNewton3, this->getCutoff());
-  }
-
-  /**
    * Returns the number of neighbor pairs in the list.
    * @return the number of neighbor pairs in the list.
    */

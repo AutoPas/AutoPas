@@ -10,6 +10,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/utils/StaticSelectorMacros.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
 template <class Particle>
@@ -201,41 +202,52 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
 }
 
 TEST_P(LJFunctorCudaTest, testLJFunctorVSLJFunctorCuda) {
+  /// @todo c++20: replace below std::get<> with structured bindings. c++20 allows captured values in lambdas.
+  // auto [newton3, calculateGlobals, numParticlesFirstCell, numParticlesSecondCell] = GetParam();
   auto options = GetParam();
-  if (std::get<3>(options) < 0) {
-    if (std::get<0>(options)) {
-      if (std::get<1>(options)) {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, true, true>(std::get<2>(options));
+  auto newton3 = std::get<0>(options);
+  auto calculateGlobals = std::get<1>(options);
+  auto numParticlesFirstCell = std::get<2>(options);
+  auto numParticlesSecondCell = std::get<3>(options);
+
+  // using nested withStaticBool is not possible because of bug in gcc7 and gcc8
+  if (newton3) {
+    autopas::utils::withStaticBool(calculateGlobals, [&](auto calculateGlobalsC) {
+      if (numParticlesSecondCell == 0) {
+        testLJFunctorVSLJFunctorCudaOneCell<Particle, true /*newton3*/, calculateGlobalsC>(numParticlesFirstCell);
       } else {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, true, false>(std::get<2>(options));
+        testLJFunctorVSLJFunctorCudaTwoCells<Particle, true /*newton3*/, calculateGlobalsC>(numParticlesFirstCell,
+                                                                                            numParticlesSecondCell);
       }
-    } else {
-      if (std::get<1>(options)) {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, false, true>(std::get<2>(options));
-      } else {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, false, false>(std::get<2>(options));
-      }
-    }
+    });
   } else {
-    if (std::get<0>(options)) {
-      if (std::get<1>(options)) {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, true, true>(std::get<2>(options), std::get<3>(options));
+    autopas::utils::withStaticBool(calculateGlobals, [&](auto calculateGlobalsC) {
+      if (numParticlesSecondCell == 0) {
+        testLJFunctorVSLJFunctorCudaOneCell<Particle, false /*newton3*/, calculateGlobalsC>(numParticlesFirstCell);
       } else {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, true, false>(std::get<2>(options), std::get<3>(options));
+        testLJFunctorVSLJFunctorCudaTwoCells<Particle, false /*newton3*/, calculateGlobalsC>(numParticlesFirstCell,
+                                                                                             numParticlesSecondCell);
       }
-    } else {
-      if (std::get<1>(options)) {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, false, true>(std::get<2>(options), std::get<3>(options));
-      } else {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, false, false>(std::get<2>(options), std::get<3>(options));
-      }
-    }
+    });
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorCudaTest,
-                         ::testing::Combine(::testing::Bool(), ::testing::Bool(),
-                                            ::testing::ValuesIn({1, 2, 4, 16, 31, 32, 33, 55, 64, 65}),
-                                            ::testing::ValuesIn({-1, 1, 4, 16, 31, 32, 33, 55, 64, 65})));
+static auto toString = [](const auto &info) {
+  auto [newton3, calculateGlobals, numParticlesFirstCell, numParticlesSecondCell] = info.param;
+  std::stringstream resStream;
+  resStream << (newton3 ? "N3" : "noN3") << (calculateGlobals ? "globals" : "noGlobals") << numParticlesFirstCell << "x"
+            << numParticlesSecondCell;
+  std::string res = resStream.str();
+  std::replace(res.begin(), res.end(), '-', '_');
+  std::replace(res.begin(), res.end(), '.', '_');
+  return res;
+};
+
+INSTANTIATE_TEST_SUITE_P(
+    Generated, LJFunctorCudaTest,
+    ::testing::Combine(::testing::Bool(), ::testing::Bool(),
+                       ::testing::ValuesIn({1, 2, 4, 16, 31, 32, 33, 55, 64, 65}) /* numParticlesFirstCell */,
+                       ::testing::ValuesIn({0, 1, 4, 16, 31, 32, 33, 55, 64, 65}) /* numParticlesSecondCell */),
+    toString);
 
 #endif  // AUTOPAS_CUDA

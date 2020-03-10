@@ -56,23 +56,17 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
   ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
   /**
-   * @copydoc ParticleContainerInterface::addParticle()
+   * @copydoc ParticleContainerInterface::addParticleImpl()
    */
-  void addParticle(const ParticleType &p) override {
-    bool inBox = autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax());
-    if (inBox) {
-      ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
-      cell.addParticle(p);
-    } else {
-      utils::ExceptionHandler::exception(
-          "LinkedCells: Trying to add a particle that is not inside the bounding box.\n" + p.toString());
-    }
+  void addParticleImpl(const ParticleType &p) override {
+    ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
+    cell.addParticle(p);
   }
 
   /**
-   * @copydoc ParticleContainerInterface::addHaloParticle()
+   * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
-  void addHaloParticle(const ParticleType &haloParticle) override {
+  void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwned(false);
     ParticleCell &cell = _cellBlock.getContainingCell(pCopy.getR());
@@ -159,7 +153,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
       for (auto &&p : myInvalidParticles) {
         // if not in halo
         if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-          addParticle(p);
+          this->template addParticle<false>(p);
         } else {
           myInvalidNotOwnedParticles.push_back(p);
         }
@@ -174,33 +168,6 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
       }
     }
     return invalidParticles;
-  }
-
-  bool isContainerUpdateNeeded() const override {
-    std::atomic<bool> outlierFound(false);
-#ifdef AUTOPAS_OPENMP
-    /// @todo: find a sensible value for magic number
-    // numThreads should be at least 1 and maximal max_threads
-    int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 500)));
-    AutoPasLog(trace, "Using {} threads", numThreads);
-#pragma omp parallel for shared(outlierFound) num_threads(numThreads)
-#endif
-    for (size_t cellIndex1d = 0; cellIndex1d < this->_cells.size(); ++cellIndex1d) {
-      std::array<double, 3> boxmin{0., 0., 0.};
-      std::array<double, 3> boxmax{0., 0., 0.};
-      _cellBlock.getCellBoundingBox(cellIndex1d, boxmin, boxmax);
-
-      for (auto iter = this->_cells[cellIndex1d].begin(); iter.isValid(); ++iter) {
-        if (not utils::inBox(iter->getR(), boxmin, boxmax)) {
-          outlierFound = true;  // we need an update
-          break;
-        }
-      }
-      // abort loop (for all threads) by moving loop index to end
-      if (outlierFound) cellIndex1d = this->_cells.size();
-    }
-
-    return outlierFound;
   }
 
   TraversalSelectorInfo getTraversalSelectorInfo() const override {

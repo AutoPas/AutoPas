@@ -36,9 +36,15 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param interactionLength The interaction length.
+   * @param cellLengths The lengths of the cell.
    */
-  explicit C01CudaTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor)
-      : CellPairTraversal<ParticleCell>(dims), _functor(pairwiseFunctor) {
+  explicit C01CudaTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                            double interactionLength, std::array<double, 3> cellLengths)
+      : CellPairTraversal<ParticleCell>(dims),
+        _functor{pairwiseFunctor},
+        _interactionLength{interactionLength},
+        _cellLengths{cellLengths} {
     computeOffsets();
   }
 
@@ -63,7 +69,19 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
 #if defined(AUTOPAS_CUDA)
     int nDevices;
     cudaGetDeviceCount(&nDevices);
-    return (dataLayout == DataLayoutOption::cuda) && (nDevices > 0);
+    // cuda only:
+    bool applicable = dataLayout == DataLayoutOption::cuda;
+    // only if we actually have some devices:
+    applicable &= nDevices > 0;
+    for (auto cellLength : _cellLengths) {
+      // we only interact neighboring cells, therefore the cell length has to be bigger than the interaction length.
+      /// @todo reenable when https://github.com/AutoPas/AutoPas/issues/417 is done.
+      applicable &= cellLength >= _interactionLength;
+    }
+    // currently newton3 support for this traversal is buggy
+    /// @todo reenable when fixed, see: https://github.com/AutoPas/AutoPas/issues/420
+    applicable &= not useNewton3;
+    return applicable;
 #else
     return false;
 #endif
@@ -98,6 +116,16 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
    * device cell sizes storage
    */
   utils::CudaDeviceVector<size_t> _deviceCellSizes;
+
+  /**
+   * Interaction length.
+   */
+  double _interactionLength;
+
+  /**
+   * Cell lengths.
+   */
+  std::array<double, 3> _cellLengths;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
@@ -107,8 +135,12 @@ inline void C01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
       for (int x = -1; x <= 1; ++x) {
         int offset = (z * this->_cellsPerDimension[1] + y) * this->_cellsPerDimension[0] + x;
         if (not useNewton3) {
+          // all offsets for useNewton3 == false
           _cellOffsets.push_back(offset);
         } else {
+          // only positive offsets for useNewton3 == true
+          /// @todo this is wrong! especially for halo cells and has to be adapted for correct calculations!
+          /// see https://github.com/AutoPas/AutoPas/issues/420
           if (offset > 0) {
             _cellOffsets.push_back(offset);
           }
