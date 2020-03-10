@@ -362,7 +362,7 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
 
 void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation,
                                    InteractionType interactionType, size_t additionalParticlesToVerletNumber,
-                                   bool cellWiseOwnedState) {
+                                   bool cellWiseOwnedState, uint64_t numParticleReplicas) {
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(
@@ -401,25 +401,18 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
     default:
       FAIL() << "not in enum where_type";
   }
+  whereFactor *= numParticleReplicas;
   FMCell cell1, cell2;
-  {
-    Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0, 0);
+  for (uint64_t replicaID = 0; replicaID < numParticleReplicas; ++replicaID) {
+    Molecule p1({0. + xOffset, 0. + 2. * replicaID, 0.}, {0., 0., 0.}, 2 * replicaID, 0);
     p1.setOwned(owned1);
     cell1.addParticle(p1);
-    Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
+    Molecule p2({0.1 + xOffset, 0.2 + 2. * replicaID, 0.3}, {0., 0., 0.}, 2 * replicaID + 1, 0);
     p2.setOwned(owned2);
-    Molecule pAdditional({1.2 + xOffset, 0., 0.}, {0., 0., 0.}, 2, 0);
-    pAdditional.setOwned(owned2);
+
     switch (interactionType) {
       case InteractionType::verlet:
-        cell1.addParticle(p2);
-        // add dummy particles outside of the cutoff. this will only change the number of particles in the verlet lists,
-        // but will leave the desired result unchanged. the higher number of particles is useful to test the soa
-        // functor version of verlet lists.
-        for (size_t i = 0; i < additionalParticlesToVerletNumber; ++i) {
-          cell1.addParticle(pAdditional);
-        }
-        break;
+        // same as own: add to cell1.
       case InteractionType::own:
         cell1.addParticle(p2);
         break;
@@ -431,6 +424,17 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
     }
   }
 
+  if (interactionType == InteractionType::verlet) {
+    Molecule pAdditional({1.2 + xOffset, 0., 0.}, {0., 0., 0.}, std::numeric_limits<uint64_t>::max(), 0);
+    pAdditional.setOwned(owned2);
+    // add dummy particles outside of the cutoff. this will only change the number of particles in the verlet lists,
+    // but will leave the desired result unchanged. the higher number of particles is useful to test the soa
+    // functor version of verlet lists.
+    for (size_t i = 0; i < additionalParticlesToVerletNumber; ++i) {
+      cell1.addParticle(pAdditional);
+    }
+  }
+
   functor.initTraversal();
 
   functor.SoALoader(cell1, cell1._particleSoABuffer);
@@ -439,19 +443,22 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
   switch (interactionType) {
     case InteractionType::verlet: {
       // Build verlet list
-      std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborList(2);
-      neighborList[0].push_back(1);
-      for (size_t i = 0; i < additionalParticlesToVerletNumber; ++i) {
-        neighborList[0].push_back(2 + i);
-      }
-      if (not newton3) {
-        neighborList[1].push_back(0);
+      std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborList(2 * numParticleReplicas);
+      for (uint64_t replicaID = 0; replicaID < numParticleReplicas; ++replicaID) {
+        neighborList[2 * replicaID].push_back(2 * replicaID + 1);
         for (size_t i = 0; i < additionalParticlesToVerletNumber; ++i) {
-          neighborList[1].push_back(2 + i);
+          neighborList[2 * replicaID].push_back(2 * numParticleReplicas + i);
+        }
+        if (not newton3) {
+          neighborList[2 * replicaID + 1].push_back(2 * replicaID);
+          for (size_t i = 0; i < additionalParticlesToVerletNumber; ++i) {
+            neighborList[2 * replicaID + 1].push_back(2 * numParticleReplicas + i);
+          }
         }
       }
-      functor.SoAFunctorVerlet(cell1._particleSoABuffer, 0, neighborList[0], newton3);
-      functor.SoAFunctorVerlet(cell1._particleSoABuffer, 1, neighborList[1], newton3);
+      for (uint64_t i = 0; i < 2 * numParticleReplicas; ++i) {
+        functor.SoAFunctorVerlet(cell1._particleSoABuffer, i, neighborList[i], newton3);
+      }
     } break;
     case InteractionType::own:
       functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
@@ -474,11 +481,13 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
   EXPECT_NEAR(upot, whereFactor * expectedEnergy, absDelta)
       << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation
       << ", interactionType: " << (interactionType == pair ? "pair" : (interactionType == own ? "own" : "verlet"))
-      << ", additionalVerletDummyParticles: " << additionalParticlesToVerletNumber;
+      << ", additionalVerletDummyParticles: " << additionalParticlesToVerletNumber
+      << ", cellWiseOwnedState: " << cellWiseOwnedState << ", numParticleReplicas: " << numParticleReplicas;
   EXPECT_NEAR(virial, whereFactor * expectedVirial, absDelta)
       << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation
       << ", interactionType: " << (interactionType == pair ? "pair" : (interactionType == own ? "own" : "verlet"))
-      << ", additionalVerletDummyParticles: " << additionalParticlesToVerletNumber;
+      << ", additionalVerletDummyParticles: " << additionalParticlesToVerletNumber
+      << ", cellWiseOwnedState: " << cellWiseOwnedState << ", numParticleReplicas: " << numParticleReplicas;
 }
 
 TEST_F(LJFunctorTest, testSoAFunctorGlobalsOwn) {
@@ -488,11 +497,13 @@ TEST_F(LJFunctorTest, testSoAFunctorGlobalsOwn) {
     for (where_type where : {inside, outside}) {
       for (bool newton3 : {false, true}) {
         for (bool cellWiseOwnedState : {false, true}) {
-          if (where == outside && not duplicatedCalculation) {
-            // this case does not happen and the test is not made to check this, i.e., it will fail.
-            continue;
+          for (uint64_t numParticleReplicas : {1, 2}) {
+            if (where == outside && not duplicatedCalculation) {
+              // this case does not happen and the test is not made to check this, i.e., it will fail.
+              continue;
+            }
+            testSoAGlobals(where, newton3, duplicatedCalculation, own, 0, cellWiseOwnedState, numParticleReplicas);
           }
-          testSoAGlobals(where, newton3, duplicatedCalculation, own, 0, cellWiseOwnedState);
         }
       }
     }
@@ -507,7 +518,10 @@ TEST_F(LJFunctorTest, testSoAFunctorGlobalsVerlet) {
       for (where_type where : {inside, boundary, outside}) {
         for (bool newton3 : {false, true}) {
           for (bool cellWiseOwnedState : {false, true}) {
-            testSoAGlobals(where, newton3, duplicatedCalculation, verlet, additionalDummyParticles, cellWiseOwnedState);
+            for (uint64_t numParticleReplicas : {1, 2}) {
+              testSoAGlobals(where, newton3, duplicatedCalculation, verlet, additionalDummyParticles,
+                             cellWiseOwnedState, numParticleReplicas);
+            }
           }
         }
       }
@@ -520,7 +534,9 @@ TEST_F(LJFunctorTest, testSoAFunctorGlobalsPair) {
     for (where_type where : {inside, boundary, outside}) {
       for (bool newton3 : {false, true}) {
         for (bool cellWiseOwnedState : {false, true}) {
-          testSoAGlobals(where, newton3, duplicatedCalculation, pair, 0, cellWiseOwnedState);
+          for (uint64_t numParticleReplicas : {1, 2}) {
+            testSoAGlobals(where, newton3, duplicatedCalculation, pair, 0, cellWiseOwnedState, numParticleReplicas);
+          }
         }
       }
     }

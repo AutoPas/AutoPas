@@ -33,7 +33,7 @@ class LJFunctorTest : public AutoPasTestBase {
   enum where_type { inside, boundary, outside };
   void testAoSGlobals(where_type where, bool newton3, bool duplicatedCalculation);
   void testSoAGlobals(where_type where, bool newton3, bool duplicatedCalculation, InteractionType interactionType,
-                      size_t additionalParticlesToVerletNumber, bool cellWiseOwnedState);
+                      size_t additionalParticlesToVerletNumber, bool cellWiseOwnedState, uint64_t numParticleReplicas);
 
   constexpr static double cutoff{1.};
   constexpr static double epsilon{1.};
