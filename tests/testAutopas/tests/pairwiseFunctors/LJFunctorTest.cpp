@@ -369,46 +369,54 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
       cutoff, duplicatedCalculation);
   functor.setParticleProperties(epsilon * 24, 1);
   double xOffset;
-  double whereFactor;
+  double whereFactor = 0.;
   std::string where_str;
   bool owned1, owned2;
   switch (where) {
     case inside:
       xOffset = 0.;
-      whereFactor = 1.;
       where_str = "inside";
       owned1 = owned2 = true;
       break;
     case boundary:
       xOffset = 4.9;
-      // if there are no duplicated calculations all calculations count, therefore factor = 1
-      // if there are duplicated calculations there shouldn't be only a partial (factor 0.5) contribution to the energy
-      // if one particle is inside and one outside
-      whereFactor = duplicatedCalculation ? 0.5 : 1;
       where_str = "boundary";
       owned1 = true;
       owned2 = false;
       break;
     case outside:
       xOffset = 5.0;
-      // if there are no duplicated calculations all calculations count, therefore factor = 1
-      // if there are duplicated calculations there shouldn't be any contribution to the energy if both particles are
-      // outside
-      whereFactor = duplicatedCalculation ? 0. : 1;
       where_str = "outside";
       owned1 = owned2 = false;
       break;
     default:
       FAIL() << "not in enum where_type";
   }
-  whereFactor *= numParticleReplicas;
   FMCell cell1, cell2;
   for (uint64_t replicaID = 0; replicaID < numParticleReplicas; ++replicaID) {
+    if (not cellWiseOwnedState) {
+      if (replicaID > 0) {
+        if (owned1 && owned2) {
+          owned1 = false;
+          owned2 = false;
+        } else {
+          owned1 = true;
+          owned2 = true;
+        }
+      }
+    }
+
     Molecule p1({0. + xOffset, 0. + 2. * replicaID, 0.}, {0., 0., 0.}, 2 * replicaID, 0);
     p1.setOwned(owned1);
     cell1.addParticle(p1);
     Molecule p2({0.1 + xOffset, 0.2 + 2. * replicaID, 0.3}, {0., 0., 0.}, 2 * replicaID + 1, 0);
     p2.setOwned(owned2);
+
+    // calculate whereFactor:
+    double currentWhereFactor = 0.;
+    currentWhereFactor += p1.isOwned() ? .5 : 0.;
+    currentWhereFactor += p2.isOwned() ? .5 : 0.;
+    whereFactor += duplicatedCalculation ? currentWhereFactor : 1.;
 
     switch (interactionType) {
       case InteractionType::verlet:
