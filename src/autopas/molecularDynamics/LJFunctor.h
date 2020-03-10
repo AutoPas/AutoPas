@@ -360,27 +360,21 @@ class LJFunctor
                       const bool cellWiseOwnedState) override {
     // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
     /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
-    if (newton3) {
+    utils::withStaticBool(newton3, [&](auto newton3) {
       if (cellWiseOwnedState) {
-        utils::withStaticBool(_duplicatedCalculations, [&](auto duplicatedCalculations) {
-          SoAFunctorPairImpl<true /*newton3*/, true /*cellWiseOwnedState*/, duplicatedCalculations>(soa1, soa2);
-        });
+        if (_duplicatedCalculations) {
+          SoAFunctorPairImpl<newton3, true /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa1, soa2);
+        } else {
+          SoAFunctorPairImpl<newton3, true /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa1, soa2);
+        }
       } else {
-        utils::withStaticBool(_duplicatedCalculations, [&](auto duplicatedCalculations) {
-          SoAFunctorPairImpl<true /*newton3*/, false /*cellWiseOwnedState*/, duplicatedCalculations>(soa1, soa2);
-        });
+        if (_duplicatedCalculations) {
+          SoAFunctorPairImpl<newton3, false /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa1, soa2);
+        } else {
+          SoAFunctorPairImpl<newton3, false /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa1, soa2);
+        }
       }
-    } else {
-      if (cellWiseOwnedState) {
-        utils::withStaticBool(_duplicatedCalculations, [&](auto duplicatedCalculations) {
-          SoAFunctorPairImpl<false /*newton3*/, true /*cellWiseOwnedState*/, duplicatedCalculations>(soa1, soa2);
-        });
-      } else {
-        utils::withStaticBool(_duplicatedCalculations, [&](auto duplicatedCalculations) {
-          SoAFunctorPairImpl<false /*newton3*/, false /*cellWiseOwnedState*/, duplicatedCalculations>(soa1, soa2);
-        });
-      }
-    }
+    });
   }
 
  private:

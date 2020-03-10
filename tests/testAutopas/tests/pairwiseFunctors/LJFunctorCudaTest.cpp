@@ -210,7 +210,8 @@ TEST_P(LJFunctorCudaTest, testLJFunctorVSLJFunctorCuda) {
   auto numParticlesFirstCell = std::get<2>(options);
   auto numParticlesSecondCell = std::get<3>(options);
 
-  // using nested withStaticBool is not possible because of bug in gcc7 and gcc8 (and the intel compiler)
+  // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
+  /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
   if (newton3) {
     autopas::utils::withStaticBool(calculateGlobals, [&](auto calculateGlobalsC) {
       if (numParticlesSecondCell == 0) {
