@@ -30,18 +30,26 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
                              std::array<double, 3>,  // boxMax
                              bool                    // doSlightShift
                              >;
+  /**
+   * Struct to hold global values
+   */
+  struct Globals {
+    double upot{};
+    double virial{};
+  };
+
   static void generateReference(mykey_t key);
 
   static auto getTestParams();
 
  protected:
-  template <class Container>
-  static void executeSlightShift(Container &container, double magnitude, unsigned long totalNumParticles);
+  template <class ContainerPtrType>
+  static void executeShift(ContainerPtrType containerPtr, double magnitude, size_t totalNumParticles);
 
-  static std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> calculateForces(
+  static std::tuple<std::vector<std::array<double, 3>>, Globals> calculateForces(
       autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
-      autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, unsigned long numMolecules,
-      unsigned long numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift);
+      autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, size_t numMolecules,
+      size_t numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift);
 
   static constexpr std::array<double, 3> _boxMin{0, 0, 0};
   static constexpr double _cutoff{1.};
@@ -50,5 +58,5 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static constexpr double _sig{1.};
 
   static inline std::map<mykey_t, std::vector<std::array<double, 3>>> _forcesReference{};
-  static inline std::map<mykey_t, std::array<double, 2>> _globalValuesReference{};
+  static inline std::map<mykey_t, Globals> _globalValuesReference{};
 };

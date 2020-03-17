@@ -9,6 +9,12 @@ if (AUTOPAS_ENABLE_FAST_MATH)
     )
 endif ()
 
+# autopas requires c++17. If cmake < 3.17 is used this is set globally in the top level
+# CMakeLists.txt
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.17)
+    target_compile_features(autopas PUBLIC cxx_std_17)
+endif ()
+
 target_compile_options(
     autopas
     PUBLIC

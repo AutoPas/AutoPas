@@ -236,14 +236,6 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewt
         }
         cell1 = &combinationSlice[index];
         cell1ViewEnd = combinationSlicesOffsets[index][1];
-      } else if (offset1 == _baseOffsets.back().front()) {
-        const auto index = (currentSlice + numSlices - 1) % numSlices;
-        if (combinationSlicesOffsets[index][1] == 0) {
-          continue;
-        }
-        cell1 = &combinationSlice[index];
-        cell1ViewStart = 0;
-        cell1ViewEnd = combinationSlicesOffsets[index][1];
       } else {
         const unsigned long cellIndex1 = baseIndex + offset1;
         cell1 = &cells[cellIndex1];

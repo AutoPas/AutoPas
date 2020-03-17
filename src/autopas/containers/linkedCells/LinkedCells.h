@@ -100,8 +100,6 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    AutoPasLog(debug, "Using traversal {}.", traversal->getTraversalType().to_string());
-
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
@@ -153,7 +151,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
       for (auto &&p : myInvalidParticles) {
         // if not in halo
         if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-          this->template addParticle<true>(p);
+          this->template addParticle<false>(p);
         } else {
           myInvalidNotOwnedParticles.push_back(p);
         }

@@ -57,12 +57,12 @@ static void testClusterGenerationAndDummies() {
 
     // Skip generating neighbor lists
 
-    // Check if dummy particles are filled in correctly. (Dummy particles always have ID 0, filled up particles have
-    // ID>0.
+    // Check if dummy particles are filled in correctly. (Dummy particles always have ID
+    // std::numeric_limits<size_t>::max(), filled up particles have ID>0.
     tower.fillUpWithDummyParticles(0, 0);
     const auto &lastCluster = tower.getCluster(tower.getNumClusters() - 1);
     for (size_t i = 1; i <= tower.getNumDummyParticles(); i++) {
-      EXPECT_EQ(lastCluster[clusterSize - i].getID(), 0);
+      EXPECT_EQ(lastCluster[clusterSize - i].getID(), std::numeric_limits<size_t>::max());
     }
   }
 }

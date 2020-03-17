@@ -93,8 +93,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
   void addParticleImpl(const Particle &p) override {
     if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
-      // removes dummy particles in first cell
-      this->_cells[0].resize(_dummyStarts[0]);
+      removeDummiesFromFirstCell();
       // add particle somewhere, because lists will be rebuild anyways
       this->_cells[0].addParticle(p);
       ++_dummyStarts[0];
@@ -111,8 +110,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     Particle p_copy = haloParticle;
     if (autopas::utils::notInBox(p_copy.getR(), this->getBoxMin(), this->getBoxMax())) {
       _isValid = false;
-      // removes dummy particles in first cell
-      this->_cells[0].resize(_dummyStarts[0]);
+      removeDummiesFromFirstCell();
       p_copy.setOwned(false);
       // add particle somewhere, because lists will be rebuild anyways
       this->_cells[0].addParticle(p_copy);
@@ -353,7 +351,10 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
    */
   void deleteDummyParticles() {
     for (size_t i = 0; i < this->_cells.size(); ++i) {
-      this->_cells[i].resize(_dummyStarts[i]);
+      // removes dummy particles in first cell, if the cell is not empty!
+      if (this->_cells[i].begin().isValid()) {
+        this->_cells[i].resize(_dummyStarts[i], *(this->_cells[i].begin()));
+      }
     }
     _isValid = false;
   }
@@ -434,19 +435,19 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
       const auto numParticles = this->_cells[i].numParticles();
 
       _dummyStarts[i] = numParticles;
-      unsigned int numDummys = _clusterSize;
-      if (numParticles > 0) {
-        numDummys -= (numParticles % (size_t)_clusterSize);
-      }
+      auto sizeLastCluster = (numParticles % _clusterSize);
+      unsigned int numDummys = sizeLastCluster != 0 ? _clusterSize - sizeLastCluster : 0;
 
-      Particle dummyParticle = Particle();
-      for (unsigned int j = 0; j < numDummys; ++j) {
-        dummyParticle.setR({_boxMaxWithHalo[0] + 8 * this->getInteractionLength() + static_cast<double>(i),
-                            _boxMaxWithHalo[1] + 8 * this->getInteractionLength() + static_cast<double>(j),
-                            _boxMaxWithHalo[2] + 8 * this->getInteractionLength()});
-        dummyParticle.setID(std::numeric_limits<size_t>::max());
-        dummyParticle.setOwned(false);
-        this->_cells[i].addParticle(dummyParticle);
+      if (numDummys != 0) {
+        Particle dummyParticle = *(this->_cells[i].begin());
+        for (unsigned int j = 0; j < numDummys; ++j) {
+          dummyParticle.setR({_boxMaxWithHalo[0] + 8 * this->getInteractionLength() + static_cast<double>(i),
+                              _boxMaxWithHalo[1] + 8 * this->getInteractionLength() + static_cast<double>(j),
+                              _boxMaxWithHalo[2] + 8 * this->getInteractionLength()});
+          dummyParticle.setID(std::numeric_limits<size_t>::max());
+          dummyParticle.setOwned(false);
+          this->_cells[i].addParticle(dummyParticle);
+        }
       }
     }
 
@@ -494,6 +495,17 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     }
     return true;
   }
+
+  /**
+   * Removes dummy particles from the first cell.
+   */
+  void removeDummiesFromFirstCell() {
+    // removes dummy particles in first cell, if the cell is not empty!
+    if (this->_cells[0].begin().isValid()) {
+      this->_cells[0].resize(_dummyStarts[0], *(this->_cells[0].begin()));
+    }
+  }
+
   std::array<double, 3> _boxMinWithHalo, _boxMaxWithHalo;
 
   /// indices where dummy particles in the cells start

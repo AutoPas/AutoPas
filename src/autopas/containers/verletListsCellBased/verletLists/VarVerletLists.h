@@ -43,8 +43,6 @@ class VarVerletLists
   ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    AutoPasLog(debug, "Using traversal {}.", traversal->getTraversalType().to_string());
-
     auto *traversalInterface = dynamic_cast<VarVerletTraversalInterface<NeighborList> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setNeighborListToTraverse(_neighborList);
