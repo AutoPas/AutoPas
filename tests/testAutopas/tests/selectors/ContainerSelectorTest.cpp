@@ -119,21 +119,7 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   }
 }
 
-/// @todo: use this instead of below to enable testing of VerletClusterLists.
-// INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
-//                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()),
-//                         ValuesIn(autopas::ContainerOption::getAllOptions())),
-//                         ContainerSelectorTest::PrintToStringParamName());
-
 INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
-                         Combine(ValuesIn([]() -> std::set<autopas::ContainerOption> {
-                                   auto all = autopas::ContainerOption::getAllOptions();
-                                   all.erase(all.find(autopas::ContainerOption::verletClusterLists));
-                                   return all;
-                                 }()),
-                                 ValuesIn([]() -> std::set<autopas::ContainerOption> {
-                                   auto all = autopas::ContainerOption::getAllOptions();
-                                   all.erase(all.find(autopas::ContainerOption::verletClusterLists));
-                                   return all;
-                                 }())),
+                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()),
+                                 ValuesIn(autopas::ContainerOption::getAllOptions())),
                          ContainerSelectorTest::PrintToStringParamName());
