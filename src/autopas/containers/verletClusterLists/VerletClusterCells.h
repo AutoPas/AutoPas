@@ -95,16 +95,11 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
    * @copydoc VerletLists::addParticleImpl()
    */
   void addParticleImpl(const Particle &p) override {
-    if (autopas::utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-      _isValid = false;
-      removeDummiesFromFirstCell();
-      // add particle somewhere, because lists will be rebuild anyways
-      this->_cells[0].addParticle(p);
-      ++_dummyStarts[0];
-    } else {
-      utils::ExceptionHandler::exception(
-          "VerletCluster: trying to add particle that is not inside the bounding box.\n" + p.toString());
-    }
+    _isValid = false;
+    removeDummiesFromFirstCell();
+    // add particle somewhere, because lists will be rebuild anyways
+    this->_cells[0].addParticle(p);
+    ++_dummyStarts[0];
   }
 
   /**
