@@ -6,8 +6,8 @@
 
 #include "VerletClusterCellsTest.h"
 
-#include "autopas/containers/verletClusterLists/VerletClusterCells.h"
-#include "autopas/containers/verletClusterLists/traversals/VerletClusterCellsTraversal.h"
+#include "autopas/containers/verletClusterCells/VerletClusterCells.h"
+#include "autopas/containers/verletClusterCells/traversals/VerletClusterCellsTraversal.h"
 #include "testingHelpers/TouchableParticle.h"
 
 using ::testing::_;
