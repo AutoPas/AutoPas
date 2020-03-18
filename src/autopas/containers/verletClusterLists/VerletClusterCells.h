@@ -107,17 +107,12 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
    */
   void addHaloParticleImpl(const Particle &haloParticle) override {
     Particle p_copy = haloParticle;
-    if (autopas::utils::notInBox(p_copy.getR(), this->getBoxMin(), this->getBoxMax())) {
-      _isValid = false;
-      removeDummiesFromFirstCell();
-      p_copy.setOwned(false);
-      // add particle somewhere, because lists will be rebuild anyways
-      this->_cells[0].addParticle(p_copy);
-      ++_dummyStarts[0];
-    } else {
-      utils::ExceptionHandler::exception(
-          "VerletCluster: trying to add halo particle that is inside the bounding box.\n" + haloParticle.toString());
-    }
+    _isValid = false;
+    removeDummiesFromFirstCell();
+    p_copy.setOwned(false);
+    // add particle somewhere, because lists will be rebuild anyways
+    this->_cells[0].addParticle(p_copy);
+    ++_dummyStarts[0];
   }
 
   /**
