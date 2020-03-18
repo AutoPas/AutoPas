@@ -102,7 +102,9 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    * @copydoc VerletLists::addHaloParticle()
    */
   void addHaloParticleImpl(const Particle &haloParticle) override {
-    autopas::utils::ExceptionHandler::exception("VerletClusterLists.addHaloParticle not yet implemented.");
+    Particle copy = haloParticle;
+    copy.setOwned(false);
+    _particlesToAdd.push_back(copy);
   }
 
   /**
