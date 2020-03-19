@@ -32,7 +32,6 @@ class VerletClusterListsRebuilder {
   int _interactionLengthInTowers;
   double _towerSideLengthReciprocal;
   std::array<size_t, 2> _towersPerDim;
-  bool _neighborListIsNewton3;
   double _interactionLength;
   double _interactionLengthSqr;
   std::array<double, 3> _boxMin;
@@ -45,26 +44,23 @@ class VerletClusterListsRebuilder {
    * @param clusterList The cluster list to rebuild the neighbor lists for.
    * @param towers The towers from the cluster list to rebuild.
    * @param particlesToAdd New particles to add.
-   * @param newton3 If the neighbor lists should use newton 3.
    */
   VerletClusterListsRebuilder(const VerletClusterLists<Particle> &clusterList,
                               std::vector<ClusterTower<Particle, clusterSize>> &towers,
-                              std::vector<Particle> &particlesToAdd, bool newton3)
+                              std::vector<Particle> &particlesToAdd)
       : _particlesToAdd(particlesToAdd),
         _towers(towers),
         _towerSideLength(clusterList.getTowerSideLength()),
         _interactionLengthInTowers(clusterList.getNumTowersPerInteractionLength()),
         _towerSideLengthReciprocal(1 / _towerSideLength),
         _towersPerDim(clusterList.getTowersPerDimension()),
-        _neighborListIsNewton3(newton3),
         _interactionLength(clusterList.getInteractionLength()),
         _interactionLengthSqr(_interactionLength * _interactionLength),
         _boxMin(clusterList.getBoxMin()),
         _boxMax(clusterList.getBoxMax()) {}
 
   /**
-   * Rebuilds the towers, clusters, and neighbor lists. Clusters are filled with dummies as described in
-   * ClusterTower::fillUpWithDummyParticles.
+   * Rebuilds the towers, clusters, and neighbor lists.
    *
    * @return new values for VerletClusterLists member variables. They are returned as tuple consisting of:
    * {
@@ -72,10 +68,9 @@ class VerletClusterListsRebuilder {
    *  int:                   The interaction length in towers using the new tower side length,
    *  std::array<size_t, 2>: The number of towers in each dimension using the new tower side length,
    *  size_t:                The new number of clusters in the container,
-   *  bool:                  If the neighbor lists use newton 3.
    * }
    */
-  auto rebuild() {
+  auto rebuildTowersAndClusters() {
     auto invalidParticles = collectAllParticlesFromTowers();
     invalidParticles.push_back(std::move(_particlesToAdd));
     _particlesToAdd.clear();
@@ -104,19 +99,39 @@ class VerletClusterListsRebuilder {
       numClusters += tower.generateClusters();
     }
 
-    updateNeighborLists();
+    return std::make_tuple(_towerSideLength, _interactionLengthInTowers, _towersPerDim, numClusters);
+  }
+
+  /**
+   * Rebuilds the neighbor lists and fills Clusters with dummies as described in
+   * ClusterTower::fillUpWithDummyParticles.
+   * @param useNewton3 Specifies, whether newton3 should be used or not.
+   */
+  void rebuildNeighborListsAndFillClusters(bool useNewton3) {
+    clearNeighborListsAndResetDummies();
+    updateNeighborLists(useNewton3);
 
     double dummyParticleDistance = _interactionLength * 2;
     double startDummiesX = 1000 * _boxMax[0];
     for (size_t index = 0; index < _towers.size(); index++) {
       _towers[index].fillUpWithDummyParticles(startDummiesX + index * dummyParticleDistance, dummyParticleDistance);
     }
-
-    return std::make_tuple(_towerSideLength, _interactionLengthInTowers, _towersPerDim, numClusters,
-                           _neighborListIsNewton3);
   }
 
  protected:
+  /**
+   * Removes previously saved neighbors from clusters and sets the positions of the dummy particles to inside of the
+   * cluster. The latter reduces the amount of calculated interaction partners.
+   */
+  void clearNeighborListsAndResetDummies() {
+    for (auto &tower : _towers) {
+      tower.setDummyParticlesToLastActualParticle();
+      for (auto &cluster : tower.getClusters()) {
+        cluster.clearNeighbors();
+      }
+    }
+  }
+
   /**
    * Takes all particles from all towers and returns them. Towers are cleared afterwards.
    * @return All particles in the container.
@@ -188,8 +203,9 @@ class VerletClusterListsRebuilder {
 
   /**
    * Updates the neighbor lists.
+   * @param useNewton3 Specifies, whether newton3 should be used or not.
    */
-  void updateNeighborLists() {
+  void updateNeighborLists(bool useNewton3) {
     const int maxTowerIndexX = _towersPerDim[0] - 1;
     const int maxTowerIndexY = _towersPerDim[1] - 1;
 
@@ -205,7 +221,7 @@ class VerletClusterListsRebuilder {
         const int maxX = std::min(towerIndexX + _interactionLengthInTowers, maxTowerIndexX);
         const int maxY = std::min(towerIndexY + _interactionLengthInTowers, maxTowerIndexY);
 
-        calculateNeighborsForTowerInRange(towerIndexX, towerIndexY, minX, maxX, minY, maxY);
+        calculateNeighborsForTowerInRange(towerIndexX, towerIndexY, minX, maxX, minY, maxY, useNewton3);
       }
     }
   }
@@ -218,17 +234,18 @@ class VerletClusterListsRebuilder {
    * @param maxX The maximum x-coordinate of the given neighbor towers.
    * @param minY The minimum y-coordinate of the given neighbor towers.
    * @param maxY The maximum y-coordinate of the given neighbor towers.
+   * @param useNewton3 Specifies, whether newton3 should be used or not.
    */
   void calculateNeighborsForTowerInRange(const int towerIndexX, const int towerIndexY, const int minX, const int maxX,
-                                         const int minY, const int maxY) {
+                                         const int minY, const int maxY, const bool useNewton3) {
     auto &tower = getTowerAtCoordinates(towerIndexX, towerIndexY);
     // for all neighbor towers
     for (int neighborIndexY = minY; neighborIndexY <= maxY; neighborIndexY++) {
       double distBetweenTowersY = std::max(0, std::abs(towerIndexY - neighborIndexY) - 1) * _towerSideLength;
 
       for (int neighborIndexX = minX; neighborIndexX <= maxX; neighborIndexX++) {
-        if (_neighborListIsNewton3 and not shouldTowerContainOtherAsNeighborWithNewton3(
-                                           towerIndexX, towerIndexY, neighborIndexX, neighborIndexY)) {
+        if (useNewton3 and not shouldTowerContainOtherAsNeighborWithNewton3(towerIndexX, towerIndexY, neighborIndexX,
+                                                                            neighborIndexY)) {
           continue;
         }
 
@@ -239,7 +256,7 @@ class VerletClusterListsRebuilder {
         if (distBetweenTowersXYsqr <= _interactionLengthSqr) {
           auto &neighborTower = getTowerAtCoordinates(neighborIndexX, neighborIndexY);
 
-          calculateNeighborsForTowerPair(tower, neighborTower, distBetweenTowersXYsqr);
+          calculateNeighborsForTowerPair(tower, neighborTower, distBetweenTowersXYsqr, useNewton3);
         }
       }
     }
@@ -293,20 +310,21 @@ class VerletClusterListsRebuilder {
    * @param tower The given tower.
    * @param neighborTower The given neighbor tower.
    * @param distBetweenTowersXYsqr The distance in the xy-plane between the towers.
+   * @param useNewton3 Specifies, whether newton3 should be used or not.
    */
   void calculateNeighborsForTowerPair(internal::ClusterTower<Particle, clusterSize> &tower,
                                       internal::ClusterTower<Particle, clusterSize> &neighborTower,
-                                      double distBetweenTowersXYsqr) {
+                                      double distBetweenTowersXYsqr, bool useNewton3) {
     const bool isSameTower = &tower == &neighborTower;
     for (size_t towerIndex = 0; towerIndex < tower.getNumClusters(); towerIndex++) {
-      auto startIndexNeighbor = _neighborListIsNewton3 and isSameTower ? towerIndex + 1 : 0;
+      auto startIndexNeighbor = useNewton3 and isSameTower ? towerIndex + 1 : 0;
       auto &towerCluster = tower.getCluster(towerIndex);
       double towerClusterBoxBottom = towerCluster[0].getR()[2];
       double towerClusterBoxTop = towerCluster[clusterSize - 1].getR()[2];
 
       for (size_t neighborIndex = startIndexNeighbor; neighborIndex < neighborTower.getNumClusters(); neighborIndex++) {
         const bool isSameCluster = towerIndex == neighborIndex;
-        if (not _neighborListIsNewton3 and isSameTower and isSameCluster) {
+        if (not useNewton3 and isSameTower and isSameCluster) {
           continue;
         }
         auto &neighborCluster = neighborTower.getCluster(neighborIndex);

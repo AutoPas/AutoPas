@@ -105,6 +105,20 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
+   * More or less inverse operation of fillUpWithDummyParticles().
+   * It sets the particle positions to the last actual particle in the tower.
+   */
+  void setDummyParticlesToLastActualParticle() {
+    if (_numDummyParticles > 0) {
+      auto &lastCluster = getCluster(getNumClusters() - 1);
+      auto lastActualParticle = lastCluster[clusterSize - _numDummyParticles - 1];
+      for (size_t index = 1; index <= _numDummyParticles; index++) {
+        lastCluster[clusterSize - index] = lastActualParticle;
+      }
+    }
+  }
+
+  /**
    * Loads the particles into the SoA stored in this tower and generates the SoAView for each cluster.
    * @tparam Functor The type of the functor to use.
    * @param functor The functor to use for loading the particles into the SoA.

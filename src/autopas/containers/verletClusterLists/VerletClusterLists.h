@@ -69,7 +69,6 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
       : ParticleContainerInterface<FullParticleCell<Particle>>(),
         _numClusters{0},
         _numTowersPerInteractionLength{0},
-        _neighborListIsNewton3{false},
         _boxMin{boxMin},
         _boxMax{boxMax},
         _cutoff{cutoff},
@@ -78,6 +77,11 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
+    if (not _isValid) {
+      autopas::utils::ExceptionHandler::exception(
+          "VerletClusterLists::iteratePairwise(): Trying to do a pairwise iteration, even though verlet lists are not "
+          "valid.");
+    }
     auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setClusterLists(*this);
@@ -93,19 +97,20 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     traversal->endTraversal();
   }
 
-  /// @todo: Somehow make the iterator also iterate over the _particlesToAdd. Otherwise, e.g. ContainerSelectorTest
-  /// will work but have all particles removed after it switches from this container to another.
-  /// see: https://github.com/AutoPas/AutoPas/issues/155
   /**
    * Adds the given particle to the container. rebuildVerletLists() has to be called to have it actually sorted in.
    * @param p The particle to add.
    */
-  void addParticleImpl(const Particle &p) override { _particlesToAdd.push_back(p); }
+  void addParticleImpl(const Particle &p) override {
+    _isValid = false;
+    _particlesToAdd.push_back(p);
+  }
 
   /**
    * @copydoc VerletLists::addHaloParticle()
    */
   void addHaloParticleImpl(const Particle &haloParticle) override {
+    _isValid = false;
     Particle copy = haloParticle;
     copy.setOwned(false);
     _particlesToAdd.push_back(copy);
@@ -123,6 +128,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @copydoc VerletLists::deleteHaloParticles
    */
   void deleteHaloParticles() override {
+    _isValid = false;
     // quick and dirty: iterate over all particles and delete halo particles
     /// @todo: make this proper
     for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
@@ -161,22 +167,49 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   }
 
   ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+    // For good openmp scalability we want the particles to be sorted into the clusters, so we do this!
+#ifdef AUTOPAS_OPENMP
+#pragma omp single
+#endif
+    if (not _isValid) {
+      rebuildTowersAndClusters();
+    }
+    // there is an implicit barrier at end of single!
     return ParticleIteratorWrapper<Particle, true>(
         new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, true>(
-            &(this->_towers)));
+            &(this->_towers), 0, nullptr, behavior));
   }
 
   ParticleIteratorWrapper<Particle, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    return ParticleIteratorWrapper<Particle, false>(
-        new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
-            &(this->_towers)));
+    if (_isValid) {
+      if (not _particlesToAdd.empty()) {
+        autopas::utils::ExceptionHandler::exception(
+            "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
+      }
+      // If the particles are sorted into the towers, we can simply use the iteration over towers.
+      return ParticleIteratorWrapper<Particle, false>{
+          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
+              &(this->_towers), 0, nullptr, behavior)};
+    } else {
+      // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
+      return ParticleIteratorWrapper<Particle, false>{
+          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
+              &(this->_towers), 0, nullptr, behavior, &_particlesToAdd)};
+    }
   }
 
   ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    /// @todo implement this if bounding boxes are here
+    // Special iterator requires sorted cells
+#ifdef AUTOPAS_OPENMP
+#pragma omp single
+#endif
+    if (not _isValid) {
+      rebuildTowersAndClusters();
+    }
+    // there is an implicit barrier at end of single!
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
     return ParticleIteratorWrapper<Particle, true>();
   }
@@ -184,16 +217,30 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   ParticleIteratorWrapper<Particle, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    /// @todo implement this if bounding boxes are here
+    if (_isValid) {
+      // use optimized version
+    } else {
+      // uses optimzed version, but also iterate over _particlesToAdd!
+      ///@todo needs to also iterate over stupid particles.
+    }
     autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
     return ParticleIteratorWrapper<Particle, false>();
   }
 
+  /**
+   * @todo: make this protected/private!
+   */
+  void rebuildTowersAndClusters() {
+    _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, _particlesToAdd);
+    std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
+        _builder->rebuildTowersAndClusters();
+  }
+
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    internal::VerletClusterListsRebuilder<Particle> builder{*this, _towers, _particlesToAdd,
-                                                            traversal->getUseNewton3()};
-    std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters, _neighborListIsNewton3) =
-        builder.rebuild();
+    if (not _isValid) {
+      rebuildTowersAndClusters();
+    }
+    _builder->rebuildNeighborListsAndFillClusters(traversal->getUseNewton3());
 
     auto *clusterTraversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
     if (clusterTraversalInterface) {
@@ -205,6 +252,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
           "Trying to use a traversal of wrong type in VerletClusterLists::rebuildNeighborLists. TraversalID: {}",
           traversal->getTraversalType());
     }
+    _isValid = true;
   }
 
   /**
@@ -351,6 +399,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   double getInteractionLength() const override { return _cutoff + _skin; }
 
   void deleteAllParticles() override {
+    _isValid = false;
     std::for_each(_towers.begin(), _towers.end(), [](auto &tower) { tower.clear(); });
   }
 
@@ -493,11 +542,6 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   int _numTowersPerInteractionLength;
 
   /**
-   * Specifies if the saved neighbors use newton 3 or not.
-   */
-  bool _neighborListIsNewton3;
-
-  /**
    * Contains all particles that should be added to the container during the next rebuild.
    */
   std::vector<Particle> _particlesToAdd;
@@ -526,6 +570,16 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * Skin.
    */
   double _skin{};
+
+  /**
+   * Indicates, whether the current container structure (mainly for region iterators) and the verlet lists are valid.
+   */
+  bool _isValid{false};
+
+  /**
+   * The builder for the verlet cluster lists.
+   */
+  std::unique_ptr<internal::VerletClusterListsRebuilder<Particle>> _builder;
 };
 
 }  // namespace autopas
