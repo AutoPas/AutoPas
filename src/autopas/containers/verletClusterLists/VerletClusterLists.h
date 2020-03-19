@@ -29,7 +29,7 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> {
+class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Particle>> {
  public:
   /**
    * The number of particles in a full cluster. Currently, constexpr is necessary so it can be passed to ClusterTower as
@@ -66,10 +66,14 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    * @param skin the skin radius
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
-      : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
-        _numClusters(0),
-        _numTowersPerInteractionLength(0),
-        _neighborListIsNewton3(false) {}
+      : ParticleContainerInterface<FullParticleCell<Particle>>(),
+        _numClusters{0},
+        _numTowersPerInteractionLength{0},
+        _neighborListIsNewton3{false},
+        _boxMin{boxMin},
+        _boxMax{boxMax},
+        _cutoff{cutoff},
+        _skin{skin} {}
 
   ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 
@@ -328,6 +332,28 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
     return towerIndex2DTo1D(x, y, _towersPerDim);
   }
 
+  const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
+
+  void setBoxMax(const std::array<double, 3> &boxMax) override { _boxMax = boxMax; }
+
+  const std::array<double, 3> &getBoxMin() const override { return _boxMin; }
+
+  void setBoxMin(const std::array<double, 3> &boxMin) override { _boxMin = boxMin; }
+
+  double getCutoff() const override { return _cutoff; }
+
+  void setCutoff(double cutoff) override { _cutoff = cutoff; }
+
+  double getSkin() const override { return _skin; }
+
+  void setSkin(double skin) override { _skin = skin; }
+
+  double getInteractionLength() const override { return _cutoff + _skin; }
+
+  void deleteAllParticles() override {
+    std::for_each(_towers.begin(), _towers.end(), [](auto &tower) { tower.clear(); });
+  }
+
  protected:
   /**
    * Helper method to sequentially iterate over all clusters.
@@ -480,6 +506,26 @@ class VerletClusterLists : public ParticleContainer<FullParticleCell<Particle>> 
    * Defines a partition of the clusters to a number of threads.
    */
   std::vector<ClusterRange> _clusterThreadPartition;
+
+  /**
+   * Minimum of the container.
+   */
+  std::array<double, 3> _boxMin{};
+
+  /**
+   * Maximum of the container.
+   */
+  std::array<double, 3> _boxMax{};
+
+  /**
+   * Cutoff.
+   */
+  double _cutoff{};
+
+  /**
+   * Skin.
+   */
+  double _skin{};
 };
 
 }  // namespace autopas
