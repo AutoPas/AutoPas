@@ -58,6 +58,7 @@ class LogicHandler {
    */
   void addParticle(const Particle &p) {
     if (not isContainerValid()) {
+      // Container has to be invalid to be able to add Particles!
       _autoTuner.getContainer()->addParticle(p);
       _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
     } else {
