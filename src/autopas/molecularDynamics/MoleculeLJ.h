@@ -41,6 +41,10 @@ class MoleculeLJ : public Particle {
 
   /**
    * The type for the SoA storage.
+   *
+   * @note The attribute owned is of type float but treated as a bool.
+   * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
+   * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType = typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType,
                                                          floatType, size_t, floatType>::Type;
