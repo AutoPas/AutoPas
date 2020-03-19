@@ -733,9 +733,12 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   inline __m256d wrapperFMA(const __m256d &factorA, const __m256d &factorB, const __m256d &summandC) {
 #ifdef __FMA__
     return _mm256_fmadd_pd(factorA, factorB, summandC);
-#else
+#elif __AVX__
     const __m256d tmp = _mm256_mul_pd(factorA, factorB);
     return _mm256_add_pd(summandC, tmp);
+#else
+    // dummy return. If no vectorization is available this whole class is pointless anyways.
+    return __m256d();
 #endif
   }
 
