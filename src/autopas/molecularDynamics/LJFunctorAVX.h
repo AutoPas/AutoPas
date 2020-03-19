@@ -215,13 +215,15 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       // floor soa numParticles to multiple of vecLength
       size_t j = 0;
       for (; j < (i & ~(vecLength - 1)); j += 4) {
-        SoAKernel<true, cellWiseOwnedState, duplicatedCalculations, false>(j, isOwnedI, ownedPtr, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc,
-                               fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+        SoAKernel<true, cellWiseOwnedState, duplicatedCalculations, false>(
+            j, isOwnedI, ownedPtr, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc,
+            fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
       }
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
-        SoAKernel<true, cellWiseOwnedState, duplicatedCalculations, true>(j, isOwnedI, ownedPtr, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc,
-                              fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+        SoAKernel<true, cellWiseOwnedState, duplicatedCalculations, true>(
+            j, isOwnedI, ownedPtr, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc,
+            fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
       }
 
       // horizontally reduce fDacc to sumfD
@@ -309,30 +311,14 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * @param rest
    */
   template <bool newton3, bool cellWiseOwnedState, bool duplicatedCalculations, bool masked>
-  inline void SoAKernel(
-                        const size_t j,
-                        const __m256d isOwnedI,
-                        const double *const __restrict__ ownedPtr2,
-                        const __m256d &x1,
-                        const __m256d &y1,
-                        const __m256d &z1,
-                        const double *const __restrict__ x2ptr,
-                        const double *const __restrict__ y2ptr,
-                        const double *const __restrict__ z2ptr,
-                        double *const __restrict__ fx2ptr,
-                        double *const __restrict__ fy2ptr,
-                        double *const __restrict__ fz2ptr,
-                        const size_t *const typeID1ptr,
-                        const size_t *const type2IDptr,
-                        __m256d &fxacc,
-                        __m256d &fyacc,
-                        __m256d &fzacc,
-                        __m256d *virialSumX,
-                        __m256d *virialSumY,
-                        __m256d *virialSumZ,
-                        __m256d *upotSum,
-                        const unsigned int rest = 0
-                            ) {
+  inline void SoAKernel(const size_t j, const __m256d isOwnedI, const double *const __restrict__ ownedPtr2,
+                        const __m256d &x1, const __m256d &y1, const __m256d &z1, const double *const __restrict__ x2ptr,
+                        const double *const __restrict__ y2ptr, const double *const __restrict__ z2ptr,
+                        double *const __restrict__ fx2ptr, double *const __restrict__ fy2ptr,
+                        double *const __restrict__ fz2ptr, const size_t *const typeID1ptr,
+                        const size_t *const type2IDptr, __m256d &fxacc, __m256d &fyacc, __m256d &fzacc,
+                        __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ, __m256d *upotSum,
+                        const unsigned int rest = 0) {
 #ifdef __AVX__
     __m256d epsilon24s = _epsilon24;
     __m256d sigmaSquares = _sigmaSquare;
@@ -434,10 +420,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
         *virialSumY = _mm256_add_pd(*virialSumY, virialY);
         *virialSumZ = _mm256_add_pd(*virialSumZ, virialZ);
       } else {
-        const __m256d ownedPtrJ = masked ? _mm256_maskload_pd(&ownedPtr2[j], _masks[rest - 1]) : _mm256_load_pd(&ownedPtr2[j]);
+        const __m256d ownedPtrJ =
+            masked ? _mm256_maskload_pd(&ownedPtr2[j], _masks[rest - 1]) : _mm256_load_pd(&ownedPtr2[j]);
         __m256d energyFactor = isOwnedI;
-        if constexpr (newton3){
-            energyFactor = _mm256_add_pd(isOwnedI, ownedPtrJ);
+        if constexpr (newton3) {
+          energyFactor = _mm256_add_pd(isOwnedI, ownedPtrJ);
         }
         *upotSum = wrapperFMA(energyFactor, upot, *upotSum);
         *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
@@ -543,13 +530,15 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       // floor soa2 numParticles to multiple of vecLength
       unsigned int j = 0;
       for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-        SoAKernel<newton3, cellWiseOwnedState, duplicatedCalculations, false>(j, isOwnedI, ownedPtr2, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
-                               fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+        SoAKernel<newton3, cellWiseOwnedState, duplicatedCalculations, false>(
+            j, isOwnedI, ownedPtr2, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
+            fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
       }
       const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
       if (rest > 0)
-        SoAKernel<newton3, cellWiseOwnedState, duplicatedCalculations, true>(j, isOwnedI, ownedPtr2, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
-                              fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+        SoAKernel<newton3, cellWiseOwnedState, duplicatedCalculations, true>(
+            j, isOwnedI, ownedPtr2, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
+            fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -752,7 +741,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   }
 
  private:
-
   /**
    * Wrapper function for FMA. If FMA is not supported it executes first the multiplication then the addition.
    * @param factorA
