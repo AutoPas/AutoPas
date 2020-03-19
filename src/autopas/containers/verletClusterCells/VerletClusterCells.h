@@ -78,7 +78,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 
     if (traversalInterface->getSignature() != _lastTraversalSig or (not _isValid)) {
       if (!_isValid) {
-        rebuild();
+        rebuildClusterStructure();
       }
       traversalInterface->rebuildVerlet(_cellsPerDim, this->_cells, _boundingBoxes,
                                         std::ceil(this->getInteractionLength() * _gridSideLengthReciprocal),
@@ -149,7 +149,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
           "trying to use a traversal of wrong type in VerletClusterCells::iteratePairwise");
     }
     if (not _isValid) {
-      rebuild();
+      rebuildClusterStructure();
     }
 
     traversalInterface->setVerletListPointer(&_neighborCellIds, &_neighborMatrixDim, &_neighborMatrix);
@@ -230,7 +230,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 #pragma omp single
 #endif
     if (not _isValid) {
-      rebuild();
+      rebuildClusterStructure();
     }
     // there is an implicit barrier at end of single!
 
@@ -352,11 +352,12 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 
  protected:
   /**
-   * Recalculate grids and clusters,
-   * build verlet lists and pad clusters.
-   * @return Vector of particles containing particles no longer in the box
+   * Rebuild the container structure:
+   * - Recalculate grids and clusters
+   * - Adds padding to clusters.
+   * Does NOT rebuild the neighbor lists.
    */
-  std::vector<Particle> rebuild() {
+  void rebuildClusterStructure() {
     deleteDummyParticles();
     _boundingBoxes.clear();
     // get the dimensions and volumes of the box
@@ -370,7 +371,6 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 
     // get all particles and clear clusters
     std::vector<Particle> invalidParticles;
-    std::vector<Particle> outsideParticles;
 
     for (size_t i = 0; i < this->_cells.size(); ++i) {
       for (auto &p : this->_cells[i]._particles) {
@@ -378,7 +378,9 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
           invalidParticles.push_back(p);
         } else {
           if (p.isOwned()) {
-            outsideParticles.push_back(p);
+            autopas::utils::ExceptionHandler::exception(
+                "VerletClusterCells::rebuildClusterStructure(): Detected particle leak: Possible reason: \n"
+                "Please ensure that you call an updateContainerForced after manually adding or removing particles!");
           } else {
             invalidParticles.push_back(p);
           }
@@ -459,7 +461,6 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
     }
 
     _isValid = true;
-    return outsideParticles;
   }
 
  private:
