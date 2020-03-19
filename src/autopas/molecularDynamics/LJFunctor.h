@@ -217,7 +217,7 @@ class LJFunctor
     SoAFloatPrecision epsilon24 = _epsilon24;
     const bool duplicatedCalculations = _duplicatedCalculations;
     if (calculateGlobals and cellWiseOwnedState and _duplicatedCalculations) {
-      bool isHaloCell = ownedPtr[0] ? false : true;
+      bool isHaloCell = not ownedPtr[0];
       // Checks if the cell is a halo cell, if it is, we skip it.
       if (isHaloCell) {
         return;
