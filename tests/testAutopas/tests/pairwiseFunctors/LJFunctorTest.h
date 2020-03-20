@@ -22,9 +22,8 @@ class LJFunctorTest : public AutoPasTestBase {
 
   void TearDown() override{};
 
- protected:
-  template <bool Mixing>
-  void testAoSNoGlobals(bool newton3);
+  template <bool mixing>
+  static void testAoSNoGlobals(bool newton3);
 
   enum InteractionType { own, pair, verlet };
 
@@ -32,8 +31,8 @@ class LJFunctorTest : public AutoPasTestBase {
   static void testSoANoGlobals(bool newton3, InteractionType interactionType);
 
   enum where_type { inside, boundary, outside };
-  void testAoSGlobals(where_type where, bool newton3, bool duplicatedCalculation);
-  void testSoAGlobals(where_type where, bool newton3, bool duplicatedCalculation, InteractionType interactionType,
+  static void testAoSGlobals(where_type where, bool newton3, bool duplicatedCalculation);
+  static void testSoAGlobals(where_type where, bool newton3, bool duplicatedCalculation, InteractionType interactionType,
                       size_t additionalParticlesToVerletNumber, bool cellWiseOwnedState, uint64_t numParticleReplicas);
 
   constexpr static double cutoff{1.};

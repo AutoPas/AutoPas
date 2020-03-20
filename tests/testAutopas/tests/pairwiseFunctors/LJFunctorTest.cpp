@@ -4,16 +4,17 @@
  * @date 06.11.18
  */
 
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "LJFunctorTest.h"
 
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "testingHelpers/commonTypedefs.h"
 
-template <bool mixing>
-void LJFunctorTest::testAoSNoGlobals(bool newton3) {
-  constexpr bool shifting = true;
-  using FuncType = autopas::LJFunctor<Molecule, FMCell, shifting, mixing>;
+TYPED_TEST_SUITE_P(LJFunctorTest);
 
+template<class FuncType>
+template<bool mixing>
+void LJFunctorTest<FuncType>::testAoSNoGlobals(bool newton3) {
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(cutoff);
   std::unique_ptr<FuncType> functor;
 
@@ -84,14 +85,44 @@ void LJFunctorTest::testAoSNoGlobals(bool newton3) {
   }
 }
 
-TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsNoN3) {
+TYPED_TEST_P(LJFunctorTest, testAoSFunctorNoGlobalsNoN3) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTest<FuncType>;
+
   bool newton3 = false;
-  testAoSNoGlobals<false>(newton3);
+  constexpr bool mixing = false;
+  constexpr bool shifting = true;
+  TestType::template testAoSNoGlobals<mixing>(newton3);
 }
 
-TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
+TYPED_TEST_P(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTest<FuncType>;
+
   bool newton3 = true;
-  testAoSNoGlobals<false>(newton3);
+  constexpr bool mixing = false;
+  constexpr bool shifting = true;
+  TestType::template testAoSNoGlobals<mixing>(newton3);
+}
+
+TYPED_TEST_P(LJFunctorTest, testAoSMixingFunctorNoGlobalsNoN3) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTest<FuncType>;
+
+  bool newton3 = false;
+  constexpr bool mixing = true;
+  constexpr bool shifting = true;
+  TestType::template testAoSNoGlobals<mixing>(newton3);
+}
+
+TYPED_TEST_P(LJFunctorTest, testAoSMixingFunctorNoGlobalsN3) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTest<FuncType>;
+
+  constexpr bool newton3 = true;
+  constexpr bool mixing = true;
+  constexpr bool shifting = true;
+  TestType::template testAoSNoGlobals<mixing>(newton3);
 }
 
 template <class FuncType>
@@ -239,8 +270,6 @@ void LJFunctorTest<FuncType>::testSoANoGlobals(bool newton3, InteractionType int
   }
 }
 
-TYPED_TEST_SUITE_P(LJFunctorTest);
-
 TYPED_TEST_P(LJFunctorTest, testSoAFunctorNoGlobals) {
   using FuncType = TypeParam;
   using TestType = LJFunctorTest<FuncType>;
@@ -252,22 +281,15 @@ TYPED_TEST_P(LJFunctorTest, testSoAFunctorNoGlobals) {
   }
 }
 
-TEST_F(LJFunctorTest, testSoAMixingFunctorNoGlobals) {
-  for (InteractionType interactionType : {pair, own, verlet}) {
-    for (bool newton3 : {false, true}) {
-      testSoANoGlobals<true>(newton3, interactionType);
-    }
-  }
-}
-
-TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
+TYPED_TEST_P(LJFunctorTest, testFunctorGlobalsThrowBad) {
   bool duplicatedCalculation = true;
   using exception_type = autopas::utils::ExceptionHandler::AutoPasException;
 
+  using FuncType = TypeParam;
   constexpr bool shifting = true;
-  constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(
-      cutoff, duplicatedCalculation);
+  constexpr bool mixing = FuncType::getMixing();
+  FuncType functor(
+      this->cutoff, duplicatedCalculation);
 
   // getupot without postprocessing is not allowed
   EXPECT_THROW(functor.getUpot(), exception_type);
@@ -285,7 +307,8 @@ TEST_F(LJFunctorTest, testFunctorGlobalsThrowBad) {
   EXPECT_NO_THROW(functor.endTraversal(true));
 }
 
-void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation) {
+template <class FuncType>
+void LJFunctorTest<FuncType>::testAoSGlobals(LJFunctorTest<FuncType>::where_type where, bool newton3, bool duplicatedCalculation) {
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
@@ -345,9 +368,12 @@ void LJFunctorTest::testAoSGlobals(LJFunctorTest::where_type where, bool newton3
       << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
 }
 
-TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
+TYPED_TEST_P(LJFunctorTest, testAoSFunctorGlobals) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTest<FuncType>;
+
   for (bool duplicatedCalculation : {false, true}) {
-    for (where_type where : {inside, boundary, outside}) {
+    for (typename TestType::where_type where : {TestType::where_type::inside, TestType::where_type::boundary, TestType::where_type::outside}) {
       for (bool newton3 : {false, true}) {
         testAoSGlobals(where, newton3, duplicatedCalculation);
       }
@@ -355,7 +381,8 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobals) {
   }
 }
 
-void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3, bool duplicatedCalculation,
+template <class FuncType>
+void LJFunctorTest<FuncType>::testSoAGlobals(LJFunctorTest<FuncType>::where_type where, bool newton3, bool duplicatedCalculation,
                                    InteractionType interactionType, size_t additionalParticlesToVerletNumber,
                                    bool cellWiseOwnedState, uint64_t numParticleReplicas) {
   constexpr bool shifting = true;
@@ -493,19 +520,23 @@ void LJFunctorTest::testSoAGlobals(LJFunctorTest::where_type where, bool newton3
       << ", cellWiseOwnedState: " << cellWiseOwnedState << ", numParticleReplicas: " << numParticleReplicas;
 }
 
-TEST_F(LJFunctorTest, testSoAFunctorGlobalsOwn) {
+TYPED_TEST_P(LJFunctorTest, testSoAFunctorGlobalsOwn) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTest<FuncType>;
+
   for (bool duplicatedCalculation : {false, true}) {
     // the own functor can only be called for inner or outside pairs! (if two particles lie in one cell they can be
     // either both inside the process or neither of them is)
-    for (where_type where : {inside, outside}) {
+    for (typename TestType::where_type where : {TestType::inside, TestType::outside}) {
       for (bool newton3 : {false, true}) {
         for (bool cellWiseOwnedState : {false, true}) {
           for (uint64_t numParticleReplicas : {1, 2}) {
-            if (where == outside && not duplicatedCalculation) {
+            if (where == TestType::outside && not duplicatedCalculation) {
               // this case does not happen and the test is not made to check this, i.e., it will fail.
               continue;
             }
-            testSoAGlobals(where, newton3, duplicatedCalculation, own, 0, cellWiseOwnedState, numParticleReplicas);
+            // @TODO SKIP IF MIXING == TRUE
+            testSoAGlobals(where, newton3, duplicatedCalculation, TestType::own, 0, cellWiseOwnedState, numParticleReplicas);
           }
         }
       }
@@ -513,16 +544,20 @@ TEST_F(LJFunctorTest, testSoAFunctorGlobalsOwn) {
   }
 }
 
-TEST_F(LJFunctorTest, testSoAFunctorGlobalsVerlet) {
+TYPED_TEST_P(LJFunctorTest, testSoAFunctorGlobalsVerlet) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTest<FuncType>;
+
   for (size_t additionalDummyParticles = 0; additionalDummyParticles < 30; additionalDummyParticles += 5) {
     for (bool duplicatedCalculation : {false, true}) {
       // the own functor can only be called for inner or outside pairs! (if two particles lie in one cell they can be
       // either both inside the process or neither of them is)
-      for (where_type where : {inside, boundary, outside}) {
+      for (typename TestType::where_type where : {TestType::inside, TestType::boundary, TestType::outside}) {
         for (bool newton3 : {false, true}) {
           for (bool cellWiseOwnedState : {false, true}) {
             for (uint64_t numParticleReplicas : {1, 2}) {
-              testSoAGlobals(where, newton3, duplicatedCalculation, verlet, additionalDummyParticles,
+              // @TODO SKIP IF MIXING == TRUE
+              testSoAGlobals(where, newton3, duplicatedCalculation, TestType::verlet, additionalDummyParticles,
                              cellWiseOwnedState, numParticleReplicas);
             }
           }
@@ -532,13 +567,17 @@ TEST_F(LJFunctorTest, testSoAFunctorGlobalsVerlet) {
   }
 }
 
-TEST_F(LJFunctorTest, testSoAFunctorGlobalsPair) {
+TYPED_TEST_P(LJFunctorTest, testSoAFunctorGlobalsPair) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTest<FuncType>;
+
   for (bool duplicatedCalculation : {false, true}) {
-    for (where_type where : {inside, boundary, outside}) {
+    for (typename TestType::where_type where : {TestType::inside, TestType::boundary, TestType::outside}) {
       for (bool newton3 : {false, true}) {
         for (bool cellWiseOwnedState : {false, true}) {
           for (uint64_t numParticleReplicas : {1, 2}) {
-            testSoAGlobals(where, newton3, duplicatedCalculation, pair, 0, cellWiseOwnedState, numParticleReplicas);
+            // @TODO SKIP IF MIXING == TRUE
+            testSoAGlobals(where, newton3, duplicatedCalculation, TestType::pair, 0, cellWiseOwnedState, numParticleReplicas);
           }
         }
       }
@@ -546,7 +585,10 @@ TEST_F(LJFunctorTest, testSoAFunctorGlobalsPair) {
   }
 }
 
-TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
+TYPED_TEST_P(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTest<FuncType>;
+
   bool duplicatedCalculation = false;
   bool newton3 = true;
   double multiParticleFactor = 2.;  // two particles, so factor 2
@@ -560,8 +602,8 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(
-      cutoff, duplicatedCalculation);
-  functor.setParticleProperties(epsilon * 24, 1);
+      this->cutoff, duplicatedCalculation);
+  functor.setParticleProperties(this->epsilon * 24, 1);
 
   functor.initTraversal();
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
@@ -589,19 +631,19 @@ TEST_F(LJFunctorTest, testAoSFunctorGlobalsOpenMPParallel) {
   double upot = functor.getUpot();
   double virial = functor.getVirial();
 
-  EXPECT_NEAR(upot, whereFactor * multiParticleFactor * expectedEnergy, absDelta)
+  EXPECT_NEAR(upot, whereFactor * multiParticleFactor * this->expectedEnergy, this->absDelta)
       << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
-  EXPECT_NEAR(virial, whereFactor * multiParticleFactor * expectedVirial, absDelta)
+  EXPECT_NEAR(virial, whereFactor * multiParticleFactor * this->expectedVirial, this->absDelta)
       << "where: " << where_str << ", newton3: " << newton3 << ", duplicatedCalculation:" << duplicatedCalculation;
 }
 
-TEST_F(LJFunctorTest, testSetPropertiesVSPPLSoA) {
+TYPED_TEST_P(LJFunctorTest, testSetPropertiesVSPPLSoA) {
   constexpr bool shifting = true;
   constexpr bool mixing = true;
   autopas::LJFunctor<Molecule, FMCell, shifting, not mixing, autopas::FunctorN3Modes::Both, true> funNoPPL(1);
   funNoPPL.setParticleProperties(24, 1);
 
-  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(cutoff);
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
   particlePropertiesLibrary.addType(0, 1, 1, 1);
   autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> funPPL(
       1, particlePropertiesLibrary);
@@ -638,13 +680,13 @@ TEST_F(LJFunctorTest, testSetPropertiesVSPPLSoA) {
   }
 }
 
-TEST_F(LJFunctorTest, testSetPropertiesVSPPLAoS) {
+TYPED_TEST_P(LJFunctorTest, testSetPropertiesVSPPLAoS) {
   constexpr bool shifting = true;
   constexpr bool mixing = true;
   autopas::LJFunctor<Molecule, FMCell, shifting, not mixing, autopas::FunctorN3Modes::Both, true> funNoPPL(1);
   funNoPPL.setParticleProperties(24, 1);
 
-  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(cutoff);
+  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
   particlePropertiesLibrary.addType(0, 1, 1, 1);
   autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> funPPL(
       1, particlePropertiesLibrary);
@@ -663,7 +705,21 @@ TEST_F(LJFunctorTest, testSetPropertiesVSPPLAoS) {
 
 
  REGISTER_TYPED_TEST_SUITE_P(LJFunctorTest,
-                            testSoAFunctorNoGlobals);
+                             testAoSFunctorNoGlobalsNoN3,
+                             testAoSFunctorNoGlobalsN3,
+                             testAoSMixingFunctorNoGlobalsNoN3,
+                             testAoSMixingFunctorNoGlobalsN3,
+                             testSoAFunctorNoGlobals,
+                             testFunctorGlobalsThrowBad,
+                             testAoSFunctorGlobals,
+                             testSoAFunctorGlobalsOwn,
+                             testSoAFunctorGlobalsVerlet,
+                             testSoAFunctorGlobalsPair,
+                             testAoSFunctorGlobalsOpenMPParallel,
+                             testSetPropertiesVSPPLSoA,
+                             testSetPropertiesVSPPLAoS
+                            );
+
 typedef ::testing::Types<autopas::LJFunctor<Molecule, FMCell, true, true>
                          ,autopas::LJFunctor<Molecule, FMCell, true, false>
 //                         ,autopas::LJFunctorAVX<Molecule, FMCell, true, true>
