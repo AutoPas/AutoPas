@@ -13,6 +13,7 @@
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
+template <class FuncType>
 class LJFunctorTest : public AutoPasTestBase {
  public:
   LJFunctorTest() : AutoPasTestBase() {}
@@ -27,8 +28,8 @@ class LJFunctorTest : public AutoPasTestBase {
 
   enum InteractionType { own, pair, verlet };
 
-  template <bool Mixing>
-  void testSoANoGlobals(bool newton3, InteractionType interactionType);
+  template <bool mixing>
+  static void testSoANoGlobals(bool newton3, InteractionType interactionType);
 
   enum where_type { inside, boundary, outside };
   void testAoSGlobals(where_type where, bool newton3, bool duplicatedCalculation);

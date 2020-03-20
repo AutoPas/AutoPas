@@ -94,20 +94,10 @@ TEST_F(LJFunctorTest, testAoSFunctorNoGlobalsN3) {
   testAoSNoGlobals<false>(newton3);
 }
 
-TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsNoN3) {
-  bool newton3 = false;
-  testAoSNoGlobals<true>(newton3);
-}
-
-TEST_F(LJFunctorTest, testAoSMixingFunctorNoGlobalsN3) {
-  bool newton3 = true;
-  testAoSNoGlobals<true>(newton3);
-}
-
+template <class FuncType>
 template <bool mixing>
-void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionType) {
+void LJFunctorTest<FuncType>::testSoANoGlobals(bool newton3, InteractionType interactionType) {
   constexpr bool shifting = true;
-  using FuncType = autopas::LJFunctor<Molecule, FMCell, shifting, mixing>;
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(cutoff);
   std::unique_ptr<FuncType> functor;
@@ -249,10 +239,15 @@ void LJFunctorTest::testSoANoGlobals(bool newton3, InteractionType interactionTy
   }
 }
 
-TEST_F(LJFunctorTest, testSoAFunctorNoGlobals) {
-  for (InteractionType interactionType : {pair, verlet, own}) {
+TYPED_TEST_SUITE_P(LJFunctorTest);
+
+TYPED_TEST_P(LJFunctorTest, testSoAFunctorNoGlobals) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTest<FuncType>;
+
+  for (typename TestType::InteractionType interactionType : {TestType::InteractionType::pair, TestType::InteractionType::verlet, TestType::InteractionType::own}) {
     for (bool newton3 : {false, true}) {
-      testSoANoGlobals<false>(newton3, interactionType);
+      TestType::template testSoANoGlobals<FuncType::getMixing()>(newton3, interactionType);
     }
   }
 }
@@ -665,3 +660,13 @@ TEST_F(LJFunctorTest, testSetPropertiesVSPPLAoS) {
   // Molecules should be exactly the same
   EXPECT_THAT(moleculesNoPPL, testing::ElementsAreArray(moleculesPPL));
 }
+
+
+ REGISTER_TYPED_TEST_SUITE_P(LJFunctorTest,
+                            testSoAFunctorNoGlobals);
+typedef ::testing::Types<autopas::LJFunctor<Molecule, FMCell, true, true>
+                         ,autopas::LJFunctor<Molecule, FMCell, true, false>
+//                         ,autopas::LJFunctorAVX<Molecule, FMCell, true, true>
+//                         ,autopas::LJFunctorAVX<Molecule, FMCell, true, false>
+                         > MyTypes;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, LJFunctorTest, MyTypes);
