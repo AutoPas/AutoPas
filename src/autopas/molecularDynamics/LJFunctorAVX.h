@@ -163,6 +163,40 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     });
   }
 
+  // clang-format off
+  /**
+   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3, bool cellWiseOwnedState)
+   */
+  // clang-format on
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3,
+                      const bool cellWiseOwnedState) override {
+    // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
+    /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
+    utils::withStaticBool(newton3, [&](auto newton3) {
+      if (cellWiseOwnedState) {
+        if (_duplicatedCalculations) {
+          SoAFunctorPairImpl<newton3, true /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa1, soa2);
+        } else {
+          SoAFunctorPairImpl<newton3, true /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa1, soa2);
+        }
+      } else {
+        if (_duplicatedCalculations) {
+          SoAFunctorPairImpl<newton3, false /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa1, soa2);
+        } else {
+          SoAFunctorPairImpl<newton3, false /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa1, soa2);
+        }
+      }
+    });
+  }
+
+ private:
+  /**
+   * Templetized version of SoAFunctorSingle actually doing what the latter should.
+   * @tparam newton3
+   * @tparam cellWiseOwnedState
+   * @tparam duplicatedCalculations
+   * @param soa
+   */
   template <bool newton3, bool cellWiseOwnedState, bool duplicatedCalculations>
   void SoAFunctorSingleImpl(SoAView<SoAArraysType> soa) {
 #ifdef __AVX__
@@ -282,7 +316,144 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 #endif
   }
 
- private:
+  template <bool newton3, bool cellWiseOwnedState, bool duplicatedCalculations>
+  void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
+    if constexpr (not cellWiseOwnedState) {
+      autopas::utils::ExceptionHandler::exception("cellWiseOwnedState=false not yet supported!");
+    }
+#ifdef __AVX__
+    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
+
+    const auto *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+
+    const auto *const __restrict__ ownedPtr1 = soa1.template begin<Particle::AttributeNames::owned>();
+    const auto *const __restrict__ ownedPtr2 = soa2.template begin<Particle::AttributeNames::owned>();
+
+    auto *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+
+    const auto *const __restrict__ typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict__ typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+
+    __m256d virialSumX = _mm256_setzero_pd();
+    __m256d virialSumY = _mm256_setzero_pd();
+    __m256d virialSumZ = _mm256_setzero_pd();
+    __m256d upotSum = _mm256_setzero_pd();
+
+    // Copied from pairwiseFunctor/LJFunctor.h:264-281
+    bool isHaloCell1 = false;
+    bool isHaloCell2 = false;
+    // Checks whether the cells are halo cells.
+    // This check cannot be done if _lowCorner and _highCorner are not set. So we do this only if calculateGlobals is
+    // defined. (as of 23.11.2018)
+    if constexpr (calculateGlobals and cellWiseOwnedState) {
+      isHaloCell1 = not ownedPtr1[0];
+      isHaloCell2 = not ownedPtr2[0];
+
+      // This if is commented out because the AoS vs SoA test would fail otherwise. Even though it is physically
+      // correct!
+      /*if(_duplicatedCalculations and isHaloCell1 and isHaloCell2){
+        return;
+      }*/
+    }
+
+    for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
+      __m256d fxacc = _mm256_setzero_pd();
+      __m256d fyacc = _mm256_setzero_pd();
+      __m256d fzacc = _mm256_setzero_pd();
+
+      __m256d isOwnedI = _mm256_setzero_pd();
+      if constexpr (calculateGlobals and not cellWiseOwnedState and duplicatedCalculations) {
+        isOwnedI = _mm256_broadcast_sd(&ownedPtr1[i]);
+      }
+
+      const __m256d x1 = _mm256_broadcast_sd(&x1ptr[i]);
+      const __m256d y1 = _mm256_broadcast_sd(&y1ptr[i]);
+      const __m256d z1 = _mm256_broadcast_sd(&z1ptr[i]);
+
+      // floor soa2 numParticles to multiple of vecLength
+      unsigned int j = 0;
+      for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
+        SoAKernel<newton3, cellWiseOwnedState, duplicatedCalculations, false>(
+            j, isOwnedI, ownedPtr2, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
+            fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+      }
+      const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
+      if (rest > 0)
+        SoAKernel<newton3, cellWiseOwnedState, duplicatedCalculations, true>(
+            j, isOwnedI, ownedPtr2, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
+            fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+
+      // horizontally reduce fDacc to sumfD
+      const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
+      const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
+
+      const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
+      const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
+
+      const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
+      const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
+
+      const __m128d sumfxfyVEC = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
+      const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
+
+      const double sumfx = sumfxfyVEC[0];
+      const double sumfy = sumfxfyVEC[1];
+      const double sumfz = _mm_cvtsd_f64(sumfzVEC);
+
+      fx1ptr[i] += sumfx;
+      fy1ptr[i] += sumfy;
+      fz1ptr[i] += sumfz;
+    }
+
+    if constexpr (calculateGlobals) {
+      const int threadnum = autopas_get_thread_num();
+
+      // horizontally reduce virialSumX and virialSumY
+      const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
+      const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
+      const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
+      const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
+
+      // horizontally reduce virialSumZ and upotSum
+      const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
+      const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
+      const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
+      const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
+
+      // globals = {virialX, virialY, virialZ, uPot}
+      double globals[4];
+      _mm_store_pd(&globals[0], hSumVirialxyVec);
+      _mm_store_pd(&globals[2], hSumVirialzUpotVec);
+
+      double energyfactor = 1.;
+      if constexpr (duplicatedCalculations) {
+        // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
+        // that we do not add the energy multiple times!
+        energyfactor = isHaloCell1 ? 0. : 1.;
+        if constexpr (newton3) {
+          energyfactor += isHaloCell2 ? 0. : 1.;
+          energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
+        }
+      }
+
+      _aosThreadData[threadnum].virialSum[0] += globals[0] * energyfactor;
+      _aosThreadData[threadnum].virialSum[1] += globals[1] * energyfactor;
+      _aosThreadData[threadnum].virialSum[2] += globals[2] * energyfactor;
+      _aosThreadData[threadnum].upotSum += globals[3] * energyfactor;
+    }
+#endif
+  }
+
   /**
    * Actual inner kernel of the SoAFunctors.
    *
@@ -436,171 +607,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   }
 
  public:
-  // clang-format off
-  /**
-   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3, bool cellWiseOwnedState)
-   */
-  // clang-format on
-  // @TODO: make cellWiseOwnedState and duplicatedCalculations a template
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3,
-                      const bool cellWiseOwnedState) override {
-    // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
-    /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
-    utils::withStaticBool(newton3, [&](auto newton3) {
-      if (cellWiseOwnedState) {
-        if (_duplicatedCalculations) {
-          SoAFunctorPairImpl<newton3, true /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<newton3, true /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa1, soa2);
-        }
-      } else {
-        if (_duplicatedCalculations) {
-          SoAFunctorPairImpl<newton3, false /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<newton3, false /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa1, soa2);
-        }
-      }
-    });
-  }
-
-  template <bool newton3, bool cellWiseOwnedState, bool duplicatedCalculations>
-  void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
-    if constexpr (not cellWiseOwnedState) {
-      autopas::utils::ExceptionHandler::exception("cellWiseOwnedState=false not yet supported!");
-    }
-#ifdef __AVX__
-    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
-
-    const auto *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
-
-    const auto *const __restrict__ ownedPtr1 = soa1.template begin<Particle::AttributeNames::owned>();
-    const auto *const __restrict__ ownedPtr2 = soa2.template begin<Particle::AttributeNames::owned>();
-
-    auto *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
-    auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
-
-    const auto *const __restrict__ typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
-    const auto *const __restrict__ typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
-
-    __m256d virialSumX = _mm256_setzero_pd();
-    __m256d virialSumY = _mm256_setzero_pd();
-    __m256d virialSumZ = _mm256_setzero_pd();
-    __m256d upotSum = _mm256_setzero_pd();
-
-    // Copied from pairwiseFunctor/LJFunctor.h:264-281
-    bool isHaloCell1 = false;
-    bool isHaloCell2 = false;
-    // Checks whether the cells are halo cells.
-    // This check cannot be done if _lowCorner and _highCorner are not set. So we do this only if calculateGlobals is
-    // defined. (as of 23.11.2018)
-    if constexpr (calculateGlobals and cellWiseOwnedState) {
-      isHaloCell1 = not ownedPtr1[0];
-      isHaloCell2 = not ownedPtr2[0];
-
-      // This if is commented out because the AoS vs SoA test would fail otherwise. Even though it is physically
-      // correct!
-      /*if(_duplicatedCalculations and isHaloCell1 and isHaloCell2){
-        return;
-      }*/
-    }
-
-    for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
-      __m256d fxacc = _mm256_setzero_pd();
-      __m256d fyacc = _mm256_setzero_pd();
-      __m256d fzacc = _mm256_setzero_pd();
-
-      __m256d isOwnedI = _mm256_setzero_pd();
-      if constexpr (calculateGlobals and not cellWiseOwnedState and duplicatedCalculations) {
-        isOwnedI = _mm256_broadcast_sd(&ownedPtr1[i]);
-      }
-
-      const __m256d x1 = _mm256_broadcast_sd(&x1ptr[i]);
-      const __m256d y1 = _mm256_broadcast_sd(&y1ptr[i]);
-      const __m256d z1 = _mm256_broadcast_sd(&z1ptr[i]);
-
-      // floor soa2 numParticles to multiple of vecLength
-      unsigned int j = 0;
-      for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-        SoAKernel<newton3, cellWiseOwnedState, duplicatedCalculations, false>(
-            j, isOwnedI, ownedPtr2, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
-            fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
-      }
-      const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
-      if (rest > 0)
-        SoAKernel<newton3, cellWiseOwnedState, duplicatedCalculations, true>(
-            j, isOwnedI, ownedPtr2, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
-            fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
-
-      // horizontally reduce fDacc to sumfD
-      const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
-      const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
-
-      const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
-      const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
-
-      const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
-      const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
-
-      const __m128d sumfxfyVEC = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
-      const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
-
-      const double sumfx = sumfxfyVEC[0];
-      const double sumfy = sumfxfyVEC[1];
-      const double sumfz = _mm_cvtsd_f64(sumfzVEC);
-
-      fx1ptr[i] += sumfx;
-      fy1ptr[i] += sumfy;
-      fz1ptr[i] += sumfz;
-    }
-
-    if constexpr (calculateGlobals) {
-      const int threadnum = autopas_get_thread_num();
-
-      // horizontally reduce virialSumX and virialSumY
-      const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
-      const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
-      const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
-      const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
-
-      // horizontally reduce virialSumZ and upotSum
-      const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
-      const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
-      const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
-      const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
-
-      // globals = {virialX, virialY, virialZ, uPot}
-      double globals[4];
-      _mm_store_pd(&globals[0], hSumVirialxyVec);
-      _mm_store_pd(&globals[2], hSumVirialzUpotVec);
-
-      double energyfactor = 1.;
-      if constexpr (duplicatedCalculations) {
-        // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
-        // that we do not add the energy multiple times!
-        energyfactor = isHaloCell1 ? 0. : 1.;
-        if constexpr (newton3) {
-          energyfactor += isHaloCell2 ? 0. : 1.;
-          energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
-        }
-      }
-
-      _aosThreadData[threadnum].virialSum[0] += globals[0] * energyfactor;
-      _aosThreadData[threadnum].virialSum[1] += globals[1] * energyfactor;
-      _aosThreadData[threadnum].virialSum[2] += globals[2] * energyfactor;
-      _aosThreadData[threadnum].upotSum += globals[3] * energyfactor;
-    }
-#endif
-  }
-
   // clang-format off
   /**
    * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
