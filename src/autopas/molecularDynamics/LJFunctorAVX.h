@@ -497,19 +497,20 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     __m256d shift6s = _shift6;
     if (useMixing) {
       // the first argument for set lands in the last bits of the register
-      epsilon24s = _mm256_set_pd(masked and rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-                                 masked and rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                                 masked and rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                                 _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)));
+      epsilon24s =
+          _mm256_set_pd(not masked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                        not masked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                        not masked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                        _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)));
       sigmaSquares =
-          _mm256_set_pd(masked and rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-                        masked and rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                        masked and rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+          _mm256_set_pd(not masked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                        not masked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                        not masked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
                         _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)));
       if constexpr (applyShift) {
-        shift6s = _mm256_set_pd(masked and rest > 3 ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-                                masked and rest > 2 ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                                masked and rest > 1 ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+        shift6s = _mm256_set_pd(not masked or rest > 3 ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                                not masked or rest > 2 ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                                not masked or rest > 1 ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
                                 _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0)));
       }
     }
