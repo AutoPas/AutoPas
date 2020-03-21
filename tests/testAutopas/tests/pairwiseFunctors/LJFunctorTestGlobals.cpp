@@ -381,4 +381,4 @@ REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestGlobals, testAoSFunctorGlobals, testAoS
 using MyTypes =
     ::testing::Types<autopas::LJFunctor<Molecule, FMCell, true, false, autopas::FunctorN3Modes::Both, true>,
                      autopas::LJFunctorAVX<Molecule, FMCell, true, false, autopas::FunctorN3Modes::Both, true>>;
-INSTANTIATE_TYPED_TEST_SUITE_P(My, LJFunctorTestGlobals, MyTypes);
+INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestGlobals, MyTypes);

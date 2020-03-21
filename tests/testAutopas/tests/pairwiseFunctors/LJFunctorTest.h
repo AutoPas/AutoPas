@@ -22,7 +22,7 @@ class LJFunctorTest : public AutoPasTestBase {
    * @return Empty string if nothing was caught, the exception string if a matching exception was found.
    * If the exception does not match it is rethrown.
    */
-  template<class FunType>
+  template <class FunType>
   static std::string shouldSkipIfNotImplemented(FunType &&f) {
     try {
       f();
@@ -36,5 +36,4 @@ class LJFunctorTest : public AutoPasTestBase {
     }
     return "";
   }
-
 };

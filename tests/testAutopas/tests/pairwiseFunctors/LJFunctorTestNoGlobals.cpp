@@ -13,7 +13,6 @@
 TYPED_TEST_SUITE_P(LJFunctorTestNoGlobals);
 
 TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
-
   using FuncType = typename TypeParam::FuncType;
   constexpr bool mixing = FuncType::getMixing();
   constexpr bool newton3 = TypeParam::newton3;
@@ -33,9 +32,7 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
 
-  if (auto msg = this->shouldSkipIfNotImplemented([&]() {
-    functor->AoSFunctor(p1, p2, newton3);
-  }); msg != "") {
+  if (auto msg = this->shouldSkipIfNotImplemented([&]() { functor->AoSFunctor(p1, p2, newton3); }); msg != "") {
     GTEST_SKIP() << msg;
   }
 
@@ -93,15 +90,13 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
 }
 
 TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
-
   using FuncType = typename TypeParam::FuncType;
   using TestType = LJFunctorTestNoGlobals<FuncType>;
   constexpr bool mixing = FuncType::getMixing();
   constexpr bool newton3 = TypeParam::newton3;
 
   for (typename TestType::InteractionType interactionType :
-      {TestType::InteractionType::pair, TestType::InteractionType::verlet, TestType::InteractionType::own}) {
-
+       {TestType::InteractionType::pair, TestType::InteractionType::verlet, TestType::InteractionType::own}) {
     ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
     std::unique_ptr<FuncType> functor;
 
@@ -133,34 +128,36 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
           // If we interact a cell pair, it should be in cell2.
           cell2.addParticle(p2);
           break;
-        default:FAIL();
+        default:
+          FAIL();
       }
     }
     // Load the particles into the soa.
     functor->SoALoader(cell1, cell1._particleSoABuffer);
     functor->SoALoader(cell2, cell2._particleSoABuffer);
 
-    if (auto msg = this->shouldSkipIfNotImplemented([&] () {
-      switch (interactionType) {
-        case TestType::InteractionType::own:
-          // Interation of one cell with itself
-          functor->SoAFunctorSingle(cell1._particleSoABuffer, newton3, true);
-          break;
-        case TestType::InteractionType::pair:
-          // Interation of a cell pair
-          functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3, true);
-          break;
-        case TestType::InteractionType::verlet:
-          // Build verlet list
-          std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborList(2);
-          neighborList[0].push_back(1);
-          if (not newton3) {
-            neighborList[1].push_back(0);
+    if (auto msg = this->shouldSkipIfNotImplemented([&]() {
+          switch (interactionType) {
+            case TestType::InteractionType::own:
+              // Interation of one cell with itself
+              functor->SoAFunctorSingle(cell1._particleSoABuffer, newton3, true);
+              break;
+            case TestType::InteractionType::pair:
+              // Interation of a cell pair
+              functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3, true);
+              break;
+            case TestType::InteractionType::verlet:
+              // Build verlet list
+              std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborList(2);
+              neighborList[0].push_back(1);
+              if (not newton3) {
+                neighborList[1].push_back(0);
+              }
+              functor->SoAFunctorVerlet(cell1._particleSoABuffer, 0, neighborList[0], newton3);
+              functor->SoAFunctorVerlet(cell1._particleSoABuffer, 1, neighborList[1], newton3);
           }
-          functor->SoAFunctorVerlet(cell1._particleSoABuffer, 0, neighborList[0], newton3);
-          functor->SoAFunctorVerlet(cell1._particleSoABuffer, 1, neighborList[1], newton3);
-      }
-    }); msg != "") {
+        });
+        msg != "") {
       GTEST_SKIP() << msg;
     }
 
@@ -185,9 +182,11 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     std::array<double, 3> f2 = {0., 0., 0.};
     switch (interactionType) {
       case TestType::InteractionType::verlet:
-      case TestType::InteractionType::own:f2 = (++cell1.begin())->getF();
+      case TestType::InteractionType::own:
+        f2 = (++cell1.begin())->getF();
         break;
-      case TestType::InteractionType::pair:f2 = cell2.begin()->getF();
+      case TestType::InteractionType::pair:
+        f2 = cell2.begin()->getF();
         break;
     }
     // if the interactiontype is own, then the forces of the second particle should always be calculated!
@@ -249,19 +248,17 @@ REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestNoGlobals, testAoSNoGlobals, testSoANoG
 template <class Func, bool n3>
 struct TypeWrapper {
   using FuncType = Func;
-  constexpr static bool newton3 = n3 ;
+  constexpr static bool newton3 = n3;
 };
 
-using MyTypes = ::testing::Types<
-        TypeWrapper<autopas::LJFunctor<Molecule, FMCell, true, true>, true>,
-        TypeWrapper<autopas::LJFunctor<Molecule, FMCell, true, true>, false>,
-        TypeWrapper<autopas::LJFunctor<Molecule, FMCell, true, false>, true>,
-        TypeWrapper<autopas::LJFunctor<Molecule, FMCell, true, false>, false>,
-            // Fixme: Failing:
-        TypeWrapper<autopas::LJFunctorAVX<Molecule, FMCell, true, true>, true>,
-        TypeWrapper<autopas::LJFunctorAVX<Molecule, FMCell, true, true>, false>,
-            //
-        TypeWrapper<autopas::LJFunctorAVX<Molecule, FMCell, true, false>,true>,
-        TypeWrapper<autopas::LJFunctorAVX<Molecule, FMCell, true, false>,false>
-            >;
-INSTANTIATE_TYPED_TEST_SUITE_P(My, LJFunctorTestNoGlobals, MyTypes);
+using MyTypes = ::testing::Types<TypeWrapper<autopas::LJFunctor<Molecule, FMCell, true, true>, true>,
+                                 TypeWrapper<autopas::LJFunctor<Molecule, FMCell, true, true>, false>,
+                                 TypeWrapper<autopas::LJFunctor<Molecule, FMCell, true, false>, true>,
+                                 TypeWrapper<autopas::LJFunctor<Molecule, FMCell, true, false>, false>,
+                                 // Fixme: Failing:
+                                 TypeWrapper<autopas::LJFunctorAVX<Molecule, FMCell, true, true>, true>,
+                                 TypeWrapper<autopas::LJFunctorAVX<Molecule, FMCell, true, true>, false>,
+                                 //
+                                 TypeWrapper<autopas::LJFunctorAVX<Molecule, FMCell, true, false>, true>,
+                                 TypeWrapper<autopas::LJFunctorAVX<Molecule, FMCell, true, false>, false>>;
+INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestNoGlobals, MyTypes);
