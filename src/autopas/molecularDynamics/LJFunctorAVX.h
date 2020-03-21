@@ -648,14 +648,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
         Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
   }
 
-
   /**
    *
    * @return useMixing
    */
-  constexpr static bool getMixing() {
-    return useMixing;
-  }
+  constexpr static bool getMixing() { return useMixing; }
 
   /**
    * Get the number of flops used per kernel call. This should count the
