@@ -255,8 +255,6 @@ struct Newton3False : public TypeWrapper<FuncType, false> {};
 
 using MyTypes = ::testing::Types<Newton3True<LJFunShiftMixNoGlob>, Newton3False<LJFunShiftMixNoGlob>,
                                  Newton3True<LJFunShiftNoMixNoGlob>, Newton3False<LJFunShiftNoMixNoGlob>,
-                                 // Fixme: Failing:
                                  Newton3True<LJFunAVXShiftMixNoGlob>, Newton3False<LJFunAVXShiftMixNoGlob>,
-                                 //
                                  Newton3True<LJFunAVXShiftNoMixNoGlob>, Newton3False<LJFunAVXShiftNoMixNoGlob>>;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestNoGlobals, MyTypes);
