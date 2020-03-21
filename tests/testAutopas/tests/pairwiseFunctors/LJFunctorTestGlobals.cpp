@@ -6,12 +6,6 @@
 
 #include "LJFunctorTestGlobals.h"
 
-#include <exception>
-
-#include "autopas/molecularDynamics/LJFunctorAVX.h"
-#include "autopas/molecularDynamics/MoleculeLJ.h"
-#include "testingHelpers/commonTypedefs.h"
-
 TYPED_TEST_SUITE_P(LJFunctorTestGlobals);
 
 template <class FuncType>
@@ -378,7 +372,5 @@ REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestGlobals, testAoSFunctorGlobals, testAoS
                             testSoAFunctorGlobalsOwn, testSoAFunctorGlobalsPair, testSoAFunctorGlobalsVerlet,
                             testFunctorGlobalsThrowBad);
 
-using MyTypes =
-    ::testing::Types<autopas::LJFunctor<Molecule, FMCell, true, false, autopas::FunctorN3Modes::Both, true>,
-                     autopas::LJFunctorAVX<Molecule, FMCell, true, false, autopas::FunctorN3Modes::Both, true>>;
+using MyTypes = ::testing::Types<LJFunShiftNoMixGlob, LJFunAVXShiftNoMixGlob>;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestGlobals, MyTypes);

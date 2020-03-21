@@ -6,10 +6,6 @@
 
 #include "LJFunctorTestNoGlobals.h"
 
-#include "autopas/molecularDynamics/LJFunctorAVX.h"
-#include "autopas/molecularDynamics/MoleculeLJ.h"
-#include "testingHelpers/commonTypedefs.h"
-
 TYPED_TEST_SUITE_P(LJFunctorTestNoGlobals);
 
 TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
@@ -251,14 +247,16 @@ struct TypeWrapper {
   constexpr static bool newton3 = n3;
 };
 
-using MyTypes = ::testing::Types<TypeWrapper<autopas::LJFunctor<Molecule, FMCell, true, true>, true>,
-                                 TypeWrapper<autopas::LJFunctor<Molecule, FMCell, true, true>, false>,
-                                 TypeWrapper<autopas::LJFunctor<Molecule, FMCell, true, false>, true>,
-                                 TypeWrapper<autopas::LJFunctor<Molecule, FMCell, true, false>, false>,
+// struct aliasing for readable names
+template <class FuncType>
+struct Newton3True : public TypeWrapper<FuncType, true> {};
+template <class FuncType>
+struct Newton3False : public TypeWrapper<FuncType, false> {};
+
+using MyTypes = ::testing::Types<Newton3True<LJFunShiftMixNoGlob>, Newton3False<LJFunShiftMixNoGlob>,
+                                 Newton3True<LJFunShiftNoMixNoGlob>, Newton3False<LJFunShiftNoMixNoGlob>,
                                  // Fixme: Failing:
-                                 TypeWrapper<autopas::LJFunctorAVX<Molecule, FMCell, true, true>, true>,
-                                 TypeWrapper<autopas::LJFunctorAVX<Molecule, FMCell, true, true>, false>,
+                                 Newton3True<LJFunAVXShiftMixNoGlob>, Newton3False<LJFunAVXShiftMixNoGlob>,
                                  //
-                                 TypeWrapper<autopas::LJFunctorAVX<Molecule, FMCell, true, false>, true>,
-                                 TypeWrapper<autopas::LJFunctorAVX<Molecule, FMCell, true, false>, false>>;
+                                 Newton3True<LJFunAVXShiftNoMixNoGlob>, Newton3False<LJFunAVXShiftNoMixNoGlob>>;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestNoGlobals, MyTypes);

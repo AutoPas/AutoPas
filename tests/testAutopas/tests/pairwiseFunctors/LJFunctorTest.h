@@ -9,7 +9,10 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class LJFunctorTest : public AutoPasTestBase {
  public:
@@ -39,4 +42,36 @@ class LJFunctorTest : public AutoPasTestBase {
     }
     return "";
   }
+};
+
+// typedefs to hide clutter
+template <bool shift, bool mixing, bool globals>
+using LJFunMol = autopas::LJFunctor<Molecule, FMCell, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
+template <bool shift, bool mixing, bool globals>
+using LJFunAVXMol = autopas::LJFunctorAVX<Molecule, FMCell, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
+
+// struct aliasing for readable names
+struct LJFunShiftMixNoGlob : public LJFunMol<true, true, false> {
+  using LJFunMol<true, true, false>::LJFunctor;
+};
+struct LJFunShiftNoMixNoGlob : public LJFunMol<true, false, false> {
+  using LJFunMol<true, false, false>::LJFunctor;
+};
+struct LJFunAVXShiftMixNoGlob : public LJFunAVXMol<true, true, false> {
+  using LJFunAVXMol<true, true, false>::LJFunctorAVX;
+};
+struct LJFunAVXShiftNoMixNoGlob : public LJFunAVXMol<true, false, false> {
+  using LJFunAVXMol<true, false, false>::LJFunctorAVX;
+};
+struct LJFunShiftMixGlob : public LJFunMol<true, true, true> {
+  using LJFunMol<true, true, true>::LJFunctor;
+};
+struct LJFunShiftNoMixGlob : public LJFunMol<true, false, true> {
+  using LJFunMol<true, false, true>::LJFunctor;
+};
+struct LJFunAVXShiftMixGlob : public LJFunAVXMol<true, true, true> {
+  using LJFunAVXMol<true, true, true>::LJFunctorAVX;
+};
+struct LJFunAVXShiftNoMixGlob : public LJFunAVXMol<true, false, true> {
+  using LJFunAVXMol<true, false, true>::LJFunctorAVX;
 };

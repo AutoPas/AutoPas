@@ -9,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "LJFunctorTest.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopasTools/generators/RandomGenerator.h"
 

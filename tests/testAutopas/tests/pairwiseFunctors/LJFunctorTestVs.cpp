@@ -6,10 +6,6 @@
 
 #include "LJFunctorTestVs.h"
 
-#include "autopas/molecularDynamics/LJFunctorAVX.h"
-#include "autopas/molecularDynamics/MoleculeLJ.h"
-#include "testingHelpers/commonTypedefs.h"
-
 TYPED_TEST_SUITE_P(LJFunctorTestVs);
 
 TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
@@ -90,15 +86,12 @@ REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA, testSetP
 
 using MyTypes = ::testing::Types<
     // LJFunctor<mixing> VS LJFunctor<not mixing>
-    std::tuple<autopas::LJFunctor<Molecule, FMCell, true, /* mixing */ true, autopas::FunctorN3Modes::Both, true>,
-               autopas::LJFunctor<Molecule, FMCell, true, /* mixing */ false, autopas::FunctorN3Modes::Both, true>>,
+    std::tuple<LJFunShiftMixGlob, LJFunShiftNoMixGlob>,
     // LJFunctorAVX<mixing> VS LJFunctorAVX<not mixing>
-    std::tuple<autopas::LJFunctorAVX<Molecule, FMCell, true, /* mixing */ true, autopas::FunctorN3Modes::Both, true>,
-               autopas::LJFunctorAVX<Molecule, FMCell, true, /* mixing */ false, autopas::FunctorN3Modes::Both, true>>,
+    std::tuple<LJFunAVXShiftMixGlob, LJFunAVXShiftNoMixGlob>,
     // LJFunctor<mixing> VS LJFunctorAVX<not mixing>
-    std::tuple<autopas::LJFunctor<Molecule, FMCell, true, /* mixing */ true, autopas::FunctorN3Modes::Both, true>,
-               autopas::LJFunctorAVX<Molecule, FMCell, true, /* mixing */ false, autopas::FunctorN3Modes::Both, true>>,
+    std::tuple<LJFunShiftMixGlob, LJFunAVXShiftNoMixGlob>,
     // LJFunctorAVX<mixing> VS LJFunctor<not mixing>
-    std::tuple<autopas::LJFunctorAVX<Molecule, FMCell, true, /* mixing */ true, autopas::FunctorN3Modes::Both, true>,
-               autopas::LJFunctor<Molecule, FMCell, true, /* mixing */ false, autopas::FunctorN3Modes::Both, true>>>;
+    std::tuple<LJFunAVXShiftMixGlob, LJFunShiftNoMixGlob>>;
+
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestVs, MyTypes);
