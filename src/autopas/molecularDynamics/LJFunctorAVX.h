@@ -472,7 +472,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * @param fy2ptr
    * @param fz2ptr
    * @param typeID1ptr
-   * @param type2IDptr
+   * @param typeID2ptr
    * @param fxacc
    * @param fyacc
    * @param fzacc
@@ -488,7 +488,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
                         const double *const __restrict__ y2ptr, const double *const __restrict__ z2ptr,
                         double *const __restrict__ fx2ptr, double *const __restrict__ fy2ptr,
                         double *const __restrict__ fz2ptr, const size_t *const typeID1ptr,
-                        const size_t *const type2IDptr, __m256d &fxacc, __m256d &fyacc, __m256d &fzacc,
+                        const size_t *const typeID2ptr, __m256d &fxacc, __m256d &fyacc, __m256d &fzacc,
                         __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ, __m256d *upotSum,
                         const unsigned int rest = 0) {
 #ifdef __AVX__
@@ -496,19 +496,21 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     __m256d sigmaSquares = _sigmaSquare;
     __m256d shift6s = _shift6;
     if (useMixing) {
-      epsilon24s = _mm256_set_pd(_PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 0)),
-                                 _PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 1)),
-                                 _PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 2)),
-                                 _PPLibrary->mixing24Epsilon(*typeID1ptr, *(type2IDptr + 3)));
-      sigmaSquares = _mm256_set_pd(_PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 0)),
-                                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 1)),
-                                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 2)),
-                                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(type2IDptr + 3)));
+      // the first argument for set lands in the last bits of the register
+      epsilon24s = _mm256_set_pd(masked and rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                                 masked and rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                                 masked and rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                                 _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)));
+      sigmaSquares =
+          _mm256_set_pd(masked and rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                        masked and rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                        masked and rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                        _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)));
       if constexpr (applyShift) {
-        shift6s = _mm256_set_pd(_PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 0)),
-                                _PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 1)),
-                                _PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 2)),
-                                _PPLibrary->mixingShift6(*typeID1ptr, *(type2IDptr + 3)));
+        shift6s = _mm256_set_pd(masked and rest > 3 ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                                masked and rest > 2 ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                                masked and rest > 1 ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                                _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0)));
       }
     }
 
@@ -625,19 +627,19 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * @copydoc Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 8>{
+    return std::array<typename Particle::AttributeNames, 9>{
         Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::owned};
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
   }
 
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 5>{
-        Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::owned};
+    return std::array<typename Particle::AttributeNames, 6>{
+        Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
   }
 
   /**
