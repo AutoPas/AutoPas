@@ -18,14 +18,6 @@ class LJFunctorTestNoGlobals : public LJFunctorTest {
  public:
   LJFunctorTestNoGlobals() : LJFunctorTest() {}
 
-  enum InteractionType { own, pair, verlet };
-  enum where_type { inside, boundary, outside };
-
-  template <bool mixing>
-  static void testSoANoGlobals(bool newton3, InteractionType interactionType);
-  template <bool mixing>
-  static std::string testAoSNoGlobals(bool newton3);
-
   constexpr static double cutoff{1.};
   constexpr static double epsilon{1.};
   constexpr static double sigma{1.};

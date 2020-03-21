@@ -18,7 +18,7 @@ template <class FuncType>
 void LJFunctorTestGlobals<FuncType>::testAoSGlobals(LJFunctorTestGlobals<FuncType>::where_type where, bool newton3,
                                                     bool duplicatedCalculation) {
   FuncType functor(cutoff, duplicatedCalculation);
-  functor.setParticleProperties(epsilon * 24, 1);
+  functor.setParticleProperties(epsilon * 24, sigma);
   double xOffset;
   double whereFactor;
   std::string where_str;
@@ -100,7 +100,7 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
   constexpr bool mixing = false;
   autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(
       cutoff, duplicatedCalculation);
-  functor.setParticleProperties(epsilon * 24, 1);
+  functor.setParticleProperties(epsilon * 24, sigma);
   double xOffset;
   double whereFactor = 0.;
   std::string where_str;

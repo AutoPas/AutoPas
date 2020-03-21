@@ -18,9 +18,6 @@ class LJFunctorTestGlobals : public LJFunctorTest {
  public:
   LJFunctorTestGlobals() : LJFunctorTest() {}
 
-  enum InteractionType { own, pair, verlet };
-  enum where_type { inside, boundary, outside };
-
   static void testAoSGlobals(where_type where, bool newton3, bool duplicatedCalculation);
   static void testSoAGlobals(where_type where, bool newton3, bool duplicatedCalculation,
                              InteractionType interactionType, size_t additionalParticlesToVerletNumber,

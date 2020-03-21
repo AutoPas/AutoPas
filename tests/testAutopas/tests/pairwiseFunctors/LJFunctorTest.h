@@ -15,6 +15,9 @@ class LJFunctorTest : public AutoPasTestBase {
  public:
   LJFunctorTest() : AutoPasTestBase() {}
 
+  enum InteractionType { own, pair, verlet };
+  enum where_type { inside, boundary, outside };
+
   /**
    * Checks if the given function throws an exception containing "not implemented".
    * @tparam FunType Type of the given function.
