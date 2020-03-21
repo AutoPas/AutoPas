@@ -96,10 +96,10 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
     std::unique_ptr<FuncType> functor;
 
-    particlePropertiesLibrary.addType(0, this->epsilon, this->sigma, 1.0);
     if constexpr (mixing) {
-      functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
+      particlePropertiesLibrary.addType(0, this->epsilon, this->sigma, 1.0);
       particlePropertiesLibrary.addType(1, this->epsilon2, this->sigma2, 1.0);
+      functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
     } else {
       functor = std::make_unique<FuncType>(this->cutoff);
       functor->setParticleProperties(this->epsilon * 24, 1);
