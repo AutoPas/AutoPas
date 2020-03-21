@@ -8,25 +8,15 @@
 
 #include <gtest/gtest.h>
 
-#include "AutoPasTestBase.h"
+#include "LJFunctorTest.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
 template <class FuncType>
-class LJFunctorTestGlobals : public AutoPasTestBase {
+class LJFunctorTestGlobals : public LJFunctorTest {
  public:
-  LJFunctorTestGlobals() : AutoPasTestBase() {}
-
-  /**
-   * Checks if the given function throws an exception containing "not implemented".
-   * @tparam FunType Type of the given function.
-   * @param f Code to be checked as a lambda.
-   * @return Empty string if nothing was caught, the exception string if a matching exception was found.
-   * If the exception does not match it is rethrown.
-   */
-  template <class FunType>
-  static std::string shouldSkipIfNotImplemented(FunType &&f);
+  LJFunctorTestGlobals() : LJFunctorTest() {}
 
   enum InteractionType { own, pair, verlet };
   enum where_type { inside, boundary, outside };

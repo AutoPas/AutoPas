@@ -15,22 +15,6 @@
 TYPED_TEST_SUITE_P(LJFunctorTestGlobals);
 
 template <class FuncType>
-template <class FunType>
-std::string LJFunctorTestGlobals<FuncType>::shouldSkipIfNotImplemented(FunType &&f) {
-  try {
-    f();
-  } catch (const autopas::utils::ExceptionHandler::AutoPasException &e) {
-    // if the functor fails with an exception about "not implemented" do not treat this as a failure but skip
-    if (std::string(e.what()).find("not implemented") != std::string::npos) {
-      return std::string(e.what());
-    } else {
-      throw;  // rethrow original exception
-    }
-  }
-  return "";
-}
-
-template <class FuncType>
 void LJFunctorTestGlobals<FuncType>::testAoSGlobals(LJFunctorTestGlobals<FuncType>::where_type where, bool newton3,
                                                     bool duplicatedCalculation) {
   FuncType functor(cutoff, duplicatedCalculation);

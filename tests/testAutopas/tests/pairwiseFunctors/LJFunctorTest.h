@@ -1,7 +1,7 @@
 /**
- * @file LJFunctorTest.h
- * @author seckler
- * @date 06.11.18
+ * @file LJFunctorTestGlobals.cpp
+ * @author F. Gratl
+ * @date 20.03.20
  */
 
 #pragma once
@@ -9,43 +9,32 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopas/utils/ExceptionHandler.h"
 
-template <class FuncType>
 class LJFunctorTest : public AutoPasTestBase {
  public:
   LJFunctorTest() : AutoPasTestBase() {}
 
-  void SetUp() override{};
+  /**
+   * Checks if the given function throws an exception containing "not implemented".
+   * @tparam FunType Type of the given function.
+   * @param f Code to be checked as a lambda.
+   * @return Empty string if nothing was caught, the exception string if a matching exception was found.
+   * If the exception does not match it is rethrown.
+   */
+  template<class FunType>
+  static std::string shouldSkipIfNotImplemented(FunType &&f) {
+    try {
+      f();
+    } catch (const autopas::utils::ExceptionHandler::AutoPasException &e) {
+      // if the functor fails with an exception about "not implemented" do not treat this as a failure but skip
+      if (std::string(e.what()).find("not implemented") != std::string::npos) {
+        return std::string(e.what());
+      } else {
+        throw;  // rethrow original exception
+      }
+    }
+    return "";
+  }
 
-  void TearDown() override{};
-
-  template <bool mixing>
-  static void testAoSNoGlobals(bool newton3);
-
-  enum InteractionType { own, pair, verlet };
-
-  template <bool mixing>
-  static void testSoANoGlobals(bool newton3, InteractionType interactionType);
-
-  enum where_type { inside, boundary, outside };
-  static void testAoSGlobals(where_type where, bool newton3, bool duplicatedCalculation);
-  static void testSoAGlobals(where_type where, bool newton3, bool duplicatedCalculation, InteractionType interactionType,
-                      size_t additionalParticlesToVerletNumber, bool cellWiseOwnedState, uint64_t numParticleReplicas);
-
-  constexpr static double cutoff{1.};
-  constexpr static double epsilon{1.};
-  constexpr static double sigma{1.};
-  constexpr static double epsilon2{2.};
-  constexpr static double sigma2{2.};
-
-  constexpr static std::array<double, 3> expectedForce{-4547248.8989645941, -9094497.7979291882, -13641746.696893783};
-  constexpr static std::array<double, 3> expectedForceMixing{-835415983.7676939964294, -1670831967.5353879928588,
-                                                             -2506247951.3030819892883};
-
-  constexpr static double expectedVirial{6366148.4585504318};
-  constexpr static double expectedEnergy{529783.50857210846};
-  constexpr static double absDelta{1e-7};
 };
