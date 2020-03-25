@@ -746,6 +746,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * @param sigmaSquare
    */
   void setParticleProperties(double epsilon24, double sigmaSquare) {
+#ifdef __AVX__
     _epsilon24 = _mm256_set1_pd(epsilon24);
     _sigmaSquare = _mm256_set1_pd(sigmaSquare);
     if constexpr (applyShift) {
@@ -754,6 +755,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     } else {
       _shift6 = _mm256_setzero_pd();
     }
+#endif
   }
 
  private:
