@@ -465,7 +465,13 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     auto numThreads =
         std::clamp(static_cast<int>(numClusterPairs / minNumClusterPairsPerThread), 1, autopas_get_max_threads());
 
-    size_t numClusterPairsPerThread = numClusterPairs / numThreads;
+    size_t numClusterPairsPerThread =
+        std::max(static_cast<unsigned long>(std::ceil(static_cast<double>(numClusterPairs) / numThreads)), 1ul);
+    if (numClusterPairsPerThread * numThreads < numClusterPairs) {
+      autopas::utils::ExceptionHandler::exception(
+          "VerletClusterLists::calculateClusterThreadPartition(): numClusterPairsPerThread * numThreads should always "
+          "be at least the amount of Cluster Pairs!");
+    }
     fillClusterRanges(numClusterPairsPerThread, numThreads);
   }
 
@@ -476,12 +482,17 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @param numThreads The number of threads to use.
    */
   void fillClusterRanges(size_t numClusterPairsPerThread, int numThreads) {
+    if (numClusterPairsPerThread < 1) {
+      autopas::utils::ExceptionHandler::exception(
+          "VerletClusterLists::fillClusterRanges(): numClusterPairsPerThread is less than one, this is not supported "
+          "and will lead to errors!");
+    }
     _clusterThreadPartition.resize(numThreads);
 
     size_t currentThread = 0;
-    size_t numClustersThisThread = 0;
+    size_t currentNumClustersToAdd = 0;
     size_t numClusterPairsTotal = 0;
-
+    bool threadIsInitialized = false;
     // Iterate over the clusters of all towers
     for (size_t currentTowerIndex = 0; currentTowerIndex < _towers.size(); currentTowerIndex++) {
       auto &currentTower = _towers[currentTowerIndex];
@@ -490,26 +501,32 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
         auto &currentCluster = currentTower.getCluster(currentClusterInTower);
 
         // If on a new thread, start with the clusters for this thread here.
-        if (numClustersThisThread == 0) {
+        if (not threadIsInitialized) {
           _clusterThreadPartition[currentThread] = {currentTowerIndex, currentClusterInTower, 0};
+          threadIsInitialized = true;
         }
 
-        numClustersThisThread++;
+        currentNumClustersToAdd++;
         numClusterPairsTotal += currentCluster.getNeighbors().size();
 
         // If the thread is finished, write number of clusters and start new thread.
         if (numClusterPairsTotal >= numClusterPairsPerThread * (currentThread + 1)) {
-          // Set the number of clusters for the finished thread.
-          _clusterThreadPartition[currentThread].numClusters = numClustersThisThread;
-          numClustersThisThread = 0;
+          // Add the number of clusters for the finished thread.
+          _clusterThreadPartition[currentThread].numClusters += currentNumClustersToAdd;
+          currentNumClustersToAdd = 0;
           // Go to next thread!
           currentThread++;
+          // if we are already at the end of all threads, go back to last thread!
+          // this is a safety precaution and should not really matter.
+          if (currentThread > numThreads) {
+            --currentThread;
+          }
         }
       }
     }
     // Make sure the last cluster range contains the rest of the clusters, even if there is not the perfect number left.
-    if (numClustersThisThread != 0) {
-      _clusterThreadPartition[currentThread].numClusters = numClustersThisThread;
+    if (currentNumClustersToAdd != 0) {
+      _clusterThreadPartition[currentThread].numClusters += currentNumClustersToAdd;
     }
     // Theoretically, some threads may still remain. This ensures that their numClusters are set to 0.
     while (++currentThread < numThreads) {
