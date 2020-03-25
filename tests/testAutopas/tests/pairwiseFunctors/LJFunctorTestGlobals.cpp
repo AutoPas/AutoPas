@@ -373,5 +373,10 @@ REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestGlobals, testAoSFunctorGlobals, testAoS
                             testSoAFunctorGlobalsOwn, testSoAFunctorGlobalsPair, testSoAFunctorGlobalsVerlet,
                             testFunctorGlobalsThrowBad);
 
-using MyTypes = ::testing::Types<LJFunShiftNoMixGlob, LJFunAVXShiftNoMixGlob>;
+using MyTypes = ::testing::Types<LJFunShiftNoMixGlob
+#ifdef __AVX__
+                                 ,
+                                 LJFunAVXShiftNoMixGlob
+#endif
+                                 >;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestGlobals, MyTypes);

@@ -88,12 +88,16 @@ REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA, testSetP
 
 using MyTypes = ::testing::Types<
     // LJFunctor<mixing> VS LJFunctor<not mixing>
-    std::tuple<LJFunShiftMixGlob, LJFunShiftNoMixGlob>,
+    std::tuple<LJFunShiftMixGlob, LJFunShiftNoMixGlob>
+#ifdef __AVX__
+    ,
     // LJFunctorAVX<mixing> VS LJFunctorAVX<not mixing>
     std::tuple<LJFunAVXShiftMixGlob, LJFunAVXShiftNoMixGlob>,
     // LJFunctor<mixing> VS LJFunctorAVX<not mixing>
     std::tuple<LJFunShiftMixGlob, LJFunAVXShiftNoMixGlob>,
     // LJFunctorAVX<mixing> VS LJFunctor<not mixing>
-    std::tuple<LJFunAVXShiftMixGlob, LJFunShiftNoMixGlob>>;
+    std::tuple<LJFunAVXShiftMixGlob, LJFunShiftNoMixGlob>
+#endif
+    >;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestVs, MyTypes);

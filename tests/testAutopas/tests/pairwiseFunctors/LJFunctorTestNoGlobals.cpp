@@ -254,7 +254,11 @@ template <class FuncType>
 struct Newton3False : public TypeWrapper<FuncType, false> {};
 
 using MyTypes = ::testing::Types<Newton3True<LJFunShiftMixNoGlob>, Newton3False<LJFunShiftMixNoGlob>,
-                                 Newton3True<LJFunShiftNoMixNoGlob>, Newton3False<LJFunShiftNoMixNoGlob>,
+                                 Newton3True<LJFunShiftNoMixNoGlob>, Newton3False<LJFunShiftNoMixNoGlob>
+#ifdef __AVX__
+                                 ,
                                  Newton3True<LJFunAVXShiftMixNoGlob>, Newton3False<LJFunAVXShiftMixNoGlob>,
-                                 Newton3True<LJFunAVXShiftNoMixNoGlob>, Newton3False<LJFunAVXShiftNoMixNoGlob>>;
+                                 Newton3True<LJFunAVXShiftNoMixNoGlob>, Newton3False<LJFunAVXShiftNoMixNoGlob>
+#endif
+                                 >;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestNoGlobals, MyTypes);
