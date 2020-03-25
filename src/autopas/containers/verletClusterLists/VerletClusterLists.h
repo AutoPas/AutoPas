@@ -520,6 +520,9 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
           // this is a safety precaution and should not really matter.
           if (currentThread > numThreads) {
             --currentThread;
+            threadIsInitialized = true;
+          } else {
+            threadIsInitialized = false;
           }
         }
       }
