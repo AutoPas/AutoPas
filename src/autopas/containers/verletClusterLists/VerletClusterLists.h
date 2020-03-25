@@ -213,7 +213,6 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
       rebuildTowersAndClusters();
     }
     // there is an implicit barrier at end of single!
-    autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
     return ParticleIteratorWrapper<Particle, true>();
   }
 
@@ -226,7 +225,6 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
       // uses optimzed version, but also iterate over _particlesToAdd!
       ///@todo needs to also iterate over stupid particles.
     }
-    autopas::utils::ExceptionHandler::exception("VerletClusterLists.getRegionIterator not yet implemented.");
     return ParticleIteratorWrapper<Particle, false>();
   }
 
