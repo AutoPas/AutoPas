@@ -26,7 +26,7 @@ class LJFunctorTestNoGlobals : public LJFunctorTest {
   // if we make this static constexpr icpc sets them to 0
   const std::array<double, 3> expectedForce{-4547248.8989645941, -9094497.7979291882, -13641746.696893783};
   const std::array<double, 3> expectedForceMixing{-835415983.7676939964294, -1670831967.5353879928588,
-                                                             -2506247951.3030819892883};
+                                                  -2506247951.3030819892883};
 
   constexpr static double absDelta{1e-7};
 };
