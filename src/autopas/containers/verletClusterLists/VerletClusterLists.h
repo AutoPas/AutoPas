@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/containers/UnknowingCellBorderAndFlagManager.h>
+
 #include <cmath>
 
 #include "autopas/cells/FullParticleCell.h"
@@ -177,11 +179,12 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     // there is an implicit barrier at end of single!
     return ParticleIteratorWrapper<Particle, true>(
         new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, true>(
-            &(this->_towers), 0, nullptr, behavior));
+            &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior));
   }
 
   ParticleIteratorWrapper<Particle, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+    /// @todo use proper cellBorderAndFlagManager instead of the unknowing.
     if (_isValid) {
       if (not _particlesToAdd.empty()) {
         autopas::utils::ExceptionHandler::exception(
@@ -190,12 +193,12 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
       // If the particles are sorted into the towers, we can simply use the iteration over towers.
       return ParticleIteratorWrapper<Particle, false>{
           new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
-              &(this->_towers), 0, nullptr, behavior)};
+              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior)};
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       return ParticleIteratorWrapper<Particle, false>{
           new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
-              &(this->_towers), 0, nullptr, behavior, &_particlesToAdd)};
+              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, &_particlesToAdd)};
     }
   }
 
@@ -580,6 +583,11 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * The builder for the verlet cluster lists.
    */
   std::unique_ptr<internal::VerletClusterListsRebuilder<Particle>> _builder;
+
+  /**
+   * The flag manager of this container.
+   */
+  internal::UnknowingCellBorderAndFlagManager unknowingCellBorderAndFlagManager;
 };
 
 }  // namespace autopas
