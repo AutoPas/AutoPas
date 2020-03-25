@@ -46,15 +46,15 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     /**
      * The index of the tower that contains the first cluster.
      */
-    size_t startTowerIndex;
+    size_t startTowerIndex{};
     /**
      * The index of the first cluster in its tower.
      */
-    size_t startIndexInTower;
+    size_t startIndexInTower{};
     /**
      * The number of clusters in the range.
      */
-    size_t numClusters;
+    size_t numClusters{};
   };
 
   /**
@@ -518,7 +518,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
           currentThread++;
           // if we are already at the end of all threads, go back to last thread!
           // this is a safety precaution and should not really matter.
-          if (currentThread > numThreads) {
+          if (currentThread >= numThreads) {
             --currentThread;
             threadIsInitialized = true;
           } else {
@@ -527,13 +527,16 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
         }
       }
     }
+    if (not threadIsInitialized) {
+      _clusterThreadPartition[currentThread] = {0, 0, 0};
+    }
     // Make sure the last cluster range contains the rest of the clusters, even if there is not the perfect number left.
     if (currentNumClustersToAdd != 0) {
       _clusterThreadPartition[currentThread].numClusters += currentNumClustersToAdd;
     }
     // Theoretically, some threads may still remain. This ensures that their numClusters are set to 0.
     while (++currentThread < numThreads) {
-      _clusterThreadPartition[currentThread].numClusters = 0;
+      _clusterThreadPartition[currentThread] = {0, 0, 0};
     }
   }
 
