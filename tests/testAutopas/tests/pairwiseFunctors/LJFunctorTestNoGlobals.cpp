@@ -1,5 +1,5 @@
 /**
- * @file LJFunctorTestGlobals.cpp
+ * @file LJFunctorTestNoGlobals.cpp
  * @author F. Gratl
  * @date 20.03.20
  */

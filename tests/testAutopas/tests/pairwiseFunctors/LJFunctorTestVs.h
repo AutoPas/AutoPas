@@ -1,5 +1,5 @@
 /**
- * @file LJFunctorTestVs.cpp
+ * @file LJFunctorTestVs.h
  * @author F. Gratl
  * @date 20.03.20
  */
