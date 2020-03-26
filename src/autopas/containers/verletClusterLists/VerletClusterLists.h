@@ -235,6 +235,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, _particlesToAdd);
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
         _builder->rebuildTowersAndClusters();
+    _isValid = true;
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
