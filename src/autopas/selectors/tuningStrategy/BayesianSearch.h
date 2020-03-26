@@ -13,7 +13,7 @@
 
 #include "GaussianProcess.h"
 #include "TuningStrategyInterface.h"
-#include "autopas/selectors/ContainerSelector.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/selectors/FeatureVector.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
