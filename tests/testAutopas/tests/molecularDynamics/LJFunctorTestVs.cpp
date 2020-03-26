@@ -86,6 +86,12 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLAoS) {
 
 REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA, testSetPropertiesVSPPLAoS);
 
+/**
+ * Compare:
+ * - Mixing vs not mixing (-> using ppl vs not using ppl when only one type of particle exists)
+ * - AVX vs not AVX
+ * - combinations of the above
+ */
 using MyTypes = ::testing::Types<
     // LJFunctor<mixing> VS LJFunctor<not mixing>
     std::tuple<LJFunShiftMixGlob, LJFunShiftNoMixGlob>
