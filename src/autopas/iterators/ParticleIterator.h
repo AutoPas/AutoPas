@@ -303,7 +303,11 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
   AdditionalParticleVectorToIterateState _additionalParticleVectorToIterateState{
       AdditionalParticleVectorToIterateState::ignore};
 
+  /**
+   * Pointer to an additional Particle Vector this ParticleIterator will iterate over.
+   */
   ParticleVecType *_additionalParticleVector;
+
   /**
    * Index for ParticleVecType.
    */

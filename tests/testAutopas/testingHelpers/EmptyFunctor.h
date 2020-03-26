@@ -9,13 +9,21 @@
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/pairwiseFunctors/Functor.h"
 #if defined(AUTOPAS_CUDA)
 #include "autopas/utils/CudaSoA.h"
 #endif
 
+/**
+ * Empty Functor, this functor is empty and can be used for testing purposes.
+ * It returns that it is applicable for everything.
+ */
 template <class Particle, class ParticleCell_t>
 class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
  public:
+  /**
+   * Default constructor.
+   */
   EmptyFunctor() : autopas::Functor<Particle, ParticleCell_t>(0.){};
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {}
@@ -25,8 +33,13 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
   void SoAFunctor(autopas::SoAView<typename Particle::SoAArraysType> soa,
                   autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3) override {}
 
+  // clang-format off
+  /**
+   * @copydoc autopas::Functor::SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   */
+  // clang-format on
   void SoAFunctor(autopas::SoAView<typename Particle::SoAArraysType> soa, size_t indexFirst,
-                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &, bool newton3) override{};
+                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) override{};
 
   bool allowsNewton3() override { return true; }
 
