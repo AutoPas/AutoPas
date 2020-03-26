@@ -402,6 +402,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
 
   void deleteAllParticles() override {
     _isValid = false;
+    _particlesToAdd.clear();
     std::for_each(_towers.begin(), _towers.end(), [](auto &tower) { tower.clear(); });
   }
 
