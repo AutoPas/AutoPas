@@ -47,11 +47,15 @@ void checkRegionIteratorForAllParticles(AutoPasT &autoPas, autopas::IteratorBeha
  * Tests the addition and iteration over particles.
  * @param containerOption
  */
-void testAdditionAndIteration(testingTuple options) {
+template <bool testConstIterators>
+void testAdditionAndIteration(autopas::ContainerOption containerOption, double cellSizeOption) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
 
-  auto [containerOption, cellSizeOption] = options;
+  // Reference to the AutoPas object to be able to check const iterators.
+  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule, FMCell> &,
+                     autopas::AutoPas<Molecule, FMCell> &>
+      autoPasRef = autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
@@ -92,7 +96,7 @@ void testAdditionAndIteration(testingTuple options) {
   }
   {
     size_t count = 0;
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    for (auto iter = autoPasRef.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       ++count;
       EXPECT_TRUE(iter->isOwned());
     }
@@ -103,7 +107,7 @@ void testAdditionAndIteration(testingTuple options) {
   // check number of halo particles
   {
     size_t count = 0;
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
+    for (auto iter = autoPasRef.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
       ++count;
       EXPECT_FALSE(iter->isOwned());
     }
@@ -115,7 +119,7 @@ void testAdditionAndIteration(testingTuple options) {
   // check number of particles
   {
     size_t count = 0;
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
+    for (auto iter = autoPasRef.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
       ++count;
     }
     EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal);
@@ -124,7 +128,7 @@ void testAdditionAndIteration(testingTuple options) {
   // check number of halo particles for region iterator
   {
     size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloOnly);
+    for (auto iter = autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloOnly);
          iter.isValid(); ++iter) {
       ++count;
       EXPECT_FALSE(iter->isOwned());
@@ -137,7 +141,7 @@ void testAdditionAndIteration(testingTuple options) {
   // check number of particles for region iterator
   {
     size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloAndOwned);
+    for (auto iter = autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloAndOwned);
          iter.isValid(); ++iter) {
       ++count;
     }
@@ -147,7 +151,7 @@ void testAdditionAndIteration(testingTuple options) {
   // check number of owned particles for region iterator
   {
     size_t count = 0;
-    for (auto iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::ownedOnly);
+    for (auto iter = autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::ownedOnly);
          iter.isValid(); ++iter) {
       ++count;
     }
@@ -156,15 +160,16 @@ void testAdditionAndIteration(testingTuple options) {
   }
 
   // check all particles are in region iterator of their position, ownedOnly
-  checkRegionIteratorForAllParticles(autoPas, autopas::IteratorBehavior::ownedOnly);
+  checkRegionIteratorForAllParticles(autoPasRef, autopas::IteratorBehavior::ownedOnly);
 
   // check all particles are in region iterator of their position, haloOnly
-  checkRegionIteratorForAllParticles(autoPas, autopas::IteratorBehavior::haloOnly);
+  checkRegionIteratorForAllParticles(autoPasRef, autopas::IteratorBehavior::haloOnly);
 
   // check all particles are in region iterator of their position, haloAndOwned
-  checkRegionIteratorForAllParticles(autoPas, autopas::IteratorBehavior::haloAndOwned);
+  checkRegionIteratorForAllParticles(autoPasRef, autopas::IteratorBehavior::haloAndOwned);
 
-  // now move particles by at most skin/2, as this is the maximal distance they are allowed to move
+  // Now move particles by at most skin/2, as this is the maximal distance they are allowed to move.
+  // Don't use autoPasRef here, as we are modifying things!
   for (auto iter = autoPas.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
     auto pos = iter->getR();
     for (auto d = 0; d < 3; ++d) {
@@ -182,24 +187,27 @@ void testAdditionAndIteration(testingTuple options) {
   }
 
   // check all particles are in region iterator of their position, ownedOnly
-  checkRegionIteratorForAllParticles(autoPas, autopas::IteratorBehavior::ownedOnly);
+  checkRegionIteratorForAllParticles(autoPasRef, autopas::IteratorBehavior::ownedOnly);
 
   // check all particles are in region iterator of their position, haloOnly
-  checkRegionIteratorForAllParticles(autoPas, autopas::IteratorBehavior::haloOnly);
+  checkRegionIteratorForAllParticles(autoPasRef, autopas::IteratorBehavior::haloOnly);
 
   // check all particles are in region iterator of their position, haloAndOwned
-  checkRegionIteratorForAllParticles(autoPas, autopas::IteratorBehavior::haloAndOwned);
+  checkRegionIteratorForAllParticles(autoPasRef, autopas::IteratorBehavior::haloAndOwned);
 }
 
 /**
  * Tests the equivalence of the range-based for loop with the normal for loop using isValid
  * @param containerOption
  */
-void testRangeBasedIterator(testingTuple options) {
+template <bool testConstIterators>
+void testRangeBasedIterator(autopas::ContainerOption containerOption, double cellSizeOption) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
-
-  auto [containerOption, cellSizeOption] = options;
+  // Reference to the AutoPas object to be able to check const iterators.
+  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule, FMCell> &,
+                     autopas::AutoPas<Molecule, FMCell> &>
+      autoPasRef = autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
@@ -242,26 +250,40 @@ void testRangeBasedIterator(testingTuple options) {
     particle.setF({42., 42., 42.});
   }
 
-  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+  for (auto &particle : autoPasRef) {
+    decltype(particle.getF()) comparison = {42., 42., 42};
+    ASSERT_EQ(particle.getF(), comparison);
+  }
+
+  for (auto iter = autoPasRef.begin(); iter.isValid(); ++iter) {
     decltype(iter->getF()) comparison = {42., 42., 42};
     ASSERT_EQ(iter->getF(), comparison);
   }
 }
 
 TEST_P(IteratorTest, ParticleAdditionAndIteratorTestNormal) {
-  auto options = GetParam();
-  testAdditionAndIteration(options);
+  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  if (testConstIterators) {
+    testAdditionAndIteration<true>(containerOption, cellSizeFactor);
+  } else {
+    testAdditionAndIteration<false>(containerOption, cellSizeFactor);
+  }
 }
 
 TEST_P(IteratorTest, RangeBasedIterator) {
-  auto options = GetParam();
-  testRangeBasedIterator(options);
+  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  if (testConstIterators) {
+    testRangeBasedIterator<true>(containerOption, cellSizeFactor);
+  } else {
+    testRangeBasedIterator<false>(containerOption, cellSizeFactor);
+  }
 }
 
 /**
  * The main idea of this test is to compare the iterators using openmp with the iterators not using openmp.
  * If OPENMP is disabled, this tests mainly that no particle is traversed twice.
  */
+template <bool testConstIterators>
 void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption, double cellSizeFactor,
                                        autopas::IteratorBehavior behavior, bool testRegionIterators) {
   std::array<double, 3> min = {1, 1, 1};
@@ -272,6 +294,11 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
 
   int clusterSize = 64;
   autopas::AutoPas<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> apContainer;
+  // Reference to the AutoPas object to be able to check const iterators.
+  std::conditional_t<testConstIterators,
+                     const autopas::AutoPas<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> &,
+                     autopas::AutoPas<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> &>
+      autoPasRef = apContainer;
 
   apContainer.setAllowedContainers({containerOption});
   apContainer.setCellSizeFactor(cellSizeFactor);
@@ -308,8 +335,8 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
   }
   {
     // without OpenMP:
-    auto begin = testRegionIterators ? apContainer.getRegionIterator(lowCorner, highCorner, behavior)
-                                     : apContainer.begin(behavior);
+    auto begin = testRegionIterators ? autoPasRef.getRegionIterator(lowCorner, highCorner, behavior)
+                                     : autoPasRef.begin(behavior);
     for (auto iter = begin; iter.isValid(); ++iter) {
       EXPECT_EQ(1, iter->getNumTouched());
       if (behavior == autopas::IteratorBehavior::ownedOnly) {
@@ -325,48 +352,75 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
  * Compare the OpenMP iterator behavior for owned only.
  */
 TEST_P(IteratorTest, testOpenMPIteratorsOwnedOnly) {
-  auto [containerOption, cellSizeFactor] = GetParam();
-  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, false);
+  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  if (testConstIterators) {
+    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, false);
+  } else {
+    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, false);
+  }
 }
 
 /**
  * Compare the OpenMP iterator behavior for halo and owned particles.
  */
 TEST_P(IteratorTest, testOpenMPIteratorsHaloAndOwned) {
-  auto [containerOption, cellSizeFactor] = GetParam();
-  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, false);
+  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  if (testConstIterators) {
+    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, false);
+
+  } else {
+    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, false);
+  }
 }
 
 /**
  * Compare the OpenMP iterator behavior for halo only.
  */
 TEST_P(IteratorTest, testOpenMPIteratorsHaloOnly) {
-  auto [containerOption, cellSizeFactor] = GetParam();
-  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, false);
+  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  if (testConstIterators) {
+    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, false);
+
+  } else {
+    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, false);
+  }
 }
 
 /**
  * Compare the OpenMP RegionIterator behavior for owned only.
  */
 TEST_P(IteratorTest, testOpenMPRegionIteratorsOwnedOnly) {
-  auto [containerOption, cellSizeFactor] = GetParam();
-  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, true);
+  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  if (testConstIterators) {
+    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, true);
+
+  } else {
+    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, true);
+  }
 }
 
 /**
  * Compare the OpenMP RegionIterator behavior for halo and owned particles.
  */
 TEST_P(IteratorTest, testOpenMPRegionIteratorsHaloAndOwned) {
-  auto [containerOption, cellSizeFactor] = GetParam();
-  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, true);
+  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  if (testConstIterators) {
+    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, true);
+  } else {
+    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, true);
+  }
 }
 
 /**
  * Compare the OpenMP RegionIterator behavior for halo only.
  */
 TEST_P(IteratorTest, testOpenMPRegionIteratorsHaloOnly) {
-  auto [containerOption, cellSizeFactor] = GetParam();
-  testOpenMPIterators(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, true);
+  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  if (testConstIterators) {
+    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, true);
+  } else {
+    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, true);
+  }
 }
 
 using ::testing::Combine;
@@ -375,5 +429,6 @@ using ::testing::Values;
 using ::testing::ValuesIn;
 
 INSTANTIATE_TEST_SUITE_P(Generated, IteratorTest,
-                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()), Values(0.5, 1., 1.5)),
+                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()), Values(0.5, 1., 1.5),
+                                 Values(true, false)),
                          IteratorTest::PrintToStringParamName());
