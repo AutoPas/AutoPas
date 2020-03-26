@@ -64,21 +64,29 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
    * Can be nullptr if the behavior is haloAndOwned.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
-   * @param additionalVectorToIterate Additional Particle Vector to iterate over.
+   * @param additionalParticleVectorToIterate Additional Particle Vector to iterate over.
    */
   explicit ParticleIterator(CellVecType *cont, size_t offset = 0, CellBorderAndFlagManagerType *flagManager = nullptr,
                             IteratorBehavior behavior = haloAndOwned,
-                            ParticleVecType *additionalVectorToIterate = nullptr)
+                            ParticleVecType *additionalParticleVectorToIterate = nullptr)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
         _iteratorWithinOneCell(cont->begin()->begin()),
         _flagManager(flagManager),
-        _behavior(behavior) {
+        _behavior(behavior),
+        _additionalParticleVector{additionalParticleVectorToIterate} {
     auto myThreadId = autopas_get_thread_num();
     offset += myThreadId;
+    if (additionalParticleVectorToIterate and myThreadId == autopas_get_num_threads() - 1) {
+      // we want to iterate with the last thread over the additional particle vector.
+      _additionalParticleVectorToIterateState = AdditionalParticleVectorToIterateState::notStarted;
+    }
+
     if (offset < cont->size()) {
       _iteratorAcrossCells += offset;
       _iteratorWithinOneCell = _iteratorAcrossCells->begin();
+    } else if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::notStarted) {
+      _additionalParticleVectorToIterateState = AdditionalParticleVectorToIterateState::iterating;
     } else {
       _iteratorAcrossCells = cont->end();
       AutoPasLog(trace, "More threads than cells. No work left for thread {}!", myThreadId);
@@ -94,14 +102,26 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
           "nullptr!");
     }
 
-    if (not _iteratorWithinOneCell.isValid() or not isCellTypeBehaviorCorrect()) {
-      ParticleIterator::next_non_empty_cell();
-    }
-    // The iterator might still be invalid (because the cell is empty or the owned-state of the particle is wrong), so
-    // we check it here!
-    if (not ParticleIterator::isValid() and this->_iteratorAcrossCells < cont->end()) {
-      // the iterator is invalid + we still have particles/cells, so we increment it!
-      ParticleIterator::operator++();
+    if (_additionalParticleVectorToIterateState != AdditionalParticleVectorToIterateState::iterating) {
+      if (not _iteratorWithinOneCell.isValid() or not isCellTypeBehaviorCorrect()) {
+        // This ensures that the current cell is NOT empty or (that the end of the cells is selected and
+        // ParticleIterator::isValid is false).
+        /// @todo: this might not actually be needed -> check!
+        ParticleIterator::next_non_empty_cell();
+      }
+      // The iterator might still be invalid (because the cell is empty or the owned-state of the particle is wrong), so
+      // we check it here!
+      if (not ParticleIterator::isValid() and
+          (this->_iteratorAcrossCells < cont->end() or
+           _additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::notStarted)) {
+        // the iterator is invalid + we still have particles/cells, so we increment it!
+        ParticleIterator::operator++();
+      }
+    } else {
+      if (not ParticleIterator::isValid()) {
+        // The iterator is invalid + we still have particles/cells, so we increment it!
+        ParticleIterator::operator++();
+      }
     }
   }
 
@@ -109,30 +129,55 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * @copydoc ParticleIteratorInterface::operator++()
    */
   inline ParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
-    // this iteration is done until a proper particle is found. i.e. one that satisfies the owning state.
-    do {
-      if (_iteratorWithinOneCell.isValid()) {
-        ++_iteratorWithinOneCell;
-      }
+    if (_additionalParticleVectorToIterateState != AdditionalParticleVectorToIterateState::iterating) {
+      // this iteration is done until a proper particle is found. i.e. one that satisfies the owning state.
+      do {
+        if (_iteratorWithinOneCell.isValid()) {
+          ++_iteratorWithinOneCell;
+        }
 
-      // don't merge into if-else, _cell_iterator may become invalid after ++
-      if (not _iteratorWithinOneCell.isValid()) {
-        next_non_empty_cell();
+        // don't merge into if-else, _cell_iterator may become invalid after ++
+        if (not _iteratorWithinOneCell.isValid()) {
+          next_non_empty_cell();
+        }
+      } while (not isValid() && _iteratorAcrossCells < _vectorOfCells->end());
+      if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::notStarted &&
+          _iteratorAcrossCells >= _vectorOfCells->end()) {
+        _additionalParticleVectorToIterateState = AdditionalParticleVectorToIterateState::iterating;
+        if (isValid()) {
+          // if the first particle in the additional Vector is valid, we return here.
+          return *this;
+        }  // otherwise we run into the loop below and ++ further.
       }
-    } while (not isValid() && _iteratorAcrossCells < _vectorOfCells->end());
+    }
+    if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
+      // Simply increase the counter, as long as we aren't valid.
+      do {
+        ++_additionalParticleVectorPosition;
+      } while (not isValid() && _additionalParticleVectorPosition < _additionalParticleVector->size());
+    }
+
     return *this;
   }
 
   /**
    * @copydoc ParticleIteratorInterface::operator*()
    */
-  inline ParticleType &operator*() const override { return _iteratorWithinOneCell.operator*(); }
+  inline ParticleType &operator*() const override {
+    if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
+      return (*_additionalParticleVector)[_additionalParticleVectorPosition];
+    }
+    return _iteratorWithinOneCell.operator*();
+  }
 
   /**
    * Check whether the iterator currently points to a valid particle.
    * @return returns whether the iterator is valid
    */
   bool isValid() const override {
+    if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
+      return _additionalParticleVectorPosition < _additionalParticleVector->size() and particleHasCorrectOwnedState();
+    }
     return _vectorOfCells != nullptr and _iteratorAcrossCells < _vectorOfCells->end() and
            _iteratorWithinOneCell.isValid() and particleHasCorrectOwnedState();
   }
@@ -198,9 +243,17 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
       case haloAndOwned:
         return true;
       case haloOnly:
-        return not _iteratorWithinOneCell->isOwned();
+        if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
+          return not(*_additionalParticleVector)[_additionalParticleVectorPosition].isOwned();
+        } else {
+          return not _iteratorWithinOneCell->isOwned();
+        }
       case ownedOnly:
-        return _iteratorWithinOneCell->isOwned();
+        if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
+          return (*_additionalParticleVector)[_additionalParticleVectorPosition].isOwned();
+        } else {
+          return _iteratorWithinOneCell->isOwned();
+        }
       default:
         utils::ExceptionHandler::exception("unknown iterator behavior");
         return false;
@@ -238,5 +291,22 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * The behavior of the iterator.
    */
   const IteratorBehavior _behavior;
+
+  /**
+   * Enum class that specifies the iterating state of the additional particle vector.
+   */
+  enum class AdditionalParticleVectorToIterateState { ignore, notStarted, iterating };
+
+  /**
+   * Specifies if this iterator should also iterate over the additional array.
+   */
+  AdditionalParticleVectorToIterateState _additionalParticleVectorToIterateState{
+      AdditionalParticleVectorToIterateState::ignore};
+
+  ParticleVecType *_additionalParticleVector;
+  /**
+   * Index for ParticleVecType.
+   */
+  size_t _additionalParticleVectorPosition{0ul};
 };
 }  // namespace autopas::internal
