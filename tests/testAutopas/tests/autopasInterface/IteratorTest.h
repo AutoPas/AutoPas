@@ -12,7 +12,8 @@
 
 #include "autopas/AutoPas.h"
 
-using testingTuple = std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*testConstIterators*/, bool /*priorForceCalc*/>;
+using testingTuple = std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*testConstIterators*/,
+                                bool /*priorForceCalc*/>;
 
 class IteratorTest : public testing::Test, public ::testing::WithParamInterface<testingTuple> {
  public:
