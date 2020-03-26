@@ -36,6 +36,8 @@ class VerletClusterListsRebuilder {
   double _interactionLengthSqr;
   std::array<double, 3> _boxMin;
   std::array<double, 3> _boxMax;
+  std::array<double, 3> _haloBoxMin;
+  std::array<double, 3> _haloBoxMax;
 
  public:
   /**
@@ -57,7 +59,9 @@ class VerletClusterListsRebuilder {
         _interactionLength(clusterList.getInteractionLength()),
         _interactionLengthSqr(_interactionLength * _interactionLength),
         _boxMin(clusterList.getBoxMin()),
-        _boxMax(clusterList.getBoxMax()) {}
+        _boxMax(clusterList.getBoxMax()),
+        _haloBoxMin(utils::ArrayMath::subScalar(_boxMin, _interactionLength)),
+        _haloBoxMax(utils::ArrayMath::addScalar(_boxMax, _interactionLength)) {}
 
   /**
    * Rebuilds the towers, clusters, and neighbor lists.
@@ -80,7 +84,7 @@ class VerletClusterListsRebuilder {
       numParticles += vector.size();
     }
 
-    auto boxSize = utils::ArrayMath::sub(_boxMax, _boxMin);
+    auto boxSize = utils::ArrayMath::sub(_haloBoxMax, _haloBoxMin);
 
     _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSize);
     _towerSideLengthReciprocal = 1 / _towerSideLength;
@@ -112,7 +116,7 @@ class VerletClusterListsRebuilder {
     updateNeighborLists(useNewton3);
 
     double dummyParticleDistance = _interactionLength * 2;
-    double startDummiesX = 1000 * _boxMax[0];
+    double startDummiesX = 1000 * _haloBoxMax[0];
     for (size_t index = 0; index < _towers.size(); index++) {
       _towers[index].fillUpWithDummyParticles(startDummiesX + index * dummyParticleDistance, dummyParticleDistance);
     }
@@ -193,7 +197,7 @@ class VerletClusterListsRebuilder {
     for (size_t index = 0; index < numVectors; index++) {
       const std::vector<Particle> &vector = particles[index];
       for (const auto &particle : vector) {
-        if (utils::inBox(particle.getR(), _boxMin, _boxMax)) {
+        if (utils::inBox(particle.getR(), _haloBoxMin, _haloBoxMax)) {
           auto &tower = getTowerForParticleLocation(particle.getR());
           tower.addParticle(particle);
         }
@@ -371,15 +375,15 @@ class VerletClusterListsRebuilder {
 
     for (int dim = 0; dim < 2; dim++) {
       const auto towerDimIndex =
-          (static_cast<long int>(floor((location[dim] - _boxMin[dim]) * _towerSideLengthReciprocal))) + 1l;
+          (static_cast<long int>(floor((location[dim] - _haloBoxMin[dim]) * _towerSideLengthReciprocal))) + 1l;
       const auto towerDimIndexNonNegative = static_cast<size_t>(std::max(towerDimIndex, 0l));
       const auto towerDimIndexNonLargerValue = std::min(towerDimIndexNonNegative, _towersPerDim[dim] - 1);
       towerIndex[dim] = towerDimIndexNonLargerValue;
       /// @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
       // flag manager
-      if (location[dim] >= _boxMax[dim]) {
+      if (location[dim] >= _haloBoxMax[dim]) {
         towerIndex[dim] = _towersPerDim[dim] - 1;
-      } else if (location[dim] < _boxMin[dim]) {
+      } else if (location[dim] < _haloBoxMin[dim]) {
         towerIndex[dim] = 0;
       }
     }
