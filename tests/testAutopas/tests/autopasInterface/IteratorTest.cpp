@@ -7,6 +7,7 @@
 #include "IteratorTest.h"
 
 #include "autopasTools/generators/RandomGenerator.h"
+#include "testingHelpers/EmptyFunctor.h"
 #include "testingHelpers/TouchableParticle.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -16,6 +17,8 @@ constexpr std::array<double, 3> boxMin{0., 0., 0.};
 constexpr std::array<double, 3> haloBoxMin{0. - skin - cutoff, 0. - skin - cutoff, 0. - skin - cutoff};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
 constexpr std::array<double, 3> haloBoxMax{10. + skin + cutoff, 10. + skin + cutoff, 10. + skin + cutoff};
+
+using ::testing::_;
 
 template <typename AutoPasT>
 void defaultInit(AutoPasT &autoPas) {
@@ -48,7 +51,7 @@ void checkRegionIteratorForAllParticles(AutoPasT &autoPas, autopas::IteratorBeha
  * @param containerOption
  */
 template <bool testConstIterators>
-void testAdditionAndIteration(autopas::ContainerOption containerOption, double cellSizeOption) {
+void testAdditionAndIteration(autopas::ContainerOption containerOption, double cellSizeOption, bool priorForceCalc) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
 
@@ -93,6 +96,11 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
         }
       }
     }
+  }
+  if (priorForceCalc) {
+    // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
+    EmptyFunctor<Molecule, FMCell> eFunctor;
+    autoPas.iteratePairwise(&eFunctor);
   }
   {
     size_t count = 0;
@@ -201,7 +209,7 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
  * @param containerOption
  */
 template <bool testConstIterators>
-void testRangeBasedIterator(autopas::ContainerOption containerOption, double cellSizeOption) {
+void testRangeBasedIterator(autopas::ContainerOption containerOption, double cellSizeOption, bool priorForceCalc) {
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas;
   // Reference to the AutoPas object to be able to check const iterators.
@@ -246,6 +254,12 @@ void testRangeBasedIterator(autopas::ContainerOption containerOption, double cel
     }
   }
 
+  if (priorForceCalc) {
+    // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
+    EmptyFunctor<Molecule, FMCell> eFunctor;
+    autoPas.iteratePairwise(&eFunctor);
+  }
+
   for (Particle &particle : autoPas) {
     particle.setF({42., 42., 42.});
   }
@@ -262,20 +276,20 @@ void testRangeBasedIterator(autopas::ContainerOption containerOption, double cel
 }
 
 TEST_P(IteratorTest, ParticleAdditionAndIteratorTestNormal) {
-  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  auto [containerOption, cellSizeFactor, testConstIterators, priorForceCalc] = GetParam();
   if (testConstIterators) {
-    testAdditionAndIteration<true>(containerOption, cellSizeFactor);
+    testAdditionAndIteration<true>(containerOption, cellSizeFactor, priorForceCalc);
   } else {
-    testAdditionAndIteration<false>(containerOption, cellSizeFactor);
+    testAdditionAndIteration<false>(containerOption, cellSizeFactor, priorForceCalc);
   }
 }
 
 TEST_P(IteratorTest, RangeBasedIterator) {
-  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  auto [containerOption, cellSizeFactor, testConstIterators, priorForceCalc] = GetParam();
   if (testConstIterators) {
-    testRangeBasedIterator<true>(containerOption, cellSizeFactor);
+    testRangeBasedIterator<true>(containerOption, cellSizeFactor, priorForceCalc);
   } else {
-    testRangeBasedIterator<false>(containerOption, cellSizeFactor);
+    testRangeBasedIterator<false>(containerOption, cellSizeFactor, priorForceCalc);
   }
 }
 
@@ -285,7 +299,8 @@ TEST_P(IteratorTest, RangeBasedIterator) {
  */
 template <bool testConstIterators>
 void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption, double cellSizeFactor,
-                                       autopas::IteratorBehavior behavior, bool testRegionIterators) {
+                                       autopas::IteratorBehavior behavior, bool testRegionIterators,
+                                       bool priorForceCalc) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {8, 8, 8};
 
@@ -316,6 +331,12 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(
       apContainer, TouchableParticle({0., 0., 0.}, 0), cutoff, 50,
       [](decltype(apContainer) &c, TouchableParticle p) { c.addOrUpdateHaloParticle(p); });
+
+  if (priorForceCalc) {
+    // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
+    EmptyFunctor<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> eFunctor;
+    apContainer.iteratePairwise(&eFunctor);
+  }
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -352,11 +373,13 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
  * Compare the OpenMP iterator behavior for owned only.
  */
 TEST_P(IteratorTest, testOpenMPIteratorsOwnedOnly) {
-  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  auto [containerOption, cellSizeFactor, testConstIterators, priorForceCalc] = GetParam();
   if (testConstIterators) {
-    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, false);
+    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, false,
+                              priorForceCalc);
   } else {
-    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, false);
+    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, false,
+                               priorForceCalc);
   }
 }
 
@@ -364,12 +387,13 @@ TEST_P(IteratorTest, testOpenMPIteratorsOwnedOnly) {
  * Compare the OpenMP iterator behavior for halo and owned particles.
  */
 TEST_P(IteratorTest, testOpenMPIteratorsHaloAndOwned) {
-  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  auto [containerOption, cellSizeFactor, testConstIterators, priorForceCalc] = GetParam();
   if (testConstIterators) {
-    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, false);
-
+    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, false,
+                              priorForceCalc);
   } else {
-    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, false);
+    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, false,
+                               priorForceCalc);
   }
 }
 
@@ -377,12 +401,13 @@ TEST_P(IteratorTest, testOpenMPIteratorsHaloAndOwned) {
  * Compare the OpenMP iterator behavior for halo only.
  */
 TEST_P(IteratorTest, testOpenMPIteratorsHaloOnly) {
-  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  auto [containerOption, cellSizeFactor, testConstIterators, priorForceCalc] = GetParam();
   if (testConstIterators) {
-    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, false);
-
+    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, false,
+                              priorForceCalc);
   } else {
-    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, false);
+    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, false,
+                               priorForceCalc);
   }
 }
 
@@ -390,12 +415,13 @@ TEST_P(IteratorTest, testOpenMPIteratorsHaloOnly) {
  * Compare the OpenMP RegionIterator behavior for owned only.
  */
 TEST_P(IteratorTest, testOpenMPRegionIteratorsOwnedOnly) {
-  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  auto [containerOption, cellSizeFactor, testConstIterators, priorForceCalc] = GetParam();
   if (testConstIterators) {
-    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, true);
-
+    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, true,
+                              priorForceCalc);
   } else {
-    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, true);
+    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, true,
+                               priorForceCalc);
   }
 }
 
@@ -403,11 +429,13 @@ TEST_P(IteratorTest, testOpenMPRegionIteratorsOwnedOnly) {
  * Compare the OpenMP RegionIterator behavior for halo and owned particles.
  */
 TEST_P(IteratorTest, testOpenMPRegionIteratorsHaloAndOwned) {
-  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  auto [containerOption, cellSizeFactor, testConstIterators, priorForceCalc] = GetParam();
   if (testConstIterators) {
-    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, true);
+    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, true,
+                              priorForceCalc);
   } else {
-    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, true);
+    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, true,
+                               priorForceCalc);
   }
 }
 
@@ -415,11 +443,13 @@ TEST_P(IteratorTest, testOpenMPRegionIteratorsHaloAndOwned) {
  * Compare the OpenMP RegionIterator behavior for halo only.
  */
 TEST_P(IteratorTest, testOpenMPRegionIteratorsHaloOnly) {
-  auto [containerOption, cellSizeFactor, testConstIterators] = GetParam();
+  auto [containerOption, cellSizeFactor, testConstIterators, priorForceCalc] = GetParam();
   if (testConstIterators) {
-    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, true);
+    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, true,
+                              priorForceCalc);
   } else {
-    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, true);
+    testOpenMPIterators<false>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, true,
+                               priorForceCalc);
   }
 }
 
@@ -430,5 +460,5 @@ using ::testing::ValuesIn;
 
 INSTANTIATE_TEST_SUITE_P(Generated, IteratorTest,
                          Combine(ValuesIn(autopas::ContainerOption::getAllOptions()), Values(0.5, 1., 1.5),
-                                 Values(true, false)),
+                                 Values(true, false), Values(true, false)),
                          IteratorTest::PrintToStringParamName());
