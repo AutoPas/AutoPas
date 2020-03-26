@@ -23,7 +23,7 @@ class IteratorTest : public testing::Test, public ::testing::WithParamInterface<
       std::string str;
       str += containerOption.to_string() + "_";
       str += std::string{"cellSizeFactor"} + std::to_string(cellSizeFactor);
-      str += testConstIterators ? "const" : "non_const";
+      str += testConstIterators ? "_const" : "_nonConst";
       std::replace(str.begin(), str.end(), '-', '_');
       std::replace(str.begin(), str.end(), '.', '_');
       return str;
