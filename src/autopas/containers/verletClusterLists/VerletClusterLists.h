@@ -277,6 +277,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     for (size_t index = 0; index < _towers.size(); index++) {
       sum += _towers[index].getNumActualParticles();
     }
+    sum += _particlesToAdd.size();
     return sum;
   }
 
