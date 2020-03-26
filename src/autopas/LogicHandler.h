@@ -191,7 +191,7 @@ class LogicHandler {
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
+    return std::as_const(_autoTuner).getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
   /**
