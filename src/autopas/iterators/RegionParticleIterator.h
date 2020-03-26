@@ -60,6 +60,15 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
       return;
     }
 
+    if (behavior != haloAndOwned and flagManager == nullptr) {
+      AutoPasLog(error,
+                 "Behavior is not haloAndOwned, but flagManager is "
+                 "nullptr!");
+      utils::ExceptionHandler::exception(
+          "Behavior is not haloAndOwned, but flagManager is "
+          "nullptr!");
+    }
+
     if (not this->isCellTypeBehaviorCorrect()) {
       this->next_non_empty_cell();
     }

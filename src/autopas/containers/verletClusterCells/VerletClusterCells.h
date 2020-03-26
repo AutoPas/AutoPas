@@ -13,6 +13,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/verletClusterCells/VerletClusterCellsParticleIterator.h"
 #include "autopas/containers/verletClusterCells/traversals/VerletClusterCellsTraversalInterface.h"
@@ -305,7 +306,8 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
 
       return ParticleIteratorWrapper<Particle, false>(
           new internal::RegionParticleIterator<Particle, FullParticleCell<Particle>, false>(
-              &this->_cells, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest, nullptr, behavior));
+              &this->_cells, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
+              &internal::unknowingCellBorderAndFlagManager, behavior));
     }
   }
 

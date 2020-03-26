@@ -20,4 +20,7 @@ class UnknowingCellBorderAndFlagManager : public CellBorderAndFlagManager {
   bool cellCanContainOwnedParticles(index_t index1d) const override { return true; }
 };
 
+// An instance of this UnknowingCellBorderAndFlagManager.
+static UnknowingCellBorderAndFlagManager unknowingCellBorderAndFlagManager;
+
 }  // namespace autopas::internal
