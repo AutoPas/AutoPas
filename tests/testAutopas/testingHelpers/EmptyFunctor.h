@@ -28,18 +28,21 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {}
 
-  void SoAFunctor(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {}
+  void SoAFunctorSingle(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3,
+                        bool cellWiseOwnedState) override {}
 
-  void SoAFunctor(autopas::SoAView<typename Particle::SoAArraysType> soa,
-                  autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3) override {}
+  void SoAFunctorPair(autopas::SoAView<typename Particle::SoAArraysType> soa,
+                      autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3,
+                      bool cellWiseOwnedState) override {}
 
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorVerlet()
    */
   // clang-format on
-  void SoAFunctor(autopas::SoAView<typename Particle::SoAArraysType> soa, size_t indexFirst,
-                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) override{};
+  void SoAFunctorVerlet(autopas::SoAView<typename Particle::SoAArraysType> soa, size_t indexFirst,
+                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                        bool newton3) override{};
 
   bool allowsNewton3() override { return true; }
 
