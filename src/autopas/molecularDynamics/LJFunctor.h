@@ -789,6 +789,12 @@ class LJFunctor
   }
 
   /**
+   *
+   * @return useMixing
+   */
+  constexpr static bool getMixing() { return useMixing; }
+
+  /**
    * Get the number of flops used per kernel call. This should count the
    * floating point operations needed for two particles that lie within a cutoff
    * radius.
