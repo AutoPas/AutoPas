@@ -8,6 +8,7 @@
 
 #include <set>
 
+#include "ArrayUtils.h"
 #include "NumberSet.h"
 
 namespace autopas {
