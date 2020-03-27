@@ -200,6 +200,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
         // particle that is now at the back.
         std::swap((*_additionalParticleVector)[_additionalParticleVectorPosition], _additionalParticleVector->back());
         _additionalParticleVector->pop_back();
+        --_additionalParticleVectorPosition;
       } else {
         utils::ExceptionHandler::exception("Error: Trying to delete a particle through a const iterator.");
       }
