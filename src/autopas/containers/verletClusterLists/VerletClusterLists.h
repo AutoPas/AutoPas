@@ -178,6 +178,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   }
 
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
+    // potentially should be halo box and not box:
     std::array<double, 3> towerSize = {_towerSideLength, _towerSideLength, this->getBoxMax()[2] - this->getBoxMin()[2]};
     std::array<unsigned long, 3> towerDimensions = {_towersPerDim[0], _towersPerDim[1], 1};
     return TraversalSelectorInfo(towerDimensions, this->getInteractionLength(), towerSize, clusterSize);
