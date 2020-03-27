@@ -125,7 +125,18 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @copydoc autopas::ParticleContainerInterface::updateHaloParticle()
    */
   bool updateHaloParticle(const Particle &haloParticle) override {
-    autopas::utils::ExceptionHandler::exception("VerletClusterLists.updateHaloParticle not yet implemented.");
+    Particle pCopy = haloParticle;
+    pCopy.setOwned(false);
+
+    for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
+                                     utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2),
+                                     IteratorBehavior::haloOnly);
+         it.isValid(); ++it) {
+      if (pCopy.getID() == it->getID()) {
+        *it = pCopy;
+        return true;
+      }
+    }
     return false;
   }
 
