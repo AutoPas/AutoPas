@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "VCLParticleDeletedObserver.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletClusterLists/Cluster.h"
 
@@ -237,8 +238,22 @@ class ClusterTower : public ParticleCell<Particle> {
   [[nodiscard]] bool isNotEmpty() const override { return getNumActualParticles() > 0; }
 
   void deleteByIndex(size_t index) override {
-    // @TODO support deletion of particles somehow
-    autopas::utils::ExceptionHandler::exception("ClusterTower::deleteByIndex(): Not supported!");
+    /// @note The implementation of this function prevents a regionIterator to make sorted assumptions of particles
+    /// inside a cell! supporting this would mean that the deleted particle should be swapped to the end of the valid
+    /// particles. See also https://github.com/AutoPas/AutoPas/issues/435
+
+    // swap particle that should be deleted to end of actual particles.
+    std::swap(_particles._particles[index], _particles._particles[getNumActualParticles() - 1]);
+    if (getNumDummyParticles() != 0) {
+      // swap particle that should be deleted (now at end of actual particles) with last dummy particle.
+      std::swap(_particles._particles[getNumActualParticles() - 1],
+                _particles._particles[_particles._particles.size() - 1]);
+    }
+    _particles._particles.pop_back();
+
+    if (_particleDeletionObserver) {
+      _particleDeletionObserver->notifyParticleDeleted();
+    }
   }
 
   void setCellLength(std::array<double, 3> &) override {
@@ -249,6 +264,10 @@ class ClusterTower : public ParticleCell<Particle> {
     autopas::utils::ExceptionHandler::exception("ClusterTower::getCellLength(): Not supported!");
     return {0, 0, 0};
   }
+
+  void setParticleDeletionObserser(internal::VCLParticleDeletedObserver *observer) {
+    _particleDeletionObserver = observer;
+  };
 
  private:
   /**
@@ -263,6 +282,8 @@ class ClusterTower : public ParticleCell<Particle> {
    * The number of dummy particles in this tower.
    */
   size_t _numDummyParticles{};
+
+  internal::VCLParticleDeletedObserver *_particleDeletionObserver{nullptr};
 };
 
 }  // namespace autopas::internal

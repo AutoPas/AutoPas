@@ -6,13 +6,13 @@
 
 #pragma once
 
-#include <autopas/containers/UnknowingCellBorderAndFlagManager.h>
-
 #include <cmath>
 
+#include "VCLParticleDeletedObserver.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
@@ -32,7 +32,8 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Particle>> {
+class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Particle>>,
+                           public internal::VCLParticleDeletedObserver {
  public:
   /**
    * The number of particles in a full cluster. Currently, constexpr is necessary so it can be passed to ClusterTower as
@@ -276,6 +277,9 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
         _builder->rebuildTowersAndClusters();
     _isValid = true;
+    for (auto &tower : _towers) {
+      tower.setParticleDeletionObserser(this);
+    }
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
@@ -581,6 +585,16 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     }
   }
 
+  /**
+   * If a particle is deleted, we want _isValid to be set false, as the tower structure is invalidated.
+   *
+   * This function is not called, if a particle from the _particlesToAdd vector is deleted!
+   */
+  void notifyParticleDeleted() override {
+    // this is potentially called from a threaded environment, so we have to make this atomic here!
+    _isValid.store(false, std::memory_order::memory_order_relaxed);
+  }
+
  private:
   /**
    * internal storage, particles are split into a grid in xy-dimension
@@ -651,7 +665,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   /**
    * Indicates, whether the current container structure (mainly for region iterators) and the verlet lists are valid.
    */
-  bool _isValid{false};
+  std::atomic<bool> _isValid{false};
 
   /**
    * The builder for the verlet cluster lists.
