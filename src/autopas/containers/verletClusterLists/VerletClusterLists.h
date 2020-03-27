@@ -236,13 +236,25 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   ParticleIteratorWrapper<Particle, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    if (_isValid) {
-      // use optimized version
-    } else {
-      // uses optimzed version, but also iterate over _particlesToAdd!
-      ///@todo needs to also iterate over stupid particles.
+    if (_isValid && not _particlesToAdd.empty()) {
+      autopas::utils::ExceptionHandler::exception(
+          "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
     }
-    return ParticleIteratorWrapper<Particle, false>();
+
+    // Check all cells, as dummy particles are outside the domain they are only found if the search region is outside
+    // the domain.
+    const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _haloBoxMin);
+    const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _haloBoxMax);
+
+    // iterate over all cells
+    /// @todo optimize
+    std::vector<size_t> cellsOfInterest(this->_towers.size());
+    std::iota(cellsOfInterest.begin(), cellsOfInterest.end(), 0);
+
+    return ParticleIteratorWrapper<Particle, false>(
+        new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
+            &this->_towers, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
+            &internal::unknowingCellBorderAndFlagManager, behavior, _isValid ? nullptr : &_particlesToAdd));
   }
 
   /**

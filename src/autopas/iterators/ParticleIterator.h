@@ -43,13 +43,16 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
    * Can be nullptr if the behavior is haloAndOwned.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
+   * @param additionalParticleVectorToIterate Additional Particle Vector to iterate over.
    */
-  ParticleIterator(CellVecType *cont, CellBorderAndFlagManagerType *flagManager, IteratorBehavior behavior)
+  ParticleIterator(CellVecType *cont, CellBorderAndFlagManagerType *flagManager, IteratorBehavior behavior,
+                   ParticleVecType *additionalParticleVectorToIterate)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
         _iteratorWithinOneCell(cont->begin()->begin()),
         _flagManager(flagManager),
-        _behavior(behavior) {}
+        _behavior(behavior),
+        _additionalParticleVector(additionalParticleVectorToIterate) {}
 
  public:
   /**
@@ -306,7 +309,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
   /**
    * Pointer to an additional Particle Vector this ParticleIterator will iterate over.
    */
-  ParticleVecType *_additionalParticleVector;
+  ParticleVecType *_additionalParticleVector{nullptr};
 
   /**
    * Index for ParticleVecType.
