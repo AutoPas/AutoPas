@@ -194,7 +194,16 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * @copydoc ParticleIteratorInterface::deleteCurrentParticle()
    */
   inline void deleteCurrentParticleImpl() override {
-    if (_iteratorWithinOneCell.isValid()) {
+    if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
+      if constexpr (modifiable) {
+        // for the additionalParticleVector, we simply swap the last particle with the current particle and remove the
+        // particle that is now at the back.
+        std::swap((*_additionalParticleVector)[_additionalParticleVectorPosition], _additionalParticleVector->back());
+        _additionalParticleVector->pop_back();
+      } else {
+        utils::ExceptionHandler::exception("Error: Trying to delete a particle through a const iterator.");
+      }
+    } else if (_iteratorWithinOneCell.isValid()) {
       if constexpr (modifiable) {
         internal::deleteParticle(_iteratorWithinOneCell);
       } else {
