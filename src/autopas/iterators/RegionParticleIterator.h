@@ -66,8 +66,10 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
     if (_indicesInRegion.size() > static_cast<size_t>(myThreadId)) {
       this->_iteratorAcrossCells = cont->begin() + _indicesInRegion[myThreadId];
       this->_iteratorWithinOneCell = this->_iteratorAcrossCells->begin();
-    } else if (this->_additionalParticleVectorToIterateState == decltype(this->_additionalParticleVectorToIterateState)::notStarted) {
-      this->_additionalParticleVectorToIterateState = decltype(this->_additionalParticleVectorToIterateState)::iterating;
+    } else if (this->_additionalParticleVectorToIterateState ==
+               decltype(this->_additionalParticleVectorToIterateState)::notStarted) {
+      this->_additionalParticleVectorToIterateState =
+          decltype(this->_additionalParticleVectorToIterateState)::iterating;
     } else {
       this->_iteratorAcrossCells = cont->end();
       return;
@@ -82,7 +84,8 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
           "nullptr!");
     }
 
-    if (this->_additionalParticleVectorToIterateState != decltype(this->_additionalParticleVectorToIterateState)::iterating) {
+    if (this->_additionalParticleVectorToIterateState !=
+        decltype(this->_additionalParticleVectorToIterateState)::iterating) {
       if (not this->isCellTypeBehaviorCorrect()) {
         this->next_non_empty_cell();
       }

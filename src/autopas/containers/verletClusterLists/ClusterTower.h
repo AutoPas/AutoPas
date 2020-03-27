@@ -265,6 +265,10 @@ class ClusterTower : public ParticleCell<Particle> {
     return {0, 0, 0};
   }
 
+  /**
+   * Set the ParticleDeletionObserver, which is called, when a particle is deleted.
+   * @param observer
+   */
   void setParticleDeletionObserser(internal::VCLParticleDeletedObserver *observer) {
     _particleDeletionObserver = observer;
   };
