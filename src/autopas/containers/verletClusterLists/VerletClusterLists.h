@@ -17,6 +17,7 @@
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
+#include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
 
@@ -73,6 +74,8 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
         _numTowersPerInteractionLength{0},
         _boxMin{boxMin},
         _boxMax{boxMax},
+        _haloBoxMin{utils::ArrayMath::subScalar(boxMin, cutoff + skin)},
+        _haloBoxMax{utils::ArrayMath::addScalar(boxMax, cutoff + skin)},
         _cutoff{cutoff},
         _skin{skin} {}
 
@@ -213,7 +216,21 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
       rebuildTowersAndClusters();
     }
     // there is an implicit barrier at end of single!
-    return ParticleIteratorWrapper<Particle, true>();
+
+    // Check all cells, as dummy particles are outside the domain they are only found if the search region is outside
+    // the domain.
+    const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _haloBoxMin);
+    const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _haloBoxMax);
+
+    // iterate over all cells
+    /// @todo optimize
+    std::vector<size_t> cellsOfInterest(this->_towers.size());
+    std::iota(cellsOfInterest.begin(), cellsOfInterest.end(), 0);
+
+    return ParticleIteratorWrapper<Particle, true>(
+        new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, true>(
+            &this->_towers, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
+            &internal::unknowingCellBorderAndFlagManager, behavior));
   }
 
   ParticleIteratorWrapper<Particle, false> getRegionIterator(
@@ -587,6 +604,16 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * Maximum of the container.
    */
   std::array<double, 3> _boxMax{};
+
+  /**
+   * Minimum of the container including halo.
+   */
+  std::array<double, 3> _haloBoxMin{};
+
+  /**
+   * Maximum of the container including halo.
+   */
+  std::array<double, 3> _haloBoxMax{};
 
   /**
    * Cutoff.
