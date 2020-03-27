@@ -32,7 +32,8 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
 }
 
 /**
- * This function stores a copy of each particle depending on the position in ListInner, ListHaloWithinCutoff or ListHaloOutsideCutoff.
+ * This function stores a copy of each particle depending on the position in ListInner, ListHaloWithinCutoff or
+ * ListHaloOutsideCutoff.
  * @param bBoxMin Bounding box min.
  * @param bBoxMax Bounding box max.
  * @param cutoff Cutoff radius.
@@ -80,7 +81,7 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
     auto container = containerSelector.getCurrentContainer();
     auto getPossible1DPositions = [&](double min, double max) -> auto {
       return std::array<double, 6>{min - cutoff - verletSkin,       min - cutoff, min, max, max + cutoff - 1e-3,
-                                   min - cutoff - verletSkin - 1e-3};
+                                   max + cutoff + verletSkin - 1e-3};
     };
     size_t id = 0;
 
@@ -100,10 +101,11 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
     }
   }
 
-  std::vector<Particle> beforeListInner, beforeListHalo,
-      beforeListHaloVerletOnly /*for particles only in verlet containers*/;
+  std::vector<Particle> beforeListInner, beforeListHaloWithinCutoff,
+      beforeListHaloOutsideCutoff /*for particles only in verlet containers*/;
 
-  getStatus(bBoxMin, bBoxMax, cutoff, containerSelector, beforeListInner, beforeListHalo, beforeListHaloVerletOnly);
+  getStatus(bBoxMin, bBoxMax, cutoff, containerSelector, beforeListInner, beforeListHaloWithinCutoff,
+            beforeListHaloOutsideCutoff);
 
   // select container to which we want to convert to
   containerSelector.selectContainer(to, containerInfo);
@@ -113,9 +115,17 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   getStatus(bBoxMin, bBoxMax, cutoff, containerSelector, afterListInner, afterListHaloWithinCutoff,
             afterListHaloOutsideCutoff);
 
+  EXPECT_EQ(afterListInner.size(), beforeListInner.size());
+  EXPECT_EQ(afterListHaloWithinCutoff.size(), beforeListHaloWithinCutoff.size());
+  EXPECT_EQ(afterListHaloOutsideCutoff.size(), beforeListHaloOutsideCutoff.size());
+
+  if (::testing::Test::HasFailure()) {
+    FAIL();
+  }
+
   EXPECT_THAT(afterListInner, UnorderedElementsAreArray(beforeListInner));
-  EXPECT_THAT(afterListHaloWithinCutoff, UnorderedElementsAreArray(beforeListHalo));
-  EXPECT_THAT(afterListHaloOutsideCutoff, UnorderedElementsAreArray(beforeListHaloVerletOnly));
+  EXPECT_THAT(afterListHaloWithinCutoff, UnorderedElementsAreArray(beforeListHaloWithinCutoff));
+  EXPECT_THAT(afterListHaloOutsideCutoff, UnorderedElementsAreArray(beforeListHaloOutsideCutoff));
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
