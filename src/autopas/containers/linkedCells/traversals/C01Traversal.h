@@ -302,8 +302,9 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, 
         // pairwise functor directly.
         auto startIndex = baseCell.numParticles();
         auto endIndex = combinationSlice[slice]._particleSoABuffer.getNumParticles();
-        _pairwiseFunctor->SoAFunctor(baseCell._particleSoABuffer,
-                                     {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
+        _pairwiseFunctor->SoAFunctorPair(baseCell._particleSoABuffer,
+                                         {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false,
+                                         true);
         // compute base cell
         this->_cellFunctor.processCell(baseCell);
       } else {

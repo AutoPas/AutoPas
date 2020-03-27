@@ -23,18 +23,20 @@ class MockFunctor : public autopas::Functor<Particle, ParticleCell_t> {
   // virtual void AoSFunctor(Particle &i, Particle &j, bool newton3)
   MOCK_METHOD(void, AoSFunctor, (Particle & i, Particle &j, bool newton3), (override));
 
-  // virtual void SoAFunctor(SoAView &soa, bool newton3)
-  MOCK_METHOD(void, SoAFunctor, (autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3), (override));
-
-  // virtual void SoAFunctor(SoAView &soa1, SoAView &soa2, bool newton3)
-  MOCK_METHOD(void, SoAFunctor,
-              (autopas::SoAView<typename Particle::SoAArraysType> soa,
-               autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3),
+  // virtual void SoAFunctorSingle(SoAView &soa, bool newton3, bool cellWiseOwnedState)
+  MOCK_METHOD(void, SoAFunctorSingle,
+              (autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3, bool cellWiseOwnedState),
               (override));
 
-  // virtual void SoAFunctor(SoAView &soa, const std::vector, (override)<std::vector<size_t,
+  // virtual void SoAFunctorPair(SoAView &soa1, SoAView &soa2, bool newton3)
+  MOCK_METHOD(void, SoAFunctorPair,
+              (autopas::SoAView<typename Particle::SoAArraysType> soa,
+               autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3, bool cellWiseOwnedState),
+              (override));
+
+  // virtual void SoAFunctorVerlet(SoAView &soa, const std::vector, (override)<std::vector<size_t,
   // AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
-  MOCK_METHOD(void, SoAFunctor,
+  MOCK_METHOD(void, SoAFunctorVerlet,
               (autopas::SoAView<typename Particle::SoAArraysType> soa, size_t indexFirst,
                (const std::vector<size_t, autopas::AlignedAllocator<size_t>> &), bool newton3),
               (override));
