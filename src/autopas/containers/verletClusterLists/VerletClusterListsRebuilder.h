@@ -200,6 +200,8 @@ class VerletClusterListsRebuilder {
         if (utils::inBox(particle.getR(), _haloBoxMin, _haloBoxMax)) {
           auto &tower = getTowerForParticleLocation(particle.getR());
           tower.addParticle(particle);
+        } else {
+          AutoPasLog(trace, "Not adding particle to VerletClusterLists container, because it is far outside.");
         }
       }
     }
