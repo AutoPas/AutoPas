@@ -238,15 +238,15 @@ class ClusterTower : public ParticleCell<Particle> {
 
   void deleteByIndex(size_t index) override {
     // @TODO support deletion of particles somehow
-    autopas::utils::ExceptionHandler::exception("Not supported!");
+    autopas::utils::ExceptionHandler::exception("ClusterTower::deleteByIndex(): Not supported!");
   }
 
   void setCellLength(std::array<double, 3> &) override {
-    autopas::utils::ExceptionHandler::exception("Not supported!");
+    autopas::utils::ExceptionHandler::exception("ClusterTower::setCellLength(): Not supported!");
   }
 
   [[nodiscard]] std::array<double, 3> getCellLength() const override {
-    autopas::utils::ExceptionHandler::exception("Not supported!");
+    autopas::utils::ExceptionHandler::exception("ClusterTower::getCellLength(): Not supported!");
     return {0, 0, 0};
   }
 
