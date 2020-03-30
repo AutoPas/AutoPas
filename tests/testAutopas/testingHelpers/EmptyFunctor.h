@@ -18,7 +18,7 @@
  * Empty Functor, this functor is empty and can be used for testing purposes.
  * It returns that it is applicable for everything.
  */
-template <class Particle, class ParticleCell_t>
+template <class Particle, class ParticleCell_t, class SoAArraysType = typename Particle::SoAArraysType>
 class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
  public:
   /**
@@ -55,12 +55,12 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
   bool isRelevantForTuning() override { return true; }
 
 #if defined(AUTOPAS_CUDA)
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) override {}
+  void CudaFunctor(autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) override {}
 
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-                   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {}
+  void CudaFunctor(autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
+                   autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {}
 
-  void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
-                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {}
+  void deviceSoALoader(autopas::SoA<SoAArraysType> &soa,
+                       autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {}
 #endif
 };
