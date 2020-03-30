@@ -691,18 +691,22 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       throw utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
-    for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-      _upotSum += _aosThreadData[i].upotSum;
-      _virialSum = utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
+
+    if (calculateGlobals) {
+      for (size_t i = 0; i < _aosThreadData.size(); ++i) {
+        _upotSum += _aosThreadData[i].upotSum;
+        _virialSum = utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
+      }
+      if (not newton3) {
+        // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
+        // here.
+        _upotSum *= 0.5;
+        _virialSum = utils::ArrayMath::mulScalar(_virialSum, 0.5);
+      }
+      // we have always calculated 6*upot, so we divide by 6 here!
+      _upotSum /= 6.;
+      _postProcessed = true;
     }
-    if (not newton3) {
-      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2 here.
-      _upotSum *= 0.5;
-      _virialSum = utils::ArrayMath::mulScalar(_virialSum, 0.5);
-    }
-    // we have always calculated 6*upot, so we divide by 6 here!
-    _upotSum /= 6.;
-    _postProcessed = true;
   }
 
   /**

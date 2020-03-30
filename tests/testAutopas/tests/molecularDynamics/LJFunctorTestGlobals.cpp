@@ -308,30 +308,37 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
 
   functor.initTraversal();
 
-  // apparently moving this into an if with init causes some compilers to fail sometimes when OpenMP is on
-  auto msg = this->shouldSkipIfNotImplemented([&]() {
+  std::string msg = "";
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
 #if defined(AUTOPAS_OPENMP)
-#pragma omp parallel
+// reduction for appending strings: "abc" + "def" -> "abcdef"
+#pragma omp declare reduction(stringAppend : std::string : omp_out.append(omp_in))
+
+#pragma omp parallel reduction(stringAppend : msg)
 #endif
-    {
+  {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp sections
 #endif
+    {
+#if defined(AUTOPAS_OPENMP)
+#pragma omp section
+#endif
       {
+        msg = this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p1, p2, newton3); });
+      }  // pragma omp section
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-        functor.AoSFunctor(p1, p2, newton3);
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
-        functor.AoSFunctor(p3, p4, newton3);
-      }
-    }
-  });
-  if (msg != "") {
+      {
+        msg = this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p3, p4, newton3); });
+      }  // pragma omp section
+    }    // pragma omp sections
+#pragma omp barrier
+  }  // pragma omp parallel
+
+  if (not msg.empty()) {
     GTEST_SKIP() << msg;
   }
 
