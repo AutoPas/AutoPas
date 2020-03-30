@@ -335,7 +335,7 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
         msg += this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p3, p4, newton3); });
       }  // pragma omp section
     }    // pragma omp sections
-  }  // pragma omp parallel
+  }      // pragma omp parallel
 
   if (not msg.empty()) {
     GTEST_SKIP() << msg;
