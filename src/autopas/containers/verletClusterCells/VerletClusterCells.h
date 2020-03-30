@@ -189,19 +189,30 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>> 
    * @copydoc VerletLists::updateContainer()
    */
   std::vector<Particle> updateContainer() override {
-    AutoPasLog(debug, "updating container");
+    // first delete all halo particles.
+    this->deleteHaloParticles();
 
-    deleteHaloParticles();
+    // next find invalid particles
+    std::vector<Particle> invalidParticles;
 
-    std::vector<Particle> outsideParticles;
-    for (auto iter = begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
-        outsideParticles.push_back(*iter);
-        internal::deleteParticle(iter);
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    {
+      std::vector<Particle> myInvalidParticles;
+      for (auto iter = this->begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+        if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
+          myInvalidParticles.push_back(*iter);
+          internal::deleteParticle(iter);
+        }
       }
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+      invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
     }
-
-    return outsideParticles;
+    _isValid = false;
+    return invalidParticles;
   }
 
   TraversalSelectorInfo getTraversalSelectorInfo() const override {

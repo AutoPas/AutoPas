@@ -160,20 +160,29 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    */
   AUTOPAS_WARN_UNUSED_RESULT
   std::vector<Particle> updateContainer() override {
-    /// @todo What happens when some particles are just deleted here?
-    // first delete all particles
+    // first delete all halo particles.
     this->deleteHaloParticles();
 
     // next find invalid particles
     std::vector<Particle> invalidParticles;
-    /// @todo: parallelize
-    for (auto iter = this->begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
-        invalidParticles.push_back(*iter);
-        internal::deleteParticle(iter);
-      }
-    }
 
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    {
+      std::vector<Particle> myInvalidParticles;
+      for (auto iter = this->begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+        if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
+          myInvalidParticles.push_back(*iter);
+          internal::deleteParticle(iter);
+        }
+      }
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+      invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
+    }
+    _isValid = false;
     return invalidParticles;
   }
 
