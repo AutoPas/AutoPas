@@ -326,13 +326,13 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
 #pragma omp section
 #endif
       {
-        msg = this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p1, p2, newton3); });
+        msg += this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p1, p2, newton3); });
       }  // pragma omp section
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
       {
-        msg = this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p3, p4, newton3); });
+        msg += this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p3, p4, newton3); });
       }  // pragma omp section
     }    // pragma omp sections
 #pragma omp barrier
