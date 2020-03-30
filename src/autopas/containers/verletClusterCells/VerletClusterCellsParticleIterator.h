@@ -253,8 +253,9 @@ class VerletClusterCellsRegionParticleIterator
       ++this->_iteratorWithinOneCell;
 
       while (this->_iteratorWithinOneCell == this->_cellEnd) {
-        // increase _currentRegionIndex by stride if we are at the end of a cell!
-        // also ensure that it does not go beyond _indicesInRegion.size() - 1.
+        // Increase _currentRegionIndex by stride if we are at the end of a cell!
+        // Also ensure that it does not go beyond _indicesInRegion.size() - 1.
+        // The last entry of _indicesInRegion is invalid (>= _vectorOfCells->size()), so this is fine!
         _currentRegionIndex = std::min(_currentRegionIndex + autopas_get_num_threads(), _indicesInRegion.size() - 1);
         this->_cellId = _indicesInRegion[_currentRegionIndex];
         if (this->_cellId >= this->_vectorOfCells->size()) {
