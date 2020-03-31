@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "VCLParticleDeletedObserver.h"
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/verletClusterLists/Cluster.h"
 
 namespace autopas::internal {
@@ -269,7 +269,7 @@ class ClusterTower : public ParticleCell<Particle> {
    * Set the ParticleDeletionObserver, which is called, when a particle is deleted.
    * @param observer
    */
-  void setParticleDeletionObserser(internal::VCLParticleDeletedObserver *observer) {
+  void setParticleDeletionObserser(internal::ParticleDeletedObserver *observer) {
     _particleDeletionObserver = observer;
   };
 
@@ -287,7 +287,7 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   size_t _numDummyParticles{};
 
-  internal::VCLParticleDeletedObserver *_particleDeletionObserver{nullptr};
+  internal::ParticleDeletedObserver *_particleDeletionObserver{nullptr};
 };
 
 }  // namespace autopas::internal
