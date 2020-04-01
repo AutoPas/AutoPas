@@ -145,13 +145,17 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @copydoc VerletLists::deleteHaloParticles
    */
   void deleteHaloParticles() override {
-    _isValid = false;
-    // quick and dirty: iterate over all particles and delete halo particles
-    /// @todo: make this proper
-    for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
-      if (not iter->isOwned()) {
+    bool deletedSth = false;
+
+#pragma omp parallel reduction(|| : deletedSth)
+    {
+      for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
         internal::deleteParticle(iter);
+        deletedSth = true;
       }
+    }
+    if (deletedSth) {
+      _isValid = false;
     }
   }
 
@@ -182,7 +186,9 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
 #endif
       invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
     }
-    _isValid = false;
+    if (not invalidParticles.empty()) {
+      _isValid = false;
+    }
     return invalidParticles;
   }
 

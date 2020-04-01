@@ -107,9 +107,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
 
     if (_additionalParticleVectorToIterateState != AdditionalParticleVectorToIterateState::iterating) {
       if (not _iteratorWithinOneCell.isValid() or not isCellTypeBehaviorCorrect()) {
-        // This ensures that the current cell is NOT empty or (that the end of the cells is selected and
-        // ParticleIterator::isValid is false).
-        /// @todo: this might not actually be needed -> check!
+        // This ensures that the first cell has a correct cell type behavior. This couldn't be done using operator++.
         ParticleIterator::next_non_empty_cell();
       }
       // The iterator might still be invalid (because the cell is empty or the owned-state of the particle is wrong), so
