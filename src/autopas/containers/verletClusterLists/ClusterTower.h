@@ -107,7 +107,7 @@ class ClusterTower : public ParticleCell<Particle> {
 
   /**
    * More or less inverse operation of fillUpWithDummyParticles().
-   * It sets the particle positions to the last actual particle in the tower.
+   * It sets the positions of the dummy particles to the position of the last actual particle in the tower.
    */
   void setDummyParticlesToLastActualParticle() {
     if (_numDummyParticles > 0) {

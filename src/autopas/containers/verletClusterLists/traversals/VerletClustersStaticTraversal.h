@@ -87,7 +87,8 @@ class VerletClustersStaticTraversal : public TraversalInterface, public VerletCl
       if (clusterCount != clusterRange.numClusters) {
         autopas::utils::ExceptionHandler::exception(
             "VerletClustersStaticTraversal::traverseParticlePairs(): Not all or too many clusters traversed, probably "
-            "the clusterThreadPartitions are wrong!");
+            "the clusterThreadPartitions are wrong! TraversedClusters={}, ClustersInRange={}",
+            clusterCount, clusterRange.numClusters);
       }
     }
   }
