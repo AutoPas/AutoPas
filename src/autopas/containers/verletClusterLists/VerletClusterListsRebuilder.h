@@ -60,8 +60,8 @@ class VerletClusterListsRebuilder {
         _interactionLengthSqr(_interactionLength * _interactionLength),
         _boxMin(clusterList.getBoxMin()),
         _boxMax(clusterList.getBoxMax()),
-        _haloBoxMin(utils::ArrayMath::subScalar(_boxMin, _interactionLength)),
-        _haloBoxMax(utils::ArrayMath::addScalar(_boxMax, _interactionLength)) {}
+        _haloBoxMin(clusterList.getHaloBoxMin()),
+        _haloBoxMax(clusterList.getHaloBoxMax()) {}
 
   /**
    * Rebuilds the towers, clusters, and neighbor lists.
@@ -84,13 +84,13 @@ class VerletClusterListsRebuilder {
       numParticles += vector.size();
     }
 
-    auto boxSize = utils::ArrayMath::sub(_haloBoxMax, _haloBoxMin);
+    auto boxSizeWithHalo = utils::ArrayMath::sub(_haloBoxMax, _haloBoxMin);
 
-    _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSize);
+    _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSizeWithHalo);
     _towerSideLengthReciprocal = 1 / _towerSideLength;
     _interactionLengthInTowers = static_cast<int>(std::ceil(_interactionLength * _towerSideLengthReciprocal));
 
-    _towersPerDim = calculateTowersPerDim(boxSize);
+    _towersPerDim = calculateTowersPerDim(boxSizeWithHalo);
     size_t numTowers = _towersPerDim[0] * _towersPerDim[1];
 
     // resize to number of towers
@@ -109,7 +109,10 @@ class VerletClusterListsRebuilder {
   /**
    * Rebuilds the neighbor lists and fills Clusters with dummies as described in
    * ClusterTower::fillUpWithDummyParticles.
-   * @param useNewton3 Specifies, whether newton3 should be used or not.
+   * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
+   * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
+   * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
+   * false)
    */
   void rebuildNeighborListsAndFillClusters(bool useNewton3) {
     clearNeighborListsAndResetDummies();
@@ -201,7 +204,8 @@ class VerletClusterListsRebuilder {
           auto &tower = getTowerForParticleLocation(particle.getR());
           tower.addParticle(particle);
         } else {
-          AutoPasLog(trace, "Not adding particle to VerletClusterLists container, because it is far outside.");
+          AutoPasLog(trace, "Not adding particle to VerletClusterLists container, because it is far outside:\n{}",
+                     particle.toString());
         }
       }
     }
@@ -209,7 +213,10 @@ class VerletClusterListsRebuilder {
 
   /**
    * Updates the neighbor lists.
-   * @param useNewton3 Specifies, whether newton3 should be used or not.
+   * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
+   * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
+   * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
+   * false)
    */
   void updateNeighborLists(bool useNewton3) {
     const int maxTowerIndexX = _towersPerDim[0] - 1;
@@ -240,7 +247,10 @@ class VerletClusterListsRebuilder {
    * @param maxX The maximum x-coordinate of the given neighbor towers.
    * @param minY The minimum y-coordinate of the given neighbor towers.
    * @param maxY The maximum y-coordinate of the given neighbor towers.
-   * @param useNewton3 Specifies, whether newton3 should be used or not.
+   * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
+   * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
+   * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
+   * false)
    */
   void calculateNeighborsForTowerInRange(const int towerIndexX, const int towerIndexY, const int minX, const int maxX,
                                          const int minY, const int maxY, const bool useNewton3) {
@@ -316,7 +326,10 @@ class VerletClusterListsRebuilder {
    * @param tower The given tower.
    * @param neighborTower The given neighbor tower.
    * @param distBetweenTowersXYsqr The distance in the xy-plane between the towers.
-   * @param useNewton3 Specifies, whether newton3 should be used or not.
+   * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
+   * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
+   * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
+   * false)
    */
   void calculateNeighborsForTowerPair(internal::ClusterTower<Particle, clusterSize> &tower,
                                       internal::ClusterTower<Particle, clusterSize> &neighborTower,

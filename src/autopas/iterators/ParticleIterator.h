@@ -143,8 +143,8 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
         if (not _iteratorWithinOneCell.isValid()) {
           next_non_empty_cell();
         }
-      } while (not isValid() && _iteratorAcrossCells < _vectorOfCells->end());
-      if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::notStarted &&
+      } while (not isValid() and _iteratorAcrossCells < _vectorOfCells->end());
+      if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::notStarted and
           _iteratorAcrossCells >= _vectorOfCells->end()) {
         _additionalParticleVectorToIterateState = AdditionalParticleVectorToIterateState::iterating;
         if (isValid()) {
@@ -157,7 +157,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
       // Simply increase the counter, as long as we aren't valid.
       do {
         ++_additionalParticleVectorPosition;
-      } while (not isValid() && _additionalParticleVectorPosition < _additionalParticleVector->size());
+      } while (not isValid() and _additionalParticleVectorPosition < _additionalParticleVector->size());
     }
 
     return *this;

@@ -187,12 +187,16 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   }
 
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
-    // potentially should be halo box and not box:
-    std::array<double, 3> towerSize = {_towerSideLength, _towerSideLength, this->getBoxMax()[2] - this->getBoxMin()[2]};
+    std::array<double, 3> towerSize = {_towerSideLength, _towerSideLength,
+                                       this->getHaloBoxMax()[2] - this->getHaloBoxMin()[2]};
     std::array<unsigned long, 3> towerDimensions = {_towersPerDim[0], _towersPerDim[1], 1};
     return TraversalSelectorInfo(towerDimensions, this->getInteractionLength(), towerSize, clusterSize);
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::begin()
+   * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
+   */
   ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     // For good openmp scalability we want the particles to be sorted into the clusters, so we do this!
 #ifdef AUTOPAS_OPENMP
@@ -207,6 +211,11 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
             &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior));
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::begin()
+   * @note const version.
+   * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
+   */
   ParticleIteratorWrapper<Particle, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     /// @todo use proper cellBorderAndFlagManager instead of the unknowing.
@@ -227,10 +236,15 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     }
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getRegionIterator()
+   * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
+   */
   ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    // Special iterator requires sorted cells
+    // Special iterator requires sorted cells.
+    // Only one thread is allowed to rebuild the towers, so we do an omp single here.
 #ifdef AUTOPAS_OPENMP
 #pragma omp single
 #endif
@@ -245,7 +259,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _haloBoxMax);
 
     // iterate over all cells
-    /// @todo optimize
+    /// @todo optimize, see https://github.com/AutoPas/AutoPas/issues/438
     std::vector<size_t> cellsOfInterest(this->_towers.size());
     std::iota(cellsOfInterest.begin(), cellsOfInterest.end(), 0);
 
@@ -255,6 +269,11 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
             &internal::unknowingCellBorderAndFlagManager, behavior));
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getRegionIterator()
+   * @note const version.
+   * @note This function additionally iterates over _particlesToAdd if the container structure isn't valid.
+   */
   ParticleIteratorWrapper<Particle, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
@@ -269,7 +288,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _haloBoxMax);
 
     // iterate over all cells
-    /// @todo optimize
+    /// @todo optimize, see https://github.com/AutoPas/AutoPas/issues/438
     std::vector<size_t> cellsOfInterest(this->_towers.size());
     std::iota(cellsOfInterest.begin(), cellsOfInterest.end(), 0);
 
@@ -277,19 +296,6 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
         new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
             &this->_towers, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
             &internal::unknowingCellBorderAndFlagManager, behavior, _isValid ? nullptr : &_particlesToAdd));
-  }
-
-  /**
-   * @todo: make this protected/private!
-   */
-  void rebuildTowersAndClusters() {
-    _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, _particlesToAdd);
-    std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
-        _builder->rebuildTowersAndClusters();
-    _isValid = true;
-    for (auto &tower : _towers) {
-      tower.setParticleDeletionObserser(this);
-    }
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
@@ -308,7 +314,6 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
           "Trying to use a traversal of wrong type in VerletClusterLists::rebuildNeighborLists. TraversalID: {}",
           traversal->getTraversalType());
     }
-    _isValid = true;
   }
 
   /**
@@ -437,13 +442,27 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     return towerIndex2DTo1D(x, y, _towersPerDim);
   }
 
+  // boxmax
   const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
 
   void setBoxMax(const std::array<double, 3> &boxMax) override { _boxMax = boxMax; }
 
+  /**
+   * Get the upper corner of the halo box.
+   * @return the upper corner of the halo box.
+   */
+  const std::array<double, 3> &getHaloBoxMax() const { return _haloBoxMax; }
+
+  // boxmin
   const std::array<double, 3> &getBoxMin() const override { return _boxMin; }
 
   void setBoxMin(const std::array<double, 3> &boxMin) override { _boxMin = boxMin; }
+
+  /**
+   * Get the lower corner of the halo box.
+   * @return the lower corner of the halo box.
+   */
+  const std::array<double, 3> &getHaloBoxMin() const { return _haloBoxMin; }
 
   double getCutoff() const override { return _cutoff; }
 
@@ -462,6 +481,20 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   }
 
  protected:
+  /**
+   * Rebuild the towers and the clusters.
+   * This function sets the container structure to valid.
+   */
+  void rebuildTowersAndClusters() {
+    _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, _particlesToAdd);
+    std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
+        _builder->rebuildTowersAndClusters();
+    _isValid = true;
+    for (auto &tower : _towers) {
+      tower.setParticleDeletionObserser(this);
+    }
+  }
+
   /**
    * Helper method to sequentially iterate over all clusters.
    * @tparam LoopBody The type of the lambda to execute for all clusters.
@@ -524,8 +557,10 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
         std::max(static_cast<unsigned long>(std::ceil(static_cast<double>(numClusterPairs) / numThreads)), 1ul);
     if (numClusterPairsPerThread * numThreads < numClusterPairs) {
       autopas::utils::ExceptionHandler::exception(
-          "VerletClusterLists::calculateClusterThreadPartition(): numClusterPairsPerThread * numThreads should always "
-          "be at least the amount of Cluster Pairs!");
+          "VerletClusterLists::calculateClusterThreadPartition(): numClusterPairsPerThread ({}) * numThreads ({})={} "
+          "should always "
+          "be at least the amount of Cluster Pairs ({})!",
+          numClusterPairsPerThread, numThreads, numClusterPairsPerThread * numThreads, numClusterPairs);
     }
     fillClusterRanges(numClusterPairsPerThread, numThreads);
   }
@@ -539,8 +574,10 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   void fillClusterRanges(size_t numClusterPairsPerThread, int numThreads) {
     if (numClusterPairsPerThread < 1) {
       autopas::utils::ExceptionHandler::exception(
-          "VerletClusterLists::fillClusterRanges(): numClusterPairsPerThread is less than one, this is not supported "
-          "and will lead to errors!");
+          "VerletClusterLists::fillClusterRanges(): numClusterPairsPerThread({}) is less than one, this is not "
+          "supported "
+          "and will lead to errors!",
+          numClusterPairsPerThread);
     }
     _clusterThreadPartition.resize(numThreads);
 
