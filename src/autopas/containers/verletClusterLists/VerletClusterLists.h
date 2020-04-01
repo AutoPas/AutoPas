@@ -146,8 +146,9 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    */
   void deleteHaloParticles() override {
     bool deletedSth = false;
-
+#ifdef AUTOPAS_OPENMP
 #pragma omp parallel reduction(|| : deletedSth)
+#endif
     {
       for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
         internal::deleteParticle(iter);
