@@ -197,7 +197,8 @@ TEST_F(VerletClusterCellsTest, testVerletParticleLoss) {
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(AtLeast(1));
   autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
-  verletLists.iteratePairwise(&verletClusterCellsTraversal);
+
+  verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
 
   int numOwn = 0;
   int numDummyOwn = 0;
