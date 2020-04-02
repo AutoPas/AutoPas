@@ -453,6 +453,84 @@ TEST_P(IteratorTest, testOpenMPRegionIteratorsHaloOnly) {
   }
 }
 
+/**
+ * The main idea of this test is to check whether deletion through a RegionIterator doesn't do stupid things.
+ */
+template <bool testConstIterators>
+void testRegionIteratorDeletion(autopas::ContainerOption containerOption, double cellSizeFactor, bool priorForceCalc) {
+  // create AutoPas object
+  autopas::AutoPas<Molecule, FMCell> autoPas;
+  // Reference to the AutoPas object to be able to check const iterators.
+  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule, FMCell> &,
+                     autopas::AutoPas<Molecule, FMCell> &>
+      autoPasRef = autoPas;
+
+  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
+
+  defaultInit(autoPas);
+
+  size_t numParticles = 200;
+
+  srand(42);
+  for (size_t id = 0; id < numParticles; ++id) {
+    auto pos = autopasTools::generators::RandomGenerator::randomPosition(haloBoxMin, haloBoxMax);
+    Molecule p(pos, {0., 0., 0.}, id);
+    // add the particle!
+    if (autopas::utils::inBox(pos, boxMin, boxMax)) {
+      autoPas.addParticle(p);
+    } else {
+      autoPas.addOrUpdateHaloParticle(p);
+    }
+  }
+
+  if (priorForceCalc) {
+    // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
+    EmptyFunctor<Molecule, FMCell> eFunctor;
+    autoPas.iteratePairwise(&eFunctor);
+  }
+
+  std::set<unsigned long> beforeParticles;
+  for (auto &particle : autoPasRef) {
+    beforeParticles.insert(particle.getID());
+  }
+  ASSERT_EQ(beforeParticles.size(), numParticles);
+
+  // delete some particles
+  std::set<unsigned long> deletedParticles;
+  for (auto it = autoPas.getRegionIterator({0., 0., 3.}, {10., 10., 4.5}); it != autoPas.end(); ++it) {
+    deletedParticles.insert(it->getID());
+    autoPas.deleteParticle(it);
+  }
+
+  // calculate the particles that should still be there.
+  std::set<unsigned long> shouldBeParticles;
+  for (auto id : beforeParticles) {
+    if (deletedParticles.find(id) == deletedParticles.end()) {
+      // Has not been deleted!
+      shouldBeParticles.insert(id);
+    }
+  }
+
+  // check whether they are still there.
+  std::vector<unsigned long> afterParticles;
+  for (auto &particle : autoPasRef) {
+    EXPECT_NE(shouldBeParticles.find(particle.getID()), shouldBeParticles.end()) << "id:" << particle.getID();
+    afterParticles.push_back(particle.getID());
+  }
+
+  EXPECT_EQ(afterParticles.size(), shouldBeParticles.size());
+}
+
+TEST_P(IteratorTest, RegionIteratorDeletion) {
+  auto [containerOption, cellSizeFactor, testConstIterators, priorForceCalc] = GetParam();
+  if (testConstIterators) {
+    testRegionIteratorDeletion<true>(containerOption, cellSizeFactor, priorForceCalc);
+  } else {
+    testRegionIteratorDeletion<false>(containerOption, cellSizeFactor, priorForceCalc);
+  }
+}
+
 using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;

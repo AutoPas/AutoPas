@@ -8,10 +8,10 @@
 
 #include <cmath>
 
-#include "VCLParticleDeletedObserver.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
@@ -33,7 +33,7 @@ namespace autopas {
  */
 template <class Particle>
 class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Particle>>,
-                           public internal::VCLParticleDeletedObserver {
+                           public internal::ParticleDeletedObserver {
  public:
   /**
    * The number of particles in a full cluster. Currently, constexpr is necessary so it can be passed to ClusterTower as

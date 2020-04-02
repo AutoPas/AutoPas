@@ -1,5 +1,5 @@
 /**
- * @file VCLParticleDeletedObserver.h
+ * @file ParticleDeletedObserver.h
  * @author seckler
  * @date 27.03.20
  */
@@ -12,7 +12,7 @@ namespace autopas::internal {
  * Class that is notified when a particle is deleted.
  * For VerletClusterLists
  */
-class VCLParticleDeletedObserver {
+class ParticleDeletedObserver {
  public:
   /**
    * This function is called when a particle is deleted.
