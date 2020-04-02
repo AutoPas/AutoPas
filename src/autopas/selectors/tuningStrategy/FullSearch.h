@@ -10,7 +10,7 @@
 #include <sstream>
 
 #include "TuningStrategyInterface.h"
-#include "autopas/selectors/ContainerSelector.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 

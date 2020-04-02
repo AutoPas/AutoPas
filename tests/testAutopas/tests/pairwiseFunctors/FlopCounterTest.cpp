@@ -143,19 +143,19 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctor(cell1._particleSoABuffer, newton3);
+      functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3, true);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctor(cell2._particleSoABuffer, newton3);
+      functor.SoAFunctorSingle(cell2._particleSoABuffer, newton3, true);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctor(cell3._particleSoABuffer, newton3);
+      functor.SoAFunctorSingle(cell3._particleSoABuffer, newton3, true);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctor(cell4._particleSoABuffer, newton3);
+      functor.SoAFunctorSingle(cell4._particleSoABuffer, newton3, true);
     }
   }
 
@@ -171,11 +171,11 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+      functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3, true);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctor(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
+      functor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3, true);
     }
   }
 }

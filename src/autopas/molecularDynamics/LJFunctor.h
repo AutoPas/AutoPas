@@ -14,6 +14,7 @@
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/StaticSelectorMacros.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 #if defined(AUTOPAS_CUDA)
@@ -192,11 +193,11 @@ class LJFunctor
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, bool newton3)
+   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState)
    * This functor ignores will use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
    */
-  void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState) override {
     if (soa.getNumParticles() == 0) return;
 
     const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -214,9 +215,10 @@ class LJFunctor
     SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmasquare = _sigmasquare;
     SoAFloatPrecision epsilon24 = _epsilon24;
-    if (calculateGlobals) {
+    const bool duplicatedCalculations = _duplicatedCalculations;
+    if (calculateGlobals and cellWiseOwnedState and duplicatedCalculations) {
+      bool isHaloCell = not ownedPtr[0];
       // Checks if the cell is a halo cell, if it is, we skip it.
-      bool isHaloCell = ownedPtr[0] ? false : true;
       if (isHaloCell) {
         return;
       }
@@ -228,6 +230,14 @@ class LJFunctor
     SoAFloatPrecision virialSumZ = 0.;
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
+      SoAFloatPrecision isOwnedI;
+      if (calculateGlobals and not cellWiseOwnedState and duplicatedCalculations) {
+        // save the owned state of particle i. This is only needed if we calculate globals (calculateGlobals), the owned
+        // state is not constant throughout the cell (not cellWiseOwnedState) and there are duplicated calculations
+        // (duplicatedCalculations)
+        isOwnedI = ownedPtr[i];
+      }
+
       SoAFloatPrecision fxacc = 0.;
       SoAFloatPrecision fyacc = 0.;
       SoAFloatPrecision fzacc = 0.;
@@ -301,11 +311,23 @@ class LJFunctor
           const SoAFloatPrecision virialz = drz * fz;
           const SoAFloatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
 
-          // these calculations assume that this functor is not called for halo cells!
-          upotSum += upot;
-          virialSumX += virialx;
-          virialSumY += virialy;
-          virialSumZ += virialz;
+          if (cellWiseOwnedState or not duplicatedCalculations) {
+            // these calculations are only safe if it is called for an owned cell of if no duplicated calculations are
+            // happening.
+            upotSum += upot;
+            virialSumX += virialx;
+            virialSumY += virialy;
+            virialSumZ += virialz;
+          } else {
+            // In this functor, all pairs are only traversed once (newton3-scheme!).
+            // In this case,
+            // The calculations are later divided by two!
+            double energyFactor = isOwnedI + ownedPtr[j];
+            upotSum += upot * energyFactor;
+            virialSumX += virialx * energyFactor;
+            virialSumY += virialy * energyFactor;
+            virialSumZ += virialz * energyFactor;
+          }
         }
       }
 
@@ -315,19 +337,58 @@ class LJFunctor
     }
     if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
+      double factor = 1.;
       // we assume newton3 to be enabled in this functor call, thus we multiply by two if the value of newton3 is false,
       // since for newton3 disabled we divide by two later on.
-      _aosThreadData[threadnum].upotSum += upotSum * (newton3 ? 1. : 2.);
-      _aosThreadData[threadnum].virialSum[0] += virialSumX * (newton3 ? 1. : 2.);
-      _aosThreadData[threadnum].virialSum[1] += virialSumY * (newton3 ? 1. : 2.);
-      _aosThreadData[threadnum].virialSum[2] += virialSumZ * (newton3 ? 1. : 2.);
+      factor *= newton3 ? 1. : 2.;
+      // In case we have a non-cell-wise owned state and duplicated_calculations is false, we have multiplied everything
+      // by two, so we divide it by 2 again.
+      factor *= (not cellWiseOwnedState and duplicatedCalculations) ? .5 : 1.;
+      _aosThreadData[threadnum].upotSum += upotSum * factor;
+      _aosThreadData[threadnum].virialSum[0] += virialSumX * factor;
+      _aosThreadData[threadnum].virialSum[1] += virialSumY * factor;
+      _aosThreadData[threadnum].virialSum[2] += virialSumZ * factor;
     }
   }
 
+  // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
+   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3, bool cellWiseOwnedState)
    */
-  void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
+  // clang-format on
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3,
+                      const bool cellWiseOwnedState) override {
+    // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
+    /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
+    utils::withStaticBool(newton3, [&](auto newton3) {
+      if (cellWiseOwnedState) {
+        if (_duplicatedCalculations) {
+          SoAFunctorPairImpl<newton3, true /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa1, soa2);
+        } else {
+          SoAFunctorPairImpl<newton3, true /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa1, soa2);
+        }
+      } else {
+        if (_duplicatedCalculations) {
+          SoAFunctorPairImpl<newton3, false /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa1, soa2);
+        } else {
+          SoAFunctorPairImpl<newton3, false /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa1, soa2);
+        }
+      }
+    });
+  }
+
+ private:
+  /**
+   * Implementation function of SoAFunctorPair(soa1, soa2, newton3, cellWiseOwnedState)
+   *
+   * @tparam newton3
+   * @tparam cellWiseOwnedState
+   * @tparam duplicatedCalculations
+   * @param soa1
+   * @param soa2
+   */
+  template <bool newton3, bool cellWiseOwnedState, bool duplicatedCalculations>
+  void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     const auto *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -351,7 +412,7 @@ class LJFunctor
     bool isHaloCell1 = false;
     bool isHaloCell2 = false;
     // Checks whether the cells are halo cells.
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals and cellWiseOwnedState) {
       isHaloCell1 = ownedPtr1[0] ? false : true;
       isHaloCell2 = ownedPtr2[0] ? false : true;
 
@@ -374,6 +435,11 @@ class LJFunctor
       SoAFloatPrecision fxacc = 0;
       SoAFloatPrecision fyacc = 0;
       SoAFloatPrecision fzacc = 0;
+
+      SoAFloatPrecision isOwnedI;
+      if constexpr (calculateGlobals and not cellWiseOwnedState and duplicatedCalculations) {
+        isOwnedI = ownedPtr1[i];
+      }
 
       // preload all sigma and epsilons for next vectorized region
       std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
@@ -439,16 +505,33 @@ class LJFunctor
           fz2ptr[j] -= fz;
         }
 
-        if (calculateGlobals) {
+        if constexpr (calculateGlobals) {
           SoAFloatPrecision virialx = drx * fx;
           SoAFloatPrecision virialy = dry * fy;
           SoAFloatPrecision virialz = drz * fz;
           SoAFloatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
 
-          upotSum += upot;
-          virialSumX += virialx;
-          virialSumY += virialy;
-          virialSumZ += virialz;
+          if constexpr (cellWiseOwnedState or not duplicatedCalculations) {
+            upotSum += upot;
+            virialSumX += virialx;
+            virialSumY += virialy;
+            virialSumZ += virialz;
+          } else {
+            // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
+            // that we do not add the energy multiple times!
+            // Here, a cell-wise optimization is not possible, as cellWiseOwnedState is false.
+            double energyFactor = isOwnedI;
+            if constexpr (newton3) {
+              energyFactor += ownedPtr2[j];
+            }
+
+            // if newton3 is enabled, we multiply by 0.5 at the end of this function call when adding up the values to
+            // the threadData.
+            upotSum += upot * energyFactor;
+            virialSumX += virialx * energyFactor;
+            virialSumY += virialy * energyFactor;
+            virialSumZ += virialz * energyFactor;
+          }
         }
       }
       fx1ptr[i] += fxacc;
@@ -456,34 +539,46 @@ class LJFunctor
       fz1ptr[i] += fzacc;
     }
     if (calculateGlobals) {
-      SoAFloatPrecision energyfactor = 1.;
-      if (_duplicatedCalculations) {
-        // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
-        // that we do not add the energy multiple times!
-        energyfactor = isHaloCell1 ? 0. : 1.;
-        if (newton3) {
-          energyfactor += isHaloCell2 ? 0. : 1.;
-          energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
-        }
-      }
       const int threadnum = autopas_get_thread_num();
-
-      _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
-      _aosThreadData[threadnum].virialSum[0] += virialSumX * energyfactor;
-      _aosThreadData[threadnum].virialSum[1] += virialSumY * energyfactor;
-      _aosThreadData[threadnum].virialSum[2] += virialSumZ * energyfactor;
+      if constexpr (cellWiseOwnedState or not duplicatedCalculations) {
+        SoAFloatPrecision energyfactor = 1.;
+        if constexpr (duplicatedCalculations) {
+          // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
+          // that we do not add the energy multiple times!
+          energyfactor = isHaloCell1 ? 0. : 1.;
+          if (newton3) {
+            energyfactor += isHaloCell2 ? 0. : 1.;
+            energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
+          }
+        }
+        _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
+        _aosThreadData[threadnum].virialSum[0] += virialSumX * energyfactor;
+        _aosThreadData[threadnum].virialSum[1] += virialSumY * energyfactor;
+        _aosThreadData[threadnum].virialSum[2] += virialSumZ * energyfactor;
+      } else {
+        SoAFloatPrecision newton3Factor = 1.;
+        if constexpr (newton3) {
+          newton3Factor *= 0.5;  // we count the energies partly to one of the two cells!
+        }
+        _aosThreadData[threadnum].upotSum += upotSum * newton3Factor;
+        _aosThreadData[threadnum].virialSum[0] += virialSumX * newton3Factor;
+        _aosThreadData[threadnum].virialSum[1] += virialSumY * newton3Factor;
+        _aosThreadData[threadnum].virialSum[2] += virialSumZ * newton3Factor;
+      }
     }
   }
 
+ public:
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors!
    */
   // clang-format on
-  void SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) override {
+  void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                        bool newton3) override {
     if (newton3) {
       if (_duplicatedCalculations) {
         SoAFunctorImpl<true, true>(soa, indexFirst, neighborList);
@@ -692,6 +787,12 @@ class LJFunctor
     return std::array<typename Particle::AttributeNames, 3>{
         Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
   }
+
+  /**
+   *
+   * @return useMixing
+   */
+  constexpr static bool getMixing() { return useMixing; }
 
   /**
    * Get the number of flops used per kernel call. This should count the

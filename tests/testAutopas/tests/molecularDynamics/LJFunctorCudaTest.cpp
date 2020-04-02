@@ -119,7 +119,7 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   ljFunctorCuda.deviceSoALoader(cell2Cuda._particleSoABuffer, cell2Cuda._particleSoABufferDevice);
 
   // Functor calls
-  ljFunctorNoCuda.SoAFunctor(cell1NoCuda._particleSoABuffer, cell2NoCuda._particleSoABuffer, useNewton3);
+  ljFunctorNoCuda.SoAFunctorPair(cell1NoCuda._particleSoABuffer, cell2NoCuda._particleSoABuffer, useNewton3, true);
   ljFunctorCuda.CudaFunctor(cell1Cuda._particleSoABufferDevice, cell2Cuda._particleSoABufferDevice, useNewton3);
 
   ljFunctorCuda.deviceSoAExtractor(cell1Cuda._particleSoABuffer, cell1Cuda._particleSoABufferDevice);
@@ -179,7 +179,7 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
   ljFunctorCuda.deviceSoALoader(cellCuda._particleSoABuffer, cellCuda._particleSoABufferDevice);
 
   // functor calls
-  ljFunctorNoCuda.SoAFunctor(cellNoCuda._particleSoABuffer, useNewton3);
+  ljFunctorNoCuda.SoAFunctorSingle(cellNoCuda._particleSoABuffer, useNewton3, true);
   ljFunctorCuda.CudaFunctor(cellCuda._particleSoABufferDevice, useNewton3);
 
   ljFunctorCuda.deviceSoAExtractor(cellCuda._particleSoABuffer, cellCuda._particleSoABufferDevice);
@@ -210,7 +210,8 @@ TEST_P(LJFunctorCudaTest, testLJFunctorVSLJFunctorCuda) {
   auto numParticlesFirstCell = std::get<2>(options);
   auto numParticlesSecondCell = std::get<3>(options);
 
-  // using nested withStaticBool is not possible because of bug in gcc7 and gcc8
+  // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
+  /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
   if (newton3) {
     autopas::utils::withStaticBool(calculateGlobals, [&](auto calculateGlobalsC) {
       if (numParticlesSecondCell == 0) {

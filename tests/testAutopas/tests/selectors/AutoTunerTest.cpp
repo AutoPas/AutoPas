@@ -66,19 +66,18 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //
   // currently disabled:
   // NORMAL:
-  // C04SoATraversal completely, see #422                                                     -2
   //                                                                                    --------
-  // TOTAL:                                                                                   46
+  // TOTAL:                                                                                   48
   //
   // CUDA:
   // C01CudaTraversal for enabled N3, see #420                                                -1
   //                                                                                    --------
-  // TOTAL:                                                                                   51
+  // TOTAL:                                                                                   53
 
 #ifndef AUTOPAS_CUDA
-  const size_t expectedNumberOfIterations = 46 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 48 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 51 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 53 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;
