@@ -290,7 +290,7 @@ class VerletClusterCellsRegionParticleIterator
               (*this->_vectorOfCells)[this->_cellId]._particles.begin() + this->getDummyStartbyIndex(this->_cellId),
               _endRegion[2] + _skin, [](const double b, const Particle &a) { return b < a.getR()[2]; });
         } else {
-          // If the iterator is modifiable, then we can delete particles, which breaks the sorted assumption and thus
+          // If the iterator is modifiable, we can delete particles, which breaks the sorted assumption and thus
           // some particles might be skipped.
           this->_iteratorWithinOneCell = (*this->_vectorOfCells)[this->_cellId]._particles.begin();
           this->_cellEnd = this->_iteratorWithinOneCell + this->getDummyStartbyIndex(this->_cellId);
