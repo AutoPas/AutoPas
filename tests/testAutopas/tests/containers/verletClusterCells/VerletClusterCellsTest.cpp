@@ -309,7 +309,7 @@ TEST_F(VerletClusterCellsTest, testIteratePairwiseWithoutNeighborlistRebuildThro
   autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, Particle(), verletLists.getBoxMin(),
-                                                               verletLists.getBoxMax(), 500);
+                                                               verletLists.getBoxMax(), 50);
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(verletLists, Particle(), cutoff, 50);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
