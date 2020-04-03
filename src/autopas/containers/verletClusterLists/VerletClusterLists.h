@@ -302,7 +302,8 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     return ParticleIteratorWrapper<Particle, false>(
         new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
             &this->_towers, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
-            &internal::unknowingCellBorderAndFlagManager, behavior, _isValid != ValidityState::invalid ? nullptr : &_particlesToAdd));
+            &internal::unknowingCellBorderAndFlagManager, behavior,
+            _isValid != ValidityState::invalid ? nullptr : &_particlesToAdd));
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
