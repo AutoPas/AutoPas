@@ -265,14 +265,14 @@ class GaussianProcess {
    * @return
    */
   Vector sampleAquisitionMax(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
-    int maxIdx = -1;
-    double maxVal = 0.;
+    size_t maxIdx = 0;
+    double maxVal = calcAcquisition(af, samples[0]);
 
     // find maximum from samples
-    for (unsigned i = 0; i < samples.size(); ++i) {
+    for (unsigned i = 1; i < samples.size(); ++i) {
       double val = calcAcquisition(af, samples[i]);
 
-      if (maxIdx == -1 || val > maxVal) {
+      if (val > maxVal) {
         maxIdx = i;
         maxVal = val;
       }
@@ -289,14 +289,14 @@ class GaussianProcess {
    * @return
    */
   Vector sampleAquisitionMin(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
-    int minIdx = -1;
-    double minVal = 0.;
+    size_t minIdx = 0;
+    double minVal = calcAcquisition(af, samples[0]);
 
     // find minimum from samples
-    for (unsigned i = 0; i < samples.size(); ++i) {
+    for (unsigned i = 1; i < samples.size(); ++i) {
       double val = calcAcquisition(af, samples[i]);
 
-      if (minIdx == -1 || val < minVal) {
+      if (val < minVal) {
         minIdx = i;
         minVal = val;
       }
