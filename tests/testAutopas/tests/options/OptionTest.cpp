@@ -99,6 +99,7 @@ TEST(OptionTest, parseSelectorOptionsTest) {
 TEST(OptionTest, parseTuningStrategyOptionsTest) {
   std::map<autopas::TuningStrategyOption, std::string> mapEnumString = {
       {autopas::TuningStrategyOption::bayesianSearch, "bayesian"},
+      {autopas::TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster"},
       {autopas::TuningStrategyOption::fullSearch, "full"},
       {autopas::TuningStrategyOption::randomSearch, "random"},
       {autopas::TuningStrategyOption::activeHarmony, "harmony"},

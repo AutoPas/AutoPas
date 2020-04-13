@@ -37,7 +37,7 @@ class GaussianCluster {
    * @param sigma fixed noise
    * @param rngRef reference to random number generator
    */
-  GaussianCluster(std::vector<size_t> dimRestriction, size_t continuousDims, double sigma, Random &rngRef)
+  GaussianCluster(std::vector<int> dimRestriction, size_t continuousDims, double sigma, Random &rngRef)
       : _dimRestriction(dimRestriction), _continuousDims(continuousDims), _clusters(), _numEvidence(0) {
     size_t numClusters = 1;
     for (auto restriction : _dimRestriction) {
@@ -219,7 +219,7 @@ class GaussianCluster {
 
     size_t result = x[i];
     for (--i; i >= 0; --i) {
-      if (x[i] < 0 || static_cast<size_t>(x[i]) >= _dimRestriction[i]) {
+      if (x[i] < 0 || x[i] >= _dimRestriction[i]) {
         utils::ExceptionHandler::exception("GaussianCluster: The {}th dimension is {} but is restricted to [0,{})", i,
                                            x[i], _dimRestriction[i]);
       }
@@ -248,7 +248,7 @@ class GaussianCluster {
   /**
    * restrict the i-th dimension to a integer between 0 and _dimRestriction[i]-1
    */
-  const std::vector<size_t> _dimRestriction;
+  const std::vector<int> _dimRestriction;
   /**
    * number of additional unrestricted dimensions
    */

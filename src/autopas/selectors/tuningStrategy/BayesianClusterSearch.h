@@ -68,7 +68,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _invalidConfigs(),
         _rng(seed),
         _gaussianCluster(
-            {allowedTraversalOptions.size(), allowedDataLayoutOptions.size(), allowedNewton3Options.size()}, 1, 0.01,
+            {static_cast<int>(allowedTraversalOptions.size()), static_cast<int>(allowedDataLayoutOptions.size()), static_cast<int>(allowedNewton3Options.size())}, 1, 0.01,
             _rng),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
