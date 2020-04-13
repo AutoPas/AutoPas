@@ -1,7 +1,7 @@
 /**
- * @file BayesianSearch.h
+ * @file BayesianClusterSearch.h
  * @author Jan Nguyen
- * @date 12.06.19
+ * @date 12.04.20
  */
 
 #pragma once
@@ -11,7 +11,7 @@
 #include <set>
 #include <unordered_set>
 
-#include "GaussianModel/GaussianProcess.h"
+#include "GaussianModel/GaussianCluster.h"
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/selectors/FeatureVector.h"
@@ -22,11 +22,11 @@
 namespace autopas {
 
 /**
- * Assume that the stochastic distribution of the execution time corresponds
+ * Assume that the stochastic distribution of the execution time while fixing discrete variables corresponds
  * to a Gaussian Process. This allows to estimate the 'gain' of testing a given
  * feature next.
  */
-class BayesianSearch : public TuningStrategyInterface {
+class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * The maximum number of attempts to sample an optimum.
    */
@@ -49,24 +49,27 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param maxEvidence stop tuning after given number of evidence provided.
    * @param seed seed of random number generator (should only be used for tests)
    */
-  BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
-                 const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
-                 const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
-                 const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-                 const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
-                 size_t maxEvidence = 10,
-                 AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lowerConfidenceBound,
-                 size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()())
-      : _containerOptions(allowedContainerOptions),
-        _traversalOptions(allowedTraversalOptions),
-        _dataLayoutOptions(allowedDataLayoutOptions),
-        _newton3Options(allowedNewton3Options),
+  BayesianClusterSearch(const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
+                        const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
+                        const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
+                        const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
+                        const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
+                        size_t maxEvidence = 10,
+                        AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lowerConfidenceBound,
+                        size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()())
+      : _containerOptionsSet(allowedContainerOptions),
+        _containerOptions(allowedContainerOptions.begin(), allowedContainerOptions.end()),
+        _traversalOptions(allowedTraversalOptions.begin(), allowedTraversalOptions.end()),
+        _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
+        _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
         _cellSizeFactors(allowedCellSizeFactors.clone()),
         _traversalContainerMap(),
         _currentConfig(),
         _invalidConfigs(),
         _rng(seed),
-        _gaussianProcess(FeatureVector::oneHotDims, 0.01, _rng),
+        _gaussianCluster(
+            {allowedTraversalOptions.size(), allowedDataLayoutOptions.size(), allowedNewton3Options.size()}, 1, 0.01,
+            _rng),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
         _predNumLHSamples(predNumLHSamples) {
@@ -99,18 +102,20 @@ class BayesianSearch : public TuningStrategyInterface {
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
   inline void addEvidence(long time) override {
+    // encoded vector
+    auto vec = _currentConfig.clusterEncode(_traversalOptions, _dataLayoutOptions, _newton3Options);
     // time is converted to seconds, to big values may lead to errors in GaussianProcess
-    _gaussianProcess.addEvidence(_currentConfig.oneHotEncode(), time * secondsPerMicroseconds);
+    _gaussianCluster.addEvidence(vec.first, vec.second, time * secondsPerMicroseconds);
   }
 
   inline void reset() override {
-    _gaussianProcess.clear();
+    _gaussianCluster.clear();
     tune();
   }
 
   inline bool tune(bool currentInvalid = false) override;
 
-  inline std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptions; }
+  inline std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptionsSet; }
 
   inline bool searchSpaceIsTrivial() const override;
 
@@ -127,10 +132,11 @@ class BayesianSearch : public TuningStrategyInterface {
    */
   inline FeatureVector sampleOptimalFeatureVector(size_t n, AcquisitionFunctionOption af);
 
-  std::set<ContainerOption> _containerOptions;
-  std::set<TraversalOption> _traversalOptions;
-  std::set<DataLayoutOption> _dataLayoutOptions;
-  std::set<Newton3Option> _newton3Options;
+  std::set<ContainerOption> _containerOptionsSet;
+  std::vector<ContainerOption> _containerOptions;
+  std::vector<TraversalOption> _traversalOptions;
+  std::vector<DataLayoutOption> _dataLayoutOptions;
+  std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
 
   std::map<TraversalOption, ContainerOption> _traversalContainerMap;
@@ -139,13 +145,13 @@ class BayesianSearch : public TuningStrategyInterface {
   std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
 
   Random _rng;
-  GaussianProcess _gaussianProcess;
+  GaussianCluster _gaussianCluster;
   size_t _maxEvidence;
   AcquisitionFunctionOption _predAcqFunction;
   size_t _predNumLHSamples;
 };
 
-bool BayesianSearch::tune(bool currentInvalid) {
+bool BayesianClusterSearch::tune(bool currentInvalid) {
   if (currentInvalid) {
     _invalidConfigs.insert(_currentConfig);
   }
@@ -156,9 +162,10 @@ bool BayesianSearch::tune(bool currentInvalid) {
     return false;
   }
 
-  if (_gaussianProcess.numEvidence() >= _maxEvidence) {
+  if (_gaussianCluster.numEvidence() >= _maxEvidence) {
     // select best config
-    _currentConfig = FeatureVector::oneHotDecode(_gaussianProcess.getEvidenceMin());
+    _currentConfig = FeatureVector::clusterDecode(_gaussianCluster.getEvidenceMin(), _traversalOptions,
+                                                  _dataLayoutOptions, _newton3Options);
     _currentConfig.container = _traversalContainerMap[_currentConfig.traversal];
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
     return false;
@@ -169,7 +176,7 @@ bool BayesianSearch::tune(bool currentInvalid) {
   return true;
 }
 
-FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFunctionOption af) {
+FeatureVector BayesianClusterSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFunctionOption af) {
   for (size_t i = 0; i < maxAttempts; ++i) {
     // create n lhs samples
     std::vector<FeatureVector> samples = FeatureVector::lhsSampleFeatures(n, _rng, *_cellSizeFactors, _traversalOptions,
@@ -179,7 +186,8 @@ FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFu
     std::map<FeatureVector, double> acquisitions;
     for (auto &sample : samples) {
       sample.container = _traversalContainerMap[sample.traversal];
-      acquisitions[sample] = _gaussianProcess.calcAcquisition(af, sample.oneHotEncode());
+      auto sampleEnc = sample.clusterEncode(_traversalOptions, _dataLayoutOptions, _newton3Options);
+      acquisitions[sample] = _gaussianCluster.calcAcquisition(af, sampleEnc.first, sampleEnc.second);
     }
 
     // sort by acquisition
@@ -220,7 +228,7 @@ FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFu
   return FeatureVector();
 }
 
-bool BayesianSearch::searchSpaceIsTrivial() const {
+bool BayesianClusterSearch::searchSpaceIsTrivial() const {
   if (searchSpaceIsEmpty()) {
     return false;
   }
@@ -229,15 +237,14 @@ bool BayesianSearch::searchSpaceIsTrivial() const {
          _traversalOptions.size() == 1 and _dataLayoutOptions.size() == 1 and _newton3Options.size() == 1;
 }
 
-bool BayesianSearch::searchSpaceIsEmpty() const {
+bool BayesianClusterSearch::searchSpaceIsEmpty() const {
   // if one enum is empty return true
   return _containerOptions.empty() or (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 0) or
          _traversalOptions.empty() or _dataLayoutOptions.empty() or _newton3Options.empty();
 }
 
-void BayesianSearch::removeN3Option(Newton3Option badNewton3Option) {
-  _newton3Options.erase(badNewton3Option);
-
+void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
+  std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option);
   if (this->searchSpaceIsEmpty()) {
     utils::ExceptionHandler::exception(
         "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);

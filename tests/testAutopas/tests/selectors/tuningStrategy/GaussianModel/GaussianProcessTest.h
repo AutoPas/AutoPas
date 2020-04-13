@@ -11,7 +11,7 @@
 #include "AutoPasTestBase.h"
 #include "Eigen/Dense"
 #include "autopas/selectors/FeatureVector.h"
-#include "autopas/selectors/tuningStrategy/GaussianProcess.h"
+#include "autopas/selectors/tuningStrategy/GaussianModel/GaussianProcess.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
 

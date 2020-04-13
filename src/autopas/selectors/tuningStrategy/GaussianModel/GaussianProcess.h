@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 #include <utility>
 
+#include "AcquisitionFunction.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Math.h"
@@ -89,7 +90,7 @@ class GaussianProcess {
      * @param inputs evidence input
      * @param outputs evidence output
      */
-    void precalculate(double sigma, const std::vector<Eigen::VectorXd> &inputs, const Eigen::VectorXd &outputs);
+    void precalculate(double sigma, const std::vector<Vector> &inputs, const Eigen::VectorXd &outputs);
   };
 
  public:
@@ -120,10 +121,9 @@ class GaussianProcess {
    * @param output f(x)
    */
   void addEvidence(Vector input, double output) {
-    auto inputVec = static_cast<Eigen::VectorXd>(input);
-    if (static_cast<size_t>(inputVec.size()) != _dims) {
+    if (static_cast<size_t>(input.size()) != _dims) {
       utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
-                                         inputVec.size(), _dims);
+                                         input.size(), _dims);
     }
 
     if (_inputs.empty()) {
@@ -179,10 +179,9 @@ class GaussianProcess {
    * @return expected output of f(x)
    */
   double predictMean(const Vector &input) const {
-    auto inputVec = static_cast<Eigen::VectorXd>(input);
-    if (static_cast<size_t>(inputVec.size()) != _dims) {
+    if (static_cast<size_t>(input.size()) != _dims) {
       utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
-                                         inputVec.size(), _dims);
+                                         input.size(), _dims);
     }
 
     // default mean 0.
@@ -202,10 +201,9 @@ class GaussianProcess {
    * @return variance
    */
   double predictVar(const Vector &input) const {
-    auto inputVec = static_cast<Eigen::VectorXd>(input);
-    if (static_cast<size_t>(inputVec.size()) != _dims) {
+    if (static_cast<size_t>(input.size()) != _dims) {
       utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
-                                         inputVec.size(), _dims);
+                                         input.size(), _dims);
     }
 
     // default variance 1.
@@ -228,33 +226,12 @@ class GaussianProcess {
    */
   inline double calcAcquisition(AcquisitionFunctionOption af, const Vector &input) const {
     switch (af) {
-      case AcquisitionFunctionOption::upperConfidenceBound: {
-        return predictMean(input) + 2 * std::sqrt(predictVar(input));
-      }
-      case AcquisitionFunctionOption::lowerConfidenceBound: {
-        return predictMean(input) - 2 * std::sqrt(predictVar(input));
-      }
-      case AcquisitionFunctionOption::mean: {
-        return predictMean(input);
-      }
-      case AcquisitionFunctionOption::variance: {
-        return predictVar(input);
-      }
-      case AcquisitionFunctionOption::probabilityOfDecrease: {
-        return utils::Math::normalCDF((_evidenceMinValue - predictMean(input)) / std::sqrt(predictVar(input)));
-      }
-      case AcquisitionFunctionOption::expectedDecrease: {
-        double mean = predictMean(input);
-        double stddev = std::sqrt(predictVar(input));
-        double minNormed = (_evidenceMinValue - mean) / stddev;
-        return (_evidenceMinValue - mean) * utils::Math::normalCDF(minNormed) +
-               stddev * utils::Math::normalPDF(minNormed);
-      }
+      case AcquisitionFunctionOption::probabilityOfDecrease:
+      case AcquisitionFunctionOption::expectedDecrease:
+        return AcquisitionFunction::calcAcquisition(af, predictMean(input), predictVar(input), _evidenceMinValue);
+      default:
+        return AcquisitionFunction::calcAcquisition(af, predictMean(input), predictVar(input));
     }
-
-    autopas::utils::ExceptionHandler::exception("GaussianProcess.calcAcquisition: Unknown acquisition function {}.",
-                                                af);
-    return 0;
   }
 
   /**
@@ -265,6 +242,17 @@ class GaussianProcess {
    * @return
    */
   Vector sampleAquisitionMax(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
+    return sampleAquisitionMaxValue(af, samples).first;
+  }
+
+  /**
+   * Find the input in samples which maximizes given aquisition function.
+   * @param af function to maximize
+   * @param samples
+   * @return optimal input and resulting acquisition
+   */
+  std::pair<Vector, double> sampleAquisitionMaxValue(AcquisitionFunctionOption af,
+                                                     const std::vector<Vector> &samples) const {
     size_t maxIdx = 0;
     double maxVal = calcAcquisition(af, samples[0]);
 
@@ -278,7 +266,7 @@ class GaussianProcess {
       }
     }
 
-    return samples[maxIdx];
+    return std::make_pair(samples[maxIdx], maxVal);
   }
 
   /**
@@ -289,6 +277,17 @@ class GaussianProcess {
    * @return
    */
   Vector sampleAquisitionMin(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
+    return sampleAquisitionMinValue(af, samples).first;
+  }
+
+  /**
+   * Find the input in samples which minimizes given aquisition function.
+   * @param af function to minimize
+   * @param samples
+   * @return optimal input and corresponding acquisition
+   */
+  std::pair<Vector, double> sampleAquisitionMinValue(AcquisitionFunctionOption af,
+                                                     const std::vector<Vector> &samples) const {
     size_t minIdx = 0;
     double minVal = calcAcquisition(af, samples[0]);
 
@@ -302,7 +301,7 @@ class GaussianProcess {
       }
     }
 
-    return samples[minIdx];
+    return std::make_pair(samples[minIdx], minVal);
   }
 
  private:
