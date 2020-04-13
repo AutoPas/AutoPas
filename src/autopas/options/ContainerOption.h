@@ -28,6 +28,7 @@ class ContainerOption : public Option<ContainerOption> {
     verletClusterLists = 4,
     varVerletListsAsBuild = 5,
     verletClusterCells = 6,
+    referenceLinkedCells = 7,
   };
 
   /**
@@ -61,6 +62,7 @@ class ContainerOption : public Option<ContainerOption> {
     return {
         {ContainerOption::directSum, "DirectSum"},
         {ContainerOption::linkedCells, "LinkedCells"},
+        {ContainerOption::referenceLinkedCells, "ReferenceLinkedCells"},
         {ContainerOption::verletLists, "VerletLists"},
         {ContainerOption::verletListsCells, "VerletListsCells"},
         {ContainerOption::verletClusterLists, "VerletClusterLists"},
