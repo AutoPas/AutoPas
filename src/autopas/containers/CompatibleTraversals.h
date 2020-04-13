@@ -40,6 +40,22 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
   };
   return s;
 }
+/**
+    **
+    * Lists all traversal options applicable for the Linked Cells container.
+    * @return set of all applicable traversal options.
+    */
+    static const std::set<TraversalOption> &allRLCCompatibleTraversals() {
+        static const std::set<TraversalOption> s {
+                TraversalOption::c01, TraversalOption::c08, TraversalOption::c18, TraversalOption::sliced,
+                TraversalOption::c01CombinedSoA, TraversalOption::c04, TraversalOption::c04SoA
+#if defined(AUTOPAS_CUDA)
+                ,
+        TraversalOption::c01Cuda
+#endif
+        };
+        return s;
+    }
 
 /**
  * Lists all traversal options applicable for the Verlet Cluster Lists container.
@@ -117,6 +133,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     case ContainerOption::varVerletListsAsBuild: {
       return allVarVLAsBuildCompatibleTraversals();
     }
+      case ContainerOption::referenceLinkedCells: {
+          return allRLCCompatibleTraversals();
+      }
   }
 
   autopas::utils::ExceptionHandler::exception("CompatibleTraversals: Unknown container option {}!",
