@@ -52,7 +52,7 @@ class Random : public std::mt19937 {
 
     // copy the whole set until result is full
     while (result.size() < n) {
-      result.insert(result.end(), poolBegin, poolEnd);
+      result.insert(std::end(result), poolBegin, poolEnd);
     }
 
     // if too many elements added
