@@ -79,7 +79,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
 
     traversalInterface->setVerletListPointer(&_neighborCellIds, &_neighborMatrixDim, &_neighborMatrix);
 
-    if (traversalInterface->getSignature() != _lastTraversalSig or _isValid != ValidityState::listsAreValid) {
+    if (traversalInterface->getSignature() != _lastTraversalSig or _isValid != ValidityState::cellsAndListsValid) {
       utils::ExceptionHandler::exception(
           "VerletClusterCells::iteratePairwise called even though the lists are not valid or the traversal has "
           "changed.");
@@ -158,7 +158,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
                                       this->getInteractionLength());
     _lastTraversalSig = traversalInterface->getSignature();
 
-    _isValid = ValidityState::listsAreValid;
+    _isValid = ValidityState::cellsAndListsValid;
   }
 
   /**
@@ -482,7 +482,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
         }
     }
 
-    _isValid = ValidityState::cellsAreValid;
+    _isValid = ValidityState::cellsValidListsInvalid;
   }
 
   /**
@@ -558,9 +558,9 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    * Enum to specify the validity of this container.
    */
   enum class ValidityState : unsigned char {
-    invalid = 0,        // nothing is valid.
-    cellsAreValid = 1,  // only the cell structure is valid, but the lists are not.
-    listsAreValid = 2   // the lists are valid
+    invalid = 0,                 // nothing is valid.
+    cellsValidListsInvalid = 1,  // only the cell structure is valid, but the lists are not.
+    cellsAndListsValid = 2       // the cells and lists are valid
   };
 
   // specifies the validity of the cells and

@@ -83,7 +83,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    if (_isValid == ValidityState::listsAreValid) {
+    if (_isValid == ValidityState::cellsAndListsValid) {
       autopas::utils::ExceptionHandler::exception(
           "VerletClusterLists::iteratePairwise(): Trying to do a pairwise iteration, even though verlet lists are not "
           "valid.");
@@ -497,7 +497,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, _particlesToAdd);
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
         _builder->rebuildTowersAndClusters();
-    _isValid = ValidityState::cellsAreValid;
+    _isValid = ValidityState::cellsValidListsInvalid;
     for (auto &tower : _towers) {
       tower.setParticleDeletionObserser(this);
     }
@@ -721,9 +721,9 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * Enum to specify the validity of this container.
    */
   enum class ValidityState : unsigned char {
-    invalid = 0,        // nothing is valid.
-    cellsAreValid = 1,  // only the cell structure is valid, but the lists are not.
-    listsAreValid = 2   // the lists are valid
+    invalid = 0,                 // nothing is valid.
+    cellsValidListsInvalid = 1,  // only the cell structure is valid, but the lists are not.
+    cellsAndListsValid = 2       // the cells and lists are valid
   };
 
   /**
