@@ -67,7 +67,6 @@ class FeatureVector : public Configuration {
     Eigen::VectorXd result(featureSpaceDims);
     result << cellSizeFactor - other.cellSizeFactor, traversal == other.traversal ? 0. : 1.,
         dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1.;
-
     return result;
   }
 
@@ -186,15 +185,15 @@ class FeatureVector : public Configuration {
   std::pair<Eigen::VectorXi, Eigen::VectorXd> clusterEncode(const std::vector<TraversalOption> &traversalOptions,
                                                             const std::vector<DataLayoutOption> &dataLayoutOptions,
                                                             const std::vector<Newton3Option> &newton3Options) const {
-    long traversalIndex =
-        std::distance(traversalOptions.begin(), std::find(traversalOptions.begin(), traversalOptions.end(), traversal));
-    long dataLayoutIndex = std::distance(dataLayoutOptions.begin(),
-                                         std::find(dataLayoutOptions.begin(), dataLayoutOptions.end(), dataLayout));
-    long newton3Index =
-        std::distance(newton3Options.begin(), std::find(newton3Options.begin(), newton3Options.end(), newton3));
+    int traversalIndex = static_cast<int>(std::distance(
+        traversalOptions.begin(), std::find(traversalOptions.begin(), traversalOptions.end(), traversal)));
+    int dataLayoutIndex = static_cast<int>(std::distance(
+        dataLayoutOptions.begin(), std::find(dataLayoutOptions.begin(), dataLayoutOptions.end(), dataLayout)));
+    int newton3Index = static_cast<int>(
+        std::distance(newton3Options.begin(), std::find(newton3Options.begin(), newton3Options.end(), newton3)));
 
-    Eigen::Vector3i vecDiscrete(traversalIndex, dataLayoutIndex, newton3Index);
-    Eigen::VectorXd vecContinuous;
+    Eigen::Vector3i vecDiscrete({traversalIndex, dataLayoutIndex, newton3Index});
+    Eigen::VectorXd vecContinuous(1);
     vecContinuous << cellSizeFactor;
     return std::make_pair(vecDiscrete, vecContinuous);
   }
@@ -212,6 +211,34 @@ class FeatureVector : public Configuration {
                                      const std::vector<Newton3Option> &allowedNewton3Options) {
     return FeatureVector(ContainerOption(), vec.second[0], allowedTraversalOptions[vec.first[0]],
                          allowedDataLayoutOptions[vec.first[1]], allowedNewton3Options[vec.first[2]]);
+  }
+
+  /**
+   * Get cluster-encoded neighbours of given target.
+   * Neighbours are all configurations which differ in at most one configuration from target
+   * @param target
+   * @param dimRestrictions restriction on each dimension
+   * @return all neighbours
+   */
+  static std::vector<Eigen::VectorXi> neighboursManhattan1(Eigen::VectorXi target, std::vector<int> dimRestrictions) {
+    std::vector<Eigen::VectorXi> result;
+    // for each dimension
+    for (int i = 0; i < target.size(); ++i) {
+      // store old value
+      auto init = target[i];
+
+      // for each possible value of that dimension
+      for (int x = 0; x < dimRestrictions[i]; ++x) {
+        if (x != init) {
+          target[i] = x;
+          result.push_back(target);
+        }
+      }
+
+      // restore old value
+      target[i] = init;
+    }
+    return result;
   }
 
   /**
@@ -244,6 +271,27 @@ class FeatureVector : public Configuration {
     std::vector<FeatureVector> result;
     for (size_t i = 0; i < n; ++i) {
       result.emplace_back(ContainerOption(), csf[i], tr[i], dl[i], n3[i]);
+    }
+
+    return result;
+  }
+  /**
+   * Create n latin-hypercube-samples from given featureSpace only considering continuous values.
+   * @param n number of samples
+   * @param rng
+   * @param cellSizeFactors
+   * @return vector of sample featureVectors
+   */
+  static std::vector<Eigen::VectorXd> lhsSampleFeatureContinuous(size_t n, Random &rng,
+                                                                 const NumberSet<double> &cellSizeFactors) {
+    // create n samples from each set
+    auto csf = cellSizeFactors.uniformSample(n, rng);
+
+    std::vector<Eigen::VectorXd> result;
+    for (size_t i = 0; i < n; ++i) {
+      Eigen::VectorXd vec(1);
+      vec << csf[i];
+      result.emplace_back(vec);
     }
 
     return result;

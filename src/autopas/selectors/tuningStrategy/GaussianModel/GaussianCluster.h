@@ -37,7 +37,7 @@ class GaussianCluster {
    * @param sigma fixed noise
    * @param rngRef reference to random number generator
    */
-  GaussianCluster(std::vector<int> dimRestriction, size_t continuousDims, double sigma, Random &rngRef)
+  GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims, double sigma, Random &rngRef)
       : _dimRestriction(dimRestriction), _continuousDims(continuousDims), _clusters(), _numEvidence(0) {
     size_t numClusters = 1;
     for (auto restriction : _dimRestriction) {
@@ -142,26 +142,42 @@ class GaussianCluster {
   /**
    * Find the discrete tuple and the continuous tuple in samples which maximizes given aquisition function.
    * @param af function to maximize
+   * @param neighbourFun function which generates neighbours of given discrete tuple
    * @param samples
    * @return
    */
-  std::pair<VectorDiscrete, VectorContinuous> sampleAquisitionMax(AcquisitionFunctionOption af,
-                                                                  const std::vector<VectorContinuous> &samples) const {
-    VectorDiscrete v = Eigen::VectorXi::Zero(_dimRestriction.size());
+  std::pair<VectorDiscrete, VectorContinuous> sampleAquisitionMax(
+      AcquisitionFunctionOption af, std::vector<VectorDiscrete> neighbourFun(VectorDiscrete),
+      const std::vector<VectorContinuous> &samples) const {
+    double maxValue = std::numeric_limits<double>::min();
+    VectorDiscrete maxVectorDiscrete;
+    VectorContinuous maxVectorContinuous;
 
-    // find the maximum of the first cluster
-    auto maxLocal = _clusters[0].sampleAquisitionMaxValue(af, samples);
-    VectorDiscrete maxVectorDiscrete = v;
-    VectorContinuous maxVectorContinuous = maxLocal.first;
-    double maxValue = maxLocal.second;
+    for (auto currentContinuous : samples) {
+      // calc acquistion of given continuous tuple for each cluster
+      std::vector<double> acquisitions;
+      acquisitions.reserve(_clusters.size());
+      for (size_t i = 0; i < _clusters.size(); ++i) {
+        acquisitions.push_back(_clusters[i].calcAcquisition(af, currentContinuous));
+      }
 
-    // search for other clusters for a greater maximum
-    for (size_t i = 1; i < _clusters.size(); ++i, discreteIncrement(v)) {
-      maxLocal = _clusters[i].sampleAquisitionMaxValue(af, samples);
-      if (maxLocal.second > maxValue) {
-        maxVectorDiscrete = v;
-        maxVectorContinuous = maxLocal.first;
-        maxValue = maxLocal.second;
+      // get maximum acquisition considering neighbours
+      VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
+      for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
+        auto neighbours = neighbourFun(currentDiscrete);
+        // give target more weight than neighbours
+        double currentValue = acquisitions[i] * neighbours.size();
+        // sum over neighbours
+        for (auto n : neighbours) {
+          currentValue += acquisitions[getIndex(n)];
+        }
+
+        // if better value found store
+        if (currentValue > maxValue) {
+          maxVectorDiscrete = currentDiscrete;
+          maxVectorContinuous = currentContinuous;
+          maxValue = currentValue;
+        }
       }
     }
 
@@ -171,26 +187,42 @@ class GaussianCluster {
   /**
    * Find the discrete tuple and the continuous tuple in samples which minimizes given aquisition function.
    * @param af function to minimize
+   * @param neighbourFun function which generates neighbours of given discrete tuple
    * @param samples
    * @return
    */
-  std::pair<VectorDiscrete, VectorContinuous> sampleAquisitionMin(AcquisitionFunctionOption af,
-                                                                  const std::vector<VectorContinuous> &samples) const {
-    VectorDiscrete v = Eigen::VectorXi::Zero(_dimRestriction.size());
+  std::pair<VectorDiscrete, VectorContinuous> sampleAquisitionMin(
+      AcquisitionFunctionOption af, std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> neighbourFun,
+      const std::vector<VectorContinuous> &samples) const {
+    double minValue = std::numeric_limits<double>::max();
+    VectorDiscrete minVectorDiscrete;
+    VectorContinuous minVectorContinuous;
 
-    // find the minimum of the first cluster
-    auto minLocal = _clusters[0].sampleAquisitionMinValue(af, samples);
-    VectorDiscrete minVectorDiscrete = v;
-    VectorContinuous minVectorContinuous = minLocal.first;
-    double minValue = minLocal.second;
+    for (auto currentContinuous : samples) {
+      // calc acquistion of given continuous tuple for each cluster
+      std::vector<double> acquisitions;
+      acquisitions.reserve(_clusters.size());
+      for (size_t i = 0; i < _clusters.size(); ++i) {
+        acquisitions.push_back(_clusters[i].calcAcquisition(af, currentContinuous));
+      }
 
-    // search for other clusters for a lesser minimum
-    for (size_t i = 1; i < _clusters.size(); ++i, discreteIncrement(v)) {
-      minLocal = _clusters[i].sampleAquisitionMinValue(af, samples);
-      if (minLocal.second < minValue) {
-        minVectorDiscrete = v;
-        minVectorContinuous = minLocal.first;
-        minValue = minLocal.second;
+      // get maximum acquisition considering neighbours
+      VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
+      for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
+        auto neighbours = neighbourFun(currentDiscrete);
+        // give target more weight than neighbours
+        double currentValue = acquisitions[i] * neighbours.size();
+        // sum over neighbours
+        for (auto n : neighbours) {
+          currentValue += acquisitions[getIndex(n)];
+        }
+
+        // if better value found store
+        if (currentValue < minValue) {
+          minVectorDiscrete = currentDiscrete;
+          minVectorContinuous = currentContinuous;
+          minValue = currentValue;
+        }
       }
     }
 
