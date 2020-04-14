@@ -192,7 +192,7 @@ void PredictiveTuning::selectPossibleConfigurations() {
 
     for(auto &configuration : _searchSpace){
         auto vector = _traversalTimesStorage[configuration];
-        if( (_timer - vector[vector.size()].first) >= 5 || ((float) _traversalPredictions[configuration] / optimum->second <= 1.2) ){
+        if( (_timer - vector[vector.size()-1].first) >= 5 || ((float) _traversalPredictions[configuration] / optimum->second <= 1.2) ){
             _optimalSearchSpace.emplace(configuration);
         }
     }

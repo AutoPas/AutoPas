@@ -219,3 +219,114 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
               predictiveTuning.getCurrentConfiguration());
 }
 
+TEST_F(PredictiveTuningTest, testTuningSevenIterations) {
+    autopas::PredictiveTuning predictiveTuning(
+            {autopas::ContainerOption::linkedCells}, {1.},
+            {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
+            {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
+
+    predictiveTuning.reset();
+
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+    predictiveTuning.addEvidence(20);
+
+    predictiveTuning.tune();
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+    predictiveTuning.addEvidence(10);
+
+    predictiveTuning.tune();
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+
+    predictiveTuning.reset();
+
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+    predictiveTuning.addEvidence(20);
+
+    predictiveTuning.tune();
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+    predictiveTuning.addEvidence(10);
+
+    predictiveTuning.tune();
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+
+    predictiveTuning.reset();
+
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+    predictiveTuning.addEvidence(10);
+
+    predictiveTuning.tune();
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+
+    predictiveTuning.reset();
+
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+    predictiveTuning.addEvidence(10);
+
+    predictiveTuning.tune();
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+
+    predictiveTuning.reset();
+
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+    predictiveTuning.addEvidence(10);
+
+    predictiveTuning.tune();
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+
+    predictiveTuning.reset();
+
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+    predictiveTuning.addEvidence(10);
+
+    predictiveTuning.tune();
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+
+    predictiveTuning.reset();
+
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+    predictiveTuning.addEvidence(20);
+
+    predictiveTuning.tune();
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+    predictiveTuning.addEvidence(10);
+
+    predictiveTuning.tune();
+    EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+                                     autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+              predictiveTuning.getCurrentConfiguration());
+
+
+}
+
