@@ -147,18 +147,25 @@ class GaussianCluster {
    * @return
    */
   std::pair<VectorDiscrete, VectorContinuous> sampleAquisitionMax(
-      AcquisitionFunctionOption af, std::vector<VectorDiscrete> neighbourFun(VectorDiscrete),
+      AcquisitionFunctionOption af, std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> neighbourFun,
       const std::vector<VectorContinuous> &samples) const {
     double maxValue = std::numeric_limits<double>::min();
     VectorDiscrete maxVectorDiscrete;
     VectorContinuous maxVectorContinuous;
 
     for (auto currentContinuous : samples) {
-      // calc acquistion of given continuous tuple for each cluster
-      std::vector<double> acquisitions;
-      acquisitions.reserve(_clusters.size());
+      // calc means of given continuous tuple for each cluster
+      std::vector<double> means;
+      means.reserve(_clusters.size());
       for (size_t i = 0; i < _clusters.size(); ++i) {
-        acquisitions.push_back(_clusters[i].calcAcquisition(af, currentContinuous));
+        means.push_back(_clusters[i].predictMean(currentContinuous));
+      }
+
+      // calc variances of given continuous tuple for each cluster
+      std::vector<double> vars;
+      vars.reserve(_clusters.size());
+      for (size_t i = 0; i < _clusters.size(); ++i) {
+        vars.push_back(_clusters[i].predictVar(currentContinuous));
       }
 
       // get maximum acquisition considering neighbours
@@ -166,10 +173,26 @@ class GaussianCluster {
       for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
         auto neighbours = neighbourFun(currentDiscrete);
         // give target more weight than neighbours
-        double currentValue = acquisitions[i] * neighbours.size();
+        double mixMean = means[i] * neighbours.size();
+        double mixVar = vars[i] * neighbours.size();
         // sum over neighbours
         for (auto n : neighbours) {
-          currentValue += acquisitions[getIndex(n)];
+          mixMean += means[getIndex(n)];
+          mixVar = vars[getIndex(n)];
+        }
+
+        // normalize
+        mixMean /= 2 * neighbours.size();
+        mixVar /= 2 * neighbours.size();
+
+        // calc acquisition
+        double currentValue;
+        switch (af) {
+          case AcquisitionFunctionOption::probabilityOfDecrease:
+          case AcquisitionFunctionOption::expectedDecrease:
+            currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMinValue);
+          default:
+            currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar);
         }
 
         // if better value found store
@@ -199,11 +222,18 @@ class GaussianCluster {
     VectorContinuous minVectorContinuous;
 
     for (auto currentContinuous : samples) {
-      // calc acquistion of given continuous tuple for each cluster
-      std::vector<double> acquisitions;
-      acquisitions.reserve(_clusters.size());
+      // calc means of given continuous tuple for each cluster
+      std::vector<double> means;
+      means.reserve(_clusters.size());
       for (size_t i = 0; i < _clusters.size(); ++i) {
-        acquisitions.push_back(_clusters[i].calcAcquisition(af, currentContinuous));
+        means.push_back(_clusters[i].predictMean(currentContinuous));
+      }
+
+      // calc variances of given continuous tuple for each cluster
+      std::vector<double> vars;
+      vars.reserve(_clusters.size());
+      for (size_t i = 0; i < _clusters.size(); ++i) {
+        vars.push_back(_clusters[i].predictVar(currentContinuous));
       }
 
       // get maximum acquisition considering neighbours
@@ -211,10 +241,26 @@ class GaussianCluster {
       for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
         auto neighbours = neighbourFun(currentDiscrete);
         // give target more weight than neighbours
-        double currentValue = acquisitions[i] * neighbours.size();
+        double mixMean = means[i] * neighbours.size();
+        double mixVar = vars[i] * neighbours.size();
         // sum over neighbours
         for (auto n : neighbours) {
-          currentValue += acquisitions[getIndex(n)];
+          mixMean += means[getIndex(n)];
+          mixVar = vars[getIndex(n)];
+        }
+
+        // normalize
+        mixMean /= 2 * neighbours.size();
+        mixVar /= 2 * neighbours.size();
+
+        // calc acquisition
+        double currentValue;
+        switch (af) {
+          case AcquisitionFunctionOption::probabilityOfDecrease:
+          case AcquisitionFunctionOption::expectedDecrease:
+            currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMinValue);
+          default:
+            currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar);
         }
 
         // if better value found store
