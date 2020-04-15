@@ -149,62 +149,7 @@ class GaussianCluster {
   std::pair<VectorDiscrete, VectorContinuous> sampleAquisitionMax(
       AcquisitionFunctionOption af, std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> neighbourFun,
       const std::vector<VectorContinuous> &samples) const {
-    double maxValue = std::numeric_limits<double>::min();
-    VectorDiscrete maxVectorDiscrete;
-    VectorContinuous maxVectorContinuous;
-
-    for (auto currentContinuous : samples) {
-      // calc means of given continuous tuple for each cluster
-      std::vector<double> means;
-      means.reserve(_clusters.size());
-      for (size_t i = 0; i < _clusters.size(); ++i) {
-        means.push_back(_clusters[i].predictMean(currentContinuous));
-      }
-
-      // calc variances of given continuous tuple for each cluster
-      std::vector<double> vars;
-      vars.reserve(_clusters.size());
-      for (size_t i = 0; i < _clusters.size(); ++i) {
-        vars.push_back(_clusters[i].predictVar(currentContinuous));
-      }
-
-      // get maximum acquisition considering neighbours
-      VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
-      for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
-        auto neighbours = neighbourFun(currentDiscrete);
-        // give target more weight than neighbours
-        double mixMean = means[i] * neighbours.size();
-        double mixVar = vars[i] * neighbours.size();
-        // sum over neighbours
-        for (auto n : neighbours) {
-          mixMean += means[getIndex(n)];
-          mixVar = vars[getIndex(n)];
-        }
-
-        // normalize
-        mixMean /= 2 * neighbours.size();
-        mixVar /= 2 * neighbours.size();
-
-        // calc acquisition
-        double currentValue;
-        switch (af) {
-          case AcquisitionFunctionOption::probabilityOfDecrease:
-          case AcquisitionFunctionOption::expectedDecrease:
-            currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMinValue);
-          default:
-            currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar);
-        }
-
-        // if better value found store
-        if (currentValue > maxValue) {
-          maxVectorDiscrete = currentDiscrete;
-          maxVectorContinuous = currentContinuous;
-          maxValue = currentValue;
-        }
-      }
-    }
-
-    return std::make_pair(maxVectorDiscrete, maxVectorContinuous);
+    return sampleAcquisitionBest<true>(af, neighbourFun, samples);
   }
 
   /**
@@ -217,62 +162,7 @@ class GaussianCluster {
   std::pair<VectorDiscrete, VectorContinuous> sampleAquisitionMin(
       AcquisitionFunctionOption af, std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> neighbourFun,
       const std::vector<VectorContinuous> &samples) const {
-    double minValue = std::numeric_limits<double>::max();
-    VectorDiscrete minVectorDiscrete;
-    VectorContinuous minVectorContinuous;
-
-    for (auto currentContinuous : samples) {
-      // calc means of given continuous tuple for each cluster
-      std::vector<double> means;
-      means.reserve(_clusters.size());
-      for (size_t i = 0; i < _clusters.size(); ++i) {
-        means.push_back(_clusters[i].predictMean(currentContinuous));
-      }
-
-      // calc variances of given continuous tuple for each cluster
-      std::vector<double> vars;
-      vars.reserve(_clusters.size());
-      for (size_t i = 0; i < _clusters.size(); ++i) {
-        vars.push_back(_clusters[i].predictVar(currentContinuous));
-      }
-
-      // get maximum acquisition considering neighbours
-      VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
-      for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
-        auto neighbours = neighbourFun(currentDiscrete);
-        // give target more weight than neighbours
-        double mixMean = means[i] * neighbours.size();
-        double mixVar = vars[i] * neighbours.size();
-        // sum over neighbours
-        for (auto n : neighbours) {
-          mixMean += means[getIndex(n)];
-          mixVar = vars[getIndex(n)];
-        }
-
-        // normalize
-        mixMean /= 2 * neighbours.size();
-        mixVar /= 2 * neighbours.size();
-
-        // calc acquisition
-        double currentValue;
-        switch (af) {
-          case AcquisitionFunctionOption::probabilityOfDecrease:
-          case AcquisitionFunctionOption::expectedDecrease:
-            currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMinValue);
-          default:
-            currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar);
-        }
-
-        // if better value found store
-        if (currentValue < minValue) {
-          minVectorDiscrete = currentDiscrete;
-          minVectorContinuous = currentContinuous;
-          minValue = currentValue;
-        }
-      }
-    }
-
-    return std::make_pair(minVectorDiscrete, minVectorContinuous);
+    return sampleAcquisitionBest<false>(af, neighbourFun, samples);
   }
 
  private:
@@ -321,6 +211,77 @@ class GaussianCluster {
         x[i] = 0;
       }
     }
+  }
+
+  /**
+   * Find the discrete tuple and the continuous tuple in samples which minimizes/maximizes given aquisition function.
+   * @param af function to optimize
+   * @param neighbourFun function which generates neighbours of given discrete tuple
+   * @param samples
+   * @tparam max find maximum if true, minimum otherwise
+   * @return
+   */
+  template <bool max>
+  inline std::pair<VectorDiscrete, VectorContinuous> sampleAcquisitionBest(
+      AcquisitionFunctionOption af, std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> neighbourFun,
+      const std::vector<VectorContinuous> &samples) const {
+    double bestValue = max ? std::numeric_limits<double>::min() : std::numeric_limits<double>::max();
+    VectorDiscrete bestVectorDiscrete;
+    VectorContinuous bestVectorContinuous;
+
+    for (auto currentContinuous : samples) {
+      // calc means of given continuous tuple for each cluster
+      std::vector<double> means;
+      means.reserve(_clusters.size());
+      for (size_t i = 0; i < _clusters.size(); ++i) {
+        means.push_back(_clusters[i].predictMean(currentContinuous));
+      }
+
+      // calc variances of given continuous tuple for each cluster
+      std::vector<double> vars;
+      vars.reserve(_clusters.size());
+      for (size_t i = 0; i < _clusters.size(); ++i) {
+        vars.push_back(_clusters[i].predictVar(currentContinuous));
+      }
+
+      // get maximum acquisition considering neighbours
+      VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
+      for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
+        auto neighbours = neighbourFun(currentDiscrete);
+        // give target more weight than neighbours
+        double mixMean = means[i] * neighbours.size();
+        double mixVar = vars[i] * neighbours.size();
+        // sum over neighbours
+        for (auto n : neighbours) {
+          size_t n_index = getIndex(n);
+          mixMean += means[n_index];
+          mixVar = vars[n_index];
+        }
+
+        // normalize
+        mixMean /= 2 * neighbours.size();
+        mixVar /= 2 * neighbours.size();
+
+        // calc acquisition
+        double currentValue;
+        switch (af) {
+          case AcquisitionFunctionOption::probabilityOfDecrease:
+          case AcquisitionFunctionOption::expectedDecrease:
+            currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMinValue);
+          default:
+            currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar);
+        }
+
+        // if better value found store
+        if (max ? (currentValue > bestValue) : (currentValue < bestValue)) {
+          bestVectorDiscrete = currentDiscrete;
+          bestVectorContinuous = currentContinuous;
+          bestValue = currentValue;
+        }
+      }
+    }
+
+    return std::make_pair(bestVectorDiscrete, bestVectorContinuous);
   }
 
   /**

@@ -242,31 +242,7 @@ class GaussianProcess {
    * @return
    */
   Vector sampleAquisitionMax(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
-    return sampleAquisitionMaxValue(af, samples).first;
-  }
-
-  /**
-   * Find the input in samples which maximizes given aquisition function.
-   * @param af function to maximize
-   * @param samples
-   * @return optimal input and resulting acquisition
-   */
-  std::pair<Vector, double> sampleAquisitionMaxValue(AcquisitionFunctionOption af,
-                                                     const std::vector<Vector> &samples) const {
-    size_t maxIdx = 0;
-    double maxVal = calcAcquisition(af, samples[0]);
-
-    // find maximum from samples
-    for (unsigned i = 1; i < samples.size(); ++i) {
-      double val = calcAcquisition(af, samples[i]);
-
-      if (val > maxVal) {
-        maxIdx = i;
-        maxVal = val;
-      }
-    }
-
-    return std::make_pair(samples[maxIdx], maxVal);
+    return sampleAquisitionBest<true>(af, samples);
   }
 
   /**
@@ -277,34 +253,35 @@ class GaussianProcess {
    * @return
    */
   Vector sampleAquisitionMin(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
-    return sampleAquisitionMinValue(af, samples).first;
-  }
-
-  /**
-   * Find the input in samples which minimizes given aquisition function.
-   * @param af function to minimize
-   * @param samples
-   * @return optimal input and corresponding acquisition
-   */
-  std::pair<Vector, double> sampleAquisitionMinValue(AcquisitionFunctionOption af,
-                                                     const std::vector<Vector> &samples) const {
-    size_t minIdx = 0;
-    double minVal = calcAcquisition(af, samples[0]);
-
-    // find minimum from samples
-    for (unsigned i = 1; i < samples.size(); ++i) {
-      double val = calcAcquisition(af, samples[i]);
-
-      if (val < minVal) {
-        minIdx = i;
-        minVal = val;
-      }
-    }
-
-    return std::make_pair(samples[minIdx], minVal);
+    return sampleAquisitionBest<false>(af, samples);
   }
 
  private:
+  /**
+   * Find the input in samples which minimizes/maximizes given aquisition function.
+   * @param af function to optimize
+   * @param samples
+   * @tparam max maximize if true, minimize otherwise
+   * @return optimal input
+   */
+  template <bool max>
+  Vector sampleAquisitionBest(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
+    size_t bestIdx = 0;
+    double bestVal = calcAcquisition(af, samples[0]);
+
+    // find optimmum from samples
+    for (unsigned i = 1; i < samples.size(); ++i) {
+      double val = calcAcquisition(af, samples[i]);
+
+      if (max ? (val > bestVal) : (val < bestVal)) {
+        bestIdx = i;
+        bestVal = val;
+      }
+    }
+
+    return samples[bestIdx];
+  }
+
   /**
    * Update the hyperparameters: theta, dimScale.
    * To do so, hyperparameter-samples are randomly generated.
