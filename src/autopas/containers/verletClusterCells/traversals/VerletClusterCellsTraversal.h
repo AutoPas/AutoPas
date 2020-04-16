@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "VerletClusterTraversalInterface.h"
+#include "VerletClusterCellsTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
@@ -31,7 +31,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
-                                    public VerletClusterTraversalInterface<ParticleCell> {
+                                    public VerletClusterCellsTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
