@@ -64,6 +64,9 @@ public:
         _traversalTimes.clear();
         _traversalPredictions.clear();
         _optimalSearchSpace.clear();
+        //Too expensive?
+        _validSearchSpace = _searchSpace;
+        _validConfiguration = false;
         selectPredictedConfigurations();
 
         // sanity check
@@ -85,10 +88,6 @@ public:
     inline bool searchSpaceIsTrivial() const override { return _searchSpace.size() == 1; }
 
     inline bool searchSpaceIsEmpty() const override { return _searchSpace.empty(); }
-
-    //Functions are there for unit testing right now - should be deleted afterwards.
-    inline std::set<Configuration> getOptimalSearchSpace() { return _optimalSearchSpace; }
-    inline std::unordered_map<Configuration, size_t, ConfigHash>  getTraversalPredictions () { return _traversalPredictions; }
 
     private:
     /**
@@ -121,6 +120,11 @@ public:
      */
     inline void linePrediction();
 
+    /**
+     * Creates a new optimalSearchSpace if every configuration in the previous one was invalid.
+     */
+    inline void invalidOptimalSearchSpace();
+
     std::set<ContainerOption> _containerOptions;
     std::set<Configuration> _searchSpace;
     std::set<Configuration>::iterator _currentConfig;
@@ -142,10 +146,20 @@ public:
     std::set<Configuration> _optimalSearchSpace;
 
     /**
+     * Contains the configurations that are not invalid the whole optimalSearchSpace was invalid
+     */
+    std::set<Configuration> _validSearchSpace;
+
+    /**
      * Gets incremented after every completed tuning phase.
      * Mainly used for the traversal time storage.
      */
     int _timer = 0;
+
+    /**
+     * Checks if a valid configuration was in the optimal SearchSpace.
+     */
+    bool _validConfiguration = false;
 };
 
 void PredictiveTuning::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
@@ -201,6 +215,7 @@ void PredictiveTuning::selectPredictedConfigurations() {
 
     _optimalSearchSpace.emplace(optimum->first);
 
+    // selects configurations that are near the optimal prediction or have not been tested in the last five iterations
     for(auto &configuration : _searchSpace){
         auto vector = _traversalTimesStorage[configuration];
         if( (_timer - vector[vector.size()-1].first) >= 5 || ((float) _traversalPredictions[configuration] / optimum->second <= 1.2) ){
@@ -229,16 +244,68 @@ void PredictiveTuning::linePrediction() {
     }
 }
 
-bool PredictiveTuning::tune(bool) {
+void PredictiveTuning::invalidOptimalSearchSpace() {
+    for(auto &configuration : _optimalSearchSpace) {
+        _traversalPredictions.erase(configuration);
+        _validSearchSpace.erase(configuration);
+    }
+
+    _optimalSearchSpace.clear();
+
+    // checks if there are any configurations left that can be tested
+    if(_traversalPredictions.empty()){
+        autopas::utils::ExceptionHandler::exception("Predictive Tuning: No valid configuration could be found");
+    }
+
+    auto optimum = std::min_element(_traversalPredictions.begin(), _traversalPredictions.end(),
+                                    [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
+                                        return a.second < b.second;
+                                    });
+
+    if(_validSearchSpace.count(optimum->first) == 0){
+        autopas::utils::ExceptionHandler::exception("Predictive Tuning: No valid optimal configuration could be found");
+    }
+
+    _optimalSearchSpace.emplace(optimum->first);
+
+    // selects configurations that are near the optimal prediction
+    for(auto &configuration : _validSearchSpace){
+        if((float) _traversalPredictions[configuration] / optimum->second <= 1.2){
+            _optimalSearchSpace.emplace(configuration);
+        }
+    }
+
+    // sanity check
+    if(_optimalSearchSpace.empty()){
+        autopas::utils::ExceptionHandler::exception(
+                "PredicitveTuning: No possible configuration prediction found!");
+    }
+
+    _currentConfig = _searchSpace.begin();
+    while(_optimalSearchSpace.count(*_currentConfig) == 0 && _currentConfig != _searchSpace.end()) {
+        ++_currentConfig;
+    }
+}
+
+bool PredictiveTuning::tune(bool valid) {
+    if(!valid){
+        _validConfiguration = true;
+    }
+
     // repeat as long as traversals are not applicable or we run out of configs
     do {
         ++_currentConfig;
     } while(_optimalSearchSpace.count(*_currentConfig) == 0 && _currentConfig != _searchSpace.end());
 
+
     if (_currentConfig == _searchSpace.end()) {
-        selectOptimalConfiguration();
-        _timer++;
-        return false;
+        if(_validConfiguration){
+            selectOptimalConfiguration();
+            _timer++;
+            return false;
+        } else {
+            invalidOptimalSearchSpace();
+        }
     }
 
     return true;
