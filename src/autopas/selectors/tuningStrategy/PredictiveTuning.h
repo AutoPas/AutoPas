@@ -17,7 +17,7 @@
 namespace autopas {
 
 /**
- * Exhaustive full search of the search space by testing every applicable configuration and then selecting the optimum.
+ * Searching the search space by prediciting the time of the configuration and only testing the optimal configurations and then selecting the optimum.
  */
 class PredictiveTuning : public TuningStrategyInterface {
 public:
@@ -64,7 +64,7 @@ public:
         _traversalTimes.clear();
         _traversalPredictions.clear();
         _optimalSearchSpace.clear();
-        selectPossibleConfigurations();
+        selectPredictedConfigurations();
 
         // sanity check
         if(_optimalSearchSpace.empty()){
@@ -106,19 +106,45 @@ public:
 
     inline void selectOptimalConfiguration();
 
-    inline void selectPossibleConfigurations();
+    /**
+     * Selects the configuration that are going to be tested.
+     */
+    inline void selectPredictedConfigurations();
 
+    /**
+     * Provides different extrapolation methods for the prediction of the traversal time.
+     */
     inline void predictConfigurations();
 
+    /**
+     * Predicts the traversal time by placing a line trough the last two traversal points and calculating the prediction for the current time.
+     */
     inline void linePrediction();
 
     std::set<ContainerOption> _containerOptions;
     std::set<Configuration> _searchSpace;
     std::set<Configuration>::iterator _currentConfig;
     std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
+
+    /**
+     * Stores the traversal times for each configuration.
+     */
     std::unordered_map<Configuration, std::vector<std::pair<int, size_t>>, ConfigHash> _traversalTimesStorage;
+
+    /**
+     * Contains the predicted time for each configuration.
+     */
     std::unordered_map<Configuration, size_t, ConfigHash> _traversalPredictions;
+
+    /**
+     * Contains the configuration that are going to be tested.
+     */
     std::set<Configuration> _optimalSearchSpace;
+
+    /**
+     * Gets incremented after every completed tuning phase.
+     * Mainly used for the traversal time storage.
+     */
     int _timer = 0;
 };
 
@@ -160,22 +186,7 @@ void PredictiveTuning::populateSearchSpace(const std::set<ContainerOption> &allo
     _currentConfig = _searchSpace.begin();
 }
 
-bool PredictiveTuning::tune(bool) {
-    // repeat as long as traversals are not applicable or we run out of configs
-    do {
-        ++_currentConfig;
-    } while(_optimalSearchSpace.count(*_currentConfig) == 0 && _currentConfig != _searchSpace.end());
-
-    if (_currentConfig == _searchSpace.end()) {
-        selectOptimalConfiguration();
-        _timer++;
-        return false;
-    }
-
-    return true;
-}
-
-void PredictiveTuning::selectPossibleConfigurations() {
+void PredictiveTuning::selectPredictedConfigurations() {
     if(_searchSpace.size() == 1 || _timer == 0 || _timer == 1){
         _optimalSearchSpace = _searchSpace;
         return;
@@ -186,9 +197,9 @@ void PredictiveTuning::selectPossibleConfigurations() {
     auto optimum = std::min_element(_traversalPredictions.begin(), _traversalPredictions.end(),
                                     [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
                                      return a.second < b.second;
-                                    });
+                                     });
 
-    //_optimalSearchSpace.emplace(optimum->first);
+    _optimalSearchSpace.emplace(optimum->first);
 
     for(auto &configuration : _searchSpace){
         auto vector = _traversalTimesStorage[configuration];
@@ -208,14 +219,29 @@ void PredictiveTuning::predictConfigurations() {
 }
 
 void PredictiveTuning::linePrediction() {
-    for(auto &configuration : _searchSpace) {
+    for (auto &configuration : _searchSpace) {
         auto vector = _traversalTimesStorage[configuration];
-        auto tmp1 = vector[vector.size()-1];
-        auto tmp2 = vector[vector.size()-2];
+        auto tmp1 = vector[vector.size() - 1];
+        auto tmp2 = vector[vector.size() - 2];
 
         auto prediction = tmp1.second + (tmp1.second - tmp2.second) / (tmp1.first - tmp2.first) * (_timer - tmp1.first);
         _traversalPredictions[configuration] = prediction;
     }
+}
+
+bool PredictiveTuning::tune(bool) {
+    // repeat as long as traversals are not applicable or we run out of configs
+    do {
+        ++_currentConfig;
+    } while(_optimalSearchSpace.count(*_currentConfig) == 0 && _currentConfig != _searchSpace.end());
+
+    if (_currentConfig == _searchSpace.end()) {
+        selectOptimalConfiguration();
+        _timer++;
+        return false;
+    }
+
+    return true;
 }
 
 void PredictiveTuning::selectOptimalConfiguration() {
