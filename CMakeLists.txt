@@ -81,6 +81,7 @@ include(format)
 include(CodeCoverageAutopas)
 include(doxygen)
 include(OpenMP)
+include(mpi)
 
 include(version.cmake)
 
