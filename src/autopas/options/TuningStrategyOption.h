@@ -30,6 +30,10 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      */
     fullSearch,
     /**
+     * Test all allowed configurations using MPI parallelization.
+     */
+    fullSearchMPI,
+    /**
      * Predict the configuration which will yield the most
      * information if tested next.
      */
@@ -65,6 +69,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
     return {
         {TuningStrategyOption::bayesianSearch, "bayesian-Search"},
         {TuningStrategyOption::fullSearch, "full-Search"},
+        {TuningStrategyOption::fullSearchMPI, "full-Search-MPI"},
         {TuningStrategyOption::randomSearch, "random-Search"},
         {TuningStrategyOption::activeHarmony, "active-harmony"},
     };

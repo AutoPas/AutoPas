@@ -9,6 +9,7 @@
 #include "ActiveHarmony.h"
 #include "BayesianSearch.h"
 #include "FullSearch.h"
+#include "FullSearchMPI.h"
 #include "RandomSearch.h"
 
 std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory::generateTuningStrategy(
@@ -32,6 +33,17 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
 
       return std::make_unique<FullSearch>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
                                           allowedDataLayouts, allowedNewton3Options);
+    }
+
+    case TuningStrategyOption::fullSearchMPI: {
+      if (not allowedCellSizeFactors.isFinite()) {
+        autopas::utils::ExceptionHandler::exception(
+            "AutoPass::generateTuningStrategy: fullSearchMPI cannot handle infinite cellSizeFactors!");
+        return nullptr;
+      }
+
+      return std::make_unique<FullSearchMPI>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
+                                             allowedDataLayouts, allowedNewton3Options);
     }
 
     case TuningStrategyOption::bayesianSearch: {
