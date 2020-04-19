@@ -22,6 +22,7 @@ target_link_libraries(
                                   # openmp when using archer
         $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${ARCHER}>>>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
+        $<$<BOOL:${AUTOPAS_MPI}>:MPI::MPI_CXX>
     PRIVATE
         # harmony and Eigen3 are only needed privately when building AutoPas.
         harmony Eigen3
