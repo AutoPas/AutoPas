@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/verletClusterLists/Cluster.h"
 
 namespace autopas::internal {
@@ -101,6 +102,20 @@ class ClusterTower : public ParticleCell<Particle> {
       lastCluster[clusterSize - index] = lastCluster[0];  // use first Particle in last cluster as dummy particle!
       lastCluster[clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
       lastCluster[clusterSize - index].setID(std::numeric_limits<size_t>::max());
+    }
+  }
+
+  /**
+   * More or less inverse operation of fillUpWithDummyParticles().
+   * It sets the positions of the dummy particles to the position of the last actual particle in the tower.
+   */
+  void setDummyParticlesToLastActualParticle() {
+    if (_numDummyParticles > 0) {
+      auto &lastCluster = getCluster(getNumClusters() - 1);
+      auto lastActualParticle = lastCluster[clusterSize - _numDummyParticles - 1];
+      for (size_t index = 1; index <= _numDummyParticles; index++) {
+        lastCluster[clusterSize - index] = lastActualParticle;
+      }
     }
   }
 
@@ -223,18 +238,40 @@ class ClusterTower : public ParticleCell<Particle> {
   [[nodiscard]] bool isNotEmpty() const override { return getNumActualParticles() > 0; }
 
   void deleteByIndex(size_t index) override {
-    // @TODO support deletion of particles somehow
-    autopas::utils::ExceptionHandler::exception("Not supported!");
+    /// @note The implementation of this function prevents a regionIterator to make sorted assumptions of particles
+    /// inside a cell! supporting this would mean that the deleted particle should be swapped to the end of the valid
+    /// particles. See also https://github.com/AutoPas/AutoPas/issues/435
+
+    // swap particle that should be deleted to end of actual particles.
+    std::swap(_particles._particles[index], _particles._particles[getNumActualParticles() - 1]);
+    if (getNumDummyParticles() != 0) {
+      // swap particle that should be deleted (now at end of actual particles) with last dummy particle.
+      std::swap(_particles._particles[getNumActualParticles() - 1],
+                _particles._particles[_particles._particles.size() - 1]);
+    }
+    _particles._particles.pop_back();
+
+    if (_particleDeletionObserver) {
+      _particleDeletionObserver->notifyParticleDeleted();
+    }
   }
 
   void setCellLength(std::array<double, 3> &) override {
-    autopas::utils::ExceptionHandler::exception("Not supported!");
+    autopas::utils::ExceptionHandler::exception("ClusterTower::setCellLength(): Not supported!");
   }
 
   [[nodiscard]] std::array<double, 3> getCellLength() const override {
-    autopas::utils::ExceptionHandler::exception("Not supported!");
+    autopas::utils::ExceptionHandler::exception("ClusterTower::getCellLength(): Not supported!");
     return {0, 0, 0};
   }
+
+  /**
+   * Set the ParticleDeletionObserver, which is called, when a particle is deleted.
+   * @param observer
+   */
+  void setParticleDeletionObserser(internal::ParticleDeletedObserver *observer) {
+    _particleDeletionObserver = observer;
+  };
 
  private:
   /**
@@ -249,6 +286,8 @@ class ClusterTower : public ParticleCell<Particle> {
    * The number of dummy particles in this tower.
    */
   size_t _numDummyParticles{};
+
+  internal::ParticleDeletedObserver *_particleDeletionObserver{nullptr};
 };
 
 }  // namespace autopas::internal

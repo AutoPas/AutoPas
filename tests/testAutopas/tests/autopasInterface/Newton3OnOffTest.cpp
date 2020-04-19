@@ -148,17 +148,17 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
   switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // single cell
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, useNewton3))
+      EXPECT_CALL(mockFunctor, SoAFunctorSingle(_, useNewton3, _))
           .Times(testing::AtLeast(1))
           .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsSC++; }));
 
       // pair of cells
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, useNewton3))
+      EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, useNewton3, _))
           .Times(testing::AtLeast(1))
           .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsPair++; }));
 
       // non useNewton3 variant should not happen
-      EXPECT_CALL(mockFunctor, SoAFunctor(_, _, not useNewton3)).Times(0);
+      EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, not useNewton3, _)).Times(0);
       iterate(
           container,
           autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,

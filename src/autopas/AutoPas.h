@@ -260,7 +260,7 @@ class AutoPas {
    */
   const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
-    return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
+    return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
   /**
