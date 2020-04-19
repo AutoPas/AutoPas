@@ -6,6 +6,8 @@
 
 #pragma once
 
+using namespace std;
+
 namespace autopas{
 
 
@@ -82,6 +84,9 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseP
   std::array<long, 3> index;
   const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension);
 
+  cout << "end: " << _end[0] << ", " << _end[1] << ", " << _end[2] << endl;
+  cout << "baseIndex: " << base3DIndex[0] << ", " << base3DIndex[1] << ", " << base3DIndex[2] << endl;
+
   for(long z = 0; z < 3; ++z){ //go through the six cells
     for(long x = 0; x < 2; ++x){
       index[0] = base3DIndex[0] + x;
@@ -90,13 +95,18 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseP
 
       bool isIn = true;
       for (int d = 0; d < 3; ++d){
-        isIn &= (index[d] >= 0l) and (index[d] < _end[d]);
+        isIn &= (index[d] >= 0l) and (index[d] < _end[d]); //TODO: why does it not check correctly?
       }
 
-      if(isIn){ //skip cellsoutside radius
+      if(isIn){ //skip cells outside radius
+        cout << "isIn: " << index[0] << ", " << index[1] << ", " << index[2] << endl;
         const unsigned long ulIndex = threeToOneD(index, signedDims);
+        cout << "ulIndex: " << ulIndex << endl;
         _cellHandler.processBaseCell(cells, ulIndex);
+      } else {
+        cout << "isNotIn: " << index[0] << ", " << index[1] << ", " << index[2] << endl;
       }
+
     }
   }
 }
@@ -124,8 +134,6 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSingleColor(
         std::vector<ParticleCell> &cells, int color) {
 
-  printf("insideSingleColor");
-
   // determine a starting point of one of the grids
   std::array<long, 3> startOfThisColor{};
 
@@ -135,15 +143,17 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
       startOfThisColor = {0l, 0l, 0l};
       break;
     case 1:
-      startOfThisColor = {0l, 0l, -3l};
+      startOfThisColor = {-4l, 0l, 1l};
       break;
     case 2:
-      startOfThisColor = {0l, 0l, -6l};
+      startOfThisColor = {-4l, 0l, -2l};
       break;
     case 3:
-      startOfThisColor = {0l, 0l, -9l};
+      startOfThisColor = {-2l, 0l, -1l};
       break;
   }
+
+  cout << "---- Current colour: " << color << " --------" << endl;
 
 
   // to fix compiler complaints about perfectly nested loop.
@@ -158,25 +168,32 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
 #endif
   for (long z = startZ; z < endZ; z += 4) {
 
-    if(startOfThisColor[2] != z){
-      if(z % 12 != 0){
-        startY += 3; //Shift color 3 rows, this happens two times
-      } else {
-        startY -= 6; //Shift color back to origin
-      }
-    } //no shifting for first rotation
+    cout << "z: " << z << endl;
+
+    if((z - startZ) % 12 == 0){
+      startX = startOfThisColor[0];
+    }
+    else if((z - startZ) % 8 == 0){
+      startX = startOfThisColor[0] - 2;
+    } else {
+      startX = startOfThisColor[0] - 4;
+    }
 
     for (long y = startY; y < endY; ++y) {
 
-      if(startOfThisColor[1] != y){
-        if(y % 2 != 0){
+      cout << "y: " << y << endl;
+
+      if(y != startY){
+        if((y - startY) % 2 != 0){
           startX += 3; //Shift start of color every second y-row
         } else {
           startX -= 3; //Shift start of color back to origin
         }
       } //no shifting for first rotation
+      cout << "startX: " << startX << endl;
 
       for (long x = startX; x < endX; x += 6) { // color starts every 6th column again
+        cout << "x in for: " << x << endl;
         const std::array<long, 3> base3DIndex = {x, y, z};
         processBasePack6(cells, base3DIndex);
       }

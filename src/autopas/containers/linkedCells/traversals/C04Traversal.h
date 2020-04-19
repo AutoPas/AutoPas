@@ -87,6 +87,14 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
   const std::array<long, 3> _end;
 };
 
+/**
+ * Computes the barriers of the aggregation of cells for each color
+ *
+ * @tparam ParticleCell
+ * @tparam PairwiseFunctor
+ * @tparam dataLayout
+ * @tparam useNewton3
+ */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 constexpr void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets32Pack() {
   using std::make_pair;
@@ -122,6 +130,16 @@ constexpr void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
   }
 }
 
+/**
+ * Goes through the cells aggregated by one color and processes the particles in each cell that is part of the aggregation
+ *
+ * @tparam ParticleCell
+ * @tparam PairwiseFunctor
+ * @tparam dataLayout
+ * @tparam useNewton3
+ * @param cells
+ * @param base3DIndex
+ */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBasePack32(
     std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex) {
@@ -185,6 +203,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traver
       break;
   }
 
+  //calculate whether the calculated starting point is part of the color
   long correctParity = parity(startOfThisColor[0], startOfThisColor[1], startOfThisColor[2]);
   if (color >= 2) {
     correctParity += 4;
@@ -196,6 +215,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traver
   const long startZ = startOfThisColor[2], endZ = _end[2];
 
 // first cartesian grid
+// grids are interlinked: one grid fills the gaps in the other grid
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(3) nowait
 #endif
