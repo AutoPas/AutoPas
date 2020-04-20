@@ -56,6 +56,14 @@ TEST_F(PredictiveTuningTest, testRemoveN3OptionRemoveSome) {
   EXPECT_FALSE(predictiveTuning.searchSpaceIsTrivial());
 }
 
+/*
+ * Tests the prediction and the selection of the right optimum.
+ * Three different configurations:
+ *      - C08 that is not optimal but it getting getting less expensive.
+ *      - Sliced is optimal in the beginning but is getting more expensive.
+ *      - C01 is constant an not in the optimum range.
+ * In the third iteration c08 should be predicted to be the optimum.
+ */
 TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
@@ -117,6 +125,7 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
             predictiveTuning.getCurrentConfiguration());
 }
 
+// Tests the first tuning iteration. There is no prediction and the whole searchSpace should be tested.
 TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
@@ -148,6 +157,15 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
             predictiveTuning.getCurrentConfiguration());
 }
 
+/*
+ * Tests the selection of the right optimumSearchSpace in the regard of the relativeOptimum and tuning.
+ * Three different configurations:
+ *      - C08 is constant near the optimum (11).
+ *      - Sliced is constant the optimum (10).
+ *      - C01 is constant an not in the optimum range (20).
+ * In the third iteration c08 and sliced should be in _optimalSearchSpace and after the tuning phase sliced should be
+ * the optimal configuration.
+ */
 TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
@@ -221,6 +239,14 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
             predictiveTuning.getCurrentConfiguration());
 }
 
+/*
+ * Tests the selection of the right optimumSearchSpace in the regard of the number of iterations without a test and
+ * tuning. Two different configurations:
+ *      - C08 is constant out of the optimum range (20).
+ *      - Sliced is constant the optimum (10).
+ * In iteration three to six only sliced should be in _optimalSearchSpace.
+ * In the seventh iteration c08 and sliced should be in _optimalSearchSpace.
+ */
 TEST_F(PredictiveTuningTest, testTuningSevenIterations) {
   autopas::PredictiveTuning predictiveTuning({autopas::ContainerOption::linkedCells}, {1.},
                                              {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
@@ -329,6 +355,14 @@ TEST_F(PredictiveTuningTest, testTuningSevenIterations) {
             predictiveTuning.getCurrentConfiguration());
 }
 
+/*
+ * Tests the recognition of an invalid _optimalSearchSpace in tuning and the reselection of _optimalSearchSpace
+ * Three different configurations:
+ *      - C08 is constant out of the optimum range (15).
+ *      - Sliced is constant the optimum (10) and invalid in the third iteration.
+ *      - C01 is constant out of the optimum range (20).
+ * In the third iteration reselectOptimalSearchSpace should be called and C08 should be selected after the tuning phase.
+ */
 TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
@@ -403,6 +437,15 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
             predictiveTuning.getCurrentConfiguration());
 }
 
+/*
+ * Tests the recognition of an invalid _optimalSearchSpace in tuning and the reselection of _optimalSearchSpace
+ * Three different configurations:
+ *      - C08 is constant out of the optimum range (15) and invalid in the third iteration.
+ *      - Sliced is constant the optimum (10) and invalid in the third iteration.
+ *      - C01 is constant out of the optimum range (20).
+ * In the third iteration reselectOptimalSearchSpace should be called twice and C01 should be selected after the tuning
+ * phase.
+ */
 TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},

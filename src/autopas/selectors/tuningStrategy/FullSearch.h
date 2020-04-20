@@ -1,7 +1,7 @@
 /**
  * @file FullSearch.h
  * @author F. Gratl
- * @date 5/29/19
+ * @date 29.05.2019
  */
 
 #pragma once
@@ -161,9 +161,6 @@ void FullSearch::selectOptimalConfiguration() {
     autopas::utils::ExceptionHandler::exception(
         "FullSearch: Optimal configuration not found in list of configurations!");
   }
-
-  // measurements are not needed anymore
-  _traversalTimes.clear();
 
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
 }

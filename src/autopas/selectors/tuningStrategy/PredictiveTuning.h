@@ -7,7 +7,6 @@
 #pragma once
 
 #include <set>
-#include <sstream>
 
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
@@ -59,27 +58,19 @@ class PredictiveTuning : public TuningStrategyInterface {
 
   inline void addEvidence(long time) override {
     _traversalTimes[*_currentConfig] = time;
-    _traversalTimesStorage[*_currentConfig].emplace_back(std::make_pair(_timer, time));
+    _traversalTimesStorage[*_currentConfig].emplace_back(std::make_pair(_tuningIterationsCounter, time));
   }
 
   inline void reset() override {
     _traversalTimes.clear();
-    _traversalPredictions.clear();
+    _configurationPredictions.clear();
     _optimalSearchSpace.clear();
     // Too expensive?
     _validSearchSpace = _searchSpace;
-    _validConfiguration = false;
-    selectPredictedConfigurations();
+    _validConfigurationFound = false;
 
-    // sanity check
-    if (_optimalSearchSpace.empty()) {
-      autopas::utils::ExceptionHandler::exception("PredicitveTuning: No possible configuration prediction found!");
-    }
-
-    _currentConfig = _searchSpace.begin();
-    while (_optimalSearchSpace.count(*_currentConfig) == 0 && _currentConfig != _searchSpace.end()) {
-      ++_currentConfig;
-    }
+    selectOptimalSearchSpace();
+    _currentConfig = _optimalSearchSpace.begin();
   }
 
   inline bool tune(bool = false) override;
@@ -107,14 +98,14 @@ class PredictiveTuning : public TuningStrategyInterface {
   inline void selectOptimalConfiguration();
 
   /**
-   * Selects the configuration that are going to be tested.
+   * Selects the configurations that are going to be tested.
    */
-  inline void selectPredictedConfigurations();
+  inline void selectOptimalSearchSpace();
 
   /**
    * Provides different extrapolation methods for the prediction of the traversal time.
    */
-  inline void predictConfigurations();
+  inline void calculatePredictions();
 
   /**
    * Predicts the traversal time by placing a line trough the last two traversal points and calculating the prediction
@@ -125,22 +116,32 @@ class PredictiveTuning : public TuningStrategyInterface {
   /**
    * Creates a new optimalSearchSpace if every configuration in the previous one was invalid.
    */
-  inline void invalidOptimalSearchSpace();
+  inline void reselectOptimalSearchSpace();
 
   std::set<ContainerOption> _containerOptions;
   std::set<Configuration> _searchSpace;
   std::set<Configuration>::iterator _currentConfig;
+
+  /**
+   * Stores the tested traversal times for the current tuning phase
+   * @param Configuration
+   * @param traversal time
+   */
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
 
   /**
    * Stores the traversal times for each configuration.
+   * @param Configuration
+   * @param Vector with pairs of the iteration and the traversal time
    */
   std::unordered_map<Configuration, std::vector<std::pair<int, size_t>>, ConfigHash> _traversalTimesStorage;
 
   /**
    * Contains the predicted time for each configuration.
+   * @param Configuration
+   * @param traversal prediction
    */
-  std::unordered_map<Configuration, size_t, ConfigHash> _traversalPredictions;
+  std::unordered_map<Configuration, size_t, ConfigHash> _configurationPredictions;
 
   /**
    * Contains the configuration that are going to be tested.
@@ -148,7 +149,7 @@ class PredictiveTuning : public TuningStrategyInterface {
   std::set<Configuration> _optimalSearchSpace;
 
   /**
-   * Contains the configurations that are not invalid the whole optimalSearchSpace was invalid
+   * Contains the configurations that are not invalid.
    */
   std::set<Configuration> _validSearchSpace;
 
@@ -156,12 +157,22 @@ class PredictiveTuning : public TuningStrategyInterface {
    * Gets incremented after every completed tuning phase.
    * Mainly used for the traversal time storage.
    */
-  int _timer = 0;
+  int _tuningIterationsCounter = 0;
 
   /**
-   * Checks if a valid configuration was in the optimal SearchSpace.
+   * Indicates if a valid configuration was found in the _optimalSearchSpace.
    */
-  bool _validConfiguration = false;
+  bool _validConfigurationFound = false;
+
+  /**
+   * Factor of the range of the optimal configurations for the optimalSearchSpace
+   */
+  static constexpr double _relativeOptimumRange = 1.2;
+
+  /**
+   * After not being tested this number of tuningPhases a configuration is being emplaced in _optimalSearchSpace
+   */
+  static constexpr int _maxTuningIterationsWithoutTest = 5;
 };
 
 void PredictiveTuning::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
@@ -179,7 +190,7 @@ void PredictiveTuning::populateSearchSpace(const std::set<ContainerOption> &allo
                           allContainerTraversals.begin(), allContainerTraversals.end(),
                           std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
-    for (auto &cellSizeFactor : allowedCellSizeFactors)
+    for (const auto &cellSizeFactor : allowedCellSizeFactors)
       for (auto &traversalOption : allowedAndApplicable) {
         for (auto &dataLayoutOption : allowedDataLayoutOptions) {
           for (auto &newton3Option : allowedNewton3Options) {
@@ -203,32 +214,39 @@ void PredictiveTuning::populateSearchSpace(const std::set<ContainerOption> &allo
   _currentConfig = _searchSpace.begin();
 }
 
-void PredictiveTuning::selectPredictedConfigurations() {
-  if (_searchSpace.size() == 1 || _timer == 0 || _timer == 1) {
+void PredictiveTuning::selectOptimalSearchSpace() {
+  if (_searchSpace.size() == 1 || _tuningIterationsCounter < 2) {
     _optimalSearchSpace = _searchSpace;
     return;
   }
 
-  predictConfigurations();
+  calculatePredictions();
 
-  auto optimum = std::min_element(_traversalPredictions.begin(), _traversalPredictions.end(),
-                                  [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
-                                    return a.second < b.second;
-                                  });
+  const auto optimum = std::min_element(_configurationPredictions.begin(), _configurationPredictions.end(),
+                                        [](std::pair<Configuration, size_t> a,
+                                           std::pair<Configuration, size_t> b) -> bool { return a.second < b.second; });
 
   _optimalSearchSpace.emplace(optimum->first);
 
-  // selects configurations that are near the optimal prediction or have not been tested in the last five iterations
+  // selects configurations that are near the optimal prediction or have not been tested in a certain number of
+  // iterations
   for (auto &configuration : _searchSpace) {
-    auto vector = _traversalTimesStorage[configuration];
-    if ((_timer - vector[vector.size() - 1].first) >= 5 ||
-        ((float)_traversalPredictions[configuration] / optimum->second <= 1.2)) {
+    const auto vector = _traversalTimesStorage[configuration];
+    // Adds configurations that have not been tested for _maxTuningIterationsWithoutTest or are within the
+    // _relativeOptimumRange
+    if ((_tuningIterationsCounter - vector.back().first) >= _maxTuningIterationsWithoutTest ||
+        ((float)_configurationPredictions[configuration] / optimum->second <= _relativeOptimumRange)) {
       _optimalSearchSpace.emplace(configuration);
     }
   }
+
+  // sanity check
+  if (_optimalSearchSpace.empty()) {
+    autopas::utils::ExceptionHandler::exception("PredicitveTuning: No possible configuration prediction found!");
+  }
 }
 
-void PredictiveTuning::predictConfigurations() {
+void PredictiveTuning::calculatePredictions() {
   linePrediction();
   /*switch (method) {
   * case line: linePrediction(); break;
@@ -239,32 +257,34 @@ void PredictiveTuning::predictConfigurations() {
 
 void PredictiveTuning::linePrediction() {
   for (auto &configuration : _searchSpace) {
-    auto vector = _traversalTimesStorage[configuration];
-    auto tmp1 = vector[vector.size() - 1];
-    auto tmp2 = vector[vector.size() - 2];
+    const auto &vector = _traversalTimesStorage[configuration];
+    auto traversal1 = vector[vector.size() - 1];
+    auto traversal2 = vector[vector.size() - 2];
 
-    auto prediction = tmp1.second + (tmp1.second - tmp2.second) / (tmp1.first - tmp2.first) * (_timer - tmp1.first);
-    _traversalPredictions[configuration] = prediction;
+    // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
+    _configurationPredictions[configuration] = traversal1.second + (traversal1.second - traversal2.second) /
+                                                                       (traversal1.first - traversal2.first) *
+                                                                       (_tuningIterationsCounter - traversal1.first);
   }
 }
 
-void PredictiveTuning::invalidOptimalSearchSpace() {
+void PredictiveTuning::reselectOptimalSearchSpace() {
+  // This is placed here, because there are no unnecessary removals
   for (auto &configuration : _optimalSearchSpace) {
-    _traversalPredictions.erase(configuration);
+    _configurationPredictions.erase(configuration);
     _validSearchSpace.erase(configuration);
   }
 
   _optimalSearchSpace.clear();
 
   // checks if there are any configurations left that can be tested
-  if (_traversalPredictions.empty()) {
+  if (_configurationPredictions.empty()) {
     autopas::utils::ExceptionHandler::exception("Predictive Tuning: No valid configuration could be found");
   }
 
-  auto optimum = std::min_element(_traversalPredictions.begin(), _traversalPredictions.end(),
-                                  [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
-                                    return a.second < b.second;
-                                  });
+  const auto optimum = std::min_element(_configurationPredictions.begin(), _configurationPredictions.end(),
+                                        [](std::pair<Configuration, size_t> a,
+                                           std::pair<Configuration, size_t> b) -> bool { return a.second < b.second; });
 
   if (_validSearchSpace.count(optimum->first) == 0) {
     autopas::utils::ExceptionHandler::exception("Predictive Tuning: No valid optimal configuration could be found");
@@ -274,7 +294,8 @@ void PredictiveTuning::invalidOptimalSearchSpace() {
 
   // selects configurations that are near the optimal prediction
   for (auto &configuration : _validSearchSpace) {
-    if ((float)_traversalPredictions[configuration] / optimum->second <= 1.2) {
+    // Adds configurations that are within the _relativeOptimumRange
+    if ((float)_configurationPredictions[configuration] / optimum->second <= _relativeOptimumRange) {
       _optimalSearchSpace.emplace(configuration);
     }
   }
@@ -284,29 +305,24 @@ void PredictiveTuning::invalidOptimalSearchSpace() {
     autopas::utils::ExceptionHandler::exception("PredicitveTuning: No possible configuration prediction found!");
   }
 
-  _currentConfig = _searchSpace.begin();
-  while (_optimalSearchSpace.count(*_currentConfig) == 0 && _currentConfig != _searchSpace.end()) {
-    ++_currentConfig;
-  }
+  _currentConfig = _optimalSearchSpace.begin();
 }
 
 bool PredictiveTuning::tune(bool valid) {
-  if (!valid) {
-    _validConfiguration = true;
+  if (not valid) {
+    _validConfigurationFound = true;
   }
 
   // repeat as long as traversals are not applicable or we run out of configs
-  do {
-    ++_currentConfig;
-  } while (_optimalSearchSpace.count(*_currentConfig) == 0 && _currentConfig != _searchSpace.end());
+  ++_currentConfig;
 
-  if (_currentConfig == _searchSpace.end()) {
-    if (_validConfiguration) {
+  if (_currentConfig == _searchSpace.end() || _currentConfig == _optimalSearchSpace.end()) {
+    if (_validConfigurationFound) {
       selectOptimalConfiguration();
-      _timer++;
+      _tuningIterationsCounter++;
       return false;
     } else {
-      invalidOptimalSearchSpace();
+      reselectOptimalSearchSpace();
     }
   }
 
@@ -337,11 +353,6 @@ void PredictiveTuning::selectOptimalConfiguration() {
     autopas::utils::ExceptionHandler::exception(
         "PredicitveTuning: Optimal configuration not found in list of configurations!");
   }
-
-  // measurements are not needed anymore
-  _traversalTimes.clear();
-  _traversalPredictions.clear();
-  _optimalSearchSpace.clear();
 
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
 }
