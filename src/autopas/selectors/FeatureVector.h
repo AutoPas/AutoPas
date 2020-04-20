@@ -177,9 +177,9 @@ class FeatureVector : public Configuration {
   /**
    * Encode Feature vector to a cluster-encoded vector ignoring ContainerOptions.
    * Discrete values are encoded using their index in given std::vector.
-   * @param traversalOptions
-   * @param dataLayoutOptions
-   * @param newton3Options
+   * @param traversalOptions allowed traversals
+   * @param dataLayoutOptions allowed data layouts
+   * @param newton3Options allowed newton3 options
    * @return cluster encoded vector
    */
   std::pair<Eigen::VectorXi, Eigen::VectorXd> clusterEncode(const std::vector<TraversalOption> &traversalOptions,
@@ -203,14 +203,17 @@ class FeatureVector : public Configuration {
    * Encoding ignores ContainerOption and valid options are unknown.
    * So this functions passes an invalid ContainerOption.
    * @param vec cluster encoded vector
-   * @return decoded FeatureVector
+   * @param traversalOptions allowed traversals
+   * @param dataLayoutOptions allowed data layouts
+   * @param newton3Options allowed newton3 options
+   * @return decoded vector
    */
   static FeatureVector clusterDecode(std::pair<Eigen::VectorXi, Eigen::VectorXd> vec,
-                                     const std::vector<TraversalOption> &allowedTraversalOptions,
-                                     const std::vector<DataLayoutOption> &allowedDataLayoutOptions,
-                                     const std::vector<Newton3Option> &allowedNewton3Options) {
-    return FeatureVector(ContainerOption(), vec.second[0], allowedTraversalOptions[vec.first[0]],
-                         allowedDataLayoutOptions[vec.first[1]], allowedNewton3Options[vec.first[2]]);
+                                     const std::vector<TraversalOption> &traversalOptions,
+                                     const std::vector<DataLayoutOption> &dataLayoutOptions,
+                                     const std::vector<Newton3Option> &newton3Options) {
+    return FeatureVector(ContainerOption(), vec.second[0], traversalOptions[vec.first[0]],
+                         dataLayoutOptions[vec.first[1]], newton3Options[vec.first[2]]);
   }
 
   /**

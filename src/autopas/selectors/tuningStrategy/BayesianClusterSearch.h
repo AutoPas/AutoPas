@@ -56,7 +56,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
                         const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
                         size_t maxEvidence = 10,
                         AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lowerConfidenceBound,
-                        size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()())
+                        size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
       : _containerOptionsSet(allowedContainerOptions),
         _containerOptions(allowedContainerOptions.begin(), allowedContainerOptions.end()),
         _traversalOptions(allowedTraversalOptions.begin(), allowedTraversalOptions.end()),
@@ -107,10 +107,12 @@ class BayesianClusterSearch : public TuningStrategyInterface {
     auto vec = _currentConfig.clusterEncode(_traversalOptions, _dataLayoutOptions, _newton3Options);
     // time is converted to seconds, to big values may lead to errors in GaussianProcess
     _gaussianCluster.addEvidence(vec.first, vec.second, time * secondsPerMicroseconds);
+    _currentAcquisitions.clear();
   }
 
   inline void reset() override {
     _gaussianCluster.clear();
+    _currentAcquisitions.clear();
     tune();
   }
 
@@ -125,13 +127,12 @@ class BayesianClusterSearch : public TuningStrategyInterface {
  private:
   /**
    * Generate n samples and predict their corresponding
-   * acquisition function. Return the FeatureVector which
-   * generates the smallest value.
+   * acquisition function. The result is sorted depending on
+   * given acquistion function.
    * @param n numSamples
    * @param af acquisition function
-   * @return optimal FeatureVector
    */
-  inline FeatureVector sampleOptimalFeatureVector(size_t n, AcquisitionFunctionOption af);
+  inline void sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
 
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<ContainerOption> _containerOptions;
@@ -143,6 +144,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   std::map<TraversalOption, ContainerOption> _traversalContainerMap;
 
   FeatureVector _currentConfig;
+  std::vector<GaussianCluster::VectorAcquisition> _currentAcquisitions;
   std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
 
   Random _rng;
@@ -164,6 +166,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
     return false;
   }
 
+  // no more tunings steps
   if (_gaussianCluster.numEvidence() >= _maxEvidence) {
     // select best config
     _currentConfig = FeatureVector::clusterDecode(_gaussianCluster.getEvidenceMin(), _traversalOptions,
@@ -173,12 +176,37 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
     return false;
   }
 
-  // select predicted best config for tuning
-  _currentConfig = sampleOptimalFeatureVector(_predNumLHSamples, _predAcqFunction);
-  return true;
+  // try to sample a valid vector which is expected to yield a good acquisition
+  for (size_t i = 0; i < maxAttempts; ++i) {
+    if (_currentAcquisitions.empty()) {
+      sampleAcquisitions(_predNumLHSamples, _predAcqFunction);
+    }
+
+    // test best vectors until empty
+    while (not _currentAcquisitions.empty()) {
+      auto best = FeatureVector::clusterDecode(_currentAcquisitions[0].first, _traversalOptions, _dataLayoutOptions,
+                                               _newton3Options);
+      best.container = _traversalContainerMap[best.traversal];
+
+      if (_invalidConfigs.find(best) == _invalidConfigs.end()) {
+        // valid config found!
+        _currentConfig = best;
+        return true;
+      } else {
+        _currentAcquisitions.erase(_currentAcquisitions.begin());
+      }
+    }
+
+    // No valid configuration. This should rarely happen.
+    AutoPasLog(debug, "Tuning could not generate a valid configuration.");
+  }
+
+  utils::ExceptionHandler::exception("BayesianSearch: Failed to sample an valid FeatureVector");
+  _currentConfig = FeatureVector();
+  return false;
 }
 
-FeatureVector BayesianClusterSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFunctionOption af) {
+void BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOption af) {
   // create n lhs samples
   auto continuousSamples = FeatureVector::lhsSampleFeatureContinuous(n, _rng, *_cellSizeFactors);
 
@@ -186,26 +214,30 @@ FeatureVector BayesianClusterSearch::sampleOptimalFeatureVector(size_t n, Acquis
     return FeatureVector::neighboursManhattan1(target, _dimRestrictions);
   };
 
-  std::pair<Eigen::VectorXi, Eigen::VectorXd> best;
-  // sort by acquisition
+  // calculate all acquisitions
+  _currentAcquisitions = _gaussianCluster.sampleAcquisition(af, neighbourFun, continuousSamples);
+
+  // sort vectors by acquisition
   switch (af) {
     case AcquisitionFunctionOption::mean:
     case AcquisitionFunctionOption::lowerConfidenceBound:
     case AcquisitionFunctionOption::upperConfidenceBound:
       // min estimated value first
-      best = _gaussianCluster.sampleAquisitionMin(af, neighbourFun, continuousSamples);
+      std::sort(_currentAcquisitions.begin(), _currentAcquisitions.end(),
+                [](const GaussianCluster::VectorAcquisition &va1, const GaussianCluster::VectorAcquisition &va2) {
+                  return va1.second < va2.second;
+                });
       break;
     case AcquisitionFunctionOption::variance:
     case AcquisitionFunctionOption::expectedDecrease:
     case AcquisitionFunctionOption::probabilityOfDecrease:
       // max acquisition first
-      best = _gaussianCluster.sampleAquisitionMin(af, neighbourFun, continuousSamples);
+      std::sort(_currentAcquisitions.begin(), _currentAcquisitions.end(),
+                [](const GaussianCluster::VectorAcquisition &va1, const GaussianCluster::VectorAcquisition &va2) {
+                  return va1.second > va2.second;
+                });
       break;
   }
-
-  auto result = FeatureVector::clusterDecode(best, _traversalOptions, _dataLayoutOptions, _newton3Options);
-  result.container = _traversalContainerMap[result.traversal];
-  return result;
 }
 
 bool BayesianClusterSearch::searchSpaceIsTrivial() const {
@@ -225,6 +257,8 @@ bool BayesianClusterSearch::searchSpaceIsEmpty() const {
 
 void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
   std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option);
+  _currentAcquisitions.clear();
+
   if (this->searchSpaceIsEmpty()) {
     utils::ExceptionHandler::exception(
         "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);

@@ -13,7 +13,7 @@ namespace autopas::utils::Math {
  * @return PDF(x)
  */
 double normalPDF(double x) {
-  static double factor = 1. / std::sqrt(2 * M_PI);
+  const double factor = 1. / std::sqrt(2 * M_PI);
   return factor * std::exp(-x * x / 2.);
 }
 
@@ -23,7 +23,7 @@ double normalPDF(double x) {
  * @return CDF(x)
  */
 double normalCDF(double x) {
-  static double factor = -1. / std::sqrt(2);
+  const double factor = -1. / std::sqrt(2);
   return std::erfc(factor * x) / 2.;
 }
 
