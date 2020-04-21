@@ -64,23 +64,23 @@ class FullSearchMPI : public TuningStrategyInterface {
     const int blockSize = totalNumConfigs / worldSize;
     const int remainder = totalNumConfigs % worldSize;
     int start = blockSize * worldRank;
-    int end = blockSize * (worldRank + 1) - 1;
+    int startNext = blockSize * (worldRank + 1);
     // distribute the remaining configurations over the lower ranks.
     if (worldRank < remainder) {
       start += worldRank;
-      end += worldRank + 1;
+      startNext += worldRank + 1;
     } else {
       start += remainder;
-      end += remainder;
+      startNext += remainder;
     }
 
     populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors,
                         allowedTraversalOptions, allowedDataLayoutOptions,
-                        allowedNewton3Options,   start, end);
+                        allowedNewton3Options,   start, startNext);
 
     // @todo implement proper exception if no rank has a non-empty search space.
     if (_searchSpace.empty()) {
-      AutoPasLog(debug, "No valid configuration could be created for rank {}.", worldRank);
+      autopas::utils::ExceptionHandler::exception("FullSearchMPI: No valid configuration for rank {}", worldRank);
     } else {
       AutoPasLog(debug, "Points in search space of rank {}: {}", worldRank, _searchSpace.size());
     }
@@ -147,10 +147,11 @@ void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowed
                                      const std::set<TraversalOption> &allowedTraversalOptions,
                                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                      const std::set<Newton3Option> &allowedNewton3Options,
-                                     const int start, const int end) {
+                                     const int start, const int startNext) {
   // index to test which configurations apply to the current rank
   int i = 0;
   // generate all potential configs
+  // @todo order the loops so that the further you go in the less taxing it is to switch.
   for (auto &containerOption : allowedContainerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
     const std::set<TraversalOption> &allContainerTraversals =
@@ -160,22 +161,22 @@ void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowed
                           allContainerTraversals.begin(), allContainerTraversals.end(),
                           std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
-    for (auto &cellSizeFactor : allowedCellSizeFactors)
+    for (auto &cellSizeFactor : allowedCellSizeFactors) {
       for (auto &traversalOption : allowedAndApplicable) {
         for (auto &dataLayoutOption : allowedDataLayoutOptions) {
           for (auto &newton3Option : allowedNewton3Options) {
-            if (i < start) {
+            if (i++ < start) {
               continue;
             }
-            if (i == end) {
+            if (i == startNext) {
               return;
             }
             _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption,
                                  dataLayoutOption, newton3Option);
-            ++i;
           }
         }
       }
+    }
   }
 }
 
