@@ -33,8 +33,8 @@ class PredictiveTuning : public TuningStrategyInterface {
                    const std::set<double> &allowedCellSizeFactors,
                    const std::set<TraversalOption> &allowedTraversalOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                   const std::set<Newton3Option> &allowedNewton3Options)
-      : _containerOptions(allowedContainerOptions) {
+                   const std::set<Newton3Option> &allowedNewton3Options, unsigned int &iterations)
+      : _containerOptions(allowedContainerOptions), _iterations(iterations) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                         allowedDataLayoutOptions, allowedNewton3Options);
@@ -45,8 +45,11 @@ class PredictiveTuning : public TuningStrategyInterface {
    * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
    */
-  explicit PredictiveTuning(std::set<Configuration> allowedConfigurations)
-      : _containerOptions{}, _searchSpace(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {
+  explicit PredictiveTuning(std::set<Configuration> allowedConfigurations, unsigned int &iterations)
+      : _containerOptions{},
+        _searchSpace(std::move(allowedConfigurations)),
+        _currentConfig(_searchSpace.begin()),
+        _iterations(iterations) {
     for (auto config : _searchSpace) {
       _containerOptions.insert(config.container);
     }
@@ -56,9 +59,10 @@ class PredictiveTuning : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time) override {
+  inline void addEvidence(long time, size_t iteration) override {
     _traversalTimes[*_currentConfig] = time;
-    _traversalTimesStorage[*_currentConfig].emplace_back(std::make_pair(_tuningIterationsCounter, time));
+    _traversalTimesStorage[*_currentConfig].emplace_back(std::make_pair(iteration, time));
+    _lastTest[*_currentConfig] = _tuningIterationsCounter;
   }
 
   inline void reset() override {
@@ -153,11 +157,23 @@ class PredictiveTuning : public TuningStrategyInterface {
    */
   std::set<Configuration> _validSearchSpace;
 
+    /**
+     * Stores the the last tuning phase a configuration got tested
+     * @param Configuration
+     * @param last tuning phase
+     */
+    std::unordered_map<Configuration, size_t, ConfigHash> _lastTest;
+
   /**
    * Gets incremented after every completed tuning phase.
    * Mainly used for the traversal time storage.
    */
   int _tuningIterationsCounter = 0;
+
+  /**
+   * Pointer to the _iterations variable in AutoTuner
+   */
+  unsigned int &_iterations;
 
   /**
    * Indicates if a valid configuration was found in the _optimalSearchSpace.
@@ -231,10 +247,9 @@ void PredictiveTuning::selectOptimalSearchSpace() {
   // selects configurations that are near the optimal prediction or have not been tested in a certain number of
   // iterations
   for (auto &configuration : _searchSpace) {
-    const auto vector = _traversalTimesStorage[configuration];
     // Adds configurations that have not been tested for _maxTuningIterationsWithoutTest or are within the
     // _relativeOptimumRange
-    if ((_tuningIterationsCounter - vector.back().first) >= _maxTuningIterationsWithoutTest ||
+    if ((_tuningIterationsCounter - _lastTest[configuration] >= _maxTuningIterationsWithoutTest) ||
         ((float)_configurationPredictions[configuration] / optimum->second <= _relativeOptimumRange)) {
       _optimalSearchSpace.emplace(configuration);
     }
@@ -264,7 +279,7 @@ void PredictiveTuning::linePrediction() {
     // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
     _configurationPredictions[configuration] = traversal1.second + (traversal1.second - traversal2.second) /
                                                                        (traversal1.first - traversal2.first) *
-                                                                       (_tuningIterationsCounter - traversal1.first);
+                                                                       (_iterations - traversal1.first);
   }
 }
 

@@ -21,7 +21,7 @@ class TuningStrategyInterface {
    * Store empirically collected information for the current configuration.
    * @param time Measured traversal time.
    */
-  virtual void addEvidence(long time) = 0;
+  virtual void addEvidence(long time, size_t iteration) = 0;
 
   /**
    * Returns the currently selected configuration object.

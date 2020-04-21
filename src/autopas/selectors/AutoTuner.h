@@ -63,6 +63,7 @@ class AutoTuner {
       autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
     }
 
+    _iterations = 0;
     selectCurrentContainer();
   }
 
@@ -146,7 +147,7 @@ class AutoTuner {
         // if this was the last sample:
         if (_samples.size() == _maxSamples) {
           auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
-          _tuningStrategy->addEvidence(reducedValue);
+          _tuningStrategy->addEvidence(reducedValue, _iterations);
 
           // print config, times and reduced value
           if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
@@ -202,7 +203,7 @@ class AutoTuner {
 
   SelectorStrategyOption _selectorStrategy;
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
-  unsigned int _tuningInterval, _iterationsSinceTuning;
+  unsigned int _tuningInterval, _iterationsSinceTuning, _iterations;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
   double _verletSkin;
   unsigned int _verletClusterSize;
@@ -313,6 +314,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool
   if (f->isRelevantForTuning()) {
     ++_iterationsSinceTuning;
   }
+  ++_iterations;
   return isTuning;
 }
 
