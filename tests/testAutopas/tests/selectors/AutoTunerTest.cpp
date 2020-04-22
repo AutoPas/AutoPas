@@ -57,18 +57,18 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3) = 4
   // VerletClusterCells:    verlet-cluster-cells        (AoS, newton3 <=> noNewton3)         = 2
   //                                                                                    --------
-  //                                                                                          48
+  //                                                                                          52
   // Additional with cuda
   // Direct Sum:            directSum traversal         (Cuda, newton3 <=> noNewton3)        = 2
   // LinkedCells:           c01Cuda traversal           (Cuda, newton3 <=> noNewton3)        = 2
   // VerletClusterCells:    verlet-cluster-cells traversal (Cuda, newton3 <=> noNewton3)     = 2
   //                                                                                    --------
-  //                                                                                          54
+  //                                                                                          58
   //
   // currently disabled:
   // NORMAL:
   //                                                                                    --------
-  // TOTAL:                                                                                   48
+  // TOTAL:                                                                                   52
   //
   // CUDA:
   // C01CudaTraversal for enabled N3, see #420                                                -1
