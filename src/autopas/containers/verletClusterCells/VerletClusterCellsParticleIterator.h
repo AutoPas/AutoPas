@@ -12,11 +12,11 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 
-namespace autopas {
-namespace internal {
+namespace autopas::internal {
 /**
  * ParticleIterator class to access particles inside a VerletClusterCells container efficiently.
  * The particles can be accessed using "iterator->" or "*iterator". The next
@@ -39,14 +39,17 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    * @param dummyStarts indices of the first dummy particle for each cell
    * @param offsetToDummy offset to add to create dummy particle
    * @param behavior iterator behavior
+   * @param particleDeletedObserver Observer that should be called, when a particle is deleted. Can be nullptr.
    */
   explicit VerletClusterCellsParticleIterator(CellVecType *cont, DummyStartsType &dummyStarts, double offsetToDummy,
-                                              IteratorBehavior behavior = haloAndOwned)
+                                              IteratorBehavior behavior = haloAndOwned,
+                                              ParticleDeletedObserver *particleDeletedObserver = nullptr)
       : _vectorOfCells(cont),
         _dummyStarts(dummyStarts),
         _cellId(0),
         _behavior(behavior),
-        _offsetToDummy(offsetToDummy) {
+        _offsetToDummy(offsetToDummy),
+        _particleDeletedObserver(particleDeletedObserver) {
     // 1. set _cellId to thread number.
     _cellId = autopas_get_thread_num();
 
@@ -115,6 +118,9 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
       --_cellEnd;
       std::iter_swap(_iteratorWithinOneCell, _cellEnd);
       --_iteratorWithinOneCell;
+      if (_particleDeletedObserver) {
+        _particleDeletedObserver->notifyParticleDeleted();
+      }
     }
   }
 
@@ -178,6 +184,12 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    * Offset to add to set particle outside domain
    */
   double _offsetToDummy;
+
+  /**
+   * Observer that should be called, when a particle is deleted.
+   * Can be nullptr.
+   */
+  ParticleDeletedObserver *_particleDeletedObserver{nullptr};
 };
 
 /**
@@ -203,13 +215,15 @@ class VerletClusterCellsRegionParticleIterator
    * @param offsetToDummy offset to add to create dummy particle
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    * @param skin skin to which extend serch window
+   * @param particleDeletedObserver Observer that should be called, when a particle is deleted. Can be nullptr.
    */
   explicit VerletClusterCellsRegionParticleIterator(CellVecType *cont, DummyStartsType &dummyStarts,
                                                     std::array<double, 3> startRegion, std::array<double, 3> endRegion,
                                                     std::vector<size_t> indicesInRegion, double offsetToDummy,
-                                                    IteratorBehavior behavior = haloAndOwned, double skin = 0.0)
+                                                    IteratorBehavior behavior = haloAndOwned, double skin = 0.0,
+                                                    ParticleDeletedObserver *particleDeletedObserver = nullptr)
       : VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>(cont, dummyStarts, offsetToDummy,
-                                                                               behavior),
+                                                                               behavior, particleDeletedObserver),
         _startRegion(startRegion),
         _endRegion(endRegion),
         _indicesInRegion(std::move(indicesInRegion)),
@@ -253,24 +267,34 @@ class VerletClusterCellsRegionParticleIterator
       ++this->_iteratorWithinOneCell;
 
       while (this->_iteratorWithinOneCell == this->_cellEnd) {
-        // increase _currentRegionIndex by stride if we are at the end of a cell!
-        // also ensure that it does not go beyond _indicesInRegion.size() - 1.
+        // Increase _currentRegionIndex by stride if we are at the end of a cell!
+        // Also ensure that it does not go beyond _indicesInRegion.size() - 1.
+        // The last entry of _indicesInRegion is invalid (>= _vectorOfCells->size()), so this is fine!
         _currentRegionIndex = std::min(_currentRegionIndex + autopas_get_num_threads(), _indicesInRegion.size() - 1);
         this->_cellId = _indicesInRegion[_currentRegionIndex];
         if (this->_cellId >= this->_vectorOfCells->size()) {
           return *this;
         }
-        // Find lowest possible particle in the region.
-        // Sorting in the array is at most off by skin/2 as the container is rebuilt if a particle moves more.
-        // increasing the search area by skin guarantees particles in the region to be found.
-        this->_iteratorWithinOneCell = std::lower_bound(
-            (*this->_vectorOfCells)[this->_cellId]._particles.begin(),
-            (*this->_vectorOfCells)[this->_cellId]._particles.begin() + this->getDummyStartbyIndex(this->_cellId),
-            _startRegion[2] - _skin, [](const Particle &a, const double b) { return a.getR()[2] < b; });
-        this->_cellEnd = std::upper_bound(
-            (*this->_vectorOfCells)[this->_cellId]._particles.begin(),
-            (*this->_vectorOfCells)[this->_cellId]._particles.begin() + this->getDummyStartbyIndex(this->_cellId),
-            _endRegion[2] + _skin, [](const double b, const Particle &a) { return b < a.getR()[2]; });
+        if (not modifiable) {
+          // We can't delete particles, so optimizations assuming sorted particles are in order!
+
+          // Find lowest possible particle in the region.
+          // Sorting in the array is at most off by skin/2 as the container is rebuilt if a particle moves more.
+          // increasing the search area by skin guarantees particles in the region to be found.
+          this->_iteratorWithinOneCell = std::lower_bound(
+              (*this->_vectorOfCells)[this->_cellId]._particles.begin(),
+              (*this->_vectorOfCells)[this->_cellId]._particles.begin() + this->getDummyStartbyIndex(this->_cellId),
+              _startRegion[2] - _skin, [](const Particle &a, const double b) { return a.getR()[2] < b; });
+          this->_cellEnd = std::upper_bound(
+              (*this->_vectorOfCells)[this->_cellId]._particles.begin(),
+              (*this->_vectorOfCells)[this->_cellId]._particles.begin() + this->getDummyStartbyIndex(this->_cellId),
+              _endRegion[2] + _skin, [](const double b, const Particle &a) { return b < a.getR()[2]; });
+        } else {
+          // If the iterator is modifiable, we can delete particles, which breaks the sorted assumption and thus
+          // some particles might be skipped.
+          this->_iteratorWithinOneCell = (*this->_vectorOfCells)[this->_cellId]._particles.begin();
+          this->_cellEnd = this->_iteratorWithinOneCell + this->getDummyStartbyIndex(this->_cellId);
+        }
       }
     } while ((not VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>::fitsBehavior(
                  *this->_iteratorWithinOneCell)) or
@@ -308,5 +332,4 @@ class VerletClusterCellsRegionParticleIterator
    */
   const double _skin;
 };
-}  // namespace internal
-}  // namespace autopas
+}  // namespace autopas::internal

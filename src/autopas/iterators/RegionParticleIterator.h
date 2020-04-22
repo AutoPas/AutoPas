@@ -29,6 +29,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
   using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
   using CellBorderAndFlagManagerType =
       std::conditional_t<modifiable, internal::CellBorderAndFlagManager, const internal::CellBorderAndFlagManager>;
+  using ParticleVecType = std::conditional_t<modifiable, std::vector<Particle>, const std::vector<Particle>>;
 
  public:
   /**
@@ -41,39 +42,69 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
    * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
    * Can be nullptr if the behavior is haloAndOwned.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
+   * @param additionalParticleVectorToIterate Additional Particle Vector to iterate over.
    */
   explicit RegionParticleIterator(CellVecType *cont, std::array<double, 3> startRegion, std::array<double, 3> endRegion,
                                   std::vector<size_t> &indicesInRegion,
                                   CellBorderAndFlagManagerType *flagManager = nullptr,
-                                  IteratorBehavior behavior = haloAndOwned)
-      : ParticleIterator<Particle, ParticleCell, modifiable>(cont, flagManager, behavior),
+                                  IteratorBehavior behavior = haloAndOwned,
+                                  ParticleVecType *additionalParticleVectorToIterate = nullptr)
+      : ParticleIterator<Particle, ParticleCell, modifiable>(cont, flagManager, behavior,
+                                                             additionalParticleVectorToIterate),
         _startRegion(startRegion),
         _endRegion(endRegion),
-        _indicesInRegion(indicesInRegion),
-        _currentRegionIndex(autopas_get_thread_num()) {
+        _indicesInRegion(indicesInRegion) {
+    auto myThreadId = autopas_get_thread_num();
+    _currentRegionIndex = myThreadId;
+    if (additionalParticleVectorToIterate and myThreadId == autopas_get_num_threads() - 1) {
+      // we want to iterate with the last thread over the additional particle vector.
+      this->_additionalParticleVectorToIterateState =
+          decltype(this->_additionalParticleVectorToIterateState)::notStarted;
+    }
+
     this->_vectorOfCells = cont;
-    if (_indicesInRegion.size() > (size_t)autopas_get_thread_num()) {
-      this->_iteratorAcrossCells = cont->begin() + _indicesInRegion[autopas_get_thread_num()];
+    if (_indicesInRegion.size() > static_cast<size_t>(myThreadId)) {
+      this->_iteratorAcrossCells = cont->begin() + _indicesInRegion[myThreadId];
       this->_iteratorWithinOneCell = this->_iteratorAcrossCells->begin();
+    } else if (this->_additionalParticleVectorToIterateState ==
+               decltype(this->_additionalParticleVectorToIterateState)::notStarted) {
+      this->_additionalParticleVectorToIterateState =
+          decltype(this->_additionalParticleVectorToIterateState)::iterating;
     } else {
       this->_iteratorAcrossCells = cont->end();
       return;
     }
 
-    if (not this->isCellTypeBehaviorCorrect()) {
-      this->next_non_empty_cell();
+    if (behavior != haloAndOwned and flagManager == nullptr) {
+      AutoPasLog(error,
+                 "Behavior is not haloAndOwned, but flagManager is "
+                 "nullptr!");
+      utils::ExceptionHandler::exception(
+          "Behavior is not haloAndOwned, but flagManager is "
+          "nullptr!");
     }
 
-    // The iterator might still be invalid (because the cell is empty or the owned-state of the particle is wrong), so
-    // we check it here!
-    if (ParticleIterator<Particle, ParticleCell, modifiable>::isValid()) {
-      // The iterator is valid, so there is a particle, now we need to check whether it's actually in the box!
-      if (utils::notInBox(this->operator*().getR(), _startRegion, _endRegion)) {
+    if (this->_additionalParticleVectorToIterateState !=
+        decltype(this->_additionalParticleVectorToIterateState)::iterating) {
+      if (not this->isCellTypeBehaviorCorrect()) {
+        this->next_non_empty_cell();
+      }
+
+      // The iterator might still be invalid (because the cell is empty or the owned-state of the particle is wrong), so
+      // we check it here!
+      if (ParticleIterator<Particle, ParticleCell, modifiable>::isValid()) {
+        // The iterator is valid, so there is a particle, now we need to check whether it's actually in the box!
+        if (utils::notInBox(this->operator*().getR(), _startRegion, _endRegion)) {
+          operator++();
+        }
+      } else if (this->_iteratorAcrossCells != cont->end()) {
+        // the iterator is invalid + we still have particles, so we increment it!
         operator++();
       }
-    } else if (this->_iteratorAcrossCells != cont->end()) {
-      // the iterator is invalid + we still have particles, so we increment it!
-      operator++();
+    } else {
+      if (not isValid()) {
+        operator++();
+      }
     }
   }
 

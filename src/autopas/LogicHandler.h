@@ -58,6 +58,7 @@ class LogicHandler {
    */
   void addParticle(const Particle &p) {
     if (not isContainerValid()) {
+      // Container has to be invalid to be able to add Particles!
       _autoTuner.getContainer()->addParticle(p);
       _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
     } else {
@@ -190,7 +191,7 @@ class LogicHandler {
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
+    return std::as_const(_autoTuner).getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
   /**

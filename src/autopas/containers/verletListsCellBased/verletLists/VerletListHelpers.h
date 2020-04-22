@@ -89,7 +89,7 @@ class VerletListHelpers {
      * @param soa the soa
      * @param newton3 whether to use newton 3
      */
-    void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
+    void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool /*cellWiseOwnedstate*/) override {
       if (soa.getNumParticles() == 0) return;
 
       auto **const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
@@ -115,7 +115,7 @@ class VerletListHelpers {
           if (dr2 < _cutoffskinsquared) {
             currentList.push_back(ptrptr[j]);
             if (not newton3) {
-              // we need this here, as SoAFunctor(soa) will only be called once for both newton3=true and false.
+              // we need this here, as SoAFunctorSingle will only be called once for both newton3=true and false.
               _verletListsAoS.at(ptrptr[j]).push_back(ptrptr[i]);
             }
           }
@@ -127,9 +127,11 @@ class VerletListHelpers {
      * SoAFunctor for the verlet list generation. (two cell version)
      * @param soa1 soa of first cell
      * @param soa2 soa of second cell
-     * @note: newton3 is ignored here, as for newton3=false SoAFunctor(soa2, soa1) will also be called.
+     * @note newton3 is ignored here, as for newton3=false SoAFunctorPair(soa2, soa1) will also be called.
+     * @note cellWiseOwnedState is ignored.
      */
-    void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
+    void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/,
+                        bool /*cellWiseOwnedState*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
       auto **const __restrict__ ptr1ptr = soa1.template begin<AttributeNames::ptr>();

@@ -71,6 +71,11 @@ class Cluster {
    */
   void addNeighbor(Cluster<Particle, clusterSize> &neighbor) { _neighborClusters.push_back(&neighbor); }
 
+  /**
+   * Remove all neighbors.
+   */
+  void clearNeighbors() { _neighborClusters.clear(); }
+
  private:
   /**
    * A pointer to the first particle of the cluster.

@@ -70,7 +70,8 @@ class VerletClustersStaticTraversal : public TraversalInterface, public VerletCl
       const auto &clusterRange = clusterThreadPartition[threadNum];
       auto &towers = *VerletClustersTraversalInterface<Particle>::_towers;
       size_t clusterCount = 0;
-      for (size_t towerIndex = clusterRange.startTowerIndex; clusterCount < clusterRange.numClusters; towerIndex++) {
+      for (size_t towerIndex = clusterRange.startTowerIndex;
+           clusterCount < clusterRange.numClusters and towerIndex < towers.size(); towerIndex++) {
         auto &currentTower = towers[towerIndex];
         auto startIndexInTower = clusterCount == 0 ? clusterRange.startIndexInTower : 0;
         for (size_t clusterIndex = startIndexInTower;
@@ -82,6 +83,12 @@ class VerletClustersStaticTraversal : public TraversalInterface, public VerletCl
             _clusterFunctor.traverseClusterPair(currentCluster, *neighborCluster);
           }
         }
+      }
+      if (clusterCount != clusterRange.numClusters) {
+        autopas::utils::ExceptionHandler::exception(
+            "VerletClustersStaticTraversal::traverseParticlePairs(): Not all or too many clusters traversed, probably "
+            "the clusterThreadPartitions are wrong! TraversedClusters={}, ClustersInRange={}",
+            clusterCount, clusterRange.numClusters);
       }
     }
   }

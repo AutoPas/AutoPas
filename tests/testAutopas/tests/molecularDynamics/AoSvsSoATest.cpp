@@ -62,7 +62,7 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
 
   ljFunctor.SoALoader(cell, cell._particleSoABuffer);
   start = std::chrono::high_resolution_clock::now();
-  ljFunctor.SoAFunctor(cell._particleSoABuffer, true);
+  ljFunctor.SoAFunctorSingle(cell._particleSoABuffer, true, true);
   stop = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
 

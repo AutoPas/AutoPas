@@ -22,7 +22,7 @@
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
-#include "autopas/containers/verletClusterLists/traversals/VerletClusterCellsTraversal.h"
+#include "autopas/containers/verletClusterCells/traversals/VerletClusterCellsTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersColoringTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersStaticTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"

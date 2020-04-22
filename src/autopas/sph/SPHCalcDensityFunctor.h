@@ -72,10 +72,10 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType>, bool)
+   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType>, bool, bool)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctor(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -116,9 +116,10 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
   }
 
   /**
-   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool)
+   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool, bool)
    */
-  void SoAFunctor(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3,
+                      bool cellWiseOwnedState) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
@@ -171,11 +172,12 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
    */
   // clang-format on
-  void SoAFunctor(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3) override {
+  void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                        bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();

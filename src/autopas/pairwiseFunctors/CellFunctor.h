@@ -308,29 +308,30 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairSoAN3(
     ParticleCell &cell1, ParticleCell &cell2) {
-  _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
+  _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, true, true);
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
           bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                  bidirectional>::processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2) {
-  _functor->SoAFunctor(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
-  if (bidirectional) _functor->SoAFunctor(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
+  _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false, true);
+  if (bidirectional) _functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false, true);
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
           bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellSoAN3(
     ParticleCell &cell) {
-  _functor->SoAFunctor(cell._particleSoABuffer, true);
+  _functor->SoAFunctorSingle(cell._particleSoABuffer, true, true /*cellWiseOwnedState*/);
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
           bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellSoANoN3(
     ParticleCell &cell) {
-  _functor->SoAFunctor(cell._particleSoABuffer, false);  // the functor has to enable this...
+  _functor->SoAFunctorSingle(cell._particleSoABuffer, false,
+                             true /*cellWiseOwnedState*/);  // the functor has to enable this...
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,

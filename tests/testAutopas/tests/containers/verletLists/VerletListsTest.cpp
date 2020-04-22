@@ -272,7 +272,7 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
   const size_t numCells = dimWithHalo * dimWithHalo * dimWithHalo;
   EXPECT_CALL(mockFunctor, SoALoaderVerlet(_, _, _)).Times(numCells);
   EXPECT_CALL(mockFunctor, SoAExtractorVerlet(_, _, _)).Times(numCells);
-  EXPECT_CALL(mockFunctor, SoAFunctor(_, _, _, _)).Times(1);
+  EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, _)).Times(1);
 
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);

@@ -110,14 +110,14 @@ class TraversalVerlet
           const size_t chunkSize = std::max(soaNeighborLists.size() / (omp_get_max_threads() * 10), 1ul);
 #pragma omp parallel for schedule(dynamic, chunkSize)
           for (size_t i = 0; i < soaNeighborLists.size(); i++) {
-            _functor->SoAFunctor(_soa, i, soaNeighborLists[i], useNewton3);
+            _functor->SoAFunctorVerlet(_soa, i, soaNeighborLists[i], useNewton3);
           }
         } else
 #endif
         {
           // iterate over SoA
           for (size_t i = 0; i < soaNeighborLists.size(); i++) {
-            _functor->SoAFunctor(_soa, i, soaNeighborLists[i], useNewton3);
+            _functor->SoAFunctorVerlet(_soa, i, soaNeighborLists[i], useNewton3);
           }
         }
         return;

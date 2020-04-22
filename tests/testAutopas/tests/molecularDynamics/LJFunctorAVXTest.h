@@ -22,22 +22,22 @@ class LJFunctorAVXTest : public AutoPasTestBase {
   constexpr static double _maxError = 1e-12;
 
   /**
-   * Checks equality of SoALoader, SoAFunctor and SoAExtractor.
+   * Checks equality of SoALoader, SoAFunctorPair and SoAExtractor.
    * Expects that particles are loaded and extracted in the same order.
    * In all comparisons first is AVX2, second non-AVX2
    *
-   * Checks SoAFunctor(soa1, soa2, newton3)
+   * Checks SoAFunctorPair(soa1, soa2, newton3)
    *
    * @param newton3
    */
   void testLJFunctorVSLJFunctorAVXTwoCells(bool newton3);
 
   /**
-   * Checks equality of SoALoader, SoAFunctor and SoAExtractor.
+   * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
    * Expects that particles are loaded and extracted in the same order.
    * In all comparisons first is AVX2, second non-AVX2
    *
-   * Checks SoAFunctor(soa, newton3)
+   * Checks SoAFunctorSingle(soa, newton3, cellWiseOwnedState)
    *
    * @param newton3
    */

@@ -45,7 +45,7 @@ class TouchableParticle : public autopas::Particle {
    * Get the number that indicates how often the particle was touch.
    * @return returns how often the particle was touched.
    */
-  unsigned int getNumTouched() { return _numTouched; }
+  unsigned int getNumTouched() const { return _numTouched; }
 
  private:
   unsigned int _numTouched;

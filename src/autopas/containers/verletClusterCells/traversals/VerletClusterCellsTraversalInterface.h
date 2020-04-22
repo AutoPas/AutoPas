@@ -1,5 +1,5 @@
 /**
- * @file VerletClusterTraversalInterface.h
+ * @file VerletClusterCellsTraversalInterface.h
  * @author jspahl
  * @date 25.3.19
  */
@@ -20,7 +20,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell>
-class VerletClusterTraversalInterface {
+class VerletClusterCellsTraversalInterface {
   using Particle = typename ParticleCell::ParticleType;
 
  public:

@@ -46,8 +46,11 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
    * copy operator
    * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
    */
-  ParticleIteratorWrapper(const ParticleIteratorWrapper &otherParticleIteratorWrapper)
-      : _particleIterator(otherParticleIteratorWrapper._particleIterator->clone()) {}
+  ParticleIteratorWrapper(const ParticleIteratorWrapper &otherParticleIteratorWrapper) : _particleIterator(nullptr) {
+    if (otherParticleIteratorWrapper._particleIterator) {
+      _particleIterator.reset(otherParticleIteratorWrapper._particleIterator->clone());
+    }
+  }
 
   /**
    * copy assignment operator to assign contents of otherParticleIteratorWrapper to this ParticleIteratorWrapper
