@@ -131,7 +131,8 @@ constexpr void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
 }
 
 /**
- * Goes through the cells aggregated by one color and processes the particles in each cell that is part of the aggregation
+ * Goes through the cells aggregated by one color and processes the particles in each cell that is part of the
+ * aggregation
  *
  * @tparam ParticleCell
  * @tparam PairwiseFunctor
@@ -203,7 +204,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traver
       break;
   }
 
-  //calculate whether the calculated starting point is part of the color
+  // calculate whether the calculated starting point is part of the color
   long correctParity = parity(startOfThisColor[0], startOfThisColor[1], startOfThisColor[2]);
   if (color >= 2) {
     correctParity += 4;

@@ -15,9 +15,9 @@
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
+#include "autopas/containers/linkedCells/traversals/C04HCP.h"
 #include "autopas/containers/linkedCells/traversals/C04SoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/C04Traversal.h"
-#include "autopas/containers/linkedCells/traversals/C04HCP.h"
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
@@ -121,9 +121,8 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     }
     case TraversalOption::c04HCP: {
       return std::make_unique<C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-              info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
-
-      }
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
     case TraversalOption::c01CombinedSoA: {
       return std::make_unique<C01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
