@@ -69,7 +69,8 @@ class GaussianProcess {
      * Default Constructor
      */
     Hyperparameters()
-        : mean(0.),
+        : score(0),
+          mean(0.),
           theta(1.),
           dimScales(Eigen::VectorXd::Ones(1)),
           covMatInv(Eigen::MatrixXd::Ones(1, 1)),
@@ -82,7 +83,7 @@ class GaussianProcess {
      * @param dimScales scale for each input dimension
      */
     Hyperparameters(double mean, double theta, Eigen::VectorXd dimScales)
-        : mean(mean), theta(theta), dimScales(std::move(dimScales)) {}
+        : score(0), mean(mean), theta(theta), dimScales(std::move(dimScales)) {}
 
     /**
      * Precalculate matrices needed for predictions
@@ -101,7 +102,14 @@ class GaussianProcess {
    * @param rngRef reference to rng
    */
   GaussianProcess(size_t dims, double sigma, Random &rngRef)
-      : _inputs(), _outputs(), _dims(dims), _sigma(sigma), _hypers(), _rng(rngRef) {}
+      : _inputs(),
+        _outputs(),
+        _dims(dims),
+        _sigma(sigma),
+        _hypers(),
+        _rng(rngRef),
+        _evidenceMinValue(0),
+        _evidenceMaxValue(0) {}
 
   /**
    * Discard all evidence.
@@ -120,7 +128,7 @@ class GaussianProcess {
    * @param input x
    * @param output f(x)
    */
-  void addEvidence(Vector input, double output) {
+  void addEvidence(const Vector &input, double output) {
     if (static_cast<size_t>(input.size()) != _dims) {
       utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
                                          input.size(), _dims);
@@ -185,7 +193,7 @@ class GaussianProcess {
     }
 
     // default mean 0.
-    if (_inputs.size() == 0) return 0.;
+    if (_inputs.empty()) return 0.;
 
     double result = 0.;
     for (auto &hyper : _hypers) {
@@ -207,7 +215,7 @@ class GaussianProcess {
     }
 
     // default variance 1.
-    if (_inputs.size() == 0) return 1.;
+    if (_inputs.empty()) return 1.;
 
     double result = 0.;
     for (auto &hyper : _hypers) {

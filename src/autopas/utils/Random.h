@@ -41,7 +41,8 @@ class Random : public std::mt19937 {
    * Sample n points from the pool. Each element in the pool will
    * appear about the same number of times in the sample.
    * @tparam T type of the elements
-   * @param pool
+   * @param poolBegin
+   * @param poolEnd
    * @param n number samples
    * @return samples
    */

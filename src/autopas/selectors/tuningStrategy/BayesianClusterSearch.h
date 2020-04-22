@@ -193,6 +193,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
         _currentConfig = best;
         return true;
       } else {
+        // invalid: dispose
         _currentAcquisitions.erase(_currentAcquisitions.begin());
       }
     }

@@ -30,6 +30,9 @@ class GaussianCluster {
   using VectorContinuous = Eigen::VectorXd;
 
  public:
+  /**
+   * Pair of input tuples and corresponding expected acquisition
+   */
   using VectorAcquisition = std::pair<std::pair<VectorDiscrete, VectorContinuous>, double>;
 
   /**
@@ -40,7 +43,12 @@ class GaussianCluster {
    * @param rngRef reference to random number generator
    */
   GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims, double sigma, Random &rngRef)
-      : _dimRestriction(dimRestriction), _continuousDims(continuousDims), _clusters(), _numEvidence(0) {
+      : _dimRestriction(dimRestriction),
+        _continuousDims(continuousDims),
+        _clusters(),
+        _numEvidence(0),
+        _evidenceMinValue(0),
+        _evidenceMaxValue(0) {
     size_t numClusters = 1;
     for (auto restriction : _dimRestriction) {
       if (restriction <= 0) {
@@ -76,8 +84,9 @@ class GaussianCluster {
   /**
    * Provide a input-output pair as evidence.
    * Each evidence improve the quality of future predictions.
-   * @param input x
-   * @param output f(x)
+   * @param inputDiscrete x
+   * @param inputContinuous y
+   * @param output f((x,y))
    */
   void addEvidence(VectorDiscrete inputDiscrete, VectorContinuous inputContinuous, double output) {
     size_t clusterIdx = getIndex(inputDiscrete);
@@ -137,24 +146,20 @@ class GaussianCluster {
    * @return vector of pairs - vectors and corresponding acquisition
    */
   std::vector<VectorAcquisition> sampleAcquisition(
-      AcquisitionFunctionOption af, std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> neighbourFun,
+      AcquisitionFunctionOption af, const std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> &neighbourFun,
       const std::vector<VectorContinuous> &samples) {
     std::vector<VectorAcquisition> acquisitions;
 
     for (auto currentContinuous : samples) {
       // calc means of given continuous tuple for each cluster
       std::vector<double> means;
-      means.reserve(_clusters.size());
-      for (size_t i = 0; i < _clusters.size(); ++i) {
-        means.push_back(_clusters[i].predictMean(currentContinuous));
-      }
-
-      // calc variances and standard deviations of given continuous tuple for each cluster
       std::vector<double> vars;
       std::vector<double> stddevs;
-      vars.reserve(_clusters.size());
-      for (size_t i = 0; i < _clusters.size(); ++i) {
-        double var = _clusters[i].predictVar(currentContinuous);
+      means.reserve(_clusters.size());
+      for (const auto &cluster : _clusters) {
+        means.push_back(cluster.predictMean(currentContinuous));
+
+        double var = cluster.predictVar(currentContinuous);
         vars.push_back(var);
         stddevs.push_back(std::sqrt(var));
       }
@@ -169,7 +174,7 @@ class GaussianCluster {
         double weightSum = 1.;
 
         // sum over neighbours
-        for (auto n : neighbours) {
+        for (const auto &n : neighbours) {
           size_t n_index = getIndex(n);
           // ignore clusters without evidence
           if (_clusters[i].numEvidence() > 0) {
@@ -177,7 +182,7 @@ class GaussianCluster {
             double distance = std::pow(means[n_index] - means[i], 2) + std::pow(stddevs[n_index] - stddevs[i], 2);
             double n_weight = 1. / (1 + distance / vars[i]);
             mixMean += means[n_index] * n_weight;
-            mixVar += vars[n_index] * n_weight;
+            mixVar += vars[n_index] * n_weight * n_weight;
             weightSum += n_weight;
           }
         }
@@ -196,7 +201,7 @@ class GaussianCluster {
             currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar);
         }
 
-        acquisitions.push_back(std::make_pair(std::make_pair(currentDiscrete, currentContinuous), currentValue));
+        acquisitions.emplace_back(std::make_pair(currentDiscrete, currentContinuous), currentValue);
       }
     }
 
@@ -245,9 +250,8 @@ class GaussianCluster {
     for (Eigen::Index i = 0; i < x.size(); ++i) {
       if (++x[i] < _dimRestriction[i]) {
         break;
-      } else {
-        x[i] = 0;
       }
+      x[i] = 0;
     }
   }
 
