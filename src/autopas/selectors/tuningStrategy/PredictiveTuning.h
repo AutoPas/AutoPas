@@ -69,12 +69,12 @@ class PredictiveTuning : public TuningStrategyInterface {
     _traversalTimes.clear();
     _configurationPredictions.clear();
     _optimalSearchSpace.clear();
+    _longNotTestedSearchSpace.clear();
     // Too expensive?
     _validSearchSpace = _searchSpace;
     _validConfigurationFound = false;
 
     selectOptimalSearchSpace();
-    _currentConfig = _optimalSearchSpace.begin();
   }
 
   inline bool tune(bool = false) override;
@@ -148,21 +148,26 @@ class PredictiveTuning : public TuningStrategyInterface {
   std::unordered_map<Configuration, size_t, ConfigHash> _configurationPredictions;
 
   /**
-   * Contains the configuration that are going to be tested.
+   * Contains the configuration that are predicted to be optimal and going to be tested.
    */
   std::set<Configuration> _optimalSearchSpace;
+
+  /**
+   * Contains the configuration that have not been tested for a period of time and are going to be tested.
+   */
+  std::set<Configuration> _longNotTestedSearchSpace;
 
   /**
    * Contains the configurations that are not invalid.
    */
   std::set<Configuration> _validSearchSpace;
 
-    /**
-     * Stores the the last tuning phase a configuration got tested
-     * @param Configuration
-     * @param last tuning phase
-     */
-    std::unordered_map<Configuration, size_t, ConfigHash> _lastTest;
+  /**
+   * Stores the the last tuning phase a configuration got tested
+   * @param Configuration
+   * @param last tuning phase
+   */
+  std::unordered_map<Configuration, size_t, ConfigHash> _lastTest;
 
   /**
    * Gets incremented after every completed tuning phase.
@@ -179,6 +184,11 @@ class PredictiveTuning : public TuningStrategyInterface {
    * Indicates if a valid configuration was found in the _optimalSearchSpace.
    */
   bool _validConfigurationFound = false;
+
+  /**
+   * Intermediate storage for the optimal configuration
+   */
+  std::set<Configuration>::iterator _optimalConfig;
 
   /**
    * Factor of the range of the optimal configurations for the optimalSearchSpace
@@ -232,7 +242,7 @@ void PredictiveTuning::populateSearchSpace(const std::set<ContainerOption> &allo
 
 void PredictiveTuning::selectOptimalSearchSpace() {
   if (_searchSpace.size() == 1 || _tuningIterationsCounter < 2) {
-    _optimalSearchSpace = _searchSpace;
+    _currentConfig = _searchSpace.begin();
     return;
   }
 
@@ -249,9 +259,10 @@ void PredictiveTuning::selectOptimalSearchSpace() {
   for (auto &configuration : _searchSpace) {
     // Adds configurations that have not been tested for _maxTuningIterationsWithoutTest or are within the
     // _relativeOptimumRange
-    if ((_tuningIterationsCounter - _lastTest[configuration] >= _maxTuningIterationsWithoutTest) ||
-        ((float)_configurationPredictions[configuration] / optimum->second <= _relativeOptimumRange)) {
+    if ((float)_configurationPredictions[configuration] / optimum->second <= _relativeOptimumRange) {
       _optimalSearchSpace.emplace(configuration);
+    } else if (_tuningIterationsCounter - _lastTest[configuration] >= _maxTuningIterationsWithoutTest) {
+      _longNotTestedSearchSpace.emplace(configuration);
     }
   }
 
@@ -259,6 +270,8 @@ void PredictiveTuning::selectOptimalSearchSpace() {
   if (_optimalSearchSpace.empty()) {
     autopas::utils::ExceptionHandler::exception("PredicitveTuning: No possible configuration prediction found!");
   }
+
+  _currentConfig = _optimalSearchSpace.begin();
 }
 
 void PredictiveTuning::calculatePredictions() {
@@ -292,6 +305,12 @@ void PredictiveTuning::reselectOptimalSearchSpace() {
 
   _optimalSearchSpace.clear();
 
+  if (_validSearchSpace.size() == 1) {
+    _optimalSearchSpace = _validSearchSpace;
+    _currentConfig = _optimalSearchSpace.begin();
+    return;
+  }
+
   // checks if there are any configurations left that can be tested
   if (_configurationPredictions.empty()) {
     autopas::utils::ExceptionHandler::exception("Predictive Tuning: No valid configuration could be found");
@@ -312,6 +331,7 @@ void PredictiveTuning::reselectOptimalSearchSpace() {
     // Adds configurations that are within the _relativeOptimumRange
     if ((float)_configurationPredictions[configuration] / optimum->second <= _relativeOptimumRange) {
       _optimalSearchSpace.emplace(configuration);
+      _longNotTestedSearchSpace.erase(configuration);
     }
   }
 
@@ -334,11 +354,21 @@ bool PredictiveTuning::tune(bool valid) {
   if (_currentConfig == _searchSpace.end() || _currentConfig == _optimalSearchSpace.end()) {
     if (_validConfigurationFound) {
       selectOptimalConfiguration();
-      _tuningIterationsCounter++;
-      return false;
+      if (_longNotTestedSearchSpace.empty()) {
+        _currentConfig = _optimalConfig;
+        _tuningIterationsCounter++;
+        return false;
+      } else {
+        _currentConfig = _longNotTestedSearchSpace.begin();
+        return true;
+      }
     } else {
       reselectOptimalSearchSpace();
     }
+  } else if (_currentConfig == _longNotTestedSearchSpace.end()) {
+    _currentConfig = _optimalConfig;
+    _tuningIterationsCounter++;
+    return false;
   }
 
   return true;
@@ -346,7 +376,11 @@ bool PredictiveTuning::tune(bool valid) {
 
 void PredictiveTuning::selectOptimalConfiguration() {
   if (_optimalSearchSpace.size() == 1) {
-    _currentConfig = _optimalSearchSpace.begin();
+    _optimalConfig = _optimalSearchSpace.begin();
+    return;
+  }
+  if (_searchSpace.size() == 1) {
+    _optimalConfig = _searchSpace.begin();
     return;
   }
 
@@ -362,9 +396,9 @@ void PredictiveTuning::selectOptimalConfiguration() {
                                     return a.second < b.second;
                                   });
 
-  _currentConfig = _searchSpace.find(optimum->first);
+  _optimalConfig = _searchSpace.find(optimum->first);
   // sanity check
-  if (_currentConfig == _searchSpace.end()) {
+  if (_optimalConfig == _searchSpace.end() || _optimalConfig == _optimalSearchSpace.end()) {
     autopas::utils::ExceptionHandler::exception(
         "PredicitveTuning: Optimal configuration not found in list of configurations!");
   }

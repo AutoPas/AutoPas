@@ -373,17 +373,18 @@ TEST_F(PredictiveTuningTest, testTuningSevenIterations) {
 
   predictiveTuning.reset();
 
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
-                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
-            predictiveTuning.getCurrentConfiguration());
-  predictiveTuning.addEvidence(20, iteration);
-  ++iteration;
-
-  predictiveTuning.tune();
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
             predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(10, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
+                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+            predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(20, iteration);
+
   ++iteration;
 
   predictiveTuning.tune();
