@@ -204,7 +204,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traver
       break;
   }
 
-  //calculate whether the calculated starting point is part of the color
+  // calculate whether the calculated starting point is part of the color
   long correctParity = parity(startOfThisColor[0], startOfThisColor[1], startOfThisColor[2]);
   if (color >= 2) {
     correctParity += 4;
