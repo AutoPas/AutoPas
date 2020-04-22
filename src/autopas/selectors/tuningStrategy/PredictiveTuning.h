@@ -60,19 +60,18 @@ class PredictiveTuning : public TuningStrategyInterface {
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
   inline void addEvidence(long time, size_t iteration) override {
-    _traversalTimes[*_currentConfig] = time;
     _traversalTimesStorage[*_currentConfig].emplace_back(std::make_pair(iteration, time));
     _lastTest[*_currentConfig] = _tuningIterationsCounter;
   }
 
   inline void reset() override {
-    _traversalTimes.clear();
     _configurationPredictions.clear();
     _optimalSearchSpace.clear();
     _longNotTestedSearchSpace.clear();
     // Too expensive?
     _validSearchSpace = _searchSpace;
     _validConfigurationFound = false;
+    _iterationBeginTuningPhase = _iterations;
 
     selectOptimalSearchSpace();
   }
@@ -127,13 +126,6 @@ class PredictiveTuning : public TuningStrategyInterface {
   std::set<Configuration>::iterator _currentConfig;
 
   /**
-   * Stores the tested traversal times for the current tuning phase
-   * @param Configuration
-   * @param traversal time
-   */
-  std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
-
-  /**
    * Stores the traversal times for each configuration.
    * @param Configuration
    * @param Vector with pairs of the iteration and the traversal time
@@ -179,6 +171,11 @@ class PredictiveTuning : public TuningStrategyInterface {
    * Pointer to the _iterations variable in AutoTuner
    */
   unsigned int &_iterations;
+
+  /**
+   * Stores the iteration at the beginning of a tuning phase
+   */
+  unsigned int _iterationBeginTuningPhase = 0;
 
   /**
    * Indicates if a valid configuration was found in the _optimalSearchSpace.
@@ -384,14 +381,22 @@ void PredictiveTuning::selectOptimalConfiguration() {
     return;
   }
 
+  std::unordered_map<Configuration, size_t, ConfigHash> traversalTimes;
+  // for (auto &configuration : _optimalSearchSpace) does not work, but would be way more efficient
+  for (auto &configuration : _searchSpace) {
+    if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
+    }
+  }
+
   // Time measure strategy
-  if (_traversalTimes.empty()) {
+  if (traversalTimes.empty()) {
     utils::ExceptionHandler::exception(
         "PredictiveTuning: Trying to determine fastest configuration without any measurements! "
         "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
   }
 
-  auto optimum = std::min_element(_traversalTimes.begin(), _traversalTimes.end(),
+  auto optimum = std::min_element(traversalTimes.begin(), traversalTimes.end(),
                                   [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
                                     return a.second < b.second;
                                   });
