@@ -1,15 +1,12 @@
 /**
- * @file C04hcp.h
+ * @file C04HCP.h
  * @author sabrinakrallmann
  * @date 30.03.2020
  */
 
 #pragma once
 
-using namespace std;
-
 namespace autopas{
-
 
 
 /**
@@ -148,41 +145,32 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
 
 
   // to fix compiler complaints about perfectly nested loop.
-  long endX = _end[0];
+  long startX = startOfThisColor[0], endX = _end[0];
   long startY = startOfThisColor[1], endY = _end[1];
   long startZ = startOfThisColor[2], endZ = _end[2];
 
-  std::array<long, 3> startsOfX{};
-  startsOfX[0] = startOfThisColor[0];
-  startsOfX[1] = startOfThisColor[0] -4;
-  startsOfX[2] = startOfThisColor[0] -2;
-
-  //iterate over cartesian grid first time
+  //iterate over cartesian grid
 #if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(2) nowait
+#pragma omp for schedule(dynamic, 1) collapse(3) nowait
 #endif
   for (long z = startZ; z < endZ; z += 4) {
-    for (long y = startY; y < endY; y+=2) {
-      for (long x = startsOfX[(z-startZ) % 12 / 4]; x < endX; x += 6) { // color starts every 6th column again
-        const std::array<long, 3> base3DIndex = {x, y, z};
-        processBasePack6(cells, base3DIndex);
-      }
-    }
-  }
-
-  startY++;
-  startsOfX[0] +=3;
-  startsOfX[1] +=3;
-  startsOfX[2] +=3;
-
-  //iterate over cartesian grid after shift
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(2) nowait
-#endif
-  for (long z = startZ; z < endZ; z += 4) {
-    for (long y = startY; y < endY; y+=2) {
-      for (long x = startsOfX[(z-startZ) % 12 / 4]; x < endX; x += 6) { // color starts every 6th column again
-        const std::array<long, 3> base3DIndex = {x, y, z};
+    for (long y = startY; y < endY; y++) { //iterate over every second y-row
+      for (long x = startX; x < (endX + 4); x += 6) { // color starts every 6th column again, the +4 is needed to prevent ending too early, since it will be shifted inside the loop
+        long x_index = x;
+        switch((z-startZ) % 12 / 4){ //shift on x-axis according to z value
+          case 0:
+            break;
+          case 1:
+            x_index -=4;
+            break;
+          case 2:
+            x_index -=2;
+            break;
+        }
+        if((y - startY) % 2 != 0){
+          x_index+=3;
+        }
+        const std::array<long, 3> base3DIndex = {x_index, y, z};
         processBasePack6(cells, base3DIndex);
       }
     }
