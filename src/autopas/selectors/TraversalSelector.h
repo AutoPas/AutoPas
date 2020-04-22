@@ -11,7 +11,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "TraversalSelectorInfo.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
@@ -36,6 +35,7 @@
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Logger.h"
 #include "autopas/utils/StringUtils.h"
