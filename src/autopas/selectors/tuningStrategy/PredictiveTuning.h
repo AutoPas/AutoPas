@@ -16,8 +16,9 @@
 namespace autopas {
 
 /**
- * Searching the search space by prediciting the time of the configuration and only testing the optimal configurations
- * and then selecting the optimum.
+ * On every tuning phase, this strategy makes a runtime prediction for every configuration and then
+ * only tests those which are within a certain range of the best prediction. In the end, the configuration
+ * that performed best during testing is selected.
  */
 class PredictiveTuning : public TuningStrategyInterface {
  public:
@@ -28,6 +29,7 @@ class PredictiveTuning : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
+   * @param iterations
    */
   PredictiveTuning(const std::set<ContainerOption> &allowedContainerOptions,
                    const std::set<double> &allowedCellSizeFactors,
@@ -44,6 +46,7 @@ class PredictiveTuning : public TuningStrategyInterface {
    * Constructor for the PredictiveTuning that only contains the given configurations.
    * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
+   * @param iterations
    */
   explicit PredictiveTuning(std::set<Configuration> allowedConfigurations, unsigned int &iterations)
       : _containerOptions{},
