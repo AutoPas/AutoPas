@@ -64,27 +64,25 @@ class TraversalOption : public Option<TraversalOption> {
    * @return map option -> string representation
    */
   static std::map<TraversalOption, std::string> getOptionNames() {
-    return {
-        {TraversalOption::c08, "c08"},
-        {TraversalOption::sliced, "sliced"},
-        {TraversalOption::c18, "c18"},
-        {TraversalOption::c01, "c01"},
-        {TraversalOption::directSumTraversal, "directSum"},
-        {TraversalOption::slicedVerlet, "verlet-sliced"},
-        {TraversalOption::c18Verlet, "verlet-c18"},
-        {TraversalOption::c01Verlet, "verlet-c01"},
-        {TraversalOption::c01Cuda, "cuda-c01"},
-        {TraversalOption::verletTraversal, "verlet-lists"},
-        {TraversalOption::c01CombinedSoA, "c01-combined-SoA"},
-        {TraversalOption::verletClusters, "verlet-clusters"},
-        {TraversalOption::c04, "c04"},
-        {TraversalOption::varVerletTraversalAsBuild, "var-verlet-lists-as-build"},
-        {TraversalOption::verletClustersColoring, "verlet-clusters-coloring"},
-        {TraversalOption::c04SoA, "c04SoA"},
-        {TraversalOption::verletClusterCells, "verlet-cluster-cells"},
-        {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
-        {TraversalOption::c04HCP, "c04HCP"}
-    };
+    return {{TraversalOption::c08, "c08"},
+            {TraversalOption::sliced, "sliced"},
+            {TraversalOption::c18, "c18"},
+            {TraversalOption::c01, "c01"},
+            {TraversalOption::directSumTraversal, "directSum"},
+            {TraversalOption::slicedVerlet, "verlet-sliced"},
+            {TraversalOption::c18Verlet, "verlet-c18"},
+            {TraversalOption::c01Verlet, "verlet-c01"},
+            {TraversalOption::c01Cuda, "cuda-c01"},
+            {TraversalOption::verletTraversal, "verlet-lists"},
+            {TraversalOption::c01CombinedSoA, "c01-combined-SoA"},
+            {TraversalOption::verletClusters, "verlet-clusters"},
+            {TraversalOption::c04, "c04"},
+            {TraversalOption::varVerletTraversalAsBuild, "var-verlet-lists-as-build"},
+            {TraversalOption::verletClustersColoring, "verlet-clusters-coloring"},
+            {TraversalOption::c04SoA, "c04SoA"},
+            {TraversalOption::verletClusterCells, "verlet-cluster-cells"},
+            {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
+            {TraversalOption::c04HCP, "c04HCP"}};
   };
 
  private:
