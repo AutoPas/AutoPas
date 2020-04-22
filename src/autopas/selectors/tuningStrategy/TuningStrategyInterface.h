@@ -20,6 +20,7 @@ class TuningStrategyInterface {
   /**
    * Store empirically collected information for the current configuration.
    * @param time Measured traversal time.
+   * @param iteration Iteration when the traversal time is added
    */
   virtual void addEvidence(long time, size_t iteration) = 0;
 
