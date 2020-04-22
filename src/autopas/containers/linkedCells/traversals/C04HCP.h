@@ -95,7 +95,7 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseP
 
       bool isIn = true;
       for (int d = 0; d < 3; ++d){
-        isIn &= (index[d] >= 0l) and (index[d] < _end[d]); //TODO: why does it not check correctly?
+        isIn &= (index[d] >= 0l) and (index[d] <= (_end[d] - this->_overlap[d])); //prevent using overlapping cells
       }
 
       if(isIn){ //skip cells outside radius
