@@ -203,6 +203,10 @@ class AutoTuner {
 
   SelectorStrategyOption _selectorStrategy;
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
+
+  /**
+   * _iterations - Counter of the iterations
+   */
   unsigned int _tuningInterval, _iterationsSinceTuning, _iterations;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
   double _verletSkin;

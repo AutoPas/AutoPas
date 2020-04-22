@@ -29,7 +29,7 @@ class PredictiveTuning : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
-   * @param iterations
+   * @param iterations Reference to iteration counter
    */
   PredictiveTuning(const std::set<ContainerOption> &allowedContainerOptions,
                    const std::set<double> &allowedCellSizeFactors,
@@ -129,6 +129,11 @@ class PredictiveTuning : public TuningStrategyInterface {
   std::set<Configuration>::iterator _currentConfig;
 
   /**
+   * Intermediate storage for the optimal configuration
+   */
+  std::set<Configuration>::iterator _optimalConfig;
+
+  /**
    * Stores the traversal times for each configuration.
    * @param Configuration
    * @param Vector with pairs of the iteration and the traversal time
@@ -184,11 +189,6 @@ class PredictiveTuning : public TuningStrategyInterface {
    * Indicates if a valid configuration was found in the _optimalSearchSpace.
    */
   bool _validConfigurationFound = false;
-
-  /**
-   * Intermediate storage for the optimal configuration
-   */
-  std::set<Configuration>::iterator _optimalConfig;
 
   /**
    * Factor of the range of the optimal configurations for the optimalSearchSpace
@@ -384,6 +384,7 @@ void PredictiveTuning::selectOptimalConfiguration() {
     return;
   }
 
+  // select the tested traversal times for the current tuning phase
   std::unordered_map<Configuration, size_t, ConfigHash> traversalTimes;
   // for (auto &configuration : _optimalSearchSpace) does not work, but would be way more efficient
   for (auto &configuration : _searchSpace) {
