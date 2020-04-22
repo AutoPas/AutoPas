@@ -84,9 +84,6 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseP
   std::array<long, 3> index;
   const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension);
 
-  cout << "end: " << _end[0] << ", " << _end[1] << ", " << _end[2] << endl;
-  cout << "baseIndex: " << base3DIndex[0] << ", " << base3DIndex[1] << ", " << base3DIndex[2] << endl;
-
   for(long z = 0; z < 3; ++z){ //go through the six cells
     for(long x = 0; x < 2; ++x){
       index[0] = base3DIndex[0] + x;
@@ -99,12 +96,8 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseP
       }
 
       if(isIn){ //skip cells outside radius
-        cout << "isIn: " << index[0] << ", " << index[1] << ", " << index[2] << endl;
         const unsigned long ulIndex = threeToOneD(index, signedDims);
-        cout << "ulIndex: " << ulIndex << endl;
         _cellHandler.processBaseCell(cells, ulIndex);
-      } else {
-        cout << "isNotIn: " << index[0] << ", " << index[1] << ", " << index[2] << endl;
       }
 
     }
@@ -153,8 +146,6 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
       break;
   }
 
-  cout << "---- Current colour: " << color << " --------" << endl;
-
 
   // to fix compiler complaints about perfectly nested loop.
   long startX = startOfThisColor[0], endX = _end[0];
@@ -168,8 +159,6 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
 #endif
   for (long z = startZ; z < endZ; z += 4) {
 
-    cout << "z: " << z << endl;
-
     if((z - startZ) % 12 == 0){
       startX = startOfThisColor[0];
     }
@@ -181,8 +170,6 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
 
     for (long y = startY; y < endY; ++y) {
 
-      cout << "y: " << y << endl;
-
       if(y != startY){
         if((y - startY) % 2 != 0){
           startX += 3; //Shift start of color every second y-row
@@ -190,10 +177,8 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
           startX -= 3; //Shift start of color back to origin
         }
       } //no shifting for first rotation
-      cout << "startX: " << startX << endl;
 
       for (long x = startX; x < endX; x += 6) { // color starts every 6th column again
-        cout << "x in for: " << x << endl;
         const std::array<long, 3> base3DIndex = {x, y, z};
         processBasePack6(cells, base3DIndex);
       }
