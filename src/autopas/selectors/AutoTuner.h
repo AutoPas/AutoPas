@@ -205,7 +205,7 @@ class AutoTuner {
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
 
   /**
-   * _iterations - Counter of the iterations
+   * _iterations - Counter of the iterations.
    */
   unsigned int _tuningInterval, _iterationsSinceTuning, _iterations;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
@@ -317,8 +317,8 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool
 
   if (f->isRelevantForTuning()) {
     ++_iterationsSinceTuning;
+    ++_iterations;
   }
-  ++_iterations;
   return isTuning;
 }
 
