@@ -135,7 +135,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSingleColor(
     std::vector<ParticleCell> &cells, int color) {
   // determine a starting point of one of the grids
-  std::array<long, 3> startOfThisColor{}; // coordinates: {x,y,z}
+  std::array<long, 3> startOfThisColor{};  // coordinates: {x,y,z}
 
   // different starting points for different colors
   // some colors are starting outside the grid because only part of their cuboids are part of the grid
@@ -185,7 +185,7 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
             x_index -= 2;
             break;
         }
-        if ((y - startY) % 2 != 0) { //shift x-axis every second y-row
+        if ((y - startY) % 2 != 0) {  // shift x-axis every second y-row
           x_index += 3;
         }
         const std::array<long, 3> base3DIndex = {x_index, y, z};
