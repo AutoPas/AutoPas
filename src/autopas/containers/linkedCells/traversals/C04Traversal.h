@@ -59,7 +59,7 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
 
   /**
    * C04 traversals are usable, if cellSizeFactor >= 1.0 and there are at least 3 cells for each dimension.
-   * @return
+   * @return information about applicability
    */
   bool isApplicable() const override {
     if (dataLayout == DataLayoutOption::cuda) {
@@ -132,7 +132,7 @@ constexpr void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
 
 /**
  * Goes through the cells aggregated by one color and processes the particles in each cell that is part of the
- * aggregation
+ * aggregation by using the barriers safed in _cellOffset32Pack
  *
  * @tparam ParticleCell
  * @tparam PairwiseFunctor
@@ -163,6 +163,15 @@ void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proces
   }
 }
 
+/**
+ *  Go through one color and search for blocks belonging to the specified color.
+ *  Uses two cartesian grids that are overlapping gridwise but not blockwise.
+ *
+ * @tparam ParticleCell
+ * @tparam PairwiseFunctor
+ * @tparam dataLayout
+ * @tparam useNewton3
+ */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);

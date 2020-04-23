@@ -15,10 +15,12 @@
 namespace autopas {
 
 /**
- * This class provides the c04 hcp traversal.
+ * This class provides the c04 hcp traversal. The traversal is based on Tchipev, N. Algorithmic and Implementational
+ * Optimizations of Molecular Dynamics Simulations for Process Engineering, Chapter 8 Outlook.
  *
  * The traversal uses the c04 base step performed on every single cell. Since
- * these steps overlap a domain coloring with four colors is applied.
+ * these steps overlap a domain coloring with four colors is applied. It differs from c04 in the shape of the colored
+ * blocks. The chosen block-shape in the c04HCP traversal is a 2x1x3-shape cuboid.
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
@@ -118,14 +120,26 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traversePart
   }  // close parallel region
 }
 
+/**
+ * Go through one color and search for cuboids belonging to the specified color.
+ * Uses shifts to go through the different dimensions and prevent overlapping of the cuboids.
+ *
+ * @tparam ParticleCell
+ * @tparam PairwiseFunctor
+ * @tparam dataLayout
+ * @tparam useNewton3
+ * @param cells
+ * @param color
+ */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSingleColor(
     std::vector<ParticleCell> &cells, int color) {
   // determine a starting point of one of the grids
-  std::array<long, 3> startOfThisColor{};
+  std::array<long, 3> startOfThisColor{}; // coordinates: {x,y,z}
 
-  // only need to shift z-dimension, because in each z dimension the colors behave like the 0-color in the z = 0
-  // dimension
+  // different starting points for different colors
+  // some colors are starting outside the grid because only part of their cuboids are part of the grid
+  // this way the starting points of sticking out cuboids can be determined as well
   switch (color) {
     case 0:
       startOfThisColor = {0l, 0l, 0l};
@@ -151,12 +165,17 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
 #pragma omp for schedule(dynamic, 1) collapse(3) nowait
 #endif
   for (long z = startZ; z < endZ; z += 4) {
-    for (long y = startY; y < endY; y++) {  // iterate over every second y-row
+    for (long y = startY; y < endY; y++) {
       for (long x = startX; x < (endX + 4);
            x += 6) {  // color starts every 6th column again, the +4 is needed to prevent ending too early, since it
-                      // will be shifted inside the loop
+                      // will be shifted back inside the loop
         long x_index = x;
-        switch ((z - startZ) % 12 / 4) {  // shift on x-axis according to z value
+        // shift on x-axis according to z value
+        // first: no shift
+        // second: -4 shift
+        // third: -2 shift
+        // fourth: go back to first
+        switch ((z - startZ) % 12 / 4) {
           case 0:
             break;
           case 1:
@@ -166,7 +185,7 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
             x_index -= 2;
             break;
         }
-        if ((y - startY) % 2 != 0) {
+        if ((y - startY) % 2 != 0) { //shift x-axis every second y-row
           x_index += 3;
         }
         const std::array<long, 3> base3DIndex = {x_index, y, z};
