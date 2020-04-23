@@ -46,9 +46,9 @@ class GaussianCluster {
       : _dimRestriction(dimRestriction),
         _continuousDims(continuousDims),
         _clusters(),
-        _numEvidence(0),
         _evidenceMinValue(0),
-        _evidenceMaxValue(0) {
+        _evidenceMaxValue(0),
+        _numEvidence(0) {
     size_t numClusters = 1;
     for (auto restriction : _dimRestriction) {
       if (restriction <= 0) {

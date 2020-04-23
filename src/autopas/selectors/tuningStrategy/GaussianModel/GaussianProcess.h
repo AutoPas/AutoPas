@@ -105,11 +105,11 @@ class GaussianProcess {
       : _inputs(),
         _outputs(),
         _dims(dims),
+        _evidenceMinValue(0),
+        _evidenceMaxValue(0),
         _sigma(sigma),
         _hypers(),
-        _rng(rngRef),
-        _evidenceMinValue(0),
-        _evidenceMaxValue(0) {}
+        _rng(rngRef) {}
 
   /**
    * Discard all evidence.
@@ -425,6 +425,11 @@ class GaussianProcess {
   Eigen::VectorXd _outputs;
 
   /**
+   * input dimensions
+   */
+  const size_t _dims;
+
+  /**
    * Current smallest evidence output
    */
   double _evidenceMinValue;
@@ -440,11 +445,6 @@ class GaussianProcess {
    * Current greatest evidence input
    */
   Vector _evidenceMaxVector;
-
-  /**
-   * input dimensions
-   */
-  const size_t _dims;
 
   /**
    * fixed noise assumed
