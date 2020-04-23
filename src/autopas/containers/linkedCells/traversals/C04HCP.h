@@ -6,6 +6,12 @@
 
 #pragma once
 
+#include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
+#include "autopas/containers/linkedCells/traversals/C08CellHandler.h"
+#include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
+#include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
+
 namespace autopas {
 
 /**
