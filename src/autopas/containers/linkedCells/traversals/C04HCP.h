@@ -170,7 +170,7 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
            x += 6) {  // color starts every 6th column again, the +4 is needed to prevent ending too early, since it
                       // will be shifted back inside the loop
         long x_index = x;
-        // shift on x-axis according to z value
+        // shift on x-axis according to z-value
         // first: no shift
         // second: -4 shift
         // third: -2 shift
