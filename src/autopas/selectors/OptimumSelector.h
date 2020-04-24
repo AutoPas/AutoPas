@@ -74,4 +74,4 @@ inline unsigned long optimumValue(const std::vector<unsigned long> &values, Sele
   return 0;
 }
 
-}  // namespace autopas
+}  // namespace autopas::OptimumSelector
