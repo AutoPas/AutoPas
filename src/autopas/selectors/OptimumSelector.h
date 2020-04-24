@@ -33,7 +33,7 @@ inline unsigned long minValue(const std::vector<unsigned long> &values) {
  * @return Arithmetic mean of the vector.
  */
 inline unsigned long meanValue(const std::vector<unsigned long> &values) {
-  return std::accumulate(values.cbegin(), values.cend(), 0l) / values.size();
+  return std::accumulate(values.cbegin(), values.cend(), 0ul) / values.size();
 }
 
 /**
