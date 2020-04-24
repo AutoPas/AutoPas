@@ -46,7 +46,7 @@ class FullSearch : public TuningStrategyInterface {
    */
   explicit FullSearch(std::set<Configuration> allowedConfigurations)
       : _containerOptions{}, _searchSpace(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {
-    for (auto config : _searchSpace) {
+    for (const auto config : _searchSpace) {
       _containerOptions.insert(config.container);
     }
   }
@@ -98,7 +98,7 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
                                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                      const std::set<Newton3Option> &allowedNewton3Options) {
   // generate all potential configs
-  for (auto &containerOption : allowedContainerOptions) {
+  for (const auto &containerOption : allowedContainerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
     const std::set<TraversalOption> &allContainerTraversals =
         compatibleTraversals::allCompatibleTraversals(containerOption);
@@ -107,10 +107,10 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
                           allContainerTraversals.begin(), allContainerTraversals.end(),
                           std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
-    for (auto &cellSizeFactor : allowedCellSizeFactors)
-      for (auto &traversalOption : allowedAndApplicable) {
-        for (auto &dataLayoutOption : allowedDataLayoutOptions) {
-          for (auto &newton3Option : allowedNewton3Options) {
+    for (const auto &cellSizeFactor : allowedCellSizeFactors)
+      for (const auto &traversalOption : allowedAndApplicable) {
+        for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
+          for (const auto &newton3Option : allowedNewton3Options) {
             _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, dataLayoutOption, newton3Option);
           }
         }
@@ -150,10 +150,9 @@ void FullSearch::selectOptimalConfiguration() {
         "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
   }
 
-  auto optimum = std::min_element(_traversalTimes.begin(), _traversalTimes.end(),
-                                  [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
-                                    return a.second < b.second;
-                                  });
+  const auto optimum = std::min_element(_traversalTimes.begin(), _traversalTimes.end(),
+                                        [](std::pair<Configuration, size_t> a,
+                                           std::pair<Configuration, size_t> b) -> bool { return a.second < b.second; });
 
   _currentConfig = _searchSpace.find(optimum->first);
   // sanity check
