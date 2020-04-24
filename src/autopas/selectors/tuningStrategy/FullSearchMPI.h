@@ -55,10 +55,10 @@ class FullSearchMPI : public TuningStrategyInterface {
     }
 
     int worldSize;
-    Autopas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &worldSize);
+    AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &worldSize);
 
     int worldRank;
-    Autopas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &worldRank);
+    AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &worldRank);
 
     // divide search space into worldSize many blocks.
     const int blockSize = totalNumConfigs / worldSize;
@@ -74,6 +74,10 @@ class FullSearchMPI : public TuningStrategyInterface {
       startNext += remainder;
     }
 
+    if (worldRank == 0) {
+        AutoPasLog(debug, "number of ranks: {}", worldSize);
+        AutoPasLog(debug, "total number of possible configurations: {}", totalNumConfigs);
+    }
     populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors,
                         allowedTraversalOptions, allowedDataLayoutOptions,
                         allowedNewton3Options,   start, startNext);
@@ -143,11 +147,11 @@ class FullSearchMPI : public TuningStrategyInterface {
 };
 
 void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
-                                     const std::set<double> &allowedCellSizeFactors,
-                                     const std::set<TraversalOption> &allowedTraversalOptions,
-                                     const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                     const std::set<Newton3Option> &allowedNewton3Options,
-                                     const int start, const int startNext) {
+                                        const std::set<double> &allowedCellSizeFactors,
+                                        const std::set<TraversalOption> &allowedTraversalOptions,
+                                        const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                                        const std::set<Newton3Option> &allowedNewton3Options,
+                                        const int start, const int startNext) {
   // index to test which configurations apply to the current rank
   int i = 0;
   // generate all potential configs
@@ -165,7 +169,8 @@ void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowed
       for (auto &traversalOption : allowedAndApplicable) {
         for (auto &dataLayoutOption : allowedDataLayoutOptions) {
           for (auto &newton3Option : allowedNewton3Options) {
-            if (i++ < start) {
+            if (i < start) {
+              ++i;
               continue;
             }
             if (i == startNext) {
@@ -173,6 +178,7 @@ void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowed
             }
             _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption,
                                  dataLayoutOption, newton3Option);
+            ++i;
           }
         }
       }
