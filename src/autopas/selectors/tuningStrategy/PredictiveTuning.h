@@ -380,10 +380,23 @@ void PredictiveTuning::selectOptimalConfiguration() {
 
   // select the tested traversal times for the current tuning phase
   std::unordered_map<Configuration, size_t, ConfigHash> traversalTimes;
-  // for (auto &configuration : _optimalSearchSpace) does not work, but would be way more efficient
-  for (const auto &configuration : _searchSpace) {
-    if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
-      traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
+  // In the first couple iterations tune iterates through _searchSpace until predictions are made
+  if (_optimalSearchSpace.empty()) {
+    for (const auto &configuration : _searchSpace) {
+      if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+        traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
+      }
+    }
+  } else {
+    for (const auto &configuration : _optimalSearchSpace) {
+      if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+        traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
+      }
+    }
+    for (const auto &configuration : _tooLongNotTestedSearchSpace) {
+      if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+        traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
+      }
     }
   }
 
