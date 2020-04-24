@@ -255,7 +255,7 @@ void PredictiveTuning::selectOptimalSearchSpace() {
     // _relativeOptimumRange
     if ((float)_configurationPredictions[configuration] / optimum->second <= _relativeOptimumRange) {
       _optimalSearchSpace.emplace(configuration);
-    } else if (_tuningIterationsCounter - _lastTest[configuration] >= _maxTuningIterationsWithoutTest) {
+    } else if (_tuningIterationsCounter - _lastTest[configuration] > _maxTuningIterationsWithoutTest) {
       _tooLongNotTestedSearchSpace.emplace(configuration);
     }
   }
