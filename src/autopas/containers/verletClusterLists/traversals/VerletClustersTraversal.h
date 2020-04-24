@@ -61,8 +61,8 @@ class VerletClustersTraversal : public TraversalInterface,
 
     const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle, clusterSize> &cluster) {
       _clusterFunctor.traverseCluster(cluster);
-      for (auto &neighborCluster : cluster.getNeighbors()) {
-        _clusterFunctor.traverseClusterPair(cluster, neighborCluster);
+      for (auto *neighborCluster : cluster.getNeighbors()) {
+        _clusterFunctor.traverseClusterPair(cluster, *neighborCluster);
       }
     };
 

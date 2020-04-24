@@ -80,8 +80,8 @@ class VerletClustersStaticTraversal : public TraversalInterface, public VerletCl
              clusterIndex++, clusterCount++) {
           auto &currentCluster = currentTower.getCluster(clusterIndex);
           _clusterFunctor.traverseCluster(currentCluster);
-          for (auto &neighborCluster : currentCluster.getNeighbors()) {
-            _clusterFunctor.traverseClusterPair(currentCluster, neighborCluster);
+          for (auto *neighborCluster : currentCluster.getNeighbors()) {
+            _clusterFunctor.traverseClusterPair(currentCluster, *neighborCluster);
           }
         }
       }
