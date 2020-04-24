@@ -46,9 +46,9 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         _neighborMatrixDim(nullptr),
         _clusterSize(clusterSize) {}
 
-  TraversalOption getTraversalType() const override { return TraversalOption::verletClusterCells; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::verletClusterCells; }
 
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     if (dataLayout == DataLayoutOption::cuda) {
       int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
@@ -61,9 +61,9 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
     }
   }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
   std::tuple<TraversalOption, DataLayoutOption, bool> getSignature() override {
     return std::make_tuple(TraversalOption::verletClusterCells, dataLayout, useNewton3);
@@ -361,7 +361,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
    * @param box2
    * @return distance
    */
-  inline double getMinDist(const std::array<double, 6> &box1, const std::array<double, 6> &box2) const {
+  [[nodiscard]] inline double getMinDist(const std::array<double, 6> &box1, const std::array<double, 6> &box2) const {
     double sqrDist = 0;
     for (int i = 0; i < 3; ++i) {
       if (box2[i + 3] < box1[i]) {

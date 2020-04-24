@@ -34,12 +34,13 @@ class VerletClustersTraversal : public TraversalInterface,
   explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor)
       : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor) {}
 
-  TraversalOption getTraversalType() const override { return TraversalOption::verletClusters; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::verletClusters; }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool isApplicable() const override {
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
+
+  [[nodiscard]] bool isApplicable() const override {
     return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa) and not useNewton3;
   }
 

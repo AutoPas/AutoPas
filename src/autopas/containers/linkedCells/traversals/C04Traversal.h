@@ -51,17 +51,17 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
 
   void traverseParticlePairs() override;
 
-  TraversalOption getTraversalType() const override { return TraversalOption::c04; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c04; }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   /**
    * C04 traversals are usable, if cellSizeFactor >= 1.0 and there are at least 3 cells for each dimension.
    * @return
    */
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     if (dataLayout == DataLayoutOption::cuda) {
       return false;
     }
@@ -78,7 +78,7 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
 
   constexpr void computeOffsets32Pack();
 
-  constexpr long parity(long x, long y, long z) const { return (x + y + z + 24) % 8; }
+  [[nodiscard]] constexpr long parity(long x, long y, long z) const { return (x + y + z + 24) % 8; }
 
   std::array<std::array<long, 3>, 32> _cellOffsets32Pack;
 
