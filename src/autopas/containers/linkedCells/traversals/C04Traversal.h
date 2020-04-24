@@ -44,10 +44,9 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
                const double interactionLength, const std::array<double, 3> &cellLength)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
+        _cellOffsets32Pack(computeOffsets32Pack()),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap),
-        _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {
-    computeOffsets32Pack();
-  }
+        _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {}
 
   void traverseParticlePairs() override;
 
@@ -76,7 +75,7 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
 
   void processBasePack32(std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex);
 
-  constexpr void computeOffsets32Pack();
+  constexpr auto computeOffsets32Pack() const;
 
   [[nodiscard]] constexpr long parity(long x, long y, long z) const { return (x + y + z + 24) % 8; }
 
@@ -88,16 +87,18 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-constexpr void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets32Pack() {
+constexpr auto C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets32Pack() const {
   using std::make_pair;
   using utils::ThreeDimensionalMapping::threeToOneD;
 
+  std::array<std::array<long, 3>, 32> cellOffsets32Pack = {};
+
   unsigned int i = 0;
   long z = 0l;
-  _cellOffsets32Pack[i++] = {1l, 1l, z};
-  _cellOffsets32Pack[i++] = {1l, 2l, z};
-  _cellOffsets32Pack[i++] = {2l, 1l, z};
-  _cellOffsets32Pack[i++] = {2l, 2l, z};
+  cellOffsets32Pack[i++] = {1l, 1l, z};
+  cellOffsets32Pack[i++] = {1l, 2l, z};
+  cellOffsets32Pack[i++] = {2l, 1l, z};
+  cellOffsets32Pack[i++] = {2l, 2l, z};
 
   // z = 1ul; z = 2ul
   for (z = 1l; z < 3l; ++z) {
@@ -106,20 +107,23 @@ constexpr void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
         if ((x == 0l and y == 0l) or (x == 3l and y == 0l) or (x == 0l and y == 3l) or (x == 3l and y == 3l)) {
           continue;
         }
-        _cellOffsets32Pack[i++] = {x, y, z};
+        cellOffsets32Pack[i++] = {x, y, z};
       }
     }
   }
 
   z = 3ul;
-  _cellOffsets32Pack[i++] = {1l, 1l, z};
-  _cellOffsets32Pack[i++] = {1l, 2l, z};
-  _cellOffsets32Pack[i++] = {2l, 1l, z};
-  _cellOffsets32Pack[i++] = {2l, 2l, z};
+  cellOffsets32Pack[i++] = {1l, 1l, z};
+  cellOffsets32Pack[i++] = {1l, 2l, z};
+  cellOffsets32Pack[i++] = {2l, 1l, z};
+  cellOffsets32Pack[i++] = {2l, 2l, z};
 
+  /// @todo C++20: mark as unlikely
   if (i != 32) {
     utils::ExceptionHandler::exception("Internal error: Wrong number of offsets (expected: 32, actual: {})", i);
   }
+
+  return cellOffsets32Pack;
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
