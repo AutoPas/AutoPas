@@ -8,92 +8,100 @@
 
 /**
  * Provide non-MPI versions of the needed MPI function calls.
+ * Extend MPI functionality by AutoPas-specifics (e.g. the Config datatype)
  *
  * Extend when necessary.
  */
 
 // @todo find a more elegant way of dealing with the MPI enums
-enum AutoPas_MPI_Comm {
-  AUTOPAS_MPI_COMM_WORLD,
-};
-
-enum AutopPas_MPI_Error {
-  AUTOPAS_MPI_SUCCESS,
-  AUTOPAS_MPI_ERR_COMM,
-  AUTOPAS_MPI_ERR_ARG,
-  AUTOPAS_MPI_ERR_TYPE,
-  AUTOPAS_UNKNOWN_MPI_ERR, // NOT the AutoPas version of MPI_ERR_UNKNOWN
-};
-
-enum AutoPas_MPI_Datatype {
+enum AutoPas_Datatype {
   AUTOPAS_CONFIG,
-};
-
-enum AutoPas_MPI_Status {
-  AUTOPAS_MPI_STATUS_IGNORE,
 };
 
 #if defined(AUTOPAS_MPI)
 #include <mpi.h>
-#include <stddef.h>
 #endif
 
-namespace autopas{
+namespace autopas {
 
 /**
  * Extends MPI with a Datatype for AutoPas Configarations
  */
 #if defined(AUTOPAS_MPI)
-struct Config{
-  short container, traversal, dataLayout, newton3;
+
+// MPI_Comm
+#define AUTOPAS_MPI_COMM_WORLD MPI_COMM_WORLD
+
+// MPI_Datatype
+#define AUTOPAS_MPI_LONG_INT MPI_LONG_INT
+
+// MPI_Op
+#define AUTOPAS_MPI_MINLOC MPI_MINLOC
+
+// MPI_Status
+#define AUTOPAS_MPI_STATUS_IGNORE MPI_STATUS_IGNORE
+
+using AutoPas_MPI_Comm = MPI_Comm;
+using AutoPas_MPI_Datatype = MPI_Datatype;
+using AutoPas_MPI_Op = MPI_Op;
+using AutoPas_MPI_Status = MPI_Status;
+
+struct Config_struct {
+  char container, traversal, dataLayout, newton3;
   double cellSizeFactor;
 };
 
+/**
+ * function used internally to define AUTOPAS_MPI_CONFIG as an MPI_Datatype
+ * @return handle for AUTOPAS_MPI_CONFIG
+ */
 MPI_Datatype _init_config_type() {
   MPI_Datatype config;
   const int array_of_blocklengths[] = {4, 1};
-  const MPI_Aint array_of_displacement[] = { offsetof(Config, container), offsetof(Config, cellSizeFactor) };
-  const MPI_Datatype array_of_datatypes[] = { MPI_SHORT, MPI_DOUBLE };
+  const MPI_Aint array_of_displacement[] = { offsetof(Config_struct, container), offsetof(Config_struct, cellSizeFactor) };
+  const MPI_Datatype array_of_datatypes[] = { MPI_CHAR, MPI_DOUBLE };
   MPI_Type_create_struct(2, array_of_blocklengths, array_of_displacement, array_of_datatypes, &config);
   return config;
 }
 
 struct {
   MPI_Datatype AUTOPAS_MPI_CONFIG = _init_config_type();
-}_AutoPas_MPI_Datatype_Handles;
+}_AutoPas_Datatype_Handles;
 
 /**
- * Translator for the return types of MPI functions
- * @param err: a value return by an MPI function call
- * @return: the appropriate AutoPas equivalent
+ * gives the MPI handle for a given AutoPas_Datatype
+ * @param datatype: the AutoPas_Datatype to convert
+ * @return the MPI handle for datatype or MPI_DATATYPE_NULL for undefined inputs
  */
-int translate(int err) {
-  switch (err) {
-    case MPI_SUCCESS:
-      return AUTOPAS_MPI_SUCCESS;
-    case MPI_ERR_COMM:
-      return AUTOPAS_MPI_ERR_COMM;
-    case MPI_ERR_ARG:
-      return AUTOPAS_MPI_ERR_ARG;
+inline MPI_Datatype AutoPas_to_MPI_datatype(AutoPas_Datatype datatype) {
+  MPI_Datatype result;
+  switch (datatype) {
+    case AUTOPAS_CONFIG:
+      result = _AutoPas_Datatype_Handles.AUTOPAS_MPI_CONFIG; break;
     default:
-      return AUTOPAS_UNKNOWN_MPI_ERR;
+      return MPI_DATATYPE_NULL;
   }
+  return result;
+}
+
+/**
+ * Wrapper for MPI_Error_string
+ * @param errorcode
+ * @param string: output string
+ * @param resultlen: length of output
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Error_string(int errorcode, char *string, int *resultlen) {
+  return MPI_Error_string(errorcode, string, resultlen);
 }
 
 /**
  * Wrapper for MPI_Comm_size
  * @param comm: communicator (handle)
  * @param size: outputs number of processes in the group of comm
- * @return: AutoPas_MPI error value
+ * @return: MPI error value
  */
-inline int AutoPas_MPI_Comm_size(AutoPas_MPI_Comm comm, int *size) {
-  switch(comm) {
-    case AUTOPAS_MPI_COMM_WORLD:
-      return translate(MPI_Comm_size(MPI_COMM_WORLD, size));
-    default:
-      return AUTOPAS_MPI_ERR_COMM;
-  }
-}
+inline int AutoPas_MPI_Comm_size(AutoPas_MPI_Comm comm, int *size) { return MPI_Comm_size(comm, size); }
 
 /**
  * Wrapper for MPI_Comm_rank
@@ -101,28 +109,7 @@ inline int AutoPas_MPI_Comm_size(AutoPas_MPI_Comm comm, int *size) {
  * @param rank: outputs rank of the process
  * @return: MPI error value
  */
-inline int AutoPas_MPI_Comm_rank(AutoPas_MPI_Comm comm, int *rank) {
-  switch(comm) {
-    case AUTOPAS_MPI_COMM_WORLD:
-      return translate(MPI_Comm_rank(MPI_COMM_WORLD, rank));
-    default:
-      return AUTOPAS_MPI_ERR_COMM;
-  }
-}
-
-/**
- * Helper for AutoPas_MPI_Send
- * Not to be used externally
- * @param all: same as AutoPas_MPI_Send
- */
-inline int _AutoPas_MPI_Send_Helper(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, AutoPas_MPI_Comm comm) {
-  switch(comm) {
-    case AUTOPAS_MPI_COMM_WORLD:
-      return translate(MPI_Send(buf, count, datatype, dest, tag, MPI_COMM_WORLD));
-    default:
-      return AUTOPAS_MPI_ERR_COMM;
-  }
-}
+inline int AutoPas_MPI_Comm_rank(AutoPas_MPI_Comm comm, int *rank) { MPI_Comm_rank(comm, rank); }
 
 /**
  * Wrapper for MPI_Send
@@ -132,32 +119,17 @@ inline int _AutoPas_MPI_Send_Helper(const void *buf, int count, MPI_Datatype dat
  * @param dest: rank of destination process
  * @param tag: message tag
  * @param comm: communicator (handle)
- * @return AutoPas_MPI error value
+ * @return MPI error value
  */
-inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag, AutoPas_MPI_Comm comm) {
-  switch(datatype) {
-    case AUTOPAS_CONFIG:
-      return _AutoPas_MPI_Send_Helper(buf, count, _AutoPas_MPI_Datatype_Handles.AUTOPAS_MPI_CONFIG, dest, tag, comm);
-    default:
-      return AUTOPAS_MPI_ERR_TYPE;
-  }
+inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype datatype,
+        int dest, int tag, AutoPas_MPI_Comm comm) {
+  return MPI_Send(buf, count, datatype, dest, tag, comm);
+}
+inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_Datatype datatype,
+        int dest, int tag, AutoPas_MPI_Comm comm) {
+  return MPI_Send(buf, count, AutoPas_to_MPI_datatype(datatype), dest, tag, comm);
 }
 
-
-/**
- * Helper for AutoPas_MPI_Recv
- * Not to be used externally
- * @param all: same as AutoPas_MPI_Recv
- */
-inline int _AutoPas_MPI_Recv_helper(void *buf, int count, MPI_Datatype datatype, int source, int tag,
-        AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
-  switch(comm) {
-    case AUTOPAS_MPI_COMM_WORLD:
-      return translate(MPI_Recv(buf, count, datatype, source, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE/* should be changed*/));
-    default:
-      return AUTOPAS_MPI_ERR_COMM;
-  }
-}
 /**
  * Wrapper for MPI_Recv
  * @param buf: outputs receive buffer
@@ -166,21 +138,94 @@ inline int _AutoPas_MPI_Recv_helper(void *buf, int count, MPI_Datatype datatype,
  * @param source: rank of source process
  * @param tag: message tag
  * @param comm: communicator (handle)
- * @param status: outputs status object
- * @return AutoPas_MPI error value
+ * @param status: currently ignored
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Recv(void *buf, int count, AutoPas_MPI_Datatype datatype, int source, int tag,
-             AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
-  switch(datatype) {
-    case AUTOPAS_CONFIG:
-      return _AutoPas_MPI_Recv_helper(buf, count, _AutoPas_MPI_Datatype_Handles.AUTOPAS_MPI_CONFIG, source, tag,
-              comm, status);
-    default:
-      return AUTOPAS_MPI_ERR_TYPE;
-  }
+        AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
+  return MPI_Recv(buf, count, datatype, source, tag, comm, status);
+}
+inline int AutoPas_MPI_Recv(void *buf, int count, AutoPas_Datatype datatype, int source, int tag,
+        AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
+  return MPI_Recv(buf, count, AutoPas_to_MPI_datatype(datatype), source, tag, comm, status);
+}
+
+/**
+ * Wrapper for MPI_Bcast
+ * @param buffer: send buffer
+ * @param count: number of elements in send buffer
+ * @param datatype: type of elements in send buffer
+ * @param root: rank of the process sending the broadcast
+ * @param comm: communicator (handle)
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_MPI_Datatype datatype, int root, AutoPas_MPI_Comm comm) {
+  return MPI_Bcast(buffer, count, datatype, root, comm);
+}
+inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_Datatype datatype, int root, AutoPas_MPI_Comm comm) {
+  return MPI_Bcast(buffer, count, AutoPas_to_MPI_datatype(datatype), root, comm);
+}
+
+/**
+ * Wrapper for MPI_Allreduce
+ * @param sendbuf: send buffer
+ * @param recvbuf: outputs receive buffer
+ * @param count: number of elements in send buffer
+ * @param datatype: type of elements in send buffer
+ * @param op: reduction operation (handle)
+ * @param comm: communicator (handle)
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
+        AutoPas_MPI_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
+  return MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
+}
+inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
+        AutoPas_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
+  return MPI_Allreduce(sendbuf, recvbuf, count, AutoPas_to_MPI_datatype(datatype), op, comm);
 }
 
 #else
+
+enum AutoPas_MPI_Comm {
+  AUTOPAS_MPI_COMM_WORLD,
+};
+
+enum AutoPas_MPI_Error {
+  AUTOPAS_MPI_SUCCESS = 0,
+  AUTOPAS_MPI_ERR_ARG,
+  AUTOPAS_MPI_ERR_COMM,
+  AUTOPAS_MPI_ERR_TYPE,
+};
+
+enum AutoPas_MPI_Datatype {
+  AUTOPAS_MPI_INT,
+  AUTOPAS_MPI_DOUBLE,
+  AUTOPAS_MPI_LONG_INT,
+};
+
+enum AutoPas_MPI_Op {
+  AUTOPAS_MPI_MINLOC,
+};
+
+enum AutoPas_MPI_Status {
+  AUTOPAS_MPI_STATUS_IGNROE,
+};
+
+/**
+ * Dummy for MPI_Error_string
+ * @param errorcode
+ * @param string: output string
+ * @param resultlen: length of output
+ * @return AUTOPAS_MPI_SUCCESS or AUTOPAS_MPI_ERR_ARG in case of undefined error code
+ */
+inline int AutoPas_MPI_Error_string(int errorcode, char *string, int *resultlen) {
+  switch (errorcode) {
+    // @todo implement error strings
+    default:
+      return AUTOPAS_MPI_ERR_ARG;
+  }
+}
 
 /**
  * Dummy for MPI_Comm_size
@@ -223,6 +268,9 @@ inline int AutoPas_MPI_Comm_rank(AutoPas_MPI_Comm comm, int *rank) {
 inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag, AutoPas_MPI_Comm comm) {
   return AUTOPAS_MPI_SUCCESS;
 }
+inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_Datatype datatype, int dest, int tag, AutoPas_MPI_Comm comm) {
+  return AUTOPAS_MPI_SUCCESS;
+}
 
 /**
  * Dummy for MPI_Recv
@@ -240,6 +288,48 @@ inline int AutoPas_MPI_Recv(void *buf, int count, AutoPas_MPI_Datatype datatype,
   buf = nullptr;
   return AUTOPAS_MPI_SUCCESS;
 }
+inline int AutoPas_MPI_Recv(void *buf, int count, AutoPas_Datatype datatype, int source, int tag,
+        AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
+  buf = nullptr;
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+/**
+ * Dummy for MPI_Bcast
+ * @param buffer: send buffer
+ * @param count: number of elements in send buffer
+ * @param datatype: type of elements in send buffer
+ * @param root: rank of the process sending the broadcast
+ * @param comm: communicator (handle)
+ * @return AUTOPAS_MPI_SUCCESS
+ */
+  inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_MPI_Datatype datatype, int root, AutoPas_MPI_Comm comm) {
+    return AUTOPAS_MPI_SUCCESS;
+  }
+  inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_Datatype datatype, int root, AutoPas_MPI_Comm comm) {
+    return AUTOPAS_MPI_SUCCESS;
+  }
+
+/**
+ * Dummy for MPI_Allreduce
+ * @param sendbuf: send buffer
+ * @param recvbuf: outputs nullptr
+ * @param count: number of elements in send buffer
+ * @param datatype: type of elements in send buffer
+ * @param op: reduction operation (handle)
+ * @param comm: communicator (handle)
+ * @return AUTOPAS_MPI_SUCCESS
+ */
+  inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
+                                   AutoPas_MPI_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
+    recvbuf = nullptr;
+    return AUTOPAS_MPI_SUCCESS;
+  }
+  inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
+                                   AutoPas_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
+    recvbuf = nullptr;
+    return AUTOPAS_MPI_SUCCESS;
+  }
 
 #endif
 }
