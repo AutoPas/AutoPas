@@ -10,10 +10,9 @@
  * Provide non-MPI versions of the needed MPI function calls.
  * Extend MPI functionality by AutoPas-specifics (e.g. the Config datatype)
  *
- * Extend when necessary.
+ * May be extended when necessary.
  */
 
-// @todo find a more elegant way of dealing with the MPI enums
 enum AutoPas_Datatype {
   AUTOPAS_CONFIG,
 };
@@ -52,8 +51,8 @@ struct Config_struct {
 };
 
 /**
- * function used internally to define AUTOPAS_MPI_CONFIG as an MPI_Datatype
- * @return handle for AUTOPAS_MPI_CONFIG
+ * Function used internally to define AUTOPAS_MPI_CONFIG as an MPI_Datatype
+ * @return Handle for AUTOPAS_MPI_CONFIG
  */
 MPI_Datatype _init_config_type() {
   MPI_Datatype config;
@@ -65,11 +64,11 @@ MPI_Datatype _init_config_type() {
 }
 
 struct {
-  MPI_Datatype AUTOPAS_MPI_CONFIG = _init_config_type();
+  MPI_Datatype AUTOPAS_MPI_CONFIG = nullptr;
 }_AutoPas_Datatype_Handles;
 
 /**
- * gives the MPI handle for a given AutoPas_Datatype
+ * Gives the MPI handle for a given AutoPas_Datatype
  * @param datatype: the AutoPas_Datatype to convert
  * @return the MPI handle for datatype or MPI_DATATYPE_NULL for undefined inputs
  */
@@ -77,6 +76,9 @@ inline MPI_Datatype AutoPas_to_MPI_datatype(AutoPas_Datatype datatype) {
   MPI_Datatype result;
   switch (datatype) {
     case AUTOPAS_CONFIG:
+      if (_AutoPas_Datatype_Handles.AUTOPAS_MPI_CONFIG == nullptr) {
+        _AutoPas_Datatype_Handles.AUTOPAS_MPI_CONFIG = _init_config_type();
+      }
       result = _AutoPas_Datatype_Handles.AUTOPAS_MPI_CONFIG; break;
     default:
       return MPI_DATATYPE_NULL;
@@ -109,7 +111,7 @@ inline int AutoPas_MPI_Comm_size(AutoPas_MPI_Comm comm, int *size) { return MPI_
  * @param rank: outputs rank of the process
  * @return: MPI error value
  */
-inline int AutoPas_MPI_Comm_rank(AutoPas_MPI_Comm comm, int *rank) { MPI_Comm_rank(comm, rank); }
+inline int AutoPas_MPI_Comm_rank(AutoPas_MPI_Comm comm, int *rank) { return MPI_Comm_rank(comm, rank); }
 
 /**
  * Wrapper for MPI_Send
