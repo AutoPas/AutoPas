@@ -32,9 +32,21 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   constexpr static size_t maxAttempts = 10;
   /**
-   *
+   * The factor for conversion from seconds to microseconds.
    */
   constexpr static double secondsPerMicroseconds = 1. / 1000000.;
+  /**
+   * Dimension corresponding to the newton3 option in the discrete tuple.
+   */
+  constexpr static size_t discreteNewtonDim = 2;
+  /**
+   * Dimensions of the continuous tuples.
+   */
+  constexpr static size_t continuousDims = 1;
+  /**
+   * Fixed noise
+   */
+  constexpr static double sigma = 0.01;
 
  public:
   /**
@@ -45,18 +57,18 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
    * @param predAcqFunction acquisition function used for prediction while tuning.
-   * @param predNumLHSamples number of samples used for prediction while tuning.
+   * @param predNumLHSamples number of latin-hypercube-samples used to find a evidence with high predicted acquisition
    * @param maxEvidence stop tuning after given number of evidence provided.
    * @param seed seed of random number generator (should only be used for tests)
    */
-  BayesianClusterSearch(const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
-                        const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
-                        const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
-                        const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-                        const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
-                        size_t maxEvidence = 10,
-                        AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lowerConfidenceBound,
-                        size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
+  explicit BayesianClusterSearch(
+      const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
+      const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
+      const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
+      const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
+      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
+      AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lowerConfidenceBound,
+      size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
       : _containerOptionsSet(allowedContainerOptions),
         _containerOptions(allowedContainerOptions.begin(), allowedContainerOptions.end()),
         _traversalOptions(allowedTraversalOptions.begin(), allowedTraversalOptions.end()),
@@ -67,10 +79,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _currentConfig(),
         _invalidConfigs(),
         _rng(seed),
-        _dimRestrictions({static_cast<int>(allowedTraversalOptions.size()),
-                          static_cast<int>(allowedDataLayoutOptions.size()),
-                          static_cast<int>(allowedNewton3Options.size())}),
-        _gaussianCluster(_dimRestrictions, 1, 0.01, _rng),
+        _gaussianCluster(
+            {static_cast<int>(allowedTraversalOptions.size()), static_cast<int>(allowedDataLayoutOptions.size()),
+             static_cast<int>(allowedNewton3Options.size())},
+            continuousDims, sigma, _rng),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
         _predNumLHSamples(predNumLHSamples) {
@@ -79,7 +91,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
     }
 
-    // map each travesal to a container
+    // map each traversal to a container
     for (auto it = _traversalOptions.begin(); it != _traversalOptions.end();) {
       auto compatibleContainerOptions = compatibleTraversals::allCompatibleContainers(*it);
       std::set<ContainerOption> allowedAndCompatible;
@@ -93,6 +105,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _traversalContainerMap[*it] = *allowedAndCompatible.begin();
         ++it;
       }
+    }
+
+    if (searchSpaceIsEmpty()) {
+      autopas::utils::ExceptionHandler::exception("BayesianClusterSearch: No valid configurations could be created.");
     }
 
     tune();
@@ -128,7 +144,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * Generate n samples and predict their corresponding
    * acquisition function. The result is sorted depending on
-   * given acquistion function.
+   * the given acquisition function.
    * @param n numSamples
    * @param af acquisition function
    */
@@ -141,18 +157,35 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
 
+  /**
+   * Map each traversal to a container.
+   */
   std::map<TraversalOption, ContainerOption> _traversalContainerMap;
 
   FeatureVector _currentConfig;
+  /**
+   * Currently sampled vectors and corresponding acquisition values.
+   */
   std::vector<GaussianCluster::VectorAcquisition> _currentAcquisitions;
+  /**
+   * Configurations marked invalid.
+   */
   std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
 
   Random _rng;
-  std::vector<int> _dimRestrictions;
+  /**
+   * Stochastic model used for predictions.
+   */
   GaussianCluster _gaussianCluster;
-  size_t _maxEvidence;
-  AcquisitionFunctionOption _predAcqFunction;
-  size_t _predNumLHSamples;
+  const size_t _maxEvidence;
+  /**
+   * Acquisition function used to predict informational gain.
+   */
+  const AcquisitionFunctionOption _predAcqFunction;
+  /**
+   * Number of latin-hypercube-samples used to find a evidence with high predicted acquisition.
+   */
+  const size_t _predNumLHSamples;
 };
 
 bool BayesianClusterSearch::tune(bool currentInvalid) {
@@ -184,7 +217,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
 
     // test best vectors until empty
     while (not _currentAcquisitions.empty()) {
-      auto best = FeatureVector::clusterDecode(_currentAcquisitions[0].first, _traversalOptions, _dataLayoutOptions,
+      auto best = FeatureVector::clusterDecode(_currentAcquisitions.back().first, _traversalOptions, _dataLayoutOptions,
                                                _newton3Options);
       best.container = _traversalContainerMap[best.traversal];
 
@@ -194,7 +227,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
         return true;
       } else {
         // invalid: dispose
-        _currentAcquisitions.erase(_currentAcquisitions.begin());
+        _currentAcquisitions.pop_back();
       }
     }
 
@@ -212,7 +245,7 @@ void BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOpti
   auto continuousSamples = FeatureVector::lhsSampleFeatureContinuous(n, _rng, *_cellSizeFactors);
 
   auto neighbourFun = [this](Eigen::VectorXi target) -> std::vector<Eigen::VectorXi> {
-    return FeatureVector::neighboursManhattan1(target, _dimRestrictions);
+    return FeatureVector::neighboursManhattan1(target, _gaussianCluster.getDimensions());
   };
 
   // calculate all acquisitions
@@ -223,19 +256,19 @@ void BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOpti
     case AcquisitionFunctionOption::mean:
     case AcquisitionFunctionOption::lowerConfidenceBound:
     case AcquisitionFunctionOption::upperConfidenceBound:
-      // min estimated value first
+      // pop min estimated value first
       std::sort(_currentAcquisitions.begin(), _currentAcquisitions.end(),
                 [](const GaussianCluster::VectorAcquisition &va1, const GaussianCluster::VectorAcquisition &va2) {
-                  return va1.second < va2.second;
+                  return va1.second > va2.second;
                 });
       break;
     case AcquisitionFunctionOption::variance:
     case AcquisitionFunctionOption::expectedDecrease:
     case AcquisitionFunctionOption::probabilityOfDecrease:
-      // max acquisition first
+      // pop max acquisition first
       std::sort(_currentAcquisitions.begin(), _currentAcquisitions.end(),
                 [](const GaussianCluster::VectorAcquisition &va1, const GaussianCluster::VectorAcquisition &va2) {
-                  return va1.second > va2.second;
+                  return va1.second < va2.second;
                 });
       break;
   }
@@ -246,18 +279,20 @@ bool BayesianClusterSearch::searchSpaceIsTrivial() const {
     return false;
   }
 
-  return _containerOptions.size() == 1 and (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 1) and
+  return _containerOptions.size() == 1 and (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 1) and
          _traversalOptions.size() == 1 and _dataLayoutOptions.size() == 1 and _newton3Options.size() == 1;
 }
 
 bool BayesianClusterSearch::searchSpaceIsEmpty() const {
   // if one enum is empty return true
-  return _containerOptions.empty() or (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 0) or
+  return _containerOptions.empty() or (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or
          _traversalOptions.empty() or _dataLayoutOptions.empty() or _newton3Options.empty();
 }
 
 void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
-  std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option);
+  _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option));
+
+  _gaussianCluster.setDimension(discreteNewtonDim, _newton3Options.size());
   _currentAcquisitions.clear();
 
   if (this->searchSpaceIsEmpty()) {

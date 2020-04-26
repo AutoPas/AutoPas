@@ -48,21 +48,26 @@ class GaussianCluster {
         _clusters(),
         _evidenceMinValue(0),
         _evidenceMaxValue(0),
-        _numEvidence(0) {
-    size_t numClusters = 1;
-    for (auto restriction : _dimRestriction) {
-      if (restriction <= 0) {
-        utils::ExceptionHandler::exception("GaussianCluster: dimension-restriction is {} but has to be positive",
-                                           restriction);
-      }
+        _numEvidence(0),
+        _sigma(sigma),
+        _rng(rngRef) {
+    initClusters();
+  }
 
-      numClusters *= restriction;
-    }
+  /**
+   * Get the number of clusters in each dimension.
+   * @return
+   */
+  const std::vector<int> &getDimensions() const { return _dimRestriction; }
 
-    _clusters.reserve(numClusters);
-    for (size_t i = 0; i < numClusters; ++i) {
-      _clusters.emplace_back(continuousDims, sigma, rngRef);
-    }
+  /**
+   * Change the number of cluster in a dimension
+   * @param dim the dimension to change
+   * @param newValue new number of clusters
+   */
+  void setDimension(size_t dim, int newValue) {
+    _dimRestriction[dim] = newValue;
+    initClusters();
   }
 
   /**
@@ -79,7 +84,7 @@ class GaussianCluster {
    * Get the number of evidence provided.
    * @return
    */
-  size_t numEvidence() const { return _numEvidence; }
+  [[nodiscard]] size_t numEvidence() const { return _numEvidence; }
 
   /**
    * Provide a input-output pair as evidence.
@@ -88,7 +93,7 @@ class GaussianCluster {
    * @param inputContinuous y
    * @param output f((x,y))
    */
-  void addEvidence(VectorDiscrete inputDiscrete, VectorContinuous inputContinuous, double output) {
+  void addEvidence(const VectorDiscrete &inputDiscrete, const VectorContinuous &inputContinuous, double output) {
     size_t clusterIdx = getIndex(inputDiscrete);
     if (static_cast<size_t>(inputContinuous.size()) != _continuousDims) {
       utils::ExceptionHandler::exception(
@@ -103,11 +108,9 @@ class GaussianCluster {
     } else if (output < _evidenceMinValue) {
       _evidenceMinValue = output;
       _evidenceMinVector = std::make_pair(inputDiscrete, inputContinuous);
-      ;
     } else if (output > _evidenceMaxValue) {
       _evidenceMaxValue = output;
       _evidenceMaxVector = std::make_pair(inputDiscrete, inputContinuous);
-      ;
     }
 
     _clusters[clusterIdx].addEvidence(inputContinuous, output);
@@ -118,7 +121,7 @@ class GaussianCluster {
    * Get the evidence with the smallest output value
    * @return input of min
    */
-  std::pair<VectorDiscrete, VectorContinuous> getEvidenceMin() {
+  [[nodiscard]] std::pair<VectorDiscrete, VectorContinuous> getEvidenceMin() const {
     if (_numEvidence == 0) {
       utils::ExceptionHandler::exception("GaussianCluster has no evidence");
     }
@@ -130,7 +133,7 @@ class GaussianCluster {
    * Get the evidence with the highest output value
    * @return input of max
    */
-  std::pair<VectorDiscrete, VectorContinuous> getEvidenceMax() {
+  [[nodiscard]] std::pair<VectorDiscrete, VectorContinuous> getEvidenceMax() const {
     if (_numEvidence == 0) {
       utils::ExceptionHandler::exception("GaussianCluster has no evidence");
     }
@@ -149,13 +152,17 @@ class GaussianCluster {
       AcquisitionFunctionOption af, const std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> &neighbourFun,
       const std::vector<VectorContinuous> &samples) {
     std::vector<VectorAcquisition> acquisitions;
+    // pair up all discrete with all continuous samples
+    acquisitions.reserve(_clusters.size() * samples.size());
 
-    for (auto currentContinuous : samples) {
+    for (const auto &currentContinuous : samples) {
       // calc means of given continuous tuple for each cluster
       std::vector<double> means;
       std::vector<double> vars;
       std::vector<double> stddevs;
       means.reserve(_clusters.size());
+      vars.reserve(_clusters.size());
+      stddevs.reserve(_clusters.size());
       for (const auto &cluster : _clusters) {
         means.push_back(cluster.predictMean(currentContinuous));
 
@@ -180,7 +187,7 @@ class GaussianCluster {
           if (_clusters[i].numEvidence() > 0) {
             // weight based on 2-wasserstein distance
             double distance = std::pow(means[n_index] - means[i], 2) + std::pow(stddevs[n_index] - stddevs[i], 2);
-            double n_weight = 1. / (1 + distance / vars[i]);
+            double n_weight = vars[i] / (vars[i] + distance);
             mixMean += means[n_index] * n_weight;
             mixVar += vars[n_index] * n_weight * n_weight;
             weightSum += n_weight;
@@ -197,7 +204,10 @@ class GaussianCluster {
           case AcquisitionFunctionOption::probabilityOfDecrease:
           case AcquisitionFunctionOption::expectedDecrease:
             currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMinValue);
-          default:
+          case AcquisitionFunctionOption::mean:
+          case AcquisitionFunctionOption::variance:
+          case AcquisitionFunctionOption::lowerConfidenceBound:
+          case AcquisitionFunctionOption::upperConfidenceBound:
             currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar);
         }
 
@@ -209,12 +219,32 @@ class GaussianCluster {
   }
 
  private:
+  void initClusters() {
+    size_t numClusters = 1;
+    for (auto restriction : _dimRestriction) {
+      if (restriction <= 0) {
+        utils::ExceptionHandler::exception("GaussianCluster: dimension-restriction is {} but has to be positive",
+                                           restriction);
+      }
+
+      numClusters *= restriction;
+    }
+
+    _clusters.clear();
+    _numEvidence = 0;
+
+    _clusters.reserve(numClusters);
+    for (size_t i = 0; i < numClusters; ++i) {
+      _clusters.emplace_back(_continuousDims, _sigma, _rng);
+    }
+  }
+
   /**
    * Get the cluster index of a discrete tuple
    * @param x the discrete tuple
    * @return
    */
-  size_t getIndex(const VectorDiscrete &x) const {
+  [[nodiscard]] size_t getIndex(const VectorDiscrete &x) const {
     if (static_cast<size_t>(x.size()) != _dimRestriction.size()) {
       utils::ExceptionHandler::exception(
           "GaussianCluster: size of discrete input {} does not match specified dimensions {}", x.size(),
@@ -223,14 +253,14 @@ class GaussianCluster {
 
     auto i = x.size() - 1;
 
-    if (x[i] < 0 || x[i] >= _dimRestriction[i]) {
+    if (x[i] < 0 or x[i] >= _dimRestriction[i]) {
       utils::ExceptionHandler::exception("GaussianCluster: The {}th dimension is {} but is restricted to [0,{})", i,
                                          x[i], _dimRestriction[i]);
     }
 
     size_t result = x[i];
     for (--i; i >= 0; --i) {
-      if (x[i] < 0 || x[i] >= _dimRestriction[i]) {
+      if (x[i] < 0 or x[i] >= _dimRestriction[i]) {
         utils::ExceptionHandler::exception("GaussianCluster: The {}th dimension is {} but is restricted to [0,{})", i,
                                            x[i], _dimRestriction[i]);
       }
@@ -244,6 +274,9 @@ class GaussianCluster {
   /**
    * Increment the given discrete tuple x, resulting
    * in the tuple following x in the cluster list.
+   * The increment works in a date-like fashion:
+   * One increment adds one to the first vector entry.
+   * If this entry overflows also the next entry is incremented and so on.
    * @param x discrete tuple
    */
   void discreteIncrement(VectorDiscrete &x) const {
@@ -256,29 +289,29 @@ class GaussianCluster {
   }
 
   /**
-   * restrict the i-th dimension to a integer between 0 and _dimRestriction[i]-1
+   * Number of clusters per discrete dimension.
    */
-  const std::vector<int> _dimRestriction;
+  std::vector<int> _dimRestriction;
   /**
-   * number of additional unrestricted dimensions
+   * Number of additional unrestricted continuous dimensions.
    */
   const size_t _continuousDims;
 
   /**
-   * Gaussian process for each discrete tuple
+   * Gaussian process for each discrete tuple.
    */
   std::vector<GaussianProcess> _clusters;
 
   /**
-   * Current smallest evidence output
+   * Current smallest evidence output.
    */
   double _evidenceMinValue;
   /**
-   * Current smallest evidence input
+   * Current smallest evidence input.
    */
   std::pair<VectorDiscrete, VectorContinuous> _evidenceMinVector;
   /**
-   * Current greatest evidence output
+   * Current greatest evidence output.
    */
   double _evidenceMaxValue;
   /**
@@ -286,8 +319,15 @@ class GaussianCluster {
    */
   std::pair<VectorDiscrete, VectorContinuous> _evidenceMaxVector;
   /**
-   * Current number of evidence
+   * Current number of evidence.
    */
   size_t _numEvidence;
+
+  /**
+   * Fixed noise assumed.
+   */
+  const double _sigma;
+
+  Random &_rng;
 };
 }  // namespace autopas

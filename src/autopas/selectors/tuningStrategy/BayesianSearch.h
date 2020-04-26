@@ -49,14 +49,14 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param maxEvidence stop tuning after given number of evidence provided.
    * @param seed seed of random number generator (should only be used for tests)
    */
-  BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
-                 const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
-                 const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
-                 const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-                 const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
-                 size_t maxEvidence = 10,
-                 AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lowerConfidenceBound,
-                 size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()())
+  explicit BayesianSearch(
+      const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
+      const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
+      const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
+      const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
+      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
+      AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lowerConfidenceBound,
+      size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()())
       : _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
         _dataLayoutOptions(allowedDataLayoutOptions),
@@ -89,6 +89,10 @@ class BayesianSearch : public TuningStrategyInterface {
         _traversalContainerMap[*it] = *allowedAndCompatible.begin();
         ++it;
       }
+    }
+
+    if (searchSpaceIsEmpty()) {
+      autopas::utils::ExceptionHandler::exception("BayesianSearch: No valid configurations could be created.");
     }
 
     tune();
@@ -231,13 +235,13 @@ bool BayesianSearch::searchSpaceIsTrivial() const {
     return false;
   }
 
-  return _containerOptions.size() == 1 and (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 1) and
+  return _containerOptions.size() == 1 and (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 1) and
          _traversalOptions.size() == 1 and _dataLayoutOptions.size() == 1 and _newton3Options.size() == 1;
 }
 
 bool BayesianSearch::searchSpaceIsEmpty() const {
   // if one enum is empty return true
-  return _containerOptions.empty() or (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 0) or
+  return _containerOptions.empty() or (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or
          _traversalOptions.empty() or _dataLayoutOptions.empty() or _newton3Options.empty();
 }
 

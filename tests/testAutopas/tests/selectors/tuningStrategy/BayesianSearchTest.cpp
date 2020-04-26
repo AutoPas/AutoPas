@@ -9,13 +9,9 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
-#include "autopas/options/Newton3Option.h"
-
 TEST_F(BayesianSearchTest, testSearchSpaceEmpty) {
-  autopas::BayesianSearch bayesianSearch(std::set<autopas::ContainerOption>({}));
-  EXPECT_TRUE(bayesianSearch.searchSpaceIsEmpty());
-  EXPECT_FALSE(bayesianSearch.searchSpaceIsTrivial());
-  EXPECT_THAT(bayesianSearch.getAllowedContainerOptions(), ::testing::IsEmpty());
+  EXPECT_THROW(autopas::BayesianSearch({std::set<autopas::ContainerOption>({})}),
+               autopas::utils::ExceptionHandler::AutoPasException);
 }
 
 TEST_F(BayesianSearchTest, testSearchSpaceOneOption) {

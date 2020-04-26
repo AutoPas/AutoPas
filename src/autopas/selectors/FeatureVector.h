@@ -182,9 +182,9 @@ class FeatureVector : public Configuration {
    * @param newton3Options allowed newton3 options
    * @return cluster encoded vector
    */
-  std::pair<Eigen::VectorXi, Eigen::VectorXd> clusterEncode(const std::vector<TraversalOption> &traversalOptions,
-                                                            const std::vector<DataLayoutOption> &dataLayoutOptions,
-                                                            const std::vector<Newton3Option> &newton3Options) const {
+  [[nodiscard]] std::pair<Eigen::VectorXi, Eigen::VectorXd> clusterEncode(
+      const std::vector<TraversalOption> &traversalOptions, const std::vector<DataLayoutOption> &dataLayoutOptions,
+      const std::vector<Newton3Option> &newton3Options) const {
     int traversalIndex = static_cast<int>(std::distance(
         traversalOptions.begin(), std::find(traversalOptions.begin(), traversalOptions.end(), traversal)));
     int dataLayoutIndex = static_cast<int>(std::distance(
@@ -223,23 +223,27 @@ class FeatureVector : public Configuration {
    * @param dimRestrictions restriction on each dimension
    * @return all neighbours
    */
-  static std::vector<Eigen::VectorXi> neighboursManhattan1(Eigen::VectorXi target, std::vector<int> dimRestrictions) {
+  static std::vector<Eigen::VectorXi> neighboursManhattan1(const Eigen::VectorXi &target,
+                                                           const std::vector<int> &dimRestrictions) {
     std::vector<Eigen::VectorXi> result;
+    // neighbours should contain #(possible values for each dimension) - #dimensions (initial vector is skipped once per
+    // dimension)
+    result.reserve(std::accumulate(dimRestrictions.begin(), dimRestrictions.end(), -dimRestrictions.size()));
+
     // for each dimension
     for (int i = 0; i < target.size(); ++i) {
-      // store old value
+      // initial value
       auto init = target[i];
 
       // for each possible value of that dimension
       for (int x = 0; x < dimRestrictions[i]; ++x) {
+        // skip initial value
         if (x != init) {
-          target[i] = x;
-          result.push_back(target);
+          auto neighbour = target;
+          neighbour[i] = x;
+          result.push_back(std::move(neighbour));
         }
       }
-
-      // restore old value
-      target[i] = init;
     }
     return result;
   }
@@ -267,9 +271,9 @@ class FeatureVector : public Configuration {
                     const Newton3Container &newton3) {
     // create n samples from each set
     auto csf = cellSizeFactors.uniformSample(n, rng);
-    std::vector<TraversalOption> tr = rng.uniformSample(traversals.begin(), traversals.end(), n);
-    std::vector<DataLayoutOption> dl = rng.uniformSample(dataLayouts.begin(), dataLayouts.end(), n);
-    std::vector<Newton3Option> n3 = rng.uniformSample(newton3.begin(), newton3.end(), n);
+    auto tr = rng.uniformSample(traversals.begin(), traversals.end(), n);
+    auto dl = rng.uniformSample(dataLayouts.begin(), dataLayouts.end(), n);
+    auto n3 = rng.uniformSample(newton3.begin(), newton3.end(), n);
 
     std::vector<FeatureVector> result;
     for (size_t i = 0; i < n; ++i) {
@@ -291,6 +295,7 @@ class FeatureVector : public Configuration {
     auto csf = cellSizeFactors.uniformSample(n, rng);
 
     std::vector<Eigen::VectorXd> result;
+    result.reserve(n);
     for (size_t i = 0; i < n; ++i) {
       Eigen::VectorXd vec(1);
       vec << csf[i];

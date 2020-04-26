@@ -425,34 +425,34 @@ class GaussianProcess {
   Eigen::VectorXd _outputs;
 
   /**
-   * input dimensions
+   * Number of input dimensions.
    */
   const size_t _dims;
 
   /**
-   * Current smallest evidence output
+   * Current smallest evidence output.
    */
   double _evidenceMinValue;
   /**
-   * Current smallest evidence input
+   * Current smallest evidence input.
    */
   Vector _evidenceMinVector;
   /**
-   * Current greatest evidence output
+   * Current greatest evidence output.
    */
   double _evidenceMaxValue;
   /**
-   * Current greatest evidence input
+   * Current greatest evidence input.
    */
   Vector _evidenceMaxVector;
 
   /**
-   * fixed noise assumed
+   * Fixed noise assumed.
    */
   const double _sigma;
 
   /**
-   * hyperparameters
+   * Sampled hyperparameters including precalculated matrices and score
    */
   std::vector<Hyperparameters> _hypers;
 

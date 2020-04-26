@@ -54,21 +54,29 @@ TEST_F(FeatureVectorTest, distanceTest) {
 }
 
 TEST_F(FeatureVectorTest, onehot) {
+  // check if applying one-hot encode and decode lead to the initial vector
+
   autopas::Random rand(42);
   auto vecList = autopas::FeatureVector::lhsSampleFeatures(
       100, rand, autopas::NumberInterval<double>(1., 2.), autopas::TraversalOption::getAllOptions(),
       autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
 
   for (auto fv : vecList) {
+    // encode
     auto vec = fv.oneHotEncode();
+
+    // check if encoded vector has expected size
     ASSERT_EQ(vec.size(), autopas::FeatureVector::oneHotDims);
 
+    // check if decoding leads to the inital vector
     auto decode = autopas::FeatureVector::oneHotDecode(vec);
     EXPECT_EQ(decode, fv);
   }
 }
 
 TEST_F(FeatureVectorTest, clusterEncode) {
+  // check if cluster-encode and decode lead to the initial vector
+
   autopas::Random rand(91);
   auto cellSizes = autopas::NumberInterval<double>(1., 2.);
 
@@ -84,11 +92,14 @@ TEST_F(FeatureVectorTest, clusterEncode) {
       autopas::FeatureVector::lhsSampleFeatures(100, rand, cellSizes, traversalsVec, dataLayoutsVec, newtonsVec);
 
   for (auto fv : vecList) {
+    // encode vector
     auto encoded = fv.clusterEncode(traversalsVec, dataLayoutsVec, newtonsVec);
 
+    // check expected size of discrete and continuous tuples
     EXPECT_EQ(encoded.first.size(), 3);
     EXPECT_EQ(encoded.second.size(), 1);
 
+    // check if decoding leads to intial vector
     auto decoded = autopas::FeatureVector::clusterDecode(encoded, traversalsVec, dataLayoutsVec, newtonsVec);
     EXPECT_EQ(decoded, fv);
   }
