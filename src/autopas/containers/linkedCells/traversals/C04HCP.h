@@ -28,7 +28,6 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-
 class C04HCP : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                public LinkedCellTraversalInterface<ParticleCell> {
  public:
