@@ -42,7 +42,6 @@ namespace autopas {
          */
         void addParticle(const Particle &p) override {
             particlesLock.lock();
-            //_particles.push_back(p);
             _particles.emplace_back(std::make_unique<Particle>(p));
             particlesLock.unlock();
         }
@@ -96,7 +95,6 @@ namespace autopas {
             }
 
             if (index < numParticles() - 1) {
-                //std::swap(_particles[index], _particles[numParticles() - 1]);
                 _particles[index].swap(_particles[numParticles() - 1]);
             }
             _particles.pop_back();
