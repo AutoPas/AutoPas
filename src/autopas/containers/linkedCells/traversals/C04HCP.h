@@ -187,8 +187,7 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
         if ((y - startY) % 2 != 0) {  // shift x-axis every second y-row
           x_index += 3;
         }
-        const std::array<long, 3> base3DIndex = {x_index, y, z};
-        processBasePack6(cells, base3DIndex);
+        processBasePack6(cells, {x_index, y, z});
       }
     }
   }
