@@ -78,7 +78,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBasePack6(
     std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex) {
   using utils::ThreeDimensionalMapping::threeToOneD;
-  std::array<long, 3> index;
+  std::array<long, 3> index{};
   const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension);
 
   for (long z = 0; z < 3; ++z) {  // go through the six cells
