@@ -13,9 +13,17 @@
  * May be extended when necessary.
  */
 
+// initialize to size  of the type in bytes
 enum AutoPas_Datatype {
-  AUTOPAS_CONFIG,
+  AUTOPAS_CONFIG = 16,
 };
+
+
+struct Config_struct {
+  char container, traversal, dataLayout, newton3;
+  double cellSizeFactor;
+};
+
 
 #if defined(AUTOPAS_MPI)
 #include <mpi.h>
@@ -32,9 +40,11 @@ namespace autopas {
 #define AUTOPAS_MPI_COMM_WORLD MPI_COMM_WORLD
 
 // MPI_Datatype
+#define AUTOPAS_MPI_CXX_BOOL MPI_CXX_BOOL
 #define AUTOPAS_MPI_LONG_INT MPI_LONG_INT
 
 // MPI_Op
+#define AUTOPAS_MPI_LAND MPI_LAND
 #define AUTOPAS_MPI_MINLOC MPI_MINLOC
 
 // MPI_Status
@@ -44,11 +54,7 @@ using AutoPas_MPI_Comm = MPI_Comm;
 using AutoPas_MPI_Datatype = MPI_Datatype;
 using AutoPas_MPI_Op = MPI_Op;
 using AutoPas_MPI_Status = MPI_Status;
-
-struct Config_struct {
-  char container, traversal, dataLayout, newton3;
-  double cellSizeFactor;
-};
+using AutoPas_MPI_Request = MPI_Request;
 
 /**
  * Function used internally to define AUTOPAS_MPI_CONFIG as an MPI_Datatype
@@ -78,6 +84,7 @@ inline MPI_Datatype AutoPas_to_MPI_datatype(AutoPas_Datatype datatype) {
     case AUTOPAS_CONFIG:
       if (_AutoPas_Datatype_Handles.AUTOPAS_MPI_CONFIG == nullptr) {
         _AutoPas_Datatype_Handles.AUTOPAS_MPI_CONFIG = _init_config_type();
+        MPI_Type_commit(&_AutoPas_Datatype_Handles.AUTOPAS_MPI_CONFIG);
       }
       result = _AutoPas_Datatype_Handles.AUTOPAS_MPI_CONFIG; break;
     default:
@@ -200,19 +207,21 @@ enum AutoPas_MPI_Error {
   AUTOPAS_MPI_ERR_TYPE,
 };
 
+// initialize values to the size of the respective type in bytes
 enum AutoPas_MPI_Datatype {
-  AUTOPAS_MPI_INT,
-  AUTOPAS_MPI_DOUBLE,
-  AUTOPAS_MPI_LONG_INT,
+  AUTOPAS_MPI_LONG_INT = 12,
 };
 
 enum AutoPas_MPI_Op {
   AUTOPAS_MPI_MINLOC,
 };
 
-enum AutoPas_MPI_Status {
-  AUTOPAS_MPI_STATUS_IGNROE,
+struct _AutoPas_MPI_Status{
+  int count, cancelled, AUTOPAS_MPI_SOURCE, AUTOPAS_MPI_TAG, AUTOPAS_MPI_ERROR;
 };
+using AutoPas_MPI_Status = struct _AutoPas_MPI_Status;
+
+#define AUTOPAS_MPI_STATUS_IGNORE nullptr
 
 /**
  * Dummy for MPI_Error_string
@@ -305,33 +314,33 @@ inline int AutoPas_MPI_Recv(void *buf, int count, AutoPas_Datatype datatype, int
  * @param comm: communicator (handle)
  * @return AUTOPAS_MPI_SUCCESS
  */
-  inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_MPI_Datatype datatype, int root, AutoPas_MPI_Comm comm) {
-    return AUTOPAS_MPI_SUCCESS;
-  }
-  inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_Datatype datatype, int root, AutoPas_MPI_Comm comm) {
-    return AUTOPAS_MPI_SUCCESS;
-  }
+inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_MPI_Datatype datatype, int root, AutoPas_MPI_Comm comm) {
+  return AUTOPAS_MPI_SUCCESS;
+}
+inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_Datatype datatype, int root, AutoPas_MPI_Comm comm) {
+  return AUTOPAS_MPI_SUCCESS;
+}
 
 /**
  * Dummy for MPI_Allreduce
  * @param sendbuf: send buffer
- * @param recvbuf: outputs nullptr
+ * @param recvbuf: outputs sendbuf
  * @param count: number of elements in send buffer
  * @param datatype: type of elements in send buffer
  * @param op: reduction operation (handle)
  * @param comm: communicator (handle)
  * @return AUTOPAS_MPI_SUCCESS
  */
-  inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
-                                   AutoPas_MPI_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
-    recvbuf = nullptr;
-    return AUTOPAS_MPI_SUCCESS;
-  }
-  inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
-                                   AutoPas_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
-    recvbuf = nullptr;
-    return AUTOPAS_MPI_SUCCESS;
-  }
+inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
+                                 AutoPas_MPI_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
+  memcpy(recvbuf, sendbuf, datatype);
+  return AUTOPAS_MPI_SUCCESS;
+}
+inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
+                                 AutoPas_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
+  memcpy(recvbuf, sendbuf, datatype);
+  return AUTOPAS_MPI_SUCCESS;
+}
 
 #endif
 }

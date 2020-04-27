@@ -82,12 +82,15 @@ class FullSearchMPI : public TuningStrategyInterface {
                         allowedTraversalOptions, allowedDataLayoutOptions,
                         allowedNewton3Options,   start, startNext);
 
-    // @todo implement proper exception if no rank has a non-empty search space.
     if (_searchSpace.empty()) {
-      autopas::utils::ExceptionHandler::exception("FullSearchMPI: No valid configuration for rank {}", worldRank);
-    } else {
-      AutoPasLog(debug, "Points in search space of rank {}: {}", worldRank, _searchSpace.size());
+      populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors,
+                          allowedTraversalOptions, allowedDataLayoutOptions,
+                          allowedNewton3Options,   0, totalNumConfigs);
+      if (_searchSpace.empty()) {
+        autopas::utils::ExceptionHandler::exception("No valid configuration could be generated");
+      }
     }
+    AutoPasLog(debug, "Points in search space: {}", _searchSpace.size());
     _tuningConfig = _searchSpace.begin();
  }
 
@@ -142,7 +145,7 @@ class FullSearchMPI : public TuningStrategyInterface {
                                   const std::set<TraversalOption> &allowedTraversalOptions,
                                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                   const std::set<Newton3Option> &allowedNewton3Options,
-                                  const int start, const int end);
+                                  const int start, const int startNext);
 
   /**
    * Uses information from all ranks to select the globally optimal configuration.
@@ -196,6 +199,7 @@ void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowed
 }
 
 bool FullSearchMPI::tune(bool) {
+  // @todo how to make sure everyone is here at the same time?
   // Repeat as long as traversals are not applicable or we run out of configs
   ++_tuningConfig;
   if (_tuningConfig == _searchSpace.end()) {
@@ -222,8 +226,7 @@ void FullSearchMPI::selectOptimalConfiguration() {
   int worldRank;
   AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &worldRank);
 
-  AutoPasLog(debug, "Optimal configuration of rank {}: {}", worldRank, optimum->first.toString());
-  std::cout << "Optimal configuration of rank " << worldRank << ": " << optimum->first.toString() << std::endl;
+  AutoPasLog(debug, "Local optimal configuration: {}", worldRank, optimum->first.toString());
 
   // Find the globally minimal traversal time.
   struct {
@@ -244,7 +247,7 @@ void FullSearchMPI::selectOptimalConfiguration() {
     config.newton3 =    (autopas::Newton3Option::Value)optimum->first.newton3;
     AutoPas_MPI_Bcast(&config, 1, AUTOPAS_CONFIG, worldRank, AUTOPAS_MPI_COMM_WORLD);
   } else {
-    AutoPas_MPI_Recv(&config, 1, AUTOPAS_CONFIG, worldRank, 0, AUTOPAS_MPI_COMM_WORLD, AUTOPAS_MPI_STATUS_IGNORE);
+    AutoPas_MPI_Recv(&config, 1, AUTOPAS_CONFIG, out->rank, 0, AUTOPAS_MPI_COMM_WORLD, AUTOPAS_MPI_STATUS_IGNORE);
   }
 
   _optimalConfig = Configuration(
@@ -260,7 +263,7 @@ void FullSearchMPI::selectOptimalConfiguration() {
   // Measurements are not needed anymore
   _traversalTimes.clear();
 
-  AutoPasLog(debug, "After comparison, rank {} uses the following config: {}", worldRank, _optimalConfig.toString());
+  AutoPasLog(debug, "Selected config {}", worldRank, _optimalConfig.toString());
 }
 
 void FullSearchMPI::removeN3Option(Newton3Option badNewton3Option) {
