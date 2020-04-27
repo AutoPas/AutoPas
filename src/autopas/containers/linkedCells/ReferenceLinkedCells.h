@@ -61,7 +61,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
   void addParticleImpl(const ParticleType &p) override {
 //      _particles.insert(p);
     ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
-    cell.addParticle(&p);
+    cell.addParticle(p);
   }
 
   /**

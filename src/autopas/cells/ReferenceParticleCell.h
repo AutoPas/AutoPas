@@ -43,7 +43,7 @@ namespace autopas {
         void addParticle(const Particle &p) override {
             particlesLock.lock();
             //_particles.push_back(p);
-            _particles.push_back(std::unique_ptr<Particle>(p));
+            _particles.emplace_back(std::make_unique<Particle>(p));
             particlesLock.unlock();
         }
 
