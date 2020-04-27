@@ -82,7 +82,7 @@ class TraversalOption : public Option<TraversalOption> {
             {TraversalOption::c04SoA, "c04SoA"},
             {TraversalOption::verletClusterCells, "verlet-cluster-cells"},
             {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
-            {TraversalOption::c04HCP, "c04HCP"}};
+            {TraversalOption::c04HCP, "c04HCP"},};
   };
 
  private:
