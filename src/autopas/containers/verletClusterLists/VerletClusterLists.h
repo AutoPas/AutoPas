@@ -32,7 +32,7 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Particle>>,
+class VerletClusterLists : public ParticleContainerInterface<Particle>,
                            public internal::ParticleDeletedObserver {
  public:
   /**
@@ -70,7 +70,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @param skin the skin radius
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
-      : ParticleContainerInterface<FullParticleCell<Particle>>(),
+      : ParticleContainerInterface<Particle>(),
         _numClusters{0},
         _numTowersPerInteractionLength{0},
         _boxMin{boxMin},

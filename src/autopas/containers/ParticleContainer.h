@@ -25,7 +25,7 @@ namespace autopas {
  * @tparam ParticleCell Class for the particle cells
  */
 template <class ParticleCell, class SoAArraysType = typename ParticleCell::ParticleType::SoAArraysType>
-class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
+class ParticleContainer : public ParticleContainerInterface<typename ParticleCell::ParticleType> {
  public:
   /**
    * Constructor of ParticleContainer

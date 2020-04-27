@@ -28,19 +28,17 @@ namespace autopas {
  *
  * @tparam ParticleCell Class for particle cells.
  */
-template <class ParticleCell>
+template <class Particle>
 class ParticleContainerInterface {
  public:
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename ParticleCell::ParticleType;
+  using ParticleType = Particle;
 
   /**
    * Type of the ParticleCell.
    */
-  using ParticleCellType = ParticleCell;
-
   /**
    * Default constructor
    */
@@ -79,7 +77,7 @@ class ParticleContainerInterface {
    * already been performed.
    */
   template <bool checkInBox = true>
-  void addParticle(const ParticleType &p) {
+  void addParticle(const Particle &p) {
     if constexpr (not checkInBox) {
       addParticleImpl(p);
     } else {
@@ -99,7 +97,7 @@ class ParticleContainerInterface {
    * @param p The particle to be added. This particle is already checked to be inside of the bounding box.
    * @note Only call this function if the position of the particle is guaranteed to be inside of the bounding box!
    */
-  virtual void addParticleImpl(const ParticleType &p) = 0;
+  virtual void addParticleImpl(const Particle &p) = 0;
 
  public:
   /**
@@ -109,7 +107,7 @@ class ParticleContainerInterface {
    * already been performed.
    */
   template <bool checkInBox = true>
-  void addHaloParticle(const ParticleType &haloParticle) {
+  void addHaloParticle(const Particle &haloParticle) {
     if constexpr (not checkInBox) {
       addHaloParticleImpl(haloParticle);
     } else {
@@ -130,7 +128,7 @@ class ParticleContainerInterface {
    * @param haloParticle Particle to be added. This particle is already checked to be outside of the bounding box.
    * @note Only call this function if the position of the particle is guaranteed to be outside of the bounding box!
    */
-  virtual void addHaloParticleImpl(const ParticleType &haloParticle) = 0;
+  virtual void addHaloParticleImpl(const Particle &haloParticle) = 0;
 
  public:
   /**
@@ -138,7 +136,7 @@ class ParticleContainerInterface {
    * @param haloParticle Particle to be updated.
    * @return Returns true if the particle was updated, false if no particle could be found.
    */
-  virtual bool updateHaloParticle(const ParticleType &haloParticle) = 0;
+  virtual bool updateHaloParticle(const Particle &haloParticle) = 0;
 
   /**
    * Rebuilds the neighbor lists.
@@ -169,21 +167,21 @@ class ParticleContainerInterface {
    * @return Iterator to the first particle.
    * @todo implement IteratorBehavior.
    */
-  virtual ParticleIteratorWrapper<ParticleType, true> begin(
+  virtual ParticleIteratorWrapper<Particle, true> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
 
   /**
    * @copydoc begin()
    * @note const version
    */
-  virtual ParticleIteratorWrapper<ParticleType, false> begin(
+  virtual ParticleIteratorWrapper<Particle, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const = 0;
 
   /**
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  virtual ParticleIteratorWrapper<ParticleType, false> cbegin(
+  virtual ParticleIteratorWrapper<Particle, false> cbegin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const final {
     return begin(behavior);
   };
@@ -196,7 +194,7 @@ class ParticleContainerInterface {
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
    * @return Iterator to iterate over all particles in a specific region.
    */
-  virtual ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
+  virtual ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
 
@@ -204,7 +202,7 @@ class ParticleContainerInterface {
    * @copydoc getRegionIterator()
    * @note const version
    */
-  virtual ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
+  virtual ParticleIteratorWrapper<Particle, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const = 0;
 
@@ -282,7 +280,7 @@ class ParticleContainerInterface {
    * @return A vector of invalid particles that do not belong into the container.
    */
   AUTOPAS_WARN_UNUSED_RESULT
-  virtual std::vector<ParticleType> updateContainer() = 0;
+  virtual std::vector<Particle> updateContainer() = 0;
 
   /**
    * Generates a traversal selector info for this container.

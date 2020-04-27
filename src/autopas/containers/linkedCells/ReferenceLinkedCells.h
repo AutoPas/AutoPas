@@ -53,14 +53,15 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
       : ParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
 
-  ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
+  ContainerOption getContainerType() const override { return ContainerOption::referenceLinkedCells; }
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
   void addParticleImpl(const ParticleType &p) override {
+//      _particles.insert(p);
     ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
-    cell.addParticle(p);
+    cell.addParticle(&p);
   }
 
   /**
@@ -269,6 +270,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
   /**
    * object to manage the block of cells.
    */
+//  std::vector<Particle> _particles;
   internal::CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
 };

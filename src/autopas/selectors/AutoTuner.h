@@ -80,7 +80,7 @@ class AutoTuner {
    * Getter for the current container.
    * @return Smart pointer to the current container.
    */
-  std::shared_ptr<autopas::ParticleContainerInterface<ParticleCell>> getContainer() {
+  std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer() {
     return _containerSelector.getCurrentContainer();
   }
 
@@ -88,7 +88,7 @@ class AutoTuner {
    * Getter for the current container.
    * @return Smart pointer to the current container.
    */
-  std::shared_ptr<const autopas::ParticleContainerInterface<ParticleCell>> getContainer() const {
+  std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> getContainer() const {
     return _containerSelector.getCurrentContainer();
   }
 
@@ -203,7 +203,7 @@ class AutoTuner {
   SelectorStrategyOption _selectorStrategy;
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
   unsigned int _tuningInterval, _iterationsSinceTuning;
-  ContainerSelector<Particle, ParticleCell> _containerSelector;
+  ContainerSelector<Particle> _containerSelector;
   double _verletSkin;
   unsigned int _verletClusterSize;
 
