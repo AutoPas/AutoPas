@@ -132,7 +132,7 @@ constexpr void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
 
 /**
  * Goes through the cells aggregated by one color and processes the particles in each cell that is part of the
- * aggregation by using the barriers safed in _cellOffset32Pack
+ * aggregation by using the barriers saved in _cellOffset32Pack.
  *
  * @tparam ParticleCell
  * @tparam PairwiseFunctor
