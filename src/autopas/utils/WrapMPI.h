@@ -194,6 +194,27 @@ inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
   return MPI_Allreduce(sendbuf, recvbuf, count, AutoPas_to_MPI_datatype(datatype), op, comm);
 }
 
+/**
+ * Wrapper for MPI_Test
+ * @param request: request to be tested. Gets invalidated.
+ * @param flag: outputs true if operation complete
+ * @param status: outputs status object. May be AUTOPAS_MPI_STATUS_IGNORE
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Test(AutoPas_MPI_Request *request, int *flag, AutoPas_MPI_Status *status) {
+  return MPI_Test(request, flag, status);
+}
+
+/**
+ * Wrapper for MPI_Ibarrier
+ * @param comm: communicator (handle)
+ * @param request: outputs communication request (handle)
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Ibarrier(AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
+  return MPI_Ibarrier(comm, request);
+}
+
 #else
 
 enum AutoPas_MPI_Comm {
@@ -220,6 +241,8 @@ struct _AutoPas_MPI_Status{
   int count, cancelled, AUTOPAS_MPI_SOURCE, AUTOPAS_MPI_TAG, AUTOPAS_MPI_ERROR;
 };
 using AutoPas_MPI_Status = struct _AutoPas_MPI_Status;
+
+using AutoPas_MPI_Request = void*;
 
 #define AUTOPAS_MPI_STATUS_IGNORE nullptr
 
@@ -339,6 +362,33 @@ inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
 inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
                                  AutoPas_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
   memcpy(recvbuf, sendbuf, datatype);
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+/**
+ * Wrapper for MPI_Test
+ * @param request: request to be tested. Gets invalidated.
+ * @param flag: outputs true
+ * @param status: outputs status object. May be AUTOPAS_MPI_STATUS_IGNORE
+ * @return AUTOPAS_MPI_SUCCESS
+ */
+inline int AutoPas_MPI_Test(AutoPas_MPI_Request *request, int *flag, AutoPas_MPI_Status *status) {
+  *flag = 1;
+  if (status != AUTOPAS_MPI_STATUS_IGNORE) {
+    status = nullptr;
+  }
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+/**
+ * Wrapper for MPI_Ibarrier
+ * @param comm: communicator (handle)
+ * @param request: outputs arbitrary handle
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Ibarrier(AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
+  // super not safe
+  *request = (void *)1;
   return AUTOPAS_MPI_SUCCESS;
 }
 
