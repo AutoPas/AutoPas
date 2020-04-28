@@ -48,8 +48,7 @@ class BalancedSlicedBasedTraversal
    * Calculates slice thickness according to estimates loads
    */
   void initTraversal() override {
-    SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::initTraversal();
-
+    this->loadDataLayout();
     // make sure locks and thicknesses are empty
     this->_sliceThickness.clear();
     this->_locks.clear();
@@ -120,12 +119,6 @@ class BalancedSlicedBasedTraversal
   }
 
  protected:
-  inline void init(const std::array<unsigned long, 3> &dims) override {
-    /* in SlicedBasedTraversal slice thicknesses are set up here. Since cell information is not available we
-     * do this in initTraversal instead.
-     */
-  }
-
   /**
    * Algorithm to use for estimating load
    */

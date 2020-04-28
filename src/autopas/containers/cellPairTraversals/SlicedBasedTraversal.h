@@ -60,23 +60,38 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @return true iff the traversal can be applied.
    */
   bool isApplicable() const override {
-    return not(dataLayout == DataLayoutOption::cuda) and this->_sliceThickness.size() > 0;
+    auto minSliceThickness = _overlapLongestAxis + 1;
+    auto maxNumSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
+    return not(dataLayout == DataLayoutOption::cuda) and maxNumSlices > 0;
   }
 
   /**
-   * Load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
+   * Load Data Layouts and sets up slice thicknesses.
    */
   void initTraversal() override {
-    if (this->_cells) {
-      auto &cells = *(this->_cells);
-#ifdef AUTOPAS_OPENMP
-      /// @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-      for (size_t i = 0; i < cells.size(); ++i) {
-        _dataLayoutConverter.loadDataLayout(cells[i]);
-      }
+    loadDataLayout();
+    // split domain across its longest dimension
+
+    auto numSlices = (size_t)autopas_get_max_threads();
+    auto minSliceThickness = this->_cellsPerDimension[_dimsPerLength[0]] / numSlices;
+    if (minSliceThickness < _overlapLongestAxis + 1) {
+      minSliceThickness = _overlapLongestAxis + 1;
+      numSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
+      AutoPasLog(debug, "Sliced traversal only using {} threads because the number of cells is too small.", numSlices);
     }
+
+    _sliceThickness.clear();
+
+    // abort if domain is too small -> cleared _sliceThickness array indicates non applicability
+    if (numSlices < 1) return;
+
+    _sliceThickness.insert(_sliceThickness.begin(), numSlices, minSliceThickness);
+    auto rest = this->_cellsPerDimension[_dimsPerLength[0]] - _sliceThickness[0] * numSlices;
+    for (size_t i = 0; i < rest; ++i) ++_sliceThickness[i];
+    // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
+    _sliceThickness.back() -= _overlapLongestAxis;
+
+    _locks.resize((numSlices - 1) * _overlapLongestAxis);
   }
 
   /**
@@ -100,7 +115,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * Resets the cell structure of the traversal.
    * @param dims
    */
-  virtual void init(const std::array<unsigned long, 3> &dims);
+  void init(const std::array<unsigned long, 3> &dims);
 
   /**
    * The main traversal of the sliced traversal.
@@ -117,6 +132,21 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   template <bool allCells = false, typename LoopBody>
   inline void slicedTraversal(LoopBody &&loopBody);
 
+  /**
+   * Load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
+   */
+  void loadDataLayout() {
+    if (this->_cells) {
+      auto &cells = *(this->_cells);
+#ifdef AUTOPAS_OPENMP
+      /// @todo find a condition on when to use omp or when it is just overhead
+#pragma omp parallel for
+#endif
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _dataLayoutConverter.loadDataLayout(cells[i]);
+      }
+    }
+  }
   /**
    * Overlap of interacting cells. Array allows asymmetric cell sizes.
    */
@@ -173,29 +203,6 @@ inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useN
   _dimsPerLength[1] = 3 - (_dimsPerLength[0] + _dimsPerLength[2]);
 
   _overlapLongestAxis = _overlap[_dimsPerLength[0]];
-
-  // split domain across its longest dimension
-
-  auto numSlices = (size_t)autopas_get_max_threads();
-  auto minSliceThickness = this->_cellsPerDimension[_dimsPerLength[0]] / numSlices;
-  if (minSliceThickness < _overlapLongestAxis + 1) {
-    minSliceThickness = _overlapLongestAxis + 1;
-    numSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
-    AutoPasLog(debug, "Sliced traversal only using {} threads because the number of cells is too small.", numSlices);
-  }
-
-  _sliceThickness.clear();
-
-  // abort if domain is too small -> cleared _sliceThickness array indicates non applicability
-  if (numSlices < 1) return;
-
-  _sliceThickness.insert(_sliceThickness.begin(), numSlices, minSliceThickness);
-  auto rest = this->_cellsPerDimension[_dimsPerLength[0]] - _sliceThickness[0] * numSlices;
-  for (size_t i = 0; i < rest; ++i) ++_sliceThickness[i];
-  // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
-  _sliceThickness.back() -= _overlapLongestAxis;
-
-  _locks.resize((numSlices - 1) * _overlapLongestAxis);
 }
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 template <bool allCells, typename LoopBody>
