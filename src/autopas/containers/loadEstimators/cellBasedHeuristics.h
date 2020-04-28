@@ -30,9 +30,10 @@ enum class CellBasedHeuristic {
 /**
  * Squared Cell Size
  * @param cells
- * @param cellsPerdimension
+ * @param cellsPerDimension
  * @param lowerCorner lower boundary indices for region
  * @param upperCorner upper boundary indices for region
+ * @return estimated load for given region
  */
 template <class ParticleCell>
 unsigned long squaredCellSize(const std::vector<ParticleCell> &cells,
@@ -56,9 +57,10 @@ unsigned long squaredCellSize(const std::vector<ParticleCell> &cells,
  * estimateCellBasedLoad
  * @param heuristic
  * @param cells
- * @param cellsPerdimension
+ * @param cellsPerDimension
  * @param lowerCorner lower boundary indices for region
  * @param upperCorner upper boundary indices for region
+ * @return estimated load for given region
  */
 template <class ParticleCell>
 unsigned long estimateCellBasedLoad(const CellBasedHeuristic &heuristic, const std::vector<ParticleCell> &cells,

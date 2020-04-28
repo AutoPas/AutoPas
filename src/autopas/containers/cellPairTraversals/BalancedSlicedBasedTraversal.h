@@ -126,6 +126,9 @@ class BalancedSlicedBasedTraversal
      */
   }
 
+  /**
+   * Algorithm to use for estimating load
+   */
   loadEstimators::CellBasedHeuristic _heuristic;
 };
 

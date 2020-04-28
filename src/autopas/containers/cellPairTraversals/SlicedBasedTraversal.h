@@ -137,6 +137,9 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   std::vector<unsigned long> _sliceThickness;
 
+  /**
+   * locks for synchronising access to cells on boundary layers
+   */
   std::vector<AutoPasLock> _locks;
 
  private:
