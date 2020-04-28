@@ -64,6 +64,7 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
 
   auto *traversalInterface = dynamic_cast<autopas::CellPairTraversal<FPCell> *>(traversal.get());
   traversalInterface->setCellsToTraverse(cells);
+  traversalInterface->initTraversal();
   traversalInterface->traverseParticlePairs();
 }
 
