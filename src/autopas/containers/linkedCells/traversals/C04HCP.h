@@ -165,15 +165,18 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
 #endif
   for (long z = startZ; z < endZ; z += 4) {
     for (long y = startY; y < endY; y++) {
-      for (long x = startX; x < (endX + 4);
-           x += 6) {  // color starts every 6th column again, the +4 is needed to prevent ending too early, since it
-                      // will be shifted back inside the loop
+      /* color starts every 6th column again, the +4 is needed to prevent ending too early, since it
+      will be shifted back inside the loop */
+      for (long x = startX; x < (endX + 4); x += 6) {
         long x_index = x;
-        // shift on x-axis according to z-value
-        // first: no shift
-        // second: -4 shift
-        // third: -2 shift
-        // fourth: go back to first
+        /*  shift on x-axis according to z-value: shift two times and then go back to original x-value
+            first: no shift
+            second: -4 shift
+            third: -2 shift
+            fourth: go back to first
+            every 12th z, the shifting pattern repeats again at the origin of x without shift,
+            because z is shifted by 4 in every loop run and every third z-shift the pattern repeats
+        */
         switch ((z - startZ) % 12 / 4) {
           case 0:
             break;
@@ -183,8 +186,11 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
           case 2:
             x_index -= 2;
             break;
+          default:
+            break;
         }
-        if ((y - startY) % 2 != 0) {  // shift x-axis every second y-row
+        // shift x-axis every second y-row
+        if ((y - startY) % 2 != 0) {
           x_index += 3;
         }
         processBasePack6(cells, {x_index, y, z});
