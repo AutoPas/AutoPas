@@ -118,14 +118,11 @@ TODO
 #### Usage
 TODO
 
-### Ownage
+### Particle Ownership
 An AutoPas container normally saves two different types of particles:
-* owned particles: Particles that belong to the AutoPas instance
-* halo particles: Particles that do not belong to the current AutoPas instance. These can be ghost particles due to, e.g., periodic boundary conditions, or particles belonging to another neighboring AutoPas object (if you split the entire domain over multiple AutoPas objects). The halo particles are needed for the correct calculation of the pairwise forces. 
+* owned particles: Particles that belong to the AutoPas instance. These particles lie either inside of the boundary of the AutoPas instance or very close to the boundary (less than a distance of skin/2 away). If a particle is added via `addParticle()`, it is automatically added as owned particle. An owned particle can explicitly be removed by deleting the particle using an iterator (`autoPas.deleteParticle(iterator)`). On an update of the AutoPas container (using `updateContainer()`) owned particles that move outside of the boundary of its parent AutoPas container are returned.
+* halo particles: Particles that do not belong to the current AutoPas instance. These normally are ghost particles arising from either periodic boundary conditions or particles of a neighboring AutoPas object (if you split the entire domain over multiple AutoPas objects, i.e., you use a domain decompositioning algorithm). The halo particles are needed for the correct calculation of the pairwise forces. On an update of the AutoPas container, halo particles are deleted (note that not every call to `updateContainer()` does this!, see [Simulation Loop]).
 
-Note that not all owned particles necessarily have to lie within the boundaries of an AutoPas
-object, see also section Simulation Loop.
- 
 ### Iterating Through Particles
 Iterators to iterate over particle are provided.
 The particle can be accesses using `iter->` (`*iter` is also possible).
@@ -181,12 +178,24 @@ Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return
 ### Simulation Loop
 One simulation loop should always consist of the following phases:
 
-1. Updating the Container, which returns a vector of all invalid == leaving particles!
+1. Updating the Container:
    ```C++
    auto [invalidParticles, updated] = autoPas.updateContainer();
    ```
+   This call will potentially trigger an update of the container inside of AutoPas. The update will be performed if either
+   
+    a. Enough samples are collected for the current configuration OR
+    
+    b. The rebuild frequeny is reached.
+   
+   If the update is performed, the returned bool `updated` is `true` and the returned vector `invalidParticles` consists of the particles that are leaving this container. These are particles which were previously owned by this AutoPas container, but have left the boundary of this container, i.e., their current position resides outside of the container.
+   
+   If the update is not performed, `updated` will be false and the returned vector `invalidParticles` will be empty.
+   An update is sometimes skipped to ensure that containers do not change and to enable the best possible performance for containers that use neighbor lists.
 
 2. Handling the leaving particles
+   * This step can be skipped if `updated` was false. If you use multiple MPI instances, you have to ensure that all instances rebuild at the same time steps. This is guaranteed, if the sampling frequency is the same as (or a multiple of) the rebuild frequency.
+   
    * Apply boundary conditions on them
 
    * Potentially send them to other mpi-processes, skip this if MPI is not needed
@@ -197,6 +206,8 @@ One simulation loop should always consist of the following phases:
       ```
 
 3. Handle halo particles:
+   * This step always has to be performed, even if `updated` was false.
+   
    * Identify the halo particles by use of AutoPas' iterators and send them in a similar way as the leaving particles.
 
    * Add the particles as haloParticles using
@@ -209,8 +220,6 @@ One simulation loop should always consist of the following phases:
    autoPas.iteratePairwise(functor);
    ```
 
-In some iterations step 1. will return a pair of an empty list of invalid particles and false.
-In this case the container was not rebuild to benefit of not rebuilding the containers and the associated neighbor lists.
 
 ### Using multiple functors
 
