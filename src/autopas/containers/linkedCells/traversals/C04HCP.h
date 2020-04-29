@@ -81,7 +81,8 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseP
   std::array<long, 3> index{};
   const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension);
 
-  for (long z = 0; z < 3; ++z) {  // go through the six cells
+  // go through the six cells
+  for (long z = 0; z < 3; ++z) {
     for (long x = 0; x < 2; ++x) {
       index[0] = base3DIndex[0] + x;
       index[1] = base3DIndex[1];
@@ -89,10 +90,12 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseP
 
       bool isIn = true;
       for (int d = 0; d < 3; ++d) {
-        isIn &= (index[d] >= 0l) and (index[d] <= (_end[d] - this->_overlap[d]));  // prevent using overlapping cells
+        // prevent using overlapping cells and cells outside the boundaries
+        isIn &= (index[d] >= 0l) and (index[d] <= (_end[d] - this->_overlap[d]));
       }
 
-      if (isIn) {  // skip cells outside radius
+      // skip cells outside radius
+      if (isIn) {
         const unsigned long ulIndex = threeToOneD(index, signedDims);
         _cellHandler.processBaseCell(cells, ulIndex);
       }
