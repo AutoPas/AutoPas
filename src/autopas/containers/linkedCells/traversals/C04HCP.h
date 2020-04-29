@@ -59,9 +59,8 @@ class C04HCP : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayou
       return false;
     }
     const double minLength = *std::min_element(this->_cellLength.cbegin(), this->_cellLength.cend());
-    const unsigned long minDim = *std::min_element(this->_cellsPerDimension.cbegin(), this->_cellsPerDimension.cend());
 
-    return minLength >= this->_interactionLength and minDim > 3;
+    return minLength >= this->_interactionLength;
   }
 
  private:
@@ -157,20 +156,20 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
       break;
   }
 
-    // to fix compiler complaints about perfectly nested loop.
-    // const long startX = startOfThisColor[0], endX = _end[0];
-    // const long startY = startOfThisColor[1], endY = _end[1];
-    // const long startZ = startOfThisColor[2], endZ = _end[2];
+  // to fix intel64 icpc compiler complaints about perfectly nested loop.
+  const long startX = startOfThisColor[0], endX = _end[0];
+  const long startY = startOfThisColor[1], endY = _end[1];
+  const long startZ = startOfThisColor[2], endZ = _end[2];
 
-    // iterate over cartesian grid
+  // iterate over cartesian grid
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(3) nowait
 #endif
-  for (long z = startOfThisColor[2]; z < _end[2]; z += 4) {
-    for (long y = startOfThisColor[1]; y < _end[1]; y++) {
+  for (long z = startZ; z < endZ; z += 4) {
+    for (long y = startY; y < endY; y++) {
       /* color starts every 6th column again, the +4 is needed to prevent ending too early, since it
       will be shifted back inside the loop */
-      for (long x = startOfThisColor[0]; x < (_end[0] + 4); x += 6) {
+      for (long x = startX; x < (endX + 4); x += 6) {
         long x_index = x;
         /*  shift on x-axis according to z-value: shift two times and then go back to original x-value
             first: no shift
@@ -180,7 +179,7 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
             every 12th z, the shifting pattern repeats again at the origin of x without shift,
             because z is shifted by 4 in every loop run and every third z-shift the pattern repeats
         */
-        switch ((z - startOfThisColor[2]) % 12 / 4) {
+        switch ((z - startZ) % 12 / 4) {
           case 0:
             break;
           case 1:
@@ -193,7 +192,7 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
             break;
         }
         // shift x-axis every second y-row
-        if ((y - startOfThisColor[1]) % 2 != 0) {
+        if ((y - startY) % 2 != 0) {
           x_index += 3;
         }
         processBasePack6(cells, {x_index, y, z});

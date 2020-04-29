@@ -219,7 +219,7 @@ void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traver
     correctParity += 4;
   }
 
-  // to fix compiler complaints about perfectly nested loop.
+  // to fix intel64 icpc compiler complaints about perfectly nested loop.
   const long startX = startOfThisColor[0], endX = _end[0];
   const long startY = startOfThisColor[1], endY = _end[1];
   const long startZ = startOfThisColor[2], endZ = _end[2];
