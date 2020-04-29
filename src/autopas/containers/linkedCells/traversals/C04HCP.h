@@ -157,12 +157,12 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
       break;
   }
 
-  // to fix compiler complaints about perfectly nested loop.
-  // const long startX = startOfThisColor[0], endX = _end[0];
-  // const long startY = startOfThisColor[1], endY = _end[1];
-  // const long startZ = startOfThisColor[2], endZ = _end[2];
+    // to fix compiler complaints about perfectly nested loop.
+    // const long startX = startOfThisColor[0], endX = _end[0];
+    // const long startY = startOfThisColor[1], endY = _end[1];
+    // const long startZ = startOfThisColor[2], endZ = _end[2];
 
-  // iterate over cartesian grid
+    // iterate over cartesian grid
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(3) nowait
 #endif
