@@ -20,7 +20,7 @@ namespace autopas {
  *
  * The traversal uses the c04 base step performed on every single cell. Since
  * these steps overlap a domain coloring with four colors is applied. It differs from c04 in the shape of the colored
- * blocks. The chosen block-shape in the c04HCP traversal is a 2x1x3-shape cuboid.
+ * blocks. The chosen block-shape for the c08-base-steps in the c04HCP traversal is a 2x1x3-shape cuboid.
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
