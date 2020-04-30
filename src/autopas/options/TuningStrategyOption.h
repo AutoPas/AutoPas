@@ -38,6 +38,11 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * ActiveHarmony client / server system
      */
     activeHarmony,
+
+    /**
+     * Predicts all configurations, tests those which are in the optimum range and selects the best.
+     */
+    predictiveTuning,
   };
 
   /**

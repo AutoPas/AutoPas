@@ -9,6 +9,7 @@
 #include "ActiveHarmony.h"
 #include "BayesianSearch.h"
 #include "FullSearch.h"
+#include "PredictiveTuning.h"
 #include "RandomSearch.h"
 
 std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory::generateTuningStrategy(
@@ -43,6 +44,11 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     case TuningStrategyOption::activeHarmony: {
       return std::make_unique<ActiveHarmony>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
                                              allowedDataLayouts, allowedNewton3Options);
+    }
+
+    case TuningStrategyOption::predictiveTuning: {
+      return std::make_unique<PredictiveTuning>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
+                                                allowedDataLayouts, allowedNewton3Options);
     }
   }
 

@@ -49,7 +49,7 @@ class FullSearch : public TuningStrategySuperClass {
 
   inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
 
-  inline void reset() override {
+  inline void reset(size_t iteration) override {
     _traversalTimes.clear();
     _currentConfig = _searchSpace.begin();
   }

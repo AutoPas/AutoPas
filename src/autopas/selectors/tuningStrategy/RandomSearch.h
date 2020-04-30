@@ -53,7 +53,7 @@ class RandomSearch : public TuningStrategyInterface {
 
   inline void addEvidence(long time, size_t iteration) override { _traversalTimes[_currentConfig] = time; }
 
-  inline void reset() override {
+  inline void reset(size_t iteration) override {
     _traversalTimes.clear();
     tune();
   }

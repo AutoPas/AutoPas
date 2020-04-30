@@ -103,7 +103,7 @@ class BayesianSearch : public TuningStrategyInterface {
     _gaussianProcess.addEvidence(_currentConfig.oneHotEncode(), time * secondsPerMicroseconds);
   }
 
-  inline void reset() override {
+  inline void reset(size_t iteration) override {
     _gaussianProcess.clear();
     tune();
   }

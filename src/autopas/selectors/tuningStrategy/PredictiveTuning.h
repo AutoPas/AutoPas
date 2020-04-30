@@ -29,17 +29,15 @@ class PredictiveTuning : public TuningStrategySuperClass {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
-   * @param iterationsReference Reference to an iteration counter.
    */
   PredictiveTuning(const std::set<ContainerOption> &allowedContainerOptions,
                    const std::set<double> &allowedCellSizeFactors,
                    const std::set<TraversalOption> &allowedTraversalOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                   const std::set<Newton3Option> &allowedNewton3Options, unsigned int &iterationsReference)
+                   const std::set<Newton3Option> &allowedNewton3Options)
       : TuningStrategySuperClass(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                  allowedDataLayoutOptions, allowedNewton3Options),
-        _currentConfig(_searchSpace.begin()),
-        _iterationsReference(iterationsReference) {
+        _currentConfig(_searchSpace.begin()) {
     // sets traversalTimesStorage
     for (const auto &configuration : _searchSpace) {
       std::vector<std::pair<int, size_t>> vector;
@@ -51,12 +49,9 @@ class PredictiveTuning : public TuningStrategySuperClass {
    * Constructor for the PredictiveTuning that only contains the given configurations.
    * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
-   * @param iterationsReference
    */
-  explicit PredictiveTuning(std::set<Configuration> allowedConfigurations, unsigned int &iterationsReference)
-      : TuningStrategySuperClass(std::move(allowedConfigurations)),
-        _iterationsReference(iterationsReference),
-        _currentConfig(_searchSpace.begin()) {}
+  explicit PredictiveTuning(std::set<Configuration> allowedConfigurations)
+      : TuningStrategySuperClass(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {}
 
   inline void addEvidence(long time, size_t iteration) override {
     _traversalTimesStorage[*_currentConfig].emplace_back(iteration, time);
@@ -65,13 +60,13 @@ class PredictiveTuning : public TuningStrategySuperClass {
 
   inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
 
-  inline void reset() override {
+  inline void reset(size_t iteration) override {
     _configurationPredictions.clear();
     _optimalSearchSpace.clear();
     _tooLongNotTestedSearchSpace.clear();
     _validSearchSpace = _searchSpace;
     _validConfigurationFound = false;
-    _iterationBeginTuningPhase = _iterationsReference;
+    _iterationBeginTuningPhase = iteration;
 
     selectOptimalSearchSpace();
   }
@@ -148,11 +143,6 @@ class PredictiveTuning : public TuningStrategySuperClass {
   unsigned int _tuningIterationsCounter = 0;
 
   /**
-   * Reference to the _iterations variable in AutoTuner.
-   */
-  unsigned int &_iterationsReference;
-
-  /**
    * Stores the iteration at the beginning of a tuning phase.
    */
   unsigned int _iterationBeginTuningPhase = 0;
@@ -221,7 +211,7 @@ void PredictiveTuning::linePrediction() {
     const auto &traversal2 = vector[vector.size() - 2];
 
     const auto gradient = (traversal1.second - traversal2.second) / (traversal1.first - traversal2.first);
-    const auto delta = _iterationsReference - traversal1.first;
+    const auto delta = _iterationBeginTuningPhase - traversal1.first;
 
     // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
     _configurationPredictions[configuration] = traversal1.second + gradient * delta;
