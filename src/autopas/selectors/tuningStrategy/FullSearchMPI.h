@@ -14,6 +14,7 @@
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/AutoPasMessagePasser.h"
 
 namespace autopas {
 
@@ -155,14 +156,21 @@ class FullSearchMPI : public TuningStrategyInterface {
                                   const int start, const int startNext);
 
   /**
-   * Uses information from all ranks to select the globally optimal configuration.
+   * Uses traversal times from this rank to select the locally optimal configuration.
    */
-  inline void selectOptimalConfiguration();
+  inline void selectLocalOptimalConfiguration();
+
+  /**
+   * Uses traversal times from all ranks to select the globally optimal configuration.
+   * Must be called after selectLocalOptimalConfiguration
+   */
+  inline void selectGlobalOptimalConfiguration();
 
   std::set<ContainerOption> _containerOptions;
   std::set<Configuration> _searchSpace;
   std::set<Configuration>::iterator _tuningConfig;
   Configuration _optimalConfig;
+  size_t _localOptimalTime;
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
   bool _allConfigsTested;
   AutoPas_MPI_Request _tuningRequest;
@@ -208,44 +216,51 @@ void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowed
 }
 
 bool FullSearchMPI::tune(bool currentInvalid) {
-  // Repeat as long as traversals are not applicable or we run out of configs
-  ++_tuningConfig;
+  if (not _allConfigsTested) {
+    // Repeat as long as traversals are not applicable or we run out of configs
+    ++_tuningConfig;
 
-  if (_tuningConfig == _searchSpace.end()) {
-    _allConfigsTested = true;
-    // Do more testing until everyone is ready to select the optimal configuration
-    _tuningConfig = _searchSpace.begin();
-    AutoPasLog(debug, "Every configuration in this rank has been tested");
-  }
-  if (currentInvalid) {
-    // maximally send one _tuningRequest per iteration
-    return true;
-  }
+    if (_tuningConfig == _searchSpace.end()) {
+      _allConfigsTested = true;
 
-  // This if-statement will always be true after the first _tuningRequest (until next tuning interval)
-  if (_tuningRequest != nullptr) {
-    // Test if the _tuningRequest from the previous iteration was made by everyone
-    int completed;
-    AutoPas_MPI_Test(&_tuningRequest, &completed, AUTOPAS_MPI_STATUS_IGNORE);
-    if (completed) {
-      AutoPasLog(debug, "Initiate global tuning");
-      selectOptimalConfiguration();
-      return false;
+      // Use the local optimum until global comparisons are possible
+      selectLocalOptimalConfiguration();
+      AutoPasLog(debug, "Every configuration in this rank has been tested");
     }
-  } else if (_allConfigsTested) {
-    AutoPas_MPI_Ibarrier(AUTOPAS_MPI_COMM_WORLD, &_tuningRequest);
-    AutoPasLog(debug, "Requested global tuning");
+  } else {
+    if (currentInvalid) {
+      // The optimal configuration became invalid.
+      selectLocalOptimalConfiguration();
+
+      // Only check/send _tuningRequest once per iteration
+      return true;
+    }
+
+    // This if-statement will always be true after the first _tuningRequest (until next tuning interval)
+    if (_tuningRequest != nullptr) {
+      // Test if the _tuningRequest from the previous iteration was made by everyone
+      int completed;
+      AutoPas_MPI_Test(&_tuningRequest, &completed, AUTOPAS_MPI_STATUS_IGNORE);
+      if (completed) {
+        AutoPasLog(debug, "Initiate global tuning");
+        selectGlobalOptimalConfiguration();
+        return false;
+      }
+    } else if (_allConfigsTested) {
+      AutoPas_MPI_Ibarrier(AUTOPAS_MPI_COMM_WORLD, &_tuningRequest);
+      AutoPasLog(debug, "Requested global tuning");
+    }
   }
 
   return true;
 }
 
-void FullSearchMPI::selectOptimalConfiguration() {
+void FullSearchMPI::selectLocalOptimalConfiguration() {
   // Time measure strategy
   if (_traversalTimes.empty()) {
     utils::ExceptionHandler::exception(
-        "FullSearchMPI: Trying to determine fastest configuration without any measurements! "
-        "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
+            "FullSearchMPI: Trying to determine fastest configuration without any measurements! "
+            "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
   }
 
   auto optimum = std::min_element(_traversalTimes.begin(), _traversalTimes.end(),
@@ -256,42 +271,26 @@ void FullSearchMPI::selectOptimalConfiguration() {
   int worldRank;
   AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &worldRank);
 
-  AutoPasLog(debug, "Local optimal configuration: {}", optimum->first.toString());
+  AutoPasLog(debug, "Local optimal configuration: {}; took {} nanoseconds", optimum->first.toString(), optimum->second);
+  _optimalConfig = optimum->first;
+  _localOptimalTime = optimum->second;
 
-  // Find the globally minimal traversal time.
-  struct {
-    size_t val;
-    int rank;
-  }in[1], out[1];
-  in->val = optimum->second;
-  in->rank = worldRank;
-  AutoPas_MPI_Allreduce(in, out, 1, AUTOPAS_MPI_LONG_INT, AUTOPAS_MPI_MINLOC, AUTOPAS_MPI_COMM_WORLD);
+  // If the local optimum is searched again with the same traversal times, it should not return the same configuration,
+  // because it became invalid
+  _traversalTimes.erase(optimum->first);
+}
 
-  // The rank with the best configuration sends it to all other ranks
-  Config_struct config;
-  if (out->rank == worldRank) {
-    config.container = (autopas::ContainerOption::Value) optimum->first.container;
-    config.cellSizeFactor = optimum->first.cellSizeFactor;
-    config.traversal = (autopas::TraversalOption::Value) optimum->first.traversal;
-    config.dataLayout = (autopas::DataLayoutOption::Value) optimum->first.dataLayout;
-    config.newton3 = (autopas::Newton3Option::Value) optimum->first.newton3;
-  }
-  AutoPas_MPI_Bcast(&config, 1, AUTOPAS_CONFIG, out->rank, AUTOPAS_MPI_COMM_WORLD);
+void FullSearchMPI::selectGlobalOptimalConfiguration() {
 
-  _optimalConfig = Configuration(
-          ContainerOption((ContainerOption::Value)config.container),
-          config.cellSizeFactor,
-          TraversalOption((TraversalOption::Value)config.traversal),
-          DataLayoutOption((DataLayoutOption::Value)config.dataLayout),
-          Newton3Option((Newton3Option::Value)config.newton3));
+  int worldRank;
+  AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &worldRank);
 
+  _optimalConfig = globalOptimalConfiguration(_optimalConfig, _localOptimalTime);
   // There used to be a sanity check here for when the optimal config was not actually part of the search space.
   // Might have to be replaced.
 
   // Measurements are not needed anymore
   _traversalTimes.clear();
-
-  AutoPasLog(debug, "Selected configuration: {}", _optimalConfig.toString());
 }
 
 void FullSearchMPI::removeN3Option(Newton3Option badNewton3Option) {

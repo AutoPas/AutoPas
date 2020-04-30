@@ -13,18 +13,6 @@
  * May be extended when necessary.
  */
 
-// initialize to size  of the type in bytes
-enum AutoPas_Datatype {
-  AUTOPAS_CONFIG = 16,
-};
-
-
-struct Config_struct {
-  char container, traversal, dataLayout, newton3;
-  double cellSizeFactor;
-};
-
-
 #if defined(AUTOPAS_MPI)
 #include <mpi.h>
 #endif
@@ -40,7 +28,7 @@ namespace autopas {
 #define AUTOPAS_MPI_COMM_WORLD MPI_COMM_WORLD
 
 // MPI_Datatype
-#define AUTOPAS_MPI_CXX_BOOL MPI_CXX_BOOL
+#define AUTOPAS_MPI_BYTE MPI_BYTE
 #define AUTOPAS_MPI_LONG_INT MPI_LONG_INT
 
 // MPI_Op
@@ -55,43 +43,6 @@ using AutoPas_MPI_Datatype = MPI_Datatype;
 using AutoPas_MPI_Op = MPI_Op;
 using AutoPas_MPI_Status = MPI_Status;
 using AutoPas_MPI_Request = MPI_Request;
-
-/**
- * Function used internally to define AUTOPAS_MPI_CONFIG as an MPI_Datatype
- * @return Handle for AUTOPAS_MPI_CONFIG
- */
-MPI_Datatype _init_config_type() {
-  MPI_Datatype config;
-  const int array_of_blocklengths[] = {4, 1};
-  const MPI_Aint array_of_displacement[] = { offsetof(Config_struct, container), offsetof(Config_struct, cellSizeFactor) };
-  const MPI_Datatype array_of_datatypes[] = { MPI_CHAR, MPI_DOUBLE };
-  MPI_Type_create_struct(2, array_of_blocklengths, array_of_displacement, array_of_datatypes, &config);
-  return config;
-}
-
-struct {
-  MPI_Datatype AUTOPAS_MPI_CONFIG = nullptr;
-}_AutoPas_Datatype_Handles;
-
-/**
- * Gives the MPI handle for a given AutoPas_Datatype
- * @param datatype: the AutoPas_Datatype to convert
- * @return the MPI handle for datatype or MPI_DATATYPE_NULL for undefined inputs
- */
-inline MPI_Datatype AutoPas_to_MPI_datatype(AutoPas_Datatype datatype) {
-  MPI_Datatype result;
-  switch (datatype) {
-    case AUTOPAS_CONFIG:
-      if (_AutoPas_Datatype_Handles.AUTOPAS_MPI_CONFIG == nullptr) {
-        _AutoPas_Datatype_Handles.AUTOPAS_MPI_CONFIG = _init_config_type();
-        MPI_Type_commit(&_AutoPas_Datatype_Handles.AUTOPAS_MPI_CONFIG);
-      }
-      result = _AutoPas_Datatype_Handles.AUTOPAS_MPI_CONFIG; break;
-    default:
-      return MPI_DATATYPE_NULL;
-  }
-  return result;
-}
 
 /**
  * Wrapper for MPI_Error_string
@@ -134,10 +85,6 @@ inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype dat
         int dest, int tag, AutoPas_MPI_Comm comm) {
   return MPI_Send(buf, count, datatype, dest, tag, comm);
 }
-inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_Datatype datatype,
-        int dest, int tag, AutoPas_MPI_Comm comm) {
-  return MPI_Send(buf, count, AutoPas_to_MPI_datatype(datatype), dest, tag, comm);
-}
 
 /**
  * Wrapper for MPI_Recv
@@ -154,10 +101,6 @@ inline int AutoPas_MPI_Recv(void *buf, int count, AutoPas_MPI_Datatype datatype,
         AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
   return MPI_Recv(buf, count, datatype, source, tag, comm, status);
 }
-inline int AutoPas_MPI_Recv(void *buf, int count, AutoPas_Datatype datatype, int source, int tag,
-        AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
-  return MPI_Recv(buf, count, AutoPas_to_MPI_datatype(datatype), source, tag, comm, status);
-}
 
 /**
  * Wrapper for MPI_Bcast
@@ -170,9 +113,6 @@ inline int AutoPas_MPI_Recv(void *buf, int count, AutoPas_Datatype datatype, int
  */
 inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_MPI_Datatype datatype, int root, AutoPas_MPI_Comm comm) {
   return MPI_Bcast(buffer, count, datatype, root, comm);
-}
-inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_Datatype datatype, int root, AutoPas_MPI_Comm comm) {
-  return MPI_Bcast(buffer, count, AutoPas_to_MPI_datatype(datatype), root, comm);
 }
 
 /**
@@ -188,10 +128,6 @@ inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_Datatype datatype,
 inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
         AutoPas_MPI_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
   return MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
-}
-inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
-        AutoPas_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
-  return MPI_Allreduce(sendbuf, recvbuf, count, AutoPas_to_MPI_datatype(datatype), op, comm);
 }
 
 /**
@@ -302,9 +238,6 @@ inline int AutoPas_MPI_Comm_rank(AutoPas_MPI_Comm comm, int *rank) {
 inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag, AutoPas_MPI_Comm comm) {
   return AUTOPAS_MPI_SUCCESS;
 }
-inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_Datatype datatype, int dest, int tag, AutoPas_MPI_Comm comm) {
-  return AUTOPAS_MPI_SUCCESS;
-}
 
 /**
  * Dummy for MPI_Recv
@@ -322,11 +255,6 @@ inline int AutoPas_MPI_Recv(void *buf, int count, AutoPas_MPI_Datatype datatype,
   buf = nullptr;
   return AUTOPAS_MPI_SUCCESS;
 }
-inline int AutoPas_MPI_Recv(void *buf, int count, AutoPas_Datatype datatype, int source, int tag,
-        AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
-  buf = nullptr;
-  return AUTOPAS_MPI_SUCCESS;
-}
 
 /**
  * Dummy for MPI_Bcast
@@ -338,9 +266,6 @@ inline int AutoPas_MPI_Recv(void *buf, int count, AutoPas_Datatype datatype, int
  * @return AUTOPAS_MPI_SUCCESS
  */
 inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_MPI_Datatype datatype, int root, AutoPas_MPI_Comm comm) {
-  return AUTOPAS_MPI_SUCCESS;
-}
-inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_Datatype datatype, int root, AutoPas_MPI_Comm comm) {
   return AUTOPAS_MPI_SUCCESS;
 }
 
@@ -356,11 +281,6 @@ inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_Datatype datatype,
  */
 inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
                                  AutoPas_MPI_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
-  memcpy(recvbuf, sendbuf, datatype);
-  return AUTOPAS_MPI_SUCCESS;
-}
-inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
-                                 AutoPas_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
   memcpy(recvbuf, sendbuf, datatype);
   return AUTOPAS_MPI_SUCCESS;
 }
