@@ -14,3 +14,4 @@ include(autopas_gtest)
 
 # add AutoPas tests:
 add_subdirectory(testAutopas)
+add_subdirectory(MPIParallelAutoPasTests)
