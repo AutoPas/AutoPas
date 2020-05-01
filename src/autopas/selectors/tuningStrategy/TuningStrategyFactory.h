@@ -1,7 +1,7 @@
 /**
  * @file TuningStrategyFactory.h
  * @author seckler
- * @date 07.02.20
+ * @date 07.02.2020
  */
 
 #pragma once
@@ -21,7 +21,7 @@ namespace autopas::TuningStrategyFactory {
  * @param allowedNewton3Options
  * @param maxEvidence
  * @param relativeOptimum
- * @param maxTuningIterationsWithoutTest
+ * @param maxTuningPhasesWithoutTest
  * @param acquisitionFunctionOption
  * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
  */
@@ -30,5 +30,5 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<autopas::TraversalOption> &allowedTraversals,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
-    unsigned int maxTuningIterationsWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption);
+    unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption);
 }  // namespace autopas::TuningStrategyFactory

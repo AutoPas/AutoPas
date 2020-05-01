@@ -73,7 +73,7 @@ class AutoPas {
         _numSamples(3),
         _maxEvidence(10),
         _relativeOptimumRange(1.2),
-        _maxTuningIterationsWithoutTest(5),
+        _maxTuningPhasesWithoutTest(5),
         _acquisitionFunctionOption(AcquisitionFunctionOption::lowerConfidenceBound),
         _tuningStrategyOption(TuningStrategyOption::fullSearch),
         _selectorStrategy(SelectorStrategyOption::fastestAbs),
@@ -127,7 +127,7 @@ class AutoPas {
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
-            _maxTuningIterationsWithoutTest, _acquisitionFunctionOption)),
+            _maxTuningPhasesWithoutTest, _acquisitionFunctionOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
         std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
@@ -448,22 +448,20 @@ class AutoPas {
    * Set the range for the optimum in which has to be to be tested
    * @param relativeOptimumRange
    */
-  void setRelativeOptimumRange(unsigned int relativeOptimumRange) {
-    AutoPas::_relativeOptimumRange = relativeOptimumRange;
-  }
+  void setRelativeOptimumRange(double relativeOptimumRange) { AutoPas::_relativeOptimumRange = relativeOptimumRange; }
 
   /**
    * Get the maximum number of tuning phases a configuration can not be tested.
    * @return
    */
-  unsigned int getMaxTuningIterationsWithoutTest() const { return _maxTuningIterationsWithoutTest; }
+  unsigned int getMaxTuningPhasesWithoutTest() const { return _maxTuningPhasesWithoutTest; }
 
   /**
    * Set the maximum number of tuning phases a configuration can not be tested.
    * @param maxTuningIterationsWithoutTest
    */
-  void setMaxTuningIterationsWithoutTest(unsigned int maxTuningIterationsWithoutTest) {
-    AutoPas::_maxTuningIterationsWithoutTest = maxTuningIterationsWithoutTest;
+  void setMaxTuningPhasesWithoutTest(unsigned int maxTuningPhasesWithoutTest) {
+    AutoPas::_maxTuningPhasesWithoutTest = maxTuningPhasesWithoutTest;
   }
 
   /**
@@ -615,7 +613,7 @@ class AutoPas {
   /**
    * Specifies how many tuning phases a configuration can not be tested in PredicitveTuning.
    */
-  unsigned int _maxTuningIterationsWithoutTest;
+  unsigned int _maxTuningPhasesWithoutTest;
 
   /**
    * Acquisition function used for tuning.

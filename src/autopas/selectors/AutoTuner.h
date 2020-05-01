@@ -1,7 +1,7 @@
 /**
  * @file AutoTuner.h
  * @author F. Gratl
- * @date 11.06.18
+ * @date 11.06.2018
  */
 
 #pragma once
