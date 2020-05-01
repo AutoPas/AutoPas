@@ -20,6 +20,8 @@ namespace autopas::TuningStrategyFactory {
  * @param allowedDataLayouts
  * @param allowedNewton3Options
  * @param maxEvidence
+ * @param relativeOptimum
+ * @param maxTuningIterationsWithoutTest
  * @param acquisitionFunctionOption
  * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
  */
@@ -27,6 +29,6 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     autopas::TuningStrategyOption tuningStrategyOption, const std::set<autopas::ContainerOption> &allowedContainers,
     autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<autopas::TraversalOption> &allowedTraversals,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
-    const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence,
-    AcquisitionFunctionOption acquisitionFunctionOption);
+    const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
+    unsigned int maxTuningIterationsWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption);
 }  // namespace autopas::TuningStrategyFactory

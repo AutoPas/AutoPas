@@ -27,9 +27,9 @@ TEST_F(PredictiveTuningTest, testSearchSpaceOneOption) {
 }
 
 TEST_F(PredictiveTuningTest, testSearchSpaceMoreOptions) {
-  autopas::PredictiveTuning predictiveTuning({autopas::ContainerOption::linkedCells}, {1.},
-                                             {autopas::TraversalOption::c08}, {autopas::DataLayoutOption::soa},
-                                             {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
+  autopas::PredictiveTuning predictiveTuning(
+      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08}, {autopas::DataLayoutOption::soa},
+      {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, 1.2, 5);
   EXPECT_FALSE(predictiveTuning.searchSpaceIsEmpty());
   EXPECT_FALSE(predictiveTuning.searchSpaceIsTrivial());
   EXPECT_THAT(predictiveTuning.getAllowedContainerOptions(),
@@ -39,17 +39,17 @@ TEST_F(PredictiveTuningTest, testSearchSpaceMoreOptions) {
 TEST_F(PredictiveTuningTest, testRemoveN3OptionRemoveAll) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
-      {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos}, {autopas::Newton3Option::enabled});
+      {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos}, {autopas::Newton3Option::enabled}, 1.2, 5);
 
   EXPECT_THROW(predictiveTuning.removeN3Option(autopas::Newton3Option::enabled),
                autopas::utils::ExceptionHandler::AutoPasException);
 }
 
 TEST_F(PredictiveTuningTest, testRemoveN3OptionRemoveSome) {
-  autopas::PredictiveTuning predictiveTuning({autopas::ContainerOption::linkedCells}, {1.},
-                                             {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
-                                             {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-                                             {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
+  autopas::PredictiveTuning predictiveTuning(
+      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
+      {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
+      {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, 1.2, 5);
 
   EXPECT_NO_THROW(predictiveTuning.removeN3Option(autopas::Newton3Option::enabled));
   EXPECT_FALSE(predictiveTuning.searchSpaceIsEmpty());
@@ -69,7 +69,7 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
-      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
+      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, 1.2, 5);
 
   predictiveTuning.reset(iteration);
 
@@ -123,7 +123,7 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
-      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
+      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, 1.2, 5);
 
   predictiveTuning.reset(iteration);
 
@@ -139,7 +139,6 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
   predictiveTuning.tune();
   EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
-  ++iteration;
 
   predictiveTuning.tune();
   EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
@@ -159,7 +158,7 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
-      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
+      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, 1.2, 5);
 
   predictiveTuning.reset(iteration);
 
@@ -211,7 +210,6 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
   predictiveTuning.tune();
   EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(10, iteration);
-  ++iteration;
 
   // This tests that the right optimum configuration gets selected at the end of a tuning phase.
   predictiveTuning.tune();
@@ -225,15 +223,13 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
  *      - Sliced is constant the optimum (10).
  * In iteration three to six only sliced should be in _optimalSearchSpace.
  * In the seventh iteration c08 and sliced should be in _optimalSearchSpace.
- *
- * _maxIterationsWithoutTest has to be equal to _maxIterationsWithoutTest in PredictiveTuning.h
  */
 TEST_F(PredictiveTuningTest, testTooLongNotTested) {
   unsigned int iteration = 0;
   unsigned int _maxTuningIterationsWithoutTest = 5;
-  autopas::PredictiveTuning predictiveTuning({autopas::ContainerOption::linkedCells}, {1.},
-                                             {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
-                                             {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
+  autopas::PredictiveTuning predictiveTuning(
+      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
+      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, 1.2, _maxTuningIterationsWithoutTest);
 
   predictiveTuning.reset(iteration);
 
@@ -289,8 +285,6 @@ TEST_F(PredictiveTuningTest, testTooLongNotTested) {
   EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
 
-  ++iteration;
-
   predictiveTuning.tune();
   EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
 }
@@ -308,7 +302,7 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
-      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
+      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, 1.2, 5);
 
   predictiveTuning.reset(iteration);
 
@@ -360,7 +354,6 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
   // Tests if a new _optimalSearchSpace gets selected if the first one is invalid.
   EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(15, iteration);
-  ++iteration;
 
   predictiveTuning.tune();
   EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
@@ -380,7 +373,7 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
-      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
+      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, 1.2, 5);
 
   predictiveTuning.reset(iteration);
 
@@ -438,7 +431,6 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
   // Tests if a new _optimalSearchSpace gets selected if the second one is invalid.
   EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
-  ++iteration;
 
   predictiveTuning.tune();
   EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());

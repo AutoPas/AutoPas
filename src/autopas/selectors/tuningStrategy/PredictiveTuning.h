@@ -34,10 +34,13 @@ class PredictiveTuning : public TuningStrategySuperClass {
                    const std::set<double> &allowedCellSizeFactors,
                    const std::set<TraversalOption> &allowedTraversalOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                   const std::set<Newton3Option> &allowedNewton3Options)
+                   const std::set<Newton3Option> &allowedNewton3Options, double relativeOptimum,
+                   int maxTuningIterationsWithoutTest)
       : TuningStrategySuperClass(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                  allowedDataLayoutOptions, allowedNewton3Options),
-        _currentConfig(_searchSpace.begin()) {
+        _currentConfig(_searchSpace.begin()),
+        _relativeOptimumRange(relativeOptimum),
+        _maxTuningIterationsWithoutTest(maxTuningIterationsWithoutTest) {
     // sets traversalTimesStorage
     for (const auto &configuration : _searchSpace) {
       std::vector<std::pair<int, size_t>> vector;
@@ -51,7 +54,10 @@ class PredictiveTuning : public TuningStrategySuperClass {
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
    */
   explicit PredictiveTuning(std::set<Configuration> allowedConfigurations)
-      : TuningStrategySuperClass(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {}
+      : TuningStrategySuperClass(std::move(allowedConfigurations)),
+        _currentConfig(_searchSpace.begin()),
+        _relativeOptimumRange(1.2),
+        _maxTuningIterationsWithoutTest(5) {}
 
   inline void addEvidence(long time, size_t iteration) override {
     _traversalTimesStorage[*_currentConfig].emplace_back(iteration, time);
@@ -156,12 +162,12 @@ class PredictiveTuning : public TuningStrategySuperClass {
   /**
    * Factor of the range of the optimal configurations for the optimalSearchSpace.
    */
-  static constexpr double _relativeOptimumRange = 1.2;
+  const double _relativeOptimumRange;
 
   /**
    * After not being tested this number of tuningPhases a configuration is being emplaced in _optimalSearchSpace.
    */
-  static constexpr int _maxTuningIterationsWithoutTest = 5;
+  const unsigned int _maxTuningIterationsWithoutTest;
 };
 
 void PredictiveTuning::selectOptimalSearchSpace() {
@@ -309,18 +315,18 @@ void PredictiveTuning::selectOptimalConfiguration() {
   // In the first couple iterations tune iterates through _searchSpace until predictions are made
   if (_optimalSearchSpace.empty()) {
     for (const auto &configuration : _searchSpace) {
-      if ((unsigned int) _traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      if ((unsigned int)_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
   } else {
     for (const auto &configuration : _optimalSearchSpace) {
-      if ((unsigned int) _traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      if ((unsigned int)_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
     for (const auto &configuration : _tooLongNotTestedSearchSpace) {
-      if ((unsigned int) _traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      if ((unsigned int)_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
