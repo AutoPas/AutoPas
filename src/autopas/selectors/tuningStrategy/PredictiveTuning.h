@@ -100,6 +100,7 @@ class PredictiveTuning : public TuningStrategySuperClass {
   inline void reselectOptimalSearchSpace();
 
   std::set<Configuration>::iterator _currentConfig;
+
   /**
    * Stores the traversal times for each configuration.
    * @param Configuration
@@ -308,18 +309,18 @@ void PredictiveTuning::selectOptimalConfiguration() {
   // In the first couple iterations tune iterates through _searchSpace until predictions are made
   if (_optimalSearchSpace.empty()) {
     for (const auto &configuration : _searchSpace) {
-      if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      if ((unsigned int) _traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
   } else {
     for (const auto &configuration : _optimalSearchSpace) {
-      if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      if ((unsigned int) _traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
     for (const auto &configuration : _tooLongNotTestedSearchSpace) {
-      if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      if ((unsigned int) _traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }

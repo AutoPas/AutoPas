@@ -18,7 +18,7 @@ namespace autopas {
 class TuningStrategySuperClass : public TuningStrategyInterface {
  public:
   /**
-   * Constructor for the TungingStragetySuperClass that generates the search space from the allowed options.
+   * Constructor for the TuningStrategySuperClass that generates the search space from the allowed options.
    * @param allowedContainerOptions
    * @param allowedTraversalOptions
    * @param allowedDataLayoutOptions
