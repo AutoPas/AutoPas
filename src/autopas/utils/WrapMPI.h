@@ -167,6 +167,7 @@ enum AutoPas_MPI_Error {
 // initialize values to the size of the respective type in bytes
 enum AutoPas_MPI_Datatype {
   AUTOPAS_MPI_LONG_INT = 12,
+  AUTOPAS_MPI_BYTE = 1,
 };
 
 enum AutoPas_MPI_Op {
@@ -281,7 +282,7 @@ inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_MPI_Datatype datat
  */
 inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
                                  AutoPas_MPI_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
-  memcpy(recvbuf, sendbuf, datatype);
+  memcpy(recvbuf, sendbuf, datatype * count);
   return AUTOPAS_MPI_SUCCESS;
 }
 
