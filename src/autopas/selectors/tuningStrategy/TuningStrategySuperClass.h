@@ -76,7 +76,13 @@ class TuningStrategySuperClass : public TuningStrategyInterface {
   static inline std::__detail::_Node_const_iterator<std::pair<const Configuration, unsigned long>, false, true>
   getOptimum(const std::unordered_map<Configuration, size_t, ConfigHash> &findOptimumSearchSpace);
 
+  /**
+   * Contains every container option.
+   */
   std::set<ContainerOption> _containerOptions;
+  /**
+   * Contains every configuration.
+   */
   std::set<Configuration> _searchSpace;
 };
 
