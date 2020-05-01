@@ -30,7 +30,7 @@ include(GoogleTest)
 # queries the compiled executable for tests, this requires the executable to be runnable. if you are
 # cross compiling, make sure to properly set CMAKE_CROSSCOMPILING_EMULATOR.
 gtest_discover_tests(
-    runMPITests TEST_PREFIX "testAutopas/"
+    runMPITests TEST_PREFIX "MPIParallelAutoPasTests/"
     # increase the discovery timeout for `runTests --gtest_list_tests`
     DISCOVERY_TIMEOUT 60
 )

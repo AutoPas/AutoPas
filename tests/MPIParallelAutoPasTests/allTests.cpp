@@ -14,10 +14,9 @@ int main(int argc, char **argv) {
   // set the gtest death test style to threadsafe
   testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-  MPI_Init(&argc, argv);
+  MPI_Init(&argc, &argv);
   // running only my tests
   result = RUN_ALL_TESTS();
   MPI_Finalize();
-  
   return result;
 }

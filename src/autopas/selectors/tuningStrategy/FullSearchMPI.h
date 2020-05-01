@@ -102,14 +102,13 @@ class FullSearchMPI : public TuningStrategyInterface {
    * Constructor for the FullSearch that only contains the given configurations.
    * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
-   *
+   */
   explicit FullSearchMPI(std::set<Configuration> allowedConfigurations)
-      : _containerOptions{}, _searchSpace(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {
+      : _containerOptions{}, _searchSpace(std::move(allowedConfigurations)), _tuningConfig(_searchSpace.begin()) {
     for (auto config : _searchSpace) {
       _containerOptions.insert(config.container);
     }
   }
-   */
 
   inline const Configuration &getCurrentConfiguration() const override {
     // the cellSizeFactor is -1 if _optimalConfig has been initialized to an invalid value
