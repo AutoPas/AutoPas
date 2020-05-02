@@ -1,7 +1,7 @@
 /**
  * @file TuningStrategyInterface.h
  * @author F. Gratl
- * @date 5/29/19
+ * @date 29.05.2019
  */
 
 #pragma once

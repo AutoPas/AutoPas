@@ -1,7 +1,7 @@
 /**
  * @file ActiveHarmony.h
  * @author Jakob Englhauser
- * @date 21.10.19
+ * @date 21.10.2019
  */
 
 #pragma once

@@ -29,13 +29,15 @@ class PredictiveTuning : public TuningStrategySuperClass {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
+   * @param relativeOptimum
+   * @param maxTuningIterationsWithoutTest
    */
   PredictiveTuning(const std::set<ContainerOption> &allowedContainerOptions,
                    const std::set<double> &allowedCellSizeFactors,
                    const std::set<TraversalOption> &allowedTraversalOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                    const std::set<Newton3Option> &allowedNewton3Options, double relativeOptimum,
-                   int maxTuningIterationsWithoutTest)
+                   unsigned int maxTuningIterationsWithoutTest)
       : TuningStrategySuperClass(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                  allowedDataLayoutOptions, allowedNewton3Options),
         _currentConfig(_searchSpace.begin()),
@@ -43,7 +45,7 @@ class PredictiveTuning : public TuningStrategySuperClass {
         _maxTuningIterationsWithoutTest(maxTuningIterationsWithoutTest) {
     // sets traversalTimesStorage
     for (const auto &configuration : _searchSpace) {
-      std::vector<std::pair<int, size_t>> vector;
+      std::vector<std::pair<size_t, long>> vector;
       _traversalTimesStorage.emplace(configuration, vector);
     }
   }
@@ -83,87 +85,72 @@ class PredictiveTuning : public TuningStrategySuperClass {
 
  private:
   inline void selectOptimalConfiguration();
-
   /**
    * Selects the configurations that are going to be tested.
    */
   inline void selectOptimalSearchSpace();
-
   /**
    * Provides different extrapolation methods for the prediction of the traversal time.
    */
   inline void calculatePredictions();
-
   /**
    * Predicts the traversal time by placing a line trough the last two traversal points and calculating the prediction
    * for the current time.
    */
   inline void linePrediction();
-
   /**
    * Creates a new optimalSearchSpace if every configuration in the previous one was invalid.
    */
   inline void reselectOptimalSearchSpace();
 
   std::set<Configuration>::iterator _currentConfig;
-
   /**
    * Stores the traversal times for each configuration.
    * @param Configuration
    * @param Vector with pairs of the iteration and the traversal time.
    */
-  std::unordered_map<Configuration, std::vector<std::pair<int, size_t>>, ConfigHash> _traversalTimesStorage;
-
+  std::unordered_map<Configuration, std::vector<std::pair<size_t, long>>, ConfigHash> _traversalTimesStorage;
   /**
    * Contains the predicted time for each configuration.
    * @param Configuration
    * @param traversal prediction
    */
   std::unordered_map<Configuration, size_t, ConfigHash> _configurationPredictions;
-
   /**
    * Contains the configuration that are predicted to be optimal and going to be tested.
    */
   std::set<Configuration> _optimalSearchSpace;
-
   /**
    * Contains the configuration that have not been tested for a period of time and are going to be tested.
    */
   std::set<Configuration> _tooLongNotTestedSearchSpace;
-
   /**
    * Contains the configurations that are not invalid.
    */
   std::set<Configuration> _validSearchSpace;
-
   /**
    * Stores the the last tuning phase a configuration got tested.
    * @param Configuration
    * @param last tuning phase
    */
   std::unordered_map<Configuration, size_t, ConfigHash> _lastTest;
-
   /**
    * Gets incremented after every completed tuning phase.
    * Mainly used for the traversal time storage.
    */
   unsigned int _tuningIterationsCounter = 0;
-
   /**
    * Stores the iteration at the beginning of a tuning phase.
    */
   unsigned int _iterationBeginTuningPhase = 0;
-
   /**
    * Indicates if a valid configuration was found in the _optimalSearchSpace.
    */
   bool _validConfigurationFound = false;
-
   /**
    * Factor of the range of the optimal configurations for the optimalSearchSpace.
    */
   const double _relativeOptimumRange;
-
   /**
    * After not being tested this number of tuningPhases a configuration is being emplaced in _optimalSearchSpace.
    */
@@ -315,18 +302,18 @@ void PredictiveTuning::selectOptimalConfiguration() {
   // In the first couple iterations tune iterates through _searchSpace until predictions are made
   if (_optimalSearchSpace.empty()) {
     for (const auto &configuration : _searchSpace) {
-      if ((unsigned int)_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
   } else {
     for (const auto &configuration : _optimalSearchSpace) {
-      if ((unsigned int)_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
     for (const auto &configuration : _tooLongNotTestedSearchSpace) {
-      if ((unsigned int)_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }

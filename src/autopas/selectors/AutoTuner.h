@@ -58,12 +58,12 @@ class AutoTuner {
         _verletSkin(verletSkin),
         _verletClusterSize(verletClusterSize),
         _maxSamples(maxSamples),
-        _samples(maxSamples) {
+        _samples(maxSamples),
+        _iteration(0) {
     if (_tuningStrategy->searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
     }
 
-    _iteration = 0;
     selectCurrentContainer();
   }
 

@@ -85,21 +85,9 @@ class MDFlexConfig {
   unsigned int tuningSamples{3};
   static inline const char *tuningMaxEvidenceStr{"tuning-max-evidence"};
   unsigned int tuningMaxEvidence{10};
-  /**
-   * Name for the input.
-   */
   static inline const char *relativeOptimumRangeStr{"relative-optimum-range"};
-  /**
-   * Specifies the factor of the range of the optimal configurations in PredicitveTuning.
-   */
   double relativeOptimumRange{1.2};
-  /**
-   * Name for the input.
-   */
   static inline const char *maxTuningPhasesWithoutTestStr{"max-tuning-phases-without-test"};
-  /**
-   * Specifies how many tuning phases a configuration can not be tested in PredicitveTuning.
-   */
   unsigned int maxTuningPhasesWithoutTest{5};
   static inline const char *vtkFileNameStr{"vtk-filename"};
   std::string vtkFileName;

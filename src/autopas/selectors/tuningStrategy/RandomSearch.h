@@ -1,7 +1,7 @@
 /**
  * @file RandomSearch.h
  * @author Jan Nguyen
- * @date 10.07.19
+ * @date 10.07.2019
  */
 
 #pragma once

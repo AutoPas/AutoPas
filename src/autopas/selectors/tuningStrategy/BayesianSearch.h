@@ -1,7 +1,7 @@
 /**
  * @file BayesianSearch.h
  * @author Jan Nguyen
- * @date 12.06.19
+ * @date 12.06.2019
  */
 
 #pragma once
