@@ -35,7 +35,7 @@ namespace autopas {
          * Constructs a new FullParticleCell with the given cell side length.
          * @param cellLength cell side length
          */
-        ReferenceParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
+        explicit ReferenceParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
 
         /**
          * @copydoc ParticleCell::addParticle()
