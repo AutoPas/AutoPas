@@ -44,19 +44,11 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
 
 /**
     **
-    * Lists all traversal options applicable for the Linked Cells container.
+    * Lists all traversal options applicable for the Reference Linked Cells container.
     * @return set of all applicable traversal options.
     */
     static const std::set<TraversalOption> &allRLCCompatibleTraversals() {
-        static const std::set<TraversalOption> s {
-                TraversalOption::c01, TraversalOption::c08, TraversalOption::c18, TraversalOption::sliced,
-                TraversalOption::c01CombinedSoA, TraversalOption::c04, TraversalOption::c04SoA
-#if defined(AUTOPAS_CUDA)
-                ,
-        TraversalOption::c01Cuda
-#endif
-        };
-        return s;
+        return allLCCompatibleTraversals();
     }
 
 /**
