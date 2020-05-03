@@ -170,15 +170,15 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
     _isValid = false;
     for (size_t i = 0; i < this->_cells.size(); ++i) {
       for (size_t j = 0; j < _dummyStarts[i];) {
-        if (not this->_cells[i].at(j).isOwned()) {
+        if (not this->_cells[i][j].isOwned()) {
           // set position outside the domain with other dummy particles
-          auto pos = this->_cells[i].at(j).getR();
+          auto pos = this->_cells[i][j].getR();
           pos[0] += _boxMaxWithHalo[2] + 8 * this->getInteractionLength();
-          this->_cells[i].at(j).setR(pos);
+          this->_cells[i][j].setR(pos);
           // one more dummy particle
           --_dummyStarts[i];
           // swap last non dummy particle with the halo particle to remove
-          std::swap(this->_cells[i].at(j), this->_cells[i].at(_dummyStarts[i]));
+          std::swap(this->_cells[i][j], this->_cells[i].at(_dummyStarts[i]));
         } else {
           // move on if no halo particle was removed
           ++j;
