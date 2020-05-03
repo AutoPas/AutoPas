@@ -40,6 +40,7 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
   };
   return s;
 }
+
 /**
     **
     * Lists all traversal options applicable for the Linked Cells container.
