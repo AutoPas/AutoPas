@@ -1,5 +1,5 @@
 /**
- * @file FullParticleCell.h
+ * @file ReferenceParticleCell.h
  * @date 18.01.2018
  * @author seckler
  */
@@ -25,24 +25,28 @@ namespace autopas {
     class ReferenceParticleCell : public ParticleCell<Particle> {
     public:
         /**
-         * Constructs a new FullParticleCell.
+         * Constructs a new ReferenceParticleCell.
          */
         ReferenceParticleCell()
                 : _cellLength({std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
                                std::numeric_limits<double>::max()}) {}
 
         /**
-         * Constructs a new FullParticleCell with the given cell side length.
+         * Constructs a new ReferenceParticleCell with the given cell side length.
          * @param cellLength cell side length
          */
         ReferenceParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
 
+        void addParticle(const Particle &p) override {
+          autopas::utils::ExceptionHandler::exception("Should use addParticleReference instead");
+        }
+
         /**
          * @copydoc ParticleCell::addParticle()
          */
-        void addParticle(const Particle &p) override {
+        void addParticleReference(Particle *p) {
             particlesLock.lock();
-            _particles.emplace_back(std::make_unique<Particle>(p));
+            _particles.emplace_back(p);
             particlesLock.unlock();
         }
 
@@ -95,7 +99,7 @@ namespace autopas {
             }
 
             if (index < numParticles() - 1) {
-                _particles[index].swap(_particles[numParticles() - 1]);
+                std::swap(_particles[index], _particles[numParticles() - 1]);
             }
             _particles.pop_back();
         }
@@ -129,7 +133,7 @@ namespace autopas {
         /**
          * Storage of the molecules of the cell.
          */
-        std::vector<std::unique_ptr<Particle>> _particles;
+        std::vector<Particle*> _particles;
 
         /**
          * SoA buffer of this cell.
