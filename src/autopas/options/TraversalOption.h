@@ -41,6 +41,8 @@ class TraversalOption : public Option<TraversalOption> {
     verletClustersStatic = 17,
     noneBalancedSliced = 18,
     squaredCellSizeBalancedSliced = 19,
+    noneBalancedSlicedVerlet = 20,
+    squaredCellSizeBalancedSlicedVerlet = 21,
   };
 
   /**
@@ -86,6 +88,8 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
         {TraversalOption::noneBalancedSliced, "none-balanced-sliced"},
         {TraversalOption::squaredCellSizeBalancedSliced, "squared-cell-size-balanced-sliced"},
+        {TraversalOption::noneBalancedSlicedVerlet, "none-balanced-sliced-verlet"},
+        {TraversalOption::squaredCellSizeBalancedSlicedVerlet, "squared-cell-size-balanced-sliced-verlet"},
     };
   };
 

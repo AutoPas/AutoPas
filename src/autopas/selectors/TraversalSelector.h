@@ -28,6 +28,7 @@
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VarVerletTraversalAsBuild.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/BalancedSlicedTraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C01TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C18TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/SlicedTraversalVerlet.h"
@@ -138,6 +139,16 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     case TraversalOption::slicedVerlet: {
       return std::make_unique<SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
+    case TraversalOption::noneBalancedSlicedVerlet: {
+      return std::make_unique<BalancedSlicedTraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength,
+          loadEstimators::CellBasedHeuristic::none);
+    }
+    case TraversalOption::squaredCellSizeBalancedSlicedVerlet: {
+      return std::make_unique<BalancedSlicedTraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength,
+          loadEstimators::CellBasedHeuristic::squaredCellSize);
     }
     case TraversalOption::c18Verlet: {
       return std::make_unique<C18TraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(

@@ -68,7 +68,8 @@ static const std::set<TraversalOption> &allVLCompatibleTraversals() {
  */
 static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::slicedVerlet, TraversalOption::c18Verlet,
-                                           TraversalOption::c01Verlet};
+                                           TraversalOption::c01Verlet, TraversalOption::noneBalancedSlicedVerlet,
+                                           TraversalOption::squaredCellSizeBalancedSlicedVerlet};
   return s;
 }
 

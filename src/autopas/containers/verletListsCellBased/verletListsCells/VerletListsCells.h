@@ -9,6 +9,7 @@
 #include "VerletListsCellsHelpers.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
@@ -60,6 +61,10 @@ class VerletListsCells
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto vTraversal = dynamic_cast<autopas::VerletListsCellsTraversal<Particle> *>(traversal);
+    auto cTraversal = dynamic_cast<autopas::CellPairTraversal<ParticleCell> *>(traversal);
+    if (cTraversal) {
+      cTraversal->setCellsToTraverse((this->_linkedCells).getCells());
+    }
     if (vTraversal) {
       vTraversal->setVerletList(_neighborLists);
     } else {
