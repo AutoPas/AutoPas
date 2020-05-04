@@ -8,18 +8,20 @@
 
 template <class Type>
 class ParticleList{
+
+    using particleListImpType = std::vector<Type>;
+
+    using iterator = typename particleListImpType::iterator;
+    using const_iterator = typename particleListImpType::const_iterator;
+
     public:
         ParticleList<Type>() {
             dirty = false;
+            particleListImp = std::vector<Type>();
         }
 
-        ParticleList<Type>(int n) {
-            dirty = false;
-            particleListImp = std::vector<Type>(n);
-        }
-
-        Type get(int index) {
-            return particleListImp[index];
+        Type* getReference(int index) {
+            return &particleListImp[index];
         }
 
         void set(int index, Type value) {
@@ -37,13 +39,16 @@ class ParticleList{
             return particleListImp.pop_back();
         }
 
-        Type* begin(){
-            return particleListImp.begin();
+        int size() {
+            return particleListImp.size();
         }
 
-        Type* end(){
-            return particleListImp.end();
-        }
+        iterator begin() { return particleListImp.begin(); }
+        iterator end() { return particleListImp.end(); }
+        const_iterator begin() const { return particleListImp.begin(); }
+        const_iterator end() const { return particleListImp.end(); }
+        const_iterator cbegin() const { return particleListImp.cbegin(); }
+        const_iterator cend() const { return particleListImp.cend(); }
 
     private:
         bool dirty;
