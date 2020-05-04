@@ -11,6 +11,7 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
+#include "autopas/containers/linkedCells/ParticleList.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -49,7 +50,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
    * By default all applicable traversals are allowed.
    */
   ReferenceLinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double skin, const double cellSizeFactor = 1.0)
+                       const double skin, const double cellSizeFactor = 1.0)
       : ParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
 
@@ -59,9 +60,18 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
   void addParticleImpl(const ParticleType &p) override {
-//      _particles.insert(p);
-    ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
-    cell.addParticle(p);
+    _particleList.push_back(p);
+  }
+
+    /**
+     * @copydoc ParticleContainerInterface::onAllParticlesAddedCallback()
+     */
+  void onAllParticlesAddedCallback() { // override
+      for(auto particlePtr = _particleList.begin(); particlePtr != _particleList.end(); particlePtr++) {
+          Particle particle = *particlePtr;
+          ParticleCell &cell = _cellBlock.getContainingCell(particle.getR());
+          cell.addParticleReference(&particle);
+      }
   }
 
   /**
@@ -71,7 +81,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
     ParticleType pCopy = haloParticle;
     pCopy.setOwned(false);
     ParticleCell &cell = _cellBlock.getContainingCell(pCopy.getR());
-    cell.addParticle(pCopy);
+    cell.addParticleReference(pCopy);
   }
 
   /**
@@ -270,7 +280,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
   /**
    * object to manage the block of cells.
    */
-//  std::vector<Particle> _particles;
+  ParticleList<Particle> _particleList;
   internal::CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
 };
