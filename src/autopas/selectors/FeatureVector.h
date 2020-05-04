@@ -175,24 +175,25 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Encode Feature vector to a cluster-encoded vector ignoring ContainerOptions.
+   * Encode Feature vector to a cluster-encoded vector.
    * Discrete values are encoded using their index in given std::vector.
-   * @param traversalOptions allowed traversals
+   * @param containerTraversalOptions allowed container-traversal pairs
    * @param dataLayoutOptions allowed data layouts
    * @param newton3Options allowed newton3 options
    * @return cluster encoded vector
    */
   [[nodiscard]] std::pair<Eigen::VectorXi, Eigen::VectorXd> clusterEncode(
-      const std::vector<TraversalOption> &traversalOptions, const std::vector<DataLayoutOption> &dataLayoutOptions,
-      const std::vector<Newton3Option> &newton3Options) const {
-    int traversalIndex = static_cast<int>(std::distance(
-        traversalOptions.begin(), std::find(traversalOptions.begin(), traversalOptions.end(), traversal)));
+      const std::vector<std::pair<ContainerOption, TraversalOption>> &containerTraversalOptions,
+      const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options) const {
+    int containerTraversalIndex = static_cast<int>(std::distance(
+        containerTraversalOptions.begin(), std::find(containerTraversalOptions.begin(), containerTraversalOptions.end(),
+                                                     std::make_pair(container, traversal))));
     int dataLayoutIndex = static_cast<int>(std::distance(
         dataLayoutOptions.begin(), std::find(dataLayoutOptions.begin(), dataLayoutOptions.end(), dataLayout)));
     int newton3Index = static_cast<int>(
         std::distance(newton3Options.begin(), std::find(newton3Options.begin(), newton3Options.end(), newton3)));
 
-    Eigen::Vector3i vecDiscrete({traversalIndex, dataLayoutIndex, newton3Index});
+    Eigen::Vector3i vecDiscrete({containerTraversalIndex, dataLayoutIndex, newton3Index});
     Eigen::VectorXd vecContinuous(1);
     vecContinuous << cellSizeFactor;
     return std::make_pair(vecDiscrete, vecContinuous);
@@ -200,20 +201,21 @@ class FeatureVector : public Configuration {
 
   /**
    * Decode cluster-encoded vector to FeatureVector.
-   * Encoding ignores ContainerOption and valid options are unknown.
-   * So this functions passes an invalid ContainerOption.
    * @param vec cluster encoded vector
-   * @param traversalOptions allowed traversals
+   * @param containerTraversalOptions allowed container-traversal pairs
    * @param dataLayoutOptions allowed data layouts
    * @param newton3Options allowed newton3 options
    * @return decoded vector
    */
-  static FeatureVector clusterDecode(std::pair<Eigen::VectorXi, Eigen::VectorXd> vec,
-                                     const std::vector<TraversalOption> &traversalOptions,
-                                     const std::vector<DataLayoutOption> &dataLayoutOptions,
-                                     const std::vector<Newton3Option> &newton3Options) {
-    return FeatureVector(ContainerOption(), vec.second[0], traversalOptions[vec.first[0]],
-                         dataLayoutOptions[vec.first[1]], newton3Options[vec.first[2]]);
+  static FeatureVector clusterDecode(
+      std::pair<Eigen::VectorXi, Eigen::VectorXd> vec,
+      const std::vector<std::pair<ContainerOption, TraversalOption>> &containerTraversalOptions,
+      const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options) {
+    const auto &[vecDiscrete, vecContinuous] = vec;
+    auto [container, traversal] = containerTraversalOptions[vecDiscrete[0]];
+
+    return FeatureVector(container, vecContinuous[0], traversal, dataLayoutOptions[vecDiscrete[1]],
+                         newton3Options[vecDiscrete[2]]);
   }
 
   /**

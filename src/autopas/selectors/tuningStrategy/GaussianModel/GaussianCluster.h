@@ -251,15 +251,8 @@ class GaussianCluster {
           _dimRestriction.size());
     }
 
-    auto i = x.size() - 1;
-
-    if (x[i] < 0 or x[i] >= _dimRestriction[i]) {
-      utils::ExceptionHandler::exception("GaussianCluster: The {}th dimension is {} but is restricted to [0,{})", i,
-                                         x[i], _dimRestriction[i]);
-    }
-
-    size_t result = x[i];
-    for (--i; i >= 0; --i) {
+    size_t result = 0;
+    for (long i = x.size() - 1; i >= 0; --i) {
       if (x[i] < 0 or x[i] >= _dimRestriction[i]) {
         utils::ExceptionHandler::exception("GaussianCluster: The {}th dimension is {} but is restricted to [0,{})", i,
                                            x[i], _dimRestriction[i]);

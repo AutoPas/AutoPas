@@ -11,8 +11,11 @@
 
 using namespace autopas;
 
+/**
+ * Check if correct number of samples is generated.
+ */
 TEST_F(FeatureVectorTest, lhsSample) {
-  autopas::Random rand(42);
+  autopas::Random rand;
   size_t n = 100;
 
   auto vecList = autopas::FeatureVector::lhsSampleFeatures(
@@ -53,10 +56,11 @@ TEST_F(FeatureVectorTest, distanceTest) {
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f4 - f1).squaredNorm(), 3);
 }
 
+/**
+ * Check if applying one-hot encode and decode lead to the initial vector.
+ */
 TEST_F(FeatureVectorTest, onehot) {
-  // check if applying one-hot encode and decode lead to the initial vector
-
-  autopas::Random rand(42);
+  autopas::Random rand;
   auto vecList = autopas::FeatureVector::lhsSampleFeatures(
       100, rand, autopas::NumberInterval<double>(1., 2.), autopas::TraversalOption::getAllOptions(),
       autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
@@ -74,58 +78,87 @@ TEST_F(FeatureVectorTest, onehot) {
   }
 }
 
+/**
+ * Check if cluster-encode and decode lead to the initial vector.
+ */
 TEST_F(FeatureVectorTest, clusterEncode) {
-  // check if cluster-encode and decode lead to the initial vector
-
-  autopas::Random rand(91);
   auto cellSizes = autopas::NumberInterval<double>(1., 2.);
 
+  auto container = autopas::ContainerOption::linkedCells;
+  auto cellSizeFactor = 1.0;
   auto traversals = autopas::TraversalOption::getAllOptions();
   auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
   auto newtons = autopas::Newton3Option::getAllOptions();
 
-  std::vector<TraversalOption> traversalsVec(traversals.begin(), traversals.end());
+  std::vector<std::pair<ContainerOption, TraversalOption>> containerTraversalsVec;
+  containerTraversalsVec.reserve(traversals.size());
+  for (auto traversal : traversals) {
+    containerTraversalsVec.emplace_back(container, traversal);
+  }
   std::vector<DataLayoutOption> dataLayoutsVec(dataLayouts.begin(), dataLayouts.end());
   std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
 
-  auto vecList =
-      autopas::FeatureVector::lhsSampleFeatures(100, rand, cellSizes, traversalsVec, dataLayoutsVec, newtonsVec);
+  // generate all possible combinations
+  std::vector<FeatureVector> vecList;
+  for (auto [container, traversal] : containerTraversalsVec) {
+    for (auto dataLayout : dataLayouts) {
+      for (auto newton3 : newtons) {
+        vecList.emplace_back(container, cellSizeFactor, traversal, dataLayout, newton3);
+      }
+    }
+  }
 
   for (auto fv : vecList) {
+    fv.container = container;
+
     // encode vector
-    auto encoded = fv.clusterEncode(traversalsVec, dataLayoutsVec, newtonsVec);
+    auto encoded = fv.clusterEncode(containerTraversalsVec, dataLayoutsVec, newtonsVec);
 
     // check expected size of discrete and continuous tuples
     EXPECT_EQ(encoded.first.size(), 3);
     EXPECT_EQ(encoded.second.size(), 1);
 
     // check if decoding leads to intial vector
-    auto decoded = autopas::FeatureVector::clusterDecode(encoded, traversalsVec, dataLayoutsVec, newtonsVec);
+    auto decoded = autopas::FeatureVector::clusterDecode(encoded, containerTraversalsVec, dataLayoutsVec, newtonsVec);
     EXPECT_EQ(decoded, fv);
   }
 }
 
-TEST_F(FeatureVectorTest, clusterNeighbours) {
-  autopas::Random rand(91);
-  auto cellSizes = autopas::NumberInterval<double>(1., 2.);
-
+/**
+ * Check neighboursManhattan1 generates unique and correct number of neighbours.
+ */
+TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
+  auto container = autopas::ContainerOption::linkedCells;
+  auto cellSizeFactor = 1.0;
   auto traversals = autopas::TraversalOption::getAllOptions();
   auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
   auto newtons = autopas::Newton3Option::getAllOptions();
 
-  std::vector<TraversalOption> traversalsVec(traversals.begin(), traversals.end());
+  std::vector<std::pair<ContainerOption, TraversalOption>> containerTraversalsVec;
+  containerTraversalsVec.reserve(traversals.size());
+  for (auto traversal : traversals) {
+    containerTraversalsVec.emplace_back(container, traversal);
+  }
   std::vector<DataLayoutOption> dataLayoutsVec(dataLayouts.begin(), dataLayouts.end());
   std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
 
   std::vector<int> dimRestriction = {static_cast<int>(traversals.size()), static_cast<int>(dataLayouts.size()),
                                      static_cast<int>(newtons.size())};
 
-  auto vecList =
-      autopas::FeatureVector::lhsSampleFeatures(100, rand, cellSizes, traversalsVec, dataLayoutsVec, newtonsVec);
+  // generate all possible combinations
+  std::vector<FeatureVector> vecList;
+  for (auto [container, traversal] : containerTraversalsVec) {
+    for (auto dataLayout : dataLayouts) {
+      for (auto newton3 : newtons) {
+        vecList.emplace_back(container, cellSizeFactor, traversal, dataLayout, newton3);
+      }
+    }
+  }
 
   for (auto fv : vecList) {
-    auto encoded = fv.clusterEncode(traversalsVec, dataLayoutsVec, newtonsVec);
-    auto neighbours = autopas::FeatureVector::neighboursManhattan1(encoded.first, dimRestriction);
+    // get neighbours of encoded vector
+    auto [encodedDiscrete, encodedContinuous] = fv.clusterEncode(containerTraversalsVec, dataLayoutsVec, newtonsVec);
+    auto neighbours = autopas::FeatureVector::neighboursManhattan1(encodedDiscrete, dimRestriction);
 
     // neighbours should contain all traversals + all datalayouts + all newtons - 3 (initial vector is counted trice)
     EXPECT_EQ(neighbours.size(), traversals.size() + dataLayouts.size() + newtons.size() - 3);

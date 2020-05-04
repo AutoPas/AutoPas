@@ -70,12 +70,9 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lowerConfidenceBound,
       size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
       : _containerOptionsSet(allowedContainerOptions),
-        _containerOptions(allowedContainerOptions.begin(), allowedContainerOptions.end()),
-        _traversalOptions(allowedTraversalOptions.begin(), allowedTraversalOptions.end()),
         _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
         _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
         _cellSizeFactors(allowedCellSizeFactors.clone()),
-        _traversalContainerMap(),
         _currentConfig(),
         _invalidConfigs(),
         _rng(seed),
@@ -91,19 +88,16 @@ class BayesianClusterSearch : public TuningStrategyInterface {
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
     }
 
-    // map each traversal to a container
-    for (auto it = _traversalOptions.begin(); it != _traversalOptions.end();) {
-      auto compatibleContainerOptions = compatibleTraversals::allCompatibleContainers(*it);
+    // generate all compatible container-traversal pairs
+    for (auto traversal : allowedTraversalOptions) {
+      auto compatibleContainerOptions = compatibleTraversals::allCompatibleContainers(traversal);
       std::set<ContainerOption> allowedAndCompatible;
       std::set_intersection(allowedContainerOptions.begin(), allowedContainerOptions.end(),
                             compatibleContainerOptions.begin(), compatibleContainerOptions.end(),
                             std::inserter(allowedAndCompatible, allowedAndCompatible.begin()));
-      if (allowedAndCompatible.empty()) {
-        // no compatible container found
-        it = _traversalOptions.erase(it);
-      } else {
-        _traversalContainerMap[*it] = *allowedAndCompatible.begin();
-        ++it;
+
+      for (auto container : allowedAndCompatible) {
+        _containerTraversalOptions.emplace_back(container, traversal);
       }
     }
 
@@ -124,9 +118,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   inline void addEvidence(long time) override {
     // encoded vector
-    auto vec = _currentConfig.clusterEncode(_traversalOptions, _dataLayoutOptions, _newton3Options);
+    auto [vecDiscrete, vecContinuous] =
+        _currentConfig.clusterEncode(_containerTraversalOptions, _dataLayoutOptions, _newton3Options);
     // time is converted to seconds, to big values may lead to errors in GaussianProcess
-    _gaussianCluster.addEvidence(vec.first, vec.second, time * secondsPerMicroseconds);
+    _gaussianCluster.addEvidence(vecDiscrete, vecContinuous, time * secondsPerMicroseconds);
     _currentAcquisitions.clear();
   }
 
@@ -155,16 +150,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   inline void sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
 
   std::set<ContainerOption> _containerOptionsSet;
-  std::vector<ContainerOption> _containerOptions;
-  std::vector<TraversalOption> _traversalOptions;
+  std::vector<std::pair<ContainerOption, TraversalOption>> _containerTraversalOptions;
   std::vector<DataLayoutOption> _dataLayoutOptions;
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
-
-  /**
-   * Map each traversal to a container.
-   */
-  std::map<TraversalOption, ContainerOption> _traversalContainerMap;
 
   FeatureVector _currentConfig;
   /**
@@ -206,9 +195,8 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
   // no more tunings steps
   if (_gaussianCluster.numEvidence() >= _maxEvidence) {
     // select best config
-    _currentConfig = FeatureVector::clusterDecode(_gaussianCluster.getEvidenceMin(), _traversalOptions,
+    _currentConfig = FeatureVector::clusterDecode(_gaussianCluster.getEvidenceMin(), _containerTraversalOptions,
                                                   _dataLayoutOptions, _newton3Options);
-    _currentConfig.container = _traversalContainerMap[_currentConfig.traversal];
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
     return false;
   }
@@ -221,9 +209,8 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
 
     // test best vectors until empty
     while (not _currentAcquisitions.empty()) {
-      auto best = FeatureVector::clusterDecode(_currentAcquisitions.back().first, _traversalOptions, _dataLayoutOptions,
-                                               _newton3Options);
-      best.container = _traversalContainerMap[best.traversal];
+      auto best = FeatureVector::clusterDecode(_currentAcquisitions.back().first, _containerTraversalOptions,
+                                               _dataLayoutOptions, _newton3Options);
 
       if (_invalidConfigs.find(best) == _invalidConfigs.end()) {
         // valid config found!
@@ -283,14 +270,14 @@ bool BayesianClusterSearch::searchSpaceIsTrivial() const {
     return false;
   }
 
-  return _containerOptions.size() == 1 and (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 1) and
-         _traversalOptions.size() == 1 and _dataLayoutOptions.size() == 1 and _newton3Options.size() == 1;
+  return _containerTraversalOptions.size() == 1 and (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 1) and
+         _dataLayoutOptions.size() == 1 and _newton3Options.size() == 1;
 }
 
 bool BayesianClusterSearch::searchSpaceIsEmpty() const {
   // if one enum is empty return true
-  return _containerOptions.empty() or (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or
-         _traversalOptions.empty() or _dataLayoutOptions.empty() or _newton3Options.empty();
+  return _containerTraversalOptions.empty() or (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or
+         _dataLayoutOptions.empty() or _newton3Options.empty();
 }
 
 void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {

@@ -9,19 +9,25 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
+/**
+ * Generating a TuningStrategy without a valid configuration is expected to throw
+ */
 TEST_P(TuningStrategyTest, testSearchSpaceEmpty) {
+  auto tuningStrategy = GetParam();
   auto noInterval = autopas::NumberSetFinite<double>({});
-  EXPECT_THROW(autopas::TuningStrategyFactory::generateTuningStrategy(
-                   GetParam(), {}, noInterval, {}, {}, {}, 42, autopas::AcquisitionFunctionOption::expectedDecrease),
-               autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW(
+      autopas::TuningStrategyFactory::generateTuningStrategy(tuningStrategy, {}, noInterval, {}, {}, {}, 42,
+                                                             autopas::AcquisitionFunctionOption::expectedDecrease),
+      autopas::utils::ExceptionHandler::AutoPasException);
 }
 
 TEST_P(TuningStrategyTest, testSearchSpaceOneOption) {
+  auto tuningStrategy = GetParam();
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
-      GetParam(), {autopas::ContainerOption::directSum}, oneInterval, {autopas::TraversalOption::directSumTraversal},
-      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::enabled}, 42,
-      autopas::AcquisitionFunctionOption::expectedDecrease);
+      tuningStrategy, {autopas::ContainerOption::directSum}, oneInterval,
+      {autopas::TraversalOption::directSumTraversal}, {autopas::DataLayoutOption::soa},
+      {autopas::Newton3Option::enabled}, 42, autopas::AcquisitionFunctionOption::expectedDecrease);
 
   EXPECT_FALSE(search->searchSpaceIsEmpty());
   EXPECT_TRUE(search->searchSpaceIsTrivial());
@@ -29,9 +35,10 @@ TEST_P(TuningStrategyTest, testSearchSpaceOneOption) {
 }
 
 TEST_P(TuningStrategyTest, testSearchSpaceMoreOptions) {
+  auto tuningStrategy = GetParam();
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
-      GetParam(), {autopas::ContainerOption::linkedCells}, oneInterval, {autopas::TraversalOption::c08},
+      tuningStrategy, {autopas::ContainerOption::linkedCells}, oneInterval, {autopas::TraversalOption::c08},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, 1,
       autopas::AcquisitionFunctionOption::expectedDecrease);
 
@@ -40,10 +47,15 @@ TEST_P(TuningStrategyTest, testSearchSpaceMoreOptions) {
   EXPECT_THAT(search->getAllowedContainerOptions(), ::testing::ElementsAre(autopas::ContainerOption::linkedCells));
 }
 
+/**
+ * Initialize a search space and remove the only newton3 option.
+ * It is expected that this throws.
+ */
 TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveAll) {
+  auto tuningStrategy = GetParam();
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
-      GetParam(), {autopas::ContainerOption::linkedCells}, oneInterval,
+      tuningStrategy, {autopas::ContainerOption::linkedCells}, oneInterval,
       {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos}, {autopas::Newton3Option::enabled}, 1,
       autopas::AcquisitionFunctionOption::expectedDecrease);
@@ -52,10 +64,15 @@ TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveAll) {
                autopas::utils::ExceptionHandler::AutoPasException);
 }
 
+/**
+ * Initialize a search space and remove one of two newton3 options.
+ * It is expected that this does not throw and the search space still contains elements.
+ */
 TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveSome) {
+  auto tuningStrategy = GetParam();
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
-      GetParam(), {autopas::ContainerOption::linkedCells}, oneInterval,
+      tuningStrategy, {autopas::ContainerOption::linkedCells}, oneInterval,
       {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
       {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, 1,
