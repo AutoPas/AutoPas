@@ -178,7 +178,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
           // one more dummy particle
           --_dummyStarts[i];
           // swap last non dummy particle with the halo particle to remove
-          std::swap(this->_cells[i][j], this->_cells[i].at(_dummyStarts[i]));
+          std::swap(this->_cells[i][j], this->_cells[i][_dummyStarts[i]]);
         } else {
           // move on if no halo particle was removed
           ++j;
