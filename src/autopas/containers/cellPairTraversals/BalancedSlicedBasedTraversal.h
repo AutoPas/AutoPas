@@ -12,6 +12,7 @@
 
 #include "autopas/containers/cellPairTraversals/SlicedBasedTraversal.h"
 #include "autopas/containers/loadEstimators/cellBasedHeuristics.h"
+#include "autopas/utils/Timer.h"
 
 namespace autopas {
 
@@ -66,6 +67,8 @@ class BalancedSlicedBasedTraversal
     upperCorner[0]--;
     upperCorner[1]--;
     upperCorner[2]--;
+    utils::Timer timer;
+    timer.start();
     for (auto x = 0; x < maxDimensionLength; x++) {
       lowerCorner[maxDimension] = x;
       upperCorner[maxDimension] = x;
@@ -74,6 +77,8 @@ class BalancedSlicedBasedTraversal
       fullLoad += load;
       loads.push_back(fullLoad);
     }
+    auto loadEstimationTime = timer.stop();
+    AutoPasLog(debug, "load estimation took {} nanoseconds", loadEstimationTime);
 
     auto numSlices = (size_t)autopas_get_max_threads();
     AutoPasLog(debug, "{} threads available.", numSlices);
@@ -111,6 +116,19 @@ class BalancedSlicedBasedTraversal
         }
       }
     }
+    std::string thicknessStr;
+    std::string loadStr;
+    auto lastLoad = 0;
+    totalThickness = 0;
+    for (auto t : this->_sliceThickness) {
+      thicknessStr += std::to_string(t) + ", ";
+      totalThickness += t;
+      loadStr += std::to_string(loads[totalThickness - 1] - lastLoad) + ", ";
+      lastLoad = loads[totalThickness - 1];
+    }
+
+    AutoPasLog(debug, "Slice Thicknesses: [{}]", thicknessStr);
+    AutoPasLog(debug, "Slice loads: [{}]", loadStr);
 
     // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
     this->_sliceThickness.back() -= this->_overlapLongestAxis;

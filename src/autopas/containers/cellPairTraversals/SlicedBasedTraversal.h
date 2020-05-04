@@ -12,6 +12,7 @@
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -218,11 +219,18 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
     _sliceThickness.back() += _overlapLongestAxis;
   }
 
+  std::vector<utils::Timer> timers;
+  std::vector<double> threadTimes;
+
+  timers.resize(numSlices);
+  threadTimes.resize(numSlices);
+
 #ifdef AUTOPAS_OPENMP
 // although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
 #pragma omp parallel for schedule(static, 1) num_threads(numSlices)
 #endif
   for (size_t slice = 0; slice < numSlices; ++slice) {
+    timers[slice].start();
     array<unsigned long, 3> myStartArray{0, 0, 0};
     for (size_t i = 0; i < slice; ++i) {
       myStartArray[_dimsPerLength[0]] += _sliceThickness[i];
@@ -249,6 +257,7 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
           idArray[_dimsPerLength[0]] = dimSlice;
           idArray[_dimsPerLength[1]] = dimMedium;
           idArray[_dimsPerLength[2]] = dimShort;
+
           loopBody(idArray[0], idArray[1], idArray[2]);
         }
       }
@@ -270,11 +279,28 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
         }
       }
     }
+    threadTimes[slice] = timers[slice].stop();
   }
 
   if (allCells) {
     _sliceThickness.back() -= _overlapLongestAxis;
   }
+
+  std::string timesStr;
+  for (auto t : threadTimes) {
+    timesStr += std::to_string(t) + ", ";
+  }
+  auto minMax = std::minmax_element(threadTimes.begin(), threadTimes.end());
+  auto avg = std::accumulate(threadTimes.begin(), threadTimes.end(), 0.0) / numSlices;
+  auto variance = std::accumulate(threadTimes.cbegin(), threadTimes.cend(), 0.0,
+                                  [avg](double a, double b) -> double { return a + std::pow(avg - b, 2.0); }) /
+                  numSlices;
+  auto stddev = std::sqrt(variance);
+
+  AutoPasLog(debug, "times per slice: [{}].", timesStr);
+  AutoPasLog(debug, "Difference between longest and shortest time: {:.3G}", *minMax.second - *minMax.first);
+  AutoPasLog(debug, "Ratio between longest and shortest time: {:.3G}", (float)*minMax.second / *minMax.first);
+  AutoPasLog(debug, "avg: {:.3G}, std-deviation: {:.3G} ({:.3G}%)", avg, stddev, 100 * stddev / avg);
 }
 
 }  // namespace autopas
