@@ -60,7 +60,8 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
   void addParticleImpl(const ParticleType &p) override {
-    _particleList.push_back(p);
+    ParticleType pCopy = p;
+    _particleList.push_back(pCopy);
   }
 
     /**
@@ -70,7 +71,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
       for(auto particlePtr = _particleList.begin(); particlePtr != _particleList.end(); particlePtr++) {
           Particle particle = *particlePtr;
           ParticleCell &cell = _cellBlock.getContainingCell(particle.getR());
-          cell.addParticleReference(&particle);
+          cell.addParticleReference(particlePtr);
       }
   }
 
@@ -80,8 +81,14 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwned(false);
+
+    // TODO does this method get called after onAllParticlesAddedCallback/does
+    //  the onAllParticlesAddedCallback get called after every iteration?
+    _particleList.push_back(pCopy);
+    ParticleType *p =  _particleList.getReference(_particleList.size()-1);
+
     ParticleCell &cell = _cellBlock.getContainingCell(pCopy.getR());
-    cell.addParticleReference(pCopy);
+    cell.addParticleReference(p);
   }
 
   /**
@@ -280,7 +287,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
   /**
    * object to manage the block of cells.
    */
-  ParticleList<Particle> _particleList;
+  ParticleList<ParticleType> _particleList;
   internal::CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
 };
