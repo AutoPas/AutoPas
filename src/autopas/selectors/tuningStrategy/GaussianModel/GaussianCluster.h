@@ -31,9 +31,9 @@ class GaussianCluster {
 
  public:
   /**
-   * Pair of input tuples and corresponding expected acquisition
+   * Vector described by a discrete and a continuous part
    */
-  using VectorAcquisition = std::pair<std::pair<VectorDiscrete, VectorContinuous>, double>;
+  using Vector = std::pair<VectorDiscrete, VectorContinuous>;
 
   /**
    * Constructor
@@ -104,10 +104,9 @@ class GaussianCluster {
     if (_numEvidence == 0) {
       // first evidence
       _evidenceMinValue = _evidenceMaxValue = output;
-      _evidenceMinVector = _evidenceMaxVector = std::make_pair(inputDiscrete, inputContinuous);
+      _evidenceMaxVector = std::make_pair(inputDiscrete, inputContinuous);
     } else if (output < _evidenceMinValue) {
       _evidenceMinValue = output;
-      _evidenceMinVector = std::make_pair(inputDiscrete, inputContinuous);
     } else if (output > _evidenceMaxValue) {
       _evidenceMaxValue = output;
       _evidenceMaxVector = std::make_pair(inputDiscrete, inputContinuous);
@@ -118,22 +117,18 @@ class GaussianCluster {
   }
 
   /**
-   * Get the evidence with the smallest output value
-   * @return input of min
+   * Provide a input-output pair as evidence.
+   * Each evidence improve the quality of future predictions.
+   * @param input (x,y)
+   * @param output f((x,y))
    */
-  [[nodiscard]] std::pair<VectorDiscrete, VectorContinuous> getEvidenceMin() const {
-    if (_numEvidence == 0) {
-      utils::ExceptionHandler::exception("GaussianCluster has no evidence");
-    }
-
-    return _evidenceMinVector;
-  }
+  inline void addEvidence(const Vector &input, double output) { addEvidence(input.first, input.second, output); }
 
   /**
    * Get the evidence with the highest output value
    * @return input of max
    */
-  [[nodiscard]] std::pair<VectorDiscrete, VectorContinuous> getEvidenceMax() const {
+  [[nodiscard]] Vector getEvidenceMax() const {
     if (_numEvidence == 0) {
       utils::ExceptionHandler::exception("GaussianCluster has no evidence");
     }
@@ -142,20 +137,23 @@ class GaussianCluster {
   }
 
   /**
-   * Calculate the acquisition for all possible combinations of discrete tuples and continuous tuples in samples
+   * Generate all possible combinations of discrete tuples and continuous tuples in samples and
+   * order them by their acquisition.
    * @param af function to optimize
    * @param neighbourFun function which generates neighbours of given discrete tuple
-   * @param samples continuous tuples
-   * @return vector of pairs - vectors and corresponding acquisition
+   * @param continuousSamples continuous tuples
+   * @return all discrete-continuous tuples ordered by their corresponding acquisition
    */
-  std::vector<VectorAcquisition> sampleAcquisition(
+  std::vector<Vector> sampleAcquisition(
       AcquisitionFunctionOption af, const std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> &neighbourFun,
-      const std::vector<VectorContinuous> &samples) {
+      const std::vector<VectorContinuous> &continuousSamples) {
+    // store pairs of vectors and corresponding acquisition
+    using VectorAcquisition = std::pair<Vector, std::optional<double>>;
     std::vector<VectorAcquisition> acquisitions;
     // pair up all discrete with all continuous samples
-    acquisitions.reserve(_clusters.size() * samples.size());
+    acquisitions.reserve(_clusters.size() * continuousSamples.size());
 
-    for (const auto &currentContinuous : samples) {
+    for (const auto &currentContinuous : continuousSamples) {
       // calc means of given continuous tuple for each cluster
       std::vector<double> means;
       std::vector<double> vars;
@@ -176,15 +174,20 @@ class GaussianCluster {
       for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
         auto neighbours = neighbourFun(currentDiscrete);
 
-        double mixMean = means[i];
-        double mixVar = vars[i];
-        double weightSum = 1.;
+        double mixMean = 0.;
+        double mixVar = 0.;
+        double weightSum = 0.;
+        if (_clusters[i].numEvidence() > 0) {
+          mixMean = means[i];
+          mixVar = vars[i];
+          weightSum = 1.;
+        }
 
         // sum over neighbours
         for (const auto &n : neighbours) {
           size_t n_index = getIndex(n);
           // ignore clusters without evidence
-          if (_clusters[i].numEvidence() > 0) {
+          if (_clusters[n_index].numEvidence() > 0) {
             // weight based on 2-wasserstein distance
             double distance = std::pow(means[n_index] - means[i], 2) + std::pow(stddevs[n_index] - stddevs[i], 2);
             double n_weight = vars[i] / (vars[i] + distance);
@@ -194,28 +197,43 @@ class GaussianCluster {
           }
         }
 
-        // normalize
-        mixMean /= weightSum;
-        mixVar /= weightSum;
+        // check if at least one evidence added
+        if (weightSum > 0) {
+          // normalize
+          mixMean /= weightSum;
+          mixVar /= weightSum;
 
-        // calc acquisition
-        double currentValue;
-        switch (af) {
-          case AcquisitionFunctionOption::probabilityOfDecrease:
-          case AcquisitionFunctionOption::expectedDecrease:
-            currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMinValue);
-          case AcquisitionFunctionOption::mean:
-          case AcquisitionFunctionOption::variance:
-          case AcquisitionFunctionOption::lowerConfidenceBound:
-          case AcquisitionFunctionOption::upperConfidenceBound:
-            currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar);
+          // calc acquisition
+          double currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMaxValue);
+
+          acquisitions.emplace_back(std::make_pair(currentDiscrete, currentContinuous), currentValue);
+        } else {
+          // no evidence
+          acquisitions.emplace_back(std::make_pair(currentDiscrete, currentContinuous), std::nullopt);
         }
-
-        acquisitions.emplace_back(std::make_pair(currentDiscrete, currentContinuous), currentValue);
       }
     }
 
-    return acquisitions;
+    std::sort(acquisitions.begin(), acquisitions.end(), [](const VectorAcquisition &va1, const VectorAcquisition &va2) {
+      auto acquisition1 = va1.second;
+      auto acquisition2 = va2.second;
+      if (not acquisition2.has_value()) {
+        // vector2 has no evidence (high priority)
+        return acquisition1.has_value();
+      } else if (not acquisition1.has_value()) {
+        // vector1 has no evidence (high priority)
+        return false;
+      }
+      return acquisition1.value() < acquisition2.value();
+    });
+
+    std::vector<Vector> orderedVectors;
+    orderedVectors.reserve(acquisitions.size());
+    for (const auto &[vec, acq] : acquisitions) {
+      orderedVectors.push_back(vec);
+    }
+
+    return orderedVectors;
   }
 
  private:
@@ -300,17 +318,13 @@ class GaussianCluster {
    */
   double _evidenceMinValue;
   /**
-   * Current smallest evidence input.
-   */
-  std::pair<VectorDiscrete, VectorContinuous> _evidenceMinVector;
-  /**
    * Current greatest evidence output.
    */
   double _evidenceMaxValue;
   /**
    * Current greatest evidence input
    */
-  std::pair<VectorDiscrete, VectorContinuous> _evidenceMaxVector;
+  Vector _evidenceMaxVector;
   /**
    * Current number of evidence.
    */

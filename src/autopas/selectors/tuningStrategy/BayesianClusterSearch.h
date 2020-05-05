@@ -67,7 +67,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
-      AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lowerConfidenceBound,
+      AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
       : _containerOptionsSet(allowedContainerOptions),
         _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
@@ -118,10 +118,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   inline void addEvidence(long time) override {
     // encoded vector
-    auto [vecDiscrete, vecContinuous] =
-        _currentConfig.clusterEncode(_containerTraversalOptions, _dataLayoutOptions, _newton3Options);
-    // time is converted to seconds, to big values may lead to errors in GaussianProcess
-    _gaussianCluster.addEvidence(vecDiscrete, vecContinuous, time * secondsPerMicroseconds);
+    auto vec = _currentConfig.clusterEncode(_containerTraversalOptions, _dataLayoutOptions, _newton3Options);
+    // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
+    // represent a maximization problem
+    _gaussianCluster.addEvidence(vec, -time * secondsPerMicroseconds);
     _currentAcquisitions.clear();
   }
 
@@ -159,7 +159,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * Currently sampled vectors and corresponding acquisition values.
    */
-  std::vector<GaussianCluster::VectorAcquisition> _currentAcquisitions;
+  std::vector<GaussianCluster::Vector> _currentAcquisitions;
   /**
    * Configurations marked invalid.
    */
@@ -195,7 +195,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
   // no more tunings steps
   if (_gaussianCluster.numEvidence() >= _maxEvidence) {
     // select best config
-    _currentConfig = FeatureVector::clusterDecode(_gaussianCluster.getEvidenceMin(), _containerTraversalOptions,
+    _currentConfig = FeatureVector::clusterDecode(_gaussianCluster.getEvidenceMax(), _containerTraversalOptions,
                                                   _dataLayoutOptions, _newton3Options);
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
     return false;
@@ -209,7 +209,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
 
     // test best vectors until empty
     while (not _currentAcquisitions.empty()) {
-      auto best = FeatureVector::clusterDecode(_currentAcquisitions.back().first, _containerTraversalOptions,
+      auto best = FeatureVector::clusterDecode(_currentAcquisitions.back(), _containerTraversalOptions,
                                                _dataLayoutOptions, _newton3Options);
 
       if (_invalidConfigs.find(best) == _invalidConfigs.end()) {
@@ -241,28 +241,6 @@ void BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOpti
 
   // calculate all acquisitions
   _currentAcquisitions = _gaussianCluster.sampleAcquisition(af, neighbourFun, continuousSamples);
-
-  // sort vectors by acquisition
-  switch (af) {
-    case AcquisitionFunctionOption::mean:
-    case AcquisitionFunctionOption::lowerConfidenceBound:
-    case AcquisitionFunctionOption::upperConfidenceBound:
-      // pop min estimated value first
-      std::sort(_currentAcquisitions.begin(), _currentAcquisitions.end(),
-                [](const GaussianCluster::VectorAcquisition &va1, const GaussianCluster::VectorAcquisition &va2) {
-                  return va1.second > va2.second;
-                });
-      break;
-    case AcquisitionFunctionOption::variance:
-    case AcquisitionFunctionOption::expectedDecrease:
-    case AcquisitionFunctionOption::probabilityOfDecrease:
-      // pop max acquisition first
-      std::sort(_currentAcquisitions.begin(), _currentAcquisitions.end(),
-                [](const GaussianCluster::VectorAcquisition &va1, const GaussianCluster::VectorAcquisition &va2) {
-                  return va1.second < va2.second;
-                });
-      break;
-  }
 }
 
 bool BayesianClusterSearch::searchSpaceIsTrivial() const {

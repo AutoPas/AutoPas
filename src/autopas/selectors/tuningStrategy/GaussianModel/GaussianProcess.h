@@ -137,10 +137,9 @@ class GaussianProcess {
     if (_inputs.empty()) {
       // first evidence
       _evidenceMinValue = _evidenceMaxValue = output;
-      _evidenceMinVector = _evidenceMaxVector = input;
+      _evidenceMaxVector = input;
     } else if (output < _evidenceMinValue) {
       _evidenceMinValue = output;
-      _evidenceMinVector = input;
     } else if (output > _evidenceMaxValue) {
       _evidenceMaxValue = output;
       _evidenceMaxVector = input;
@@ -154,18 +153,6 @@ class GaussianProcess {
     _outputs(newSize - 1) = output;
 
     updateHyperparameters();
-  }
-
-  /**
-   * Get the evidence with the smallest output value
-   * @return input of min
-   */
-  Vector getEvidenceMin() {
-    if (_inputs.empty()) {
-      utils::ExceptionHandler::exception("GaussianProcess has no evidence");
-    }
-
-    return _evidenceMinVector;
   }
 
   /**
@@ -233,13 +220,7 @@ class GaussianProcess {
    * most gain if its evidence were provided.
    */
   inline double calcAcquisition(AcquisitionFunctionOption af, const Vector &input) const {
-    switch (af) {
-      case AcquisitionFunctionOption::probabilityOfDecrease:
-      case AcquisitionFunctionOption::expectedDecrease:
-        return AcquisitionFunction::calcAcquisition(af, predictMean(input), predictVar(input), _evidenceMinValue);
-      default:
-        return AcquisitionFunction::calcAcquisition(af, predictMean(input), predictVar(input));
-    }
+    return AcquisitionFunction::calcAcquisition(af, predictMean(input), predictVar(input), _evidenceMaxValue);
   }
 
   /**
@@ -250,38 +231,14 @@ class GaussianProcess {
    * @return
    */
   Vector sampleAquisitionMax(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
-    return sampleAquisitionBest<true>(af, samples);
-  }
-
-  /**
-   * Find the input in samples which minimizes given aquisition function.
-   * TODO: maybe add parameters for hyperparameters of aquisition functions
-   * @param af function to minimize
-   * @param samples
-   * @return
-   */
-  Vector sampleAquisitionMin(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
-    return sampleAquisitionBest<false>(af, samples);
-  }
-
- private:
-  /**
-   * Find the input in samples which minimizes/maximizes given aquisition function.
-   * @param af function to optimize
-   * @param samples
-   * @tparam max maximize if true, minimize otherwise
-   * @return optimal input
-   */
-  template <bool max>
-  Vector sampleAquisitionBest(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
     size_t bestIdx = 0;
     double bestVal = calcAcquisition(af, samples[0]);
 
     // find optimmum from samples
-    for (unsigned i = 1; i < samples.size(); ++i) {
+    for (size_t i = 1; i < samples.size(); ++i) {
       double val = calcAcquisition(af, samples[i]);
 
-      if (max ? (val > bestVal) : (val < bestVal)) {
+      if (val > bestVal) {
         bestIdx = i;
         bestVal = val;
       }
@@ -290,6 +247,7 @@ class GaussianProcess {
     return samples[bestIdx];
   }
 
+ private:
   /**
    * Update the hyperparameters: theta, dimScale.
    * To do so, hyperparameter-samples are randomly generated.
@@ -433,10 +391,6 @@ class GaussianProcess {
    * Current smallest evidence output.
    */
   double _evidenceMinValue;
-  /**
-   * Current smallest evidence input.
-   */
-  Vector _evidenceMinVector;
   /**
    * Current greatest evidence output.
    */

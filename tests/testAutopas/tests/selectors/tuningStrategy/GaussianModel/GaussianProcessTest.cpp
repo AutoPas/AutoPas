@@ -172,27 +172,12 @@ TEST_F(GaussianProcessTest, 2dMax) {
   Eigen::VectorXd max(2);
   max << -1, 1;
 
-  test2DFunction(functor, max, maxError, domain, AcquisitionFunctionOption::upperConfidenceBound, minMax::max,
-                 minMax::max, false);
+  test2DFunction(functor, max, maxError, domain, AcquisitionFunctionOption::upperConfidenceBound, false);
 }
 
-TEST_F(GaussianProcessTest, 2dMin) {
-  // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
-  auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
-  std::pair domain{NumberInterval<double>(-2, 2), NumberInterval<double>(-2, 2)};
-  constexpr double maxError = 0.2;
-
-  // min of function
-  Eigen::VectorXd min(2);
-  min << 1, 1;
-
-  test2DFunction(functor, min, maxError, domain, AcquisitionFunctionOption::expectedDecrease, minMax::min, minMax::max,
-                 false);
-}
-
-TEST_F(GaussianProcessTest, 2dMinGrid) {
-  // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
-  auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
+TEST_F(GaussianProcessTest, 2dMaxGrid) {
+  // functor to find max of
+  auto functor = [](double i1, double i2) { return -2 * std::pow(i1 - 1, 2) - 3 * std::pow(i2 - 1, 2); };
   // discrete domain of function
   int domHalf = 10;
   std::set<double> domSet;
@@ -200,19 +185,18 @@ TEST_F(GaussianProcessTest, 2dMinGrid) {
     domSet.insert(i * 2. / domHalf);
   }
   std::pair domain{NumberSetFinite<double>(domSet), NumberSetFinite<double>(domSet)};
-  constexpr double maxError = 0.2;
+  constexpr double maxError = 0.5;
 
   // min of function
-  Eigen::VectorXd min(2);
-  min << 1, 1;
-  test2DFunction(functor, min, maxError, domain, AcquisitionFunctionOption::lowerConfidenceBound, minMax::min,
-                 minMax::min, false);
+  Eigen::VectorXd max(2);
+  max << 1, 1;
+  test2DFunction(functor, max, maxError, domain, AcquisitionFunctionOption::expectedImprovement, false);
 }
 
-TEST_F(GaussianProcessTest, 2dMinGridBig) {
-  // functor to find min of
+TEST_F(GaussianProcessTest, 2dMaxGridBig) {
+  // functor to find max of
   auto functor = [](double i1, double i2) {
-    return std::pow((std::abs(i1 - 1) + 1), 5) + std::pow((std::abs(i2 - 1) + 1), 5);
+    return std::pow(-(std::abs(i1 - 1) + 1), 5) - std::pow((std::abs(i2 - 1) + 1), 5);
   };
   // discrete domain of function
   int domHalf = 10;
@@ -224,10 +208,9 @@ TEST_F(GaussianProcessTest, 2dMinGridBig) {
   constexpr double maxError = 10;
 
   // min of function
-  Eigen::VectorXd min(2);
-  min << 1, 1;
-  test2DFunction(functor, min, maxError, domain, AcquisitionFunctionOption::lowerConfidenceBound, minMax::min,
-                 minMax::min, false);
+  Eigen::VectorXd max(2);
+  max << 1, 1;
+  test2DFunction(functor, max, maxError, domain, AcquisitionFunctionOption::upperConfidenceBound, false);
 }
 
 void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::NumberSet<double> &domainX,
@@ -248,9 +231,6 @@ void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::Numb
       // calculate value of chunk
       Eigen::Vector2d sample(x * xSpace + domainX.getMin(), (y * ySpace + domainY.getMin()));
       double val = gp.calcAcquisition(af, sample);
-
-      // negate for special case lcb
-      if (af == autopas::AcquisitionFunctionOption::lowerConfidenceBound) val = -val;
 
       row.push_back(val);
 
@@ -288,7 +268,7 @@ void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::Numb
       double val = gp.predictMean(sample) * colorFactor;
 
       // map value to color
-      int color = static_cast<int>(255 - val);
+      int color = static_cast<int>(255 + val);
       color = std::clamp(color, 232, 255);
 
       // print two spaces of that color

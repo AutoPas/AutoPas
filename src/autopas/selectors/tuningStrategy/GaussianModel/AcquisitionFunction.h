@@ -24,16 +24,13 @@ namespace AcquisitionFunction {
  * @param af acquisition function
  * @param mean
  * @param var
- * @param target point of reference used for some acquisition functions
+ * @param currentMax highest output-value in the current evidence set
  * @return
  */
-static double calcAcquisition(AcquisitionFunctionOption af, double mean, double var, double target = 0.) {
+static double calcAcquisition(AcquisitionFunctionOption af, double mean, double var, double currentMax = 0.) {
   switch (af) {
     case AcquisitionFunctionOption::upperConfidenceBound: {
       return mean + 2 * std::sqrt(var);
-    }
-    case AcquisitionFunctionOption::lowerConfidenceBound: {
-      return mean - 2 * std::sqrt(var);
     }
     case AcquisitionFunctionOption::mean: {
       return mean;
@@ -41,15 +38,15 @@ static double calcAcquisition(AcquisitionFunctionOption af, double mean, double 
     case AcquisitionFunctionOption::variance: {
       return var;
     }
-    case AcquisitionFunctionOption::probabilityOfDecrease: {
-      return utils::Math::normalCDF((target - mean) / std::sqrt(var));
+    case AcquisitionFunctionOption::probabilityOfImprovement: {
+      return utils::Math::normalCDF((mean - currentMax) / std::sqrt(var));
     }
-    case AcquisitionFunctionOption::expectedDecrease: {
+    case AcquisitionFunctionOption::expectedImprovement: {
       double stddev = std::sqrt(var);
-      double minNormed = (target - mean) / stddev;
-      double cdf = utils::Math::normalCDF(minNormed);
-      double pdf = utils::Math::normalPDF(minNormed);
-      return (target - mean) * cdf + stddev * pdf;
+      double maxNormed = (mean - currentMax) / stddev;
+      double cdf = utils::Math::normalCDF(maxNormed);
+      double pdf = utils::Math::normalPDF(maxNormed);
+      return (mean - currentMax) * cdf + stddev * pdf;
     }
   }
 

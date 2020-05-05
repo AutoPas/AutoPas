@@ -55,7 +55,7 @@ class BayesianSearch : public TuningStrategyInterface {
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
-      AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lowerConfidenceBound,
+      AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()())
       : _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
@@ -103,8 +103,9 @@ class BayesianSearch : public TuningStrategyInterface {
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
   inline void addEvidence(long time) override {
-    // time is converted to seconds, to big values may lead to errors in GaussianProcess
-    _gaussianProcess.addEvidence(_currentConfig.oneHotEncode(), time * secondsPerMicroseconds);
+    // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
+    // represent a maximization problem
+    _gaussianProcess.addEvidence(_currentConfig.oneHotEncode(), -time * secondsPerMicroseconds);
     _currentSamples.clear();
   }
 
@@ -163,7 +164,7 @@ bool BayesianSearch::tune(bool currentInvalid) {
 
   if (_gaussianProcess.numEvidence() >= _maxEvidence) {
     // select best config
-    _currentConfig = FeatureVector::oneHotDecode(_gaussianProcess.getEvidenceMin());
+    _currentConfig = FeatureVector::oneHotDecode(_gaussianProcess.getEvidenceMax());
     _currentConfig.container = _traversalContainerMap[_currentConfig.traversal];
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
     return false;
@@ -177,12 +178,13 @@ bool BayesianSearch::tune(bool currentInvalid) {
 
     // test best vectors until empty
     while (not _currentSamples.empty()) {
-      if (_invalidConfigs.find(_currentSamples[0]) == _invalidConfigs.end()) {
+      if (_invalidConfigs.find(_currentSamples.back()) == _invalidConfigs.end()) {
         // valid config found!
-        _currentConfig = _currentSamples[0];
+        _currentConfig = _currentSamples.back();
         return true;
       } else {
-        _currentSamples.erase(_currentSamples.begin());
+        // invalid: dispose
+        _currentSamples.pop_back();
       }
     }
 
@@ -208,26 +210,10 @@ void BayesianSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOption af) 
   }
 
   // sort by acquisition
-  switch (af) {
-    case AcquisitionFunctionOption::mean:
-    case AcquisitionFunctionOption::lowerConfidenceBound:
-    case AcquisitionFunctionOption::upperConfidenceBound:
-      // min estimated value first
-      std::sort(_currentSamples.begin(), _currentSamples.end(),
-                [&acquisitions](const FeatureVector &f1, const FeatureVector &f2) {
-                  return acquisitions[f1] < acquisitions[f2];
-                });
-      break;
-    case AcquisitionFunctionOption::variance:
-    case AcquisitionFunctionOption::expectedDecrease:
-    case AcquisitionFunctionOption::probabilityOfDecrease:
-      // max acquisition first
-      std::sort(_currentSamples.begin(), _currentSamples.end(),
-                [&acquisitions](const FeatureVector &f1, const FeatureVector &f2) {
-                  return acquisitions[f1] > acquisitions[f2];
-                });
-      break;
-  }
+  std::sort(_currentSamples.begin(), _currentSamples.end(),
+            [&acquisitions](const FeatureVector &f1, const FeatureVector &f2) {
+              return acquisitions[f1] < acquisitions[f2];
+            });
 }
 
 bool BayesianSearch::searchSpaceIsTrivial() const {
