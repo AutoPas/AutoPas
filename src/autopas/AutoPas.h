@@ -458,7 +458,7 @@ class AutoPas {
 
   /**
    * Set the maximum number of tuning phases a configuration can not be tested.
-   * @param maxTuningIterationsWithoutTest
+   * @param maxTuningPhasesWithoutTest
    */
   void setMaxTuningPhasesWithoutTest(unsigned int maxTuningPhasesWithoutTest) {
     AutoPas::_maxTuningPhasesWithoutTest = maxTuningPhasesWithoutTest;

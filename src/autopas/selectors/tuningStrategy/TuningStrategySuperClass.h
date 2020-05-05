@@ -58,6 +58,7 @@ class TuningStrategySuperClass : public TuningStrategyInterface {
   /**
    * Fills the search space with the cartesian product of the given options (minus invalid combinations).
    * @param allowedContainerOptions
+   * @param allowedCellSizeFactors
    * @param allowedTraversalOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
