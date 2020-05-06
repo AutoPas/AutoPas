@@ -7,9 +7,9 @@
 #pragma once
 
 #include <set>
+#include <utility>
 
-#include "TuningStrategyInterface.h"
-#include "autopas/containers/CompatibleTraversals.h"
+#include "TuningStrategySuperClass.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -20,7 +20,7 @@ namespace autopas {
  * only tests those which are within a certain range of the best prediction. In the end, the configuration
  * that performed best during testing is selected.
  */
-class PredictiveTuning : public TuningStrategyInterface {
+class PredictiveTuning : public TuningStrategySuperClass {
  public:
   /**
    * Constructor for the PredictiveTuning that generates the search space from the allowed options.
@@ -29,210 +29,133 @@ class PredictiveTuning : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
-   * @param iterationsReference Reference to an iteration counter.
+   * @param relativeOptimum
+   * @param maxTuningIterationsWithoutTest
    */
   PredictiveTuning(const std::set<ContainerOption> &allowedContainerOptions,
                    const std::set<double> &allowedCellSizeFactors,
                    const std::set<TraversalOption> &allowedTraversalOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                   const std::set<Newton3Option> &allowedNewton3Options, unsigned int &iterationsReference)
-      : _containerOptions(allowedContainerOptions), _iterationsReference(iterationsReference) {
-    // sets search space and current config
-    populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                        allowedDataLayoutOptions, allowedNewton3Options);
+                   const std::set<Newton3Option> &allowedNewton3Options, double relativeOptimum,
+                   unsigned int maxTuningIterationsWithoutTest)
+      : TuningStrategySuperClass(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
+                                 allowedDataLayoutOptions, allowedNewton3Options),
+        _currentConfig(_searchSpace.begin()),
+        _relativeOptimumRange(relativeOptimum),
+        _maxTuningIterationsWithoutTest(maxTuningIterationsWithoutTest) {
+    // sets traversalTimesStorage
+    for (const auto &configuration : _searchSpace) {
+      std::vector<std::pair<size_t, long>> vector;
+      _traversalTimesStorage.emplace(configuration, vector);
+    }
   }
 
   /**
    * Constructor for the PredictiveTuning that only contains the given configurations.
    * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
-   * @param iterationsReference
    */
-  explicit PredictiveTuning(std::set<Configuration> allowedConfigurations, unsigned int &iterationsReference)
-      : _containerOptions{},
-        _searchSpace(std::move(allowedConfigurations)),
+  explicit PredictiveTuning(std::set<Configuration> allowedConfigurations)
+      : TuningStrategySuperClass(std::move(allowedConfigurations)),
         _currentConfig(_searchSpace.begin()),
-        _iterationsReference(iterationsReference) {
-    for (const auto &config : _searchSpace) {
-      _containerOptions.insert(config.container);
-    }
-  }
-
-  inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
-
-  inline void removeN3Option(Newton3Option badNewton3Option) override;
+        _relativeOptimumRange(1.2),
+        _maxTuningIterationsWithoutTest(5) {}
 
   inline void addEvidence(long time, size_t iteration) override {
     _traversalTimesStorage[*_currentConfig].emplace_back(iteration, time);
     _lastTest[*_currentConfig] = _tuningIterationsCounter;
   }
 
-  inline void reset() override {
+  inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
+
+  inline void reset(size_t iteration) override {
     _configurationPredictions.clear();
     _optimalSearchSpace.clear();
     _tooLongNotTestedSearchSpace.clear();
     _validSearchSpace = _searchSpace;
     _validConfigurationFound = false;
-    _iterationBeginTuningPhase = _iterationsReference;
+    _iterationBeginTuningPhase = iteration;
 
     selectOptimalSearchSpace();
   }
 
   inline bool tune(bool = false) override;
 
-  inline std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptions; }
-
-  inline bool searchSpaceIsTrivial() const override { return _searchSpace.size() == 1; }
-
-  inline bool searchSpaceIsEmpty() const override { return _searchSpace.empty(); }
+  inline void removeN3Option(Newton3Option badNewton3Option) override;
 
  private:
-  /**
-   * Fills the search space with the cartesian product of the given options (minus invalid combinations).
-   * @param allowedContainerOptions
-   * @param allowedTraversalOptions
-   * @param allowedDataLayoutOptions
-   * @param allowedNewton3Options
-   */
-  inline void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
-                                  const std::set<double> &allowedCellSizeFactors,
-                                  const std::set<TraversalOption> &allowedTraversalOptions,
-                                  const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                  const std::set<Newton3Option> &allowedNewton3Options);
-
   inline void selectOptimalConfiguration();
-
   /**
    * Selects the configurations that are going to be tested.
    */
   inline void selectOptimalSearchSpace();
-
   /**
    * Provides different extrapolation methods for the prediction of the traversal time.
    */
   inline void calculatePredictions();
-
   /**
    * Predicts the traversal time by placing a line trough the last two traversal points and calculating the prediction
    * for the current time.
    */
   inline void linePrediction();
-
   /**
    * Creates a new optimalSearchSpace if every configuration in the previous one was invalid.
    */
   inline void reselectOptimalSearchSpace();
 
-  std::set<ContainerOption> _containerOptions;
-  std::set<Configuration> _searchSpace;
   std::set<Configuration>::iterator _currentConfig;
-
   /**
    * Stores the traversal times for each configuration.
    * @param Configuration
    * @param Vector with pairs of the iteration and the traversal time.
    */
-  std::unordered_map<Configuration, std::vector<std::pair<int, size_t>>, ConfigHash> _traversalTimesStorage;
-
+  std::unordered_map<Configuration, std::vector<std::pair<size_t, long>>, ConfigHash> _traversalTimesStorage;
   /**
    * Contains the predicted time for each configuration.
    * @param Configuration
    * @param traversal prediction
    */
   std::unordered_map<Configuration, size_t, ConfigHash> _configurationPredictions;
-
   /**
    * Contains the configuration that are predicted to be optimal and going to be tested.
    */
   std::set<Configuration> _optimalSearchSpace;
-
   /**
    * Contains the configuration that have not been tested for a period of time and are going to be tested.
    */
   std::set<Configuration> _tooLongNotTestedSearchSpace;
-
   /**
    * Contains the configurations that are not invalid.
    */
   std::set<Configuration> _validSearchSpace;
-
   /**
    * Stores the the last tuning phase a configuration got tested.
    * @param Configuration
    * @param last tuning phase
    */
   std::unordered_map<Configuration, size_t, ConfigHash> _lastTest;
-
   /**
    * Gets incremented after every completed tuning phase.
    * Mainly used for the traversal time storage.
    */
   unsigned int _tuningIterationsCounter = 0;
-
-  /**
-   * Reference to the _iterations variable in AutoTuner.
-   */
-  unsigned int &_iterationsReference;
-
   /**
    * Stores the iteration at the beginning of a tuning phase.
    */
   unsigned int _iterationBeginTuningPhase = 0;
-
   /**
    * Indicates if a valid configuration was found in the _optimalSearchSpace.
    */
   bool _validConfigurationFound = false;
-
   /**
    * Factor of the range of the optimal configurations for the optimalSearchSpace.
    */
-  static constexpr double _relativeOptimumRange = 1.2;
-
+  const double _relativeOptimumRange;
   /**
    * After not being tested this number of tuningPhases a configuration is being emplaced in _optimalSearchSpace.
    */
-  static constexpr int _maxTuningIterationsWithoutTest = 5;
+  const unsigned int _maxTuningIterationsWithoutTest;
 };
-
-void PredictiveTuning::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
-                                           const std::set<double> &allowedCellSizeFactors,
-                                           const std::set<TraversalOption> &allowedTraversalOptions,
-                                           const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                           const std::set<Newton3Option> &allowedNewton3Options) {
-  // generate all potential configs
-  for (const auto &containerOption : allowedContainerOptions) {
-    // get all traversals of the container and restrict them to the allowed ones
-    const std::set<TraversalOption> &allContainerTraversals =
-        compatibleTraversals::allCompatibleTraversals(containerOption);
-    std::set<TraversalOption> allowedAndApplicable;
-    std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
-                          allContainerTraversals.begin(), allContainerTraversals.end(),
-                          std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
-
-    for (const auto &cellSizeFactor : allowedCellSizeFactors)
-      for (const auto &traversalOption : allowedAndApplicable) {
-        for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
-          for (const auto &newton3Option : allowedNewton3Options) {
-            _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, dataLayoutOption, newton3Option);
-          }
-        }
-      }
-  }
-
-  AutoPasLog(debug, "Points in search space: {}", _searchSpace.size());
-
-  if (_searchSpace.empty()) {
-    autopas::utils::ExceptionHandler::exception("PredictiveTuning: No valid configurations could be created.");
-  }
-
-  for (const auto &configuration : _searchSpace) {
-    std::vector<std::pair<int, size_t>> vector;
-    _traversalTimesStorage.emplace(configuration, vector);
-  }
-
-  _currentConfig = _searchSpace.begin();
-}
 
 void PredictiveTuning::selectOptimalSearchSpace() {
   if (_searchSpace.size() == 1 or _tuningIterationsCounter < 2) {
@@ -242,9 +165,7 @@ void PredictiveTuning::selectOptimalSearchSpace() {
 
   calculatePredictions();
 
-  const auto optimum = std::min_element(_configurationPredictions.begin(), _configurationPredictions.end(),
-                                        [](std::pair<Configuration, size_t> a,
-                                           std::pair<Configuration, size_t> b) -> bool { return a.second < b.second; });
+  const auto optimum = getOptimum(_configurationPredictions);
 
   _optimalSearchSpace.emplace(optimum->first);
 
@@ -284,7 +205,7 @@ void PredictiveTuning::linePrediction() {
     const auto &traversal2 = vector[vector.size() - 2];
 
     const auto gradient = (traversal1.second - traversal2.second) / (traversal1.first - traversal2.first);
-    const auto delta = _iterationsReference - traversal1.first;
+    const auto delta = _iterationBeginTuningPhase - traversal1.first;
 
     // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
     _configurationPredictions[configuration] = traversal1.second + gradient * delta;
@@ -311,9 +232,7 @@ void PredictiveTuning::reselectOptimalSearchSpace() {
     autopas::utils::ExceptionHandler::exception("Predictive Tuning: No valid configuration could be found");
   }
 
-  const auto optimum = std::min_element(_configurationPredictions.begin(), _configurationPredictions.end(),
-                                        [](std::pair<Configuration, size_t> a,
-                                           std::pair<Configuration, size_t> b) -> bool { return a.second < b.second; });
+  const auto optimum = getOptimum(_configurationPredictions);
 
   if (_validSearchSpace.count(optimum->first) == 0) {
     autopas::utils::ExceptionHandler::exception("Predictive Tuning: No valid optimal configuration could be found");
@@ -407,9 +326,7 @@ void PredictiveTuning::selectOptimalConfiguration() {
         "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
   }
 
-  const auto optimum = std::min_element(traversalTimes.begin(), traversalTimes.end(),
-                                        [](std::pair<Configuration, size_t> a,
-                                           std::pair<Configuration, size_t> b) -> bool { return a.second < b.second; });
+  const auto optimum = getOptimum(traversalTimes);
 
   _currentConfig = _searchSpace.find(optimum->first);
 
