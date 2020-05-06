@@ -30,6 +30,7 @@ namespace autopas {
 // MPI_Datatype
 #define AUTOPAS_MPI_BYTE MPI_BYTE
 #define AUTOPAS_MPI_LONG_INT MPI_LONG_INT
+#define AUTOPAS_MPI_UNSIGNED_LONG_LONG MPI_UNSIGNED_LONG_LONG
 
 // MPI_Op
 #define AUTOPAS_MPI_LAND MPI_LAND
@@ -116,6 +117,21 @@ inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_MPI_Datatype datat
 }
 
 /**
+ * Wrapper for MPI_Ibcast
+ * @param buffer: send buffer
+ * @param count: number of elements in send buffer
+ * @param datatype: type of elements in send buffer
+ * @param root: rank of the process sending the broadcast
+ * @param comm: communicator (handle)
+ * @param request: outputs communication request (handle)
+ * @return
+ */
+inline int AutoPas_MPI_Ibcast(void *buffer, int count, AutoPas_MPI_Datatype datatype, int root, AutoPas_MPI_Comm comm,
+                              AutoPas_MPI_Request *request) {
+  return MPI_Ibcast(buffer, count, datatype, root, comm, request);
+}
+
+/**
  * Wrapper for MPI_Allreduce
  * @param sendbuf: send buffer
  * @param recvbuf: outputs receive buffer
@@ -128,6 +144,22 @@ inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_MPI_Datatype datat
 inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
         AutoPas_MPI_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
   return MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
+}
+
+/**
+ * Wrapper for MPI_Iallreduce
+ * @param sendbuf: send buffer
+ * @param recvbuf: outputs receive buffer
+ * @param count: number of elements in send send buffer
+ * @param datatype: type of elements in send buffer
+ * @param op: reduction operation (handle)
+ * @param comm: communicator (handle)
+ * @param request: outputs communication request (handle)
+ * @return
+ */
+inline int AutoPas_MPI_Iallreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
+                                  AutoPas_MPI_Op op, AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
+  return MPI_Iallreduce(sendbuf, recvbuf, count, datatype, op, comm, request);
 }
 
 /**

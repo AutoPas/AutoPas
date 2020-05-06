@@ -30,7 +30,6 @@ TEST_F(FullSearchMPITest, testSearchSpaceMoreOptions) {
                                  {autopas::DataLayoutOption::soa},
                                  {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
   EXPECT_FALSE(fullSearchMPI.searchSpaceIsEmpty());
-  EXPECT_FALSE(fullSearchMPI.searchSpaceIsTrivial());
   EXPECT_THAT(fullSearchMPI.getAllowedContainerOptions(), ::testing::ElementsAre(autopas::ContainerOption::linkedCells));
 }
 
@@ -43,42 +42,113 @@ TEST_F(FullSearchMPITest, testRemoveN3OptionRemoveAll) {
                autopas::utils::ExceptionHandler::AutoPasException);
 }
 
-TEST_F(FullSearchMPITest, testRemoveN3OptionRemoveSome) {
-  autopas::FullSearchMPI fullSearchMPI({autopas::ContainerOption::linkedCells}, {1.},
-                                 {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
-                                 {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-                                 {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
+TEST_F(FullSearchMPITest, testGlobalOptimumAndReset) {
+  int worldRank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &worldRank);
 
-  EXPECT_NO_THROW(fullSearchMPI.removeN3Option(autopas::Newton3Option::enabled));
-  EXPECT_FALSE(fullSearchMPI.searchSpaceIsEmpty());
-  EXPECT_FALSE(fullSearchMPI.searchSpaceIsTrivial());
+  autopas::FullSearchMPI fullSearchMPI(
+          {autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)worldRank/10.,
+                                  autopas::TraversalOption::directSumTraversal,
+                                  autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)});
+  fullSearchMPI.addEvidence(worldRank);
+
+  fullSearchMPI.tune();
+
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)worldRank/10.,
+                                   autopas::TraversalOption::directSumTraversal,
+                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
+            fullSearchMPI.getCurrentConfiguration());
+
+  // Barrier necessary to avoid race conditions. This time is usually filled by an iteration.
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  fullSearchMPI.tune();
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1., autopas::TraversalOption::directSumTraversal,
+                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
+            fullSearchMPI.getCurrentConfiguration());
+
+  fullSearchMPI.reset();
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)worldRank/10,
+                                   autopas::TraversalOption::directSumTraversal,
+                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
+            fullSearchMPI.getCurrentConfiguration());
 }
 
-TEST_F(FullSearchMPITest, testTune) {
-  autopas::FullSearchMPI fullSearchMPI(
-          {autopas::ContainerOption::linkedCells}, {1.},
-          {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
-          {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
+TEST_F(FullSearchMPITest, testLocalOptimumAndReset) {
+  autopas::FullSearchMPI fullSearchMPI({autopas::Configuration(autopas::ContainerOption::directSum, 1.,
+                                                               autopas::TraversalOption::directSumTraversal,
+                                                               autopas::DataLayoutOption::soa,
+                                                               autopas::Newton3Option::enabled),
+                                        autopas::Configuration(autopas::ContainerOption::linkedCells, 1.2,
+                                                               autopas::TraversalOption::c08,
+                                                               autopas::DataLayoutOption::aos,
+                                                               autopas::Newton3Option::enabled),
+                                        autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.,
+                                                               autopas::TraversalOption::c01CombinedSoA,
+                                                               autopas::DataLayoutOption::soa,
+                                                               autopas::Newton3Option::enabled)});
 
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
-                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
-            fullSearchMPI.getCurrentConfiguration());
-  fullSearchMPI.addEvidence(10);
-
-  fullSearchMPI.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
-                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
-            fullSearchMPI.getCurrentConfiguration());
   fullSearchMPI.addEvidence(1);
-
   fullSearchMPI.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c01,
-                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+  fullSearchMPI.addEvidence(0);
+  fullSearchMPI.tune();
+  fullSearchMPI.addEvidence(2);
+  fullSearchMPI.tune();
+
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1.2,
+                                   autopas::TraversalOption::c08,
+                                   autopas::DataLayoutOption::aos,
+                                   autopas::Newton3Option::enabled),
             fullSearchMPI.getCurrentConfiguration());
-  fullSearchMPI.addEvidence(20);
 
+  fullSearchMPI.reset();
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1.,
+                                   autopas::TraversalOption::directSumTraversal,
+                                   autopas::DataLayoutOption::soa,
+                                   autopas::Newton3Option::enabled),
+            fullSearchMPI.getCurrentConfiguration());
+}
+
+TEST_F(FullSearchMPITest, testInvalidConfigs) {
+  autopas::FullSearchMPI fullSearchMPI({autopas::Configuration(autopas::ContainerOption::directSum, 1.,
+                                                               autopas::TraversalOption::directSumTraversal,
+                                                               autopas::DataLayoutOption::soa,
+                                                               autopas::Newton3Option::enabled),
+                                        autopas::Configuration(autopas::ContainerOption::linkedCells, 1.2,
+                                                               autopas::TraversalOption::c08,
+                                                               autopas::DataLayoutOption::aos,
+                                                               autopas::Newton3Option::enabled),
+                                        autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.,
+                                                               autopas::TraversalOption::c01CombinedSoA,
+                                                               autopas::DataLayoutOption::soa,
+                                                               autopas::Newton3Option::enabled)});
+
+  fullSearchMPI.addEvidence(1);
   fullSearchMPI.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
-                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+  fullSearchMPI.addEvidence(0);
+  fullSearchMPI.tune();
+  fullSearchMPI.addEvidence(2);
+  fullSearchMPI.tune();
+
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1.2,
+                                   autopas::TraversalOption::c08,
+                                   autopas::DataLayoutOption::aos,
+                                   autopas::Newton3Option::enabled),
+            fullSearchMPI.getCurrentConfiguration());
+
+  fullSearchMPI.tune(true);
+
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1.,
+                                   autopas::TraversalOption::directSumTraversal,
+                                   autopas::DataLayoutOption::soa,
+                                   autopas::Newton3Option::enabled),
+            fullSearchMPI.getCurrentConfiguration());
+
+  fullSearchMPI.tune(true);
+
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.,
+                                   autopas::TraversalOption::c01CombinedSoA,
+                                   autopas::DataLayoutOption::soa,
+                                   autopas::Newton3Option::enabled),
             fullSearchMPI.getCurrentConfiguration());
 }
