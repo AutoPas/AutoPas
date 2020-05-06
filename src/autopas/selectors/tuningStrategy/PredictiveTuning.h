@@ -111,6 +111,10 @@ class PredictiveTuning : public TuningStrategySuperClass {
    * Creates a new optimalSearchSpace if every configuration in the previous one was invalid.
    */
   inline void reselectOptimalSearchSpace();
+  /**
+   * Creates output of the configuration and the prediction.
+   */
+  inline void predictionOutput(const Configuration configuration);
 
   std::set<Configuration>::iterator _currentConfig;
   /**
@@ -232,19 +236,20 @@ void PredictiveTuning::linePrediction() {
       const auto delta = _iterationBeginTuningPhase - _traversalTimesStorage[configuration].back().first;
 
       _configurationPredictions[configuration] = gradient * delta + lastPoint;
-      continue;
+    } else {
+      const auto &vector = _traversalTimesStorage[configuration];
+      const auto &traversal1 = vector[vector.size() - 1];
+      const auto &traversal2 = vector[vector.size() - 2];
+
+      const auto gradient = (traversal1.second - traversal2.second) / (traversal1.first - traversal2.first);
+      const auto delta = _iterationBeginTuningPhase - traversal1.first;
+
+      // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
+      _configurationPredictions[configuration] = traversal1.second + gradient * delta;
+      _configurationLinearPredictionFunction[configuration] = std::make_pair(gradient, traversal1.second);
     }
 
-    const auto &vector = _traversalTimesStorage[configuration];
-    const auto &traversal1 = vector[vector.size() - 1];
-    const auto &traversal2 = vector[vector.size() - 2];
-
-    const auto gradient = (traversal1.second - traversal2.second) / (traversal1.first - traversal2.first);
-    const auto delta = _iterationBeginTuningPhase - traversal1.first;
-
-    // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
-    _configurationPredictions[configuration] = traversal1.second + gradient * delta;
-    _configurationLinearPredictionFunction[configuration] = std::make_pair(gradient, traversal1.second);
+    predictionOutput(configuration);
   }
 }
 
@@ -256,26 +261,39 @@ void PredictiveTuning::linearRegression() {
       const auto yIntercept = _configurationLinearPredictionFunction[configuration].second;
 
       _configurationPredictions[configuration] = gradient * _iterationBeginTuningPhase + yIntercept;
-      continue;
+    } else {
+      size_t xy = 0, iterationSum = 0, iterationSquare = 0, timeSum = 0, n = _traversalTimesStorage.size();
+      for (const auto pair : _traversalTimesStorage[configuration]) {
+        xy += pair.first * pair.second;
+        iterationSum += pair.first;
+        iterationSquare += pair.first * pair.first;
+        timeSum += pair.second;
+      }
+      const auto iterationMeanValue = iterationSum / n;
+      const auto timeMeanValue = timeSum / n;
+
+      // ((Sum x_i * y_i) - n * xMeanValue * yMeanValue) / ((Sum x_i^1) - n * xMeanValue ^ 2)
+      const auto gradient =
+          (xy - iterationMeanValue * timeSum) / (iterationSquare - n * iterationMeanValue * iterationMeanValue);
+      const auto yIntercept = timeMeanValue - gradient * iterationMeanValue;
+
+      _configurationPredictions[configuration] = gradient * _iterationBeginTuningPhase + yIntercept;
+      _configurationLinearPredictionFunction[configuration] = std::make_pair(gradient, yIntercept);
     }
 
-    size_t xy = 0, iterationSum = 0, iterationSquare = 0, timeSum = 0, n = _traversalTimesStorage.size();
-    for (const auto pair : _traversalTimesStorage[configuration]) {
-      xy += pair.first * pair.second;
-      iterationSum += pair.first;
-      iterationSquare += pair.first * pair.first;
-      timeSum += pair.second;
-    }
-    const auto iterationMeanValue = iterationSum / n;
-    const auto timeMeanValue = timeSum / n;
+    predictionOutput(configuration);
+  }
+}
 
-    // ((Sum x_i * y_i) - n * xMeanValue * yMeanValue) / ((Sum x_i^1) - n * xMeanValue ^ 2)
-    const auto gradient =
-        (xy - iterationMeanValue * timeSum) / (iterationSquare - n * iterationMeanValue * iterationMeanValue);
-    const auto yIntercept = timeMeanValue - gradient * iterationMeanValue;
-
-    _configurationPredictions[configuration] = gradient * _iterationBeginTuningPhase + yIntercept;
-    _configurationLinearPredictionFunction[configuration] = std::make_pair(gradient, yIntercept);
+void PredictiveTuning::predictionOutput(const Configuration configuration) {
+  // print config, prediction
+  if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+    std::ostringstream ss;
+    // print config
+    ss << getCurrentConfiguration().toString() << " : ";
+    // print prediction
+    ss << " - " << _configurationPredictions[configuration];
+    AutoPasLog(debug, "Traversal time prediction for ", ss.str());
   }
 }
 
