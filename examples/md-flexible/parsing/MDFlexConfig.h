@@ -16,6 +16,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -89,6 +90,8 @@ class MDFlexConfig {
   double relativeOptimumRange{1.2};
   static inline const char *maxTuningPhasesWithoutTestStr{"max-tuning-phases-without-test"};
   unsigned int maxTuningPhasesWithoutTest{5};
+  static inline const char *extrapolationMethodOptionStr{"extrapolation-method"};
+  autopas::ExtrapolationMethodOption extrapolationMethodOption{autopas::ExtrapolationMethodOption::linePrediction};
   static inline const char *vtkFileNameStr{"vtk-filename"};
   std::string vtkFileName;
   static inline const char *vtkWriteFrequencyStr{"vtk-write-frequency"};

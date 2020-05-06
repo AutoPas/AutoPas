@@ -32,19 +32,20 @@ class PredictiveTuning : public TuningStrategySuperClass {
    * @param allowedCellSizeFactors
    * @param relativeOptimum
    * @param maxTuningIterationsWithoutTest
+   * @param extrapolationMethodOption
    */
   PredictiveTuning(const std::set<ContainerOption> &allowedContainerOptions,
                    const std::set<double> &allowedCellSizeFactors,
                    const std::set<TraversalOption> &allowedTraversalOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                    const std::set<Newton3Option> &allowedNewton3Options, double relativeOptimum,
-                   unsigned int maxTuningIterationsWithoutTest)
+                   unsigned int maxTuningIterationsWithoutTest, ExtrapolationMethodOption extrapolationMethodOption)
       : TuningStrategySuperClass(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                  allowedDataLayoutOptions, allowedNewton3Options),
         _currentConfig(_searchSpace.begin()),
         _relativeOptimumRange(relativeOptimum),
         _maxTuningIterationsWithoutTest(maxTuningIterationsWithoutTest),
-        _extrapolationMethod(ExtrapolationMethodOption::linePrediction) {
+        _extrapolationMethod(extrapolationMethodOption) {
     // sets traversalTimesStorage
     for (const auto &configuration : _searchSpace) {
       std::vector<std::pair<size_t, long>> vector;

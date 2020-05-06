@@ -12,6 +12,7 @@
 #include <type_traits>
 
 #include "autopas/LogicHandler.h"
+#include "autopas/options//ExtrapolationMethodOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
@@ -75,6 +76,7 @@ class AutoPas {
         _relativeOptimumRange(1.2),
         _maxTuningPhasesWithoutTest(5),
         _acquisitionFunctionOption(AcquisitionFunctionOption::lowerConfidenceBound),
+        _extrapolationMethodOption(ExtrapolationMethodOption::linePrediction),
         _tuningStrategyOption(TuningStrategyOption::fullSearch),
         _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(ContainerOption::getAllOptions()),
@@ -127,7 +129,7 @@ class AutoPas {
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
-            _maxTuningPhasesWithoutTest, _acquisitionFunctionOption)),
+            _maxTuningPhasesWithoutTest, _acquisitionFunctionOption, _extrapolationMethodOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
         std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
@@ -477,6 +479,20 @@ class AutoPas {
   void setAcquisitionFunction(AcquisitionFunctionOption acqFun) { AutoPas::_acquisitionFunctionOption = acqFun; }
 
   /**
+   * Get extrapolation method for the prediction of the configuration performance.
+   * @return
+   */
+  ExtrapolationMethodOption getExtrapolationMethodOption() const { return _extrapolationMethodOption; }
+
+  /**
+   * Set extrapolation method for the prediction of the configuration performance.
+   * @param extrapolationMethodOption
+   */
+  void setExtrapolationMethodOption(ExtrapolationMethodOption extrapolationMethodOption) {
+    AutoPas::_extrapolationMethodOption = extrapolationMethodOption;
+  }
+
+  /**
    * Get the selector configuration strategy.
    * @return
    */
@@ -620,6 +636,12 @@ class AutoPas {
    * For possible acquisition function choices see AutoPas::AcquisitionFunction.
    */
   AcquisitionFunctionOption _acquisitionFunctionOption;
+
+  /**
+   * Extrapolation method used in predictiveTuning.
+   * For possible extrapolation method choices see autopas/options/ExtrapolationMethodOption.
+   */
+  ExtrapolationMethodOption _extrapolationMethodOption;
 
   /**
    * Strategy option for the auto tuner.

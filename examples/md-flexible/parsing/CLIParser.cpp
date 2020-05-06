@@ -38,6 +38,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {MDFlexConfig::particlesPerDimStr, required_argument, nullptr, 'n'},
                                          {MDFlexConfig::particlesTotalStr, required_argument, nullptr, 'N'},
                                          {MDFlexConfig::relativeOptimumRangeStr, required_argument, nullptr, 'o'},
+                                         {MDFlexConfig::extrapolationMethodOptionStr, required_argument, nullptr, 'O'},
                                          {MDFlexConfig::periodicStr, required_argument, nullptr, 'p'},
                                          {MDFlexConfig::verletClusterSizeStr, required_argument, nullptr, 'q'},
                                          {MDFlexConfig::verletSkinRadiusStr, required_argument, nullptr, 'r'},
@@ -313,6 +314,17 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
           cerr << "Error parsing relative optimum range: " << optarg << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case 'O': {
+        auto parsedOptions = autopas::ExtrapolationMethodOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one extrapolation method option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.extrapolationMethodOption = *parsedOptions.begin();
         break;
       }
       case 'P': {

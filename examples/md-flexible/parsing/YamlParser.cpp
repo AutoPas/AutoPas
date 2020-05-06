@@ -96,6 +96,14 @@ bool parseYamlFile(MDFlexConfig &config) {
   if (node[MDFlexConfig::maxTuningPhasesWithoutTestStr]) {
     config.maxTuningPhasesWithoutTest = node[MDFlexConfig::maxTuningPhasesWithoutTestStr].as<unsigned int>();
   }
+  if (node[MDFlexConfig::extrapolationMethodOptionStr]) {
+    auto parsedOptions = autopas::ExtrapolationMethodOption::parseOptions(
+        node[MDFlexConfig::extrapolationMethodOptionStr].as<std::string>());
+    if (parsedOptions.size() != 1) {
+      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one extrapolation method option!");
+    }
+    config.extrapolationMethodOption = *parsedOptions.begin();
+  }
   if (node[MDFlexConfig::tuningStrategyOptionsStr]) {
     auto parsedOptions =
         autopas::TuningStrategyOption::parseOptions(node[MDFlexConfig::tuningStrategyOptionsStr].as<std::string>());

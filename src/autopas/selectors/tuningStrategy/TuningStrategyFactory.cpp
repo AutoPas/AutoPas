@@ -17,7 +17,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<autopas::TraversalOption> &allowedTraversals,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
-    unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption) {
+    unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption,
+    ExtrapolationMethodOption extrapolationMethodOption) {
   // clang compiler bug requires static cast
   switch (static_cast<TuningStrategyOption>(tuningStrategyOption)) {
     case TuningStrategyOption::randomSearch: {
@@ -49,7 +50,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     case TuningStrategyOption::predictiveTuning: {
       return std::make_unique<PredictiveTuning>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
                                                 allowedDataLayouts, allowedNewton3Options, relativeOptimum,
-                                                maxTuningPhasesWithoutTest);
+                                                maxTuningPhasesWithoutTest, extrapolationMethodOption);
     }
   }
 

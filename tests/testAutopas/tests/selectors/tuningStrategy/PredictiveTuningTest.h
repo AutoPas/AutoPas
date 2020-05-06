@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
+#include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/selectors/tuningStrategy/PredictiveTuning.h"
 
 class PredictiveTuningTest : public AutoPasTestBase {
