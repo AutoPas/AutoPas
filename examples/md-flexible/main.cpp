@@ -8,8 +8,6 @@
 
 #include "PrintableMolecule.h"
 #include "Simulation.h"
-#include "autopas/molecularDynamics/autopasmd.h"
-#include "autopas/utils/MemoryProfiler.h"
 #include "parsing/MDFlexParser.h"
 
 int main(int argc, char **argv) {
