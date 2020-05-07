@@ -60,24 +60,7 @@ class AutoPas {
    * Constructor for the autopas class.
    * @param logOutputStream Stream where log output should go to. Default is std::out.
    */
-  explicit AutoPas(std::ostream &logOutputStream = std::cout)
-      : _boxMin{0, 0, 0},
-        _boxMax{0, 0, 0},
-        _cutoff(1.),
-        _verletSkin(0.2),
-        _verletRebuildFrequency(20),
-        _verletClusterSize(64),
-        _tuningInterval(5000),
-        _numSamples(3),
-        _maxEvidence(10),
-        _acquisitionFunctionOption(AcquisitionFunctionOption::lowerConfidenceBound),
-        _tuningStrategyOption(TuningStrategyOption::fullSearch),
-        _selectorStrategy(SelectorStrategyOption::fastestAbs),
-        _allowedContainers(ContainerOption::getAllOptions()),
-        _allowedTraversals(TraversalOption::getAllOptions()),
-        _allowedDataLayouts(DataLayoutOption::getAllOptions()),
-        _allowedNewton3Options(Newton3Option::getAllOptions()),
-        _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))) {
+  explicit AutoPas(std::ostream &logOutputStream = std::cout) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
@@ -544,79 +527,80 @@ class AutoPas {
   /**
    * Lower corner of the container.
    */
-  std::array<double, 3> _boxMin;
+  std::array<double, 3> _boxMin{0, 0, 0};
   /**
    * Upper corner of the container.
    */
-  std::array<double, 3> _boxMax;
+  std::array<double, 3> _boxMax{0, 0, 0};
   /**
    * Cutoff radius to be used in this container.
    */
-  double _cutoff;
+  double _cutoff{1.0};
   /**
    * Length added to the cutoff for the verlet lists' skin.
    */
-  double _verletSkin;
+  double _verletSkin{0.2};
   /**
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
-  unsigned int _verletRebuildFrequency;
+  unsigned int _verletRebuildFrequency{20};
   /**
    * Specifies the size of clusters for verlet lists.
    */
-  unsigned int _verletClusterSize;
+  unsigned int _verletClusterSize{64};
   /**
    * Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */
-  unsigned int _tuningInterval;
+  unsigned int _tuningInterval{5000};
   /**
    * Number of samples the tuner should collect for each combination.
    */
-  unsigned int _numSamples;
+  unsigned int _numSamples{3};
   /**
    * Tuning Strategies which work on a fixed number of evidence should use this value.
    */
-  unsigned int _maxEvidence;
+  unsigned int _maxEvidence{10};
   /**
    * Acquisition function used for tuning.
    * For possible acquisition function choices see AutoPas::AcquisitionFunction.
    */
-  AcquisitionFunctionOption _acquisitionFunctionOption;
+  AcquisitionFunctionOption _acquisitionFunctionOption{AcquisitionFunctionOption::lowerConfidenceBound};
 
   /**
    * Strategy option for the auto tuner.
    * For possible tuning strategy choices see AutoPas::TuningStrategy.
    */
-  TuningStrategyOption _tuningStrategyOption;
+  TuningStrategyOption _tuningStrategyOption{TuningStrategyOption::fullSearch};
 
   /**
    * Strategy for the configuration selector.
    * For possible container choices see AutoPas::SelectorStrategy.
    */
-  SelectorStrategyOption _selectorStrategy;
+  SelectorStrategyOption _selectorStrategy{SelectorStrategyOption::fastestAbs};
   /**
    * List of container types AutoPas can choose from.
    * For possible container choices see AutoPas::ContainerOption.
    */
-  std::set<ContainerOption> _allowedContainers;
+  std::set<ContainerOption> _allowedContainers{ContainerOption::getAllOptions()};
   /**
    * List of traversals AutoPas can choose from.
    * For possible container choices see AutoPas::TraversalOption.
    */
-  std::set<TraversalOption> _allowedTraversals;
+  std::set<TraversalOption> _allowedTraversals{TraversalOption::getAllOptions()};
   /**
    * List of data layouts AutoPas can choose from.
    * For possible container choices see AutoPas::DataLayoutOption.
    */
-  std::set<DataLayoutOption> _allowedDataLayouts;
+  std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getAllOptions()};
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
-  std::set<Newton3Option> _allowedNewton3Options;
+  std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getAllOptions()};
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
    */
-  std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;
+  std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors{
+      std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
 
   /**
    * LogicHandler of autopas.
