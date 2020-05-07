@@ -141,8 +141,7 @@ class AutoPas {
    * returned bool evaluates to true, the vector can both be empty or non-empty, depending on whether particles have
    * left the container or not.
    */
-  AUTOPAS_WARN_UNUSED_RESULT
-  std::pair<std::vector<Particle>, bool> updateContainer() { return _logicHandler->updateContainer(false); }
+  [[nodiscard]] std::pair<std::vector<Particle>, bool> updateContainer() { return _logicHandler->updateContainer(false); }
 
   /**
    * Forces a container update.
@@ -150,8 +149,7 @@ class AutoPas {
    * into the container.
    * @return A vector of invalid particles that do no belong in the current container.
    */
-  AUTOPAS_WARN_UNUSED_RESULT
-  std::vector<Particle> updateContainerForced() { return std::get<0>(_logicHandler->updateContainer(true)); }
+  [[nodiscard]] std::vector<Particle> updateContainerForced() { return std::get<0>(_logicHandler->updateContainer(true)); }
 
   /**
    * Adds a particle to the container.
@@ -268,7 +266,7 @@ class AutoPas {
    * @param behavior Tells this function to report the number of halo, owned or all particles.
    * @return the number of particles in this container.
    */
-  unsigned long getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::ownedOnly) const {
+  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::ownedOnly) const {
     switch (behavior) {
       case IteratorBehavior::ownedOnly: {
         return _logicHandler->getNumParticlesOwned();
@@ -287,19 +285,19 @@ class AutoPas {
    * Returns the type of the currently used container.
    * @return The type of the used container is returned.
    */
-  unsigned long getContainerType() const { return _autoTuner->getContainer()->getContainerType(); }
+  [[nodiscard]] unsigned long getContainerType() const { return _autoTuner->getContainer()->getContainerType(); }
 
   /**
    * Get the lower corner of the container.
    * @return lower corner of the container.
    */
-  std::array<double, 3> getBoxMin() const { return _autoTuner->getContainer()->getBoxMin(); }
+  [[nodiscard]] std::array<double, 3> getBoxMin() const { return _autoTuner->getContainer()->getBoxMin(); }
 
   /**
    * Get the upper corner of the container.
    * @return upper corner of the container.
    */
-  std::array<double, 3> getBoxMax() const { return _autoTuner->getContainer()->getBoxMax(); }
+  [[nodiscard]] std::array<double, 3> getBoxMax() const { return _autoTuner->getContainer()->getBoxMax(); }
 
   /**
    * Set coordinates of the lower corner of the domain.
@@ -317,7 +315,7 @@ class AutoPas {
    * Get cutoff radius.
    * @return
    */
-  double getCutoff() const { return _cutoff; }
+  [[nodiscard]] double getCutoff() const { return _cutoff; }
 
   /**
    * Set cutoff radius.
@@ -335,7 +333,7 @@ class AutoPas {
    * Get allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @return
    */
-  const NumberSet<double> &getAllowedCellSizeFactors() const { return *_allowedCellSizeFactors; }
+  [[nodiscard]] const NumberSet<double> &getAllowedCellSizeFactors() const { return *_allowedCellSizeFactors; }
 
   /**
    * Set allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
@@ -365,7 +363,7 @@ class AutoPas {
    * Get length added to the cutoff for the Verlet lists' skin.
    * @return
    */
-  double getVerletSkin() const { return _verletSkin; }
+  [[nodiscard]] double getVerletSkin() const { return _verletSkin; }
 
   /**
    * Set length added to the cutoff for the Verlet lists' skin.
@@ -377,7 +375,7 @@ class AutoPas {
    * Get Verlet rebuild frequency.
    * @return
    */
-  unsigned int getVerletRebuildFrequency() const { return _verletRebuildFrequency; }
+  [[nodiscard]] unsigned int getVerletRebuildFrequency() const { return _verletRebuildFrequency; }
 
   /**
    * Set Verlet rebuild frequency.
@@ -391,7 +389,7 @@ class AutoPas {
    * Get Verlet cluster size.
    * @return
    */
-  unsigned int getVerletClusterSize() const { return _verletClusterSize; }
+  [[nodiscard]] unsigned int getVerletClusterSize() const { return _verletClusterSize; }
 
   /**
    * Set Verlet cluster size.
@@ -403,7 +401,7 @@ class AutoPas {
    * Get tuning interval.
    * @return
    */
-  unsigned int getTuningInterval() const { return _tuningInterval; }
+  [[nodiscard]] unsigned int getTuningInterval() const { return _tuningInterval; }
 
   /**
    * Set tuning interval.
@@ -415,7 +413,7 @@ class AutoPas {
    * Get number of samples taken per configuration during the tuning.
    * @return
    */
-  unsigned int getNumSamples() const { return _numSamples; }
+  [[nodiscard]] unsigned int getNumSamples() const { return _numSamples; }
 
   /**
    * Set number of samples taken per configuration during the tuning.
@@ -427,7 +425,7 @@ class AutoPas {
    * Get maximum number of evidence for tuning
    * @return
    */
-  unsigned int getMaxEvidence() const { return _maxEvidence; }
+  [[nodiscard]] unsigned int getMaxEvidence() const { return _maxEvidence; }
 
   /**
    * Set maximum number of evidence for tuning
@@ -439,7 +437,7 @@ class AutoPas {
    * Get acquisition function used for tuning
    * @return
    */
-  AcquisitionFunctionOption getAcquisitionFunction() const { return _acquisitionFunctionOption; }
+  [[nodiscard]] AcquisitionFunctionOption getAcquisitionFunction() const { return _acquisitionFunctionOption; }
 
   /**
    * Set acquisition function for tuning
@@ -451,7 +449,7 @@ class AutoPas {
    * Get the selector configuration strategy.
    * @return
    */
-  SelectorStrategyOption getSelectorStrategy() const { return _selectorStrategy; }
+  [[nodiscard]] SelectorStrategyOption getSelectorStrategy() const { return _selectorStrategy; }
 
   /**
    * Set the selector configuration strategy.
@@ -464,7 +462,7 @@ class AutoPas {
    * Get the list of allowed containers.
    * @return
    */
-  const std::set<ContainerOption> &getAllowedContainers() const { return _allowedContainers; }
+  [[nodiscard]] const std::set<ContainerOption> &getAllowedContainers() const { return _allowedContainers; }
 
   /**
    * Set the list of allowed containers.
@@ -479,7 +477,7 @@ class AutoPas {
    * Get the list of allowed traversals.
    * @return
    */
-  const std::set<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
+  [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
 
   /**
    * Set the list of allowed traversals.
@@ -494,7 +492,7 @@ class AutoPas {
    * Get the list of allowed data layouts.
    * @return
    */
-  const std::set<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
+  [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
 
   /**
    * Set the list of allowed data layouts.
@@ -509,7 +507,7 @@ class AutoPas {
    * Get the list of allowed newton 3 options.
    * @return
    */
-  const std::set<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
+  [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
 
   /**
    * Set the list of allowed newton 3 options.
@@ -524,13 +522,13 @@ class AutoPas {
    * Getter for the currently selected configuration.
    * @return Configuration object currently used.
    */
-  Configuration getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
+  [[nodiscard]] Configuration getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
 
   /**
    * Getter for the tuning strategy option.
    * @return
    */
-  TuningStrategyOption getTuningStrategyOption() const { return _tuningStrategyOption; }
+  [[nodiscard]] TuningStrategyOption getTuningStrategyOption() const { return _tuningStrategyOption; }
 
   /**
    * Setter for the tuning strategy option.
