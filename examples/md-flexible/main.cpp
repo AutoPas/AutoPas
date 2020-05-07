@@ -22,18 +22,34 @@ int main(int argc, char **argv) {
   // make sure sim box is big enough
   config.calcSimulationBox();
 
+  // print config to console
   std::cout << config;
 
+  // select either std::out or a logfile for autopas log output.
+  // This does not affect md-flex output.
+  std::streambuf *streamBuf;
+  std::ofstream logFile;
+  if (config.logFileName.empty()) {
+    streamBuf = std::cout.rdbuf();
+  } else {
+    logFile.open(config.logFileName);
+    streamBuf = logFile.rdbuf();
+  }
+  std::ostream outputStream(streamBuf);
+
   // Initialization
-  simulation.initialize(config);
+  autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> autopas(outputStream);
+  simulation.initialize(config, autopas);
+
   std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
 
   // Simulation
   std::cout << "Starting simulation... " << std::endl;
-  simulation.simulate();
+  simulation.simulate(autopas);
   std::cout << "Simulation done!" << std::endl << std::endl;
 
-  simulation.printStatistics();
+  // Statistics about the simulation
+  simulation.printStatistics(autopas);
 
   // print config.yaml file of current run
   if (config.dontCreateEndConfig) {
