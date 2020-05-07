@@ -26,10 +26,8 @@ namespace autopas {
 static unsigned int _instanceCounter = 0;
 
 /**
- * The AutoPas class is intended to be the main point of Interaction for the
- * user. It puts a layer of abstraction over the container and handles the
- * autotuning.
- * @todo autotuning
+ * The AutoPas class is intended to be the main point of Interaction for the user.
+ * It acts as an interface from where all features of the library can be triggered and configured.
  * @tparam Particle Class for particles
  * @tparam ParticleCell Class for the particle cells
  */
