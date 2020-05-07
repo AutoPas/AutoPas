@@ -126,7 +126,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<FullParticleCell
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return _linkedCells.begin(behavior);
   }
 

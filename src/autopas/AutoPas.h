@@ -141,7 +141,9 @@ class AutoPas {
    * returned bool evaluates to true, the vector can both be empty or non-empty, depending on whether particles have
    * left the container or not.
    */
-  [[nodiscard]] std::pair<std::vector<Particle>, bool> updateContainer() { return _logicHandler->updateContainer(false); }
+  [[nodiscard]] std::pair<std::vector<Particle>, bool> updateContainer() {
+    return _logicHandler->updateContainer(false);
+  }
 
   /**
    * Forces a container update.
@@ -149,7 +151,9 @@ class AutoPas {
    * into the container.
    * @return A vector of invalid particles that do no belong in the current container.
    */
-  [[nodiscard]] std::vector<Particle> updateContainerForced() { return std::get<0>(_logicHandler->updateContainer(true)); }
+  [[nodiscard]] std::vector<Particle> updateContainerForced() {
+    return std::get<0>(_logicHandler->updateContainer(true));
+  }
 
   /**
    * Adds a particle to the container.

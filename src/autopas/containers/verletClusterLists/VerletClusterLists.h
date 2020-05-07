@@ -203,7 +203,8 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @copydoc ParticleContainerInterface::begin()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     // For good openmp scalability we want the particles to be sorted into the clusters, so we do this!
 #ifdef AUTOPAS_OPENMP
 #pragma omp single

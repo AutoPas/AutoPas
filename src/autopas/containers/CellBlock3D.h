@@ -76,7 +76,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
     return isHaloCell;
   }
 
-  [[nodiscard]] bool cellCanContainOwnedParticles(index_t index1d) const override { return not cellCanContainHaloParticles(index1d); }
+  [[nodiscard]] bool cellCanContainOwnedParticles(index_t index1d) const override {
+    return not cellCanContainHaloParticles(index1d);
+  }
 
   /**
    * get the ParticleCell of a specified 1d index
@@ -147,7 +149,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * get the dimension of the cellblock including the haloboxes
    * @return the dimensions of the cellblock
    */
-  [[nodiscard]] const std::array<index_t, 3> &getCellsPerDimensionWithHalo() const { return _cellsPerDimensionWithHalo; }
+  [[nodiscard]] const std::array<index_t, 3> &getCellsPerDimensionWithHalo() const {
+    return _cellsPerDimensionWithHalo;
+  }
 
   /**
    * checks whether a given position is inside the halo region of the managed

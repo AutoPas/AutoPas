@@ -139,7 +139,7 @@ class Simulation {
    * Getter for ParticlePropertiesLibrary of Simulation.
    * @return unique_prt(ParticlePropertiesLibrary)
    */
-  const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
+  [[nodiscard]] const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
 
  private:
   using AutoPasType = autopas::AutoPas<Particle, ParticleCell>;
