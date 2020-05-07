@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
   MDFlexConfig config;
 
   if (not MDFlexParser::parseInput(argc, argv, config)) {
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
   // make sure sim box is big enough
   config.calcSimulationBox();
