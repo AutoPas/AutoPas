@@ -287,15 +287,6 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         }
         break;
       }
-      case 'P': {
-        try {
-          config.particlesTotal = stoul(strArg);
-        } catch (const exception &) {
-          cerr << "Error parsing total number of particles: " << strArg << endl;
-          displayHelp = true;
-        }
-        break;
-      }
       case 'p': {
         try {
           config.periodic = autopas::utils::StringUtils::parseBoolOption(strArg);
