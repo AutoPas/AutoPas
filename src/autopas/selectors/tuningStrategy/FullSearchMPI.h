@@ -14,7 +14,7 @@
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapMPI.h"
-#include "autopas/utils/AutoPasConfigurationPasser.h"
+#include "autopas/utils/AutoPasConfigurationCommunicator.h"
 
 namespace autopas {
 
@@ -39,7 +39,6 @@ class FullSearchMPI : public TuningStrategyInterface {
              const std::set<Newton3Option> &allowedNewton3Options)
       : _containerOptions(allowedContainerOptions),
         _optimalConfig(Configuration()),
-        _configurationPasser(nullptr),
         _localOptimalTime(0) {
 
     // @todo distribute the division process, so that not every rank has to traverse all configs
@@ -109,15 +108,10 @@ class FullSearchMPI : public TuningStrategyInterface {
         _searchSpace(std::move(allowedConfigurations)),
         _tuningConfig(_searchSpace.begin()),
         _optimalConfig(Configuration()),
-        _configurationPasser(nullptr),
         _localOptimalTime(0) {
     for (auto config : _searchSpace) {
       _containerOptions.insert(config.container);
     }
-  }
-
-  ~FullSearchMPI() override {
-    delete _configurationPasser;
   }
 
   inline const Configuration &getCurrentConfiguration() const override {
@@ -135,8 +129,10 @@ class FullSearchMPI : public TuningStrategyInterface {
 
   inline void reset() override {
     _traversalTimes.clear();
-    _optimalConfig = Configuration();
     _tuningConfig = _searchSpace.begin();
+    _optimalConfig = Configuration();
+    _localOptimalTime = 0;
+    _configurationCommunicator.reset();
   }
 
   inline bool tune(bool = false) override;
@@ -172,7 +168,7 @@ class FullSearchMPI : public TuningStrategyInterface {
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
   std::set<Configuration>::iterator _tuningConfig;
   Configuration _optimalConfig;
-  AutoPasConfigurationPasser *_configurationPasser;
+  AutoPasConfigurationCommunicator _configurationCommunicator;
   size_t _localOptimalTime;
 };
 
@@ -232,14 +228,12 @@ bool FullSearchMPI::tune(bool currentInvalid) {
       selectLocalOptimalConfiguration();
     }
 
-    if (_configurationPasser == nullptr) {
-      _configurationPasser = new AutoPasConfigurationPasser(_optimalConfig);
-    }
-
-    if (not _configurationPasser->optimizeConfiguration(&_optimalConfig, _localOptimalTime)) {
+    if (not _configurationCommunicator.optimizeConfiguration(&_optimalConfig, _localOptimalTime)) {
+      int rank;
+      AutoPas_MPI_Comm_rank(_configurationCommunicator.AUTOPAS_MPI_COMM_AUTOPAS, &rank);
+      std::cout << rank << ": Global optimal configuration: " << _optimalConfig.toString() << std::endl;
       AutoPasLog(debug, "Global optimal configuration: {}", _optimalConfig.toString());
-      delete _configurationPasser;
-      
+
       return false;
     }
   }

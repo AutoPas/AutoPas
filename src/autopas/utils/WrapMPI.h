@@ -30,10 +30,8 @@ namespace autopas {
 // MPI_Datatype
 #define AUTOPAS_MPI_BYTE MPI_BYTE
 #define AUTOPAS_MPI_LONG_INT MPI_LONG_INT
-#define AUTOPAS_MPI_UNSIGNED_LONG_LONG MPI_UNSIGNED_LONG_LONG
 
 // MPI_Op
-#define AUTOPAS_MPI_LAND MPI_LAND
 #define AUTOPAS_MPI_MINLOC MPI_MINLOC
 
 // MPI_Status
@@ -47,7 +45,7 @@ using AutoPas_MPI_Request = MPI_Request;
 
 /**
  * Wrapper for MPI_Error_string
- * @param errorcode
+ * @param errorcode: MPI error value
  * @param string: output string
  * @param resultlen: length of output
  * @return MPI error value
@@ -71,6 +69,21 @@ inline int AutoPas_MPI_Comm_size(AutoPas_MPI_Comm comm, int *size) { return MPI_
  * @return: MPI error value
  */
 inline int AutoPas_MPI_Comm_rank(AutoPas_MPI_Comm comm, int *rank) { return MPI_Comm_rank(comm, rank); }
+
+/**
+ * Wrapper for MPI_Comm_dup
+ * @param comm: Communicator to be duplicated (handle)
+ * @param newComm: outputs new communicator over the same group as comm
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Comm_dup(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *newComm) { return MPI_Comm_dup(comm, newComm); }
+
+/**
+ * Wrapper for MPI_Comm_free
+ * @param comm: communicator to be freed (handle)
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Comm_free(AutoPas_MPI_Comm *comm) { return MPI_Comm_free(comm); }
 
 /**
  * Wrapper for MPI_Send
