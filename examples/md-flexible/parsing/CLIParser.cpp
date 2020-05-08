@@ -456,13 +456,22 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   }
 
   if (displayHelp) {
-    cout << "Usage: " << argv[0] << endl;
-    for (auto o : long_options) {
-      if (o.name == nullptr) {
-        continue;
+    // filter out null values and copy rest in more sane data structure
+    std::vector<std::pair<std::string, bool>> options;
+    for (auto &o : long_options) {
+      if (o.name != nullptr) {
+        options.emplace_back(std::make_pair(o.name, o.has_arg));
       }
-      cout << "    --" << setw(MDFlexConfig::valueOffset + 2) << left << o.name;
-      if (o.has_arg) {
+    }
+
+    // by default sort sorts by first member of pair
+    std::sort(std::begin(options), std::end(options));
+
+    // print everything
+    cout << "Usage: " << argv[0] << endl;
+    for (auto &o : options) {
+      cout << "    --" << setw(MDFlexConfig::valueOffset + 2) << left << o.first;
+      if (o.second) {
         cout << "option";
       }
       cout << endl;
