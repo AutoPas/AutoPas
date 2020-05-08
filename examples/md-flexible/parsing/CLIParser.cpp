@@ -497,7 +497,7 @@ bool checkFileExists(const std::string &filename) {
 }  // namespace
 
 void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
-  int option, optionIndex;
+  int option = 0, optionIndex = 0;
   // suppress error messages since we only want to look if the yaml option is there
   auto opterrBefore = opterr;
   opterr = 0;
@@ -523,6 +523,9 @@ void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
           throw std::runtime_error("CLIParser::inputFilesPresent: Yaml-File " + config.yamlFilename + " not found!");
         }
         break;
+      default: {
+        // do nothing
+      }
     }
   }
 
