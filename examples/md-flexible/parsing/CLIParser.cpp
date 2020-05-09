@@ -275,7 +275,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         try {
           config.maxTuningPhasesWithoutTest = (unsigned int)stoul(strArg);
           if (config.maxTuningPhasesWithoutTest < 1) {
-            cerr << "Max tuning phases without est has to be positive!" << endl;
+            cerr << "Max tuning phases without test has to be positive!" << endl;
             displayHelp = true;
           }
         } catch (const exception &) {
