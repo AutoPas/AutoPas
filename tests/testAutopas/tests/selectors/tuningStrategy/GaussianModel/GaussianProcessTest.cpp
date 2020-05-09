@@ -21,7 +21,6 @@ TEST_F(GaussianProcessTest, wrongDimension) {
 
 TEST_F(GaussianProcessTest, noEvidence) {
   Random rng(32);
-
   double epsilon = 0.05;  // allowed error for tests
 
   double sigma = 0.001;  // noise
@@ -239,7 +238,7 @@ void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::Numb
       acqMax = std::max(val, acqMax);
     }
 
-    acqMap.push_back(row);
+    acqMap.push_back(std::move(row));
   }
 
   // get scaling such that acqMax=1 and acqMin=0

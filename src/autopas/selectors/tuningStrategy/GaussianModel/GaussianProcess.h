@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "AcquisitionFunction.h"
+#include "GaussianHyperparameters.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Math.h"
@@ -28,71 +29,14 @@ namespace autopas {
  * TODO: maybe offer some options.
  */
 class GaussianProcess {
+  friend GaussianHyperparameters;
+
   using Vector = Eigen::VectorXd;
 
   // number of samples to find optimal hyperparameters
   static constexpr size_t hp_sample_size = 10000;
   // number of hyperparameters
   static constexpr size_t hp_size = 100;
-
-  /**
-   * Hyperparameters and derived matrices used for prediction
-   */
-  struct Hyperparameters {
-    /**
-     * score used to weight hyperparameters
-     */
-    double score;
-    /**
-     * prior mean
-     */
-    double mean;
-    /**
-     * prior variance
-     */
-    double theta;
-    /**
-     * Scale for each input dimension
-     */
-    Eigen::VectorXd dimScales;
-
-    /**
-     * Covariance Matrix Inverse
-     */
-    Eigen::MatrixXd covMatInv;
-    /**
-     * Weights used for predictions
-     */
-    Eigen::VectorXd weights;
-
-    /**
-     * Default Constructor
-     */
-    Hyperparameters()
-        : score(0),
-          mean(0.),
-          theta(1.),
-          dimScales(Eigen::VectorXd::Ones(1)),
-          covMatInv(Eigen::MatrixXd::Ones(1, 1)),
-          weights(Eigen::VectorXd::Ones(1)) {}
-
-    /**
-     * Constructor
-     * @param mean prior mean of Gaussian process
-     * @param theta prior variance
-     * @param dimScales scale for each input dimension
-     */
-    Hyperparameters(double mean, double theta, Eigen::VectorXd dimScales)
-        : score(0), mean(mean), theta(theta), dimScales(std::move(dimScales)) {}
-
-    /**
-     * Precalculate matrices needed for predictions
-     * @param sigma assumed noise
-     * @param inputs evidence input
-     * @param outputs evidence output
-     */
-    void precalculate(double sigma, const std::vector<Vector> &inputs, const Eigen::VectorXd &outputs);
-  };
 
  public:
   /**
@@ -109,12 +53,17 @@ class GaussianProcess {
         _evidenceMaxValue(0),
         _sigma(sigma),
         _hypers(),
-        _rng(rngRef) {}
+        _rng(rngRef) {
+    tuneHyperparameters();
+  }
 
   /**
    * Discard all evidence.
    */
-  void clear() { _inputs.clear(); }
+  void clear() {
+    _inputs.clear();
+    tuneHyperparameters();
+  }
 
   /**
    * Get the number of evidence provided.
@@ -127,8 +76,9 @@ class GaussianProcess {
    * Each evidence improve the quality of future predictions.
    * @param input x
    * @param output f(x)
+   * @param tuneHypers if false hyperparemeters need to be set manually
    */
-  void addEvidence(const Vector &input, double output) {
+  void addEvidence(const Vector &input, double output, bool tuneHypers = true) {
     if (static_cast<size_t>(input.size()) != _dims) {
       utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
                                          input.size(), _dims);
@@ -152,7 +102,12 @@ class GaussianProcess {
     _outputs.conservativeResize(newSize, Eigen::NoChange_t());
     _outputs(newSize - 1) = output;
 
-    updateHyperparameters();
+    if (tuneHypers) {
+      tuneHyperparameters();
+    } else {
+      // hyperparameters should be recalculated
+      _hypers.clear();
+    }
   }
 
   /**
@@ -179,12 +134,16 @@ class GaussianProcess {
                                          input.size(), _dims);
     }
 
-    // default mean 0.
-    if (_inputs.empty()) return 0.;
-
     double result = 0.;
-    for (auto &hyper : _hypers) {
-      result += hyper.score * (hyper.mean + kernelVector(input, hyper.theta, hyper.dimScales).dot(hyper.weights));
+    if (_inputs.empty()) {
+      // no evidence
+      for (auto &hyper : _hypers) {
+        result += hyper.score * hyper.mean;
+      }
+    } else {
+      for (auto &hyper : _hypers) {
+        result += hyper.score * (hyper.mean + kernelVector(input, hyper.theta, hyper.dimScales).dot(hyper.weights));
+      }
     }
 
     return result;
@@ -201,14 +160,19 @@ class GaussianProcess {
                                          input.size(), _dims);
     }
 
-    // default variance 1.
-    if (_inputs.empty()) return 1.;
-
     double result = 0.;
-    for (auto &hyper : _hypers) {
-      Eigen::VectorXd kVec = kernelVector(input, hyper.theta, hyper.dimScales);
-      result += hyper.score * (kernel(input, input, hyper.theta, hyper.dimScales) - kVec.dot(hyper.covMatInv * kVec));
+    if (_inputs.empty()) {
+      // no evidence
+      for (auto &hyper : _hypers) {
+        result += hyper.score * hyper.theta;
+      }
+    } else {
+      for (auto &hyper : _hypers) {
+        Eigen::VectorXd kVec = kernelVector(input, hyper.theta, hyper.dimScales);
+        result += hyper.score * (kernel(input, input, hyper.theta, hyper.dimScales) - kVec.dot(hyper.covMatInv * kVec));
+      }
     }
+
     return result;
   }
 
@@ -247,92 +211,108 @@ class GaussianProcess {
     return samples[bestIdx];
   }
 
- private:
   /**
-   * Update the hyperparameters: theta, dimScale.
-   * To do so, hyperparameter-samples are randomly generated.
-   * The samples are combined using a weighted average. The weight of a sample
-   * equals to the probability that given evidence and hyperparameter-sample
-   * generates given output.
+   * Generate hyperparameter samples.
+   * @param sampleSize size
+   * @param rng random number generator
+   * @param dims number of input dimension
+   * @param sigma fixed noise
+   * @param evidenceMinValue current lowest evidence output
+   * @param evidenceMaxValue current highest evidence output
+   * @return tuple [means, thetas, dimScales]
    */
-  inline void updateHyperparameters() {
-    // number of evidence
-    size_t newSize = _inputs.size();
-    _hypers.clear();
+  static std::tuple<std::vector<double>, std::vector<double>, std::vector<Eigen::VectorXd>>
+  generateHyperparameterSamples(size_t sampleSize, Random &rng, double dims, double sigma, double evidenceMinValue,
+                                double evidenceMaxValue) {
+    // range of mean
+    // inside bounds of evidence outputs
+    NumberInterval<double> meanRange(evidenceMinValue, evidenceMaxValue);
+    // range of theta
+    // max sample stddev: (max - min)
+    // max stddev from zero: abs(min) & abs(max)
+    double thetaMax = std::pow(
+        std::max({evidenceMaxValue - evidenceMinValue, std::abs(evidenceMinValue), std::abs(evidenceMaxValue)}), 2);
+    // at least sigma
+    thetaMax = std::max(thetaMax, sigma);
+    NumberInterval<double> thetaRange(sigma, thetaMax);
+    // range of dimScale
+    // Assuming most distances are greater equal 1.
+    // For a dimScale d > 5 + ln(thetaMax): theta * exp(-d r) < 1%. So choosing
+    // a greater dimScale may lead to many kernels close to zero.
+    // But if needed the upper bound can be increased.
+    NumberInterval<double> dimScaleRange(0., 5. + std::max(0., std::log(thetaMax)));
 
-    // if no evidence
-    if (newSize == 0) {
-      // use default values
-      return;
+    // generate mean
+    auto sample_means = meanRange.uniformSample(sampleSize, rng);
+
+    // generate theta
+    auto sample_thetas = thetaRange.uniformSample(sampleSize, rng);
+
+    // generate dimScale
+    std::vector<std::vector<double>> sample_dimScaleData;
+    for (size_t d = 0; d < dims; ++d) {
+      sample_dimScaleData.push_back(dimScaleRange.uniformSample(sampleSize, rng));
+    }
+    // convert dimScales to Vectors
+    std::vector<Eigen::VectorXd> sample_dimScales;
+    for (size_t t = 0; t < sampleSize; ++t) {
+      std::vector<double> dimScaleData;
+      for (size_t d = 0; d < dims; ++d) {
+        dimScaleData.push_back(sample_dimScaleData[d][t]);
+      }
+      Eigen::VectorXd dimScale = Eigen::Map<Eigen::VectorXd>(dimScaleData.data(), dimScaleData.size());
+      sample_dimScales.push_back(std::move(dimScale));
     }
 
-    if (newSize == 1) {
-      // default values for one evidence
-      _hypers.emplace_back(_outputs[0], _outputs[0] * _outputs[0], Eigen::VectorXd::Ones(_dims));
-      _hypers[0].precalculate(_sigma, _inputs, _outputs);
-    } else {
-      // range of mean
-      // inside bounds of evidence outputs
-      NumberInterval<double> meanRange(_evidenceMinValue, _evidenceMaxValue);
-      // range of theta
-      // max sample stddev: (max - min)
-      // max stddev from zero: abs(min) & abs(max)
-      double thetaMax = std::pow(
-          std::max({_evidenceMaxValue - _evidenceMinValue, std::abs(_evidenceMinValue), std::abs(_evidenceMaxValue)}),
-          2);
-      // at least sigma
-      thetaMax = std::max(thetaMax, _sigma);
-      NumberInterval<double> thetaRange(_sigma, thetaMax);
-      // range of dimScale
-      // Assuming most distances are greater equal 1.
-      // For a dimScale d > 5 + ln(thetaMax): theta * exp(-d r) < 1%. So choosing
-      // a greater dimScale may lead to many kernels close to zero.
-      // But if needed the upper bound can be increased.
-      NumberInterval<double> dimScaleRange(0., 5. + std::max(0., std::log(thetaMax)));
+    return std::make_tuple(sample_means, sample_thetas, sample_dimScales);
+  }
 
-      // generate mean
-      auto sample_means = meanRange.uniformSample(hp_sample_size, _rng);
+  /**
+   * Get current hyperparameters.
+   * @return
+   */
+  std::vector<GaussianHyperparameters> &getHyperparameters() { return _hypers; }
 
-      // generate theta
-      auto sample_thetas = thetaRange.uniformSample(hp_sample_size, _rng);
+  /**
+   * Set the hyperparameters: means, theta, dimScale.
+   * The samples are scored equal to the probability that given evidence and hyperparameter-sample
+   * generates given output. Hyperparameters weights should be normalized.
+   * @param sample_means
+   * @param sample_thetas
+   * @param sample_dimScales
+   */
+  void setHyperparameters(const std::vector<double> &sample_means, const std::vector<double> &sample_thetas,
+                          const std::vector<Eigen::VectorXd> &sample_dimScales) {
+    size_t hyperSize = sample_means.size();
+    _hypers.clear();
 
-      // generate dimScale
-      std::vector<std::vector<double>> sample_dimScaleData;
-      for (size_t d = 0; d < _dims; ++d) {
-        sample_dimScaleData.push_back(dimScaleRange.uniformSample(hp_sample_size, _rng));
-      }
-      // convert dimScales to Vectors
-      std::vector<Eigen::VectorXd> sample_dimScales;
-      for (size_t t = 0; t < hp_sample_size; ++t) {
-        std::vector<double> dimScaleData;
-        for (size_t d = 0; d < _dims; ++d) {
-          dimScaleData.push_back(sample_dimScaleData[d][t]);
-        }
-        Eigen::VectorXd dimScale = Eigen::Map<Eigen::VectorXd>(dimScaleData.data(), dimScaleData.size());
-        sample_dimScales.push_back(std::move(dimScale));
-      }
+    // initialize hyperparameter samples
+    _hypers.reserve(hyperSize);
+    for (size_t t = 0; t < hyperSize; ++t) {
+      _hypers.emplace_back(sample_means[t], sample_thetas[t], sample_dimScales[t]);
+    }
 
-      // initialize hyperparameter samples
-      _hypers.reserve(hp_sample_size);
-      for (size_t t = 0; t < hp_sample_size; ++t) {
-        _hypers.emplace_back(sample_means[t], sample_thetas[t], sample_dimScales[t]);
-      }
-
-      // precalculate matrices for all hyperparameters
-      // @TODO find sensible chunkSize
+    // precalculate matrices for all hyperparameters
+    // @TODO find sensible chunkSize
 #ifdef AUTOPAS_OPENMP
-      const size_t chunkSize = std::max(hp_sample_size / (autopas_get_num_threads() * 10), 1ul);
+    const size_t chunkSize = std::max(hyperSize / (autopas_get_num_threads() * 10), 1ul);
 #pragma omp parallel for schedule(dynamic, chunkSize)
 #endif
-      for (size_t t = 0; t < hp_sample_size; ++t) {
-        _hypers[t].precalculate(_sigma, _inputs, _outputs);
-      }
+    for (size_t t = 0; t < hyperSize; ++t) {
+      _hypers[t].precalculate(_sigma, _inputs, _outputs);
+    }
+  }
 
-      // sort by score
-      std::sort(_hypers.begin(), _hypers.end(),
-                [](const Hyperparameters &h1, const Hyperparameters &h2) { return h1.score > h2.score; });
+  /**
+   * Normalize weights of hyperparameters and truncate lowest weights.
+   */
+  void normalizeHyperparameters() {
+    // sort by score
+    std::sort(_hypers.begin(), _hypers.end(),
+              [](const GaussianHyperparameters &h1, const GaussianHyperparameters &h2) { return h1.score > h2.score; });
 
-      // only keep top 'hp_size' hyperparameters
+    // only keep hp_size highest scores
+    if (_hypers.size() > hp_size) {
       _hypers.resize(hp_size);
     }
 
@@ -344,6 +324,33 @@ class GaussianProcess {
     for (auto &hyper : _hypers) {
       hyper.score /= scoreSum;
     }
+  }
+
+ private:
+  /**
+   * Hyperparameter means, theta and dimScale are randomly generated.
+   * The samples are combined using a weighted average. The weight of a sample
+   * equals to the probability that given evidence and hyperparameter-sample
+   * generates given output. The lowest weights are truncated.
+   */
+  void tuneHyperparameters() {
+    // number of evidence
+    size_t newSize = _inputs.size();
+    _hypers.clear();
+
+    // if no evidence
+    if (newSize == 0) {
+      // use default values
+      _hypers.emplace_back(0., 1., Eigen::VectorXd::Ones(_dims));
+      _hypers[0].precalculate(_sigma, _inputs, _outputs);
+      _hypers[0].score = 1.;
+      return;
+    }
+
+    auto [sample_means, sample_thetas, sample_dimScales] =
+        generateHyperparameterSamples(hp_sample_size, _rng, _dims, _sigma, _evidenceMinValue, _evidenceMaxValue);
+    setHyperparameters(sample_means, sample_thetas, sample_dimScales);
+    normalizeHyperparameters();
   }
 
   /**
@@ -408,7 +415,7 @@ class GaussianProcess {
   /**
    * Sampled hyperparameters including precalculated matrices and score
    */
-  std::vector<Hyperparameters> _hypers;
+  std::vector<GaussianHyperparameters> _hypers;
 
   Random &_rng;
 };

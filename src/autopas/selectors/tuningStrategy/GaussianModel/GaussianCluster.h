@@ -29,6 +29,11 @@ class GaussianCluster {
   using VectorDiscrete = Eigen::VectorXi;
   using VectorContinuous = Eigen::VectorXd;
 
+  // number of samples to find optimal hyperparameters
+  static constexpr size_t hp_sample_size = 500;
+  // number of hyperparameters
+  static constexpr size_t hp_size = 25;
+
  public:
   /**
    * Vector described by a discrete and a continuous part
@@ -69,6 +74,14 @@ class GaussianCluster {
     _dimRestriction[dim] = newValue;
     initClusters();
   }
+
+  /**
+   * Get the underlying GaussianProcess of a cluster.
+   * This function should only be used for testing purposes.
+   * @param index1D
+   * @return
+   */
+  const GaussianProcess &getCluster(size_t index1D) const { return _clusters[index1D]; }
 
   /**
    * Discard all evidence.
@@ -112,8 +125,33 @@ class GaussianCluster {
       _evidenceMaxVector = std::make_pair(inputDiscrete, inputContinuous);
     }
 
-    _clusters[clusterIdx].addEvidence(inputContinuous, output);
+    _clusters[clusterIdx].addEvidence(inputContinuous, output, false);
     ++_numEvidence;
+
+    auto [sample_means, sample_thetas, sample_dimScales] = GaussianProcess::generateHyperparameterSamples(
+        hp_sample_size, _rng, _continuousDims, _sigma, _evidenceMinValue, _evidenceMaxValue);
+
+    // set hyperparameter of each cluster
+    for (auto &cluster : _clusters) {
+      cluster.setHyperparameters(sample_means, sample_thetas, sample_dimScales);
+    }
+
+    // combine score of each cluster
+    for (size_t i = 0; i < hp_sample_size; ++i) {
+      // set the score of a hyperparameter sample to the product of all scores
+      double combinedScore = 1.;
+      for (auto &cluster : _clusters) {
+        combinedScore *= cluster.getHyperparameters()[i].score;
+      }
+      for (auto &cluster : _clusters) {
+        cluster.getHyperparameters()[i].score = combinedScore;
+      }
+    }
+
+    // normalize all hyperparameters
+    for (auto &cluster : _clusters) {
+      cluster.normalizeHyperparameters();
+    }
   }
 
   /**
@@ -201,7 +239,7 @@ class GaussianCluster {
         if (weightSum > 0) {
           // normalize
           mixMean /= weightSum;
-          mixVar /= weightSum;
+          mixVar /= weightSum * weightSum;
 
           // calc acquisition
           double currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMaxValue);
