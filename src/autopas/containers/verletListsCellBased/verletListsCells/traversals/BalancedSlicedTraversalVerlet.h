@@ -21,7 +21,7 @@ namespace autopas {
  * This class provides the balanced sliced traversal.
  *
  * The traversal finds the longest dimension of the simulation domain and cuts
- * the domain in one slice (block) per thread along this dimension. The cut
+ * the domain along this dimension in one slice (block) per thread. The cut
  * positions are calculated to even out load among the threads. Slices are
  * assigned to the threads in a round robin fashion. Each thread locks the cells
  * on the boundary wall to the previous slice with one lock. This lock is lifted
@@ -38,13 +38,13 @@ class BalancedSlicedTraversalVerlet
       public VerletListsCellsTraversal<typename ParticleCell::ParticleType> {
  public:
   /**
-   * Constructor of the sliced traversal.
+   * Constructor of the balanced sliced traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param interactionLength cutoff + skin
    * @param cellLength length of the underlying cells
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param heuristic The algorithm used for estimating the load
+   * @param heuristic The algorithm used for estimating the load.
    */
   explicit BalancedSlicedTraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                          double interactionLength, const std::array<double, 3> &cellLength,
@@ -59,7 +59,7 @@ class BalancedSlicedTraversalVerlet
 
   bool getUseNewton3() const override { return useNewton3; }
 
-  TraversalOption getTraversalType() const override {
+  [[nodiscard]] TraversalOption getTraversalType() const override {
     switch (this->_heuristic) {
       case loadEstimators::CellBasedHeuristic::none:
         return TraversalOption::noneBalancedSlicedVerlet;

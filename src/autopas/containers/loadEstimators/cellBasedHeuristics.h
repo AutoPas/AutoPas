@@ -12,12 +12,10 @@
 
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
-namespace autopas {
-
 /**
  * Collection of functions for estimating the load required to update a specific region within a containers
  */
-namespace loadEstimators {
+namespace autopas::loadEstimators {
 
 /**
  * Possible heuristics
@@ -28,7 +26,8 @@ enum class CellBasedHeuristic {
 };
 
 /**
- * Squared Cell Size
+ * Sums up the squared number of particles for all cells within region
+ *
  * @param cells
  * @param cellsPerDimension
  * @param lowerCorner lower boundary indices for region
@@ -54,7 +53,8 @@ unsigned long squaredCellSize(const std::vector<ParticleCell> &cells,
 }
 
 /**
- * estimateCellBasedLoad
+ * Estimate the load for the given region within a cell based container.
+ *
  * @param heuristic
  * @param cells
  * @param cellsPerDimension
@@ -75,5 +75,4 @@ unsigned long estimateCellBasedLoad(const CellBasedHeuristic &heuristic, const s
   }
   return 1;
 }
-}  // namespace loadEstimators
-}  // namespace autopas
+}  // namespace autopas::loadEstimators

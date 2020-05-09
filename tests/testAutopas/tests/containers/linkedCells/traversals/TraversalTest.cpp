@@ -66,6 +66,7 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
   traversalInterface->setCellsToTraverse(cells);
   traversalInterface->initTraversal();
   traversalInterface->traverseParticlePairs();
+  traversalInterface->endTraversal();
 }
 
 TEST_P(TraversalTest, testTraversal_2x2x2) {

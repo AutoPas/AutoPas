@@ -17,11 +17,11 @@
 namespace autopas {
 
 /**
- * This class provides a load balanced version of the base sliced traversal
+ * This class provides a load balanced version of the base sliced traversal.
  *
  * The domain is still cut into slices along the longest dimension, but the
  * slices are now chosen, so that the computational load for each slice is
- * roughly equal. Differen heuristics can be chosen to estimate this load.
+ * roughly equal. Different heuristics can be chosen to estimate this load.
  *
  * @tparam ParticleCell The type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.

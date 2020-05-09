@@ -73,7 +73,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
     loadDataLayout();
     // split domain across its longest dimension
 
-    auto numSlices = (size_t)autopas_get_max_threads();
+    auto numSlices = static_cast<size_t>(autopas_get_max_threads());
     auto minSliceThickness = this->_cellsPerDimension[_dimsPerLength[0]] / numSlices;
     if (minSliceThickness < _overlapLongestAxis + 1) {
       minSliceThickness = _overlapLongestAxis + 1;
@@ -237,16 +237,18 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
     }
 
     // all but the first slice need to lock their starting layers.
+    const unsigned long lockBaseIndex = (slice - 1) * _overlapLongestAxis;
     if (slice > 0) {
       for (unsigned long i = 0ul; i < _overlapLongestAxis; i++) {
-        _locks[((slice - 1) * _overlapLongestAxis) + i].lock();
+        _locks[lockBaseIndex + i].lock();
       }
     }
     const auto lastLayer = myStartArray[_dimsPerLength[0]] + _sliceThickness[slice];
-    for (unsigned long dimSlice = myStartArray[_dimsPerLength[0]]; dimSlice < lastLayer; ++dimSlice) {
+    for (unsigned long sliceOffset = 0ul; sliceOffset < _sliceThickness[slice]; ++sliceOffset) {
+      const auto dimSlice = myStartArray[_dimsPerLength[0]] + sliceOffset;
       // at the last layers request lock for the starting layer of the next
       // slice. Does not apply for the last slice.
-      if (slice != numSlices - 1 && dimSlice >= lastLayer - _overlapLongestAxis) {
+      if (slice != numSlices - 1 and dimSlice >= lastLayer - _overlapLongestAxis) {
         _locks[((slice + 1) * _overlapLongestAxis) - (lastLayer - dimSlice)].lock();
       }
       for (unsigned long dimMedium = 0; dimMedium < this->_cellsPerDimension[_dimsPerLength[1]] - overLapps23[0];
@@ -262,17 +264,17 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
         }
       }
       // at the end of the first layers release the lock
-      if (slice > 0 && dimSlice < myStartArray[_dimsPerLength[0]] + _overlapLongestAxis) {
-        const unsigned long index = ((slice - 1) * _overlapLongestAxis) + (dimSlice - myStartArray[_dimsPerLength[0]]);
-        _locks[index].unlock();
+      if (slice > 0 and dimSlice < myStartArray[_dimsPerLength[0]] + _overlapLongestAxis) {
+        _locks[lockBaseIndex + sliceOffset].unlock();
         // if lastLayer is reached within overlap area, unlock all following _locks
+        // this should never be the case if slice thicknesses are set up properly; thickness should always be
+        // greater than the overlap along the longest axis, or the slices won't be processed in parallel.
         if (dimSlice == lastLayer - 1) {
-          for (unsigned long i = dimSlice + 1; i < myStartArray[_dimsPerLength[0]] + _overlapLongestAxis; ++i) {
-            const unsigned long index = ((slice - 1) * _overlapLongestAxis) + (i - myStartArray[_dimsPerLength[0]]);
-            _locks[index].unlock();
+          for (unsigned long i = sliceOffset + 1; i < _overlapLongestAxis; ++i) {
+            _locks[lockBaseIndex + i].unlock();
           }
         }
-      } else if (slice != numSlices - 1 && dimSlice == lastLayer - 1) {
+      } else if (slice != numSlices - 1 and dimSlice == lastLayer - 1) {
         // clearing of the _locks set on the last layers of each slice
         for (size_t i = (slice * _overlapLongestAxis); i < (slice + 1) * _overlapLongestAxis; ++i) {
           _locks[i].unlock();

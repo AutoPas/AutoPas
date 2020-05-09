@@ -43,7 +43,6 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        sliced                                      (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        none-balanced-slice                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        squared-cell-size-balanced-slice            (AoS <=> SoA, newton3 <=> noNewton3) = 4
-  //                        sliced                                      (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        c18                                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        c01                                         (AoS <=> SoA, noNewton3)             = 2
   //                        c01-combined-SoA                            (SoA, noNewton3)                     = 1
