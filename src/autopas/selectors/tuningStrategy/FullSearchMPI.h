@@ -39,7 +39,11 @@ class FullSearchMPI : public TuningStrategyInterface {
              const std::set<Newton3Option> &allowedNewton3Options)
       : _containerOptions(allowedContainerOptions),
         _optimalConfig(Configuration()),
-        _localOptimalTime(0) {
+        _configurationCommunicator(AutoPasConfigurationCommunicator()),
+        _localOptimalTime(0),
+        _request(AUTOPAS_MPI_REQUEST_NULL),
+        _allLocalConfigsTested(false),
+        _allGlobalConfigsTested(false) {
 
     // @todo distribute the division process, so that not every rank has to traverse all configs
     // @todo consider using MPI_Scatterv for dividing the search space
@@ -108,9 +112,22 @@ class FullSearchMPI : public TuningStrategyInterface {
         _searchSpace(std::move(allowedConfigurations)),
         _tuningConfig(_searchSpace.begin()),
         _optimalConfig(Configuration()),
-        _localOptimalTime(0) {
+        _configurationCommunicator(AutoPasConfigurationCommunicator()),
+        _localOptimalTime(0),
+        _request(AUTOPAS_MPI_REQUEST_NULL),
+        _allLocalConfigsTested(false),
+        _allGlobalConfigsTested(false) {
     for (auto config : _searchSpace) {
       _containerOptions.insert(config.container);
+    }
+  }
+
+  ~FullSearchMPI() override {
+    int finalized;
+    AutoPas_MPI_Finalized(&finalized);
+    // free the request in case it was still active
+    if(not finalized) {
+      AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
     }
   }
 
@@ -132,7 +149,10 @@ class FullSearchMPI : public TuningStrategyInterface {
     _tuningConfig = _searchSpace.begin();
     _optimalConfig = Configuration();
     _localOptimalTime = 0;
-    _configurationCommunicator.reset();
+    // set _request to AUTOPAS_MPI_REQUEST_NULL if it wasn't already
+    AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
+    _allLocalConfigsTested = false;
+    _allGlobalConfigsTested = false;
   }
 
   inline bool tune(bool = false) override;
@@ -170,6 +190,9 @@ class FullSearchMPI : public TuningStrategyInterface {
   Configuration _optimalConfig;
   AutoPasConfigurationCommunicator _configurationCommunicator;
   size_t _localOptimalTime;
+  AutoPas_MPI_Request _request;
+  bool _allLocalConfigsTested;
+  bool _allGlobalConfigsTested;
 };
 
 void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
@@ -211,33 +234,39 @@ void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowed
   }
 }
 
-// @todo Deadlocks are still possible
 bool FullSearchMPI::tune(bool currentInvalid) {
   // Repeat as long as traversals are not applicable or we run out of configs
   ++_tuningConfig;
 
+  if (currentInvalid) {
+    if (_tuningConfig == _searchSpace.end() || _allLocalConfigsTested) {
+      // Will be called several times in case the optimal configuration becomes invalid
+      selectLocalOptimalConfiguration();
+    }
+    return true;
+  }
+
   if (_tuningConfig == _searchSpace.end()) {
-    // The optimal configuration has become invalid
-    if (currentInvalid) {
-      selectLocalOptimalConfiguration();
-      return true;
-    }
+    _allLocalConfigsTested = true;
 
-    // The optimal configuration has not been found yet
     if (_optimalConfig.cellSizeFactor == -1) {
+      // The optimal configuration has not been set yet
       selectLocalOptimalConfiguration();
-    }
-
-    if (not _configurationCommunicator.optimizeConfiguration(&_optimalConfig, _localOptimalTime)) {
-      int rank;
-      AutoPas_MPI_Comm_rank(_configurationCommunicator.AUTOPAS_MPI_COMM_AUTOPAS, &rank);
-      std::cout << rank << ": Global optimal configuration: " << _optimalConfig.toString() << std::endl;
-      AutoPasLog(debug, "Global optimal configuration: {}", _optimalConfig.toString());
-
-      return false;
     }
   }
 
+  // Wait for the Iallreduce from the last tuning step to finish
+  // Make all ranks ready for global tuning simultaneously
+  AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
+  if (_allGlobalConfigsTested) {
+    _optimalConfig = _configurationCommunicator.optimizeConfiguration(_optimalConfig, _localOptimalTime);
+    AutoPasLog(debug, "Global optimal configuration: {}", _optimalConfig.toString());
+
+    return false;
+  }
+
+  AutoPas_MPI_Iallreduce(&_allLocalConfigsTested, &_allGlobalConfigsTested, 1, AUTOPAS_MPI_CXX_BOOL, AUTOPAS_MPI_LAND,
+                         AUTOPAS_MPI_COMM_WORLD, &_request);
   return true;
 }
 
@@ -246,16 +275,13 @@ void FullSearchMPI::selectLocalOptimalConfiguration() {
   if (_traversalTimes.empty()) {
     utils::ExceptionHandler::exception(
             "FullSearchMPI: Trying to determine fastest configuration without any measurements! "
-            "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
+            "Either selectLocalOptimalConfiguration was called too early or no applicable configurations were found");
   }
 
   auto optimum = std::min_element(_traversalTimes.begin(), _traversalTimes.end(),
                                   [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
                                     return a.second < b.second;
                                   });
-
-  int worldRank;
-  AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &worldRank);
 
   AutoPasLog(debug, "Local optimal configuration: {}; took {} nanoseconds", optimum->first.toString(), optimum->second);
   _optimalConfig = optimum->first;

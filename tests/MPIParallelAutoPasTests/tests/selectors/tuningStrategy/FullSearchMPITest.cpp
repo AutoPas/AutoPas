@@ -8,6 +8,7 @@
 
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
+#include <unistd.h>
 
 TEST_F(FullSearchMPITest, testSearchSpaceEmpty) {
   autopas::FullSearchMPI fullSearchMPI({});
@@ -53,22 +54,20 @@ TEST_F(FullSearchMPITest, testGlobalOptimumAndReset) {
   fullSearchMPI.addEvidence(worldRank);
 
   fullSearchMPI.tune();
-
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)worldRank/10.,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double) worldRank/10.,
                                    autopas::TraversalOption::directSumTraversal,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
             fullSearchMPI.getCurrentConfiguration());
 
-  // Barrier necessary to avoid race conditions. This time is usually filled by an iteration.
-  MPI_Barrier(MPI_COMM_WORLD);
-
+  // test synchronization
+  usleep(worldRank * 1000000);
   fullSearchMPI.tune();
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1., autopas::TraversalOption::directSumTraversal,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
             fullSearchMPI.getCurrentConfiguration());
 
   fullSearchMPI.reset();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)worldRank/10,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)worldRank/10.,
                                    autopas::TraversalOption::directSumTraversal,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
             fullSearchMPI.getCurrentConfiguration());

@@ -8,40 +8,88 @@
 
 /**
  * Provide non-MPI versions of the needed MPI function calls.
- * Extend MPI functionality by AutoPas-specifics (e.g. the Config datatype)
  *
  * May be extended when necessary.
  */
 
 #if defined(AUTOPAS_MPI)
 #include <mpi.h>
+#include <unistd.h>
 #endif
 
 namespace autopas {
 
-/**
- * Extends MPI with a Datatype for AutoPas Configarations
- */
 #if defined(AUTOPAS_MPI)
 
 // MPI_Comm
-#define AUTOPAS_MPI_COMM_WORLD MPI_COMM_WORLD
 
 // MPI_Datatype
+#define AUTOPAS_MPI_CXX_BOOL MPI_CXX_BOOL
 #define AUTOPAS_MPI_BYTE MPI_BYTE
 #define AUTOPAS_MPI_LONG_INT MPI_LONG_INT
 
 // MPI_Op
+#define AUTOPAS_MPI_LAND MPI_LAND
 #define AUTOPAS_MPI_MINLOC MPI_MINLOC
 
 // MPI_Status
 #define AUTOPAS_MPI_STATUS_IGNORE MPI_STATUS_IGNORE
+
+// MPI_Request
+#define AUTOPAS_MPI_REQUEST_NULL MPI_REQUEST_NULL
 
 using AutoPas_MPI_Comm = MPI_Comm;
 using AutoPas_MPI_Datatype = MPI_Datatype;
 using AutoPas_MPI_Op = MPI_Op;
 using AutoPas_MPI_Status = MPI_Status;
 using AutoPas_MPI_Request = MPI_Request;
+
+/**
+ * Communicator to be used for global MPI calls in AutoPas
+ * Importantly not an alias for MPI_COMM_WORLD, but a duplicate
+ */
+inline MPI_Comm AUTOPAS_MPI_COMM_WORLD;
+
+/**
+ * Wrapper for MPI_Init
+ * Also defines the AutoPas communicator, so it needs to be called when AutoPas should use MPI
+ * @param argc: Pointer to the number of arguments
+ * @param argv: Pointer to the argument vector
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Init(int *argc, char ***argv) {
+  int result1 = MPI_Init(argc, argv);
+  int result2 = MPI_Comm_dup(MPI_COMM_WORLD, &AUTOPAS_MPI_COMM_WORLD);
+  if (result1 == MPI_SUCCESS) {
+    return result2;
+  } else {
+    return result1;
+  }
+}
+
+/**
+ * Wrapper for MPI_Finalize
+ * Also frees the AutoPas communicator, so it needs to be called if AutoPas_MPI_Init was called
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Finalize() {
+  int result1 = MPI_Comm_free(&AUTOPAS_MPI_COMM_WORLD);
+  int result2 = MPI_Finalize();
+  if (result2 == MPI_SUCCESS) {
+    return result1;
+  } else {
+    return result2;
+  }
+}
+
+/**
+ * Wrapper for MPI_Finalized
+ * @param flag: returns true if (AutoPas_)MPI_Finalize has been called
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Finalized(int *flag) {
+  return MPI_Finalized(flag);
+}
 
 /**
  * Wrapper for MPI_Error_string
@@ -176,8 +224,18 @@ inline int AutoPas_MPI_Iallreduce(const void *sendbuf, void *recvbuf, int count,
 }
 
 /**
+ * Wrapper for MPI_Ibarrier
+ * @param comm: communicator (handle)
+ * @param request: outputs communication request (handle)
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Ibarrier(AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
+  return MPI_Ibarrier(comm, request);
+}
+
+/**
  * Wrapper for MPI_Test
- * @param request: request to be tested. Gets invalidated.
+ * @param request: request to be tested.
  * @param flag: outputs true if operation complete
  * @param status: outputs status object. May be AUTOPAS_MPI_STATUS_IGNORE
  * @return MPI error value
@@ -187,14 +245,21 @@ inline int AutoPas_MPI_Test(AutoPas_MPI_Request *request, int *flag, AutoPas_MPI
 }
 
 /**
- * Wrapper for MPI_Ibarrier
- * @param comm: communicator (handle)
- * @param request: outputs communication request (handle)
+ * Wrapper for MPI_Wait
+ * @param request: request to be waited for.
+ * @param status: outputs status object. May be AUTOPAS_MPI_STATUS_IGNORE
  * @return MPI error value
  */
-inline int AutoPas_MPI_Ibarrier(AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
-  return MPI_Ibarrier(comm, request);
+inline int AutoPas_MPI_Wait(AutoPas_MPI_Request *request, AutoPas_MPI_Status *status) {
+  return MPI_Wait(request, status);
 }
+
+/**
+ * Wrapper for MPI_Request_free
+ * @param request: request to be freed (handle). Will be set to AUTOPAS_MPI_REQUEST_NULL
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) { return MPI_Request_free(request); }
 
 #else
 

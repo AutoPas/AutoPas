@@ -5,7 +5,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <mpi.h>
+#include "autopas/utils/WrapMPI.h"
 
 int main(int argc, char **argv) {
   int result = 0;
@@ -14,13 +14,12 @@ int main(int argc, char **argv) {
   // set the gtest death test style to threadsafe
   testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-  MPI_Init(&argc, &argv);
+  autopas::AutoPas_MPI_Init(&argc, &argv);
   int worldRank;
   MPI_Comm_rank(MPI_COMM_WORLD, &worldRank);
-  std::cout << "Testing rank " << worldRank << std::endl;
 
   // running only my tests
   result = RUN_ALL_TESTS();
-  MPI_Finalize();
+  autopas::AutoPas_MPI_Finalize();
   return result;
 }
