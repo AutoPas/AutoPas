@@ -6,7 +6,7 @@ scenarios using AutoPas and flexibly configure all of it's options.
 ## Compiling
 To build MD-Flexible execute the following from the AutoPas root folder:
 ```bash
-mkdir build && $_
+mkdir build && cd $_
 cmake ..
 make md-flexible
 ```

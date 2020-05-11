@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <vector>
 
 #include "autopas/cells/FullParticleCell.h"
@@ -54,8 +55,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
       : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _boxMinWithHalo(utils::ArrayMath::subScalar(boxMin, cutoff + skin)),
         _boxMaxWithHalo(utils::ArrayMath::addScalar(boxMax, cutoff + skin)),
-        _clusterSize(clusterSize),
-        _isValid(false) {
+        _clusterSize(clusterSize) {
     this->_cells.resize(1);
     _dummyStarts = {0};
   }
@@ -79,14 +79,10 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
 
     traversalInterface->setVerletListPointer(&_neighborCellIds, &_neighborMatrixDim, &_neighborMatrix);
 
-    if (traversalInterface->getSignature() != _lastTraversalSig or (not _isValid)) {
-      if (!_isValid) {
-        rebuildClusterStructure();
-      }
-      traversalInterface->rebuildVerlet(_cellsPerDim, this->_cells, _boundingBoxes,
-                                        std::ceil(this->getInteractionLength() * _gridSideLengthReciprocal),
-                                        this->getInteractionLength());
-      _lastTraversalSig = traversalInterface->getSignature();
+    if (traversalInterface->getSignature() != _lastTraversalSig or _isValid != ValidityState::cellsAndListsValid) {
+      utils::ExceptionHandler::exception(
+          "VerletClusterCells::iteratePairwise called even though the lists are not valid or the traversal has "
+          "changed.");
     }
 
     cellPairTraversal->setCellsToTraverse(this->_cells);
@@ -99,7 +95,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    * @copydoc VerletLists::addParticleImpl()
    */
   void addParticleImpl(const Particle &p) override {
-    _isValid = false;
+    _isValid = ValidityState::invalid;
     removeDummiesFromFirstCell();
     // add particle somewhere, because lists will be rebuild anyways
     this->_cells[0].addParticle(p);
@@ -111,7 +107,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    */
   void addHaloParticleImpl(const Particle &haloParticle) override {
     Particle p_copy = haloParticle;
-    _isValid = false;
+    _isValid = ValidityState::invalid;
     removeDummiesFromFirstCell();
     p_copy.setOwned(false);
     // add particle somewhere, because lists will be rebuild anyways
@@ -151,7 +147,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletClusterCells::iteratePairwise");
     }
-    if (not _isValid) {
+    if (_isValid == ValidityState::invalid) {
       rebuildClusterStructure();
     }
 
@@ -161,13 +157,15 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
                                       std::ceil(this->getInteractionLength() * _gridSideLengthReciprocal),
                                       this->getInteractionLength());
     _lastTraversalSig = traversalInterface->getSignature();
+
+    _isValid = ValidityState::cellsAndListsValid;
   }
 
   /**
    * @copydoc VerletLists::deleteHaloParticles
    */
   void deleteHaloParticles() override {
-    _isValid = false;
+    _isValid = ValidityState::invalid;
     for (size_t i = 0; i < this->_cells.size(); ++i) {
       for (size_t j = 0; j < _dummyStarts[i];) {
         if (not this->_cells[i][j].isOwned()) {
@@ -213,7 +211,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
 #endif
       invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
     }
-    _isValid = false;
+    _isValid = ValidityState::invalid;
     return invalidParticles;
   }
 
@@ -229,7 +227,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
             &this->_cells, _dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior,
             // if the container is valid, we will have to pass the this-ptr as ParticleDeletedObserver, to ensure that
             // the container is set to invalid if a particle is deleted.
-            _isValid ? this : nullptr));
+            _isValid != ValidityState::invalid ? this : nullptr));
   }
 
   ParticleIteratorWrapper<Particle, false> begin(
@@ -246,7 +244,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
 #ifdef AUTOPAS_OPENMP
 #pragma omp single
 #endif
-    if (not _isValid) {
+    if (_isValid == ValidityState::invalid) {
       rebuildClusterStructure();
     }
     // there is an implicit barrier at end of single!
@@ -294,7 +292,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
 
     // Special iterator requires sorted cells.
     // Otherwise all cells are traversed with the general Iterator.
-    if (_isValid) {
+    if (_isValid != ValidityState::invalid) {
       // Find cells intersecting the search region
       size_t xmin =
           (size_t)((lowerCornerInBounds[0] - _boxMinWithHalo[0] - this->getSkin()) * _gridSideLengthReciprocal);
@@ -354,7 +352,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    * Deletes all particles from the container.
    */
   void deleteAllParticles() override {
-    _isValid = false;
+    _isValid = ValidityState::invalid;
     std::fill(_dummyStarts.begin(), _dummyStarts.end(), 0);
     ParticleContainer<FullParticleCell<Particle>>::deleteAllParticles();
   }
@@ -369,7 +367,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
         this->_cells[i].resize(_dummyStarts[i], *(this->_cells[i].begin()));
       }
     }
-    _isValid = false;
+    _isValid = ValidityState::invalid;
   }
 
  protected:
@@ -485,17 +483,17 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
         }
     }
 
-    _isValid = true;
+    _isValid = ValidityState::cellsValidListsInvalid;
   }
 
   /**
-   * If a particle is deleted, we want _isValid to be set false, as the tower structure is invalidated.
+   * If a particle is deleted, we want _isValid to be set to invalid, as the tower structure is invalidated.
    *
    * This function is not called, if a particle from the _particlesToAdd vector is deleted!
    */
   void notifyParticleDeleted() override {
     // this is potentially called from a threaded environment, so we have to make this atomic here!
-    _isValid.store(false, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
   }
 
  private:
@@ -557,8 +555,17 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
   // dimensions of grid
   std::array<size_t, 3> _cellsPerDim;
 
-  // specifies if the neighbor list is currently valid
-  std::atomic<bool> _isValid;
+  /**
+   * Enum to specify the validity of this container.
+   */
+  enum class ValidityState : unsigned char {
+    invalid = 0,                 // nothing is valid.
+    cellsValidListsInvalid = 1,  // only the cell structure is valid, but the lists are not.
+    cellsAndListsValid = 2       // the cells and lists are valid
+  };
+
+  // specifies the validity of the cells and
+  std::atomic<ValidityState> _isValid{ValidityState::invalid};
 
   /// Signature of the last Traversal to trigger rebuild when a new one is used
   std::tuple<TraversalOption, DataLayoutOption, bool> _lastTraversalSig;

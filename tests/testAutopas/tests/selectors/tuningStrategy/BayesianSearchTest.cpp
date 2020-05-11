@@ -68,12 +68,12 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
 
   // while #evidence < maxEvidence. tuning -> True
   for (size_t i = 1; i < maxEvidence; ++i) {
-    bayesSearch.addEvidence(i);
+    bayesSearch.addEvidence(i, 0);
     EXPECT_TRUE(bayesSearch.tune());
   }
 
   // #evidence == maxEvidence. tuning -> False
-  bayesSearch.addEvidence(-1);
+  bayesSearch.addEvidence(-1, 0);
   EXPECT_FALSE(bayesSearch.tune());
 }
 
@@ -97,7 +97,7 @@ TEST_F(BayesianSearchTest, testFindBest) {
     double distanceSquared = diff.array().square().sum();
     long dummyTime = static_cast<long>(654321 * distanceSquared);
 
-    bayesSearch.addEvidence(dummyTime);
+    bayesSearch.addEvidence(dummyTime, 0);
   }
 
   autopas::FeatureVector prediction(bayesSearch.getCurrentConfiguration());

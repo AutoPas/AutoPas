@@ -83,7 +83,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
   ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    if (not _isValid) {
+    if (_isValid == ValidityState::cellsAndListsValid) {
       autopas::utils::ExceptionHandler::exception(
           "VerletClusterLists::iteratePairwise(): Trying to do a pairwise iteration, even though verlet lists are not "
           "valid.");
@@ -108,7 +108,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
    * @param p The particle to add.
    */
   void addParticleImpl(const Particle &p) override {
-    _isValid = false;
+    _isValid = ValidityState::invalid;
     _particlesToAdd.push_back(p);
   }
 
@@ -116,7 +116,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
    * @copydoc VerletLists::addHaloParticle()
    */
   void addHaloParticleImpl(const Particle &haloParticle) override {
-    _isValid = false;
+    _isValid = ValidityState::invalid;
     Particle copy = haloParticle;
     copy.setOwned(false);
     _particlesToAdd.push_back(copy);
@@ -156,7 +156,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
       }
     }
     if (deletedSth) {
-      _isValid = false;
+      _isValid = ValidityState::invalid;
     }
   }
 
@@ -188,7 +188,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
       invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
     }
     if (not invalidParticles.empty()) {
-      _isValid = false;
+      _isValid = ValidityState::invalid;
     }
     return invalidParticles;
   }
@@ -209,7 +209,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
 #ifdef AUTOPAS_OPENMP
 #pragma omp single
 #endif
-    if (not _isValid) {
+    if (_isValid == ValidityState::invalid) {
       rebuildTowersAndClusters();
     }
     // there is an implicit barrier at end of single!
@@ -226,7 +226,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
   ParticleIteratorWrapper<Particle, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     /// @todo use proper cellBorderAndFlagManager instead of the unknowing.
-    if (_isValid) {
+    if (_isValid != ValidityState::invalid) {
       if (not _particlesToAdd.empty()) {
         autopas::utils::ExceptionHandler::exception(
             "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
@@ -255,7 +255,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
 #ifdef AUTOPAS_OPENMP
 #pragma omp single
 #endif
-    if (not _isValid) {
+    if (_isValid == ValidityState::invalid) {
       rebuildTowersAndClusters();
     }
     // there is an implicit barrier at end of single!
@@ -284,7 +284,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
   ParticleIteratorWrapper<Particle, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    if (_isValid && not _particlesToAdd.empty()) {
+    if (_isValid != ValidityState::invalid && not _particlesToAdd.empty()) {
       autopas::utils::ExceptionHandler::exception(
           "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
     }
@@ -302,11 +302,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
     return ParticleIteratorWrapper<Particle, false>(
         new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
             &this->_towers, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
-            &internal::unknowingCellBorderAndFlagManager, behavior, _isValid ? nullptr : &_particlesToAdd));
+            &internal::unknowingCellBorderAndFlagManager, behavior,
+            _isValid != ValidityState::invalid ? nullptr : &_particlesToAdd));
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    if (not _isValid) {
+    if (_isValid == ValidityState::invalid) {
       rebuildTowersAndClusters();
     }
     _builder->rebuildNeighborListsAndFillClusters(traversal->getUseNewton3());
@@ -482,7 +483,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
   double getInteractionLength() const override { return _cutoff + _skin; }
 
   void deleteAllParticles() override {
-    _isValid = false;
+    _isValid = ValidityState::invalid;
     _particlesToAdd.clear();
     std::for_each(_towers.begin(), _towers.end(), [](auto &tower) { tower.clear(); });
   }
@@ -496,7 +497,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
     _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, _particlesToAdd);
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
         _builder->rebuildTowersAndClusters();
-    _isValid = true;
+    _isValid = ValidityState::cellsValidListsInvalid;
     for (auto &tower : _towers) {
       tower.setParticleDeletionObserser(this);
     }
@@ -640,13 +641,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
   }
 
   /**
-   * If a particle is deleted, we want _isValid to be set false, as the tower structure is invalidated.
+   * If a particle is deleted, we want _isValid to be set to invalid, as the tower structure is invalidated.
    *
    * This function is not called, if a particle from the _particlesToAdd vector is deleted!
    */
   void notifyParticleDeleted() override {
     // this is potentially called from a threaded environment, so we have to make this atomic here!
-    _isValid.store(false, std::memory_order::memory_order_relaxed);
+    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
   }
 
  private:
@@ -717,9 +718,18 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
   double _skin{};
 
   /**
+   * Enum to specify the validity of this container.
+   */
+  enum class ValidityState : unsigned char {
+    invalid = 0,                 // nothing is valid.
+    cellsValidListsInvalid = 1,  // only the cell structure is valid, but the lists are not.
+    cellsAndListsValid = 2       // the cells and lists are valid
+  };
+
+  /**
    * Indicates, whether the current container structure (mainly for region iterators) and the verlet lists are valid.
    */
-  std::atomic<bool> _isValid{false};
+  std::atomic<ValidityState> _isValid{ValidityState::invalid};
 
   /**
    * The builder for the verlet cluster lists.

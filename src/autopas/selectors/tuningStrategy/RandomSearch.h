@@ -51,7 +51,7 @@ class RandomSearch : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time) override { _traversalTimes[_currentConfig] = time; }
+  inline void addEvidence(long time, size_t iteration) override { _traversalTimes[_currentConfig] = time; }
 
   inline void reset() override {
     _traversalTimes.clear();
