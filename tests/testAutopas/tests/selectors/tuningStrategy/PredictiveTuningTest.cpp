@@ -373,7 +373,7 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
  *      - Sliced is constant the optimum (10) and invalid in the third iteration.
  *      - C01 is constant out of the optimum range (20).
  * In the third iteration reselectOptimalSearchSpace should be called twice and C01 should be selected after the
- * tuning1.2, 5 phase.
+ * tuning phase.
  */
 TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
   unsigned int iteration = 0;
