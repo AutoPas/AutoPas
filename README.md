@@ -191,7 +191,7 @@ One simulation loop should always consist of the following phases:
    If the update is performed, the returned bool `updated` is `true`. The returned vector `invalidParticles` consists of the particles that are not anymore within the boundaries of this container and hence are deleted from it. These are particles that were previously owned by this AutoPas container but have left the boundary of this container, i.e., their current position resides outside of the container.
    
    If the update is not performed, `updated` will be false and the returned vector `invalidParticles` will be empty.
-   An update is sometimes skipped to ensure that containers do not change and to enable the best possible performance for containers that use neighbor lists.
+   An update is sometimes skipped to ensure that containers do not change, which allows containers to reuse neighbor lists thus enabling better performance.
 
 2. Handling the leaving particles
    * This step can be skipped if `updated` was false. If you use multiple MPI instances, you have to ensure that all instances rebuild during the same time step. This is guaranteed if the sampling frequency is the same as (or a multiple of) the rebuild frequency.
