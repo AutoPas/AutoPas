@@ -119,9 +119,9 @@ TODO
 TODO
 
 ### Particle Ownership
-An AutoPas container normally saves two different types of particles:
-* owned particles: Particles that belong to the AutoPas instance. These particles lie either inside of the boundary of the AutoPas instance or very close to the boundary (less than a distance of skin/2 away). If a particle is added via `addParticle()`, it is automatically added as owned particle. An owned particle can explicitly be removed by deleting the particle using an iterator (`autoPas.deleteParticle(iterator)`). On an update of the AutoPas container (using `updateContainer()`) owned particles that move outside of the boundary of its parent AutoPas container are returned.
-* halo particles: Particles that do not belong to the current AutoPas instance. These normally are ghost particles arising from either periodic boundary conditions or particles of a neighboring AutoPas object (if you split the entire domain over multiple AutoPas objects, i.e., you use a domain decompositioning algorithm). The halo particles are needed for the correct calculation of the pairwise forces. On an update of the AutoPas container, halo particles are deleted (note that not every call to `updateContainer()` does this!, see [Simulation Loop]).
+Particles saved in an AutoPas container can be one of two possible states:
+* owned: Particles that belong to this AutoPas instance. These particles are either inside of the boundary of the AutoPas instance or very close to the boundary (less than a distance of skin/2 away). If a particle is added via `addParticle()`, it is automatically added as an owned particle. An owned particle can explicitly be removed by deleting the particle using an iterator (`autoPas.deleteParticle(iterator)`). On update of the AutoPas container (using `updateContainer()`) owned particles that move outside of the boundary of its parent, AutoPas container are returned.
+* halo: Particles that do not belong to the current AutoPas instance. These normally are ghost particles arising from either periodic boundary conditions or particles of a neighboring AutoPas object (if you split the entire domain over multiple AutoPas objects, i.e., you use a domain decomposition algorithm). The halo particles are needed for the correct calculation of the pairwise forces. On update of the AutoPas container, halo particles are deleted (note that not every call to `updateContainer()` does this!, see [Simulation Loop]).
 
 ### Iterating Through Particles
 Iterators to iterate over particle are provided.
@@ -184,17 +184,17 @@ One simulation loop should always consist of the following phases:
    ```
    This call will potentially trigger an update of the container inside of AutoPas. The update will be performed if either
    
-    a. Enough samples are collected for the current configuration OR
+    a. The AutoTuner collected enough samples for the current configuration and will move to the next one OR
     
-    b. The rebuild frequeny is reached.
+    b. The rebuild frequency of the container is reached.
    
-   If the update is performed, the returned bool `updated` is `true` and the returned vector `invalidParticles` consists of the particles that are leaving this container. These are particles which were previously owned by this AutoPas container, but have left the boundary of this container, i.e., their current position resides outside of the container.
+   If the update is performed, the returned bool `updated` is `true`. The returned vector `invalidParticles` consists of the particles that are not anymore within the boundaries of this container and hence are deleted from it. These are particles that were previously owned by this AutoPas container but have left the boundary of this container, i.e., their current position resides outside of the container.
    
    If the update is not performed, `updated` will be false and the returned vector `invalidParticles` will be empty.
    An update is sometimes skipped to ensure that containers do not change and to enable the best possible performance for containers that use neighbor lists.
 
 2. Handling the leaving particles
-   * This step can be skipped if `updated` was false. If you use multiple MPI instances, you have to ensure that all instances rebuild at the same time steps. This is guaranteed, if the sampling frequency is the same as (or a multiple of) the rebuild frequency.
+   * This step can be skipped if `updated` was false. If you use multiple MPI instances, you have to ensure that all instances rebuild during the same time step. This is guaranteed if the sampling frequency is the same as (or a multiple of) the rebuild frequency.
    
    * Apply boundary conditions on them
 
@@ -251,4 +251,3 @@ This work was financially supported by:
 
 ## Papers to cite
 * F. A. Gratl, S. Seckler, N. Tchipev, H.-J. Bungartz and P. Neumann: [AutoPas: Auto-Tuning for Particle Simulations](https://ieeexplore.ieee.org/document/8778280) [BibTeX](https://mediatum.ub.tum.de/services/export/node/1535848/?format=template_test&mask=bibtex&lang=de&template=$$[defaultexport]$$&mimetype=text/plain) [MediaTum](https://mediatum.ub.tum.de/1535848), In 2019 IEEE International Parallel and Distributed Processing Symposium Workshops (IPDPSW), Rio de Janeiro, May 2019.
-
