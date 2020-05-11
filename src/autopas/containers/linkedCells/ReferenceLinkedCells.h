@@ -67,7 +67,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
     /**
      * @copydoc ParticleContainerInterface::onAllParticlesAddedCallback()
      */
-  void onAllParticlesAddedCallback() { // override
+  void rebuildContainer() { // override
       for(auto particlePtr = _particleList.begin(); particlePtr != _particleList.end(); particlePtr++) {
           Particle particle = *particlePtr;
           ParticleCell &cell = _cellBlock.getContainingCell(particle.getR());
@@ -83,7 +83,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
     pCopy.setOwned(false);
 
     // TODO does this method get called after onAllParticlesAddedCallback/does
-    //  the onAllParticlesAddedCallback get called after every iteration?
+    // the onAllParticlesAddedCallback get called after every iteration?
     _particleList.push_back(pCopy);
     ParticleType *p =  _particleList.getReference(_particleList.size()-1);
 
