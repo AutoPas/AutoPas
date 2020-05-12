@@ -1,7 +1,7 @@
 /**
  * @file OptionTest.cpp
  * @author F. Gratl
- * @date 10/29/19
+ * @date 29.10.2019
  */
 
 #include "OptionTest.h"
@@ -104,6 +104,7 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
       {autopas::TuningStrategyOption::fullSearch, "full"},
       {autopas::TuningStrategyOption::randomSearch, "random"},
       {autopas::TuningStrategyOption::activeHarmony, "harmony"},
+      {autopas::TuningStrategyOption::predictiveTuning, "predictive"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TuningStrategyOption::getOptionNames().size());

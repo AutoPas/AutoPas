@@ -1,7 +1,7 @@
 /**
  * @file AutoTuner.h
  * @author F. Gratl
- * @date 11.06.18
+ * @date 11.06.2018
  */
 
 #pragma once
@@ -58,12 +58,12 @@ class AutoTuner {
         _verletSkin(verletSkin),
         _verletClusterSize(verletClusterSize),
         _maxSamples(maxSamples),
-        _samples(maxSamples) {
+        _samples(maxSamples),
+        _iteration(0) {
     if (_tuningStrategy->searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
     }
 
-    _iterations = 0;
     selectCurrentContainer();
   }
 
@@ -147,7 +147,7 @@ class AutoTuner {
         // if this was the last sample:
         if (_samples.size() == _maxSamples) {
           auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
-          _tuningStrategy->addEvidence(reducedValue, _iterations);
+          _tuningStrategy->addEvidence(reducedValue, _iteration);
 
           // print config, times and reduced value
           if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
@@ -205,9 +205,9 @@ class AutoTuner {
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
 
   /**
-   * _iterations - Counter of the iterations.
+   * _iteration - Counter of the iterations.
    */
-  unsigned int _tuningInterval, _iterationsSinceTuning, _iterations;
+  unsigned int _tuningInterval, _iterationsSinceTuning, _iteration;
   ContainerSelector<Particle, ParticleCell> _containerSelector;
   double _verletSkin;
   unsigned int _verletClusterSize;
@@ -317,7 +317,7 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool
 
   if (f->isRelevantForTuning()) {
     ++_iterationsSinceTuning;
-    ++_iterations;
+    ++_iteration;
   }
   return isTuning;
 }
@@ -373,7 +373,7 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
 
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
-    _tuningStrategy->reset();
+    _tuningStrategy->reset(_iteration);
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }

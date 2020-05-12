@@ -1,7 +1,7 @@
 /**
  * @file MDFlexParser.cpp
  * @author F. Gratl
- * @date 10/18/19
+ * @date 18.10.2019
  */
 
 #pragma once
