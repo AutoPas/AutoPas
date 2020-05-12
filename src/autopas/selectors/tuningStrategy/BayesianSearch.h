@@ -102,7 +102,7 @@ class BayesianSearch : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time) override {
+  inline void addEvidence(long time, size_t iteration) override {
     // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
     // represent a maximization problem
     _gaussianProcess.addEvidence(_currentConfig.oneHotEncode(), -time * secondsPerMicroseconds, true);

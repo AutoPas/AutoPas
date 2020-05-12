@@ -77,7 +77,7 @@ class ActiveHarmony : public TuningStrategyInterface {
     }
   }
 
-  inline void addEvidence(long time) override;
+  inline void addEvidence(long time, size_t iteration) override;
 
   inline bool tune(bool currentInvalid) override;
 
@@ -159,7 +159,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   static constexpr const char *newton3OptionName = "newton3Option";
 };
 
-void ActiveHarmony::addEvidence(long time) {
+void ActiveHarmony::addEvidence(long time, size_t iteration) {
   if (searchSpaceIsTrivial() or searchSpaceIsEmpty()) {
     AutoPasLog(debug, "ActiveHarmony::addEvidence: Search space is {}; did not report performance",
                searchSpaceIsTrivial() ? "trivial" : "empty");
@@ -205,7 +205,7 @@ void ActiveHarmony::fetchConfiguration() {
 
 void ActiveHarmony::invalidateConfiguration() {
   auto worstPerf = std::numeric_limits<double>::max();
-  addEvidence(worstPerf);
+  addEvidence(worstPerf, 0);
 }
 
 bool ActiveHarmony::tune(bool currentInvalid) {
@@ -234,7 +234,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
     }
     fetchConfiguration();
     if (_traversalTimes.find(_currentConfig) != _traversalTimes.end()) {  // we already know performance for this config
-      addEvidence(_traversalTimes[_currentConfig]);
+      addEvidence(_traversalTimes[_currentConfig], 0);
       skipConfig = true;
     }
 

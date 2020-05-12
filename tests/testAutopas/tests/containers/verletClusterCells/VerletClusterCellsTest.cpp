@@ -197,7 +197,8 @@ TEST_F(VerletClusterCellsTest, testVerletParticleLoss) {
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(AtLeast(1));
   autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
-  verletLists.iteratePairwise(&verletClusterCellsTraversal);
+
+  verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
 
   int numOwn = 0;
   int numDummyOwn = 0;
@@ -297,6 +298,26 @@ TEST_F(VerletClusterCellsTest, testVerletParticleLoss) {
   for (; i < 500; ++i) {
     EXPECT_EQ(particlesBoth[i], 2) << "on index " << i << std::endl;
   }
+}
+
+TEST_F(VerletClusterCellsTest, testIteratePairwiseWithoutNeighborlistRebuildThrows) {
+  std::array<double, 3> min = {1, 1, 1};
+  std::array<double, 3> max = {3, 3, 3};
+  double cutoff = 1.;
+  double skin = 0.2;
+  int clusterSize = 32;
+  autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin, clusterSize);
+
+  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, Particle(), verletLists.getBoxMin(),
+                                                               verletLists.getBoxMax(), 50);
+  autopasTools::generators::RandomGenerator::fillWithHaloParticles(verletLists, Particle(), cutoff, 50);
+
+  MockFunctor<Particle, FPCell> emptyFunctor;
+  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(0);
+  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
+      verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
+
+  EXPECT_ANY_THROW(verletLists.iteratePairwise(&verletClusterCellsTraversal));
 }
 
 TEST_F(VerletClusterCellsTest, testParticleAdding) {

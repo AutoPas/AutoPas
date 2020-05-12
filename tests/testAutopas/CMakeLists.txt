@@ -31,6 +31,6 @@ include(GoogleTest)
 # cross compiling, make sure to properly set CMAKE_CROSSCOMPILING_EMULATOR.
 gtest_discover_tests(
     runTests TEST_PREFIX "testAutopas/"
-    # increase the decovery timeout for `runTests --gtest_list_tests`
+    # increase the discovery timeout for `runTests --gtest_list_tests`
     DISCOVERY_TIMEOUT 60
 )

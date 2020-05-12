@@ -82,8 +82,6 @@ TEST_F(FeatureVectorTest, onehot) {
  * Check if cluster-encode and decode lead to the initial vector.
  */
 TEST_F(FeatureVectorTest, clusterEncode) {
-  auto cellSizes = autopas::NumberInterval<double>(1., 2.);
-
   auto container = autopas::ContainerOption::linkedCells;
   auto cellSizeFactor = 1.0;
   auto traversals = autopas::TraversalOption::getAllOptions();

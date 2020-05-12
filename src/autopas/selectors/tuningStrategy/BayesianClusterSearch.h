@@ -112,11 +112,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  /**
-   * Provide a output of current configuration as evidence to improve future predictions.
-   * @param time runtime of current configuration
-   */
-  inline void addEvidence(long time) override {
+  inline void addEvidence(long time, size_t) override {
     // encoded vector
     auto vec = _currentConfig.clusterEncode(_containerTraversalOptions, _dataLayoutOptions, _newton3Options);
     // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
