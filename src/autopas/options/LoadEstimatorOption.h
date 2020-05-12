@@ -13,12 +13,12 @@
 namespace autopas {
 
 /**
- * Class representing the traversal choices.
+ * Class representing the load estimator choices.
  */
 class LoadEstimatorOption : public Option<LoadEstimatorOption> {
  public:
   /**
-   * Possible choices for the cell pair traversal.
+   * Possible choices for the load estimation algorithm.
    */
   enum Value {
     none = 0,
