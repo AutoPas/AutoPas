@@ -10,6 +10,8 @@
 #include <gmock/gmock-more-matchers.h>
 #include <unistd.h>
 
+#include "autopas/utils/WrapMPI.h"
+
 TEST_F(FullSearchMPITest, testSearchSpaceEmpty) {
   autopas::FullSearchMPI fullSearchMPI({});
   EXPECT_TRUE(fullSearchMPI.searchSpaceIsEmpty());
@@ -45,7 +47,7 @@ TEST_F(FullSearchMPITest, testRemoveN3OptionRemoveAll) {
 
 TEST_F(FullSearchMPITest, testGlobalOptimumAndReset) {
   int worldRank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &worldRank);
+  autopas::AutoPas_MPI_Comm_rank(autopas::AUTOPAS_MPI_COMM_WORLD, &worldRank);
 
   autopas::FullSearchMPI fullSearchMPI(
           {autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)worldRank/10.,

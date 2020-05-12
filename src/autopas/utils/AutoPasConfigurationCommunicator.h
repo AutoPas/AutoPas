@@ -24,7 +24,7 @@ public:
   Configuration optimizeConfiguration(Configuration localOptimalConfig, size_t localOptimalTime) {
     _serializedConfiguration = serializeConfiguration(localOptimalConfig);
     _optimalTime = localOptimalTime;
-    AutoPas_MPI_Allreduce(&_optimalTime, &_optimalTime, 1, MPI_UNSIGNED_LONG, MPI_MIN,
+    AutoPas_MPI_Allreduce(&_optimalTime, &_optimalTime, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_MIN,
                           AUTOPAS_MPI_COMM_WORLD);
 
     // Send own rank if local optimal time is equal to the global optimal time.
@@ -34,7 +34,7 @@ public:
     } else {
       AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_optimalRank);
     }
-    AutoPas_MPI_Allreduce(&_optimalRank, &_optimalRank, 1, MPI_INT, MPI_MIN, AUTOPAS_MPI_COMM_WORLD);
+    AutoPas_MPI_Allreduce(&_optimalRank, &_optimalRank, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_MIN, AUTOPAS_MPI_COMM_WORLD);
 
     AutoPas_MPI_Bcast(&_serializedConfiguration, sizeof(_serializedConfiguration), AUTOPAS_MPI_BYTE,
                       _optimalRank, AUTOPAS_MPI_COMM_WORLD);

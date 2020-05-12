@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
 
   autopas::AutoPas_MPI_Init(&argc, &argv);
   int worldRank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &worldRank);
+  autopas::AutoPas_MPI_Comm_rank(autopas::AUTOPAS_MPI_COMM_WORLD, &worldRank);
 
   // running only my tests
   result = RUN_ALL_TESTS();
