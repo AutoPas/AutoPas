@@ -22,6 +22,7 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
    * Constructor for the SetSearchSpaceBasedTuningStrategy that generates the search space from the allowed options.
    * @param allowedContainerOptions
    * @param allowedTraversalOptions
+   * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
