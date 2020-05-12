@@ -1,5 +1,5 @@
 /**
- * @file GaussianHyperparameter.h
+ * @file GaussianHyperparameters.h
  * @author Jan Nguyen
  * @date 11.05.20
  */
