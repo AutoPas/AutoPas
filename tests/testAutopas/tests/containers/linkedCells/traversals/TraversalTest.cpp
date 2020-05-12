@@ -25,17 +25,18 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   const std::array<double, 3> linkedCellsBoxMin = {0., 0., 0.};
 
   TraversalTest::CountFunctor functor(cutoff);
-  // std::vector<FPCell> cells(edgeLength[0] * edgeLength[1] * edgeLength[2]);
   autopas::LinkedCells<FPCell> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1.0 / cutoff,
                                            loadEstimatorOption);
 
-  // autopasTools::generators::GridGenerator::fillWithParticles(cells, edgeLength, edgeLength);
   autopasTools::generators::GridGenerator::fillWithParticles(linkedCells, edgeLength);
   ASSERT_EQ(linkedCells.getNumParticles(), edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
-  const std::array<unsigned long, 3> cellsPerDim = {edgeLength[0] + 2 * std::ceil(cutoff),
-                                                    edgeLength[1] + 2 * std::ceil(cutoff),
-                                                    edgeLength[2] + 2 * std::ceil(cutoff)};
+  std::array<unsigned long, 3> overlap = {};
+  for (unsigned int d = 0; d < 3; d++) {
+    overlap[d] = std::ceil(cutoff / 1.0);
+  }
+  const auto cellsPerDim =
+      autopas::utils::ArrayMath::add(edgeLength, autopas::utils::ArrayMath::mulScalar(overlap, 2ul));
   NumThreadGuard numThreadGuard(4);
   // clustersize is 32 if traversal has something like cluster in it, otherwise 0.
   unsigned int clusterSize = traversalOption.to_string().find("luster") != std::string::npos ? 32 : 0;
@@ -54,11 +55,6 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
 
   unsigned long cellId = 0;
 
-  std::array<unsigned long, 3> overlap = {};
-  for (unsigned int d = 0; d < 3; d++) {
-    overlap[d] = std::ceil(cutoff / 1.0);
-  }
-
   const auto boxMax = autopas::utils::ArrayMath::sub(edgeLength, overlap);
 
   for (unsigned int z = 0; z < edgeLength[2]; ++z) {
@@ -76,12 +72,6 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   }
 
   auto *traversalInterface = traversal.get();
-  /*
-traversalInterface->setCellsToTraverse(cells);
-traversalInterface->initTraversal();
-traversalInterface->traverseParticlePairs();
-traversalInterface->endTraversal();
-  */
   linkedCells.iteratePairwise(traversalInterface);
 }
 
