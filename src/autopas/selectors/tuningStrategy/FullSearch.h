@@ -11,6 +11,7 @@
 
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/loadEstimators.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -25,18 +26,20 @@ class FullSearch : public TuningStrategyInterface {
    * Constructor for the FullSearch that generates the search space from the allowed options.
    * @param allowedContainerOptions
    * @param allowedTraversalOptions
+   * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
    */
   FullSearch(const std::set<ContainerOption> &allowedContainerOptions, const std::set<double> &allowedCellSizeFactors,
              const std::set<TraversalOption> &allowedTraversalOptions,
+             const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
              const std::set<Newton3Option> &allowedNewton3Options)
       : _containerOptions(allowedContainerOptions) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                        allowedDataLayoutOptions, allowedNewton3Options);
+                        allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options);
   }
 
   /**
@@ -81,6 +84,7 @@ class FullSearch : public TuningStrategyInterface {
   inline void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
                                   const std::set<double> &allowedCellSizeFactors,
                                   const std::set<TraversalOption> &allowedTraversalOptions,
+                                  const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                   const std::set<Newton3Option> &allowedNewton3Options);
 
@@ -95,6 +99,7 @@ class FullSearch : public TuningStrategyInterface {
 void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
                                      const std::set<double> &allowedCellSizeFactors,
                                      const std::set<TraversalOption> &allowedTraversalOptions,
+                                     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                      const std::set<Newton3Option> &allowedNewton3Options) {
   // generate all potential configs
@@ -109,21 +114,26 @@ void FullSearch::populateSearchSpace(const std::set<ContainerOption> &allowedCon
 
     for (const auto &cellSizeFactor : allowedCellSizeFactors)
       for (const auto &traversalOption : allowedAndApplicable) {
-        for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
-          for (const auto &newton3Option : allowedNewton3Options) {
-            _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, dataLayoutOption, newton3Option);
+        const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
+            loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, allowedLoadEstimatorOptions);
+        for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
+          for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
+            for (const auto &newton3Option : allowedNewton3Options) {
+              _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
+                                   dataLayoutOption, newton3Option);
+            }
           }
         }
       }
+
+    AutoPasLog(debug, "Points in search space: {}", _searchSpace.size());
+
+    if (_searchSpace.empty()) {
+      autopas::utils::ExceptionHandler::exception("FullSearch: No valid configurations could be created.");
+    }
+
+    _currentConfig = _searchSpace.begin();
   }
-
-  AutoPasLog(debug, "Points in search space: {}", _searchSpace.size());
-
-  if (_searchSpace.empty()) {
-    autopas::utils::ExceptionHandler::exception("FullSearch: No valid configurations could be created.");
-  }
-
-  _currentConfig = _searchSpace.begin();
 }
 
 bool FullSearch::tune(bool) {

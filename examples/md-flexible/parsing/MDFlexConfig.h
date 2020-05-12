@@ -16,6 +16,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -68,6 +69,8 @@ class MDFlexConfig {
   autopas::SelectorStrategyOption selectorStrategy{autopas::SelectorStrategyOption::fastestAbs};
   static inline const char *traversalOptionsStr{"traversal"};
   std::set<autopas::TraversalOption> traversalOptions{autopas::TraversalOption::getAllOptions()};
+  static inline const char *loadEstimatorOptionsStr{"load-estimator"};
+  std::set<autopas::LoadEstimatorOption> loadEstimatorOptions{autopas::LoadEstimatorOption::getAllOptions()};
   static inline const char *newton3OptionsStr{"newton3"};
   std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::getAllOptions()};
   static inline const char *cellSizeFactorsStr{"cell-size"};

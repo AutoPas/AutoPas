@@ -258,12 +258,14 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::AutoPas
 void setFromOptions(const testingTuple &options, autopas::AutoPas<Molecule, FMCell> &autoPas) {
   auto containerOption = std::get<0>(std::get<0>(options));
   auto traversalOption = std::get<1>(std::get<0>(options));
+  auto loadEstimatorOption = std::get<2>(std::get<0>(options));
   auto dataLayoutOption = std::get<1>(options);
   auto newton3Option = std::get<2>(options);
   auto cellSizeOption = std::get<3>(options);
 
   autoPas.setAllowedContainers({containerOption});
   autoPas.setAllowedTraversals({traversalOption});
+  autoPas.setAllowedLoadEstimators({loadEstimatorOption});
   autoPas.setAllowedDataLayouts({dataLayoutOption});
   autoPas.setAllowedNewton3Options({newton3Option});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
@@ -425,12 +427,18 @@ using ::testing::ValuesIn;
 INSTANTIATE_TEST_SUITE_P(
     Generated, AutoPasInterfaceTest,
     // proper indent
-    Combine(ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> {
-              std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> tupleVector;
+    Combine(ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption,
+                                                    autopas::LoadEstimatorOption>> {
+              std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::LoadEstimatorOption>>
+                  tupleVector;
               for (const auto &containerOption : autopas::ContainerOption::getAllOptions()) {
                 auto compatibleTraversals = autopas::compatibleTraversals::allCompatibleTraversals(containerOption);
                 for (const auto &traversalOption : compatibleTraversals) {
-                  tupleVector.emplace_back(containerOption, traversalOption);
+                  auto compatibleLoadEstimators = autopas::loadEstimators::getApplicableLoadEstimators(
+                      containerOption, traversalOption, autopas::LoadEstimatorOption::getAllOptions());
+                  for (const auto &loadEstimatorOption : compatibleLoadEstimators) {
+                    tupleVector.emplace_back(containerOption, traversalOption, loadEstimatorOption);
+                  }
                 }
               }
               return tupleVector;

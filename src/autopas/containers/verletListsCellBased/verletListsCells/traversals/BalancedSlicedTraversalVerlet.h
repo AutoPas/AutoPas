@@ -10,7 +10,6 @@
 #include <algorithm>
 
 #include "autopas/containers/cellPairTraversals/BalancedSlicedBasedTraversal.h"
-#include "autopas/containers/loadEstimators/cellBasedHeuristics.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -44,13 +43,11 @@ class BalancedSlicedTraversalVerlet
    * @param interactionLength cutoff + skin
    * @param cellLength length of the underlying cells
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param heuristic The algorithm used for estimating the load.
    */
   explicit BalancedSlicedTraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                         double interactionLength, const std::array<double, 3> &cellLength,
-                                         loadEstimators::CellBasedHeuristic heuristic)
+                                         double interactionLength, const std::array<double, 3> &cellLength)
       : BalancedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
-            dims, pairwiseFunctor, interactionLength, cellLength, heuristic),
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _functor(pairwiseFunctor) {}
 
   void traverseParticlePairs() override;
@@ -59,15 +56,7 @@ class BalancedSlicedTraversalVerlet
 
   bool getUseNewton3() const override { return useNewton3; }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override {
-    switch (this->_heuristic) {
-      case loadEstimators::CellBasedHeuristic::none:
-        return TraversalOption::noneBalancedSlicedVerlet;
-      case loadEstimators::CellBasedHeuristic::squaredCellSize:
-        return TraversalOption::squaredCellSizeBalancedSlicedVerlet;
-    }
-    return TraversalOption::noneBalancedSliced;
-  }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::BalancedSlicedVerlet; }
 
   bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 

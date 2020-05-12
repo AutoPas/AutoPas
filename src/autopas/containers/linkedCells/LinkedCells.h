@@ -10,10 +10,13 @@
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
+#include "autopas/containers/loadEstimators.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/StringUtils.h"
@@ -46,12 +49,15 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    * @param cutoff
    * @param skin
    * @param cellSizeFactor cell size factor relative to cutoff
+   * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double skin, const double cellSizeFactor = 1.0)
+              const double skin, const double cellSizeFactor = 1.0,
+              LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : ParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
+        _loadEstimator(loadEstimator) {}
 
   ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
@@ -99,10 +105,39 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
     // nothing to do.
   }
 
+  /**
+   * Generates the load estimation function depending on _loadEstimator.
+   * @return load estimator function object.
+   */
+  BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
+    switch (_loadEstimator) {
+      case LoadEstimatorOption::none: {
+        return
+            [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
+                const std::array<unsigned long, 3> &upperCorner) { return 1; };
+      }
+      case LoadEstimatorOption::squaredParticlesPerCell: {
+        return [&](const std::array<unsigned long, 3> &cellsPerDimension,
+                   const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
+          return loadEstimators::squaredParticlesPerCell(this->_cells, cellsPerDimension, lowerCorner, upperCorner);
+        };
+      }
+      default: {
+        return
+            [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
+                const std::array<unsigned long, 3> &upperCorner) { return 1; };
+      }
+    }
+  }
+
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
+    auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal);
+    if (balancedTraversal) {
+      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
+    }
     if (traversalInterface && cellPairTraversal) {
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
@@ -270,6 +305,11 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    * object to manage the block of cells.
    */
   internal::CellBlock3D<ParticleCell> _cellBlock;
+
+  /**
+   * load estimation algorithm for balanced traversals.
+   */
+  autopas::LoadEstimatorOption _loadEstimator;
   // ThreeDimensionalCellHandler
 };
 

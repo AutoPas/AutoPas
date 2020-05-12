@@ -6,13 +6,13 @@
 
 #include "LoadEstimatorTest.h"
 
-#include "autopas/containers/loadEstimators/cellBasedHeuristics.h"
+#include "autopas/containers/loadEstimators.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 // using ::testing::_;
 
-TEST(LoadEstimatorTest, testEqualDistributionSquaredCellSize) {
+TEST(LoadEstimatorTest, testEqualDistributionSquaredParticlesPerCell) {
   std::array<size_t, 3> cellsPerDimension = {4, 4, 4};
   std::array<size_t, 3> particlesPerDimension = {8, 8, 8};
   std::array<double, 3> spacing = {.5, .5, .5};
@@ -22,19 +22,17 @@ TEST(LoadEstimatorTest, testEqualDistributionSquaredCellSize) {
 
   autopasTools::generators::GridGenerator::fillWithParticles(cells, cellsPerDimension, particlesPerDimension,
                                                              typename FPCell::ParticleType(), spacing, offset);
-  auto heuristic = autopas::loadEstimators::CellBasedHeuristic::squaredCellSize;
   std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
 
   for (unsigned long i = 1; i < 4; i++) {
     std::array<unsigned long, 3> upperCorner = {i, i, i};
-    auto load =
-        autopas::loadEstimators::estimateCellBasedLoad(heuristic, cells, cellsPerDimension, lowerCorner, upperCorner);
+    auto load = autopas::loadEstimators::squaredParticlesPerCell(cells, cellsPerDimension, lowerCorner, upperCorner);
     auto expectedLoad = (i + 1) * (i + 1) * (i + 1) * 64;
     EXPECT_EQ(load, expectedLoad);
   }
 }
 
-TEST(LoadEstimatorTest, testIncreasingDensitySquaredCellSize) {
+TEST(LoadEstimatorTest, testIncreasingDensitySquaredParticlesPerCell) {
   std::array<size_t, 3> cellsPerDimension = {3, 3, 3};
   std::vector<FPCell> cells;
   cells.resize(cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2]);
@@ -46,13 +44,11 @@ TEST(LoadEstimatorTest, testIncreasingDensitySquaredCellSize) {
     autopasTools::generators::GridGenerator::fillWithParticles(cells, cellsPerDimension, particlesPerDimension,
                                                                typename FPCell::ParticleType(), spacing, offset);
   }
-  auto heuristic = autopas::loadEstimators::CellBasedHeuristic::squaredCellSize;
 
   for (unsigned long i = 1; i < 3; i++) {
     std::array<unsigned long, 3> lowerCorner = {i, 0, 0};
     std::array<unsigned long, 3> upperCorner = {i, 2, 2};
-    auto load =
-        autopas::loadEstimators::estimateCellBasedLoad(heuristic, cells, cellsPerDimension, lowerCorner, upperCorner);
+    auto load = autopas::loadEstimators::squaredParticlesPerCell(cells, cellsPerDimension, lowerCorner, upperCorner);
     auto expectedLoad = 9 * (i + 1) * (i + 1);
     EXPECT_EQ(load, expectedLoad);
   }
@@ -60,64 +56,8 @@ TEST(LoadEstimatorTest, testIncreasingDensitySquaredCellSize) {
   for (unsigned long i = 1; i < 3; i++) {
     std::array<unsigned long, 3> lowerCorner = {0, 0, i};
     std::array<unsigned long, 3> upperCorner = {2, 2, i};
-    auto load =
-        autopas::loadEstimators::estimateCellBasedLoad(heuristic, cells, cellsPerDimension, lowerCorner, upperCorner);
+    auto load = autopas::loadEstimators::squaredParticlesPerCell(cells, cellsPerDimension, lowerCorner, upperCorner);
     auto expectedLoad = 3 * (1 * 1 + 2 * 2 + 3 * 3);
-    EXPECT_EQ(load, expectedLoad);
-  }
-}
-
-TEST(LoadEstimatorTest, testEqualDistributionNone) {
-  std::array<size_t, 3> cellsPerDimension = {4, 4, 4};
-  std::array<size_t, 3> particlesPerDimension = {8, 8, 8};
-  std::array<double, 3> spacing = {.5, .5, .5};
-  std::array<double, 3> offset = {.25, .25, .25};
-  std::vector<FPCell> cells;
-  cells.resize(cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2]);
-
-  autopasTools::generators::GridGenerator::fillWithParticles(cells, cellsPerDimension, particlesPerDimension,
-                                                             typename FPCell::ParticleType(), spacing, offset);
-  auto heuristic = autopas::loadEstimators::CellBasedHeuristic::none;
-  std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
-
-  for (unsigned long i = 1; i < 4; i++) {
-    std::array<unsigned long, 3> upperCorner = {i, i, i};
-    auto load =
-        autopas::loadEstimators::estimateCellBasedLoad(heuristic, cells, cellsPerDimension, lowerCorner, upperCorner);
-    auto expectedLoad = 1;
-    EXPECT_EQ(load, expectedLoad);
-  }
-}
-
-TEST(LoadEstimatorTest, testIncreasingDensityNone) {
-  std::array<size_t, 3> cellsPerDimension = {3, 3, 3};
-  std::vector<FPCell> cells;
-  cells.resize(cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2]);
-  for (unsigned long i = 0; i < 3; i++) {
-    std::array<size_t, 3> particlesPerDimension = {1, 3, 3 * (i + 1)};
-    std::array<double, 3> spacing = {1.0, 1.0, 1.0 / (i + 1)};
-    std::array<double, 3> offset = {.5 + i, .5, 0.5 / (i + 1)};
-
-    autopasTools::generators::GridGenerator::fillWithParticles(cells, cellsPerDimension, particlesPerDimension,
-                                                               typename FPCell::ParticleType(), spacing, offset);
-  }
-  auto heuristic = autopas::loadEstimators::CellBasedHeuristic::none;
-
-  for (unsigned long i = 1; i < 3; i++) {
-    std::array<unsigned long, 3> lowerCorner = {i, 0, 0};
-    std::array<unsigned long, 3> upperCorner = {i, 2, 2};
-    auto load =
-        autopas::loadEstimators::estimateCellBasedLoad(heuristic, cells, cellsPerDimension, lowerCorner, upperCorner);
-    auto expectedLoad = 1;
-    EXPECT_EQ(load, expectedLoad);
-  }
-
-  for (unsigned long i = 1; i < 3; i++) {
-    std::array<unsigned long, 3> lowerCorner = {0, 0, i};
-    std::array<unsigned long, 3> upperCorner = {2, 2, i};
-    auto load =
-        autopas::loadEstimators::estimateCellBasedLoad(heuristic, cells, cellsPerDimension, lowerCorner, upperCorner);
-    auto expectedLoad = 1;
     EXPECT_EQ(load, expectedLoad);
   }
 }

@@ -10,6 +10,7 @@
 
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/loadEstimators.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -26,6 +27,7 @@ class PredictiveTuning : public TuningStrategyInterface {
    * Constructor for the PredictiveTuning that generates the search space from the allowed options.
    * @param allowedContainerOptions
    * @param allowedTraversalOptions
+   * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
@@ -34,12 +36,13 @@ class PredictiveTuning : public TuningStrategyInterface {
   PredictiveTuning(const std::set<ContainerOption> &allowedContainerOptions,
                    const std::set<double> &allowedCellSizeFactors,
                    const std::set<TraversalOption> &allowedTraversalOptions,
+                   const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                    const std::set<Newton3Option> &allowedNewton3Options, unsigned int &iterationsReference)
       : _containerOptions(allowedContainerOptions), _iterationsReference(iterationsReference) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                        allowedDataLayoutOptions, allowedNewton3Options);
+                        allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options);
   }
 
   /**
@@ -97,6 +100,7 @@ class PredictiveTuning : public TuningStrategyInterface {
   inline void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
                                   const std::set<double> &allowedCellSizeFactors,
                                   const std::set<TraversalOption> &allowedTraversalOptions,
+                                  const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                   const std::set<Newton3Option> &allowedNewton3Options);
 
@@ -198,6 +202,7 @@ class PredictiveTuning : public TuningStrategyInterface {
 void PredictiveTuning::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
                                            const std::set<double> &allowedCellSizeFactors,
                                            const std::set<TraversalOption> &allowedTraversalOptions,
+                                           const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                            const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                            const std::set<Newton3Option> &allowedNewton3Options) {
   // generate all potential configs
@@ -212,9 +217,14 @@ void PredictiveTuning::populateSearchSpace(const std::set<ContainerOption> &allo
 
     for (const auto &cellSizeFactor : allowedCellSizeFactors)
       for (const auto &traversalOption : allowedAndApplicable) {
-        for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
-          for (const auto &newton3Option : allowedNewton3Options) {
-            _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, dataLayoutOption, newton3Option);
+        const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
+            loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, allowedLoadEstimatorOptions);
+        for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
+          for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
+            for (const auto &newton3Option : allowedNewton3Options) {
+              _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
+                                   dataLayoutOption, newton3Option);
+            }
           }
         }
       }

@@ -23,13 +23,14 @@ class FeatureVector : public Configuration {
   /**
    * Number of tune-able dimensions.
    */
-  static constexpr size_t featureSpaceDims = 4;
+  static constexpr size_t featureSpaceDims = 5;
 
   /**
    * Dimensions of a one-hot-encoded vector
-   * = 1 (cellSizeFactor) + traversals + dataLayouts + newton3
+   * = 1 (cellSizeFactor) + traversals + loadEstimators + dataLayouts + newton3
    */
   inline static size_t oneHotDims = 1 + TraversalOption::getOptionNames().size() +
+                                    LoadEstimatorOption::getOptionNames().size() +
                                     DataLayoutOption::getOptionNames().size() + Newton3Option::getOptionNames().size();
 
   /**
@@ -41,13 +42,14 @@ class FeatureVector : public Configuration {
    * Constructor
    * @param container
    * @param traversal
+   * @param loadEstimator
    * @param dataLayout
    * @param newton3
    * @param cellSizeFactor
    */
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
-                DataLayoutOption dataLayout, Newton3Option newton3)
-      : Configuration(container, cellSizeFactor, traversal, dataLayout, newton3) {}
+                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3)
+      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3) {}
 
   /**
    * Construct from Configuration.
@@ -66,7 +68,8 @@ class FeatureVector : public Configuration {
   Eigen::VectorXd operator-(const FeatureVector &other) const {
     Eigen::VectorXd result(featureSpaceDims);
     result << cellSizeFactor - other.cellSizeFactor, traversal == other.traversal ? 0. : 1.,
-        dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1.;
+        loadEstimator == other.loadEstimator ? 0. : 1., dataLayout == other.dataLayout ? 0. : 1.,
+        newton3 == other.newton3 ? 0. : 1.;
 
     return result;
   }
@@ -77,8 +80,8 @@ class FeatureVector : public Configuration {
    */
   operator Eigen::VectorXd() const {
     Eigen::VectorXd result(featureSpaceDims);
-    result << cellSizeFactor, static_cast<double>(traversal), static_cast<double>(dataLayout),
-        static_cast<double>(newton3);
+    result << cellSizeFactor, static_cast<double>(traversal), static_cast<double>(loadEstimator),
+        static_cast<double>(dataLayout), static_cast<double>(newton3);
 
     return result;
   }
@@ -94,6 +97,9 @@ class FeatureVector : public Configuration {
     data.push_back(cellSizeFactor);
     for (auto &[option, _] : TraversalOption::getOptionNames()) {
       data.push_back((option == traversal) ? 1. : 0.);
+    }
+    for (auto &[option, _] : LoadEstimatorOption::getOptionNames()) {
+      data.push_back((option == loadEstimator) ? 1. : 0.);
     }
     for (auto &[option, _] : DataLayoutOption::getOptionNames()) {
       data.push_back((option == dataLayout) ? 1. : 0.);
@@ -138,6 +144,24 @@ class FeatureVector : public Configuration {
           "FeatureVector.oneHotDecode: Vector encodes no traversal. (All values for traversal equal 0.)");
     }
 
+    // get load estimator
+    std::optional<LoadEstimatorOption> loadEstimator{};
+    for (auto &[option, _] : LoadEstimatorOption::getOptionNames()) {
+      if (vec[pos++] == 1.) {
+        if (loadEstimator) {
+          utils::ExceptionHandler::exception(
+              "FeatureVector.oneHotDecode: Vector encodes more than one load estimator. (More than one value for load "
+              "estimator "
+              "equals 1.)");
+        }
+        loadEstimator = option;
+      }
+    }
+    if (not loadEstimator) {
+      utils::ExceptionHandler::exception(
+          "FeatureVector.oneHotDecode: Vector encodes no load estimator. (All values for load estimator equal 0.)");
+    }
+
     // get data layout
     std::optional<DataLayoutOption> dataLayout = {};
     for (auto &[option, _] : DataLayoutOption::getOptionNames()) {
@@ -172,7 +196,7 @@ class FeatureVector : public Configuration {
           "FeatureVector.oneHotDecode: Vector encodes no newton3. (All values for newton3 equal 0.)");
     }
 
-    return FeatureVector(ContainerOption(), cellSizeFactor, *traversal, *dataLayout, *newton3);
+    return FeatureVector(ContainerOption(), cellSizeFactor, *traversal, *loadEstimator, *dataLayout, *newton3);
   }
 
   /**
@@ -183,23 +207,26 @@ class FeatureVector : public Configuration {
    * @param rng
    * @param cellSizeFactors
    * @param traversals
+   * @param loadEstimators
    * @param dataLayouts
    * @param newton3
    * @return vector of sample featureVectors
    */
   static std::vector<FeatureVector> lhsSampleFeatures(size_t n, Random &rng, const NumberSet<double> &cellSizeFactors,
                                                       const std::set<TraversalOption> &traversals,
+                                                      const std::set<LoadEstimatorOption> &loadEstimators,
                                                       const std::set<DataLayoutOption> &dataLayouts,
                                                       const std::set<Newton3Option> &newton3) {
     // create n samples from each set
     auto csf = cellSizeFactors.uniformSample(n, rng);
     auto tr = rng.uniformSample(traversals, n);
+    auto le = rng.uniformSample(loadEstimators, n);
     auto dl = rng.uniformSample(dataLayouts, n);
     auto n3 = rng.uniformSample(newton3, n);
 
     std::vector<FeatureVector> result;
     for (size_t i = 0; i < n; ++i) {
-      result.emplace_back(ContainerOption(), csf[i], tr[i], dl[i], n3[i]);
+      result.emplace_back(ContainerOption(), csf[i], tr[i], le[i], dl[i], n3[i]);
     }
 
     return result;

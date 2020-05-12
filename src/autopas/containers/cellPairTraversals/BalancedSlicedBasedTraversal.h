@@ -10,8 +10,8 @@
 #include <array>
 #include <vector>
 
+#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/cellPairTraversals/SlicedBasedTraversal.h"
-#include "autopas/containers/loadEstimators/cellBasedHeuristics.h"
 #include "autopas/utils/Timer.h"
 
 namespace autopas {
@@ -29,20 +29,17 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class BalancedSlicedBasedTraversal
-    : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
+class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+                                     public BalancedTraversal {
  public:
   /**
    * Constructor of the balanced sliced traversal.
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
-   * @param heuristic The algorithm used for estimating the load
    */
   explicit BalancedSlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                        const double interactionLength, const std::array<double, 3> &cellLength,
-                                        const autopas::loadEstimators::CellBasedHeuristic heuristic)
+                                        const double interactionLength, const std::array<double, 3> &cellLength)
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                    interactionLength, cellLength),
-        _heuristic(heuristic) {}
+                                                                                    interactionLength, cellLength) {}
 
   /**
    * @copydoc SlicedBasedTraversal::initTraversal()
@@ -72,8 +69,7 @@ class BalancedSlicedBasedTraversal
     for (auto x = 0; x < maxDimensionLength; x++) {
       lowerCorner[maxDimension] = x;
       upperCorner[maxDimension] = x;
-      auto load = loadEstimators::estimateCellBasedLoad<ParticleCell>(
-          this->_heuristic, *(this->_cells), this->_cellsPerDimension, lowerCorner, upperCorner);
+      auto load = this->_loadEstimator(this->_cellsPerDimension, lowerCorner, upperCorner);
       fullLoad += load;
       loads.push_back(fullLoad);
     }
@@ -135,12 +131,6 @@ class BalancedSlicedBasedTraversal
 
     this->_locks.resize((numSlices - 1) * this->_overlapLongestAxis);
   }
-
- protected:
-  /**
-   * Algorithm to use for estimating load
-   */
-  loadEstimators::CellBasedHeuristic _heuristic;
 };
 
 }  // namespace autopas

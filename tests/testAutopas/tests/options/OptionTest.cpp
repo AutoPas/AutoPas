@@ -43,10 +43,8 @@ TEST(OptionTest, parseTraversalOptionsTest) {
       {autopas::TraversalOption::verletClustersColoring, "verlet-clusters-coloring"},
       {autopas::TraversalOption::verletTraversal, "verletlists"},
       {autopas::TraversalOption::verletClustersStatic, "verlet-cluste-static"},
-      {autopas::TraversalOption::noneBalancedSliced, "nonebalanced-sliced"},
-      {autopas::TraversalOption::squaredCellSizeBalancedSliced, "squaredcell-size-balanced-sliced"},
-      {autopas::TraversalOption::noneBalancedSlicedVerlet, "nonebalanced-sliced-verlet"},
-      {autopas::TraversalOption::squaredCellSizeBalancedSlicedVerlet, "squaredcell-size-balanced-sliced-verlet"},
+      {autopas::TraversalOption::BalancedSliced, "balancedsliced"},
+      {autopas::TraversalOption::BalancedSlicedVerlet, "balancedsliced-verlet"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TraversalOption::getOptionNames().size());

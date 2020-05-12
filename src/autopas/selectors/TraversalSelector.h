@@ -21,7 +21,6 @@
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/linkedCells/traversals/SlicedTraversal.h"
-#include "autopas/containers/loadEstimators/cellBasedHeuristics.h"
 #include "autopas/containers/verletClusterCells/traversals/VerletClusterCellsTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersColoringTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersStaticTraversal.h"
@@ -105,15 +104,9 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       return std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
-    case TraversalOption::noneBalancedSliced: {
+    case TraversalOption::BalancedSliced: {
       return std::make_unique<BalancedSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength,
-          loadEstimators::CellBasedHeuristic::none);
-    }
-    case TraversalOption::squaredCellSizeBalancedSliced: {
-      return std::make_unique<BalancedSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength,
-          loadEstimators::CellBasedHeuristic::squaredCellSize);
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::c18: {
       return std::make_unique<C18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
@@ -140,15 +133,9 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       return std::make_unique<SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
-    case TraversalOption::noneBalancedSlicedVerlet: {
+    case TraversalOption::BalancedSlicedVerlet: {
       return std::make_unique<BalancedSlicedTraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength,
-          loadEstimators::CellBasedHeuristic::none);
-    }
-    case TraversalOption::squaredCellSizeBalancedSlicedVerlet: {
-      return std::make_unique<BalancedSlicedTraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength,
-          loadEstimators::CellBasedHeuristic::squaredCellSize);
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::c18Verlet: {
       return std::make_unique<C18TraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(

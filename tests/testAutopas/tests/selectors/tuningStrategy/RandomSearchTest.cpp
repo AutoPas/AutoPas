@@ -18,7 +18,8 @@ TEST_F(RandomSearchTest, testSearchSpaceEmpty) {
 
 TEST_F(RandomSearchTest, testSearchSpaceOneOption) {
   autopas::RandomSearch randomSearch({autopas::ContainerOption::directSum}, autopas::NumberSetFinite<double>({1.}),
-                                     {autopas::TraversalOption::directSumTraversal}, {autopas::DataLayoutOption::soa},
+                                     {autopas::TraversalOption::directSumTraversal},
+                                     {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa},
                                      {autopas::Newton3Option::enabled});
   EXPECT_FALSE(randomSearch.searchSpaceIsEmpty());
   EXPECT_TRUE(randomSearch.searchSpaceIsTrivial());
@@ -27,7 +28,8 @@ TEST_F(RandomSearchTest, testSearchSpaceOneOption) {
 
 TEST_F(RandomSearchTest, testSearchSpaceMoreOptions) {
   autopas::RandomSearch randomSearch({autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1.}),
-                                     {autopas::TraversalOption::c08}, {autopas::DataLayoutOption::soa},
+                                     {autopas::TraversalOption::c08}, {autopas::LoadEstimatorOption::none},
+                                     {autopas::DataLayoutOption::soa},
                                      {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
   EXPECT_FALSE(randomSearch.searchSpaceIsEmpty());
   EXPECT_FALSE(randomSearch.searchSpaceIsTrivial());
@@ -35,10 +37,10 @@ TEST_F(RandomSearchTest, testSearchSpaceMoreOptions) {
 }
 
 TEST_F(RandomSearchTest, testRemoveN3OptionRemoveAll) {
-  autopas::RandomSearch randomSearch({autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1.}),
-                                     {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
-                                     {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-                                     {autopas::Newton3Option::enabled});
+  autopas::RandomSearch randomSearch(
+      {autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1.}),
+      {autopas::TraversalOption::c08, autopas::TraversalOption::sliced}, {autopas::LoadEstimatorOption::none},
+      {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos}, {autopas::Newton3Option::enabled});
 
   EXPECT_THROW(randomSearch.removeN3Option(autopas::Newton3Option::enabled),
                autopas::utils::ExceptionHandler::AutoPasException);
@@ -47,6 +49,7 @@ TEST_F(RandomSearchTest, testRemoveN3OptionRemoveAll) {
 TEST_F(RandomSearchTest, testRemoveN3OptionRemoveSome) {
   autopas::RandomSearch randomSearch({autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1.}),
                                      {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
+                                     {autopas::LoadEstimatorOption::none},
                                      {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
                                      {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
 

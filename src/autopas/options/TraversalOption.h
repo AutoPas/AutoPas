@@ -39,10 +39,8 @@ class TraversalOption : public Option<TraversalOption> {
     c04SoA = 15,
     verletClusterCells = 16,
     verletClustersStatic = 17,
-    noneBalancedSliced = 18,
-    squaredCellSizeBalancedSliced = 19,
-    noneBalancedSlicedVerlet = 20,
-    squaredCellSizeBalancedSlicedVerlet = 21,
+    BalancedSliced = 18,
+    BalancedSlicedVerlet = 19,
   };
 
   /**
@@ -86,10 +84,8 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::c04SoA, "c04SoA"},
         {TraversalOption::verletClusterCells, "verlet-cluster-cells"},
         {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
-        {TraversalOption::noneBalancedSliced, "none-balanced-sliced"},
-        {TraversalOption::squaredCellSizeBalancedSliced, "squared-cell-size-balanced-sliced"},
-        {TraversalOption::noneBalancedSlicedVerlet, "none-balanced-sliced-verlet"},
-        {TraversalOption::squaredCellSizeBalancedSlicedVerlet, "squared-cell-size-balanced-sliced-verlet"},
+        {TraversalOption::BalancedSliced, "balanced-sliced"},
+        {TraversalOption::BalancedSlicedVerlet, "balanced-sliced-verlet"},
     };
   };
 

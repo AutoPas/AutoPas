@@ -9,14 +9,17 @@
 #include "VerletListsCellsHelpers.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C18Traversal.h"
+#include "autopas/containers/loadEstimators.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
@@ -49,22 +52,52 @@ class VerletListsCells
    * @param skin the skin radius
    * @param buildTraversal the traversal used to build the verletlists
    * @param cellSizeFactor cell size factor relative to cutoff
+   * @param loadEstimator load estimation algorithm for balanced traversals
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                   const TraversalOption buildTraversal, const double skin = 0, const double cellSizeFactor = 1.0)
+                   const TraversalOption buildTraversal, const double skin = 0, const double cellSizeFactor = 1.0,
+                   const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
-        _buildTraversal(buildTraversal) {}
+        _buildTraversal(buildTraversal),
+        _loadEstimator(loadEstimator) {}
 
   ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
+
+  /**
+   * Generates the load estimation function depending on _loadEstimator.
+   * @return load estimator function object.
+   */
+  BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
+    switch (_loadEstimator) {
+      case LoadEstimatorOption::none: {
+        return
+            [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
+                const std::array<unsigned long, 3> &upperCorner) { return 1; };
+      }
+      case LoadEstimatorOption::squaredParticlesPerCell: {
+        return [&](const std::array<unsigned long, 3> &cellsPerDimension,
+                   const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
+          return loadEstimators::squaredParticlesPerCell((this->_linkedCells).getCells(), cellsPerDimension,
+                                                         lowerCorner, upperCorner);
+        };
+      }
+      default: {
+        return
+            [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
+                const std::array<unsigned long, 3> &upperCorner) { return 1; };
+      }
+    }
+  }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto vTraversal = dynamic_cast<autopas::VerletListsCellsTraversal<Particle> *>(traversal);
-    auto cTraversal = dynamic_cast<autopas::CellPairTraversal<ParticleCell> *>(traversal);
-    if (cTraversal) {
-      cTraversal->setCellsToTraverse((this->_linkedCells).getCells());
+    auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal);
+    if (balancedTraversal) {
+      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
+
     if (vTraversal) {
       vTraversal->setVerletList(_neighborLists);
     } else {
@@ -165,6 +198,11 @@ class VerletListsCells
 
   // the traversal used to build the verletlists
   TraversalOption _buildTraversal;
+
+  /**
+   * load estimation algorithm for balanced traversals.
+   */
+  autopas::LoadEstimatorOption _loadEstimator;
 };
 
 }  // namespace autopas

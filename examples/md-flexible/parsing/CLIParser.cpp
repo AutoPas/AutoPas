@@ -40,6 +40,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {MDFlexConfig::selectorStrategyStr, required_argument, nullptr, 'y'},
                                          {MDFlexConfig::thermostatStr, required_argument, nullptr, 'u'},
                                          {MDFlexConfig::traversalOptionsStr, required_argument, nullptr, 't'},
+                                         {MDFlexConfig::loadEstimatorOptionsStr, required_argument, nullptr, 'H'},
                                          {MDFlexConfig::tuningIntervalStr, required_argument, nullptr, 'I'},
                                          {MDFlexConfig::tuningMaxEvidenceStr, required_argument, nullptr, 'E'},
                                          {MDFlexConfig::tuningSamplesStr, required_argument, nullptr, 'S'},
@@ -349,6 +350,14 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         config.traversalOptions = autopas::TraversalOption::parseOptions(strArg);
         if (config.traversalOptions.empty()) {
           cerr << "Unknown Traversal: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'H': {
+        config.loadEstimatorOptions = autopas::LoadEstimatorOption::parseOptions(strArg);
+        if (config.loadEstimatorOptions.empty()) {
+          cerr << "Unknown load estimator: " << strArg << endl;
           displayHelp = true;
         }
         break;

@@ -17,20 +17,21 @@ TEST_F(FeatureVectorTest, lhsSample) {
 
   auto vecList = autopas::FeatureVector::lhsSampleFeatures(
       n, rand, autopas::NumberInterval<double>(1., 2.), autopas::TraversalOption::getAllOptions(),
-      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
+      autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
+      autopas::Newton3Option::getAllOptions());
 
   EXPECT_EQ(vecList.size(), n);
 }
 
 TEST_F(FeatureVectorTest, distanceTest) {
-  autopas::FeatureVector f1(ContainerOption::linkedCells, 1., TraversalOption::c01, DataLayoutOption::aos,
-                            Newton3Option::enabled);
-  autopas::FeatureVector f2(ContainerOption::linkedCells, 1., TraversalOption::c08, DataLayoutOption::aos,
-                            Newton3Option::enabled);
-  autopas::FeatureVector f3(ContainerOption::linkedCells, 1., TraversalOption::c08, DataLayoutOption::soa,
-                            Newton3Option::enabled);
-  autopas::FeatureVector f4(ContainerOption::linkedCells, 1., TraversalOption::c08, DataLayoutOption::soa,
-                            Newton3Option::disabled);
+  autopas::FeatureVector f1(ContainerOption::linkedCells, 1., TraversalOption::c01, LoadEstimatorOption::none,
+                            DataLayoutOption::aos, Newton3Option::enabled);
+  autopas::FeatureVector f2(ContainerOption::linkedCells, 1., TraversalOption::c08, LoadEstimatorOption::none,
+                            DataLayoutOption::aos, Newton3Option::enabled);
+  autopas::FeatureVector f3(ContainerOption::linkedCells, 1., TraversalOption::c08, LoadEstimatorOption::none,
+                            DataLayoutOption::soa, Newton3Option::enabled);
+  autopas::FeatureVector f4(ContainerOption::linkedCells, 1., TraversalOption::c08, LoadEstimatorOption::none,
+                            DataLayoutOption::soa, Newton3Option::disabled);
 
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f1 - f1).squaredNorm(), 0);
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f2 - f2).squaredNorm(), 0);
@@ -57,7 +58,8 @@ TEST_F(FeatureVectorTest, onehot) {
   autopas::Random rand(42);
   auto vecList = autopas::FeatureVector::lhsSampleFeatures(
       100, rand, autopas::NumberInterval<double>(1., 2.), autopas::TraversalOption::getAllOptions(),
-      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
+      autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
+      autopas::Newton3Option::getAllOptions());
 
   for (auto fv : vecList) {
     auto vec = fv.oneHotEncode();

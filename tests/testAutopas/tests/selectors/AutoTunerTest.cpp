@@ -24,8 +24,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   autopas::LJFunctor<Molecule, FMCell> functor(cutoff);
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
       autopas::ContainerOption::getAllOptions(), std::set<double>({cellSizeFactor}),
-      autopas::TraversalOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-      autopas::Newton3Option::getAllOptions());
+      autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
+      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
   autopas::AutoTuner<Molecule, FMCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
                                                  std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs,
                                                  100, maxSamples);
@@ -118,11 +118,11 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   double cellSizeFactor = 1.;
   std::set<autopas::Configuration> configs;
   configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::directSumTraversal,
-                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
   configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::directSumTraversal,
-                  autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
   configs.emplace(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
-                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
   autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
@@ -170,11 +170,11 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   double cellSizeFactor = 1.;
   std::set<autopas::Configuration> configs;
   configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::directSumTraversal,
-                  autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
   configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::directSumTraversal,
-                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
   configs.emplace(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
-                  autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
   autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
@@ -212,9 +212,9 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   double cellSizeFactor = 1.;
   std::set<autopas::Configuration> configs;
   configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::directSumTraversal,
-                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
   configs.emplace(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
-                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
   autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
@@ -265,9 +265,10 @@ TEST_F(AutoTunerTest, testNoConfig) {
     std::set<autopas::ContainerOption> co = {};
     std::set<double> csf = {};
     std::set<autopas::TraversalOption> tr = {};
+    std::set<autopas::LoadEstimatorOption> le = {};
     std::set<autopas::DataLayoutOption> dl = {};
     std::set<autopas::Newton3Option> n3 = {};
-    auto tuningStrategy = std::make_unique<autopas::FullSearch>(co, csf, tr, dl, n3);
+    auto tuningStrategy = std::make_unique<autopas::FullSearch>(co, csf, tr, le, dl, n3);
     autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
                                                    autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
   };
@@ -280,7 +281,8 @@ TEST_F(AutoTunerTest, testNoConfig) {
  */
 TEST_F(AutoTunerTest, testOneConfig) {
   autopas::Configuration conf(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
-                              autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                              autopas::Newton3Option::enabled);
 
   auto configsList = {conf};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
@@ -314,9 +316,11 @@ TEST_F(AutoTunerTest, testOneConfig) {
 TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   double cellSizeFactor = 1.;
   autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
-                                autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                autopas::Newton3Option::enabled);
   autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
-                                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                  autopas::Newton3Option::disabled);
 
   auto configsList = {confNoN3, confN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
@@ -346,9 +350,11 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
 TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   double cellSizeFactor = 1.;
   autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
-                                autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                autopas::Newton3Option::enabled);
   autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
-                                  autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled);
+                                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
+                                  autopas::Newton3Option::enabled);
 
   auto configsList = {confN3, confNoN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);

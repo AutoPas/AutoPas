@@ -13,6 +13,7 @@
 
 #include "autopas/LogicHandler.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
@@ -79,7 +80,8 @@ class AutoPas {
         _allowedTraversals(TraversalOption::getAllOptions()),
         _allowedDataLayouts(DataLayoutOption::getAllOptions()),
         _allowedNewton3Options(Newton3Option::getAllOptions()),
-        _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))) {
+        _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))),
+        _allowedLoadEstimators(LoadEstimatorOption::getAllOptions()) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
@@ -124,7 +126,8 @@ class AutoPas {
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
-            _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _acquisitionFunctionOption)),
+            _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence,
+            _acquisitionFunctionOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
         std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
@@ -461,6 +464,21 @@ class AutoPas {
   void setSelectorStrategy(SelectorStrategyOption selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
 
   /**
+   * Get the list of allowed load estimation algorithms.
+   * @return
+   */
+  const std::set<LoadEstimatorOption> &getAllowedLoadEstimators() const { return _allowedLoadEstimators; }
+
+  /**
+   * Set the list of allowed load estimation algorithms.
+   * For possible container choices see AutoPas::LoadEstimatorOption.
+   * @param allowedLoadEstimators
+   */
+  void setAllowedLoadEstimators(const std::set<LoadEstimatorOption> &allowedLoadEstimators) {
+    AutoPas::_allowedLoadEstimators = allowedLoadEstimators;
+  }
+
+  /**
    * Get the list of allowed containers.
    * @return
    */
@@ -617,6 +635,12 @@ class AutoPas {
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
    */
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;
+
+  /***
+   * Load estimation algorithm to be used for efficient parallelisation (only relevant for BalancedSlicedTraversal and
+   * BalancedSlicedTraversalVerlet).
+   */
+  std::set<LoadEstimatorOption> _allowedLoadEstimators;
 
   /**
    * LogicHandler of autopas.

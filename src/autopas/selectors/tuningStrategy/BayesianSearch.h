@@ -41,6 +41,7 @@ class BayesianSearch : public TuningStrategyInterface {
    * Constructor
    * @param allowedContainerOptions
    * @param allowedTraversalOptions
+   * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
@@ -49,16 +50,18 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param maxEvidence stop tuning after given number of evidence provided.
    * @param seed seed of random number generator (should only be used for tests)
    */
-  BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
-                 const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
-                 const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
-                 const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-                 const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
-                 size_t maxEvidence = 10,
-                 AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lowerConfidenceBound,
-                 size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()())
+  BayesianSearch(
+      const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
+      const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
+      const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
+      const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
+      const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
+      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
+      AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::lowerConfidenceBound,
+      size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()())
       : _containerOptions(allowedContainerOptions),
         _traversalOptions(allowedTraversalOptions),
+        _loadEstimatorOptions(allowedLoadEstimatorOptions),
         _dataLayoutOptions(allowedDataLayoutOptions),
         _newton3Options(allowedNewton3Options),
         _cellSizeFactors(allowedCellSizeFactors.clone()),
@@ -129,6 +132,7 @@ class BayesianSearch : public TuningStrategyInterface {
 
   std::set<ContainerOption> _containerOptions;
   std::set<TraversalOption> _traversalOptions;
+  std::set<LoadEstimatorOption> _loadEstimatorOptions;
   std::set<DataLayoutOption> _dataLayoutOptions;
   std::set<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
@@ -172,8 +176,8 @@ bool BayesianSearch::tune(bool currentInvalid) {
 FeatureVector BayesianSearch::sampleOptimalFeatureVector(size_t n, AcquisitionFunctionOption af) {
   for (size_t i = 0; i < maxAttempts; ++i) {
     // create n lhs samples
-    std::vector<FeatureVector> samples = FeatureVector::lhsSampleFeatures(n, _rng, *_cellSizeFactors, _traversalOptions,
-                                                                          _dataLayoutOptions, _newton3Options);
+    std::vector<FeatureVector> samples = FeatureVector::lhsSampleFeatures(
+        n, _rng, *_cellSizeFactors, _traversalOptions, _loadEstimatorOptions, _dataLayoutOptions, _newton3Options);
 
     // map container and calculate all acquisition function values
     std::map<FeatureVector, double> acquisitions;
@@ -226,13 +230,15 @@ bool BayesianSearch::searchSpaceIsTrivial() const {
   }
 
   return _containerOptions.size() == 1 and (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 1) and
-         _traversalOptions.size() == 1 and _dataLayoutOptions.size() == 1 and _newton3Options.size() == 1;
+         _traversalOptions.size() == 1 and _loadEstimatorOptions.size() == 1 and _dataLayoutOptions.size() == 1 and
+         _newton3Options.size() == 1;
 }
 
 bool BayesianSearch::searchSpaceIsEmpty() const {
   // if one enum is empty return true
   return _containerOptions.empty() or (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 0) or
-         _traversalOptions.empty() or _dataLayoutOptions.empty() or _newton3Options.empty();
+         _traversalOptions.empty() or _loadEstimatorOptions.empty() or _dataLayoutOptions.empty() or
+         _newton3Options.empty();
 }
 
 void BayesianSearch::removeN3Option(Newton3Option badNewton3Option) {

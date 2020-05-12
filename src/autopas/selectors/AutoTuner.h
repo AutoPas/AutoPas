@@ -226,8 +226,8 @@ class AutoTuner {
 template <class Particle, class ParticleCell>
 void AutoTuner<Particle, ParticleCell>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
-  _containerSelector.selectContainer(conf.container,
-                                     ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize));
+  _containerSelector.selectContainer(
+      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
 }
 
 template <class Particle, class ParticleCell>
@@ -419,8 +419,8 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
     return false;
   }
 
-  _containerSelector.selectContainer(conf.container,
-                                     ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize));
+  _containerSelector.selectContainer(
+      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
   return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor>(

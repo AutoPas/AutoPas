@@ -12,7 +12,6 @@
 #include "LinkedCellTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/BalancedSlicedBasedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C08CellHandler.h"
-#include "autopas/containers/loadEstimators/cellBasedHeuristics.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -46,13 +45,11 @@ class BalancedSlicedTraversal
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
-   * @param heuristic The algorithm used for estimating the load.
    */
   explicit BalancedSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                   const double interactionLength, const std::array<double, 3> &cellLength,
-                                   loadEstimators::CellBasedHeuristic heuristic)
+                                   const double interactionLength, const std::array<double, 3> &cellLength)
       : BalancedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
-            dims, pairwiseFunctor, interactionLength, cellLength, heuristic),
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 
   void traverseParticlePairs() override;
@@ -61,15 +58,7 @@ class BalancedSlicedTraversal
 
   bool getUseNewton3() const override { return useNewton3; }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override {
-    switch (this->_heuristic) {
-      case loadEstimators::CellBasedHeuristic::none:
-        return TraversalOption::noneBalancedSliced;
-      case loadEstimators::CellBasedHeuristic::squaredCellSize:
-        return TraversalOption::squaredCellSizeBalancedSliced;
-    }
-    return TraversalOption::noneBalancedSliced;
-  }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::BalancedSliced; }
 
  private:
   C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;

@@ -215,6 +215,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   _autopas.setAllowedDataLayouts(_config->dataLayoutOptions);
   _autopas.setAllowedNewton3Options(_config->newton3Options);
   _autopas.setAllowedTraversals(_config->traversalOptions);
+  _autopas.setAllowedLoadEstimators(_config->loadEstimatorOptions);
   _autopas.setBoxMax(_config->boxMax);
   _autopas.setBoxMin(_config->boxMin);
   _autopas.setCutoff(_config->cutoff);
