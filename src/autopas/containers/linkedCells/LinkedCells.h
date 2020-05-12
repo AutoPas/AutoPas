@@ -110,7 +110,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    * @return load estimator function object.
    */
   BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
-    switch (_loadEstimator) {
+    switch (this->_loadEstimator) {
       case LoadEstimatorOption::none: {
         return
             [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
