@@ -45,8 +45,45 @@ TEST_F(GaussianClusterTest, maxNoNeighbours) {
                   AcquisitionFunctionOption::upperConfidenceBound, false);
 }
 
+TEST_F(GaussianClusterTest, maxAllNeighbours) {
+  auto functor1 = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2) - 2; };
+  auto functor2 = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2) - 1; };
+  auto functor3 = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
+  std::vector<std::function<double(double, double)>> functors = {functor1, functor2, functor3};
+
+  std::vector<Eigen::VectorXi> allDiscrete;
+  for (int i = 0; i < functors.size(); ++i) {
+    Eigen::VectorXi vec(1);
+    vec << i;
+    allDiscrete.emplace_back(std::move(vec));
+  }
+
+  // return all but target as neighbours
+  auto neighboursFun = [&allDiscrete](Eigen::VectorXi target) -> std::vector<Eigen::VectorXi> {
+    std::vector<Eigen::VectorXi> result;
+    for (const auto &vec : allDiscrete) {
+      if (vec != target) {
+        result.emplace_back(vec);
+      }
+    }
+    return result;
+  };
+
+  std::pair domain{NumberInterval<double>(-2, 2), NumberInterval<double>(-2, 2)};
+  constexpr double maxError = 1.;
+
+  // max of function
+  int maxDiscrete = 2;
+  Eigen::VectorXd maxContinuous(2);
+  maxContinuous << -1, 1;
+
+  test2DFunctions(functors, neighboursFun, maxDiscrete, maxContinuous, maxError, domain,
+                  AcquisitionFunctionOption::upperConfidenceBound, false);
+}
+
 void GaussianClusterTest::printMaps(int xChunks, int yChunks, const autopas::NumberSet<double> &domainX,
                                     const autopas::NumberSet<double> &domainY, const autopas::GaussianCluster &gc,
+                                    std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> neighboursFun,
                                     autopas::AcquisitionFunctionOption af) {
   // get distance between chunks
   double xSpace = (domainX.getMax() - domainX.getMin()) / (xChunks - 1);
@@ -58,10 +95,11 @@ void GaussianClusterTest::printMaps(int xChunks, int yChunks, const autopas::Num
   std::vector<std::vector<std::vector<double>>> acqMaps;
   acqMaps.reserve(numFunctors);
   double acqMin = std::numeric_limits<double>::max();
-  double acqMax = std::numeric_limits<double>::min();
+  double acqMax = std::numeric_limits<double>::lowest();
   for (size_t i = 0; i < numFunctors; ++i) {
     std::vector<std::vector<double>> acqMap;
-    const auto &cluster = gc.getCluster(i);
+    Eigen::VectorXi sampleDiscrete(1);
+    sampleDiscrete << i;
 
     for (int y = 0; y < xChunks; ++y) {
       // calculate a row
@@ -69,7 +107,7 @@ void GaussianClusterTest::printMaps(int xChunks, int yChunks, const autopas::Num
       for (int x = 0; x < xChunks; ++x) {
         // calculate value of chunk
         Eigen::Vector2d sampleContinuous(x * xSpace + domainX.getMin(), (y * ySpace + domainY.getMin()));
-        double val = cluster.calcAcquisition(af, sampleContinuous);
+        double val = gc.calcAcquisition(af, sampleDiscrete, sampleContinuous, neighboursFun(sampleDiscrete));
 
         row.push_back(val);
 
@@ -77,7 +115,6 @@ void GaussianClusterTest::printMaps(int xChunks, int yChunks, const autopas::Num
         acqMin = std::min(val, acqMin);
         acqMax = std::max(val, acqMax);
       }
-
       acqMap.push_back(std::move(row));
     }
     acqMaps.push_back(std::move(acqMap));

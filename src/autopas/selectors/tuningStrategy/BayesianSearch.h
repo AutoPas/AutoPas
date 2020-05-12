@@ -105,7 +105,7 @@ class BayesianSearch : public TuningStrategyInterface {
   inline void addEvidence(long time) override {
     // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
     // represent a maximization problem
-    _gaussianProcess.addEvidence(_currentConfig.oneHotEncode(), -time * secondsPerMicroseconds);
+    _gaussianProcess.addEvidence(_currentConfig.oneHotEncode(), -time * secondsPerMicroseconds, true);
     _currentSamples.clear();
   }
 

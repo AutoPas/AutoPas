@@ -78,7 +78,7 @@ class GaussianProcess {
    * @param output f(x)
    * @param tuneHypers if false hyperparemeters need to be set manually
    */
-  void addEvidence(const Vector &input, double output, bool tuneHypers = true) {
+  void addEvidence(const Vector &input, double output, bool tuneHypers) {
     if (static_cast<size_t>(input.size()) != _dims) {
       utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
                                          input.size(), _dims);

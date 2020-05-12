@@ -15,8 +15,8 @@ TEST_F(GaussianProcessTest, wrongDimension) {
   Eigen::VectorXd f1 = Eigen::VectorXd::Ones(1);
   Eigen::VectorXd f2 = Eigen::VectorXd::Zero(3);
 
-  EXPECT_THROW(gp.addEvidence(f1, 0), utils::ExceptionHandler::AutoPasException);
-  EXPECT_THROW(gp.addEvidence(f2, 1), utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW(gp.addEvidence(f1, 0, true), utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW(gp.addEvidence(f2, 1, true), utils::ExceptionHandler::AutoPasException);
 }
 
 TEST_F(GaussianProcessTest, noEvidence) {
@@ -48,7 +48,7 @@ TEST_F(GaussianProcessTest, oneEvidence) {
   Eigen::VectorXd f2(1);
   f2 << 1000.;
 
-  gp.addEvidence(f1, out1);
+  gp.addEvidence(f1, out1, true);
 
   // predicting point same as evidence -> should expect same output as evidence
   EXPECT_NEAR(gp.predictMean(f1), out1, epsilon);
@@ -76,8 +76,8 @@ TEST_F(GaussianProcessTest, twoEvidence) {
   Eigen::VectorXd f3(1);
   f3 << 0.;
 
-  gp.addEvidence(f1, out1);
-  gp.addEvidence(f2, out2);
+  gp.addEvidence(f1, out1, false);
+  gp.addEvidence(f2, out2, true);
 
   // predicting point same as evidence
   // should expect same output as evidence because great distance between inputs
@@ -103,8 +103,8 @@ TEST_F(GaussianProcessTest, clear) {
   f2 << 100.;
   double out2 = -3.;
 
-  gp.addEvidence(f1, out1);
-  gp.addEvidence(f2, out2);
+  gp.addEvidence(f1, out1, false);
+  gp.addEvidence(f2, out2, true);
   gp.clear();
 
   // predicting points as deleted evidence
@@ -117,7 +117,7 @@ TEST_F(GaussianProcessTest, clear) {
 
   // test new evidence at deleted point
   out2 = 10.;
-  gp.addEvidence(f2, out2);
+  gp.addEvidence(f2, out2, true);
 
   EXPECT_NEAR(gp.predictMean(f1), out2, epsilon);
 
@@ -146,7 +146,7 @@ TEST_F(GaussianProcessTest, sine) {
     f << input;
     double output = functor(input);
 
-    gp.addEvidence(f, output);
+    gp.addEvidence(f, output, true);
   }
 
   // make equidistant prediction over the domain
@@ -222,7 +222,7 @@ void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::Numb
   // precalculate acqMap
   std::vector<std::vector<double>> acqMap;
   double acqMin = std::numeric_limits<double>::max();
-  double acqMax = std::numeric_limits<double>::min();
+  double acqMax = std::numeric_limits<double>::lowest();
   for (int y = 0; y < xChunks; ++y) {
     // calculate a row
     std::vector<double> row;

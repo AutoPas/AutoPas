@@ -175,6 +175,50 @@ class GaussianCluster {
   }
 
   /**
+   * Calculates the acquisition function for given input.
+   * @param af acquisition function a:input->double
+   * @param inputDiscrete x
+   * @param inputContinuous y
+   * @param neighbours neighbouring clusters
+   * @return a(x,y) This value can be compared with values a(v,w) of other inputs (v,w) to weigh which input would give
+   * the most gain if its evidence were provided.
+   */
+  double calcAcquisition(AcquisitionFunctionOption af, VectorDiscrete &inputDiscrete,
+                         const VectorContinuous &inputContinuous, const std::vector<VectorDiscrete> &neighbours) const {
+    auto inputIndex = getIndex(inputDiscrete);
+    double inputMean = _clusters[inputIndex].predictMean(inputContinuous);
+    double inputVar = _clusters[inputIndex].predictVar(inputContinuous);
+    double inputStddev = std::sqrt(inputVar);
+
+    double mixMean = inputMean;
+    double mixVar = inputVar;
+    double weightSum = 1.;
+
+    // sum over neighbours
+    for (const auto &n : neighbours) {
+      size_t n_index = getIndex(n);
+      // ignore clusters without evidence
+      if (_clusters[n_index].numEvidence() > 0) {
+        double nMean = _clusters[n_index].predictMean(inputContinuous);
+        double nVar = _clusters[n_index].predictVar(inputContinuous);
+        double nStddev = std::sqrt(nVar);
+
+        // weight based on 2-wasserstein distance
+        double distance = std::pow(nMean - inputMean, 2) + std::pow(nStddev - inputStddev, 2);
+        double n_weight = inputVar / (inputVar + distance);
+        mixMean += nMean * n_weight;
+        mixVar += nVar * n_weight * n_weight;
+        weightSum += n_weight;
+      }
+    }
+
+    mixMean /= weightSum;
+    mixVar /= weightSum * weightSum;
+
+    return AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMaxValue);
+  }
+
+  /**
    * Generate all possible combinations of discrete tuples and continuous tuples in samples and
    * order them by their acquisition.
    * @param af function to optimize
@@ -182,11 +226,11 @@ class GaussianCluster {
    * @param continuousSamples continuous tuples
    * @return all discrete-continuous tuples ordered by their corresponding acquisition
    */
-  std::vector<Vector> sampleAcquisition(
-      AcquisitionFunctionOption af, const std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> &neighbourFun,
-      const std::vector<VectorContinuous> &continuousSamples) {
+  std::vector<Vector> sampleAcquisition(AcquisitionFunctionOption af,
+                                        const std::function<std::vector<VectorDiscrete>(VectorDiscrete)> &neighbourFun,
+                                        const std::vector<VectorContinuous> &continuousSamples) const {
     // store pairs of vectors and corresponding acquisition
-    using VectorAcquisition = std::pair<Vector, std::optional<double>>;
+    using VectorAcquisition = std::pair<Vector, double>;
     std::vector<VectorAcquisition> acquisitions;
     // pair up all discrete with all continuous samples
     acquisitions.reserve(_clusters.size() * continuousSamples.size());
@@ -207,19 +251,14 @@ class GaussianCluster {
         stddevs.push_back(std::sqrt(var));
       }
 
-      // get maximum acquisition considering neighbours
+      // get acquisition considering neighbours
       VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
       for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
         auto neighbours = neighbourFun(currentDiscrete);
 
-        double mixMean = 0.;
-        double mixVar = 0.;
-        double weightSum = 0.;
-        if (_clusters[i].numEvidence() > 0) {
-          mixMean = means[i];
-          mixVar = vars[i];
-          weightSum = 1.;
-        }
+        double mixMean = means[i];
+        double mixVar = vars[i];
+        double weightSum = 1.;
 
         // sum over neighbours
         for (const auto &n : neighbours) {
@@ -235,34 +274,20 @@ class GaussianCluster {
           }
         }
 
-        // check if at least one evidence added
-        if (weightSum > 0) {
-          // normalize
-          mixMean /= weightSum;
-          mixVar /= weightSum * weightSum;
+        // normalize
+        mixMean /= weightSum;
+        mixVar /= weightSum * weightSum;
 
-          // calc acquisition
-          double currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMaxValue);
-
-          acquisitions.emplace_back(std::make_pair(currentDiscrete, currentContinuous), currentValue);
-        } else {
-          // no evidence
-          acquisitions.emplace_back(std::make_pair(currentDiscrete, currentContinuous), std::nullopt);
-        }
+        // calc acquisition
+        double currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMaxValue);
+        acquisitions.emplace_back(std::make_pair(currentDiscrete, currentContinuous), currentValue);
       }
     }
 
     std::sort(acquisitions.begin(), acquisitions.end(), [](const VectorAcquisition &va1, const VectorAcquisition &va2) {
       auto acquisition1 = va1.second;
       auto acquisition2 = va2.second;
-      if (not acquisition2.has_value()) {
-        // vector2 has no evidence (high priority)
-        return acquisition1.has_value();
-      } else if (not acquisition1.has_value()) {
-        // vector1 has no evidence (high priority)
-        return false;
-      }
-      return acquisition1.value() < acquisition2.value();
+      return acquisition1 < acquisition2;
     });
 
     std::vector<Vector> orderedVectors;

@@ -40,7 +40,7 @@ class GaussianProcessTest : public AutoPasTestBase {
     // add first evidence
     Eigen::VectorXd firstEvidence(2);
     firstEvidence << 0, 0;
-    gp.addEvidence(firstEvidence, function(0, 0));
+    gp.addEvidence(firstEvidence, function(0, 0), true);
 
     for (unsigned idEvidence = 1; idEvidence < numEvidence; ++idEvidence) {
       // create lhs samples
@@ -63,7 +63,7 @@ class GaussianProcessTest : public AutoPasTestBase {
         std::cout << "Acq max: " << std::endl << am << std::endl;
         std::cout << "Got: " << amOut << std::endl;
       }
-      gp.addEvidence(am, amOut);
+      gp.addEvidence(am, amOut, true);
     }
 
     auto predictedTarget = gp.getEvidenceMax();

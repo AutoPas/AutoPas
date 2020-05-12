@@ -75,7 +75,7 @@ class GaussianClusterTest : public AutoPasTestBase {
       double amOut = functions[amDiscrete[0]](amContinuous[0], amContinuous[1]);
 
       if (visualize) {
-        printMaps(20, 20, domain.first, domain.second, gc, acquisitionFunctionOption);
+        printMaps(20, 20, domain.first, domain.second, gc, neighboursFun, acquisitionFunctionOption);
         printEvidence(amDiscrete, amContinuous, amOut, idEvidence);
       }
 
@@ -101,6 +101,7 @@ class GaussianClusterTest : public AutoPasTestBase {
    */
   static void printMaps(int xChunks, int yChunks, const autopas::NumberSet<double> &domainX,
                         const autopas::NumberSet<double> &domainY, const autopas::GaussianCluster &gc,
+                        std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> neighboursFun,
                         autopas::AcquisitionFunctionOption af);
 
   /**
