@@ -18,12 +18,12 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
 
   // while #evidence < maxEvidence. tuning -> True
   for (size_t i = 1; i < maxEvidence; ++i) {
-    bayesClusterSearch.addEvidence(i);
+    bayesClusterSearch.addEvidence(i, 0);
     EXPECT_TRUE(bayesClusterSearch.tune());
   }
 
   // #evidence == maxEvidence. tuning -> False
-  bayesClusterSearch.addEvidence(-1);
+  bayesClusterSearch.addEvidence(-1, 0);
   EXPECT_FALSE(bayesClusterSearch.tune());
 }
 
@@ -49,7 +49,7 @@ TEST_F(BayesianClusterSearchTest, testFindBest) {
 
   while (bayesClusterSearch.tune()) {
     autopas::FeatureVector current(bayesClusterSearch.getCurrentConfiguration());
-    bayesClusterSearch.addEvidence(dummyTimeFun(current));
+    bayesClusterSearch.addEvidence(dummyTimeFun(current), 0);
   }
 
   autopas::FeatureVector prediction(bayesClusterSearch.getCurrentConfiguration());
