@@ -1,7 +1,7 @@
 /**
  * @file TuningStrategyOption.h
  * @author F. Gratl
- * @date 6/3/19
+ * @date 03.06.2019
  */
 
 #pragma once
@@ -38,6 +38,11 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * ActiveHarmony client / server system
      */
     activeHarmony,
+    /**
+     * Predicts performance of all configurations based on previous tuning phases, tests those which are in the optimum
+     * range, and selects the best.
+     */
+    predictiveTuning,
   };
 
   /**
@@ -67,6 +72,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::fullSearch, "full-Search"},
         {TuningStrategyOption::randomSearch, "random-Search"},
         {TuningStrategyOption::activeHarmony, "active-harmony"},
+        {TuningStrategyOption::predictiveTuning, "predictive-tuning"},
     };
   };
 

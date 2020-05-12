@@ -1,7 +1,7 @@
 /**
  * @file TuningStrategyInterface.h
  * @author F. Gratl
- * @date 5/29/19
+ * @date 29.05.2019
  */
 
 #pragma once
@@ -45,8 +45,9 @@ class TuningStrategyInterface {
 
   /**
    * Reset all internal parameters to the beginning of a new tuning cycle.
+   * @param iteration Gives the current iteration to the tuning strategy.
    */
-  virtual void reset() = 0;
+  virtual void reset(size_t iteration) = 0;
 
   /**
    * Returns all container options the strategy might choose.

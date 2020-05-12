@@ -1,7 +1,7 @@
 /**
  * @file TuningStrategyFactory.cpp
  * @author seckler
- * @date 07.02.20
+ * @date 07.02.2020
  */
 
 #include "TuningStrategyFactory.h"
@@ -9,14 +9,15 @@
 #include "ActiveHarmony.h"
 #include "BayesianSearch.h"
 #include "FullSearch.h"
+#include "PredictiveTuning.h"
 #include "RandomSearch.h"
 
 std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory::generateTuningStrategy(
     autopas::TuningStrategyOption tuningStrategyOption, const std::set<autopas::ContainerOption> &allowedContainers,
     autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<autopas::TraversalOption> &allowedTraversals,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
-    const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence,
-    AcquisitionFunctionOption acquisitionFunctionOption) {
+    const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
+    unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption) {
   // clang compiler bug requires static cast
   switch (static_cast<TuningStrategyOption>(tuningStrategyOption)) {
     case TuningStrategyOption::randomSearch: {
@@ -43,6 +44,12 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     case TuningStrategyOption::activeHarmony: {
       return std::make_unique<ActiveHarmony>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
                                              allowedDataLayouts, allowedNewton3Options);
+    }
+
+    case TuningStrategyOption::predictiveTuning: {
+      return std::make_unique<PredictiveTuning>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
+                                                allowedDataLayouts, allowedNewton3Options, relativeOptimum,
+                                                maxTuningPhasesWithoutTest);
     }
   }
 

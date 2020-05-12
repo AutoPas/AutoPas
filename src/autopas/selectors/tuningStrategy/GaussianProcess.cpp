@@ -1,7 +1,7 @@
 /**
  * @file GaussianProcess.cpp
  * @author seckler
- * @date 07.02.20
+ * @date 07.02.2020
  */
 
 #include "GaussianProcess.h"

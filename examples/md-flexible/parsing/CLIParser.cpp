@@ -1,7 +1,7 @@
 /**
  * @file CLIParser.cpp
  * @author F. Gratl
- * @date 10/18/19
+ * @date 18.10.2019
  */
 
 #include "CLIParser.h"
@@ -15,41 +15,43 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   bool displayHelp = false;
   int option, option_index;
   static struct option long_options[] = {{"help", no_argument, nullptr, 'h'},
-                                         {MDFlexConfig::acquisitionFunctionOptionStr, required_argument, nullptr, 'A'},
-                                         {MDFlexConfig::boxLengthStr, required_argument, nullptr, 'b'},
-                                         {MDFlexConfig::cellSizeFactorsStr, required_argument, nullptr, 'a'},
+                                         {MDFlexConfig::newton3OptionsStr, required_argument, nullptr, '3'},
                                          {MDFlexConfig::checkpointfileStr, required_argument, nullptr, '4'},
+                                         {MDFlexConfig::acquisitionFunctionOptionStr, required_argument, nullptr, 'A'},
+                                         {MDFlexConfig::cellSizeFactorsStr, required_argument, nullptr, 'a'},
+                                         {MDFlexConfig::boxLengthStr, required_argument, nullptr, 'b'},
                                          {MDFlexConfig::containerOptionsStr, required_argument, nullptr, 'c'},
-                                         {MDFlexConfig::dontCreateEndConfigStr, no_argument, nullptr, 'e'},
                                          {MDFlexConfig::cutoffStr, required_argument, nullptr, 'C'},
                                          {MDFlexConfig::dataLayoutOptionsStr, required_argument, nullptr, 'd'},
                                          {MDFlexConfig::deltaTStr, required_argument, nullptr, 'D'},
-                                         {MDFlexConfig::distributionMeanStr, required_argument, nullptr, 'm'},
-                                         {MDFlexConfig::distributionStdDevStr, required_argument, nullptr, 'z'},
+                                         {MDFlexConfig::dontCreateEndConfigStr, no_argument, nullptr, 'e'},
+                                         {MDFlexConfig::tuningMaxEvidenceStr, required_argument, nullptr, 'E'},
                                          {MDFlexConfig::functorOptionStr, required_argument, nullptr, 'f'},
+                                         {MDFlexConfig::dontMeasureFlopsStr, no_argument, nullptr, 'F'},
                                          {MDFlexConfig::generatorOptionStr, required_argument, nullptr, 'g'},
                                          {MDFlexConfig::iterationsStr, required_argument, nullptr, 'i'},
-                                         {MDFlexConfig::logFileNameStr, required_argument, nullptr, 'L'},
-                                         {MDFlexConfig::logLevelStr, required_argument, nullptr, 'l'},
-                                         {MDFlexConfig::dontMeasureFlopsStr, no_argument, nullptr, 'F'},
-                                         {MDFlexConfig::newton3OptionsStr, required_argument, nullptr, '3'},
-                                         {MDFlexConfig::particlesPerDimStr, required_argument, nullptr, 'n'},
-                                         {MDFlexConfig::particlesSpacingStr, required_argument, nullptr, 's'},
-                                         {MDFlexConfig::particlesTotalStr, required_argument, nullptr, 'N'},
-                                         {MDFlexConfig::periodicStr, required_argument, nullptr, 'p'},
-                                         {MDFlexConfig::selectorStrategyStr, required_argument, nullptr, 'y'},
-                                         {MDFlexConfig::thermostatStr, required_argument, nullptr, 'u'},
-                                         {MDFlexConfig::traversalOptionsStr, required_argument, nullptr, 't'},
                                          {MDFlexConfig::tuningIntervalStr, required_argument, nullptr, 'I'},
-                                         {MDFlexConfig::tuningMaxEvidenceStr, required_argument, nullptr, 'E'},
-                                         {MDFlexConfig::tuningSamplesStr, required_argument, nullptr, 'S'},
-                                         {MDFlexConfig::tuningStrategyOptionsStr, required_argument, nullptr, 'T'},
+                                         {MDFlexConfig::logLevelStr, required_argument, nullptr, 'l'},
+                                         {MDFlexConfig::logFileNameStr, required_argument, nullptr, 'L'},
+                                         {MDFlexConfig::distributionMeanStr, required_argument, nullptr, 'm'},
+                                         {MDFlexConfig::maxTuningPhasesWithoutTestStr, required_argument, nullptr, 'M'},
+                                         {MDFlexConfig::particlesPerDimStr, required_argument, nullptr, 'n'},
+                                         {MDFlexConfig::particlesTotalStr, required_argument, nullptr, 'N'},
+                                         {MDFlexConfig::relativeOptimumRangeStr, required_argument, nullptr, 'o'},
+                                         {MDFlexConfig::periodicStr, required_argument, nullptr, 'p'},
                                          {MDFlexConfig::verletClusterSizeStr, required_argument, nullptr, 'q'},
-                                         {MDFlexConfig::verletRebuildFrequencyStr, required_argument, nullptr, 'v'},
                                          {MDFlexConfig::verletSkinRadiusStr, required_argument, nullptr, 'r'},
+                                         {MDFlexConfig::particlesSpacingStr, required_argument, nullptr, 's'},
+                                         {MDFlexConfig::tuningSamplesStr, required_argument, nullptr, 'S'},
+                                         {MDFlexConfig::traversalOptionsStr, required_argument, nullptr, 't'},
+                                         {MDFlexConfig::tuningStrategyOptionsStr, required_argument, nullptr, 'T'},
+                                         {MDFlexConfig::thermostatStr, required_argument, nullptr, 'u'},
+                                         {MDFlexConfig::verletRebuildFrequencyStr, required_argument, nullptr, 'v'},
                                          {MDFlexConfig::vtkFileNameStr, required_argument, nullptr, 'w'},
                                          {MDFlexConfig::vtkWriteFrequencyStr, required_argument, nullptr, 'W'},
+                                         {MDFlexConfig::selectorStrategyStr, required_argument, nullptr, 'y'},
                                          {MDFlexConfig::yamlFilenameStr, required_argument, nullptr, 'Y'},
+                                         {MDFlexConfig::distributionStdDevStr, required_argument, nullptr, 'z'},
                                          {nullptr, no_argument, nullptr, 0}};  // needed to signal the end of the array
   // reset getopt to scan from the start of argv
   optind = 1;
@@ -269,6 +271,19 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         }
         break;
       }
+      case 'M': {
+        try {
+          config.maxTuningPhasesWithoutTest = (unsigned int)stoul(strArg);
+          if (config.maxTuningPhasesWithoutTest < 1) {
+            cerr << "Max tuning phases without test has to be positive!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing max tuning phases without test: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case 'n': {
         try {
           config.particlesPerDim = stoul(strArg);
@@ -283,6 +298,19 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
           config.particlesTotal = stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing total number of particles: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'o': {
+        try {
+          config.relativeOptimumRange = (double)stoul(strArg);
+          if (config.relativeOptimumRange < 1) {
+            cerr << "Relative optimum range has to be greater or equal one!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing relative optimum range: " << optarg << endl;
           displayHelp = true;
         }
         break;
