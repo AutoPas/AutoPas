@@ -39,7 +39,8 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      */
     activeHarmony,
     /**
-     * Predicts all configurations, tests those which are in the optimum range and selects the best.
+     * Predicts performance of all configurations based on previous tuning phases, tests those which are in the optimum
+     * range, and selects the best.
      */
     predictiveTuning,
   };

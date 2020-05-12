@@ -1,5 +1,5 @@
 /**
- * @file TuningStrategySuperClass.h
+ * @file SetSearchSpaceBasedTuningStrategy.h
  * @author Julian Pelloth
  * @date 29.04.2020
  */
@@ -13,46 +13,48 @@
 namespace autopas {
 
 /**
- * Super class for tuning strategies
+ * Super class for tuning strategies with a set based search space.
  */
-class TuningStrategySuperClass : public TuningStrategyInterface {
+class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
  public:
   /**
-   * Constructor for the TuningStrategySuperClass that generates the search space from the allowed options.
+   * Constructor for the SetSearchSpaceBasedTuningStrategy that generates the search space from the allowed options.
    * @param allowedContainerOptions
    * @param allowedTraversalOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
    */
-  TuningStrategySuperClass(const std::set<ContainerOption> &allowedContainerOptions,
-                           const std::set<double> &allowedCellSizeFactors,
-                           const std::set<TraversalOption> &allowedTraversalOptions,
-                           const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                           const std::set<Newton3Option> &allowedNewton3Options)
-      : _containerOptions(allowedContainerOptions) {
+  SetSearchSpaceBasedTuningStrategy(const std::set<ContainerOption> &allowedContainerOptions,
+                                    const std::set<double> &allowedCellSizeFactors,
+                                    const std::set<TraversalOption> &allowedTraversalOptions,
+                                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                                    const std::set<Newton3Option> &allowedNewton3Options)
+      : _allowedContainerOptions(allowedContainerOptions) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                         allowedDataLayoutOptions, allowedNewton3Options);
   }
 
   /**
-   * Constructor for the TuningStrategySuperClass that only contains the given configurations.
+   * Constructor for the SetSearchSpaceBasedTuningStrategy that only contains the given configurations.
    * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
    */
-  explicit TuningStrategySuperClass(std::set<Configuration> allowedConfigurations)
-      : _containerOptions{}, _searchSpace(std::move(allowedConfigurations)) {
+  explicit SetSearchSpaceBasedTuningStrategy(std::set<Configuration> allowedConfigurations)
+      : _allowedContainerOptions{}, _searchSpace(std::move(allowedConfigurations)) {
     for (const auto &config : _searchSpace) {
-      _containerOptions.insert(config.container);
+      _allowedContainerOptions.insert(config.container);
     }
   }
 
-  inline std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptions; }
+  [[nodiscard]] inline std::set<ContainerOption> getAllowedContainerOptions() const override {
+    return _allowedContainerOptions;
+  }
 
-  inline bool searchSpaceIsTrivial() const override { return _searchSpace.size() == 1; }
+  [[nodiscard]] inline bool searchSpaceIsTrivial() const override { return _searchSpace.size() == 1; }
 
-  inline bool searchSpaceIsEmpty() const override { return _searchSpace.empty(); }
+  [[nodiscard]] inline bool searchSpaceIsEmpty() const override { return _searchSpace.empty(); }
 
  protected:
   /**
@@ -74,24 +76,23 @@ class TuningStrategySuperClass : public TuningStrategyInterface {
    * @param findOptimumSearchSpace
    * @return optimum
    */
-  static inline std::__detail::_Node_const_iterator<std::pair<const Configuration, unsigned long>, false, true>
-  getOptimum(const std::unordered_map<Configuration, size_t, ConfigHash> &findOptimumSearchSpace);
+  static inline auto getOptimum(const std::unordered_map<Configuration, size_t, ConfigHash> &findOptimumSearchSpace);
 
   /**
-   * Contains every container option.
+   * Contains every allowed container option.
    */
-  std::set<ContainerOption> _containerOptions;
+  std::set<ContainerOption> _allowedContainerOptions;
   /**
    * Contains every configuration.
    */
   std::set<Configuration> _searchSpace;
 };
 
-void TuningStrategySuperClass::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
-                                                   const std::set<double> &allowedCellSizeFactors,
-                                                   const std::set<TraversalOption> &allowedTraversalOptions,
-                                                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                                   const std::set<Newton3Option> &allowedNewton3Options) {
+void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+                                                            const std::set<double> &allowedCellSizeFactors,
+                                                            const std::set<TraversalOption> &allowedTraversalOptions,
+                                                            const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                                                            const std::set<Newton3Option> &allowedNewton3Options) {
   // generate all potential configs
   for (const auto &containerOption : allowedContainerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
@@ -119,8 +120,7 @@ void TuningStrategySuperClass::populateSearchSpace(const std::set<ContainerOptio
   }
 }
 
-std::__detail::_Node_const_iterator<std::pair<const Configuration, unsigned long>, false, true>
-TuningStrategySuperClass::getOptimum(
+auto SetSearchSpaceBasedTuningStrategy::getOptimum(
     const std::unordered_map<Configuration, size_t, ConfigHash> &findOptimumSearchSpace) {
   return std::min_element(findOptimumSearchSpace.begin(), findOptimumSearchSpace.end(),
                           [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {

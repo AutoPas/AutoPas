@@ -37,9 +37,11 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << left << tuningIntervalStr << ":  " << tuningInterval << endl;
   os << setw(valueOffset) << left << tuningSamplesStr << ":  " << tuningSamples << endl;
   os << setw(valueOffset) << left << tuningMaxEvidenceStr << ":  " << tuningMaxEvidence << endl;
-  os << setw(valueOffset) << left << relativeOptimumRangeStr << ":  " << relativeOptimumRange << endl;
-  os << setw(valueOffset) << left << maxTuningPhasesWithoutTestStr << ":  " << maxTuningPhasesWithoutTest << endl;
-  os << setw(valueOffset) << left << extrapolationMethodOptionStr << ":  " << extrapolationMethodOption << endl;
+  if (tuningStrategyOption == autopas::TuningStrategyOption::predictiveTuning) {
+    os << setw(valueOffset) << left << relativeOptimumRangeStr << ":  " << relativeOptimumRange << endl;
+    os << setw(valueOffset) << left << maxTuningPhasesWithoutTestStr << ":  " << maxTuningPhasesWithoutTest << endl;
+    os << setw(valueOffset) << left << extrapolationMethodOptionStr << ":  " << extrapolationMethodOption << endl;
+  }
   os << setw(valueOffset) << left << functorOptionStr << ":  ";
   switch (functorOption) {
     case FunctorOption::lj12_6: {

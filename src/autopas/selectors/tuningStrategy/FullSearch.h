@@ -10,7 +10,7 @@
 #include <sstream>
 #include <utility>
 
-#include "TuningStrategySuperClass.h"
+#include "SetSearchSpaceBasedTuningStrategy.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -19,7 +19,7 @@ namespace autopas {
 /**
  * Exhaustive full search of the search space by testing every applicable configuration and then selecting the optimum.
  */
-class FullSearch : public TuningStrategySuperClass {
+class FullSearch : public SetSearchSpaceBasedTuningStrategy {
  public:
   /**
    * Constructor for the FullSearch that generates the search space from the allowed options.
@@ -33,8 +33,8 @@ class FullSearch : public TuningStrategySuperClass {
              const std::set<TraversalOption> &allowedTraversalOptions,
              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
              const std::set<Newton3Option> &allowedNewton3Options)
-      : TuningStrategySuperClass(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                                 allowedDataLayoutOptions, allowedNewton3Options),
+      : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
+                                          allowedDataLayoutOptions, allowedNewton3Options),
         _currentConfig(_searchSpace.begin()) {}
 
   /**
@@ -43,7 +43,7 @@ class FullSearch : public TuningStrategySuperClass {
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
    */
   explicit FullSearch(std::set<Configuration> allowedConfigurations)
-      : TuningStrategySuperClass(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {}
+      : SetSearchSpaceBasedTuningStrategy(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {}
 
   inline void addEvidence(long time, size_t iteration) override { _traversalTimes[*_currentConfig] = time; }
 

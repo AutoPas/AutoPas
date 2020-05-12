@@ -9,7 +9,7 @@
 #include <set>
 #include <utility>
 
-#include "TuningStrategySuperClass.h"
+#include "SetSearchSpaceBasedTuningStrategy.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -21,7 +21,7 @@ namespace autopas {
  * only tests those which are within a certain range of the best prediction. In the end, the configuration
  * that performed best during testing is selected.
  */
-class PredictiveTuning : public TuningStrategySuperClass {
+class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
  public:
   /**
    * Constructor for the PredictiveTuning that generates the search space from the allowed options.
@@ -40,8 +40,8 @@ class PredictiveTuning : public TuningStrategySuperClass {
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                    const std::set<Newton3Option> &allowedNewton3Options, double relativeOptimum,
                    unsigned int maxTuningIterationsWithoutTest, ExtrapolationMethodOption extrapolationMethodOption)
-      : TuningStrategySuperClass(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                                 allowedDataLayoutOptions, allowedNewton3Options),
+      : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
+                                          allowedDataLayoutOptions, allowedNewton3Options),
         _currentConfig(_searchSpace.begin()),
         _relativeOptimumRange(relativeOptimum),
         _maxTuningIterationsWithoutTest(maxTuningIterationsWithoutTest),
@@ -59,7 +59,7 @@ class PredictiveTuning : public TuningStrategySuperClass {
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
    */
   explicit PredictiveTuning(std::set<Configuration> allowedConfigurations)
-      : TuningStrategySuperClass(std::move(allowedConfigurations)),
+      : SetSearchSpaceBasedTuningStrategy(std::move(allowedConfigurations)),
         _currentConfig(_searchSpace.begin()),
         _relativeOptimumRange(1.2),
         _maxTuningIterationsWithoutTest(5),
