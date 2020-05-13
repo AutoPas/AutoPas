@@ -1,7 +1,7 @@
 /**
  * @file YamlParser.h
  * @author N. Fottner
- * @date 15/7/19
+ * @date 15.07.2019
  */
 #pragma once
 

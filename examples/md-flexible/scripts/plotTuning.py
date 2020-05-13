@@ -11,6 +11,13 @@ assert sys.version_info >= (3,8)
 
 # ---------------------------------------------- Input ----------------------------------------------
 
+# help message
+for arg in sys.argv[1:]:
+    if "--help" in arg:
+        print("Usage: ./plotTuning.py [path/To/mdFlex/std.out ...]")
+        print("If no input is given the script looks for the latest testTuning directory in the current directory.")
+        exit(0)
+
 # take all input files as source for a plot
 if len(sys.argv) > 1:
     datafiles=sys.argv[1:]
