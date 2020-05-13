@@ -62,6 +62,7 @@ class GaussianProcess {
    */
   void clear() {
     _inputs.clear();
+    _outputs = Eigen::VectorXd::Zero(0);
     tuneHyperparameters();
   }
 
