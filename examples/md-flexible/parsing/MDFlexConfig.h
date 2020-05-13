@@ -117,6 +117,8 @@ class MDFlexConfig {
   FunctorOption functorOption{FunctorOption::lj12_6};
   static inline const char *iterationsStr{"iterations"};
   size_t iterations{10};
+  static inline const char *tuningPhasesStr{"tuning-phases"};
+  size_t tuningPhases{0};
   static inline const char *periodicStr{"periodic-boundaries"};
   bool periodic{true};
   // this starts with a don't such that it can be used as a flag with a sane default.
