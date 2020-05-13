@@ -61,6 +61,10 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
    * C04 traversals are usable, if cellSizeFactor >= 1.0 and there are at least 3 cells for each dimension.
    * @return information about applicability
    */
+  /*
+  * The cellsize cannot be smaller then the cutoffradius, if OpenMP is used.
+  * Also see: https://github.com/AutoPas/AutoPas/issues/464
+  */
   bool isApplicable() const override {
     if (dataLayout == DataLayoutOption::cuda) {
       return false;

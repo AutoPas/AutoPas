@@ -54,7 +54,11 @@ class C04HCP : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayou
 
   bool getUseNewton3() const override { return useNewton3; }
 
-  bool isApplicable() const override {  // TODO: Individual Restrictions
+  /*
+   * The cellsize cannot be smaller then the cutoffradius, if OpenMP is used.
+   * Also see: https://github.com/AutoPas/AutoPas/issues/464
+   */
+  bool isApplicable() const override {
     if (dataLayout == DataLayoutOption::cuda) {
       return false;
     }
