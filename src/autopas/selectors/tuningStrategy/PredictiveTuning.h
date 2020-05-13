@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <limits>
 #include <set>
 #include <utility>
 
@@ -159,7 +160,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * Gets incremented after every completed tuning phase.
    * Mainly used for the traversal time storage.
    */
-  unsigned int _tuningIterationsCounter = 0;
+  unsigned int _tuningIterationsCounter = 1;
   /**
    * Stores the iteration at the beginning of a tuning phase.
    */
@@ -183,7 +184,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
 };
 
 void PredictiveTuning::selectOptimalSearchSpace() {
-  if (_searchSpace.size() == 1 or _tuningIterationsCounter < 2) {
+  if (_searchSpace.size() == 1 or _tuningIterationsCounter < 3) {
     _currentConfig = _searchSpace.begin();
     return;
   }
@@ -230,13 +231,16 @@ void PredictiveTuning::calculatePredictions() {
 void PredictiveTuning::linePrediction() {
   for (const auto &configuration : _searchSpace) {
     // if configuration was not tested in last tuning phase reuse prediction function.
-    if (_lastTest[configuration] != (_tuningIterationsCounter - 1)) {
+    if ((_lastTest[configuration] != (_tuningIterationsCounter - 1)) &&
+        _configurationLinearPredictionFunction[configuration].first != 0 &&
+        _configurationLinearPredictionFunction[configuration].second != 0) {
       const auto gradient = _configurationLinearPredictionFunction[configuration].first;
       const auto lastPoint = _configurationLinearPredictionFunction[configuration].second;
       const auto delta = _iterationBeginTuningPhase - _traversalTimesStorage[configuration].back().first;
 
       _configurationPredictions[configuration] = gradient * delta + lastPoint;
-    } else {
+      predictionOutput(configuration);
+    } else if (_traversalTimesStorage[configuration].size() >= 2) {
       const auto &vector = _traversalTimesStorage[configuration];
       const auto &traversal1 = vector[vector.size() - 1];
       const auto &traversal2 = vector[vector.size() - 2];
@@ -247,21 +251,28 @@ void PredictiveTuning::linePrediction() {
       // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
       _configurationPredictions[configuration] = traversal1.second + gradient * delta;
       _configurationLinearPredictionFunction[configuration] = std::make_pair(gradient, traversal1.second);
+      predictionOutput(configuration);
+    } else {
+      // When a configuration was not yet tested twice.
+      _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
+      _tooLongNotTestedSearchSpace.emplace(configuration);
+      AutoPasLog(debug, "No traversal time prediction for {}", configuration.toString());
     }
-
-    predictionOutput(configuration);
   }
 }
 
 void PredictiveTuning::linearRegression() {
   for (const auto &configuration : _searchSpace) {
     // if configuration was not tested in last tuning phase reuse prediction function.
-    if (_lastTest[configuration] != (_tuningIterationsCounter - 1)) {
+    if ((_lastTest[configuration] != (_tuningIterationsCounter - 1)) &&
+        _configurationLinearPredictionFunction[configuration].first != 0 &&
+        _configurationLinearPredictionFunction[configuration].second != 0) {
       const auto gradient = _configurationLinearPredictionFunction[configuration].first;
       const auto yIntercept = _configurationLinearPredictionFunction[configuration].second;
 
       _configurationPredictions[configuration] = gradient * _iterationBeginTuningPhase + yIntercept;
-    } else {
+      predictionOutput(configuration);
+    } else if (_traversalTimesStorage[configuration].size() >= 2) {
       size_t xy = 0, iterationSum = 0, iterationSquare = 0, timeSum = 0, n = _traversalTimesStorage.size();
       for (const auto pair : _traversalTimesStorage[configuration]) {
         xy += pair.first * pair.second;
@@ -279,9 +290,14 @@ void PredictiveTuning::linearRegression() {
 
       _configurationPredictions[configuration] = gradient * _iterationBeginTuningPhase + yIntercept;
       _configurationLinearPredictionFunction[configuration] = std::make_pair(gradient, yIntercept);
-    }
 
-    predictionOutput(configuration);
+      predictionOutput(configuration);
+    } else {
+      // When a configuration was not yet tested twice.
+      _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
+      _tooLongNotTestedSearchSpace.emplace(configuration);
+      AutoPasLog(debug, "No traversal time prediction for {}", configuration.toString());
+    }
   }
 }
 
@@ -290,10 +306,10 @@ void PredictiveTuning::predictionOutput(const Configuration configuration) {
   if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
     std::ostringstream ss;
     // print config
-    ss << getCurrentConfiguration().toString() << " : ";
+    ss << configuration.toString() << " : ";
     // print prediction
-    ss << " - " << _configurationPredictions[configuration];
-    AutoPasLog(debug, "Traversal time prediction for ", ss.str());
+    ss << _configurationPredictions[configuration];
+    AutoPasLog(debug, "Traversal time prediction for {}", ss.str());
   }
 }
 
@@ -387,18 +403,18 @@ void PredictiveTuning::selectOptimalConfiguration() {
   // In the first couple iterations tune iterates through _searchSpace until predictions are made
   if (_optimalSearchSpace.empty()) {
     for (const auto &configuration : _searchSpace) {
-      if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      if (_lastTest[configuration] == _tuningIterationsCounter) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
   } else {
     for (const auto &configuration : _optimalSearchSpace) {
-      if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      if (_lastTest[configuration] == _tuningIterationsCounter) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
     for (const auto &configuration : _tooLongNotTestedSearchSpace) {
-      if (_traversalTimesStorage[configuration].back().first >= _iterationBeginTuningPhase) {
+      if (_lastTest[configuration] == _tuningIterationsCounter) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
