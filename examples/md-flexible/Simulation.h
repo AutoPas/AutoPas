@@ -259,7 +259,8 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
 
   // sanitize simulation end condition
   if (_config->tuningPhases > 0) {
-    _config->iterations = std::numeric_limits<size_t>::min();
+    // set iterations to zero because we don't want to consider it
+    _config->iterations = 0ul;
   }
 
   // initializing Objects
