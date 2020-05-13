@@ -58,12 +58,15 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
 
   /**
    * C04 traversals are usable, if cellSizeFactor >= 1.0 and there are at least 3 cells for each dimension.
-   * @return
+   * @return information about applicability
    */
   [[nodiscard]] bool isApplicable() const override {
     if (dataLayout == DataLayoutOption::cuda) {
       return false;
     }
+
+    // The cellsize cannot be smaller then the cutoff, if OpenMP is used.
+    // Also see: https://github.com/AutoPas/AutoPas/issues/464
     const double minLength = *std::min_element(this->_cellLength.cbegin(), this->_cellLength.cend());
     const unsigned long minDim = *std::min_element(this->_cellsPerDimension.cbegin(), this->_cellsPerDimension.cend());
 
@@ -86,6 +89,14 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
   const std::array<long, 3> _end;
 };
 
+/**
+ * Computes the barriers of the aggregation of cells for each color
+ *
+ * @tparam ParticleCell
+ * @tparam PairwiseFunctor
+ * @tparam dataLayout
+ * @tparam useNewton3
+ */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 constexpr auto C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets32Pack() const {
   using std::make_pair;
@@ -126,6 +137,17 @@ constexpr auto C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
   return cellOffsets32Pack;
 }
 
+/**
+ * Goes through the cells aggregated by one color and processes the particles in each cell that is part of the
+ * aggregation by using the barriers saved in _cellOffset32Pack.
+ *
+ * @tparam ParticleCell
+ * @tparam PairwiseFunctor
+ * @tparam dataLayout
+ * @tparam useNewton3
+ * @param cells
+ * @param base3DIndex
+ */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBasePack32(
     std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex) {
@@ -148,6 +170,15 @@ void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proces
   }
 }
 
+/**
+ *  Go through one color and search for blocks belonging to the specified color.
+ *  Uses two cartesian grids that are overlapping gridwise but not blockwise.
+ *
+ * @tparam ParticleCell
+ * @tparam PairwiseFunctor
+ * @tparam dataLayout
+ * @tparam useNewton3
+ */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
@@ -189,17 +220,19 @@ void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traver
       break;
   }
 
+  // calculate whether the calculated starting point is part of the color
   long correctParity = parity(startOfThisColor[0], startOfThisColor[1], startOfThisColor[2]);
   if (color >= 2) {
     correctParity += 4;
   }
 
-  // to fix compiler complaints about perfectly nested loop.
+  // to fix intel64 icpc compiler complaints about perfectly nested loop (tested with version 19.0.4.20190416).
   const long startX = startOfThisColor[0], endX = _end[0];
   const long startY = startOfThisColor[1], endY = _end[1];
   const long startZ = startOfThisColor[2], endZ = _end[2];
 
 // first cartesian grid
+// grids are interlinked: one grid fills the gaps in the other grid
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(3) nowait
 #endif

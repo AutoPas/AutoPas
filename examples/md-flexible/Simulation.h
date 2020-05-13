@@ -79,6 +79,13 @@ class Simulation {
   void simulate(autopas::AutoPas<Particle, ParticleCell> &autopas);
 
   /**
+   * Indicates if enough iterations were completed yet.
+   * Uses class member variables.
+   * @return
+   */
+  [[nodiscard]] bool needsMoreIterations() const;
+
+  /**
    * Prints statistics like duration of calculation etc of the Simulation.
    * @param autopas
    */
@@ -103,7 +110,22 @@ class Simulation {
         simulate, vtk, init, total, thermostat, boundaries;
   } _timers;
 
+  /**
+   * Number of completed iterations. Aka. number of current iteration.
+   */
+  size_t iteration = 0;
+  /**
+   * Counts completed iterations that were used for tuning
+   */
   size_t numTuningIterations = 0;
+  /**
+   * Counts completed tuning phases.
+   */
+  size_t numTuningPhasesCompleted = 0;
+  /**
+   * Indicator if the previous iteration was used for tuning.
+   */
+  bool previousIterationWasTuningIteration = false;
 
   /**
    * Precision of floating point numbers printed.
@@ -154,6 +176,8 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   autopas.setBoxMax(_config->boxMax);
   autopas.setBoxMin(_config->boxMin);
   autopas.setCutoff(_config->cutoff);
+  autopas.setRelativeOptimumRange(_config->relativeOptimumRange);
+  autopas.setMaxTuningPhasesWithoutTest(_config->maxTuningPhasesWithoutTest);
   autopas.setNumSamples(_config->tuningSamples);
   autopas.setSelectorStrategy(_config->selectorStrategy);
   autopas.setTuningInterval(_config->tuningInterval);
@@ -167,6 +191,12 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   // load checkpoint
   if (not _config->checkpointfile.empty()) {
     Checkpoint::loadParticles(autopas, _config->checkpointfile);
+  }
+
+  // sanitize simulation end condition
+  if (_config->tuningPhases > 0) {
+    // set iterations to zero because we don't want to consider it
+    _config->iterations = 0ul;
   }
 
   // initializing Objects
@@ -214,7 +244,13 @@ void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Partic
     ++numTuningIterations;
   } else {
     _timers.forceUpdateNonTuning.addTime(timeIteration);
+    // if the previous iteration was a tuning iteration an the current one is not
+    // we have reached the end of a tuning phase
+    if (previousIterationWasTuningIteration) {
+      ++numTuningPhasesCompleted;
+    }
   }
+  previousIterationWasTuningIteration = tuningIteration;
 }
 
 template <class Particle, class ParticleCell>
@@ -222,7 +258,7 @@ void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, Par
   _timers.simulate.start();
 
   // main simulation loop
-  for (size_t iteration = 0; iteration < _config->iterations; ++iteration) {
+  for (; needsMoreIterations(); ++iteration) {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Iteration " << iteration << std::endl;
     }
@@ -351,14 +387,12 @@ void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Partic
   cout << timerToString("    VTK         ", _timers.vtk.getTotalTime(), digitsTimeTotalNS, durationSimulate);
   cout << timerToString("    Thermostat  ", _timers.thermostat.getTotalTime(), digitsTimeTotalNS, durationSimulate);
 
-  auto numIterations = _config->iterations;
-
-  cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / numIterations, digitsTimeTotalNS,
+  cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / iteration, digitsTimeTotalNS,
                         durationTotal);
-  auto mfups = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) * numIterations /
+  auto mfups = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) * iteration /
                _timers.forceUpdateTotal.getTotalTime() * 1e-9;
-  cout << "Tuning iterations: " << numTuningIterations << " / " << numIterations << " = "
-       << ((double)numTuningIterations / numIterations * 100) << "%" << endl;
+  cout << "Tuning iterations: " << numTuningIterations << " / " << iteration << " = "
+       << ((double)numTuningIterations / iteration * 100) << "%" << endl;
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (_config->dontMeasureFlops) {
@@ -366,14 +400,14 @@ void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Partic
         autopas.getCutoff());
     autopas.iteratePairwise(&flopCounterFunctor);
 
-    auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * numIterations;
+    auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * iteration;
     // approximation for flops of verlet list generation
     if (autopas.getContainerType() == autopas::ContainerOption::verletLists)
       flops +=
           flopCounterFunctor.getDistanceCalculations() *
           autopas::FlopCounterFunctor<PrintableMolecule,
                                       autopas::FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
-          floor(numIterations / _config->verletRebuildFrequency);
+          floor(iteration / _config->verletRebuildFrequency);
 
     cout << "GFLOPs       : " << flops * 1e-9 << endl;
     cout << "GFLOPs/sec   : " << flops * 1e-9 / durationSimulateSec << endl;
@@ -403,6 +437,10 @@ std::string Simulation<Particle, ParticleCell>::timerToString(const std::string 
   }
   ss << std::endl;
   return ss.str();
+}
+template <class Particle, class ParticleCell>
+bool Simulation<Particle, ParticleCell>::needsMoreIterations() const {
+  return iteration < _config->iterations or numTuningPhasesCompleted < _config->tuningPhases;
 }
 
 template <class Particle, class ParticleCell>

@@ -105,7 +105,8 @@ class AutoPas {
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
-            _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _acquisitionFunctionOption)),
+            _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
+            _maxTuningPhasesWithoutTest, _acquisitionFunctionOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
         std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
@@ -419,6 +420,32 @@ class AutoPas {
   void setMaxEvidence(unsigned int maxEvidence) { AutoPas::_maxEvidence = maxEvidence; }
 
   /**
+   * Get the range for the optimum in which has to be to be tested
+   * @return
+   */
+  double getRelativeOptimumRange() const { return _relativeOptimumRange; }
+
+  /**
+   * Set the range for the optimum in which has to be to be tested
+   * @param relativeOptimumRange
+   */
+  void setRelativeOptimumRange(double relativeOptimumRange) { AutoPas::_relativeOptimumRange = relativeOptimumRange; }
+
+  /**
+   * Get the maximum number of tuning phases a configuration can not be tested.
+   * @return
+   */
+  unsigned int getMaxTuningPhasesWithoutTest() const { return _maxTuningPhasesWithoutTest; }
+
+  /**
+   * Set the maximum number of tuning phases a configuration can not be tested.
+   * @param maxTuningPhasesWithoutTest
+   */
+  void setMaxTuningPhasesWithoutTest(unsigned int maxTuningPhasesWithoutTest) {
+    AutoPas::_maxTuningPhasesWithoutTest = maxTuningPhasesWithoutTest;
+  }
+
+  /**
    * Get acquisition function used for tuning
    * @return
    */
@@ -560,6 +587,14 @@ class AutoPas {
    * Tuning Strategies which work on a fixed number of evidence should use this value.
    */
   unsigned int _maxEvidence{10};
+  /**
+   * Specifies the factor of the range of the optimal configurations in PredicitveTuning.
+   */
+  double _relativeOptimumRange{1.2};
+  /**
+   * Specifies how many tuning phases a configuration can not be tested in PredicitveTuning.
+   */
+  unsigned int _maxTuningPhasesWithoutTest{5};
   /**
    * Acquisition function used for tuning.
    * For possible acquisition function choices see AutoPas::AcquisitionFunction.
