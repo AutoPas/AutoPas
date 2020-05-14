@@ -81,7 +81,7 @@ public:
             _allowedDataLayouts(DataLayoutOption::getAllOptions()),
             _allowedNewton3Options(Newton3Option::getAllOptions()),
             _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))),
-            _autopasMPICommunicator(MPI_COMM_NULL)
+            _autopasMPICommunicator(AUTOPAS_MPI_COMM_NULL)
   {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
@@ -123,8 +123,8 @@ public:
    *
    */
   void init() {
-    if (_autopasMPICommunicator == MPI_COMM_NULL) {
-      MPI_Comm_dup(MPI_COMM_WORLD, &_autopasMPICommunicator);
+    if (_autopasMPICommunicator == AUTOPAS_MPI_COMM_NULL) {
+      AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_autopasMPICommunicator);
     }
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
@@ -143,7 +143,7 @@ public:
    * Do NOT call if: Externally provided MPI_Comm is freed externally
    */
   void finalize() {
-    MPI_Comm_free(&_autopasMPICommunicator);
+    AutoPas_MPI_Comm_free(&_autopasMPICommunicator);
   }
 
   /**
@@ -557,6 +557,8 @@ public:
   }
 
 
+// Only define the interface for the MPI communicator if AUTOPAS_MPI=ON
+// The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_MPI
 #if defined(AUTOPAS_MPI)
   /**
    * Setter for the MPI communicator that AutoPas uses for potential MPI calls.
@@ -667,6 +669,6 @@ public:
   /**
    * Communicator that should be used for MPI calls inside of AutoPas
    */
-   MPI_Comm _autopasMPICommunicator;
+   AutoPas_MPI_Comm _autopasMPICommunicator;
 };  // class AutoPas
 }  // namespace autopas

@@ -21,21 +21,21 @@ public:
    * @param localOptimalTime: The time measured for localOptimalConfig
    * @return The globally optimal configuration
    */
-  Configuration optimizeConfiguration(MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime) {
+  Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime) {
     _serializedConfiguration = serializeConfiguration(localOptimalConfig);
     _optimalTime = localOptimalTime;
-    MPI_Allreduce(&_optimalTime, &_optimalTime, 1, MPI_UNSIGNED_LONG, MPI_MIN, comm);
+    AutoPas_MPI_Allreduce(&_optimalTime, &_optimalTime, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_MIN, comm);
 
     // Send own rank if local optimal time is equal to the global optimal time.
     // Send something higher than the highest rank otherwise.
     if (localOptimalTime == _optimalTime) {
-      MPI_Comm_rank(comm, &_optimalRank);
+      AutoPas_MPI_Comm_rank(comm, &_optimalRank);
     } else {
-      MPI_Comm_size(comm, &_optimalRank);
+      AutoPas_MPI_Comm_size(comm, &_optimalRank);
     }
-    MPI_Allreduce(&_optimalRank, &_optimalRank, 1, MPI_INT, MPI_MIN, comm);
+    AutoPas_MPI_Allreduce(&_optimalRank, &_optimalRank, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_MIN, comm);
 
-    MPI_Bcast(&_serializedConfiguration, sizeof(_serializedConfiguration), MPI_BYTE, _optimalRank, comm);
+    AutoPas_MPI_Bcast(&_serializedConfiguration, sizeof(_serializedConfiguration), AUTOPAS_MPI_BYTE, _optimalRank, comm);
 
     return deserializeConfig(_serializedConfiguration);
   }

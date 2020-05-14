@@ -36,12 +36,13 @@ class FullSearchMPI : public TuningStrategyInterface {
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                 const std::set<Newton3Option> &allowedNewton3Options,
-                MPI_Comm comm = MPI_COMM_WORLD)
+                // provide default value mainly for testing, otherwise TuningStrategyFactory handles this
+                AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD)
       : _containerOptions(allowedContainerOptions),
         _optimalConfig(Configuration()),
         _configurationCommunicator(AutoPasConfigurationCommunicator()),
         _localOptimalTime(0),
-        _request(MPI_REQUEST_NULL),
+        _request(AUTOPAS_MPI_REQUEST_NULL),
         _allLocalConfigsTested(false),
         _allGlobalConfigsTested(false),
         _autopasMPICommunicator(comm) {
@@ -64,10 +65,10 @@ class FullSearchMPI : public TuningStrategyInterface {
     }
 
     int worldSize;
-    MPI_Comm_size(_autopasMPICommunicator, &worldSize);
+    AutoPas_MPI_Comm_size(_autopasMPICommunicator, &worldSize);
 
     int worldRank;
-    MPI_Comm_rank(_autopasMPICommunicator, &worldRank);
+    AutoPas_MPI_Comm_rank(_autopasMPICommunicator, &worldRank);
 
     // divide search space into worldSize many blocks.
     const int blockSize = totalNumConfigs / worldSize;
@@ -108,14 +109,14 @@ class FullSearchMPI : public TuningStrategyInterface {
    * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
    */
-  explicit FullSearchMPI(std::set<Configuration> allowedConfigurations, MPI_Comm comm = MPI_COMM_WORLD)
+  explicit FullSearchMPI(std::set<Configuration> allowedConfigurations, AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD)
       : _containerOptions{},
         _searchSpace(std::move(allowedConfigurations)),
         _tuningConfig(_searchSpace.begin()),
         _optimalConfig(Configuration()),
         _configurationCommunicator(AutoPasConfigurationCommunicator()),
         _localOptimalTime(0),
-        _request(MPI_REQUEST_NULL),
+        _request(AUTOPAS_MPI_REQUEST_NULL),
         _allLocalConfigsTested(false),
         _allGlobalConfigsTested(false),
         _autopasMPICommunicator(comm) {
@@ -126,10 +127,10 @@ class FullSearchMPI : public TuningStrategyInterface {
 
   ~FullSearchMPI() override {
     int finalized;
-    MPI_Finalized(&finalized);
+    AutoPas_MPI_Finalized(&finalized);
     // free the request in case it was still active
     if(not finalized) {
-      MPI_Wait(&_request, MPI_STATUS_IGNORE);
+      AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
     }
   }
 
@@ -152,7 +153,7 @@ class FullSearchMPI : public TuningStrategyInterface {
     _optimalConfig = Configuration();
     _localOptimalTime = 0;
     // set _request to MPI_REQUEST_NULL if it wasn't already
-    MPI_Wait(&_request, MPI_STATUS_IGNORE);
+    AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
     _allLocalConfigsTested = false;
     _allGlobalConfigsTested = false;
   }
@@ -192,10 +193,10 @@ class FullSearchMPI : public TuningStrategyInterface {
   Configuration _optimalConfig;
   AutoPasConfigurationCommunicator _configurationCommunicator;
   size_t _localOptimalTime;
-  MPI_Request _request;
+  AutoPas_MPI_Request _request;
   bool _allLocalConfigsTested;
   bool _allGlobalConfigsTested;
-  MPI_Comm _autopasMPICommunicator;
+  AutoPas_MPI_Comm _autopasMPICommunicator;
 };
 
 void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
@@ -260,7 +261,7 @@ bool FullSearchMPI::tune(bool currentInvalid) {
 
   // Wait for the Iallreduce from the last tuning step to finish
   // Make all ranks ready for global tuning simultaneously
-  MPI_Wait(&_request, MPI_STATUS_IGNORE);
+  AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
   if (_allGlobalConfigsTested) {
     _optimalConfig = _configurationCommunicator.optimizeConfiguration(_autopasMPICommunicator, _optimalConfig,
                                                                       _localOptimalTime);
@@ -269,7 +270,7 @@ bool FullSearchMPI::tune(bool currentInvalid) {
     return false;
   }
 
-  MPI_Iallreduce(&_allLocalConfigsTested, &_allGlobalConfigsTested, 1, MPI_CXX_BOOL, MPI_LAND, _autopasMPICommunicator,
+  AutoPas_MPI_Iallreduce(&_allLocalConfigsTested, &_allGlobalConfigsTested, 1, AUTOPAS_MPI_CXX_BOOL, AUTOPAS_MPI_LAND, _autopasMPICommunicator,
                  &_request);
 
   return true;
