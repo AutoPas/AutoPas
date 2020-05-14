@@ -13,6 +13,17 @@ if (AUTOPAS_ENABLE_CUDA)
     )
 endif ()
 
+find_package(MPI)
+
+if (NOT ${MPI_CXX_FOUND})
+    message(STATUS "cxx mpi not found, not building sph-main-mpi")
+    return()
+else ()
+    message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
+endif ()
+
+include_directories(SYSTEM ${MPI_INCLUDE_PATH})
+
 add_executable(runMPITests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
 
 target_compile_definitions(runMPITests PRIVATE)
@@ -24,6 +35,7 @@ target_link_libraries(
     gmock # gmock includes the gtest target, so we don't need it here.
     Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
     harmony # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
+    MPI::MPI_CXX
 )
 
 include(GoogleTest)

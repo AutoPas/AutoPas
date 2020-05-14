@@ -8,7 +8,6 @@
 
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
-#include <unistd.h>
 #include <mpi.h>
 
 
@@ -48,6 +47,10 @@ TEST_F(FullSearchMPITest, testRemoveN3OptionRemoveAll) {
 TEST_F(FullSearchMPITest, testGlobalOptimumAndReset) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+// manually set every rank to 0, because we cannot use WrapMPI here
+#if not defined(AUTOPAS_MPI)
+  rank = 0;
+#endif
   autopas::FullSearchMPI fullSearchMPI(
           {autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)rank/10.,
                                   autopas::TraversalOption::directSumTraversal,
@@ -61,8 +64,6 @@ TEST_F(FullSearchMPITest, testGlobalOptimumAndReset) {
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
             fullSearchMPI.getCurrentConfiguration());
 
-  // test synchronization
-  usleep(rank * 1000000);
   fullSearchMPI.tune();
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1., autopas::TraversalOption::directSumTraversal,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
