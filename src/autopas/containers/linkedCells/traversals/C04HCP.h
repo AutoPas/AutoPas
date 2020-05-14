@@ -48,13 +48,13 @@ class C04HCP : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayou
 
   void traverseParticlePairs() override;
 
-  TraversalOption getTraversalType() const override { return TraversalOption::c04HCP; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c04HCP; }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     if (dataLayout == DataLayoutOption::cuda) {
       return false;
     }
@@ -156,6 +156,8 @@ void C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSing
     case 3:
       startOfThisColor = {-2l, 0l, -1l};
       break;
+    default:
+      autopas::utils::ExceptionHandler::exception("C04HCP::traverseSingleColor: invalid color ({})", color);
   }
 
   // to fix intel64 icpc compiler complaints about perfectly nested loop.
