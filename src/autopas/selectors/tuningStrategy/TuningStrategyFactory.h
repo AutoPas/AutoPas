@@ -9,6 +9,7 @@
 #include "TuningStrategyInterface.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/utils/WrapMPI.h"
 
 namespace autopas::TuningStrategyFactory {
 /**
@@ -28,5 +29,5 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<autopas::TraversalOption> &allowedTraversals,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence,
-    AcquisitionFunctionOption acquisitionFunctionOption);
+    AcquisitionFunctionOption acquisitionFunctionOption, MPI_Comm);
 }  // namespace autopas::TuningStrategyFactory

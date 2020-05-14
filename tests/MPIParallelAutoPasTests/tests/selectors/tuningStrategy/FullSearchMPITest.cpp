@@ -9,8 +9,8 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 #include <unistd.h>
+#include <mpi.h>
 
-#include "autopas/utils/WrapMPI.h"
 
 TEST_F(FullSearchMPITest, testSearchSpaceEmpty) {
   autopas::FullSearchMPI fullSearchMPI({});
@@ -46,30 +46,30 @@ TEST_F(FullSearchMPITest, testRemoveN3OptionRemoveAll) {
 }
 
 TEST_F(FullSearchMPITest, testGlobalOptimumAndReset) {
-  int worldRank;
-  autopas::AutoPas_MPI_Comm_rank(autopas::AUTOPAS_MPI_COMM_WORLD, &worldRank);
-
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   autopas::FullSearchMPI fullSearchMPI(
-          {autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)worldRank/10.,
+          {autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)rank/10.,
                                   autopas::TraversalOption::directSumTraversal,
                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)});
-  fullSearchMPI.addEvidence(worldRank);
+
+  fullSearchMPI.addEvidence(rank);
 
   fullSearchMPI.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double) worldRank/10.,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double) rank/10.,
                                    autopas::TraversalOption::directSumTraversal,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
             fullSearchMPI.getCurrentConfiguration());
 
   // test synchronization
-  usleep(worldRank * 1000000);
+  usleep(rank * 1000000);
   fullSearchMPI.tune();
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1., autopas::TraversalOption::directSumTraversal,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
             fullSearchMPI.getCurrentConfiguration());
 
   fullSearchMPI.reset();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)worldRank/10.,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)rank/10.,
                                    autopas::TraversalOption::directSumTraversal,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
             fullSearchMPI.getCurrentConfiguration());

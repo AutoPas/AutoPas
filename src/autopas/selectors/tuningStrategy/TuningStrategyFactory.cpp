@@ -17,7 +17,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<autopas::TraversalOption> &allowedTraversals,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence,
-    AcquisitionFunctionOption acquisitionFunctionOption) {
+    AcquisitionFunctionOption acquisitionFunctionOption, MPI_Comm comm) {
   // clang compiler bug requires static cast
   switch (static_cast<TuningStrategyOption>(tuningStrategyOption)) {
     case TuningStrategyOption::randomSearch: {
@@ -43,7 +43,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       }
 
       return std::make_unique<FullSearchMPI>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
-                                             allowedDataLayouts, allowedNewton3Options);
+                                             allowedDataLayouts, allowedNewton3Options, comm);
     }
 
     case TuningStrategyOption::bayesianSearch: {
