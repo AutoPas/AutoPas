@@ -4,6 +4,8 @@
  * @date 30.04.2020
  */
 
+#pragma once
+
 #include <array>
 
 #include "WrapMPI.h"
