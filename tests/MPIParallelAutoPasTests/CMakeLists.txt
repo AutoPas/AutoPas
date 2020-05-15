@@ -16,7 +16,7 @@ endif ()
 find_package(MPI)
 
 if (NOT ${MPI_CXX_FOUND})
-    message(STATUS "cxx mpi not found, not building sph-main-mpi")
+    message(STATUS "cxx mpi not found, not building runMPITests")
     return()
 else ()
     message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
