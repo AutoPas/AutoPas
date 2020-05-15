@@ -502,7 +502,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
     }
 
-    // by default sort sorts by first member of pair
+    // By default `std::sort` sorts by first member of pair.
     std::sort(std::begin(options), std::end(options));
 
     // print everything
