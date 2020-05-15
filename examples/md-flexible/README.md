@@ -48,3 +48,7 @@ rather strict. The VTK file only contains Information about all
 particles positions, velocities, forces and typeIDs. All other options,
 especially the simulation box size and particle properties (still) need
 to be set through a YAML file.
+
+### Misc
+
+* `tuning-phases` overwrites restrictions set by `iterations`

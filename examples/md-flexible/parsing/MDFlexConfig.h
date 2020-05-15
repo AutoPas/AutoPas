@@ -1,7 +1,7 @@
 /**
  * @file MDFlexConfig.h
  * @author F. Gratl
- * @date 10/18/19
+ * @date 18.10.2019
  */
 
 #pragma once
@@ -85,6 +85,10 @@ class MDFlexConfig {
   unsigned int tuningSamples{3};
   static inline const char *tuningMaxEvidenceStr{"tuning-max-evidence"};
   unsigned int tuningMaxEvidence{10};
+  static inline const char *relativeOptimumRangeStr{"relative-optimum-range"};
+  double relativeOptimumRange{1.2};
+  static inline const char *maxTuningPhasesWithoutTestStr{"max-tuning-phases-without-test"};
+  unsigned int maxTuningPhasesWithoutTest{5};
   static inline const char *vtkFileNameStr{"vtk-filename"};
   std::string vtkFileName;
   static inline const char *vtkWriteFrequencyStr{"vtk-write-frequency"};
@@ -110,6 +114,8 @@ class MDFlexConfig {
   FunctorOption functorOption{FunctorOption::lj12_6};
   static inline const char *iterationsStr{"iterations"};
   size_t iterations{10};
+  static inline const char *tuningPhasesStr{"tuning-phases"};
+  size_t tuningPhases{0};
   static inline const char *periodicStr{"periodic-boundaries"};
   bool periodic{true};
   // this starts with a don't such that it can be used as a flag with a sane default.

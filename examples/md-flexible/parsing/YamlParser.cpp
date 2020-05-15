@@ -1,7 +1,7 @@
 /**
  * @file YamlParser.cpp
  * @author N. Fottner
- * @date 15/7/19
+ * @date 15.07.2019
  */
 
 #include "YamlParser.h"
@@ -62,6 +62,9 @@ bool parseYamlFile(MDFlexConfig &config) {
   if (node[MDFlexConfig::iterationsStr]) {
     config.iterations = node[MDFlexConfig::iterationsStr].as<unsigned long>();
   }
+  if (node[MDFlexConfig::tuningPhasesStr]) {
+    config.tuningPhases = node[MDFlexConfig::tuningPhasesStr].as<unsigned long>();
+  }
   if (node[MDFlexConfig::dontMeasureFlopsStr]) {
     // "not" needed because of semantics
     config.dontMeasureFlops = not node[MDFlexConfig::dontMeasureFlopsStr].as<bool>();
@@ -89,6 +92,12 @@ bool parseYamlFile(MDFlexConfig &config) {
   }
   if (node[MDFlexConfig::tuningMaxEvidenceStr]) {
     config.tuningMaxEvidence = node[MDFlexConfig::tuningMaxEvidenceStr].as<unsigned int>();
+  }
+  if (node[MDFlexConfig::relativeOptimumRangeStr]) {
+    config.relativeOptimumRange = node[MDFlexConfig::relativeOptimumRangeStr].as<double>();
+  }
+  if (node[MDFlexConfig::maxTuningPhasesWithoutTestStr]) {
+    config.maxTuningPhasesWithoutTest = node[MDFlexConfig::maxTuningPhasesWithoutTestStr].as<unsigned int>();
   }
   if (node[MDFlexConfig::tuningStrategyOptionsStr]) {
     auto parsedOptions =

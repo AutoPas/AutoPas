@@ -1,7 +1,7 @@
 /**
  * @file BayesianSearch.h
  * @author Jan Nguyen
- * @date 12.06.19
+ * @date 12.06.2019
  */
 
 #pragma once
@@ -98,12 +98,12 @@ class BayesianSearch : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time) override {
+  inline void addEvidence(long time, size_t iteration) override {
     // time is converted to seconds, to big values may lead to errors in GaussianProcess
     _gaussianProcess.addEvidence(_currentConfig.oneHotEncode(), time * secondsPerMicroseconds);
   }
 
-  inline void reset() override {
+  inline void reset(size_t iteration) override {
     _gaussianProcess.clear();
     tune();
   }

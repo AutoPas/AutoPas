@@ -11,11 +11,11 @@
 #include <unordered_map>
 #include <vector>
 
-#include "TraversalSelectorInfo.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
+#include "autopas/containers/linkedCells/traversals/C04HCP.h"
 #include "autopas/containers/linkedCells/traversals/C04SoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/C04Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C08Traversal.h"
@@ -35,6 +35,7 @@
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Logger.h"
 #include "autopas/utils/StringUtils.h"
@@ -116,6 +117,10 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     }
     case TraversalOption::c04: {
       return std::make_unique<C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
+    case TraversalOption::c04HCP: {
+      return std::make_unique<C04HCP<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::c01CombinedSoA: {
