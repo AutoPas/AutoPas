@@ -19,7 +19,7 @@ target_link_libraries(
     PUBLIC
         rt # required for Time.h
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
-        $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${ARCHER}>>>:OpenMP::OpenMP_CXX>
+        $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
     PRIVATE
         # harmony and Eigen3 are only needed privately when building AutoPas.
