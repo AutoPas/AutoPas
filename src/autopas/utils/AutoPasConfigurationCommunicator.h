@@ -4,24 +4,26 @@
  * @date 04/30/20
  */
 
+#include <array>
+
 #include "WrapMPI.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include <array>
 
 namespace autopas {
 
 using SerializedConfiguration = std::array<std::byte, 12>;
 
 class AutoPasConfigurationCommunicator {
-public:
+ public:
   /**
    * Handles communication to select the globally best configuration.
    * @param localOptimalConfig: The locally optimal configuration to be compared with others
    * @param localOptimalTime: The time measured for localOptimalConfig
    * @return The globally optimal configuration
    */
-  Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime) {
+  Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig,
+                                      size_t localOptimalTime) {
     _serializedConfiguration = serializeConfiguration(localOptimalConfig);
     _optimalTime = localOptimalTime;
     AutoPas_MPI_Allreduce(&_optimalTime, &_optimalTime, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_MIN, comm);
@@ -35,11 +37,13 @@ public:
     }
     AutoPas_MPI_Allreduce(&_optimalRank, &_optimalRank, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_MIN, comm);
 
-    AutoPas_MPI_Bcast(&_serializedConfiguration, sizeof(_serializedConfiguration), AUTOPAS_MPI_BYTE, _optimalRank, comm);
+    AutoPas_MPI_Bcast(&_serializedConfiguration, sizeof(_serializedConfiguration), AUTOPAS_MPI_BYTE, _optimalRank,
+                      comm);
 
     return deserializeConfig(_serializedConfiguration);
   }
-private:
+
+ private:
   /**
    * Serializes a configuration object for communication via MPI
    * @param configuration: the configuration to be sent
@@ -64,11 +68,9 @@ private:
   static Configuration deserializeConfig(SerializedConfiguration config) {
     double cellSizeFactor;
     std::memcpy(&cellSizeFactor, &config[4], sizeof(double));
-    return Configuration(static_cast<ContainerOption::Value>(config[0]),
-                         cellSizeFactor,
+    return Configuration(static_cast<ContainerOption::Value>(config[0]), cellSizeFactor,
                          static_cast<TraversalOption::Value>(config[1]),
-                         static_cast<DataLayoutOption::Value>(config[2]),
-                         static_cast<Newton3Option::Value>(config[3]));
+                         static_cast<DataLayoutOption::Value>(config[2]), static_cast<Newton3Option::Value>(config[3]));
   }
 
   SerializedConfiguration _serializedConfiguration;
@@ -76,4 +78,4 @@ private:
   int _optimalRank;
 };
 
-}
+}  // namespace autopas

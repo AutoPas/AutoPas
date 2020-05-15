@@ -74,7 +74,7 @@ enum AutoPas_MPI_Op {
   AUTOPAS_MPI_MINLOC,
 };
 
-struct AutoPas_MPI_Status{
+struct AutoPas_MPI_Status {
   int count, cancelled, AUTOPAS_MPI_SOURCE, AUTOPAS_MPI_TAG, AUTOPAS_MPI_ERROR;
 };
 #define AUTOPAS_MPI_STATUS_IGNORE nullptr
@@ -96,7 +96,6 @@ enum AutoPas_MPI_Error {
 #define AUTOPAS_MPI_MAX_ERROR_STRING 256
 
 #endif
-
 
 /**
  * Wrapper for MPI_Init
@@ -171,8 +170,8 @@ inline int AutoPas_MPI_Comm_free(AutoPas_MPI_Comm *comm);
  * @param comm: communicator (handle)
  * @return MPI error value
  */
-inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype datatype,
-                            int dest, int tag, AutoPas_MPI_Comm comm);
+inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
+                            AutoPas_MPI_Comm comm);
 
 /**
  * Wrapper for MPI_Recv
@@ -222,8 +221,8 @@ inline int AutoPas_MPI_Ibcast(void *buffer, int count, AutoPas_MPI_Datatype data
  * @param comm: communicator (handle)
  * @return MPI error value
  */
-inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
-                                 AutoPas_MPI_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm);
+inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
+                                 AutoPas_MPI_Op op, AutoPas_MPI_Comm comm);
 
 /**
  * Wrapper for MPI_Iallreduce
@@ -271,20 +270,13 @@ inline int AutoPas_MPI_Wait(AutoPas_MPI_Request *request, AutoPas_MPI_Status *st
  */
 inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request);
 
-
 #if defined(AUTOPAS_MPI)
 
-inline int AutoPas_MPI_Init(int *argc, char ***argv) {
-  return MPI_Init(argc, argv);
-}
+inline int AutoPas_MPI_Init(int *argc, char ***argv) { return MPI_Init(argc, argv); }
 
-inline int AutoPas_MPI_Finalize() {
-  return MPI_Finalize();
-}
+inline int AutoPas_MPI_Finalize() { return MPI_Finalize(); }
 
-inline int AutoPas_MPI_Finalized(int *flag) {
-  return MPI_Finalized(flag);
-}
+inline int AutoPas_MPI_Finalized(int *flag) { return MPI_Finalized(flag); }
 
 inline int AutoPas_MPI_Error_string(int errorcode, char *string, int *resultlen) {
   return MPI_Error_string(errorcode, string, resultlen);
@@ -294,17 +286,19 @@ inline int AutoPas_MPI_Comm_size(AutoPas_MPI_Comm comm, int *size) { return MPI_
 
 inline int AutoPas_MPI_Comm_rank(AutoPas_MPI_Comm comm, int *rank) { return MPI_Comm_rank(comm, rank); }
 
-inline int AutoPas_MPI_Comm_dup(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *newComm) { return MPI_Comm_dup(comm, newComm); }
+inline int AutoPas_MPI_Comm_dup(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *newComm) {
+  return MPI_Comm_dup(comm, newComm);
+}
 
 inline int AutoPas_MPI_Comm_free(AutoPas_MPI_Comm *comm) { return MPI_Comm_free(comm); }
 
-inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype datatype,
-        int dest, int tag, AutoPas_MPI_Comm comm) {
+inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
+                            AutoPas_MPI_Comm comm) {
   return MPI_Send(buf, count, datatype, dest, tag, comm);
 }
 
 inline int AutoPas_MPI_Recv(void *buf, int count, AutoPas_MPI_Datatype datatype, int source, int tag,
-        AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
+                            AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
   return MPI_Recv(buf, count, datatype, source, tag, comm, status);
 }
 
@@ -317,8 +311,8 @@ inline int AutoPas_MPI_Ibcast(void *buffer, int count, AutoPas_MPI_Datatype data
   return MPI_Ibcast(buffer, count, datatype, root, comm, request);
 }
 
-inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
-        AutoPas_MPI_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
+inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
+                                 AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
   return MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
 }
 
@@ -343,13 +337,9 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) { return MPI_R
 
 #else
 
-inline int AutoPas_MPI_Init(int *argc, char ***argv) {
-  return AUTOPAS_MPI_SUCCESS;
-}
+inline int AutoPas_MPI_Init(int *argc, char ***argv) { return AUTOPAS_MPI_SUCCESS; }
 
-inline int AutoPas_MPI_Finalize() {
-  return AUTOPAS_MPI_SUCCESS;
-}
+inline int AutoPas_MPI_Finalize() { return AUTOPAS_MPI_SUCCESS; }
 
 inline int AutoPas_MPI_Finalized(int *flag) {
   *flag = 1;
@@ -358,12 +348,12 @@ inline int AutoPas_MPI_Finalized(int *flag) {
 
 int AutoPas_MPI_Error_string(int errorcode, char *string, int *resultlen) {
   static const std::map<int, const char *> errorStrings = {
-          {AUTOPAS_MPI_SUCCESS,     "MPI_SUCCESS: no errors"},
-          {AUTOPAS_MPI_ERR_ARG,     "MPI_ERR_ARG: invalid argument of some other kind"},
-          {AUTOPAS_MPI_ERR_COMM,    "MPI_ERR_COMM: invalid communicator"},
-          {AUTOPAS_MPI_ERR_RANK,    "MPI_ERR_RANK: invalid rank"},
-          {AUTOPAS_MPI_ERR_REQUEST, "MPI_ERR_REQUEST: invalid Request"},
-          {AUTOPAS_MPI_ERR_TYPE,    "MPI_ERR_TYPE: invalid datatype"},
+      {AUTOPAS_MPI_SUCCESS, "MPI_SUCCESS: no errors"},
+      {AUTOPAS_MPI_ERR_ARG, "MPI_ERR_ARG: invalid argument of some other kind"},
+      {AUTOPAS_MPI_ERR_COMM, "MPI_ERR_COMM: invalid communicator"},
+      {AUTOPAS_MPI_ERR_RANK, "MPI_ERR_RANK: invalid rank"},
+      {AUTOPAS_MPI_ERR_REQUEST, "MPI_ERR_REQUEST: invalid Request"},
+      {AUTOPAS_MPI_ERR_TYPE, "MPI_ERR_TYPE: invalid datatype"},
   };
   strcpy(string, errorStrings.at(errorcode));
   *resultlen = strnlen(string, AUTOPAS_MPI_MAX_ERROR_STRING);
@@ -396,7 +386,8 @@ inline int AutoPas_MPI_Comm_free(AutoPas_MPI_Comm *comm) {
   return AUTOPAS_MPI_SUCCESS;
 }
 
-inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag, AutoPas_MPI_Comm comm) {
+inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
+                            AutoPas_MPI_Comm comm) {
   return AUTOPAS_MPI_SUCCESS;
 }
 
@@ -426,15 +417,14 @@ inline int AutoPas_MPI_Ibcast(void *buffer, int count, AutoPas_MPI_Datatype data
   }
 }
 
-inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
-                                 AutoPas_MPI_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
+inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
+                                 AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
   memcpy(recvbuf, sendbuf, datatype * count);
   return AUTOPAS_MPI_SUCCESS;
 }
 
-inline int AutoPas_MPI_Iallreduce(const void *sendbuf, void *recvbuf, int count,
-                                  AutoPas_MPI_Datatype datatype, AutoPas_MPI_Op op, AutoPas_MPI_Comm comm,
-                                  AutoPas_MPI_Request *request) {
+inline int AutoPas_MPI_Iallreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
+                                  AutoPas_MPI_Op op, AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
   *request = _AUTOPAS_MPI_COMPLETED_REQUEST;
   return AutoPas_MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
 }
@@ -455,7 +445,6 @@ inline int AutoPas_MPI_Wait(AutoPas_MPI_Request *request, AutoPas_MPI_Status *st
   return AUTOPAS_MPI_SUCCESS;
 }
 
-
 inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) {
   if (*request != _AUTOPAS_MPI_COMPLETED_REQUEST) {
     return AUTOPAS_MPI_ERR_REQUEST;
@@ -465,4 +454,4 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) {
   }
 }
 #endif
-}
+}  // namespace autopas

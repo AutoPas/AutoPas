@@ -12,8 +12,8 @@
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/selectors/OptimumSelector.h"
-#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
@@ -32,7 +32,8 @@ class FullSearchMPI : public TuningStrategyInterface {
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
    */
-  FullSearchMPI(const std::set<ContainerOption> &allowedContainerOptions, const std::set<double> &allowedCellSizeFactors,
+  FullSearchMPI(const std::set<ContainerOption> &allowedContainerOptions,
+                const std::set<double> &allowedCellSizeFactors,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                 const std::set<Newton3Option> &allowedNewton3Options,
@@ -46,21 +47,18 @@ class FullSearchMPI : public TuningStrategyInterface {
         _allLocalConfigsTested(false),
         _allGlobalConfigsTested(false),
         _autopasMPICommunicator(comm) {
-
     // @todo distribute the division process, so that not every rank has to traverse all configs
     // @todo consider using MPI_Scatterv for dividing the search space
     // Count the total number of allowed and applicable configurations
     int totalNumConfigs = 0;
     for (auto &containerOption : allowedContainerOptions) {
       const std::set<TraversalOption> &allContainerTraversals =
-        compatibleTraversals::allCompatibleTraversals(containerOption);
+          compatibleTraversals::allCompatibleTraversals(containerOption);
       std::set<TraversalOption> allowedAndApplicable;
-      std::set_intersection(allowedTraversalOptions.begin(),    allowedTraversalOptions.end(),
-                            allContainerTraversals.begin(),     allContainerTraversals.end(),
+      std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
+                            allContainerTraversals.begin(), allContainerTraversals.end(),
                             std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
-      totalNumConfigs += allowedCellSizeFactors.size() *
-                         allowedAndApplicable.size() *
-                         allowedDataLayoutOptions.size() *
+      totalNumConfigs += allowedCellSizeFactors.size() * allowedAndApplicable.size() * allowedDataLayoutOptions.size() *
                          allowedNewton3Options.size();
     }
 
@@ -85,24 +83,22 @@ class FullSearchMPI : public TuningStrategyInterface {
     }
 
     if (worldRank == 0) {
-        AutoPasLog(debug, "number of ranks: {}", worldSize);
-        AutoPasLog(debug, "total number of possible configurations: {}", totalNumConfigs);
+      AutoPasLog(debug, "number of ranks: {}", worldSize);
+      AutoPasLog(debug, "total number of possible configurations: {}", totalNumConfigs);
     }
-    populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors,
-                        allowedTraversalOptions, allowedDataLayoutOptions,
-                        allowedNewton3Options,   start, startNext);
+    populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
+                        allowedDataLayoutOptions, allowedNewton3Options, start, startNext);
 
     if (_searchSpace.empty()) {
-      populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors,
-                          allowedTraversalOptions, allowedDataLayoutOptions,
-                          allowedNewton3Options,   0, totalNumConfigs);
+      populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
+                          allowedDataLayoutOptions, allowedNewton3Options, 0, totalNumConfigs);
       if (_searchSpace.empty()) {
         autopas::utils::ExceptionHandler::exception("No valid configuration could be generated");
       }
     }
     AutoPasLog(debug, "Points in search space: {}", _searchSpace.size());
     _tuningConfig = _searchSpace.begin();
- }
+  }
 
   /**
    * Constructor for the FullSearch that only contains the given configurations.
@@ -129,7 +125,7 @@ class FullSearchMPI : public TuningStrategyInterface {
     int finalized;
     AutoPas_MPI_Finalized(&finalized);
     // free the request in case it was still active
-    if(not finalized) {
+    if (not finalized) {
       AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
     }
   }
@@ -178,8 +174,8 @@ class FullSearchMPI : public TuningStrategyInterface {
                                   const std::set<double> &allowedCellSizeFactors,
                                   const std::set<TraversalOption> &allowedTraversalOptions,
                                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                  const std::set<Newton3Option> &allowedNewton3Options,
-                                  const int start, const int startNext);
+                                  const std::set<Newton3Option> &allowedNewton3Options, const int start,
+                                  const int startNext);
 
   /**
    * Uses traversal times from this rank to select the locally optimal configuration.
@@ -203,8 +199,8 @@ void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowed
                                         const std::set<double> &allowedCellSizeFactors,
                                         const std::set<TraversalOption> &allowedTraversalOptions,
                                         const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                        const std::set<Newton3Option> &allowedNewton3Options,
-                                        const int start, const int startNext) {
+                                        const std::set<Newton3Option> &allowedNewton3Options, const int start,
+                                        const int startNext) {
   // Index to test which configurations apply to the current rank
   int i = 0;
   // Generate all potential configs
@@ -228,8 +224,7 @@ void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowed
             if (i == startNext) {
               return;
             }
-            _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption,
-                                 dataLayoutOption, newton3Option);
+            _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, dataLayoutOption, newton3Option);
             ++i;
           }
         }
@@ -263,15 +258,15 @@ bool FullSearchMPI::tune(bool currentInvalid) {
   // Make all ranks ready for global tuning simultaneously
   AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
   if (_allGlobalConfigsTested) {
-    _optimalConfig = _configurationCommunicator.optimizeConfiguration(_autopasMPICommunicator, _optimalConfig,
-                                                                      _localOptimalTime);
+    _optimalConfig =
+        _configurationCommunicator.optimizeConfiguration(_autopasMPICommunicator, _optimalConfig, _localOptimalTime);
     AutoPasLog(debug, "Global optimal configuration: {}", _optimalConfig.toString());
 
     return false;
   }
 
-  AutoPas_MPI_Iallreduce(&_allLocalConfigsTested, &_allGlobalConfigsTested, 1, AUTOPAS_MPI_CXX_BOOL, AUTOPAS_MPI_LAND, _autopasMPICommunicator,
-                 &_request);
+  AutoPas_MPI_Iallreduce(&_allLocalConfigsTested, &_allGlobalConfigsTested, 1, AUTOPAS_MPI_CXX_BOOL, AUTOPAS_MPI_LAND,
+                         _autopasMPICommunicator, &_request);
 
   return true;
 }
@@ -280,8 +275,8 @@ void FullSearchMPI::selectLocalOptimalConfiguration() {
   // Time measure strategy
   if (_traversalTimes.empty()) {
     utils::ExceptionHandler::exception(
-            "FullSearchMPI: Trying to determine fastest configuration without any measurements! "
-            "Either selectLocalOptimalConfiguration was called too early or no applicable configurations were found");
+        "FullSearchMPI: Trying to determine fastest configuration without any measurements! "
+        "Either selectLocalOptimalConfiguration was called too early or no applicable configurations were found");
   }
 
   auto optimum = std::min_element(_traversalTimes.begin(), _traversalTimes.end(),

@@ -36,7 +36,7 @@ static unsigned int _instanceCounter = 0;
  */
 template <class Particle, class ParticleCell>
 class AutoPas {
-public:
+ public:
   /**
    * Particle type to be accessible after initialization.
    */
@@ -64,26 +64,26 @@ public:
    * @param logOutputStream Stream where log output should go to. Default is std::out.
    */
   explicit AutoPas(std::ostream &logOutputStream = std::cout)
-          : _boxMin{0, 0, 0},
-            _boxMax{0, 0, 0},
-            _cutoff(1.),
-            _verletSkin(0.2),
-            _verletRebuildFrequency(20),
-            _verletClusterSize(64),
-            _tuningInterval(5000),
-            _numSamples(3),
-            _maxEvidence(10),
-            _relativeOptimumRange(1.2),
-        _maxTuningPhasesWithoutTest(5),_acquisitionFunctionOption(AcquisitionFunctionOption::lowerConfidenceBound),
-            _tuningStrategyOption(TuningStrategyOption::fullSearchMPI),
-            _selectorStrategy(SelectorStrategyOption::fastestAbs),
-            _allowedContainers(ContainerOption::getAllOptions()),
-            _allowedTraversals(TraversalOption::getAllOptions()),
-            _allowedDataLayouts(DataLayoutOption::getAllOptions()),
-            _allowedNewton3Options(Newton3Option::getAllOptions()),
-            _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))),
-            _autopasMPICommunicator(AUTOPAS_MPI_COMM_NULL)
-  {
+      : _boxMin{0, 0, 0},
+        _boxMax{0, 0, 0},
+        _cutoff(1.),
+        _verletSkin(0.2),
+        _verletRebuildFrequency(20),
+        _verletClusterSize(64),
+        _tuningInterval(5000),
+        _numSamples(3),
+        _maxEvidence(10),
+        _relativeOptimumRange(1.2),
+        _maxTuningPhasesWithoutTest(5),
+        _acquisitionFunctionOption(AcquisitionFunctionOption::lowerConfidenceBound),
+        _tuningStrategyOption(TuningStrategyOption::fullSearchMPI),
+        _selectorStrategy(SelectorStrategyOption::fastestAbs),
+        _allowedContainers(ContainerOption::getAllOptions()),
+        _allowedTraversals(TraversalOption::getAllOptions()),
+        _allowedDataLayouts(DataLayoutOption::getAllOptions()),
+        _allowedNewton3Options(Newton3Option::getAllOptions()),
+        _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))),
+        _autopasMPICommunicator(AUTOPAS_MPI_COMM_NULL) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
@@ -132,8 +132,7 @@ public:
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
-            _maxTuningPhasesWithoutTest, _acquisitionFunctionOption,
-            _autopasMPICommunicator)),
+            _maxTuningPhasesWithoutTest, _acquisitionFunctionOption, _autopasMPICommunicator)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
         std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
@@ -144,9 +143,7 @@ public:
    * DO call if: No MPI_Comm was not externally provided or is not freed externally
    * Do NOT call if: Externally provided MPI_Comm is freed externally
    */
-  void finalize() {
-    AutoPas_MPI_Comm_free(&_autopasMPICommunicator);
-  }
+  void finalize() { AutoPas_MPI_Comm_free(&_autopasMPICommunicator); }
 
   /**
    * Potentially updates the internal container.
@@ -584,7 +581,6 @@ public:
     _tuningStrategyOption = tuningStrategyOption;
   }
 
-
 // Only define the interface for the MPI communicator if AUTOPAS_MPI=ON
 // The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_MPI
 #if defined(AUTOPAS_MPI)
@@ -593,17 +589,13 @@ public:
    * If not set, MPI_COMM_WOLRD will be used.
    * @param comm: communicator (handle)
    */
-  void setMPICommunicator(MPI_Comm comm) {
-    _autopasMPICommunicator = comm;
-  }
+  void setMPICommunicator(MPI_Comm comm) { _autopasMPICommunicator = comm; }
 
   /**
    * Getter for the AutoPas MPI communicator
    * @return communicator
    */
-  MPI_Comm getMPICommunicator() {
-    return _autopasMPICommunicator;
-  }
+  MPI_Comm getMPICommunicator() { return _autopasMPICommunicator; }
 #endif
 
  private:
@@ -706,6 +698,6 @@ public:
   /**
    * Communicator that should be used for MPI calls inside of AutoPas
    */
-   AutoPas_MPI_Comm _autopasMPICommunicator;
+  AutoPas_MPI_Comm _autopasMPICommunicator;
 };  // class AutoPas
 }  // namespace autopas
