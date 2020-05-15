@@ -361,11 +361,11 @@ void checkCustom() {
         // check that no file contains NULL or assert
         try{
             // if .cpp or .h files contain NULL or assert, return 2
-            sh "grep -lrE '(NULL|[^_]assert)' . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
+            sh "grep -lrE '([^_]NULL|[^_]assert)' . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
         } catch (Exception e) {
             // change detected
             echo 'Usage of NULL and assert is prohibited. Affected files:'
-            sh "grep -lrE '(NULL|[^_]assert)' . | grep '\\.cpp\\|\\.h'"
+            sh "grep -lrE '([^_]NULL|[^_]assert)' . | grep '\\.cpp\\|\\.h'"
             sh "exit 1"
         }
 
