@@ -13,7 +13,6 @@
 bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
   bool displayHelp = false;
-  int option, option_index;
   static struct option long_options[] = {{"help", no_argument, nullptr, 'h'},
                                          {MDFlexConfig::newton3OptionsStr, required_argument, nullptr, '3'},
                                          {MDFlexConfig::checkpointfileStr, required_argument, nullptr, '4'},
@@ -57,10 +56,11 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   // reset getopt to scan from the start of argv
   optind = 1;
   string strArg;
-  while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
+  for (int cliOption = 0, cliOptionIndex = 0;
+       (cliOption = getopt_long(argc, argv, "", long_options, &cliOptionIndex)) != -1;) {
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
-    switch (option) {
+    switch (cliOption) {
       case '3': {
         config.newton3Options = autopas::Newton3Option::parseOptions(strArg);
         if (config.newton3Options.empty()) {
@@ -535,7 +535,6 @@ bool checkFileExists(const std::string &filename) {
 }  // namespace
 
 void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
-  int option = 0, optionIndex = 0;
   // suppress error messages since we only want to look if the yaml option is there
   auto opterrBefore = opterr;
   opterr = 0;
@@ -546,8 +545,9 @@ void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
   optind = 1;
 
   // search all cli parameters for input file options
-  while ((option = getopt_long(argc, argv, "", longOptions, &optionIndex)) != -1) {
-    switch (option) {
+  for (int cliOption = 0, cliOptionIndex = 0;
+       (cliOption = getopt_long(argc, argv, "", longOptions, &cliOptionIndex)) != -1;) {
+    switch (cliOption) {
       case 'C':
         config.checkpointfile = optarg;
         if (not checkFileExists(optarg)) {
