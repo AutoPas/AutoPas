@@ -1,7 +1,7 @@
 /**
  * @file WrapMPI.h
  * @author W. Thieme
- * @date 4/17/20
+ * @date 17.04.2020
  */
 
 #pragma once
@@ -23,27 +23,40 @@ namespace autopas {
 #if defined(AUTOPAS_MPI)
 
 // MPI_Comm
+/** Wrapper for MPI_COMM_NULL */
 #define AUTOPAS_MPI_COMM_NULL MPI_COMM_NULL
+/** Wrapper for MPI_COMM_WORLD */
 #define AUTOPAS_MPI_COMM_WORLD MPI_COMM_WORLD
 
 // MPI_Datatype
+/** Wrapper for MPI_BYTE */
 #define AUTOPAS_MPI_BYTE MPI_BYTE
+/** Wrapper for MPI_CXX_BOOL */
 #define AUTOPAS_MPI_CXX_BOOL MPI_CXX_BOOL
+/** Wrapper for MPI_INT */
 #define AUTOPAS_MPI_INT MPI_INT
+/** Wrapper for MPI_LONG_INT */
 #define AUTOPAS_MPI_LONG_INT MPI_LONG_INT
+/** Wrapper for MPI_UNSIGNED LONG */
 #define AUTOPAS_MPI_UNSIGNED_LONG MPI_UNSIGNED_LONG
 
 // MPI_Op
+/** Wrapper for MPI_LAND */
 #define AUTOPAS_MPI_LAND MPI_LAND
+/** Wrapper for MPI_MIN */
 #define AUTOPAS_MPI_MIN MPI_MIN
+/** Wrapper for MPI_MINLOC */
 #define AUTOPAS_MPI_MINLOC MPI_MINLOC
 
 // MPI_Status
+/** Wrapper for MPI_STATUS IGNORE */
 #define AUTOPAS_MPI_STATUS_IGNORE MPI_STATUS_IGNORE
 
 // MPI_Request
+/** Wrapper for MPI_REQUEST_NULL */
 #define AUTOPAS_MPI_REQUEST_NULL MPI_REQUEST_NULL
 
+/** Wrapper for MPI_MAX_ERROR_STRING */
 #define AUTOPAS_MPI_MAX_ERROR_STRING MPI_MAX_ERROR_STRING
 
 using AutoPas_MPI_Comm = MPI_Comm;
@@ -54,12 +67,18 @@ using AutoPas_MPI_Request = MPI_Request;
 
 #else
 
+/**
+ * Dummy for MPI_Comm.
+ */
 enum AutoPas_MPI_Comm {
   AUTOPAS_MPI_COMM_NULL = 0,
   AUTOPAS_MPI_COMM_WORLD,
 };
 
-// initialize values to the size of the respective type in bytes
+/**
+ * Dummy for MPI_Datatype.
+ * initialize values to the size of the respective type in bytes.
+ */
 enum AutoPas_MPI_Datatype {
   AUTOPAS_MPI_BYTE = 1,
   AUTOPAS_MPI_CXX_BOOL = sizeof(bool),
@@ -68,23 +87,47 @@ enum AutoPas_MPI_Datatype {
   AUTOPAS_MPI_UNSIGNED_LONG = sizeof(unsigned long),
 };
 
+/**
+ * Dummy for MPI_Op.
+ */
 enum AutoPas_MPI_Op {
   AUTOPAS_MPI_LAND,
   AUTOPAS_MPI_MIN,
   AUTOPAS_MPI_MINLOC,
 };
 
+/**
+ * @struct AutoPas_MPI_Status
+ * Dummy for MPI_Status
+ * @var AutoPas_MPI_Status::count
+ * additional field that the MPI standard does not necessitate, but that is often used in implementations of MPI_Status
+ * @var AutoPas_MPI_Status::cancelled
+ * additional field that the MPI standard does not necessitate, but that is often used in implementations of MPI_Status
+ * @var AutoPas_MPI_Status::AUTOPAS_MPI_SOURCE
+ * Dummy for MPI_Status::MPI_SOURCE
+ * @var AutoPas_MPI_Status::AUTOPAS_MPI_TAG
+ * Dummy for MPI_Status::MPI_TAG
+ * @var AutoPas_MPI_Status::AUTOPAS_MPI_ERROR
+ * Dummy for MPI_Status::MPI_ERROR
+ */
 struct AutoPas_MPI_Status {
   int count, cancelled, AUTOPAS_MPI_SOURCE, AUTOPAS_MPI_TAG, AUTOPAS_MPI_ERROR;
 };
+/** Dummy for MPI_STATUS_IGNORE */
 #define AUTOPAS_MPI_STATUS_IGNORE nullptr
 
+/**
+ * Dummy for MPI_Request.
+ */
 enum AutoPas_MPI_Request {
   AUTOPAS_MPI_REQUEST_NULL,
   _AUTOPAS_MPI_COMPLETED_REQUEST,
   _AUTOPAS_MPI_INCOMPLETE_REQUEST,
 };
 
+/**
+ * Dummy for MPI_Error
+ */
 enum AutoPas_MPI_Error {
   AUTOPAS_MPI_SUCCESS = 0,
   AUTOPAS_MPI_ERR_ARG,
@@ -93,6 +136,7 @@ enum AutoPas_MPI_Error {
   AUTOPAS_MPI_ERR_REQUEST,
   AUTOPAS_MPI_ERR_TYPE,
 };
+/** Dummy for MPI_MAX_ERROR_STRING */
 #define AUTOPAS_MPI_MAX_ERROR_STRING 256
 
 #endif

@@ -1,7 +1,7 @@
 /**
  * @file allTests.cpp
- * @author seckler
- * @date 18.01.18
+ * @author W. Thieme
+ * @date 01.05.2020
  */
 
 #include <gtest/gtest.h>

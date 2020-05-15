@@ -1,7 +1,7 @@
 /**
  * @file FullSearchMPIMPITest.cpp
  * @author W. Thieme
- * @date 05/01/20
+ * @date 01.05.2020
  */
 
 #include "FullSearchMPITest.h"

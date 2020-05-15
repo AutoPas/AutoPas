@@ -1,7 +1,7 @@
 /**
  * @file FullSearchMPI.h
  * @author W. Thieme
- * @date 4/17/20
+ * @date 17.04.2020
  */
 
 #pragma once
@@ -31,13 +31,13 @@ class FullSearchMPI : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
+   * @param comm: provide default value mainly for testing, otherwise TuningStrategyFactory handles this
    */
   FullSearchMPI(const std::set<ContainerOption> &allowedContainerOptions,
                 const std::set<double> &allowedCellSizeFactors,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                 const std::set<Newton3Option> &allowedNewton3Options,
-                // provide default value mainly for testing, otherwise TuningStrategyFactory handles this
                 AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD)
       : _containerOptions(allowedContainerOptions),
         _optimalConfig(Configuration()),
@@ -104,6 +104,7 @@ class FullSearchMPI : public TuningStrategyInterface {
    * Constructor for the FullSearch that only contains the given configurations.
    * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
+   * @param comm: provide default value mainly for testing, otherwise TuningStrategyFactory handles this
    */
   explicit FullSearchMPI(std::set<Configuration> allowedConfigurations, AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD)
       : _containerOptions{},

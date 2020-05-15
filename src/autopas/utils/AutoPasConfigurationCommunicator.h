@@ -1,7 +1,7 @@
 /**
  * @file AutoPasConfigurationCommunicator.h
  * @author W. Thieme
- * @date 04/30/20
+ * @date 30.04.2020
  */
 
 #include <array>
@@ -12,12 +12,18 @@
 
 namespace autopas {
 
+/** typedef for the serialization of configurations. A serialized config is an array of 12 bytes */
 using SerializedConfiguration = std::array<std::byte, 12>;
 
+/**
+ * Helper class for FullSearchMPI.
+ * Handles serialization and deserialization of configurations, as well selecting the global optimal via MPI calls
+ */
 class AutoPasConfigurationCommunicator {
  public:
   /**
    * Handles communication to select the globally best configuration.
+   * @param comm: The communicator used for sending and receiving the optimal configuration
    * @param localOptimalConfig: The locally optimal configuration to be compared with others
    * @param localOptimalTime: The time measured for localOptimalConfig
    * @return The globally optimal configuration

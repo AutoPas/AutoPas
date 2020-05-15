@@ -1,7 +1,7 @@
 /**
  * @file AutoPasMPITestBase.h
  * @author W. Thieme
- * @date 05/01/20
+ * @date 01.05.2020
  */
 
 #include <gtest/gtest.h>
