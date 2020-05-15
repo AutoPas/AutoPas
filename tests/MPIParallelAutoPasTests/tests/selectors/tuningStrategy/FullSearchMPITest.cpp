@@ -56,7 +56,7 @@ TEST_F(FullSearchMPITest, testGlobalOptimumAndReset) {
                                   autopas::TraversalOption::directSumTraversal,
                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)});
 
-  fullSearchMPI.addEvidence(rank);
+  fullSearchMPI.addEvidence(rank, 0);
 
   fullSearchMPI.tune();
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double) rank/10.,
@@ -69,7 +69,7 @@ TEST_F(FullSearchMPITest, testGlobalOptimumAndReset) {
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
             fullSearchMPI.getCurrentConfiguration());
 
-  fullSearchMPI.reset();
+  fullSearchMPI.reset(0);
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1. + (double)rank/10.,
                                    autopas::TraversalOption::directSumTraversal,
                                    autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled),
@@ -90,11 +90,11 @@ TEST_F(FullSearchMPITest, testLocalOptimumAndReset) {
                                                                autopas::DataLayoutOption::soa,
                                                                autopas::Newton3Option::enabled)});
 
-  fullSearchMPI.addEvidence(1);
+  fullSearchMPI.addEvidence(1,0);
   fullSearchMPI.tune();
-  fullSearchMPI.addEvidence(0);
+  fullSearchMPI.addEvidence(0,1);
   fullSearchMPI.tune();
-  fullSearchMPI.addEvidence(2);
+  fullSearchMPI.addEvidence(2,2);
   fullSearchMPI.tune();
 
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1.2,
@@ -103,7 +103,7 @@ TEST_F(FullSearchMPITest, testLocalOptimumAndReset) {
                                    autopas::Newton3Option::enabled),
             fullSearchMPI.getCurrentConfiguration());
 
-  fullSearchMPI.reset();
+  fullSearchMPI.reset(2);
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::directSum, 1.,
                                    autopas::TraversalOption::directSumTraversal,
                                    autopas::DataLayoutOption::soa,
@@ -125,11 +125,11 @@ TEST_F(FullSearchMPITest, testInvalidConfigs) {
                                                                autopas::DataLayoutOption::soa,
                                                                autopas::Newton3Option::enabled)});
 
-  fullSearchMPI.addEvidence(1);
+  fullSearchMPI.addEvidence(1,0);
   fullSearchMPI.tune();
-  fullSearchMPI.addEvidence(0);
+  fullSearchMPI.addEvidence(0,1);
   fullSearchMPI.tune();
-  fullSearchMPI.addEvidence(2);
+  fullSearchMPI.addEvidence(2,2);
   fullSearchMPI.tune();
 
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1.2,

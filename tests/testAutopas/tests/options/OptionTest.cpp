@@ -101,6 +101,7 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
   std::map<autopas::TuningStrategyOption, std::string> mapEnumString = {
       {autopas::TuningStrategyOption::bayesianSearch, "bayesian"},
       {autopas::TuningStrategyOption::fullSearch, "full"},
+      {autopas::TuningStrategyOption::fullSearchMPI, "fullMPI"},
       {autopas::TuningStrategyOption::randomSearch, "random"},
       {autopas::TuningStrategyOption::activeHarmony, "harmony"},
       {autopas::TuningStrategyOption::predictiveTuning, "predictive"},

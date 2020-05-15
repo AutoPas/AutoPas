@@ -145,9 +145,9 @@ class FullSearchMPI : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time) override { _traversalTimes[*_tuningConfig] = time; }
+  inline void addEvidence(long time, size_t /*iteration*/) override { _traversalTimes[*_tuningConfig] = time; }
 
-  inline void reset() override {
+  inline void reset(size_t /*iteration*/) override {
     _traversalTimes.clear();
     _tuningConfig = _searchSpace.begin();
     _optimalConfig = Configuration();
