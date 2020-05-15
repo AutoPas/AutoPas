@@ -18,8 +18,7 @@ target_link_libraries(
     autopas
     PUBLIC
         rt # required for Time.h
-        ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler Do not link against
-                                  # openmp when using archer
+        ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
         $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${ARCHER}>>>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
     PRIVATE
