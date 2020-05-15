@@ -37,8 +37,7 @@ class FullSearchMPI : public TuningStrategyInterface {
                 const std::set<double> &allowedCellSizeFactors,
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                const std::set<Newton3Option> &allowedNewton3Options,
-                AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD)
+                const std::set<Newton3Option> &allowedNewton3Options, AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD)
       : _containerOptions(allowedContainerOptions),
         _optimalConfig(Configuration()),
         _configurationCommunicator(AutoPasConfigurationCommunicator()),

@@ -32,5 +32,6 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<autopas::TraversalOption> &allowedTraversals,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
-    unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption, AutoPas_MPI_Comm comm);
+    unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption,
+    AutoPas_MPI_Comm comm);
 }  // namespace autopas::TuningStrategyFactory
