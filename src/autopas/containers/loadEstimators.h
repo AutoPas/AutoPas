@@ -76,7 +76,7 @@ static const std::set<autopas::LoadEstimatorOption> allCompatibleLoadEstimators(
  * @param traversal
  * @return
  */
-static const bool usesLoadEstimator(autopas::TraversalOption traversal) {
+static bool usesLoadEstimator(autopas::TraversalOption traversal) {
   switch (traversal) {
     case TraversalOption::BalancedSliced: {
       return true;
