@@ -41,6 +41,7 @@ class TraversalOption : public Option<TraversalOption> {
     verletClustersStatic = 17,
     BalancedSliced = 18,
     BalancedSlicedVerlet = 19,
+    c04HCP = 20,
   };
 
   /**
@@ -86,6 +87,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
         {TraversalOption::BalancedSliced, "balanced-sliced"},
         {TraversalOption::BalancedSlicedVerlet, "balanced-sliced-verlet"},
+        {TraversalOption::c04HCP, "c04HCP"},
     };
   };
 

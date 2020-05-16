@@ -40,6 +40,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {MDFlexConfig::relativeOptimumRangeStr, required_argument, nullptr, 'o'},
                                          {MDFlexConfig::periodicStr, required_argument, nullptr, 'p'},
                                          {MDFlexConfig::loadEstimatorOptionsStr, required_argument, nullptr, 'H'},
+                                         {MDFlexConfig::tuningPhasesStr, required_argument, nullptr, 'P'},
                                          {MDFlexConfig::verletClusterSizeStr, required_argument, nullptr, 'q'},
                                          {MDFlexConfig::verletSkinRadiusStr, required_argument, nullptr, 'r'},
                                          {MDFlexConfig::particlesSpacingStr, required_argument, nullptr, 's'},
@@ -318,9 +319,9 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'P': {
         try {
-          config.particlesTotal = stoul(strArg);
+          config.tuningPhases = stoul(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing total number of particles: " << strArg << endl;
+          cerr << "Error parsing number of tuning phases: " << strArg << endl;
           displayHelp = true;
         }
         break;

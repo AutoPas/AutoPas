@@ -47,7 +47,7 @@ if (AUTOPAS_ENABLE_CUDA)
 
     target_compile_options(
         autopas
-        PUBLIC
+        PRIVATE
             # specify host compiler
             $<$<COMPILE_LANGUAGE:CUDA>:-ccbin=${CMAKE_CXX_COMPILER}>
             # add debug flags
