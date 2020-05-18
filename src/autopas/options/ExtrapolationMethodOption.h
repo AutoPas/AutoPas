@@ -28,6 +28,14 @@ class ExtrapolationMethodOption : public Option<ExtrapolationMethodOption> {
      * Places a line trough all data points
      */
     linearRegression,
+    /**
+     * Places a polynomial function trough a certain number of data points using Lagrange interpolation
+     */
+    lagrange,
+    /**
+     * Places a polynomial function trough a certain number of data points using Newtons method.
+     */
+    newton,
   };
 
   /**
