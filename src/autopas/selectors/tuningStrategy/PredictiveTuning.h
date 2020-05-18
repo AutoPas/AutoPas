@@ -47,6 +47,8 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
         _relativeOptimumRange(relativeOptimum),
         _maxTuningIterationsWithoutTest(maxTuningIterationsWithoutTest),
         _extrapolationMethod(extrapolationMethodOption) {
+    selectTestsUntilFirstPrediction();
+
     // sets traversalTimesStorage
     for (const auto &configuration : _searchSpace) {
       std::vector<std::pair<size_t, long>> vector;
@@ -64,7 +66,9 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
         _currentConfig(_searchSpace.begin()),
         _relativeOptimumRange(1.2),
         _maxTuningIterationsWithoutTest(5),
-        _extrapolationMethod(ExtrapolationMethodOption::linePrediction) {}
+        _extrapolationMethod(ExtrapolationMethodOption::linePrediction) {
+    selectTestsUntilFirstPrediction();
+  }
 
   inline void addEvidence(long time, size_t iteration) override {
     _traversalTimesStorage[*_currentConfig].emplace_back(iteration, time);
@@ -89,6 +93,11 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
  private:
+  /**
+   * Selects the value of _testsUntilFirstPrediction
+   */
+  inline void selectTestsUntilFirstPrediction();
+
   inline void selectOptimalConfiguration();
   /**
    * Selects the configurations that are going to be tested.
@@ -115,7 +124,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   /**
    * Creates output of the configuration and the prediction.
    */
-  inline void predictionOutput(const Configuration configuration);
+  inline void predictionOutput(Configuration configuration);
 
   std::set<Configuration>::iterator _currentConfig;
   /**
@@ -128,9 +137,9 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * Stores the linear function for the prediction to reuse it if no new traversal time was added in the last tuning
    * phase.
    * @param Configuration
-   * @param Pair (gradient, y-intercept)
+   * @param Vector
    */
-  std::unordered_map<Configuration, std::pair<size_t, size_t>, ConfigHash> _configurationLinearPredictionFunction;
+  std::unordered_map<Configuration, std::vector<size_t>, ConfigHash> _configurationPredictionFunction;
 
   /**
    * Contains the predicted time for each configuration.
@@ -181,10 +190,35 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * Stores the extrapolation method that is going to be used for the traversal time predictions.
    */
   const ExtrapolationMethodOption _extrapolationMethod;
+  /**
+   * Stores the number of tests that have to be made until the first prediction
+   */
+  unsigned int _testsUntilFirstPrediction;
 };
 
+void PredictiveTuning::selectTestsUntilFirstPrediction() {
+  switch (_extrapolationMethod) {
+    case ExtrapolationMethodOption::linePrediction: {
+      _testsUntilFirstPrediction = 2;
+      break;
+    }
+    case ExtrapolationMethodOption::lagrange: {
+      _testsUntilFirstPrediction = 3;
+      break;
+    }
+    case ExtrapolationMethodOption::linearRegression: {
+      _testsUntilFirstPrediction = 2;
+      break;
+    }
+    case ExtrapolationMethodOption::newton: {
+      _testsUntilFirstPrediction = 3;
+      break;
+    }
+  }
+}
+
 void PredictiveTuning::selectOptimalSearchSpace() {
-  if (_searchSpace.size() == 1 or _tuningIterationsCounter < 3) {
+  if (_searchSpace.size() == 1 or _tuningIterationsCounter < _testsUntilFirstPrediction + 1) {
     _currentConfig = _searchSpace.begin();
     return;
   }
@@ -232,15 +266,14 @@ void PredictiveTuning::linePrediction() {
   for (const auto &configuration : _searchSpace) {
     // if configuration was not tested in last tuning phase reuse prediction function.
     if ((_lastTest[configuration] != (_tuningIterationsCounter - 1)) &&
-        _configurationLinearPredictionFunction[configuration].first != 0 &&
-        _configurationLinearPredictionFunction[configuration].second != 0) {
-      const auto gradient = _configurationLinearPredictionFunction[configuration].first;
-      const auto lastPoint = _configurationLinearPredictionFunction[configuration].second;
+        _configurationPredictionFunction[configuration].size() == 2) {
       const auto delta = _iterationBeginTuningPhase - _traversalTimesStorage[configuration].back().first;
 
-      _configurationPredictions[configuration] = gradient * delta + lastPoint;
+      // gradient * delta + last point
+      _configurationPredictions[configuration] = _configurationPredictionFunction[configuration][0] * delta +
+                                                 _configurationPredictionFunction[configuration][1];
       predictionOutput(configuration);
-    } else if (_traversalTimesStorage[configuration].size() >= 2) {
+    } else if (_traversalTimesStorage[configuration].size() >= _testsUntilFirstPrediction) {
       const auto &vector = _traversalTimesStorage[configuration];
       const auto &traversal1 = vector[vector.size() - 1];
       const auto &traversal2 = vector[vector.size() - 2];
@@ -250,7 +283,9 @@ void PredictiveTuning::linePrediction() {
 
       // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
       _configurationPredictions[configuration] = traversal1.second + gradient * delta;
-      _configurationLinearPredictionFunction[configuration] = std::make_pair(gradient, traversal1.second);
+      _configurationPredictionFunction[configuration].clear();
+      _configurationPredictionFunction[configuration].emplace_back(gradient);
+      _configurationPredictionFunction[configuration].emplace_back(traversal1.second);
       predictionOutput(configuration);
     } else {
       // When a configuration was not yet tested twice.
@@ -265,14 +300,13 @@ void PredictiveTuning::linearRegression() {
   for (const auto &configuration : _searchSpace) {
     // if configuration was not tested in last tuning phase reuse prediction function.
     if ((_lastTest[configuration] != (_tuningIterationsCounter - 1)) &&
-        _configurationLinearPredictionFunction[configuration].first != 0 &&
-        _configurationLinearPredictionFunction[configuration].second != 0) {
-      const auto gradient = _configurationLinearPredictionFunction[configuration].first;
-      const auto yIntercept = _configurationLinearPredictionFunction[configuration].second;
-
-      _configurationPredictions[configuration] = gradient * _iterationBeginTuningPhase + yIntercept;
+        _configurationPredictionFunction[configuration].size() == 2) {
+      // gradient * iteration + y-intercept
+      _configurationPredictions[configuration] =
+          _configurationPredictionFunction[configuration][0] * _iterationBeginTuningPhase +
+          _configurationPredictionFunction[configuration][1];
       predictionOutput(configuration);
-    } else if (_traversalTimesStorage[configuration].size() >= 2) {
+    } else if (_traversalTimesStorage[configuration].size() >= _testsUntilFirstPrediction) {
       size_t xy = 0, iterationSum = 0, iterationSquare = 0, timeSum = 0, n = _traversalTimesStorage.size();
       for (const auto pair : _traversalTimesStorage[configuration]) {
         xy += pair.first * pair.second;
@@ -283,13 +317,15 @@ void PredictiveTuning::linearRegression() {
       const auto iterationMeanValue = iterationSum / n;
       const auto timeMeanValue = timeSum / n;
 
-      // ((Sum x_i * y_i) - n * xMeanValue * yMeanValue) / ((Sum x_i^1) - n * xMeanValue ^ 2)
+      // ((Sum x_i * y_i) - n * xMeanValue * yMeanValue) / ((Sum x_i^2) - n * xMeanValue ^ 2)
       const auto gradient =
           (xy - iterationMeanValue * timeSum) / (iterationSquare - n * iterationMeanValue * iterationMeanValue);
       const auto yIntercept = timeMeanValue - gradient * iterationMeanValue;
 
       _configurationPredictions[configuration] = gradient * _iterationBeginTuningPhase + yIntercept;
-      _configurationLinearPredictionFunction[configuration] = std::make_pair(gradient, yIntercept);
+      _configurationPredictionFunction[configuration].clear();
+      _configurationPredictionFunction[configuration].emplace_back(gradient);
+      _configurationPredictionFunction[configuration].emplace_back(yIntercept);
 
       predictionOutput(configuration);
     } else {
