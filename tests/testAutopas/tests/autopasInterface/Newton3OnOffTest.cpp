@@ -31,7 +31,7 @@ INSTANTIATE_TEST_SUITE_P(
               std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> ret;
 
               // container factory
-              autopas::ContainerSelector<Particle, FPCell> containerSelector({0., 0., 0.}, {10., 10., 10.}, 1.);
+              autopas::ContainerSelector<Particle> containerSelector({0., 0., 0.}, {10., 10., 10.}, 1.);
               autopas::ContainerSelectorInfo containerInfo(1., 0., 64);
 
               // generate for all containers, even those to come
@@ -80,7 +80,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
     return;
   }
 
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
+  autopas::ContainerSelector<Particle> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
   autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin(), 64);
 
   containerSelector.selectContainer(containerOption, containerInfo);

@@ -30,12 +30,12 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
     double skin = 0.2;
     double cellSizeFactor = 1;
 
-    autopas::ContainerSelector<Particle, FPCell> selector{boxMin, boxMax, cutoff};
+    autopas::ContainerSelector<Particle> selector{boxMin, boxMax, cutoff};
     autopas::ContainerSelectorInfo selectorInfo{cellSizeFactor, skin, 32};
     selector.selectContainer(containerOptionToTest, selectorInfo);
     _container = selector.getCurrentContainer();
   }
 
  protected:
-  std::shared_ptr<autopas::ParticleContainerInterface<FPCell>> _container{};
+  std::shared_ptr<autopas::ParticleContainerInterface<Particle>> _container{};
 };

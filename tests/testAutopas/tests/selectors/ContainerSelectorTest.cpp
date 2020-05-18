@@ -17,7 +17,7 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
 
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff);
+  autopas::ContainerSelector<Particle> containerSelector(bBoxMin, bBoxMax, cutoff);
   autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, 64);
 
   // expect an exception if nothing is selected yet
@@ -43,7 +43,7 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
  * @param ListHaloOutsideCutoff All particles in the halo.
  */
 void getStatus(const std::array<double, 3> &bBoxMin, const std::array<double, 3> &bBoxMax, const double cutoff,
-               autopas::ContainerSelector<Particle, FPCell> &containerSelector, std::vector<Particle> &ListInner,
+               autopas::ContainerSelector<Particle> &containerSelector, std::vector<Particle> &ListInner,
                std::vector<Particle> &ListHaloWithinCutoff, std::vector<Particle> &ListHaloOutsideCutoff) {
   for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid();
        ++iter) {
@@ -70,7 +70,7 @@ TEST_P(ContainerSelectorTest, testContainerConversion) {
   const double cellSizeFactor = 1;
   const double verletSkin = 0.1;
 
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(bBoxMin, bBoxMax, cutoff);
+  autopas::ContainerSelector<Particle> containerSelector(bBoxMin, bBoxMax, cutoff);
   autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, 64);
 
   // select container from which we want to convert from
