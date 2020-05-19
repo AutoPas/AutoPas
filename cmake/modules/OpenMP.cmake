@@ -1,9 +1,6 @@
 option(AUTOPAS_OPENMP "Activates OpenMP shared memory parallelization." OFF)
 
-if (ARCHER)
-    message(STATUS "archer detected, OpenMP enabled by default, so skipping OpenMP package search")
-    set(AUTOPAS_OPENMP ON)
-elseif (AUTOPAS_OPENMP)
+if (AUTOPAS_OPENMP)
     message(STATUS "OpenMP enabled.")
     find_package(OpenMP REQUIRED)
     # OpenMP version 4.5 was specified in 11.2015
