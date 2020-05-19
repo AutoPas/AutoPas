@@ -454,7 +454,7 @@ class AutoPas {
   /**
    * Set acquisition function for tuning.
    * For possible acquisition function choices see options::AcquisitionFunctionOption::Value.
-   * @note This function is only relevant for the bayesian search.
+   * @note This function is only relevant for the bayesian based searches.
    * @param acqFun acquisition function
    */
   void setAcquisitionFunction(AcquisitionFunctionOption acqFun) { AutoPas::_acquisitionFunctionOption = acqFun; }
