@@ -609,28 +609,33 @@ class AutoPas {
 
   /**
    * Strategy for the configuration selector.
-   * For possible container choices see SelectorStrategyOption::Value.
+   * For possible selector strategies see SelectorStrategyOption::Value.
    */
   SelectorStrategyOption _selectorStrategy{SelectorStrategyOption::fastestAbs};
+
   /**
    * List of container types AutoPas can choose from.
    * For possible container choices see ContainerOption::Value.
    */
   std::set<ContainerOption> _allowedContainers{ContainerOption::getAllOptions()};
+
   /**
    * List of traversals AutoPas can choose from.
-   * For possible container choices see TraversalOption::Value.
+   * For possible traversal choices see TraversalOption::Value.
    */
   std::set<TraversalOption> _allowedTraversals{TraversalOption::getAllOptions()};
+
   /**
    * List of data layouts AutoPas can choose from.
-   * For possible container choices see DataLayoutOption::Value.
+   * For possible data layout choices see DataLayoutOption::Value.
    */
   std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getAllOptions()};
+
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
   std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getAllOptions()};
+
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
    */
