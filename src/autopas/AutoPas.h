@@ -465,7 +465,7 @@ class AutoPas {
 
   /**
    * Set the selector configuration strategy.
-   * For possible selector strategy choices see AutoPas::SelectorStrategy.
+   * For possible selector strategy choices see SelectorStrategyOption::Value.
    * @param selectorStrategy
    */
   void setSelectorStrategy(SelectorStrategyOption selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
@@ -478,7 +478,7 @@ class AutoPas {
 
   /**
    * Set the list of allowed containers.
-   * For possible container choices see AutoPas::ContainerOption.
+   * For possible container choices see ContainerOption::Value.
    * @param allowedContainers
    */
   void setAllowedContainers(const std::set<ContainerOption> &allowedContainers) {
@@ -493,7 +493,7 @@ class AutoPas {
 
   /**
    * Set the list of allowed traversals.
-   * For possible traversals choices see AutoPas::TraversalOption.
+   * For possible traversals choices see TraversalOption::Value.
    * @param allowedTraversals
    */
   void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals) {
@@ -508,7 +508,7 @@ class AutoPas {
 
   /**
    * Set the list of allowed data layouts.
-   * For possible data layout choices see AutoPas::DataLayoutOption.
+   * For possible data layout choices see DataLayoutOption::Value.
    * @param allowedDataLayouts
    */
   void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts) {
@@ -523,7 +523,7 @@ class AutoPas {
 
   /**
    * Set the list of allowed newton 3 options.
-   * For possible newton 3 choices see AutoPas::Newton3Option
+   * For possible newton 3 choices see Newton3Option::Value.
    * @param allowedNewton3Options
    */
   void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
@@ -597,34 +597,34 @@ class AutoPas {
   unsigned int _maxTuningPhasesWithoutTest{5};
   /**
    * Acquisition function used for tuning.
-   * For possible acquisition function choices see AutoPas::AcquisitionFunction.
+   * For possible acquisition function choices see AcquisitionFunction::Value.
    */
   AcquisitionFunctionOption _acquisitionFunctionOption{AcquisitionFunctionOption::lowerConfidenceBound};
 
   /**
    * Strategy option for the auto tuner.
-   * For possible tuning strategy choices see AutoPas::TuningStrategy.
+   * For possible tuning strategy choices see TuningStrategyOption::Value.
    */
   TuningStrategyOption _tuningStrategyOption{TuningStrategyOption::fullSearch};
 
   /**
    * Strategy for the configuration selector.
-   * For possible container choices see AutoPas::SelectorStrategy.
+   * For possible container choices see SelectorStrategyOption::Value.
    */
   SelectorStrategyOption _selectorStrategy{SelectorStrategyOption::fastestAbs};
   /**
    * List of container types AutoPas can choose from.
-   * For possible container choices see AutoPas::ContainerOption.
+   * For possible container choices see ContainerOption::Value.
    */
   std::set<ContainerOption> _allowedContainers{ContainerOption::getAllOptions()};
   /**
    * List of traversals AutoPas can choose from.
-   * For possible container choices see AutoPas::TraversalOption.
+   * For possible container choices see TraversalOption::Value.
    */
   std::set<TraversalOption> _allowedTraversals{TraversalOption::getAllOptions()};
   /**
    * List of data layouts AutoPas can choose from.
-   * For possible container choices see AutoPas::DataLayoutOption.
+   * For possible container choices see DataLayoutOption::Value.
    */
   std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getAllOptions()};
   /**
