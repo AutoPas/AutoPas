@@ -11,7 +11,7 @@
 #include "autopas/options/Option.h"
 
 namespace autopas {
-
+inline namespace options {
 /**
  * Class representing the traversal choices.
  */
@@ -94,4 +94,5 @@ class TraversalOption : public Option<TraversalOption> {
  private:
   Value _value{Value(-1)};
 };
+}  // namespace options
 }  // namespace autopas

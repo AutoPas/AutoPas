@@ -29,13 +29,13 @@ class CellBorderAndFlagManager {
    * @param index1d the one-dimensional index of the cell that should be checked
    * @return true if the cell can contain halo particles
    */
-  virtual bool cellCanContainHaloParticles(index_t index1d) const = 0;
+  [[nodiscard]] virtual bool cellCanContainHaloParticles(index_t index1d) const = 0;
 
   /**
    * Checks if the cell with the one-dimensional index index1d can contain owned particles.
    * @param index1d the one-dimensional index of the cell that should be checked
    * @return true if the cell can contain owned particles
    */
-  virtual bool cellCanContainOwnedParticles(index_t index1d) const = 0;
+  [[nodiscard]] virtual bool cellCanContainOwnedParticles(index_t index1d) const = 0;
 };
 }  // namespace autopas::internal

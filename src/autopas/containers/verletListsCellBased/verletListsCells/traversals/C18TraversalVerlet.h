@@ -43,13 +43,13 @@ class C18TraversalVerlet : public C18BasedTraversal<ParticleCell, PairwiseFuncto
 
   void traverseParticlePairs() override;
 
-  TraversalOption getTraversalType() const override { return TraversalOption::c18Verlet; };
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c18Verlet; };
 
-  bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
+  [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
  private:
   PairwiseFunctor *_functor;

@@ -46,9 +46,9 @@ class VarVerletTraversalAsBuild : public VarVerletTraversalInterface<VerletNeigh
    */
   explicit VarVerletTraversalAsBuild(PairwiseFunctor *pairwiseFunctor) : _functor(pairwiseFunctor), _soa{nullptr} {}
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
   void initTraversal() override {
     auto &neighborList = *(this->_neighborList);
@@ -79,11 +79,11 @@ class VarVerletTraversalAsBuild : public VarVerletTraversalInterface<VerletNeigh
     }
   }
 
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     return dataLayout == DataLayoutOption::soa || dataLayout == DataLayoutOption::aos;
   }
 
-  TraversalOption getTraversalType() const override { return TraversalOption::varVerletTraversalAsBuild; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::varVerletTraversalAsBuild; }
 
  private:
   /**

@@ -13,8 +13,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
 
-namespace autopas {
-namespace compatibleTraversals {
+namespace autopas::compatibleTraversals {
 
 /**
  * Lists all traversal options applicable for the Direct Sum container.
@@ -145,5 +144,4 @@ static inline std::set<ContainerOption> allCompatibleContainers(TraversalOption 
   return result;
 }
 
-}  // namespace compatibleTraversals
-}  // namespace autopas
+}  // namespace autopas::compatibleTraversals

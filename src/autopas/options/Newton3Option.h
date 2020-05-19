@@ -11,7 +11,7 @@
 #include "Option.h"
 
 namespace autopas {
-
+inline namespace options {
 /**
  * Class representing the choices for the Newton 3 optimization.
  */
@@ -53,4 +53,5 @@ class Newton3Option : public Option<Newton3Option> {
  private:
   Value _value{Value(-1)};
 };
+}  // namespace options
 }  // namespace autopas
