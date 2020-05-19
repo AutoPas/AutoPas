@@ -39,7 +39,10 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
   explicit BalancedSlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                         const double interactionLength, const std::array<double, 3> &cellLength)
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                    interactionLength, cellLength) {}
+                                                                                    interactionLength, cellLength) {
+    // As we create exactly one slice per thread, dynamic scheduling makes little sense.
+    this->dynamic = false;
+  }
 
   /**
    * @copydoc SlicedBasedTraversal::initTraversal()

@@ -73,13 +73,8 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
     loadDataLayout();
     // split domain across its longest dimension
 
-    auto numSlices = static_cast<size_t>(autopas_get_max_threads());
-    auto minSliceThickness = this->_cellsPerDimension[_dimsPerLength[0]] / numSlices;
-    if (minSliceThickness < _overlapLongestAxis + 1) {
-      minSliceThickness = _overlapLongestAxis + 1;
-      numSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
-      AutoPasLog(debug, "Sliced traversal only using {} threads because the number of cells is too small.", numSlices);
-    }
+    auto minSliceThickness = _overlapLongestAxis + 1;
+    auto numSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
 
     _sliceThickness.clear();
 
@@ -173,6 +168,11 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   std::vector<AutoPasLock> _locks;
 
+  /**
+   * whether to use static or dynamic scheduling.
+   */
+  bool dynamic = true;
+
  private:
   /**
    * Interaction length (cutoff + skin).
@@ -226,8 +226,14 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
   threadTimes.resize(numSlices);
 
 #ifdef AUTOPAS_OPENMP
-// although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
-#pragma omp parallel for schedule(static, 1) num_threads(numSlices)
+  // although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
+  auto numThreads = static_cast<size_t>(autopas_get_max_threads());
+  if (dynamic) {
+    omp_set_schedule(omp_sched_dynamic, 1);
+  } else {
+    omp_set_schedule(omp_sched_static, 1);
+  }
+#pragma omp parallel for schedule(runtime) num_threads(numThreads)
 #endif
   for (size_t slice = 0; slice < numSlices; ++slice) {
     timers[slice].start();
