@@ -82,6 +82,13 @@ class VerletListsCells
                                                          lowerCorner, upperCorner);
         };
       }
+      case LoadEstimatorOption::neighborListLength: {
+        return [&](const std::array<unsigned long, 3> &cellsPerDimension,
+                   const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
+          return loadEstimators::neighborListLength(_neighborLists, cellsPerDimension, lowerCorner, upperCorner);
+        };
+      }
+
       default: {
         return
             [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,

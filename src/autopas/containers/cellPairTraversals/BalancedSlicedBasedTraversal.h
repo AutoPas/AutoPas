@@ -59,23 +59,28 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
     auto maxDimensionLength = this->_cellsPerDimension[this->_dimsPerLength[0]];
 
     std::vector<unsigned long> loads;
-
-    unsigned long fullLoad = 0;
-    std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
-    std::array<unsigned long, 3> upperCorner = this->_cellsPerDimension;
-    // upper corner is inclusive, so subtract 1 from each coordinate
-    upperCorner[0]--;
-    upperCorner[1]--;
-    upperCorner[2]--;
     utils::Timer timer;
     timer.start();
+    loads.resize(maxDimensionLength);
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for schedule(static, 1)
+#endif
     for (auto x = 0; x < maxDimensionLength; x++) {
+      std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
+      std::array<unsigned long, 3> upperCorner = this->_cellsPerDimension;
+      // upper corner is inclusive, so subtract 1 from each coordinate
+      upperCorner[0]--;
+      upperCorner[1]--;
+      upperCorner[2]--;
       lowerCorner[maxDimension] = x;
       upperCorner[maxDimension] = x;
       auto load = this->_loadEstimator(this->_cellsPerDimension, lowerCorner, upperCorner);
-      fullLoad += load;
-      loads.push_back(fullLoad);
+      loads[x] = load;
     }
+    for (auto i = 1; i < loads.size(); i++) {
+      loads[i] += loads[i - 1];
+    }
+    auto fullLoad = loads.back();
     auto loadEstimationTime = timer.stop();
     AutoPasLog(debug, "load estimation took {} nanoseconds", loadEstimationTime);
 

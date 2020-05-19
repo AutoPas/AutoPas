@@ -15,6 +15,7 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 /**
  * Collection of functions for estimating the load required to update a specific region within a containers
@@ -49,6 +50,36 @@ unsigned long squaredParticlesPerCell(const std::vector<ParticleCell> &cells,
 }
 
 /**
+ * Sums up the lengths of the verlet neighbor lists of all particles within region.
+ *
+ * @param neighborLists
+ * @param cellsPerDimension
+ * @param lowerCorner lower boundary indices for region
+ * @param upperCorner upper boundary indices for region
+ * @return estimated load for given region
+ */
+template <class Particle>
+unsigned long neighborListLength(
+    const std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &neighborLists,
+    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
+    const std::array<unsigned long, 3> &upperCorner) {
+  unsigned long sum = 0;
+  for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
+    for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
+      for (unsigned long z = lowerCorner[2]; z <= upperCorner[2]; z++) {
+        auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension);
+        unsigned long cellLoad = 0;
+        for (auto &list : neighborLists[cellIndex]) {
+          cellLoad += list.second.size();
+        }
+        sum += cellLoad;
+      }
+    }
+  }
+  return sum;
+}
+
+/**
  * returns set of load estimators compatible with container.
  *
  * @param container
@@ -62,7 +93,8 @@ static const std::set<autopas::LoadEstimatorOption> allCompatibleLoadEstimators(
     }
     case ContainerOption::verletListsCells: {
       return std::set<autopas::LoadEstimatorOption>{LoadEstimatorOption::none,
-                                                    LoadEstimatorOption::squaredParticlesPerCell};
+                                                    LoadEstimatorOption::squaredParticlesPerCell,
+                                                    LoadEstimatorOption::neighborListLength};
     }
     default: {
       return std::set<autopas::LoadEstimatorOption>{};

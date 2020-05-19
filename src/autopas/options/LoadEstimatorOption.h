@@ -23,6 +23,7 @@ class LoadEstimatorOption : public Option<LoadEstimatorOption> {
   enum Value {
     none = 0,
     squaredParticlesPerCell = 1,
+    neighborListLength = 2,
   };
 
   /**
@@ -50,6 +51,7 @@ class LoadEstimatorOption : public Option<LoadEstimatorOption> {
     return {
         {LoadEstimatorOption::none, "none"},
         {LoadEstimatorOption::squaredParticlesPerCell, "squared-particles-per-cell"},
+        {LoadEstimatorOption::neighborListLength, "neighbor-list-length"},
     };
   };
 
