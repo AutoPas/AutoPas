@@ -11,7 +11,7 @@
 #include "autopas/options/Option.h"
 
 namespace autopas {
-
+inline namespace options {
 /**
  * Class representing the choices of possible tuning strategies for the auto-tuner.
  */
@@ -79,4 +79,5 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
  private:
   Value _value{Value(-1)};
 };
+}  // namespace options
 }  // namespace autopas

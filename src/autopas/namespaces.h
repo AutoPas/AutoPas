@@ -60,4 +60,10 @@ namespace StringUtils {}  // namespace StringUtils
 namespace ThreeDimensionalMapping {}  // namespace ThreeDimensionalMapping
 
 }  // namespace utils
+
+/**
+ * Namespace that contains the explicitly defined options of AutoPas.
+ */
+namespace options {}  // namespace options
+
 }  // namespace autopas
