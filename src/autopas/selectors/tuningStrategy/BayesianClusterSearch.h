@@ -155,7 +155,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * Currently sampled vectors and corresponding acquisition values.
    */
-  std::vector<GaussianCluster::Vector> _currentAcquisitions;
+  std::vector<GaussianCluster::VectorPairDiscreteContinuous> _currentAcquisitions;
   /**
    * Configurations marked invalid.
    */
@@ -236,7 +236,7 @@ void BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOpti
   };
 
   // calculate all acquisitions
-  _currentAcquisitions = _gaussianCluster.sampleAcquisition(af, neighbourFun, continuousSamples);
+  _currentAcquisitions = _gaussianCluster.sampleOrderedByAcquisition(af, neighbourFun, continuousSamples);
 }
 
 bool BayesianClusterSearch::searchSpaceIsTrivial() const {

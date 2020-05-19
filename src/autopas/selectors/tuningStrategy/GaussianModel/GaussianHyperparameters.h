@@ -40,17 +40,6 @@ struct GaussianHyperparameters {
   Eigen::VectorXd weights;
 
   /**
-   * Default Constructor
-   */
-  GaussianHyperparameters()
-      : score(0),
-        mean(0.),
-        theta(1.),
-        dimScales(Eigen::VectorXd::Ones(1)),
-        covMatInv(Eigen::MatrixXd::Ones(1, 1)),
-        weights(Eigen::VectorXd::Ones(1)) {}
-
-  /**
    * Constructor
    * @param mean prior mean of Gaussian process
    * @param theta prior variance

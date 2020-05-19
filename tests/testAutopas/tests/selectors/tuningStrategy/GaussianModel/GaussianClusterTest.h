@@ -18,12 +18,14 @@
 class GaussianClusterTest : public AutoPasTestBase {
  protected:
   /**
-   *
-   * @param functions vector of functions
-   * @param targetDiscrete
-   * @param targetContinuous
+   * Test optimization of a 1D discrete and 2D continuous function. The test
+   * should find a value close to the optimum with a limited number of evaluation
+   * of the black-box function.
+   * @param functions vector of functions each corresponding to a discrete value
+   * @param targetDiscrete optimal discrete value
+   * @param targetContinuous optimal continuous value
    * @param precision Allowed difference between target and what is predicted.
-   * @param domain
+   * @param domain domain of continuous part
    * @param acquisitionFunctionOption
    * @param visualize if true, the acquisition map is printed to std::cout
    */
@@ -69,7 +71,7 @@ class GaussianClusterTest : public AutoPasTestBase {
       }
 
       // calculate all acquisitions
-      auto acquisitions = gc.sampleAcquisition(acquisitionFunctionOption, neighboursFun, lhsSamples);
+      auto acquisitions = gc.sampleOrderedByAcquisition(acquisitionFunctionOption, neighboursFun, lhsSamples);
 
       const auto &[amDiscrete, amContinuous] = acquisitions.back();
       double amOut = functions[amDiscrete[0]](amContinuous[0], amContinuous[1]);

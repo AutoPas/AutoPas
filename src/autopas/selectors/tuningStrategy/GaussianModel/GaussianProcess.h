@@ -70,7 +70,7 @@ class GaussianProcess {
    * Get the number of evidence provided.
    * @return
    */
-  size_t numEvidence() const { return _inputs.size(); }
+  [[nodiscard]] size_t numEvidence() const { return _inputs.size(); }
 
   /**
    * Provide a input-output pair as evidence.
@@ -115,7 +115,7 @@ class GaussianProcess {
    * Get the evidence with the highest output value
    * @return input of max
    */
-  Vector getEvidenceMax() {
+  [[nodiscard]] Vector getEvidenceMax() {
     if (_inputs.empty()) {
       utils::ExceptionHandler::exception("GaussianProcess has no evidence");
     }
@@ -129,7 +129,7 @@ class GaussianProcess {
    * @param input x
    * @return expected output of f(x)
    */
-  double predictMean(const Vector &input) const {
+  [[nodiscard]] double predictMean(const Vector &input) const {
     if (static_cast<size_t>(input.size()) != _dims) {
       utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
                                          input.size(), _dims);
@@ -138,11 +138,11 @@ class GaussianProcess {
     double result = 0.;
     if (_inputs.empty()) {
       // no evidence
-      for (auto &hyper : _hypers) {
+      for (const auto &hyper : _hypers) {
         result += hyper.score * hyper.mean;
       }
     } else {
-      for (auto &hyper : _hypers) {
+      for (const auto &hyper : _hypers) {
         result += hyper.score * (hyper.mean + kernelVector(input, hyper.theta, hyper.dimScales).dot(hyper.weights));
       }
     }
@@ -155,7 +155,7 @@ class GaussianProcess {
    * @param input x
    * @return variance
    */
-  double predictVar(const Vector &input) const {
+  [[nodiscard]] double predictVar(const Vector &input) const {
     if (static_cast<size_t>(input.size()) != _dims) {
       utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
                                          input.size(), _dims);
@@ -164,11 +164,11 @@ class GaussianProcess {
     double result = 0.;
     if (_inputs.empty()) {
       // no evidence
-      for (auto &hyper : _hypers) {
+      for (const auto &hyper : _hypers) {
         result += hyper.score * hyper.theta;
       }
     } else {
-      for (auto &hyper : _hypers) {
+      for (const auto &hyper : _hypers) {
         Eigen::VectorXd kVec = kernelVector(input, hyper.theta, hyper.dimScales);
         result += hyper.score * (kernel(input, input, hyper.theta, hyper.dimScales) - kVec.dot(hyper.covMatInv * kVec));
       }
@@ -184,7 +184,7 @@ class GaussianProcess {
    * @return a(i). This value can be compared with values a(x) of other inputs x to weigh which input would give the
    * most gain if its evidence were provided.
    */
-  inline double calcAcquisition(AcquisitionFunctionOption af, const Vector &input) const {
+  [[nodiscard]] inline double calcAcquisition(AcquisitionFunctionOption af, const Vector &input) const {
     return AcquisitionFunction::calcAcquisition(af, predictMean(input), predictVar(input), _evidenceMaxValue);
   }
 
@@ -195,7 +195,7 @@ class GaussianProcess {
    * @param samples
    * @return
    */
-  Vector sampleAquisitionMax(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
+  [[nodiscard]] Vector sampleAquisitionMax(AcquisitionFunctionOption af, const std::vector<Vector> &samples) const {
     size_t bestIdx = 0;
     double bestVal = calcAcquisition(af, samples[0]);
 
@@ -222,8 +222,8 @@ class GaussianProcess {
    * @param evidenceMaxValue current highest evidence output
    * @return tuple [means, thetas, dimScales]
    */
-  static std::tuple<std::vector<double>, std::vector<double>, std::vector<Eigen::VectorXd>>
-  generateHyperparameterSamples(size_t sampleSize, Random &rng, double dims, double sigma, double evidenceMinValue,
+  [[nodiscard]] static std::tuple<std::vector<double>, std::vector<double>, std::vector<Eigen::VectorXd>>
+  generateHyperparameterSamples(size_t sampleSize, Random &rng, size_t dims, double sigma, double evidenceMinValue,
                                 double evidenceMaxValue) {
     // range of mean
     // inside bounds of evidence outputs
@@ -238,8 +238,8 @@ class GaussianProcess {
     NumberInterval<double> thetaRange(sigma, thetaMax);
     // range of dimScale
     // Assuming most distances are greater equal 1.
-    // For a dimScale d > 5 + ln(thetaMax): theta * exp(-d r) < 1%. So choosing
-    // a greater dimScale may lead to many kernels close to zero.
+    // For a dimScale d > 5 + ln(thetaMax): theta * exp(-d r) < 1%.
+    // So choosing a greater dimScale may lead to many kernels close to zero.
     // But if needed the upper bound can be increased.
     NumberInterval<double> dimScaleRange(0., 5. + std::max(0., std::log(thetaMax)));
 
@@ -251,18 +251,20 @@ class GaussianProcess {
 
     // generate dimScale
     std::vector<std::vector<double>> sample_dimScaleData;
+    sample_dimScaleData.reserve(dims);
     for (size_t d = 0; d < dims; ++d) {
-      sample_dimScaleData.push_back(dimScaleRange.uniformSample(sampleSize, rng));
+      sample_dimScaleData.emplace_back(dimScaleRange.uniformSample(sampleSize, rng));
     }
     // convert dimScales to Vectors
     std::vector<Eigen::VectorXd> sample_dimScales;
+    sample_dimScales.reserve(sampleSize);
     for (size_t t = 0; t < sampleSize; ++t) {
       std::vector<double> dimScaleData;
+      dimScaleData.reserve(dims);
       for (size_t d = 0; d < dims; ++d) {
         dimScaleData.push_back(sample_dimScaleData[d][t]);
       }
-      Eigen::VectorXd dimScale = Eigen::Map<Eigen::VectorXd>(dimScaleData.data(), dimScaleData.size());
-      sample_dimScales.push_back(std::move(dimScale));
+      sample_dimScales.emplace_back(Eigen::Map<Eigen::VectorXd>(dimScaleData.data(), dimScaleData.size()));
     }
 
     return std::make_tuple(sample_means, sample_thetas, sample_dimScales);
@@ -272,7 +274,7 @@ class GaussianProcess {
    * Get current hyperparameters.
    * @return
    */
-  std::vector<GaussianHyperparameters> &getHyperparameters() { return _hypers; }
+  [[nodiscard]] std::vector<GaussianHyperparameters> &getHyperparameters() { return _hypers; }
 
   /**
    * Set the hyperparameters: means, theta, dimScale.
@@ -314,7 +316,7 @@ class GaussianProcess {
 
     // only keep hp_size highest scores
     if (_hypers.size() > hp_size) {
-      _hypers.resize(hp_size);
+      _hypers.erase(_hypers.begin() + hp_size, _hypers.end());
     }
 
     // normalize scores
@@ -363,8 +365,8 @@ class GaussianProcess {
    * @param dimScale
    * @return
    */
-  static inline double kernel(const Vector &input1, const Vector &input2, double theta,
-                              const Eigen::VectorXd &dimScale) {
+  [[nodiscard]] static inline double kernel(const Vector &input1, const Vector &input2, double theta,
+                                            const Eigen::VectorXd &dimScale) {
     double dot = 0;
     for (int i = 0; i < input1.size(); ++i) {
       double dist = input1[i] - input2[i];
@@ -379,7 +381,7 @@ class GaussianProcess {
    * @param input
    * @return Vector of covariances
    */
-  Eigen::VectorXd kernelVector(const Vector &input, double theta, const Eigen::VectorXd &dimScale) const {
+  [[nodiscard]] Eigen::VectorXd kernelVector(const Vector &input, double theta, const Eigen::VectorXd &dimScale) const {
     std::vector<double> k(_inputs.size());
     for (size_t i = 0; i < k.size(); ++i) {
       k[i] = kernel(input, _inputs[i], theta, dimScale);

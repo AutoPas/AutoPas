@@ -29,6 +29,9 @@ class GaussianCluster {
   using VectorDiscrete = Eigen::VectorXi;
   using VectorContinuous = Eigen::VectorXd;
 
+  // store pairs of vectors and corresponding acquisition
+  using VectorAcquisition = std::pair<std::pair<VectorDiscrete, VectorContinuous>, double>;
+
   // number of samples to find optimal hyperparameters
   static constexpr size_t hp_sample_size = 500;
   // number of hyperparameters
@@ -38,7 +41,7 @@ class GaussianCluster {
   /**
    * Vector described by a discrete and a continuous part
    */
-  using Vector = std::pair<VectorDiscrete, VectorContinuous>;
+  using VectorPairDiscreteContinuous = std::pair<VectorDiscrete, VectorContinuous>;
 
   /**
    * Constructor
@@ -63,7 +66,7 @@ class GaussianCluster {
    * Get the number of clusters in each dimension.
    * @return
    */
-  const std::vector<int> &getDimensions() const { return _dimRestriction; }
+  [[nodiscard]] const std::vector<int> &getDimensions() const { return _dimRestriction; }
 
   /**
    * Change the number of cluster in a dimension
@@ -81,7 +84,7 @@ class GaussianCluster {
    * @param index1D
    * @return
    */
-  const GaussianProcess &getCluster(size_t index1D) const { return _clusters[index1D]; }
+  [[nodiscard]] const GaussianProcess &getCluster(size_t index1D) const { return _clusters[index1D]; }
 
   /**
    * Discard all evidence.
@@ -160,13 +163,15 @@ class GaussianCluster {
    * @param input (x,y)
    * @param output f((x,y))
    */
-  inline void addEvidence(const Vector &input, double output) { addEvidence(input.first, input.second, output); }
+  inline void addEvidence(const VectorPairDiscreteContinuous &input, double output) {
+    addEvidence(input.first, input.second, output);
+  }
 
   /**
    * Get the evidence with the highest output value
    * @return input of max
    */
-  [[nodiscard]] Vector getEvidenceMax() const {
+  [[nodiscard]] VectorPairDiscreteContinuous getEvidenceMax() const {
     if (_numEvidence == 0) {
       utils::ExceptionHandler::exception("GaussianCluster has no evidence");
     }
@@ -183,8 +188,9 @@ class GaussianCluster {
    * @return a(x,y) This value can be compared with values a(v,w) of other inputs (v,w) to weigh which input would give
    * the most gain if its evidence were provided.
    */
-  double calcAcquisition(AcquisitionFunctionOption af, VectorDiscrete &inputDiscrete,
-                         const VectorContinuous &inputContinuous, const std::vector<VectorDiscrete> &neighbours) const {
+  [[nodiscard]] double calcAcquisition(AcquisitionFunctionOption af, VectorDiscrete &inputDiscrete,
+                                       const VectorContinuous &inputContinuous,
+                                       const std::vector<VectorDiscrete> &neighbours) const {
     auto inputIndex = getIndex(inputDiscrete);
     double inputMean = _clusters[inputIndex].predictMean(inputContinuous);
     double inputVar = _clusters[inputIndex].predictVar(inputContinuous);
@@ -194,7 +200,7 @@ class GaussianCluster {
     double mixVar = inputVar;
     double weightSum = 1.;
 
-    // sum over neighbours
+    // calculate the weighted sum over all neighbours
     for (const auto &n : neighbours) {
       size_t n_index = getIndex(n);
       // ignore clusters without evidence
@@ -220,77 +226,50 @@ class GaussianCluster {
 
   /**
    * Generate all possible combinations of discrete tuples and continuous tuples in samples and
+   * returns the vector with maximum acquisition.
+   * @param af function to optimize
+   * @param neighbourFun function which generates neighbours of given discrete tuple
+   * @param continuousSamples continuous tuples
+   * @return pair of vector and corresponding maximum acquistion
+   */
+  [[nodiscard]] VectorAcquisition sampleAcquisitionMax(
+      AcquisitionFunctionOption af, const std::function<std::vector<VectorDiscrete>(VectorDiscrete)> &neighbourFun,
+      const std::vector<VectorContinuous> &continuousSamples) const {
+    // generate all combinations and acquisitions
+    auto acquisitions = sampleAcquisition(af, neighbourFun, continuousSamples);
+
+    // return maximum
+    return *std::max_element(acquisitions.begin(), acquisitions.end(),
+                             [](const VectorAcquisition &va1, const VectorAcquisition &va2) {
+                               auto acquisition1 = va1.second;
+                               auto acquisition2 = va2.second;
+                               return acquisition1 < acquisition2;
+                             });
+  }
+
+  /**
+   * Generate all possible combinations of discrete tuples and continuous tuples in samples and
    * order them by their acquisition.
    * @param af function to optimize
    * @param neighbourFun function which generates neighbours of given discrete tuple
    * @param continuousSamples continuous tuples
    * @return all discrete-continuous tuples ordered by their corresponding acquisition
    */
-  std::vector<Vector> sampleAcquisition(AcquisitionFunctionOption af,
-                                        const std::function<std::vector<VectorDiscrete>(VectorDiscrete)> &neighbourFun,
-                                        const std::vector<VectorContinuous> &continuousSamples) const {
-    // store pairs of vectors and corresponding acquisition
-    using VectorAcquisition = std::pair<Vector, double>;
-    std::vector<VectorAcquisition> acquisitions;
-    // pair up all discrete with all continuous samples
-    acquisitions.reserve(_clusters.size() * continuousSamples.size());
+  [[nodiscard]] std::vector<VectorPairDiscreteContinuous> sampleOrderedByAcquisition(
+      AcquisitionFunctionOption af, const std::function<std::vector<VectorDiscrete>(VectorDiscrete)> &neighbourFun,
+      const std::vector<VectorContinuous> &continuousSamples) const {
+    // generate all combinations and acquisitions
+    auto acquisitions = sampleAcquisition(af, neighbourFun, continuousSamples);
 
-    for (const auto &currentContinuous : continuousSamples) {
-      // calc means of given continuous tuple for each cluster
-      std::vector<double> means;
-      std::vector<double> vars;
-      std::vector<double> stddevs;
-      means.reserve(_clusters.size());
-      vars.reserve(_clusters.size());
-      stddevs.reserve(_clusters.size());
-      for (const auto &cluster : _clusters) {
-        means.push_back(cluster.predictMean(currentContinuous));
-
-        double var = cluster.predictVar(currentContinuous);
-        vars.push_back(var);
-        stddevs.push_back(std::sqrt(var));
-      }
-
-      // get acquisition considering neighbours
-      VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
-      for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
-        auto neighbours = neighbourFun(currentDiscrete);
-
-        double mixMean = means[i];
-        double mixVar = vars[i];
-        double weightSum = 1.;
-
-        // sum over neighbours
-        for (const auto &n : neighbours) {
-          size_t n_index = getIndex(n);
-          // ignore clusters without evidence
-          if (_clusters[n_index].numEvidence() > 0) {
-            // weight based on 2-wasserstein distance
-            double distance = std::pow(means[n_index] - means[i], 2) + std::pow(stddevs[n_index] - stddevs[i], 2);
-            double n_weight = vars[i] / (vars[i] + distance);
-            mixMean += means[n_index] * n_weight;
-            mixVar += vars[n_index] * n_weight * n_weight;
-            weightSum += n_weight;
-          }
-        }
-
-        // normalize
-        mixMean /= weightSum;
-        mixVar /= weightSum * weightSum;
-
-        // calc acquisition
-        double currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMaxValue);
-        acquisitions.emplace_back(std::make_pair(currentDiscrete, currentContinuous), currentValue);
-      }
-    }
-
+    // order by acquisition
     std::sort(acquisitions.begin(), acquisitions.end(), [](const VectorAcquisition &va1, const VectorAcquisition &va2) {
       auto acquisition1 = va1.second;
       auto acquisition2 = va2.second;
       return acquisition1 < acquisition2;
     });
 
-    std::vector<Vector> orderedVectors;
+    // project to vectors, removing acquisitions
+    std::vector<VectorPairDiscreteContinuous> orderedVectors;
     orderedVectors.reserve(acquisitions.size());
     for (const auto &[vec, acq] : acquisitions) {
       orderedVectors.push_back(vec);
@@ -363,6 +342,73 @@ class GaussianCluster {
   }
 
   /**
+   * Generate all possible combinations of discrete tuples and continuous tuples in samples
+   * and calculate their corresponding aquisition
+   * @param af function to optimize
+   * @param neighbourFun function which generates neighbours of given discrete tuple
+   * @param continuousSamples continuous tuples
+   * @return all discrete-continuous tuples paired with their corresponding acquisition
+   */
+  [[nodiscard]] std::vector<VectorAcquisition> sampleAcquisition(
+      AcquisitionFunctionOption af, const std::function<std::vector<VectorDiscrete>(VectorDiscrete)> &neighbourFun,
+      const std::vector<VectorContinuous> &continuousSamples) const {
+    std::vector<VectorAcquisition> acquisitions;
+    // pair up all discrete with all continuous samples
+    acquisitions.reserve(_clusters.size() * continuousSamples.size());
+
+    for (const auto &currentContinuous : continuousSamples) {
+      // calc means of given continuous tuple for each cluster
+      std::vector<double> means;
+      std::vector<double> vars;
+      std::vector<double> stddevs;
+      means.reserve(_clusters.size());
+      vars.reserve(_clusters.size());
+      stddevs.reserve(_clusters.size());
+      for (const auto &cluster : _clusters) {
+        means.push_back(cluster.predictMean(currentContinuous));
+
+        double var = cluster.predictVar(currentContinuous);
+        vars.push_back(var);
+        stddevs.push_back(std::sqrt(var));
+      }
+
+      // get acquisition considering neighbours
+      VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
+      for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
+        auto neighbours = neighbourFun(currentDiscrete);
+
+        double mixMean = means[i];
+        double mixVar = vars[i];
+        double weightSum = 1.;
+
+        // sum over neighbours
+        for (const auto &n : neighbours) {
+          size_t n_index = getIndex(n);
+          // ignore clusters without evidence
+          if (_clusters[n_index].numEvidence() > 0) {
+            // weight based on 2-wasserstein distance
+            double distance = std::pow(means[n_index] - means[i], 2) + std::pow(stddevs[n_index] - stddevs[i], 2);
+            double n_weight = vars[i] / (vars[i] + distance);
+            mixMean += means[n_index] * n_weight;
+            mixVar += vars[n_index] * n_weight * n_weight;
+            weightSum += n_weight;
+          }
+        }
+
+        // normalize
+        mixMean /= weightSum;
+        mixVar /= weightSum * weightSum;
+
+        // calc acquisition
+        double currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMaxValue);
+        acquisitions.emplace_back(std::make_pair(currentDiscrete, currentContinuous), currentValue);
+      }
+    }
+
+    return acquisitions;
+  }
+
+  /**
    * Number of clusters per discrete dimension.
    */
   std::vector<int> _dimRestriction;
@@ -387,7 +433,7 @@ class GaussianCluster {
   /**
    * Current greatest evidence input
    */
-  Vector _evidenceMaxVector;
+  VectorPairDiscreteContinuous _evidenceMaxVector;
   /**
    * Current number of evidence.
    */
