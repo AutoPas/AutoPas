@@ -80,7 +80,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
         _cutoff{cutoff},
         _skin{skin} {}
 
-  ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     if (_isValid == ValidityState::cellsAndListsValid) {
@@ -163,8 +163,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   /**
    * @copydoc VerletLists::updateContainer()
    */
-  AUTOPAS_WARN_UNUSED_RESULT
-  std::vector<Particle> updateContainer() override {
+  [[nodiscard]] std::vector<Particle> updateContainer() override {
     // first delete all halo particles.
     this->deleteHaloParticles();
 
@@ -193,7 +192,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     return invalidParticles;
   }
 
-  TraversalSelectorInfo getTraversalSelectorInfo() const override {
+  [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     std::array<double, 3> towerSize = {_towerSideLength, _towerSideLength,
                                        this->getHaloBoxMax()[2] - this->getHaloBoxMin()[2]};
     std::array<unsigned long, 3> towerDimensions = {_towersPerDim[0], _towersPerDim[1], 1};
@@ -204,7 +203,8 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @copydoc ParticleContainerInterface::begin()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
-  ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     // For good openmp scalability we want the particles to be sorted into the clusters, so we do this!
 #ifdef AUTOPAS_OPENMP
 #pragma omp single
@@ -223,7 +223,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @note const version.
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
-  ParticleIteratorWrapper<Particle, false> begin(
+  [[nodiscard]] ParticleIteratorWrapper<Particle, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     /// @todo use proper cellBorderAndFlagManager instead of the unknowing.
     if (_isValid != ValidityState::invalid) {
@@ -247,7 +247,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @copydoc ParticleContainerInterface::getRegionIterator()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
-  ParticleIteratorWrapper<Particle, true> getRegionIterator(
+  [[nodiscard]] ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     // Special iterator requires sorted cells.
@@ -281,7 +281,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @note const version.
    * @note This function additionally iterates over _particlesToAdd if the container structure isn't valid.
    */
-  ParticleIteratorWrapper<Particle, false> getRegionIterator(
+  [[nodiscard]] ParticleIteratorWrapper<Particle, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     if (_isValid != ValidityState::invalid && not _particlesToAdd.empty()) {
@@ -340,7 +340,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     }
   }
 
-  unsigned long getNumParticles() const override {
+  [[nodiscard]] unsigned long getNumParticles() const override {
     unsigned long sum = 0;
     for (size_t index = 0; index < _towers.size(); index++) {
       sum += _towers[index].getNumActualParticles();
@@ -450,8 +450,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     return towerIndex2DTo1D(x, y, _towersPerDim);
   }
 
-  // boxmax
-  const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
 
   void setBoxMax(const std::array<double, 3> &boxMax) override { _boxMax = boxMax; }
 
@@ -459,10 +458,9 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * Get the upper corner of the halo box.
    * @return the upper corner of the halo box.
    */
-  const std::array<double, 3> &getHaloBoxMax() const { return _haloBoxMax; }
+  [[nodiscard]] const std::array<double, 3> &getHaloBoxMax() const { return _haloBoxMax; }
 
-  // boxmin
-  const std::array<double, 3> &getBoxMin() const override { return _boxMin; }
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const override { return _boxMin; }
 
   void setBoxMin(const std::array<double, 3> &boxMin) override { _boxMin = boxMin; }
 
@@ -470,17 +468,17 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * Get the lower corner of the halo box.
    * @return the lower corner of the halo box.
    */
-  const std::array<double, 3> &getHaloBoxMin() const { return _haloBoxMin; }
+  [[nodiscard]] const std::array<double, 3> &getHaloBoxMin() const { return _haloBoxMin; }
 
-  double getCutoff() const override { return _cutoff; }
+  [[nodiscard]] double getCutoff() const override { return _cutoff; }
 
   void setCutoff(double cutoff) override { _cutoff = cutoff; }
 
-  double getSkin() const override { return _skin; }
+  [[nodiscard]] double getSkin() const override { return _skin; }
 
   void setSkin(double skin) override { _skin = skin; }
 
-  double getInteractionLength() const override { return _cutoff + _skin; }
+  [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skin; }
 
   void deleteAllParticles() override {
     _isValid = ValidityState::invalid;

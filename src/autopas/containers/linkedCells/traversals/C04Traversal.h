@@ -44,24 +44,23 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
                const double interactionLength, const std::array<double, 3> &cellLength)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
+        _cellOffsets32Pack(computeOffsets32Pack()),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap),
-        _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {
-    computeOffsets32Pack();
-  }
+        _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {}
 
   void traverseParticlePairs() override;
 
-  TraversalOption getTraversalType() const override { return TraversalOption::c04; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c04; }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   /**
    * C04 traversals are usable, if cellSizeFactor >= 1.0 and there are at least 3 cells for each dimension.
    * @return information about applicability
    */
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     if (dataLayout == DataLayoutOption::cuda) {
       return false;
     }
@@ -79,9 +78,9 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
 
   void processBasePack32(std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex);
 
-  constexpr void computeOffsets32Pack();
+  constexpr auto computeOffsets32Pack() const;
 
-  constexpr long parity(long x, long y, long z) const { return (x + y + z + 24) % 8; }
+  [[nodiscard]] constexpr long parity(long x, long y, long z) const { return (x + y + z + 24) % 8; }
 
   std::array<std::array<long, 3>, 32> _cellOffsets32Pack;
 
@@ -99,16 +98,18 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-constexpr void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets32Pack() {
+constexpr auto C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets32Pack() const {
   using std::make_pair;
   using utils::ThreeDimensionalMapping::threeToOneD;
 
+  std::array<std::array<long, 3>, 32> cellOffsets32Pack = {};
+
   unsigned int i = 0;
   long z = 0l;
-  _cellOffsets32Pack[i++] = {1l, 1l, z};
-  _cellOffsets32Pack[i++] = {1l, 2l, z};
-  _cellOffsets32Pack[i++] = {2l, 1l, z};
-  _cellOffsets32Pack[i++] = {2l, 2l, z};
+  cellOffsets32Pack[i++] = {1l, 1l, z};
+  cellOffsets32Pack[i++] = {1l, 2l, z};
+  cellOffsets32Pack[i++] = {2l, 1l, z};
+  cellOffsets32Pack[i++] = {2l, 2l, z};
 
   // z = 1ul; z = 2ul
   for (z = 1l; z < 3l; ++z) {
@@ -117,20 +118,23 @@ constexpr void C04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
         if ((x == 0l and y == 0l) or (x == 3l and y == 0l) or (x == 0l and y == 3l) or (x == 3l and y == 3l)) {
           continue;
         }
-        _cellOffsets32Pack[i++] = {x, y, z};
+        cellOffsets32Pack[i++] = {x, y, z};
       }
     }
   }
 
   z = 3ul;
-  _cellOffsets32Pack[i++] = {1l, 1l, z};
-  _cellOffsets32Pack[i++] = {1l, 2l, z};
-  _cellOffsets32Pack[i++] = {2l, 1l, z};
-  _cellOffsets32Pack[i++] = {2l, 2l, z};
+  cellOffsets32Pack[i++] = {1l, 1l, z};
+  cellOffsets32Pack[i++] = {1l, 2l, z};
+  cellOffsets32Pack[i++] = {2l, 1l, z};
+  cellOffsets32Pack[i++] = {2l, 2l, z};
 
+  /// @todo C++20: mark as unlikely
   if (i != 32) {
     utils::ExceptionHandler::exception("Internal error: Wrong number of offsets (expected: 32, actual: {})", i);
   }
+
+  return cellOffsets32Pack;
 }
 
 /**

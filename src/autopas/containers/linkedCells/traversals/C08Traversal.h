@@ -46,17 +46,17 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
 
   void traverseParticlePairs() override;
 
-  TraversalOption getTraversalType() const override { return TraversalOption::c08; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c08; }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   /**
    * C08 traversals are always usable.
    * @return
    */
-  bool isApplicable() const override { return not(dataLayout == DataLayoutOption::cuda); }
+  [[nodiscard]] bool isApplicable() const override { return not(dataLayout == DataLayoutOption::cuda); }
 
  private:
   C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;

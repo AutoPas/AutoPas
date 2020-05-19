@@ -12,8 +12,6 @@
 
 bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
-  bool displayHelp = false;
-  int option, option_index;
   static struct option long_options[] = {{"help", no_argument, nullptr, 'h'},
                                          {MDFlexConfig::newton3OptionsStr, required_argument, nullptr, '3'},
                                          {MDFlexConfig::checkpointfileStr, required_argument, nullptr, '4'},
@@ -56,11 +54,13 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {nullptr, no_argument, nullptr, 0}};  // needed to signal the end of the array
   // reset getopt to scan from the start of argv
   optind = 1;
-  string strArg;
-  while ((option = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
+  bool displayHelp = false;
+  for (int cliOption = 0, cliOptionIndex = 0;
+       (cliOption = getopt_long(argc, argv, "", long_options, &cliOptionIndex)) != -1;) {
+    string strArg;
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
-    switch (option) {
+    switch (cliOption) {
       case '3': {
         config.newton3Options = autopas::Newton3Option::parseOptions(strArg);
         if (config.newton3Options.empty()) {
@@ -494,13 +494,22 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   }
 
   if (displayHelp) {
-    cout << "Usage: " << argv[0] << endl;
-    for (auto o : long_options) {
-      if (o.name == nullptr) {
-        continue;
+    // filter out null values and copy rest in more sane data structure
+    std::vector<std::pair<std::string, bool>> options;
+    for (auto &o : long_options) {
+      if (o.name != nullptr) {
+        options.emplace_back(std::make_pair(o.name, o.has_arg));
       }
-      cout << "    --" << setw(MDFlexConfig::valueOffset + 2) << left << o.name;
-      if (o.has_arg) {
+    }
+
+    // By default `std::sort` sorts by first member of pair.
+    std::sort(std::begin(options), std::end(options));
+
+    // print everything
+    cout << "Usage: " << argv[0] << endl;
+    for (auto &o : options) {
+      cout << "    --" << setw(MDFlexConfig::valueOffset + 2) << left << o.first;
+      if (o.second) {
         cout << "option";
       }
       cout << endl;
@@ -526,19 +535,19 @@ bool checkFileExists(const std::string &filename) {
 }  // namespace
 
 void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
-  int option, optionIndex;
   // suppress error messages since we only want to look if the yaml option is there
   auto opterrBefore = opterr;
   opterr = 0;
   static struct option longOptions[] = {{MDFlexConfig::checkpointfileStr, required_argument, nullptr, 'C'},
                                         {MDFlexConfig::yamlFilenameStr, required_argument, nullptr, 'Y'},
                                         {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
-  std::string strArg;
   optind = 1;
 
   // search all cli parameters for input file options
-  while ((option = getopt_long(argc, argv, "", longOptions, &optionIndex)) != -1) {
-    switch (option) {
+  for (int cliOption = 0, cliOptionIndex = 0;
+       (cliOption = getopt_long(argc, argv, "", longOptions, &cliOptionIndex)) != -1;) {
+    std::string strArg;
+    switch (cliOption) {
       case 'C':
         config.checkpointfile = optarg;
         if (not checkFileExists(optarg)) {
@@ -552,6 +561,9 @@ void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
           throw std::runtime_error("CLIParser::inputFilesPresent: Yaml-File " + config.yamlFilename + " not found!");
         }
         break;
+      default: {
+        // do nothing
+      }
     }
   }
 

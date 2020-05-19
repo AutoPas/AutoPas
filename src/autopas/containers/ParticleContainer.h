@@ -61,7 +61,7 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMax()
    */
-  const std::array<double, 3> &getBoxMax() const override final { return _boxMax; }
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const override final { return _boxMax; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setBoxMax()
@@ -71,7 +71,7 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMin()
    */
-  const std::array<double, 3> &getBoxMin() const override final { return _boxMin; }
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const override final { return _boxMin; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setBoxMin()
@@ -81,7 +81,7 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getCutoff()
    */
-  double getCutoff() const override final { return _cutoff; }
+  [[nodiscard]] double getCutoff() const override final { return _cutoff; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setCutoff()
@@ -91,7 +91,7 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getSkin()
    */
-  double getSkin() const override final { return _skin; }
+  [[nodiscard]] double getSkin() const override final { return _skin; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setSkin()
@@ -101,7 +101,7 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
-  double getInteractionLength() const override final { return _cutoff + _skin; }
+  [[nodiscard]] double getInteractionLength() const override final { return _cutoff + _skin; }
 
   /**
    * Deletes all particles from the container.
@@ -123,7 +123,7 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
    * Get the number of particles saved in the container.
    * @return Number of particles in the container.
    */
-  unsigned long getNumParticles() const override {
+  [[nodiscard]] unsigned long getNumParticles() const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
     /// @todo: find a sensible value for magic number
