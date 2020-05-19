@@ -452,7 +452,9 @@ class AutoPas {
   [[nodiscard]] AcquisitionFunctionOption getAcquisitionFunction() const { return _acquisitionFunctionOption; }
 
   /**
-   * Set acquisition function for tuning
+   * Set acquisition function for tuning.
+   * For possible acquisition function choices see options::AcquisitionFunctionOption::Value.
+   * @note This function is only relevant for the bayesian search.
    * @param acqFun acquisition function
    */
   void setAcquisitionFunction(AcquisitionFunctionOption acqFun) { AutoPas::_acquisitionFunctionOption = acqFun; }
@@ -465,7 +467,7 @@ class AutoPas {
 
   /**
    * Set the selector configuration strategy.
-   * For possible selector strategy choices see SelectorStrategyOption::Value.
+   * For possible selector strategy choices see options::SelectorStrategyOption::Value.
    * @param selectorStrategy
    */
   void setSelectorStrategy(SelectorStrategyOption selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
@@ -478,7 +480,7 @@ class AutoPas {
 
   /**
    * Set the list of allowed containers.
-   * For possible container choices see ContainerOption::Value.
+   * For possible container choices see options::ContainerOption::Value.
    * @param allowedContainers
    */
   void setAllowedContainers(const std::set<ContainerOption> &allowedContainers) {
@@ -493,7 +495,7 @@ class AutoPas {
 
   /**
    * Set the list of allowed traversals.
-   * For possible traversals choices see TraversalOption::Value.
+   * For possible traversals choices see options::TraversalOption::Value.
    * @param allowedTraversals
    */
   void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals) {
@@ -508,7 +510,7 @@ class AutoPas {
 
   /**
    * Set the list of allowed data layouts.
-   * For possible data layout choices see DataLayoutOption::Value.
+   * For possible data layout choices see options::DataLayoutOption::Value.
    * @param allowedDataLayouts
    */
   void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts) {
@@ -523,7 +525,7 @@ class AutoPas {
 
   /**
    * Set the list of allowed newton 3 options.
-   * For possible newton 3 choices see Newton3Option::Value.
+   * For possible newton 3 choices see options::Newton3Option::Value.
    * @param allowedNewton3Options
    */
   void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
@@ -544,6 +546,7 @@ class AutoPas {
 
   /**
    * Setter for the tuning strategy option.
+   * For possible tuning strategy choices see options::TuningStrategyOption::Value.
    * @param tuningStrategyOption
    */
   void setTuningStrategyOption(TuningStrategyOption tuningStrategyOption) {
@@ -597,37 +600,37 @@ class AutoPas {
   unsigned int _maxTuningPhasesWithoutTest{5};
   /**
    * Acquisition function used for tuning.
-   * For possible acquisition function choices see AcquisitionFunction::Value.
+   * For possible acquisition function choices see options::AcquisitionFunction::Value.
    */
   AcquisitionFunctionOption _acquisitionFunctionOption{AcquisitionFunctionOption::lowerConfidenceBound};
 
   /**
    * Strategy option for the auto tuner.
-   * For possible tuning strategy choices see TuningStrategyOption::Value.
+   * For possible tuning strategy choices see options::TuningStrategyOption::Value.
    */
   TuningStrategyOption _tuningStrategyOption{TuningStrategyOption::fullSearch};
 
   /**
    * Strategy for the configuration selector.
-   * For possible selector strategies see SelectorStrategyOption::Value.
+   * For possible selector strategies see options::SelectorStrategyOption::Value.
    */
   SelectorStrategyOption _selectorStrategy{SelectorStrategyOption::fastestAbs};
 
   /**
    * List of container types AutoPas can choose from.
-   * For possible container choices see ContainerOption::Value.
+   * For possible container choices see options::ContainerOption::Value.
    */
   std::set<ContainerOption> _allowedContainers{ContainerOption::getAllOptions()};
 
   /**
    * List of traversals AutoPas can choose from.
-   * For possible traversal choices see TraversalOption::Value.
+   * For possible traversal choices see options::TraversalOption::Value.
    */
   std::set<TraversalOption> _allowedTraversals{TraversalOption::getAllOptions()};
 
   /**
    * List of data layouts AutoPas can choose from.
-   * For possible data layout choices see DataLayoutOption::Value.
+   * For possible data layout choices see options::DataLayoutOption::Value.
    */
   std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getAllOptions()};
 
