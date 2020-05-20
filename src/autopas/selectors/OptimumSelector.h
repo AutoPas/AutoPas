@@ -13,12 +13,10 @@
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace autopas {
-
 /**
  * Collection of functions for selecting the optimum value out of a vector of values according to a given strategy
  */
-namespace OptimumSelector {
+namespace autopas::OptimumSelector {
 
 /**
  * Minimal value.
@@ -35,7 +33,7 @@ inline unsigned long minValue(const std::vector<unsigned long> &values) {
  * @return Arithmetic mean of the vector.
  */
 inline unsigned long meanValue(const std::vector<unsigned long> &values) {
-  return std::accumulate(values.cbegin(), values.cend(), 0l) / values.size();
+  return std::accumulate(values.cbegin(), values.cend(), 0ul) / values.size();
 }
 
 /**
@@ -76,5 +74,4 @@ inline unsigned long optimumValue(const std::vector<unsigned long> &values, Sele
   return 0;
 }
 
-}  // namespace OptimumSelector
-}  // namespace autopas
+}  // namespace autopas::OptimumSelector

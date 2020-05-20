@@ -1,16 +1,16 @@
 #!/usr/bin/gnuplot -p
 
 datafiles = "\
-runtimes_DirectSum_AoS.csv                          \
-runtimes_DirectSum_SoA.csv                          \
-runtimes_LinkedCells_AoS.csv                        \
-runtimes_LinkedCells_SoA.csv                        \
-runtimes_VerletLists_AoS_20_0.3.csv                 \
-runtimes_VerletLists_SoA_20_0.3.csv                 \
-runtimes_VerletCells_AoS_20_0.3.csv                 \
-runtimes_VerletCells_SoA_20_0.3.csv                 \
-runtimes_VerletCluster_AoS_20_0.3.csv               \
-runtimes_VerletCluster_SoA_20_0.3.csv               \
+runtimes_DirectSum_AoS_N3on.csv                          \
+runtimes_DirectSum_SoA_N3on.csv                          \
+runtimes_LinkedCells_AoS_N3on.csv                        \
+runtimes_LinkedCells_SoA_N3on.csv                        \
+runtimes_VerletLists_AoS_20_0.3_N3on.csv                 \
+runtimes_VerletLists_SoA_20_0.3_N3on.csv                 \
+runtimes_VerletCells_AoS_20_0.3_N3on.csv                 \
+runtimes_VerletCells_SoA_20_0.3_N3on.csv                 \
+runtimes_VerletCluster_AoS_20_0.3_N3on.csv               \
+runtimes_VerletCluster_SoA_20_0.3_N3on.csv               \
 "
 
 titles = "\

@@ -121,7 +121,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
     _currentAcquisitions.clear();
   }
 
-  inline void reset() override {
+  inline void reset(size_t) override {
     _gaussianCluster.clear();
     _currentAcquisitions.clear();
     tune();

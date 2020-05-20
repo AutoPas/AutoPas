@@ -51,7 +51,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     this->_cells.resize(2);
   }
 
-  ContainerOption getContainerType() const override { return ContainerOption::directSum; }
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::directSum; }
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
@@ -98,8 +98,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     traversal->endTraversal();
   }
 
-  AUTOPAS_WARN_UNUSED_RESULT
-  std::vector<ParticleType> updateContainer() override {
+  [[nodiscard]] std::vector<ParticleType> updateContainer() override {
     // first we delete halo particles, as we don't want them here.
     deleteHaloParticles();
     std::vector<ParticleType> invalidParticles{};
@@ -112,7 +111,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     return invalidParticles;
   }
 
-  TraversalSelectorInfo getTraversalSelectorInfo() const override {
+  [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     // direct sum technically consists of two cells (owned + halo)
     return TraversalSelectorInfo(
         {2, 0, 0},
@@ -120,20 +119,20 @@ class DirectSum : public ParticleContainer<ParticleCell> {
         utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin()), 0);
   }
 
-  ParticleIteratorWrapper<ParticleType, true> begin(
+  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<ParticleType, true>(new internal::ParticleIterator<ParticleType, ParticleCell, true>(
         &this->_cells, 0, &_cellBorderFlagManager, behavior));
   }
 
-  ParticleIteratorWrapper<ParticleType, false> begin(
+  [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBorderFlagManager,
                                                                           behavior));
   }
 
-  ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
+  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     std::vector<size_t> cellsOfInterest;
@@ -156,7 +155,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
   }
 
-  ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
+  [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     std::vector<size_t> cellsOfInterest;
@@ -187,9 +186,9 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     using index_t = std::size_t;
 
    public:
-    bool cellCanContainHaloParticles(index_t index1d) const override { return index1d == 1; }
+    [[nodiscard]] bool cellCanContainHaloParticles(index_t index1d) const override { return index1d == 1; }
 
-    bool cellCanContainOwnedParticles(index_t index1d) const override { return index1d == 0; }
+    [[nodiscard]] bool cellCanContainOwnedParticles(index_t index1d) const override { return index1d == 0; }
 
   } _cellBorderFlagManager;
 

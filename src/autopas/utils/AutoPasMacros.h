@@ -6,8 +6,5 @@
 
 #pragma once
 
-/**
- * Highly encourages the compiler to produce a warning if the return value is ignored.
- * @note: this is c++17
- */
-#define AUTOPAS_WARN_UNUSED_RESULT [[nodiscard]]
+// We try not to use precompiler macros so if you feel like adding something here
+// think if it really can not be done in a different way!

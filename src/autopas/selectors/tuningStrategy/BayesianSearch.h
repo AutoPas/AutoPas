@@ -1,7 +1,7 @@
 /**
  * @file BayesianSearch.h
  * @author Jan Nguyen
- * @date 12.06.19
+ * @date 12.06.2019
  */
 
 #pragma once
@@ -109,7 +109,7 @@ class BayesianSearch : public TuningStrategyInterface {
     _currentSamples.clear();
   }
 
-  inline void reset() override {
+  inline void reset(size_t iteration) override {
     _gaussianProcess.clear();
     _currentSamples.clear();
     tune();

@@ -40,7 +40,7 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
         _dataLayoutConverter(pairwiseFunctor) {}
 
-  TraversalOption getTraversalType() const override { return TraversalOption::directSumTraversal; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::directSumTraversal; }
 
   bool isApplicable() const override {
     int nDevices = 0;
@@ -53,9 +53,9 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
       return true;
   }
 
-  bool getUseNewton3() const override { return useNewton3; };
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; };
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; };
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; };
 
   void initTraversal() override {
     auto &cells = *(this->_cells);

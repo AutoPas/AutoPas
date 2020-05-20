@@ -1,7 +1,7 @@
 /**
  * @file GaussianProcess.h
  * @author Jan Nguyen
- * @date 17.05.19
+ * @date 17.05.2019
  */
 
 #pragma once
