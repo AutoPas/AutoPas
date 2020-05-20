@@ -175,14 +175,14 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Encode Feature vector to a cluster-encoded vector.
+   * Convert Feature vector to cluster representation for GaussianCluster.
    * Discrete values are encoded using their index in given std::vector.
    * @param containerTraversalOptions allowed container-traversal pairs
    * @param dataLayoutOptions allowed data layouts
    * @param newton3Options allowed newton3 options
    * @return cluster encoded vector
    */
-  [[nodiscard]] std::pair<Eigen::VectorXi, Eigen::VectorXd> clusterEncode(
+  [[nodiscard]] std::pair<Eigen::VectorXi, Eigen::VectorXd> convertToCluster(
       const std::vector<std::pair<ContainerOption, TraversalOption>> &containerTraversalOptions,
       const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options) const {
     int containerTraversalIndex = static_cast<int>(std::distance(
@@ -200,15 +200,16 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Decode cluster-encoded vector to FeatureVector.
+   * Inverse of convertToCluster. Convert cluster representation back
+   * to Feature vector.
    * @param vec cluster encoded vector
    * @param containerTraversalOptions allowed container-traversal pairs
    * @param dataLayoutOptions allowed data layouts
    * @param newton3Options allowed newton3 options
    * @return decoded vector
    */
-  static FeatureVector clusterDecode(
-      std::pair<Eigen::VectorXi, Eigen::VectorXd> vec,
+  static FeatureVector convertFromCluster(
+      const std::pair<Eigen::VectorXi, Eigen::VectorXd> &vec,
       const std::vector<std::pair<ContainerOption, TraversalOption>> &containerTraversalOptions,
       const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options) {
     const auto &[vecDiscrete, vecContinuous] = vec;

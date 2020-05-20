@@ -110,14 +110,15 @@ TEST_F(FeatureVectorTest, clusterEncode) {
     fv.container = container;
 
     // encode vector
-    auto encoded = fv.clusterEncode(containerTraversalsVec, dataLayoutsVec, newtonsVec);
+    auto encoded = fv.convertToCluster(containerTraversalsVec, dataLayoutsVec, newtonsVec);
 
     // check expected size of discrete and continuous tuples
     EXPECT_EQ(encoded.first.size(), 3);
     EXPECT_EQ(encoded.second.size(), 1);
 
     // check if decoding leads to intial vector
-    auto decoded = autopas::FeatureVector::clusterDecode(encoded, containerTraversalsVec, dataLayoutsVec, newtonsVec);
+    auto decoded =
+        autopas::FeatureVector::convertFromCluster(encoded, containerTraversalsVec, dataLayoutsVec, newtonsVec);
     EXPECT_EQ(decoded, fv);
   }
 }
@@ -155,7 +156,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
 
   for (auto fv : vecList) {
     // get neighbours of encoded vector
-    auto [encodedDiscrete, encodedContinuous] = fv.clusterEncode(containerTraversalsVec, dataLayoutsVec, newtonsVec);
+    auto [encodedDiscrete, encodedContinuous] = fv.convertToCluster(containerTraversalsVec, dataLayoutsVec, newtonsVec);
     auto neighbours = autopas::FeatureVector::neighboursManhattan1(encodedDiscrete, dimRestriction);
 
     // neighbours should contain all traversals + all datalayouts + all newtons - 3 (initial vector is counted trice)

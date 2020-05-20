@@ -114,7 +114,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
   inline void addEvidence(long time, size_t) override {
     // encoded vector
-    auto vec = _currentConfig.clusterEncode(_containerTraversalOptions, _dataLayoutOptions, _newton3Options);
+    auto vec = _currentConfig.convertToCluster(_containerTraversalOptions, _dataLayoutOptions, _newton3Options);
     // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
     // represent a maximization problem
     _gaussianCluster.addEvidence(vec, -time * secondsPerMicroseconds);
@@ -191,8 +191,8 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
   // no more tunings steps
   if (_gaussianCluster.numEvidence() >= _maxEvidence) {
     // select best config
-    _currentConfig = FeatureVector::clusterDecode(_gaussianCluster.getEvidenceMax(), _containerTraversalOptions,
-                                                  _dataLayoutOptions, _newton3Options);
+    _currentConfig = FeatureVector::convertFromCluster(_gaussianCluster.getEvidenceMax(), _containerTraversalOptions,
+                                                       _dataLayoutOptions, _newton3Options);
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
     return false;
   }
@@ -205,8 +205,8 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
 
     // test best vectors until empty
     while (not _currentAcquisitions.empty()) {
-      auto best = FeatureVector::clusterDecode(_currentAcquisitions.back(), _containerTraversalOptions,
-                                               _dataLayoutOptions, _newton3Options);
+      auto best = FeatureVector::convertFromCluster(_currentAcquisitions.back(), _containerTraversalOptions,
+                                                    _dataLayoutOptions, _newton3Options);
 
       if (_invalidConfigs.find(best) == _invalidConfigs.end()) {
         // valid config found!
@@ -231,7 +231,7 @@ void BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOpti
   // create n lhs samples
   auto continuousSamples = FeatureVector::lhsSampleFeatureContinuous(n, _rng, *_cellSizeFactors);
 
-  auto neighbourFun = [this](Eigen::VectorXi target) -> std::vector<Eigen::VectorXi> {
+  auto neighbourFun = [this](const Eigen::VectorXi &target) -> std::vector<Eigen::VectorXi> {
     return FeatureVector::neighboursManhattan1(target, _gaussianCluster.getDimensions());
   };
 
@@ -255,7 +255,8 @@ bool BayesianClusterSearch::searchSpaceIsEmpty() const {
 }
 
 void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
-  _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option));
+  _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option),
+                        _newton3Options.end());
 
   _gaussianCluster.setDimension(discreteNewtonDim, _newton3Options.size());
   _currentAcquisitions.clear();
