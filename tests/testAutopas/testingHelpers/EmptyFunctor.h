@@ -35,11 +35,9 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
                       autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3,
                       bool cellWiseOwnedState) override {}
 
-  // clang-format off
   /**
    * @copydoc autopas::Functor::SoAFunctorVerlet()
    */
-  // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<typename Particle::SoAArraysType> soa, size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override{};
@@ -48,6 +46,9 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
 
   bool allowsNonNewton3() override { return true; }
 
+  /**
+   * @copydoc autopas::Functor::isAppropriateClusterSize()
+   */
   bool isAppropriateClusterSize(unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout) const override {
     return true;
   }

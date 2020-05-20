@@ -46,7 +46,7 @@ class Configuration {
    * Returns string representation in JSON style of the configuration object.
    * @return String representation.
    */
-  std::string toString() const {
+  [[nodiscard]] std::string toString() const {
     return "{Container: " + container.to_string() + " , CellSizeFactor: " + std::to_string(cellSizeFactor) +
            " , Traversal: " + traversal.to_string() + " , Data Layout: " + dataLayout.to_string() +
            " , Newton 3: " + newton3.to_string() + "}";

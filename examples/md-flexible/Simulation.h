@@ -48,61 +48,7 @@ class Simulation {
    * @param numParticles
    * @param autopas
    */
-  void writeVTKFile(unsigned int iteration) {
-    _timers.vtk.start();
-
-    std::string fileBaseName = _config->vtkFileName;
-    // only count number of owned particles here
-    const auto numParticles = this->_autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly);
-    std::ostringstream strstr;
-    auto maxNumDigits = std::to_string(_config->iterations).length();
-    strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtk";
-    std::ofstream vtkFile;
-    vtkFile.open(strstr.str());
-
-    vtkFile << "# vtk DataFile Version 2.0" << std::endl;
-    vtkFile << "Timestep" << std::endl;
-    vtkFile << "ASCII" << std::endl;
-
-    // print positions
-    vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
-    vtkFile << "DIMENSIONS 1 1 1" << std::endl;
-    vtkFile << "POINTS " << numParticles << " double" << std::endl;
-    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      auto pos = iter->getR();
-      vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
-    }
-    vtkFile << std::endl;
-
-    vtkFile << "POINT_DATA " << numParticles << std::endl;
-    // print velocities
-    vtkFile << "VECTORS velocities double" << std::endl;
-    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      auto v = iter->getV();
-      vtkFile << v[0] << " " << v[1] << " " << v[2] << std::endl;
-    }
-    vtkFile << std::endl;
-
-    // print Forces
-    vtkFile << "VECTORS forces double" << std::endl;
-    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      auto f = iter->getF();
-      vtkFile << f[0] << " " << f[1] << " " << f[2] << std::endl;
-    }
-    vtkFile << std::endl;
-
-    // print TypeIDs
-    vtkFile << "SCALARS typeIds int" << std::endl;
-    vtkFile << "LOOKUP_TABLE default" << std::endl;
-    for (auto iter = _autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-      vtkFile << iter->getTypeId() << std::endl;
-    }
-    vtkFile << std::endl;
-
-    vtkFile.close();
-
-    _timers.vtk.stop();
-  }
+  void writeVTKFile(unsigned int iteration, autopas::AutoPas<Particle, ParticleCell> &autopas);
 
   /**
    * Initializes the ParticlePropertiesLibrary with properties from _config.
@@ -113,22 +59,24 @@ class Simulation {
    * Initializes the AutoPas Object with the given config and initializes the simulation domain with the Object
    * Generators.
    */
-  void initialize(const MDFlexConfig &mdFlexConfig);
+  void initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<Particle, ParticleCell> &autopas);
 
   /**
    * Calculates the pairwise forces in the system and measures the runtime.
    * @tparam Force Calculation Functor
+   * @param autopas
    */
   template <class FunctorType>
-  void calculateForces();
+  void calculateForces(autopas::AutoPas<Particle, ParticleCell> &autopas);
 
   /**
    * This function processes the main simulation loop
    * -calls the time discretization class(calculate fores, etc ...)
    * -do the output each timestep
    * -collects the duration of every Calculation(Position,Force,Velocity)
+   * @param autopas
    */
-  void simulate();
+  void simulate(autopas::AutoPas<Particle, ParticleCell> &autopas);
 
   /**
    * Indicates if enough iterations were completed yet.
@@ -139,24 +87,22 @@ class Simulation {
 
   /**
    * Prints statistics like duration of calculation etc of the Simulation.
+   * @param autopas
    */
-  void printStatistics();
+  void printStatistics(autopas::AutoPas<Particle, ParticleCell> &autopas);
 
   /**
    * Getter for ParticlePropertiesLibrary of Simulation.
    * @return unique_prt(ParticlePropertiesLibrary)
    */
-  const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
+  [[nodiscard]] const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
 
  private:
-  using AutoPasType = autopas::AutoPas<Particle, ParticleCell>;
   using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
   constexpr static bool _shifting = true;
   constexpr static bool _mixing = true;
 
-  AutoPasType _autopas;
   std::shared_ptr<MDFlexConfig> _config;
-  std::ofstream _logFile;
   std::unique_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
 
   struct timers {
@@ -215,47 +161,36 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
 }
 
 template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexConfig) {
+void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexConfig,
+                                                    autopas::AutoPas<Particle, ParticleCell> &autopas) {
   _timers.init.start();
 
   _config = std::make_shared<MDFlexConfig>(mdFlexConfig);
   initializeParticlePropertiesLibrary();
-  auto logFileName(_config->logFileName);
 
-  // select either std::out or a logfile for autopas log output.
-  // This does not affect md-flex output.
-  std::streambuf *streamBuf;
-  if (logFileName.empty()) {
-    streamBuf = std::cout.rdbuf();
-  } else {
-    _logFile.open(logFileName);
-    streamBuf = _logFile.rdbuf();
-  }
-  std::ostream outputStream(streamBuf);
-  _autopas.setAllowedCellSizeFactors(*_config->cellSizeFactors);
-  _autopas.setAllowedContainers(_config->containerOptions);
-  _autopas.setAllowedDataLayouts(_config->dataLayoutOptions);
-  _autopas.setAllowedNewton3Options(_config->newton3Options);
-  _autopas.setAllowedTraversals(_config->traversalOptions);
-  _autopas.setBoxMax(_config->boxMax);
-  _autopas.setBoxMin(_config->boxMin);
-  _autopas.setCutoff(_config->cutoff);
-  _autopas.setRelativeOptimumRange(_config->relativeOptimumRange);
-  _autopas.setMaxTuningPhasesWithoutTest(_config->maxTuningPhasesWithoutTest);
-  _autopas.setExtrapolationMethodOption(_config->extrapolationMethodOption);
-  _autopas.setNumSamples(_config->tuningSamples);
-  _autopas.setSelectorStrategy(_config->selectorStrategy);
-  _autopas.setTuningInterval(_config->tuningInterval);
-  _autopas.setTuningStrategyOption(_config->tuningStrategyOption);
-  _autopas.setVerletClusterSize(_config->verletClusterSize);
-  _autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency);
-  _autopas.setVerletSkin(_config->verletSkinRadius);
+  autopas.setAllowedCellSizeFactors(*_config->cellSizeFactors);
+  autopas.setAllowedContainers(_config->containerOptions);
+  autopas.setAllowedDataLayouts(_config->dataLayoutOptions);
+  autopas.setAllowedNewton3Options(_config->newton3Options);
+  autopas.setAllowedTraversals(_config->traversalOptions);
+  autopas.setBoxMax(_config->boxMax);
+  autopas.setBoxMin(_config->boxMin);
+  autopas.setCutoff(_config->cutoff);
+  autopas.setRelativeOptimumRange(_config->relativeOptimumRange);
+  autopas.setMaxTuningPhasesWithoutTest(_config->maxTuningPhasesWithoutTest);
+  autopas.setNumSamples(_config->tuningSamples);
+  autopas.setSelectorStrategy(_config->selectorStrategy);
+  autopas.setTuningInterval(_config->tuningInterval);
+  autopas.setTuningStrategyOption(_config->tuningStrategyOption);
+  autopas.setVerletClusterSize(_config->verletClusterSize);
+  autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency);
+  autopas.setVerletSkin(_config->verletSkinRadius);
   autopas::Logger::get()->set_level(_config->logLevel);
-  _autopas.init();
+  autopas.init();
 
   // load checkpoint
   if (not _config->checkpointfile.empty()) {
-    Checkpoint::loadParticles(_autopas, _config->checkpointfile);
+    Checkpoint::loadParticles(autopas, _config->checkpointfile);
   }
 
   // sanitize simulation end condition
@@ -266,25 +201,25 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
 
   // initializing Objects
   for (const auto &grid : _config->cubeGridObjects) {
-    Generator::cubeGrid<Particle, ParticleCell>(_autopas, grid);
+    Generator::cubeGrid<Particle, ParticleCell>(autopas, grid);
   }
   for (const auto &cube : _config->cubeGaussObjects) {
-    Generator::cubeGauss<Particle, ParticleCell>(_autopas, cube);
+    Generator::cubeGauss<Particle, ParticleCell>(autopas, cube);
   }
   for (const auto &cube : _config->cubeUniformObjects) {
-    Generator::cubeRandom<Particle, ParticleCell>(_autopas, cube);
+    Generator::cubeRandom<Particle, ParticleCell>(autopas, cube);
   }
   for (const auto &sphere : _config->sphereObjects) {
-    Generator::sphere<Particle, ParticleCell>(_autopas, sphere);
+    Generator::sphere<Particle, ParticleCell>(autopas, sphere);
   }
 
   // initializing system to initial temperature and Brownian motion
   if (_config->useThermostat and _config->deltaT != 0) {
     if (_config->addBrownianMotion) {
-      Thermostat::addBrownianMotion(_autopas, *_particlePropertiesLibrary, _config->initTemperature);
+      Thermostat::addBrownianMotion(autopas, *_particlePropertiesLibrary, _config->initTemperature);
     }
     // set system to initial temperature
-    Thermostat::apply(_autopas, *_particlePropertiesLibrary, _config->initTemperature,
+    Thermostat::apply(autopas, *_particlePropertiesLibrary, _config->initTemperature,
                       std::numeric_limits<double>::max());
   }
 
@@ -293,11 +228,11 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
 
 template <class Particle, class ParticleCell>
 template <class FunctorType>
-void Simulation<Particle, ParticleCell>::calculateForces() {
+void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Particle, ParticleCell> &autopas) {
   _timers.forceUpdateTotal.start();
 
-  FunctorType functor{_autopas.getCutoff(), *_particlePropertiesLibrary};
-  bool tuningIteration = _autopas.iteratePairwise(&functor);
+  FunctorType functor{autopas.getCutoff(), *_particlePropertiesLibrary};
+  bool tuningIteration = autopas.iteratePairwise(&functor);
   // only generate this output if the logger is set to debug
   if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
     std::cout << "Tuning: " << std::boolalpha << tuningIteration << std::endl;
@@ -319,7 +254,7 @@ void Simulation<Particle, ParticleCell>::calculateForces() {
 }
 
 template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::simulate() {
+void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, ParticleCell> &autopas) {
   _timers.simulate.start();
 
   // main simulation loop
@@ -331,18 +266,18 @@ void Simulation<Particle, ParticleCell>::simulate() {
     if (_config->deltaT != 0) {
       // only write vtk files periodically and if a filename is given.
       if ((not _config->vtkFileName.empty()) and iteration % _config->vtkWriteFrequency == 0) {
-        this->writeVTKFile(iteration);
+        this->writeVTKFile(iteration, autopas);
       }
 
       // calculate new positions
       _timers.positionUpdate.start();
-      TimeDiscretization::calculatePositions(_autopas, *_particlePropertiesLibrary, _config->deltaT);
+      TimeDiscretization::calculatePositions(autopas, *_particlePropertiesLibrary, _config->deltaT);
       _timers.positionUpdate.stop();
 
       // apply boundary conditions AFTER the position update!
       if (_config->periodic) {
         _timers.boundaries.start();
-        BoundaryConditions<ParticleCell>::applyPeriodic(_autopas);
+        BoundaryConditions<ParticleCell>::applyPeriodic(autopas);
         _timers.boundaries.stop();
       } else {
         throw std::runtime_error(
@@ -352,16 +287,16 @@ void Simulation<Particle, ParticleCell>::simulate() {
     }
     switch (this->_config->functorOption) {
       case MDFlexConfig::FunctorOption::lj12_6: {
-        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing>>();
+        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing>>(autopas);
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_Globals: {
         this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing,
-                                                 autopas::FunctorN3Modes::Both, /* globals */ true>>();
+                                                 autopas::FunctorN3Modes::Both, /* globals */ true>>(autopas);
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_AVX: {
-        this->calculateForces<autopas::LJFunctorAVX<Particle, ParticleCell, _shifting, _mixing>>();
+        this->calculateForces<autopas::LJFunctorAVX<Particle, ParticleCell, _shifting, _mixing>>(autopas);
         break;
       }
     }
@@ -371,13 +306,13 @@ void Simulation<Particle, ParticleCell>::simulate() {
 
     if (_config->deltaT != 0) {
       _timers.velocityUpdate.start();
-      TimeDiscretization::calculateVelocities(_autopas, *_particlePropertiesLibrary, _config->deltaT);
+      TimeDiscretization::calculateVelocities(autopas, *_particlePropertiesLibrary, _config->deltaT);
       _timers.velocityUpdate.stop();
 
       // applying Velocity scaling with Thermostat:
       if (_config->useThermostat and (iteration % _config->thermostatInterval) == 0) {
         _timers.thermostat.start();
-        Thermostat::apply(_autopas, *_particlePropertiesLibrary, _config->targetTemperature, _config->deltaTemp);
+        Thermostat::apply(autopas, *_particlePropertiesLibrary, _config->targetTemperature, _config->deltaTemp);
         _timers.thermostat.stop();
       }
     }
@@ -386,22 +321,22 @@ void Simulation<Particle, ParticleCell>::simulate() {
   // update temperature for generated config output
   if (_config->useThermostat) {
     _timers.thermostat.start();
-    _config->initTemperature = Thermostat::calcTemperature(_autopas, *_particlePropertiesLibrary);
+    _config->initTemperature = Thermostat::calcTemperature(autopas, *_particlePropertiesLibrary);
     _timers.thermostat.stop();
   }
 
   // writes final state of the simulation
   if ((not _config->vtkFileName.empty())) {
-    this->writeVTKFile(_config->iterations);
+    this->writeVTKFile(_config->iterations, autopas);
   }
 
   _timers.simulate.stop();
 }
 
 template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::printStatistics() {
+void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Particle, ParticleCell> &autopas) {
   using namespace std;
-  size_t flopsPerKernelCall;
+  size_t flopsPerKernelCall = 0;
 
   switch (_config->functorOption) {
     case MDFlexConfig::FunctorOption ::lj12_6: {
@@ -430,8 +365,13 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
   auto digitsTimeTotalNS = std::to_string(durationTotal).length();
 
   // Statistics
+  cout << endl;
+  cout << "Total number of particles at end of Simulation: "
+       << autopas.getNumberOfParticles(autopas::IteratorBehavior::haloAndOwned) << endl;
+  cout << "  Owned: " << autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) << endl;
+  cout << "  Halo : " << autopas.getNumberOfParticles(autopas::IteratorBehavior::haloOnly) << endl;
   cout << fixed << setprecision(_floatStringPrecision);
-  cout << endl << "Measurements:" << endl;
+  cout << "Measurements:" << endl;
   cout << timerToString("Time total      ", durationTotal, digitsTimeTotalNS);
   cout << timerToString("  Initialization", _timers.init.getTotalTime(), digitsTimeTotalNS, durationTotal);
   cout << timerToString("  Simulation    ", durationSimulate, digitsTimeTotalNS, durationTotal);
@@ -449,7 +389,7 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
 
   cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / iteration, digitsTimeTotalNS,
                         durationTotal);
-  auto mfups = _autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) * iteration /
+  auto mfups = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) * iteration /
                _timers.forceUpdateTotal.getTotalTime() * 1e-9;
   cout << "Tuning iterations: " << numTuningIterations << " / " << iteration << " = "
        << ((double)numTuningIterations / iteration * 100) << "%" << endl;
@@ -457,12 +397,12 @@ void Simulation<Particle, ParticleCell>::printStatistics() {
 
   if (_config->dontMeasureFlops) {
     autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> flopCounterFunctor(
-        _autopas.getCutoff());
-    _autopas.iteratePairwise(&flopCounterFunctor);
+        autopas.getCutoff());
+    autopas.iteratePairwise(&flopCounterFunctor);
 
     auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * iteration;
     // approximation for flops of verlet list generation
-    if (_autopas.getContainerType() == autopas::ContainerOption::verletLists)
+    if (autopas.getContainerType() == autopas::ContainerOption::verletLists)
       flops +=
           flopCounterFunctor.getDistanceCalculations() *
           autopas::FlopCounterFunctor<PrintableMolecule,
@@ -501,4 +441,62 @@ std::string Simulation<Particle, ParticleCell>::timerToString(const std::string 
 template <class Particle, class ParticleCell>
 bool Simulation<Particle, ParticleCell>::needsMoreIterations() const {
   return iteration < _config->iterations or numTuningPhasesCompleted < _config->tuningPhases;
+}
+
+template <class Particle, class ParticleCell>
+void Simulation<Particle, ParticleCell>::writeVTKFile(unsigned int iteration,
+                                                      autopas::AutoPas<Particle, ParticleCell> &autopas) {
+  _timers.vtk.start();
+
+  std::string fileBaseName = _config->vtkFileName;
+  // only count number of owned particles here
+  const auto numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly);
+  std::ostringstream strstr;
+  auto maxNumDigits = std::to_string(_config->iterations).length();
+  strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtk";
+  std::ofstream vtkFile;
+  vtkFile.open(strstr.str());
+
+  vtkFile << "# vtk DataFile Version 2.0" << std::endl;
+  vtkFile << "Timestep" << std::endl;
+  vtkFile << "ASCII" << std::endl;
+
+  // print positions
+  vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
+  vtkFile << "DIMENSIONS 1 1 1" << std::endl;
+  vtkFile << "POINTS " << numParticles << " double" << std::endl;
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    auto pos = iter->getR();
+    vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
+  }
+  vtkFile << std::endl;
+
+  vtkFile << "POINT_DATA " << numParticles << std::endl;
+  // print velocities
+  vtkFile << "VECTORS velocities double" << std::endl;
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    auto v = iter->getV();
+    vtkFile << v[0] << " " << v[1] << " " << v[2] << std::endl;
+  }
+  vtkFile << std::endl;
+
+  // print Forces
+  vtkFile << "VECTORS forces double" << std::endl;
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    auto f = iter->getF();
+    vtkFile << f[0] << " " << f[1] << " " << f[2] << std::endl;
+  }
+  vtkFile << std::endl;
+
+  // print TypeIDs
+  vtkFile << "SCALARS typeIds int" << std::endl;
+  vtkFile << "LOOKUP_TABLE default" << std::endl;
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    vtkFile << iter->getTypeId() << std::endl;
+  }
+  vtkFile << std::endl;
+
+  vtkFile.close();
+
+  _timers.vtk.stop();
 }

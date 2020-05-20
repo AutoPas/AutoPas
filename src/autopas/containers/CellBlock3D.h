@@ -63,7 +63,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   CellBlock3D &operator=(const CellBlock3D) = delete;
 
-  bool cellCanContainHaloParticles(index_t index1d) const override {
+  [[nodiscard]] bool cellCanContainHaloParticles(index_t index1d) const override {
     auto index3d = index3D(index1d);
     bool isHaloCell = false;
     for (size_t i = 0; i < 3; i++) {
@@ -76,7 +76,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
     return isHaloCell;
   }
 
-  bool cellCanContainOwnedParticles(index_t index1d) const override { return not cellCanContainHaloParticles(index1d); }
+  [[nodiscard]] bool cellCanContainOwnedParticles(index_t index1d) const override {
+    return not cellCanContainHaloParticles(index1d);
+  }
 
   /**
    * get the ParticleCell of a specified 1d index
@@ -134,20 +136,22 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param pos the position
    * @return the 3d index
    */
-  std::array<index_t, 3> get3DIndexOfPosition(const std::array<double, 3> &pos) const;
+  [[nodiscard]] std::array<index_t, 3> get3DIndexOfPosition(const std::array<double, 3> &pos) const;
 
   /**
    * get the 1d index of the cellblock for a given position
    * @param pos the position
    * @return the 1d index
    */
-  index_t get1DIndexOfPosition(const std::array<double, 3> &pos) const;
+  [[nodiscard]] index_t get1DIndexOfPosition(const std::array<double, 3> &pos) const;
 
   /**
    * get the dimension of the cellblock including the haloboxes
    * @return the dimensions of the cellblock
    */
-  const std::array<index_t, 3> &getCellsPerDimensionWithHalo() const { return _cellsPerDimensionWithHalo; }
+  [[nodiscard]] const std::array<index_t, 3> &getCellsPerDimensionWithHalo() const {
+    return _cellsPerDimensionWithHalo;
+  }
 
   /**
    * checks whether a given position is inside the halo region of the managed
@@ -155,7 +159,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param position the given position
    * @return true if the position is inside the halo region
    */
-  bool checkInHalo(const std::array<double, 3> &position) const;
+  [[nodiscard]] bool checkInHalo(const std::array<double, 3> &position) const;
 
   /**
    * deletes all particles in the halo cells of the managed cell block
@@ -220,29 +224,30 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * Get the lower corner of the halo region.
    * @return Coordinates of the lower corner.
    */
-  std::array<double, 3> getHaloBoxMin() const { return _haloBoxMin; }
+  [[nodiscard]] std::array<double, 3> getHaloBoxMin() const { return _haloBoxMin; }
 
   /**
    * Get the upper corner of the halo region.
    * @return Coordinates of the upper corner.
    */
-  std::array<double, 3> getHaloBoxMax() const { return _haloBoxMax; }
+  [[nodiscard]] std::array<double, 3> getHaloBoxMax() const { return _haloBoxMax; }
 
   /**
    * Get the number of cells per interaction length.
    * @return cells per interaction length.
    */
-  unsigned long getCellsPerInteractionLength() const { return _cellsPerInteractionLength; }
+  [[nodiscard]] unsigned long getCellsPerInteractionLength() const { return _cellsPerInteractionLength; }
 
   /**
    * Get the cell lengths.
    * @return array of cell lengths.
    */
-  const std::array<double, 3> &getCellLength() const { return _cellLength; }
+  [[nodiscard]] const std::array<double, 3> &getCellLength() const { return _cellLength; }
 
  private:
-  std::array<index_t, 3> index3D(index_t index1d) const;
-  index_t index1D(const std::array<index_t, 3> &index3d) const;
+  [[nodiscard]] std::array<index_t, 3> index3D(index_t index1d) const;
+
+  [[nodiscard]] index_t index1D(const std::array<index_t, 3> &index3d) const;
 
   std::array<index_t, 3> _cellsPerDimensionWithHalo;
   index_t _numCells;

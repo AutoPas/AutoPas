@@ -11,7 +11,7 @@
 #include "autopas/options/Option.h"
 
 namespace autopas {
-
+inline namespace options {
 /**
  * Class representing the traversal choices.
  */
@@ -39,6 +39,7 @@ class TraversalOption : public Option<TraversalOption> {
     c04SoA = 15,
     verletClusterCells = 16,
     verletClustersStatic = 17,
+    c04HCP = 18
   };
 
   /**
@@ -82,10 +83,12 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::c04SoA, "c04SoA"},
         {TraversalOption::verletClusterCells, "verlet-cluster-cells"},
         {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
+        {TraversalOption::c04HCP, "c04HCP"},
     };
   };
 
  private:
   Value _value{Value(-1)};
 };
+}  // namespace options
 }  // namespace autopas

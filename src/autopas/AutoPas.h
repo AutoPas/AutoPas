@@ -27,10 +27,8 @@ namespace autopas {
 static unsigned int _instanceCounter = 0;
 
 /**
- * The AutoPas class is intended to be the main point of Interaction for the
- * user. It puts a layer of abstraction over the container and handles the
- * autotuning.
- * @todo autotuning
+ * The AutoPas class is intended to be the main point of Interaction for the user.
+ * It acts as an interface from where all features of the library can be triggered and configured.
  * @tparam Particle Class for particles
  * @tparam ParticleCell Class for the particle cells
  */
@@ -63,27 +61,7 @@ class AutoPas {
    * Constructor for the autopas class.
    * @param logOutputStream Stream where log output should go to. Default is std::out.
    */
-  explicit AutoPas(std::ostream &logOutputStream = std::cout)
-      : _boxMin{0, 0, 0},
-        _boxMax{0, 0, 0},
-        _cutoff(1.),
-        _verletSkin(0.2),
-        _verletRebuildFrequency(20),
-        _verletClusterSize(64),
-        _tuningInterval(5000),
-        _numSamples(3),
-        _maxEvidence(10),
-        _relativeOptimumRange(1.2),
-        _maxTuningPhasesWithoutTest(5),
-        _acquisitionFunctionOption(AcquisitionFunctionOption::lowerConfidenceBound),
-        _extrapolationMethodOption(ExtrapolationMethodOption::linePrediction),
-        _tuningStrategyOption(TuningStrategyOption::fullSearch),
-        _selectorStrategy(SelectorStrategyOption::fastestAbs),
-        _allowedContainers(ContainerOption::getAllOptions()),
-        _allowedTraversals(TraversalOption::getAllOptions()),
-        _allowedDataLayouts(DataLayoutOption::getAllOptions()),
-        _allowedNewton3Options(Newton3Option::getAllOptions()),
-        _allowedCellSizeFactors(std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))) {
+  explicit AutoPas(std::ostream &logOutputStream = std::cout) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
     _instanceCounter++;
@@ -146,8 +124,9 @@ class AutoPas {
    * returned bool evaluates to true, the vector can both be empty or non-empty, depending on whether particles have
    * left the container or not.
    */
-  AUTOPAS_WARN_UNUSED_RESULT
-  std::pair<std::vector<Particle>, bool> updateContainer() { return _logicHandler->updateContainer(false); }
+  [[nodiscard]] std::pair<std::vector<Particle>, bool> updateContainer() {
+    return _logicHandler->updateContainer(false);
+  }
 
   /**
    * Forces a container update.
@@ -155,8 +134,9 @@ class AutoPas {
    * into the container.
    * @return A vector of invalid particles that do no belong in the current container.
    */
-  AUTOPAS_WARN_UNUSED_RESULT
-  std::vector<Particle> updateContainerForced() { return std::get<0>(_logicHandler->updateContainer(true)); }
+  [[nodiscard]] std::vector<Particle> updateContainerForced() {
+    return std::get<0>(_logicHandler->updateContainer(true));
+  }
 
   /**
    * Adds a particle to the container.
@@ -273,7 +253,7 @@ class AutoPas {
    * @param behavior Tells this function to report the number of halo, owned or all particles.
    * @return the number of particles in this container.
    */
-  unsigned long getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::ownedOnly) const {
+  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::ownedOnly) const {
     switch (behavior) {
       case IteratorBehavior::ownedOnly: {
         return _logicHandler->getNumParticlesOwned();
@@ -292,19 +272,19 @@ class AutoPas {
    * Returns the type of the currently used container.
    * @return The type of the used container is returned.
    */
-  unsigned long getContainerType() const { return _autoTuner->getContainer()->getContainerType(); }
+  [[nodiscard]] unsigned long getContainerType() const { return _autoTuner->getContainer()->getContainerType(); }
 
   /**
    * Get the lower corner of the container.
    * @return lower corner of the container.
    */
-  std::array<double, 3> getBoxMin() const { return _autoTuner->getContainer()->getBoxMin(); }
+  [[nodiscard]] std::array<double, 3> getBoxMin() const { return _autoTuner->getContainer()->getBoxMin(); }
 
   /**
    * Get the upper corner of the container.
    * @return upper corner of the container.
    */
-  std::array<double, 3> getBoxMax() const { return _autoTuner->getContainer()->getBoxMax(); }
+  [[nodiscard]] std::array<double, 3> getBoxMax() const { return _autoTuner->getContainer()->getBoxMax(); }
 
   /**
    * Set coordinates of the lower corner of the domain.
@@ -322,7 +302,7 @@ class AutoPas {
    * Get cutoff radius.
    * @return
    */
-  double getCutoff() const { return _cutoff; }
+  [[nodiscard]] double getCutoff() const { return _cutoff; }
 
   /**
    * Set cutoff radius.
@@ -340,7 +320,7 @@ class AutoPas {
    * Get allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @return
    */
-  const NumberSet<double> &getAllowedCellSizeFactors() const { return *_allowedCellSizeFactors; }
+  [[nodiscard]] const NumberSet<double> &getAllowedCellSizeFactors() const { return *_allowedCellSizeFactors; }
 
   /**
    * Set allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
@@ -370,7 +350,7 @@ class AutoPas {
    * Get length added to the cutoff for the Verlet lists' skin.
    * @return
    */
-  double getVerletSkin() const { return _verletSkin; }
+  [[nodiscard]] double getVerletSkin() const { return _verletSkin; }
 
   /**
    * Set length added to the cutoff for the Verlet lists' skin.
@@ -382,7 +362,7 @@ class AutoPas {
    * Get Verlet rebuild frequency.
    * @return
    */
-  unsigned int getVerletRebuildFrequency() const { return _verletRebuildFrequency; }
+  [[nodiscard]] unsigned int getVerletRebuildFrequency() const { return _verletRebuildFrequency; }
 
   /**
    * Set Verlet rebuild frequency.
@@ -396,7 +376,7 @@ class AutoPas {
    * Get Verlet cluster size.
    * @return
    */
-  unsigned int getVerletClusterSize() const { return _verletClusterSize; }
+  [[nodiscard]] unsigned int getVerletClusterSize() const { return _verletClusterSize; }
 
   /**
    * Set Verlet cluster size.
@@ -408,7 +388,7 @@ class AutoPas {
    * Get tuning interval.
    * @return
    */
-  unsigned int getTuningInterval() const { return _tuningInterval; }
+  [[nodiscard]] unsigned int getTuningInterval() const { return _tuningInterval; }
 
   /**
    * Set tuning interval.
@@ -420,7 +400,7 @@ class AutoPas {
    * Get number of samples taken per configuration during the tuning.
    * @return
    */
-  unsigned int getNumSamples() const { return _numSamples; }
+  [[nodiscard]] unsigned int getNumSamples() const { return _numSamples; }
 
   /**
    * Set number of samples taken per configuration during the tuning.
@@ -432,7 +412,7 @@ class AutoPas {
    * Get maximum number of evidence for tuning
    * @return
    */
-  unsigned int getMaxEvidence() const { return _maxEvidence; }
+  [[nodiscard]] unsigned int getMaxEvidence() const { return _maxEvidence; }
 
   /**
    * Set maximum number of evidence for tuning
@@ -470,10 +450,12 @@ class AutoPas {
    * Get acquisition function used for tuning
    * @return
    */
-  AcquisitionFunctionOption getAcquisitionFunction() const { return _acquisitionFunctionOption; }
+  [[nodiscard]] AcquisitionFunctionOption getAcquisitionFunction() const { return _acquisitionFunctionOption; }
 
   /**
-   * Set acquisition function for tuning
+   * Set acquisition function for tuning.
+   * For possible acquisition function choices see options::AcquisitionFunctionOption::Value.
+   * @note This function is only relevant for the bayesian based searches.
    * @param acqFun acquisition function
    */
   void setAcquisitionFunction(AcquisitionFunctionOption acqFun) { AutoPas::_acquisitionFunctionOption = acqFun; }
@@ -496,11 +478,11 @@ class AutoPas {
    * Get the selector configuration strategy.
    * @return
    */
-  SelectorStrategyOption getSelectorStrategy() const { return _selectorStrategy; }
+  [[nodiscard]] SelectorStrategyOption getSelectorStrategy() const { return _selectorStrategy; }
 
   /**
-   * Set the selector configuration strategy.
-   * For possible selector strategy choices see AutoPas::SelectorStrategy.
+   * Set the strategy of how to select a performance value for a piece of evidence from multiple time measurements
+   * (=samples). For possible selector strategy choices see options::SelectorStrategyOption::Value.
    * @param selectorStrategy
    */
   void setSelectorStrategy(SelectorStrategyOption selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
@@ -509,11 +491,11 @@ class AutoPas {
    * Get the list of allowed containers.
    * @return
    */
-  const std::set<ContainerOption> &getAllowedContainers() const { return _allowedContainers; }
+  [[nodiscard]] const std::set<ContainerOption> &getAllowedContainers() const { return _allowedContainers; }
 
   /**
    * Set the list of allowed containers.
-   * For possible container choices see AutoPas::ContainerOption.
+   * For possible container choices see options::ContainerOption::Value.
    * @param allowedContainers
    */
   void setAllowedContainers(const std::set<ContainerOption> &allowedContainers) {
@@ -524,11 +506,11 @@ class AutoPas {
    * Get the list of allowed traversals.
    * @return
    */
-  const std::set<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
+  [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
 
   /**
    * Set the list of allowed traversals.
-   * For possible traversals choices see AutoPas::TraversalOption.
+   * For possible traversals choices see options::TraversalOption::Value.
    * @param allowedTraversals
    */
   void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals) {
@@ -539,11 +521,11 @@ class AutoPas {
    * Get the list of allowed data layouts.
    * @return
    */
-  const std::set<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
+  [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
 
   /**
    * Set the list of allowed data layouts.
-   * For possible data layout choices see AutoPas::DataLayoutOption.
+   * For possible data layout choices see options::DataLayoutOption::Value.
    * @param allowedDataLayouts
    */
   void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts) {
@@ -554,11 +536,11 @@ class AutoPas {
    * Get the list of allowed newton 3 options.
    * @return
    */
-  const std::set<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
+  [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
 
   /**
    * Set the list of allowed newton 3 options.
-   * For possible newton 3 choices see AutoPas::Newton3Option
+   * For possible newton 3 choices see options::Newton3Option::Value.
    * @param allowedNewton3Options
    */
   void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
@@ -569,16 +551,17 @@ class AutoPas {
    * Getter for the currently selected configuration.
    * @return Configuration object currently used.
    */
-  Configuration getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
+  [[nodiscard]] Configuration getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
 
   /**
    * Getter for the tuning strategy option.
    * @return
    */
-  TuningStrategyOption getTuningStrategyOption() const { return _tuningStrategyOption; }
+  [[nodiscard]] TuningStrategyOption getTuningStrategyOption() const { return _tuningStrategyOption; }
 
   /**
    * Setter for the tuning strategy option.
+   * For possible tuning strategy choices see options::TuningStrategyOption::Value.
    * @param tuningStrategyOption
    */
   void setTuningStrategyOption(TuningStrategyOption tuningStrategyOption) {
@@ -589,53 +572,52 @@ class AutoPas {
   /**
    * Lower corner of the container.
    */
-  std::array<double, 3> _boxMin;
+  std::array<double, 3> _boxMin{0, 0, 0};
   /**
    * Upper corner of the container.
    */
-  std::array<double, 3> _boxMax;
+  std::array<double, 3> _boxMax{0, 0, 0};
   /**
    * Cutoff radius to be used in this container.
    */
-  double _cutoff;
+  double _cutoff{1.0};
   /**
    * Length added to the cutoff for the verlet lists' skin.
    */
-  double _verletSkin;
+  double _verletSkin{0.2};
   /**
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
-  unsigned int _verletRebuildFrequency;
+  unsigned int _verletRebuildFrequency{20};
   /**
    * Specifies the size of clusters for verlet lists.
    */
-  unsigned int _verletClusterSize;
+  unsigned int _verletClusterSize{64};
   /**
    * Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */
-  unsigned int _tuningInterval;
+  unsigned int _tuningInterval{5000};
   /**
    * Number of samples the tuner should collect for each combination.
    */
-  unsigned int _numSamples;
+  unsigned int _numSamples{3};
   /**
    * Tuning Strategies which work on a fixed number of evidence should use this value.
    */
-  unsigned int _maxEvidence;
+  unsigned int _maxEvidence{10};
   /**
    * Specifies the factor of the range of the optimal configurations in PredicitveTuning.
    */
-  double _relativeOptimumRange;
+  double _relativeOptimumRange{1.2};
   /**
    * Specifies how many tuning phases a configuration can not be tested in PredicitveTuning.
    */
-  unsigned int _maxTuningPhasesWithoutTest;
-
+  unsigned int _maxTuningPhasesWithoutTest{5};
   /**
    * Acquisition function used for tuning.
-   * For possible acquisition function choices see AutoPas::AcquisitionFunction.
+   * For possible acquisition function choices see options::AcquisitionFunction::Value.
    */
-  AcquisitionFunctionOption _acquisitionFunctionOption;
+  AcquisitionFunctionOption _acquisitionFunctionOption{AcquisitionFunctionOption::lowerConfidenceBound};
 
   /**
    * Extrapolation method used in predictiveTuning.
@@ -645,38 +627,44 @@ class AutoPas {
 
   /**
    * Strategy option for the auto tuner.
-   * For possible tuning strategy choices see AutoPas::TuningStrategy.
+   * For possible tuning strategy choices see options::TuningStrategyOption::Value.
    */
-  TuningStrategyOption _tuningStrategyOption;
+  TuningStrategyOption _tuningStrategyOption{TuningStrategyOption::fullSearch};
 
   /**
    * Strategy for the configuration selector.
-   * For possible container choices see AutoPas::SelectorStrategy.
+   * For possible selector strategies see options::SelectorStrategyOption::Value.
    */
-  SelectorStrategyOption _selectorStrategy;
+  SelectorStrategyOption _selectorStrategy{SelectorStrategyOption::fastestAbs};
+
   /**
    * List of container types AutoPas can choose from.
-   * For possible container choices see AutoPas::ContainerOption.
+   * For possible container choices see options::ContainerOption::Value.
    */
-  std::set<ContainerOption> _allowedContainers;
+  std::set<ContainerOption> _allowedContainers{ContainerOption::getAllOptions()};
+
   /**
    * List of traversals AutoPas can choose from.
-   * For possible container choices see AutoPas::TraversalOption.
+   * For possible traversal choices see options::TraversalOption::Value.
    */
-  std::set<TraversalOption> _allowedTraversals;
+  std::set<TraversalOption> _allowedTraversals{TraversalOption::getAllOptions()};
+
   /**
    * List of data layouts AutoPas can choose from.
-   * For possible container choices see AutoPas::DataLayoutOption.
+   * For possible data layout choices see options::DataLayoutOption::Value.
    */
-  std::set<DataLayoutOption> _allowedDataLayouts;
+  std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getAllOptions()};
+
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
-  std::set<Newton3Option> _allowedNewton3Options;
+  std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getAllOptions()};
+
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
    */
-  std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;
+  std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors{
+      std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
 
   /**
    * LogicHandler of autopas.

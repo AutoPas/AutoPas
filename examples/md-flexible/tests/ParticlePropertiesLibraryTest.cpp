@@ -6,6 +6,7 @@
 #include "ParticlePropertiesLibraryTest.h"
 
 #include "Simulation.h"
+#include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "parsing/YamlParser.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -78,10 +79,11 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
   Simulation<Molecule, FMCell> simulation;
   // this test need to be adapted if the input file changes
   MDFlexConfig config;
+  autopas::AutoPas<Molecule, FMCell> autopas;
   config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
   YamlParser::parseYamlFile(config);
   config.calcSimulationBox();
-  simulation.initialize(config);
+  simulation.initialize(config, autopas);
   simulation.initializeParticlePropertiesLibrary();
   EXPECT_EQ(simulation.getPpl()->getMass(0), 1.0);
   EXPECT_EQ(simulation.getPpl()->get24Epsilon(0), 24.0);
@@ -105,7 +107,8 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitializationDefault) {
   Simulation<Molecule, FMCell> simulation;
   MDFlexConfig config;
   config.calcSimulationBox();
-  simulation.initialize(config);
+  autopas::AutoPas<Molecule, FMCell> autopas;
+  simulation.initialize(config, autopas);
   simulation.initializeParticlePropertiesLibrary();
   // default values: epsilon=sigma=mass=1.0
   EXPECT_EQ(simulation.getPpl()->getMass(0), 1.0);

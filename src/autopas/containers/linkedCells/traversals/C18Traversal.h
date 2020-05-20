@@ -63,17 +63,17 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, dat
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
-  TraversalOption getTraversalType() const override { return TraversalOption::c18; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c18; }
 
   /**
    * C18 traversal is always usable.
    * @return
    */
-  bool isApplicable() const override { return not(dataLayout == DataLayoutOption::cuda); }
+  [[nodiscard]] bool isApplicable() const override { return not(dataLayout == DataLayoutOption::cuda); }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
  private:
   /**

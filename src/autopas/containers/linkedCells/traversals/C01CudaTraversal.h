@@ -59,13 +59,13 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
 
   void endTraversal() override {}
 
-  TraversalOption getTraversalType() const override { return TraversalOption::c01Cuda; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c01Cuda; }
 
   /**
    * Cuda traversal is only usable if using a GPU.
    * @return
    */
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
 #if defined(AUTOPAS_CUDA)
     int nDevices;
     cudaGetDeviceCount(&nDevices);
@@ -87,9 +87,9 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
 #endif
   }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
  private:
   /**

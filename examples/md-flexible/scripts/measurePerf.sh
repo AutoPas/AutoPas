@@ -127,22 +127,24 @@ do
                         t=traversals__${container}
 
                         output=$(${EXECUTABLE} \
-                            --container ${container} \
-                            --traversal ${!t} \
-                            --data-layout ${dataLayout} \
-                            --cutoff 1 \
-                            --cell-size ${cellSizeFactor} \
                             --box-length 10 \
+                            --cell-size ${cellSizeFactor} \
+                            --container ${container} \
+                            --cutoff 1 \
+                            --data-layout ${dataLayout} \
+                            --deltaT 0. \
+                            --iterations ${thisReps} \
+                            --newton3 ${newton3Opt} \
+                            --no-end-config \
+                            --no-flops \
                             --particle-generator uniform \
                             --particles-total ${Mols[$i]} \
-                            --iterations ${thisReps} \
+                            --periodic false \
+                            --traversal ${!t} \
                             --tuning-interval $(( ${thisReps} + 1 )) \
                             --verlet-rebuild-frequency ${VLRebuild[$iVL]} \
                             --verlet-skin-radius ${VLSkin[$iVL]} \
-                            --no-flops \
-                            --periodic false \
-                            --newton3 ${newton3Opt} \
-                            --deltaT 0.
+
                         )
 
                         printf '%s\n' "${output}"
