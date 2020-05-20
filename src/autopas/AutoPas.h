@@ -466,8 +466,8 @@ class AutoPas {
   [[nodiscard]] SelectorStrategyOption getSelectorStrategy() const { return _selectorStrategy; }
 
   /**
-   * Set the strategy of how to select a performance value for a piece of evidence from multiple time measurements (=samples).
-   * For possible selector strategy choices see options::SelectorStrategyOption::Value.
+   * Set the strategy of how to select a performance value for a piece of evidence from multiple time measurements
+   * (=samples). For possible selector strategy choices see options::SelectorStrategyOption::Value.
    * @param selectorStrategy
    */
   void setSelectorStrategy(SelectorStrategyOption selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
