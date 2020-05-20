@@ -13,8 +13,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
 
-namespace autopas {
-namespace compatibleTraversals {
+namespace autopas::compatibleTraversals {
 
 /**
  * Lists all traversal options applicable for the Direct Sum container.
@@ -46,7 +45,6 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
-  // traversal not used but prevents usage of newton3
   static const std::set<TraversalOption> s{TraversalOption::verletClusters, TraversalOption::verletClustersColoring,
                                            TraversalOption::verletClustersStatic};
   return s;
@@ -144,5 +142,4 @@ static inline std::set<ContainerOption> allCompatibleContainers(TraversalOption 
   return result;
 }
 
-}  // namespace compatibleTraversals
-}  // namespace autopas
+}  // namespace autopas::compatibleTraversals

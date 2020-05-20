@@ -52,11 +52,11 @@ class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFuncto
 
   void traverseParticlePairs() override;
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  TraversalOption getTraversalType() const override { return TraversalOption::sliced; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::sliced; }
 
  private:
   C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;

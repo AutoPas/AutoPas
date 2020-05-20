@@ -1,12 +1,18 @@
+# cmake stuff
 cmake-build-*/
+CMakeLists.txt.user
+cmake.check_cache
 build*/
+*compile_commands.json
+
+# editor stuff
 *.swp
 .idea/
 venv/
 *.timestamp
-CMakeLists.txt.user
-cmake.check_cache
 *.synctex.gz
+
+# benchmark output folder
 *testTuning_*/
-*compile_commands.json
+*measurePerf_*/
 

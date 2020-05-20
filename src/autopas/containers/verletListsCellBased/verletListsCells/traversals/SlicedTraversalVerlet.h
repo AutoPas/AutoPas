@@ -50,13 +50,13 @@ class SlicedTraversalVerlet : public SlicedBasedTraversal<ParticleCell, Pairwise
 
   void traverseParticlePairs() override;
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  TraversalOption getTraversalType() const override { return TraversalOption::slicedVerlet; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::slicedVerlet; }
 
-  bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
+  [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 
  private:
   PairwiseFunctor *_functor;

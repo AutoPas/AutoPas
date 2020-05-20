@@ -61,11 +61,13 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor) {}
 
-  TraversalOption getTraversalType() const override { return TraversalOption::verletClustersColoring; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::verletClustersColoring; }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
-  bool getUseNewton3() const override { return useNewton3; }
-  bool isApplicable() const override {
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
+
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
+
+  [[nodiscard]] bool isApplicable() const override {
     return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa);
   }
 
