@@ -17,7 +17,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceEmpty) {
   auto noInterval = autopas::NumberSetFinite<double>({});
   EXPECT_THROW(
       autopas::TuningStrategyFactory::generateTuningStrategy(tuningStrategy, {}, noInterval, {}, {}, {}, 42,
-                                                             autopas::AcquisitionFunctionOption::expectedDecrease),
+                                                             autopas::AcquisitionFunctionOption::expectedImprovement),
       autopas::utils::ExceptionHandler::AutoPasException);
 }
 
@@ -27,7 +27,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceOneOption) {
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
       tuningStrategy, {autopas::ContainerOption::directSum}, oneInterval,
       {autopas::TraversalOption::directSumTraversal}, {autopas::DataLayoutOption::soa},
-      {autopas::Newton3Option::enabled}, 42, autopas::AcquisitionFunctionOption::expectedDecrease);
+      {autopas::Newton3Option::enabled}, 42, autopas::AcquisitionFunctionOption::expectedImprovement);
 
   EXPECT_FALSE(search->searchSpaceIsEmpty());
   EXPECT_TRUE(search->searchSpaceIsTrivial());
@@ -40,7 +40,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceMoreOptions) {
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
       tuningStrategy, {autopas::ContainerOption::linkedCells}, oneInterval, {autopas::TraversalOption::c08},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, 1,
-      autopas::AcquisitionFunctionOption::expectedDecrease);
+      autopas::AcquisitionFunctionOption::expectedImprovement);
 
   EXPECT_FALSE(search->searchSpaceIsEmpty());
   EXPECT_FALSE(search->searchSpaceIsTrivial());
@@ -58,7 +58,7 @@ TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveAll) {
       tuningStrategy, {autopas::ContainerOption::linkedCells}, oneInterval,
       {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos}, {autopas::Newton3Option::enabled}, 1,
-      autopas::AcquisitionFunctionOption::expectedDecrease);
+      autopas::AcquisitionFunctionOption::expectedImprovement);
 
   EXPECT_THROW(search->removeN3Option(autopas::Newton3Option::enabled),
                autopas::utils::ExceptionHandler::AutoPasException);
@@ -76,7 +76,7 @@ TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveSome) {
       {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
       {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, 1,
-      autopas::AcquisitionFunctionOption::expectedDecrease);
+      autopas::AcquisitionFunctionOption::expectedImprovement);
 
   EXPECT_NO_THROW(search->removeN3Option(autopas::Newton3Option::enabled));
   EXPECT_FALSE(search->searchSpaceIsEmpty());

@@ -114,10 +114,9 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
 TEST(OptionTest, parseAcquisitionFunctionOptionsTest) {
   std::map<autopas::AcquisitionFunctionOption, std::string> mapEnumString = {
       {autopas::AcquisitionFunctionOption::upperConfidenceBound, "upperconfbound"},
-      {autopas::AcquisitionFunctionOption::expectedDecrease, "expdecr"},
-      {autopas::AcquisitionFunctionOption::lowerConfidenceBound, "lowerconfbound"},
+      {autopas::AcquisitionFunctionOption::expectedImprovement, "expimprv"},
       {autopas::AcquisitionFunctionOption::mean, "mean"},
-      {autopas::AcquisitionFunctionOption::probabilityOfDecrease, "probofdecrease"},
+      {autopas::AcquisitionFunctionOption::probabilityOfImprovement, "probofimprv"},
       {autopas::AcquisitionFunctionOption::variance, "varianz"},
   };
 

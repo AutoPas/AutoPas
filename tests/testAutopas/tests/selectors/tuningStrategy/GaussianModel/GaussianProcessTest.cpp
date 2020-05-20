@@ -15,13 +15,12 @@ TEST_F(GaussianProcessTest, wrongDimension) {
   Eigen::VectorXd f1 = Eigen::VectorXd::Ones(1);
   Eigen::VectorXd f2 = Eigen::VectorXd::Zero(3);
 
-  EXPECT_THROW(gp.addEvidence(f1, 0), utils::ExceptionHandler::AutoPasException);
-  EXPECT_THROW(gp.addEvidence(f2, 1), utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW(gp.addEvidence(f1, 0, true), utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW(gp.addEvidence(f2, 1, true), utils::ExceptionHandler::AutoPasException);
 }
 
 TEST_F(GaussianProcessTest, noEvidence) {
   Random rng(32);
-
   double epsilon = 0.05;  // allowed error for tests
 
   double sigma = 0.001;  // noise
@@ -49,7 +48,7 @@ TEST_F(GaussianProcessTest, oneEvidence) {
   Eigen::VectorXd f2(1);
   f2 << 1000.;
 
-  gp.addEvidence(f1, out1);
+  gp.addEvidence(f1, out1, true);
 
   // predicting point same as evidence -> should expect same output as evidence
   EXPECT_NEAR(gp.predictMean(f1), out1, epsilon);
@@ -77,8 +76,8 @@ TEST_F(GaussianProcessTest, twoEvidence) {
   Eigen::VectorXd f3(1);
   f3 << 0.;
 
-  gp.addEvidence(f1, out1);
-  gp.addEvidence(f2, out2);
+  gp.addEvidence(f1, out1, false);
+  gp.addEvidence(f2, out2, true);
 
   // predicting point same as evidence
   // should expect same output as evidence because great distance between inputs
@@ -104,8 +103,8 @@ TEST_F(GaussianProcessTest, clear) {
   f2 << 100.;
   double out2 = -3.;
 
-  gp.addEvidence(f1, out1);
-  gp.addEvidence(f2, out2);
+  gp.addEvidence(f1, out1, false);
+  gp.addEvidence(f2, out2, true);
   gp.clear();
 
   // predicting points as deleted evidence
@@ -118,7 +117,7 @@ TEST_F(GaussianProcessTest, clear) {
 
   // test new evidence at deleted point
   out2 = 10.;
-  gp.addEvidence(f2, out2);
+  gp.addEvidence(f2, out2, true);
 
   EXPECT_NEAR(gp.predictMean(f1), out2, epsilon);
 
@@ -147,7 +146,7 @@ TEST_F(GaussianProcessTest, sine) {
     f << input;
     double output = functor(input);
 
-    gp.addEvidence(f, output);
+    gp.addEvidence(f, output, true);
   }
 
   // make equidistant prediction over the domain
@@ -172,27 +171,12 @@ TEST_F(GaussianProcessTest, 2dMax) {
   Eigen::VectorXd max(2);
   max << -1, 1;
 
-  test2DFunction(functor, max, maxError, domain, AcquisitionFunctionOption::upperConfidenceBound, minMax::max,
-                 minMax::max, false);
+  test2DFunction(functor, max, maxError, domain, AcquisitionFunctionOption::upperConfidenceBound, false);
 }
 
-TEST_F(GaussianProcessTest, 2dMin) {
-  // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
-  auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
-  std::pair domain{NumberInterval<double>(-2, 2), NumberInterval<double>(-2, 2)};
-  constexpr double maxError = 0.2;
-
-  // min of function
-  Eigen::VectorXd min(2);
-  min << 1, 1;
-
-  test2DFunction(functor, min, maxError, domain, AcquisitionFunctionOption::expectedDecrease, minMax::min, minMax::max,
-                 false);
-}
-
-TEST_F(GaussianProcessTest, 2dMinGrid) {
-  // try to find the min of (i1 - 1)^2 + (i2 - 1)^2
-  auto functor = [](double i1, double i2) { return std::pow(i1 - 1, 2) + std::pow(i2 - 1, 2); };
+TEST_F(GaussianProcessTest, 2dMaxGrid) {
+  // functor to find max of
+  auto functor = [](double i1, double i2) { return -2 * std::pow(i1 - 1, 2) - 3 * std::pow(i2 - 1, 2); };
   // discrete domain of function
   int domHalf = 10;
   std::set<double> domSet;
@@ -200,19 +184,18 @@ TEST_F(GaussianProcessTest, 2dMinGrid) {
     domSet.insert(i * 2. / domHalf);
   }
   std::pair domain{NumberSetFinite<double>(domSet), NumberSetFinite<double>(domSet)};
-  constexpr double maxError = 0.2;
+  constexpr double maxError = 0.5;
 
   // min of function
-  Eigen::VectorXd min(2);
-  min << 1, 1;
-  test2DFunction(functor, min, maxError, domain, AcquisitionFunctionOption::lowerConfidenceBound, minMax::min,
-                 minMax::min, false);
+  Eigen::VectorXd max(2);
+  max << 1, 1;
+  test2DFunction(functor, max, maxError, domain, AcquisitionFunctionOption::expectedImprovement, false);
 }
 
-TEST_F(GaussianProcessTest, 2dMinGridBig) {
-  // functor to find min of
+TEST_F(GaussianProcessTest, 2dMaxGridBig) {
+  // functor to find max of
   auto functor = [](double i1, double i2) {
-    return std::pow((std::abs(i1 - 1) + 1), 5) + std::pow((std::abs(i2 - 1) + 1), 5);
+    return std::pow(-(std::abs(i1 - 1) + 1), 5) - std::pow((std::abs(i2 - 1) + 1), 5);
   };
   // discrete domain of function
   int domHalf = 10;
@@ -224,10 +207,9 @@ TEST_F(GaussianProcessTest, 2dMinGridBig) {
   constexpr double maxError = 10;
 
   // min of function
-  Eigen::VectorXd min(2);
-  min << 1, 1;
-  test2DFunction(functor, min, maxError, domain, AcquisitionFunctionOption::lowerConfidenceBound, minMax::min,
-                 minMax::min, false);
+  Eigen::VectorXd max(2);
+  max << 1, 1;
+  test2DFunction(functor, max, maxError, domain, AcquisitionFunctionOption::upperConfidenceBound, false);
 }
 
 void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::NumberSet<double> &domainX,
@@ -240,7 +222,7 @@ void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::Numb
   // precalculate acqMap
   std::vector<std::vector<double>> acqMap;
   double acqMin = std::numeric_limits<double>::max();
-  double acqMax = std::numeric_limits<double>::min();
+  double acqMax = std::numeric_limits<double>::lowest();
   for (int y = 0; y < xChunks; ++y) {
     // calculate a row
     std::vector<double> row;
@@ -249,9 +231,6 @@ void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::Numb
       Eigen::Vector2d sample(x * xSpace + domainX.getMin(), (y * ySpace + domainY.getMin()));
       double val = gp.calcAcquisition(af, sample);
 
-      // negate for special case lcb
-      if (af == autopas::AcquisitionFunctionOption::lowerConfidenceBound) val = -val;
-
       row.push_back(val);
 
       // keep track min and max value
@@ -259,7 +238,7 @@ void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::Numb
       acqMax = std::max(val, acqMax);
     }
 
-    acqMap.push_back(row);
+    acqMap.push_back(std::move(row));
   }
 
   // get scaling such that acqMax=1 and acqMin=0
@@ -288,7 +267,7 @@ void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::Numb
       double val = gp.predictMean(sample) * colorFactor;
 
       // map value to color
-      int color = static_cast<int>(255 - val);
+      int color = static_cast<int>(255 + val);
       color = std::clamp(color, 232, 255);
 
       // print two spaces of that color
