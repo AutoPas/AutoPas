@@ -76,7 +76,7 @@ class AutoPas {
         _relativeOptimumRange(1.2),
         _maxTuningPhasesWithoutTest(5),
         _acquisitionFunctionOption(AcquisitionFunctionOption::lowerConfidenceBound),
-        _tuningStrategyOption(TuningStrategyOption::fullSearchMPI),
+        _tuningStrategyOption(TuningStrategyOption::fullSearch),
         _selectorStrategy(SelectorStrategyOption::fastestAbs),
         _allowedContainers(ContainerOption::getAllOptions()),
         _allowedTraversals(TraversalOption::getAllOptions()),

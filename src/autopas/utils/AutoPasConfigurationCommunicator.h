@@ -33,19 +33,19 @@ class AutoPasConfigurationCommunicator {
   Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig,
                                       size_t localOptimalTime) {
     _serializedConfiguration = serializeConfiguration(localOptimalConfig);
-    _optimalTime = localOptimalTime;
-    AutoPas_MPI_Allreduce(&_optimalTime, &_optimalTime, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_MIN, comm);
+    _optimalTimeIn = localOptimalTime;
+    AutoPas_MPI_Allreduce(&_optimalTimeIn, &_optimalTimeOut, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_MIN, comm);
 
     // Send own rank if local optimal time is equal to the global optimal time.
     // Send something higher than the highest rank otherwise.
-    if (localOptimalTime == _optimalTime) {
-      AutoPas_MPI_Comm_rank(comm, &_optimalRank);
+    if (_optimalTimeIn == _optimalTimeOut) {
+      AutoPas_MPI_Comm_rank(comm, &_optimalRankIn);
     } else {
-      AutoPas_MPI_Comm_size(comm, &_optimalRank);
+      AutoPas_MPI_Comm_size(comm, &_optimalRankIn);
     }
-    AutoPas_MPI_Allreduce(&_optimalRank, &_optimalRank, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_MIN, comm);
+    AutoPas_MPI_Allreduce(&_optimalRankIn, &_optimalRankOut, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_MIN, comm);
 
-    AutoPas_MPI_Bcast(&_serializedConfiguration, sizeof(_serializedConfiguration), AUTOPAS_MPI_BYTE, _optimalRank,
+    AutoPas_MPI_Bcast(&_serializedConfiguration, sizeof(_serializedConfiguration), AUTOPAS_MPI_BYTE, _optimalRankOut,
                       comm);
 
     return deserializeConfig(_serializedConfiguration);
@@ -82,8 +82,8 @@ class AutoPasConfigurationCommunicator {
   }
 
   SerializedConfiguration _serializedConfiguration;
-  size_t _optimalTime;
-  int _optimalRank;
+  size_t _optimalTimeIn, _optimalTimeOut;
+  int _optimalRankIn, _optimalRankOut;
 };
 
 }  // namespace autopas
