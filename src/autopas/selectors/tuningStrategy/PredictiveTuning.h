@@ -148,7 +148,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * @param Configuration
    * @param Vector
    */
-  std::unordered_map<Configuration, std::vector<size_t>, ConfigHash> _configurationPredictionFunction;
+  std::unordered_map<Configuration, std::vector<double>, ConfigHash> _configurationPredictionFunction;
 
   /**
    * Contains the predicted time for each configuration.
@@ -340,7 +340,7 @@ void PredictiveTuning::linearRegression() {
       const auto numerator = (double)xy - (double)iterationSum * timeMeanValue;
       const auto denominator = (double)iterationSquareSum - (double)iterationSum * iterationMeanValue;
 
-      // ((Sum x_i * y_i) - n * xMeanValue * yMeanValue) / ((Sum x_i^2) - n * xMeanValue ^ 2)
+      // ((Sum iteration_i * time_i) - n * iterationMeanValue * timeMeanValue) / ((Sum iteration_i^2) - n * iterationMeanValue ^ 2)
       const auto gradient = numerator / denominator;
       const auto yIntercept = timeMeanValue - gradient * iterationMeanValue;
 
@@ -362,15 +362,15 @@ void PredictiveTuning::linearRegression() {
 void PredictiveTuning::lagrangePolynomial() {
   for (const auto &configuration : _searchSpace) {
     if (_traversalTimesStorage[configuration].size() >= _testsUntilFirstPrediction) {
-      auto lengthVector = _traversalTimesStorage[configuration].size() - 1;
+      const auto lengthVector = _traversalTimesStorage[configuration].size() - 1;
       long prediction = 0;
       for (unsigned int i = 0; i < _testsUntilFirstPrediction; i++) {
         auto numerator = 1;
         auto denominator = 1;
-        auto point = _traversalTimesStorage[configuration][lengthVector - i];
-        for (unsigned int j = 0; i < _testsUntilFirstPrediction; j++) {
+        const auto point = _traversalTimesStorage[configuration][lengthVector - i];
+        for (unsigned int j = 0; j < _testsUntilFirstPrediction; j++) {
           if (i != j) {
-            numerator *= _iterationBeginTuningPhase - _traversalTimesStorage[configuration][lengthVector - j].second;
+            numerator *= _iterationBeginTuningPhase - _traversalTimesStorage[configuration][lengthVector - j].first;
             denominator *= point.first - _traversalTimesStorage[configuration][lengthVector - j].first;
           }
         }
@@ -392,48 +392,51 @@ void PredictiveTuning::newtonPolynomial() {
     // if configuration was not tested in last tuning phase reuse prediction function.
     if ((_lastTest[configuration] != (_tuningIterationsCounter - 1)) and
         _configurationPredictionFunction[configuration].size() == _testsUntilFirstPrediction) {
-      auto lengthVector = _traversalTimesStorage[configuration].size() - 1;
+      auto lengthTTS = _traversalTimesStorage[configuration].size() - 1;
       long prediction = 0;
       for (unsigned int i = 0; i < _testsUntilFirstPrediction; i++) {
         auto interimValue = _configurationPredictionFunction[configuration][i];
         for (unsigned int j = 0; j < i; j++) {
-          interimValue *= _iterationBeginTuningPhase -
-                          _traversalTimesStorage[configuration][lengthVector - _testsUntilFirstPrediction + j].first;
+          interimValue *= (double)_iterationBeginTuningPhase -
+                          _traversalTimesStorage[configuration][lengthTTS - _testsUntilFirstPrediction + j].first;
         }
         prediction += interimValue;
       }
       _configurationPredictions[configuration] = prediction;
       predictionOutput(configuration);
     } else if (_traversalTimesStorage[configuration].size() >= _testsUntilFirstPrediction) {
-      std::vector<std::vector<size_t>> interimCalculation;
-      std::vector<size_t> iterationValues;
-      std::vector<size_t> coefficients;
-      auto lengthVector = _traversalTimesStorage[configuration].size() - 1;
-      auto lengthIthColumn = _testsUntilFirstPrediction - 1;
+      std::vector<std::vector<double>> interimCalculation;
+      std::vector<unsigned long> iterationValues;
+      std::vector<double> coefficients;
+      const auto lengthTTS = _traversalTimesStorage[configuration].size();
+      auto lengthIthColumn = _testsUntilFirstPrediction;
       for (unsigned int i = 0; i < _testsUntilFirstPrediction; i++) {
-        std::vector<size_t> iColumn;
+        std::vector<double> iColumn;
         for (unsigned int j = 0; j < lengthIthColumn; j++) {
           if (i == 0) {
             iColumn.emplace_back(
-                _traversalTimesStorage[configuration][lengthVector - _testsUntilFirstPrediction + j].second);
+                _traversalTimesStorage[configuration][lengthTTS - _testsUntilFirstPrediction + j].second);
             iterationValues.emplace_back(
-                _traversalTimesStorage[configuration][lengthVector - _testsUntilFirstPrediction + j].first);
+                _traversalTimesStorage[configuration][lengthTTS - _testsUntilFirstPrediction + j].first);
           } else {
             iColumn.emplace_back((interimCalculation[i - 1][j + 1] - interimCalculation[i - 1][j]) /
-                                 (iterationValues[j + i] - iterationValues[j]));
+                                         (double)(iterationValues[j + i] - iterationValues[j]));
           }
         }
         interimCalculation.emplace_back(iColumn);
+        coefficients.emplace_back(iColumn[0]);
         lengthIthColumn--;
       }
-      long prediction = 0;
+
+      size_t prediction = 0;
       for (unsigned int i = 0; i < _testsUntilFirstPrediction; i++) {
         auto interimValue = coefficients[i];
         for (unsigned int j = 0; j < i; j++) {
-          interimValue *= _iterationBeginTuningPhase - iterationValues[j];
+          interimValue *= (double)_iterationBeginTuningPhase - iterationValues[j];
         }
         prediction += interimValue;
       }
+
       _configurationPredictions[configuration] = prediction;
       predictionOutput(configuration);
 

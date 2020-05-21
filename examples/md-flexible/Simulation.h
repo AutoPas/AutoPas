@@ -178,6 +178,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   autopas.setCutoff(_config->cutoff);
   autopas.setRelativeOptimumRange(_config->relativeOptimumRange);
   autopas.setMaxTuningPhasesWithoutTest(_config->maxTuningPhasesWithoutTest);
+  autopas.setExtrapolationMethodOption(_config->extrapolationMethodOption);
   autopas.setNumSamples(_config->tuningSamples);
   autopas.setSelectorStrategy(_config->selectorStrategy);
   autopas.setTuningInterval(_config->tuningInterval);

@@ -623,7 +623,7 @@ class AutoPas {
    * Extrapolation method used in predictiveTuning.
    * For possible extrapolation method choices see autopas/options/ExtrapolationMethodOption.
    */
-  ExtrapolationMethodOption _extrapolationMethodOption;
+  ExtrapolationMethodOption _extrapolationMethodOption{ExtrapolationMethodOption::linePrediction};
 
   /**
    * Strategy option for the auto tuner.
