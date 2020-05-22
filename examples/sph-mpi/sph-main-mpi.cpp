@@ -46,6 +46,10 @@ void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<dou
       }
     }
   }
+  if(i==0){
+    throw std::runtime_error("No particle added in sph-main-mpi::SetupIC.");
+  }
+
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
     part->setMass(part->getMass() * bBoxMax[0] * bBoxMax[1] * bBoxMax[2] / (double)(i));
   }
