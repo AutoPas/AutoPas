@@ -46,6 +46,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                                          {MDFlexConfig::traversalOptionsStr, required_argument, nullptr, 't'},
                                          {MDFlexConfig::tuningStrategyOptionsStr, required_argument, nullptr, 'T'},
                                          {MDFlexConfig::thermostatStr, required_argument, nullptr, 'u'},
+                                         {MDFlexConfig::testsUntilFirstPredictionStr, required_argument, nullptr, 'U'},
                                          {MDFlexConfig::verletRebuildFrequencyStr, required_argument, nullptr, 'v'},
                                          {MDFlexConfig::vtkFileNameStr, required_argument, nullptr, 'w'},
                                          {MDFlexConfig::vtkWriteFrequencyStr, required_argument, nullptr, 'W'},
@@ -414,6 +415,19 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
           config.verletRebuildFrequency = (unsigned int)stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case 'U': {
+        try {
+          config.testsUntilFirstPrediction = (unsigned int)stoul(strArg);
+          if (config.testsUntilFirstPrediction < 2) {
+            cerr << "Tests until first prediction has to be positive!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing tests until first prediction: " << optarg << endl;
           displayHelp = true;
         }
         break;

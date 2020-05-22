@@ -28,6 +28,8 @@ class PredictiveTuningTest : public AutoPasTestBase {
 
   static constexpr unsigned int maxTuningIterationsWithoutTest = 5;
 
+  static constexpr unsigned int testsUntilFirstPrediction = 2;
+
   static constexpr autopas::ExtrapolationMethodOption linePrediction =
       autopas::ExtrapolationMethodOption::linePrediction;
 };

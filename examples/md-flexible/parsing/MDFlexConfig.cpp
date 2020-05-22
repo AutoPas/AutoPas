@@ -40,6 +40,7 @@ std::string MDFlexConfig::to_string() const {
   if (tuningStrategyOption == autopas::TuningStrategyOption::predictiveTuning) {
     os << setw(valueOffset) << left << relativeOptimumRangeStr << ":  " << relativeOptimumRange << endl;
     os << setw(valueOffset) << left << maxTuningPhasesWithoutTestStr << ":  " << maxTuningPhasesWithoutTest << endl;
+    os << setw(valueOffset) << left << testsUntilFirstPredictionStr << ":  " << testsUntilFirstPrediction << endl;
     os << setw(valueOffset) << left << extrapolationMethodOptionStr << ":  " << extrapolationMethodOption << endl;
   }
   os << setw(valueOffset) << left << functorOptionStr << ":  ";

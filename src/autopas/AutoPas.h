@@ -107,7 +107,8 @@ class AutoPas {
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
-            _maxTuningPhasesWithoutTest, _acquisitionFunctionOption, _extrapolationMethodOption)),
+            _maxTuningPhasesWithoutTest, _testsUntilFirstPrediction, _acquisitionFunctionOption,
+            _extrapolationMethodOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
         std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
@@ -424,7 +425,7 @@ class AutoPas {
    * Get the range for the optimum in which has to be to be tested
    * @return
    */
-  double getRelativeOptimumRange() const { return _relativeOptimumRange; }
+  [[nodiscard]] double getRelativeOptimumRange() const { return _relativeOptimumRange; }
 
   /**
    * Set the range for the optimum in which has to be to be tested
@@ -436,7 +437,7 @@ class AutoPas {
    * Get the maximum number of tuning phases a configuration can not be tested.
    * @return
    */
-  unsigned int getMaxTuningPhasesWithoutTest() const { return _maxTuningPhasesWithoutTest; }
+  [[nodiscard]] unsigned int getMaxTuningPhasesWithoutTest() const { return _maxTuningPhasesWithoutTest; }
 
   /**
    * Set the maximum number of tuning phases a configuration can not be tested.
@@ -444,6 +445,21 @@ class AutoPas {
    */
   void setMaxTuningPhasesWithoutTest(unsigned int maxTuningPhasesWithoutTest) {
     AutoPas::_maxTuningPhasesWithoutTest = maxTuningPhasesWithoutTest;
+  }
+
+  /**
+   * Get the number of tests that need to have happened for a configuration until the first prediction are going to be
+   * calculated.
+   * @return
+   */
+  [[nodiscard]] unsigned int getTestsUntilFirstPrediction() const { return _testsUntilFirstPrediction; }
+
+  /**
+   * Set the number of tests that need to have happened for a configuration until the first prediction are going to be
+   * calculated.
+   */
+  void setTestsUntilFirstPrediction(unsigned int testsUntilFirstPrediction) {
+    AutoPas::_testsUntilFirstPrediction = testsUntilFirstPrediction;
   }
 
   /**
@@ -613,6 +629,11 @@ class AutoPas {
    * Specifies how many tuning phases a configuration can not be tested in PredicitveTuning.
    */
   unsigned int _maxTuningPhasesWithoutTest{5};
+  /**
+   * Specifies how many tests that need to have happened for a configuration until the first prediction is calculated in
+   * PredictiveTuning.
+   */
+  unsigned int _testsUntilFirstPrediction{3};
   /**
    * Acquisition function used for tuning.
    * For possible acquisition function choices see options::AcquisitionFunction::Value.

@@ -90,6 +90,8 @@ class MDFlexConfig {
   double relativeOptimumRange{1.2};
   static inline const char *maxTuningPhasesWithoutTestStr{"max-tuning-phases-without-test"};
   unsigned int maxTuningPhasesWithoutTest{5};
+  static inline const char *testsUntilFirstPredictionStr{"tests-until-first-prediction"};
+  unsigned int testsUntilFirstPrediction{3};
   static inline const char *extrapolationMethodOptionStr{"extrapolation-method"};
   autopas::ExtrapolationMethodOption extrapolationMethodOption{autopas::ExtrapolationMethodOption::linePrediction};
   static inline const char *vtkFileNameStr{"vtk-filename"};

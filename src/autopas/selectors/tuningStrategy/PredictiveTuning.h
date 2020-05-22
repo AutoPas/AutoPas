@@ -33,6 +33,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * @param allowedCellSizeFactors
    * @param relativeOptimum
    * @param maxTuningIterationsWithoutTest
+   * @param testsUntilFirstPrediction
    * @param extrapolationMethodOption
    */
   PredictiveTuning(const std::set<ContainerOption> &allowedContainerOptions,
@@ -40,14 +41,15 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
                    const std::set<TraversalOption> &allowedTraversalOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                    const std::set<Newton3Option> &allowedNewton3Options, double relativeOptimum,
-                   unsigned int maxTuningIterationsWithoutTest, ExtrapolationMethodOption extrapolationMethodOption)
+                   unsigned int maxTuningIterationsWithoutTest, unsigned int testsUntilFirstPrediction,
+                   ExtrapolationMethodOption extrapolationMethodOption)
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                           allowedDataLayoutOptions, allowedNewton3Options),
         _currentConfig(_searchSpace.begin()),
         _relativeOptimumRange(relativeOptimum),
         _maxTuningIterationsWithoutTest(maxTuningIterationsWithoutTest),
         _extrapolationMethod(extrapolationMethodOption) {
-    selectTestsUntilFirstPrediction();
+    setTestsUntilFirstPrediction(testsUntilFirstPrediction);
 
     // sets traversalTimesStorage
     for (const auto &configuration : _searchSpace) {
@@ -66,9 +68,8 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
         _currentConfig(_searchSpace.begin()),
         _relativeOptimumRange(1.2),
         _maxTuningIterationsWithoutTest(5),
-        _extrapolationMethod(ExtrapolationMethodOption::linePrediction) {
-    selectTestsUntilFirstPrediction();
-  }
+        _extrapolationMethod(ExtrapolationMethodOption::linePrediction),
+        _testsUntilFirstPrediction(2) {}
 
   inline void addEvidence(long time, size_t iteration) override {
     _traversalTimesStorage[*_currentConfig].emplace_back(iteration, time);
@@ -94,9 +95,10 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
 
  private:
   /**
-   * Selects the value of _testsUntilFirstPrediction
+   * Set the value of _testsUntilFirstPrediction
+   * @param testsUntilFirstPrediction
    */
-  inline void selectTestsUntilFirstPrediction();
+  inline void setTestsUntilFirstPrediction(unsigned int testsUntilFirstPrediction);
 
   inline void selectOptimalConfiguration();
   /**
@@ -202,26 +204,17 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   /**
    * Stores the number of tests that have to be made until the first prediction
    */
-  unsigned int _testsUntilFirstPrediction{};
+  unsigned int _testsUntilFirstPrediction{3};
 };
 
-void PredictiveTuning::selectTestsUntilFirstPrediction() {
+void PredictiveTuning::setTestsUntilFirstPrediction(unsigned int testsUntilFirstPrediction) {
   switch (_extrapolationMethod) {
     case ExtrapolationMethodOption::linePrediction: {
       _testsUntilFirstPrediction = 2;
       break;
     }
-    case ExtrapolationMethodOption::lagrange: {
-      _testsUntilFirstPrediction = 3;
-      break;
-    }
-    case ExtrapolationMethodOption::linearRegression: {
-      _testsUntilFirstPrediction = 2;
-      break;
-    }
-    case ExtrapolationMethodOption::newton: {
-      _testsUntilFirstPrediction = 3;
-      break;
+    default: {
+      _testsUntilFirstPrediction = testsUntilFirstPrediction;
     }
   }
 }
@@ -340,7 +333,8 @@ void PredictiveTuning::linearRegression() {
       const auto numerator = (double)xy - (double)iterationSum * timeMeanValue;
       const auto denominator = (double)iterationSquareSum - (double)iterationSum * iterationMeanValue;
 
-      // ((Sum iteration_i * time_i) - n * iterationMeanValue * timeMeanValue) / ((Sum iteration_i^2) - n * iterationMeanValue ^ 2)
+      // ((Sum iteration_i * time_i) - n * iterationMeanValue * timeMeanValue) / ((Sum iteration_i^2) - n *
+      // iterationMeanValue ^ 2)
       const auto gradient = numerator / denominator;
       const auto yIntercept = timeMeanValue - gradient * iterationMeanValue;
 
@@ -420,7 +414,7 @@ void PredictiveTuning::newtonPolynomial() {
                 _traversalTimesStorage[configuration][lengthTTS - _testsUntilFirstPrediction + j].first);
           } else {
             iColumn.emplace_back((interimCalculation[i - 1][j + 1] - interimCalculation[i - 1][j]) /
-                                         (double)(iterationValues[j + i] - iterationValues[j]));
+                                 (double)(iterationValues[j + i] - iterationValues[j]));
           }
         }
         interimCalculation.emplace_back(iColumn);
