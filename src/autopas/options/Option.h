@@ -13,7 +13,7 @@
 #include "autopas/utils/StringUtils.h"
 
 namespace autopas {
-
+inline namespace options {
 /**
  * Base class for autopas options.
  * @tparam actualOption Curiously recurring template pattern.
@@ -125,4 +125,5 @@ class Option {
     return os;
   }
 };
+}  // namespace options
 }  // namespace autopas
