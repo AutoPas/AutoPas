@@ -73,9 +73,9 @@ The tests executed within Jenkins are using these docker images.
 A continuous integration setup (CI) is automatically run for each open pull request and for the master.
 The executed tests are defined within the Jenkinsfile in the root AutoPas directory.
 These tests include:
-- Formatting and documentation checks 
-- Builing of all targets and execution of the provided ctest tests.
-- Sanitizer runs (Address+Leak sanitizer, Thread Sanitizer)
+* Formatting and documentation checks 
+* Builing of all targets and execution of the provided ctest tests.
+* Sanitizer runs (Address+Leak sanitizer, Thread Sanitizer)
 
 If you encounter problems within these tests check whether you can reproduce them.
 For encountering "unknown module" problems with the thread sanitizer, a library to override `dlclose()` can be found in the `libs` directory. Said library can be used to get better stack traces that are caused by dynamically loaded libraries (using `dlopen()`).
