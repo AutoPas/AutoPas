@@ -18,7 +18,7 @@ bool MDFlexParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
 
   CLIParser::inputFilesPresent(argc, argv, config);
 
-  if (not config.yamlFilename.empty()) {
+  if (not config.yamlFilename.value.empty()) {
     if (not YamlParser::parseYamlFile(config)) {
       return false;
     }

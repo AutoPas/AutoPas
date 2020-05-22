@@ -7,8 +7,8 @@
 
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
-#include "src/parsing/YamlParser.h"
 #include "src/Simulation.h"
+#include "src/parsing/YamlParser.h"
 #include "testingHelpers/commonTypedefs.h"
 
 double ParticlePropertiesLibraryTest::mixingE(double e1, double e2) { return std::sqrt(e1 * e2); }

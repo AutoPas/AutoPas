@@ -9,8 +9,8 @@
 #include "autopas/AutoPas.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "autopasTools/generators/RandomGenerator.h"
-#include "src/parsing/YamlParser.h"
 #include "src/Generator.h"
+#include "src/parsing/YamlParser.h"
 #include "testingHelpers/commonTypedefs.h"
 
 // the following test only work if testParsing.yaml is well set

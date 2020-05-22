@@ -7,63 +7,77 @@
 #include "CLIParser.h"
 
 #include <sys/stat.h>
-
-#include "autopas/utils/StringUtils.h"
+#include <any>
 
 bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
-  static struct option long_options[] = {{"help", no_argument, nullptr, 'h'},
-                                         {MDFlexConfig::newton3OptionsStr, required_argument, nullptr, '3'},
-                                         {MDFlexConfig::checkpointfileStr, required_argument, nullptr, '4'},
-                                         {MDFlexConfig::acquisitionFunctionOptionStr, required_argument, nullptr, 'A'},
-                                         {MDFlexConfig::cellSizeFactorsStr, required_argument, nullptr, 'a'},
-                                         {MDFlexConfig::boxLengthStr, required_argument, nullptr, 'b'},
-                                         {MDFlexConfig::containerOptionsStr, required_argument, nullptr, 'c'},
-                                         {MDFlexConfig::cutoffStr, required_argument, nullptr, 'C'},
-                                         {MDFlexConfig::dataLayoutOptionsStr, required_argument, nullptr, 'd'},
-                                         {MDFlexConfig::deltaTStr, required_argument, nullptr, 'D'},
-                                         {MDFlexConfig::dontCreateEndConfigStr, no_argument, nullptr, 'e'},
-                                         {MDFlexConfig::tuningMaxEvidenceStr, required_argument, nullptr, 'E'},
-                                         {MDFlexConfig::functorOptionStr, required_argument, nullptr, 'f'},
-                                         {MDFlexConfig::dontMeasureFlopsStr, no_argument, nullptr, 'F'},
-                                         {MDFlexConfig::generatorOptionStr, required_argument, nullptr, 'g'},
-                                         {MDFlexConfig::iterationsStr, required_argument, nullptr, 'i'},
-                                         {MDFlexConfig::tuningIntervalStr, required_argument, nullptr, 'I'},
-                                         {MDFlexConfig::logLevelStr, required_argument, nullptr, 'l'},
-                                         {MDFlexConfig::logFileNameStr, required_argument, nullptr, 'L'},
-                                         {MDFlexConfig::distributionMeanStr, required_argument, nullptr, 'm'},
-                                         {MDFlexConfig::maxTuningPhasesWithoutTestStr, required_argument, nullptr, 'M'},
-                                         {MDFlexConfig::particlesPerDimStr, required_argument, nullptr, 'n'},
-                                         {MDFlexConfig::particlesTotalStr, required_argument, nullptr, 'N'},
-                                         {MDFlexConfig::relativeOptimumRangeStr, required_argument, nullptr, 'o'},
-                                         {MDFlexConfig::periodicStr, required_argument, nullptr, 'p'},
-                                         {MDFlexConfig::tuningPhasesStr, required_argument, nullptr, 'P'},
-                                         {MDFlexConfig::verletClusterSizeStr, required_argument, nullptr, 'q'},
-                                         {MDFlexConfig::verletSkinRadiusStr, required_argument, nullptr, 'r'},
-                                         {MDFlexConfig::particlesSpacingStr, required_argument, nullptr, 's'},
-                                         {MDFlexConfig::tuningSamplesStr, required_argument, nullptr, 'S'},
-                                         {MDFlexConfig::traversalOptionsStr, required_argument, nullptr, 't'},
-                                         {MDFlexConfig::tuningStrategyOptionsStr, required_argument, nullptr, 'T'},
-                                         {MDFlexConfig::thermostatStr, required_argument, nullptr, 'u'},
-                                         {MDFlexConfig::verletRebuildFrequencyStr, required_argument, nullptr, 'v'},
-                                         {MDFlexConfig::vtkFileNameStr, required_argument, nullptr, 'w'},
-                                         {MDFlexConfig::vtkWriteFrequencyStr, required_argument, nullptr, 'W'},
-                                         {MDFlexConfig::selectorStrategyStr, required_argument, nullptr, 'y'},
-                                         {MDFlexConfig::yamlFilenameStr, required_argument, nullptr, 'Y'},
-                                         {MDFlexConfig::distributionStdDevStr, required_argument, nullptr, 'z'},
-                                         {nullptr, no_argument, nullptr, 0}};  // needed to signal the end of the array
+
+  static const std::vector<MDFlexConfig::MDFlexOptionInterface> relevantOptions {
+      config.newton3Options,
+      config.checkpointfile,
+      config.acquisitionFunctionOption,
+      config.cellSizeFactors,
+      config.boxLength,
+      config.containerOptions,
+      config.cutoff,
+      config.dataLayoutOptions,
+      config.deltaT,
+      config.dontCreateEndConfig,
+      config.tuningMaxEvidence,
+      config.functorOption,
+      config.dontMeasureFlops,
+      config.generatorOption,
+      config.iterations,
+      config.tuningInterval,
+      config.logLevel,
+      config.logFileName,
+      config.distributionMean,
+      config.maxTuningPhasesWithoutTest,
+      config.particlesPerDim,
+      config.particlesTotal,
+      config.relativeOptimumRange,
+      config.periodic,
+      config.tuningPhases,
+      config.verletClusterSize,
+      config.verletSkinRadius,
+      config.particleSpacing,
+      config.tuningSamples,
+      config.traversalOptions,
+      config.tuningStrategyOption,
+      config.useThermostat,
+      config.verletRebuildFrequency,
+      config.vtkFileName,
+      config.vtkWriteFrequency,
+      config.selectorStrategy,
+      config.yamlFilename,
+      config.distributionStdDev,
+      MDFlexConfig::MDFlexOption<std::string>("", "help", false, 'h', "Display this message."),
+  };
+
+  // create data structure for options that getopt can use
+  std::vector<struct option> long_options;
+  // reserve space for all relevant options + "--help" and terminal field
+  long_options.resize(relevantOptions.size() + 1);
+  for(int i = 0; i < relevantOptions.size(); ++i) {
+    auto o = relevantOptions[i].toGetoptOption();
+    long_options[i] = o;
+  }
+  // needed to signal the end of the array
+  long_options.push_back({nullptr, no_argument, nullptr, 0});
+
+
   // reset getopt to scan from the start of argv
   optind = 1;
   bool displayHelp = false;
   for (int cliOption = 0, cliOptionIndex = 0;
-       (cliOption = getopt_long(argc, argv, "", long_options, &cliOptionIndex)) != -1;) {
+       (cliOption = getopt_long(argc, argv, "", long_options.data(), &cliOptionIndex)) != -1;) {
     string strArg;
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (cliOption) {
       case '3': {
-        config.newton3Options = autopas::Newton3Option::parseOptions(strArg);
-        if (config.newton3Options.empty()) {
+        config.newton3Options.value = autopas::Newton3Option::parseOptions(strArg);
+        if (config.newton3Options.value.empty()) {
           cerr << "Unknown Newton3 option: " << strArg << endl;
           displayHelp = true;
         }
@@ -81,12 +95,12 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
           displayHelp = true;
         }
-        config.acquisitionFunctionOption = *parsedOptions.begin();
+        config.acquisitionFunctionOption.value = *parsedOptions.begin();
         break;
       }
       case 'a': {
-        config.cellSizeFactors = autopas::utils::StringUtils::parseNumberSet(strArg);
-        if (config.cellSizeFactors->isEmpty()) {
+        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(strArg);
+        if (config.cellSizeFactors.value->isEmpty()) {
           cerr << "Error parsing cell size factors: " << optarg << endl;
           displayHelp = true;
         }
@@ -94,8 +108,8 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'b': {
         try {
-          config.boxLength = stod(strArg);
-          if (config.boxLength < 0) {
+          config.boxLength.value = stod(strArg);
+          if (config.boxLength.value < 0) {
             cerr << "Box length has to be a positive (floating point) number!" << endl;
             displayHelp = true;
           }
@@ -106,8 +120,8 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'c': {
-        config.containerOptions = autopas::ContainerOption::parseOptions(strArg);
-        if (config.containerOptions.empty()) {
+        config.containerOptions.value = autopas::ContainerOption::parseOptions(strArg);
+        if (config.containerOptions.value.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
           displayHelp = true;
         }
@@ -115,7 +129,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'C': {
         try {
-          config.cutoff = stod(strArg);
+          config.cutoff.value = stod(strArg);
         } catch (const exception &) {
           cerr << "Error parsing cutoff Radius: " << optarg << endl;
           displayHelp = true;
@@ -124,7 +138,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'D': {
         try {
-          config.deltaT = stod(strArg);
+          config.deltaT.value = stod(strArg);
         } catch (const exception &) {
           cerr << "Error parsing epsilon value: " << optarg << endl;
           displayHelp = true;
@@ -132,21 +146,21 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'd': {
-        config.dataLayoutOptions = autopas::DataLayoutOption::parseOptions(strArg);
-        if (config.dataLayoutOptions.empty()) {
+        config.dataLayoutOptions.value = autopas::DataLayoutOption::parseOptions(strArg);
+        if (config.dataLayoutOptions.value.empty()) {
           cerr << "Unknown data layouts: " << strArg << endl;
           displayHelp = true;
         }
         break;
       }
       case 'e': {
-        config.dontCreateEndConfig = false;
+        config.dontCreateEndConfig.value = false;
         break;
       }
       case 'E': {
         try {
-          config.tuningMaxEvidence = (unsigned int)stoul(strArg);
-          if (config.tuningMaxEvidence < 1) {
+          config.tuningMaxEvidence.value = (unsigned int)stoul(strArg);
+          if (config.tuningMaxEvidence.value < 1) {
             cerr << "Tuning max evidence has to be a positive integer!" << endl;
             displayHelp = true;
           }
@@ -158,11 +172,11 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'f': {
         if (strArg.find("avx") != string::npos) {
-          config.functorOption = MDFlexConfig::FunctorOption::lj12_6_AVX;
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("glob") != string::npos) {
-          config.functorOption = MDFlexConfig::FunctorOption::lj12_6_Globals;
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
-          config.functorOption = MDFlexConfig::FunctorOption::lj12_6;
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
           cerr << "Unknown functor: " << strArg << endl;
           cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals' or 'Lennard-Jones-AVX'" << endl;
@@ -171,18 +185,18 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'F': {
-        config.dontMeasureFlops = false;
+        config.dontMeasureFlops.value = false;
         break;
       }
       case 'g': {
         if (strArg.find("grid") != string::npos) {
-          config.generatorOption = MDFlexConfig::GeneratorOption::grid;
+          config.generatorOption.value = MDFlexConfig::GeneratorOption::grid;
         } else if (strArg.find("uni") != string::npos) {
-          config.generatorOption = MDFlexConfig::GeneratorOption::uniform;
+          config.generatorOption.value = MDFlexConfig::GeneratorOption::uniform;
         } else if (strArg.find("gaus") != string::npos) {
-          config.generatorOption = MDFlexConfig::GeneratorOption::gaussian;
+          config.generatorOption.value = MDFlexConfig::GeneratorOption::gaussian;
         } else if (strArg.find("sp") != string::npos) {
-          config.generatorOption = MDFlexConfig::GeneratorOption::sphere;
+          config.generatorOption.value = MDFlexConfig::GeneratorOption::sphere;
         } else {
           cerr << "Unknown generator: " << strArg << endl;
           cerr << "Please use 'Grid' or 'Gaussian'" << endl;
@@ -196,8 +210,8 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'i': {
         try {
-          config.iterations = stoul(strArg);
-          if (config.iterations < 1) {
+          config.iterations.value = stoul(strArg);
+          if (config.iterations.value < 1) {
             cerr << "IterationNumber of iterations has to be a positive integer!" << endl;
             displayHelp = true;
           }
@@ -209,8 +223,8 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'I': {
         try {
-          config.tuningInterval = (unsigned int)stoul(strArg);
-          if (config.tuningInterval < 1) {
+          config.tuningInterval.value = (unsigned int)stoul(strArg);
+          if (config.tuningInterval.value < 1) {
             cerr << "Tuning interval has to be a positive integer!" << endl;
             displayHelp = true;
           }
@@ -223,31 +237,31 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       case 'l': {
         switch (strArg[0]) {
           case 't': {
-            config.logLevel = autopas::Logger::LogLevel::trace;
+            config.logLevel.value = autopas::Logger::LogLevel::trace;
             break;
           }
           case 'd': {
-            config.logLevel = autopas::Logger::LogLevel::debug;
+            config.logLevel.value = autopas::Logger::LogLevel::debug;
             break;
           }
           case 'i': {
-            config.logLevel = autopas::Logger::LogLevel::info;
+            config.logLevel.value = autopas::Logger::LogLevel::info;
             break;
           }
           case 'w': {
-            config.logLevel = autopas::Logger::LogLevel::warn;
+            config.logLevel.value = autopas::Logger::LogLevel::warn;
             break;
           }
           case 'e': {
-            config.logLevel = autopas::Logger::LogLevel::err;
+            config.logLevel.value = autopas::Logger::LogLevel::err;
             break;
           }
           case 'c': {
-            config.logLevel = autopas::Logger::LogLevel::critical;
+            config.logLevel.value = autopas::Logger::LogLevel::critical;
             break;
           }
           case 'o': {
-            config.logLevel = autopas::Logger::LogLevel::off;
+            config.logLevel.value = autopas::Logger::LogLevel::off;
             break;
           }
           default: {
@@ -259,13 +273,13 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'L': {
-        config.logFileName = strArg;
+        config.logFileName.value = strArg;
         break;
       }
       case 'm': {
         try {
           auto mean = stod(strArg);
-          config.distributionMean = {mean, mean, mean};
+          config.distributionMean.value = {mean, mean, mean};
         } catch (const exception &) {
           cerr << "Error parsing distribution mean: " << strArg << endl;
           displayHelp = true;
@@ -274,8 +288,8 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'M': {
         try {
-          config.maxTuningPhasesWithoutTest = (unsigned int)stoul(strArg);
-          if (config.maxTuningPhasesWithoutTest < 1) {
+          config.maxTuningPhasesWithoutTest.value = (unsigned int)stoul(strArg);
+          if (config.maxTuningPhasesWithoutTest.value < 1) {
             cerr << "Max tuning phases without test has to be positive!" << endl;
             displayHelp = true;
           }
@@ -287,7 +301,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'n': {
         try {
-          config.particlesPerDim = stoul(strArg);
+          config.particlesPerDim.value = stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing number of particles per dimension: " << strArg << endl;
           displayHelp = true;
@@ -296,7 +310,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'N': {
         try {
-          config.particlesTotal = stoul(strArg);
+          config.particlesTotal.value = stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing total number of particles: " << strArg << endl;
           displayHelp = true;
@@ -305,8 +319,8 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'o': {
         try {
-          config.relativeOptimumRange = (double)stoul(strArg);
-          if (config.relativeOptimumRange < 1) {
+          config.relativeOptimumRange.value = (double)stoul(strArg);
+          if (config.relativeOptimumRange.value < 1) {
             cerr << "Relative optimum range has to be greater or equal one!" << endl;
             displayHelp = true;
           }
@@ -318,7 +332,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'P': {
         try {
-          config.tuningPhases = stoul(strArg);
+          config.tuningPhases.value = stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing number of tuning phases: " << strArg << endl;
           displayHelp = true;
@@ -327,7 +341,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'p': {
         try {
-          config.periodic = autopas::utils::StringUtils::parseBoolOption(strArg);
+          config.periodic.value = autopas::utils::StringUtils::parseBoolOption(strArg);
         } catch (const exception &) {
           cerr << "Error parsing whether there should be periodic boundary conditions: " << strArg << endl;
           displayHelp = true;
@@ -336,7 +350,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'q': {
         try {
-          config.verletClusterSize = (unsigned int)stoul(strArg);
+          config.verletClusterSize.value = (unsigned int)stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing verlet cluster size: " << optarg << endl;
           displayHelp = true;
@@ -345,7 +359,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'r': {
         try {
-          config.verletSkinRadius = stod(strArg);
+          config.verletSkinRadius.value = stod(strArg);
         } catch (const exception &) {
           cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
           displayHelp = true;
@@ -354,8 +368,8 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'S': {
         try {
-          config.tuningSamples = (unsigned int)stoul(strArg);
-          if (config.tuningSamples < 1) {
+          config.tuningSamples.value = (unsigned int)stoul(strArg);
+          if (config.tuningSamples.value < 1) {
             cerr << "Tuning samples has to be a positive integer!" << endl;
             displayHelp = true;
           }
@@ -367,7 +381,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 's': {
         try {
-          config.particleSpacing = stod(strArg);
+          config.particleSpacing.value = stod(strArg);
         } catch (const exception &) {
           cerr << "Error parsing separation of particles: " << strArg << endl;
           displayHelp = true;
@@ -375,8 +389,8 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 't': {
-        config.traversalOptions = autopas::TraversalOption::parseOptions(strArg);
-        if (config.traversalOptions.empty()) {
+        config.traversalOptions.value = autopas::TraversalOption::parseOptions(strArg);
+        if (config.traversalOptions.value.empty()) {
           cerr << "Unknown Traversal: " << strArg << endl;
           displayHelp = true;
         }
@@ -390,16 +404,16 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
           displayHelp = true;
         }
-        config.tuningStrategyOption = *parsedOptions.begin();
+        config.tuningStrategyOption.value = *parsedOptions.begin();
         break;
       }
       case 'u': {
-        config.useThermostat = autopas::utils::StringUtils::parseBoolOption(strArg);
+        config.useThermostat.value = autopas::utils::StringUtils::parseBoolOption(strArg);
         break;
       }
       case 'v': {
         try {
-          config.verletRebuildFrequency = (unsigned int)stoul(strArg);
+          config.verletRebuildFrequency.value = (unsigned int)stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
           displayHelp = true;
@@ -407,12 +421,12 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'w': {
-        config.vtkFileName = strArg;
+        config.vtkFileName.value = strArg;
         break;
       }
       case 'W': {
         try {
-          config.vtkWriteFrequency = (size_t)stoul(strArg);
+          config.vtkWriteFrequency.value = (size_t)stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing vtk write frequency: " << optarg << endl;
           displayHelp = true;
@@ -427,7 +441,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
                << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
           displayHelp = true;
         }
-        config.selectorStrategy = *parsedOptions.begin();
+        config.selectorStrategy.value = *parsedOptions.begin();
         break;
       }
       case 'Y': {
@@ -437,7 +451,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       case 'z': {
         try {
           auto stdDev = stod(strArg);
-          config.distributionStdDev = {stdDev, stdDev, stdDev};
+          config.distributionStdDev.value = {stdDev, stdDev, stdDev};
         } catch (const exception &) {
           cerr << "Error parsing distribution standard deviation: " << optarg << endl;
           displayHelp = true;
@@ -452,7 +466,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   }
 
   // only create objects if nothing was set by a yaml file and there was no checkpoint
-  if (config.checkpointfile.empty() and config.cubeGaussObjects.empty() and config.cubeGridObjects.empty() and
+  if (config.checkpointfile.value.empty() and config.cubeGaussObjects.empty() and config.cubeGridObjects.empty() and
       config.cubeUniformObjects.empty() and config.sphereObjects.empty()) {
     // common settings for any object type:
     unsigned int typeID = 0;
@@ -462,31 +476,32 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
     std::array<double, 3> bottomLeftCorner = {0, 0, 0};
     std::array<double, 3> velocity = {0, 0, 0};
 
-    switch (config.generatorOption) {
+    switch (config.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::grid: {
         CubeGrid grid(velocity, typeID, epsilon, sigma, mass,
-                      {config.particlesPerDim, config.particlesPerDim, config.particlesPerDim}, config.particleSpacing,
-                      bottomLeftCorner);
+                      {config.particlesPerDim.value, config.particlesPerDim.value, config.particlesPerDim.value},
+                      config.particleSpacing.value, bottomLeftCorner);
         config.cubeGridObjects.push_back(grid);
         break;
       }
       case MDFlexConfig::GeneratorOption::gaussian: {
-        CubeGauss cubeGauss(velocity, typeID, epsilon, sigma, mass, config.particlesTotal,
-                            {config.boxLength, config.boxLength, config.boxLength}, config.distributionMean,
-                            config.distributionStdDev, bottomLeftCorner);
+        CubeGauss cubeGauss(velocity, typeID, epsilon, sigma, mass, config.particlesTotal.value,
+                            {config.boxLength.value, config.boxLength.value, config.boxLength.value},
+                            config.distributionMean.value, config.distributionStdDev.value, bottomLeftCorner);
         config.cubeGaussObjects.push_back(cubeGauss);
         break;
       }
       case MDFlexConfig::GeneratorOption::uniform: {
-        CubeUniform cubeUniform(velocity, typeID, epsilon, sigma, mass, config.particlesTotal,
-                                {config.boxLength, config.boxLength, config.boxLength}, bottomLeftCorner);
+        CubeUniform cubeUniform(velocity, typeID, epsilon, sigma, mass, config.particlesTotal.value,
+                                {config.boxLength.value, config.boxLength.value, config.boxLength.value},
+                                bottomLeftCorner);
         config.cubeUniformObjects.push_back(cubeUniform);
         break;
       }
       case MDFlexConfig::GeneratorOption::sphere: {
-        auto centerOfBox = config.particlesPerDim / 2.;
+        auto centerOfBox = config.particlesPerDim.value / 2.;
         Sphere sphere(velocity, typeID, epsilon, sigma, mass, {centerOfBox, centerOfBox, centerOfBox}, centerOfBox,
-                      config.particleSpacing);
+                      config.particleSpacing.value);
         config.sphereObjects.push_back(sphere);
         break;
       }
@@ -494,30 +509,27 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   }
 
   if (displayHelp) {
-    // filter out null values and copy rest in more sane data structure
-    std::vector<std::pair<std::string, bool>> options;
-    for (auto &o : long_options) {
-      if (o.name != nullptr) {
-        options.emplace_back(std::make_pair(o.name, o.has_arg));
-      }
-    }
-
-    // By default `std::sort` sorts by first member of pair.
-    std::sort(std::begin(options), std::end(options));
 
     // print everything
     cout << "Usage: " << argv[0] << endl;
-    cout << "lorem ipsum" << endl << endl;
+    cout << "A simple molecular dynamics simulation program showcasing AutoPas." << endl << endl;
 
-    cout << "These are the options:" << endl;
-    for (auto &o : options) {
-      cout << "    --" << setw(MDFlexConfig::valueOffset + 2) << left << o.first;
-//      if (o.second) {
-        cout << o.first;
-//      }
-      cout << endl;
+    cout << "Non-mandatory options to define a simulation:" << endl;
+    std::vector<std::string> outputLines;
+    outputLines.reserve(relevantOptions.size());
+
+    for (const auto &o : relevantOptions) {
+      std::stringstream ss;
+      ss << "    --" << setw(MDFlexConfig::valueOffset + 2) << left << o.name;
+      ss << o.description;
+      ss << endl;
+      outputLines.push_back(ss.str());
     }
 
+    std::sort(std::begin(outputLines), std::end(outputLines));
+    for_each(std::begin(outputLines), std::end(outputLines), [&](auto l) {
+      cout << l;
+    });
 
     cout << endl;
     cout << "md-flexible documentation locally available via: 'make doc_doxygen_md-flexible'" << endl;
@@ -547,8 +559,8 @@ void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
   // suppress error messages since we only want to look if the yaml option is there
   auto opterrBefore = opterr;
   opterr = 0;
-  static struct option longOptions[] = {{MDFlexConfig::checkpointfileStr, required_argument, nullptr, 'C'},
-                                        {MDFlexConfig::yamlFilenameStr, required_argument, nullptr, 'Y'},
+  static struct option longOptions[] = {config.checkpointfile.toGetoptOption(),
+                                        config.yamlFilename.toGetoptOption(),
                                         {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   optind = 1;
 
@@ -558,16 +570,16 @@ void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
     std::string strArg;
     switch (cliOption) {
       case 'C':
-        config.checkpointfile = optarg;
+        config.checkpointfile.value = optarg;
         if (not checkFileExists(optarg)) {
-          throw std::runtime_error("CLIParser::inputFilesPresent: Checkpoint-File " + config.checkpointfile +
+          throw std::runtime_error("CLIParser::inputFilesPresent: Checkpoint-File " + config.checkpointfile.value +
                                    " not found!");
         }
         break;
       case 'Y':
-        config.yamlFilename = optarg;
+        config.yamlFilename.value = optarg;
         if (not checkFileExists(optarg)) {
-          throw std::runtime_error("CLIParser::inputFilesPresent: Yaml-File " + config.yamlFilename + " not found!");
+          throw std::runtime_error("CLIParser::inputFilesPresent: Yaml-File " + config.yamlFilename.value + " not found!");
         }
         break;
       default: {
