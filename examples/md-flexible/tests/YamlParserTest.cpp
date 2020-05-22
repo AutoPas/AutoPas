@@ -5,8 +5,8 @@
  */
 #include "YamlParserTest.h"
 
-#include "parsing/MDFlexConfig.h"
-#include "parsing/YamlParser.h"
+#include "src/parsing/MDFlexConfig.h"
+#include "src/parsing/YamlParser.h"
 
 TEST_F(YamlParserTest, calcAutoPasBox) {
   // tests the AutoBox calculation after Object initialization with multipleObjectsWithMultipleTypeTest

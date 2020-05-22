@@ -507,13 +507,22 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
 
     // print everything
     cout << "Usage: " << argv[0] << endl;
+    cout << "lorem ipsum" << endl << endl;
+
+    cout << "These are the options:" << endl;
     for (auto &o : options) {
       cout << "    --" << setw(MDFlexConfig::valueOffset + 2) << left << o.first;
-      if (o.second) {
-        cout << "option";
-      }
+//      if (o.second) {
+        cout << o.first;
+//      }
       cout << endl;
     }
+
+
+    cout << endl;
+    cout << "md-flexible documentation locally available via: 'make doc_doxygen_md-flexible'" << endl;
+    cout << "Report bugs to: https://github.com/AutoPas/AutoPas/issues" << endl;
+    cout << "Full AutoPas documentation at: https://www5.in.tum.de/AutoPas/doxygen_doc/master/" << endl;
     return false;
   }
   return true;

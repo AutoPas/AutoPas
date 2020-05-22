@@ -15,8 +15,8 @@
 #include <string>
 
 #include "MDFlexConfig.h"
-#include "Objects/Objects.h"
 #include "autopas/utils/NumberSet.h"
+#include "src/Objects/Objects.h"
 
 /**
  * Parser for input through YAML files.

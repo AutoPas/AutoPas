@@ -9,10 +9,6 @@
 #include <map>
 #include <set>
 
-#include "Objects/CubeGauss.h"
-#include "Objects/CubeGrid.h"
-#include "Objects/CubeUniform.h"
-#include "Objects/Sphere.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -21,6 +17,10 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/NumberSet.h"
+#include "src/Objects/CubeGauss.h"
+#include "src/Objects/CubeGrid.h"
+#include "src/Objects/CubeUniform.h"
+#include "src/Objects/Sphere.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.

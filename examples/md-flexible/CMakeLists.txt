@@ -1,17 +1,9 @@
 file(
     GLOB_RECURSE
     MDFlex_SRC
-    "*.cpp"
-    "*.h"
+    "src/*.cpp"
+    "src/*.h"
 )
-
-# remove all files from the md-flexible/tests dir
-foreach (FILE_PATH ${MDFlex_SRC})
-    string(FIND ${FILE_PATH} "md-flexible/tests/" EXCLUDE_FILE)
-    if (NOT ${EXCLUDE_FILE} EQUAL -1)
-        list(REMOVE_ITEM MDFlex_SRC ${FILE_PATH})
-    endif ()
-endforeach ()
 
 add_executable(md-flexible ${MDFlex_SRC})
 

@@ -9,10 +9,10 @@
 #include <array>
 
 #include "AutoPasTestBase.h"
-#include "Objects/CubeGauss.h"
-#include "Objects/CubeGrid.h"
-#include "Objects/CubeUniform.h"
-#include "Objects/Sphere.h"
+#include "src/Objects/CubeGauss.h"
+#include "src/Objects/CubeGrid.h"
+#include "src/Objects/CubeUniform.h"
+#include "src/Objects/Sphere.h"
 
 // testet die boxMin und boxMax funktionen für alle Objects
 class ObjectsTest : public AutoPasTestBase {
