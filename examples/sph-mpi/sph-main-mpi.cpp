@@ -46,7 +46,7 @@ void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<dou
       }
     }
   }
-  if(i==0){
+  if (i == 0) {
     throw std::runtime_error("No particle added in sph-main-mpi::SetupIC.");
   }
 
