@@ -32,14 +32,16 @@ std::string MDFlexConfig::to_string() const {
      << autopas::utils::ArrayUtils::to_string(traversalOptions.value) << endl;
   os << setw(valueOffset) << left << tuningStrategyOption.name << ":  " << tuningStrategyOption.value << endl;
   if (tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianSearch) {
-    os << setw(valueOffset) << left << acquisitionFunctionOption.name << ":  " << acquisitionFunctionOption.value << endl;
+    os << setw(valueOffset) << left << acquisitionFunctionOption.name << ":  " << acquisitionFunctionOption.value
+       << endl;
   }
   os << setw(valueOffset) << left << tuningInterval.name << ":  " << tuningInterval.value << endl;
   os << setw(valueOffset) << left << tuningSamples.name << ":  " << tuningSamples.value << endl;
   os << setw(valueOffset) << left << tuningMaxEvidence.name << ":  " << tuningMaxEvidence.value << endl;
   if (tuningStrategyOption.value == autopas::TuningStrategyOption::predictiveTuning) {
     os << setw(valueOffset) << left << relativeOptimumRange.name << ":  " << relativeOptimumRange.value << endl;
-    os << setw(valueOffset) << left << maxTuningPhasesWithoutTest.name << ":  " << maxTuningPhasesWithoutTest.value << endl;
+    os << setw(valueOffset) << left << maxTuningPhasesWithoutTest.name << ":  " << maxTuningPhasesWithoutTest.value
+       << endl;
   }
   os << setw(valueOffset) << left << functorOption.name << ":  ";
   switch (functorOption.value) {
@@ -56,12 +58,14 @@ std::string MDFlexConfig::to_string() const {
       break;
     }
   }
-  os << setw(valueOffset) << left << newton3Options.name << ":  " << autopas::utils::ArrayUtils::to_string(newton3Options.value)
-     << endl;
+  os << setw(valueOffset) << left << newton3Options.name << ":  "
+     << autopas::utils::ArrayUtils::to_string(newton3Options.value) << endl;
 
   os << setw(valueOffset) << left << cutoff.name << ":  " << cutoff.value << endl;
-  os << setw(valueOffset) << left << boxMin.name << ":  " << autopas::utils::ArrayUtils::to_string(boxMin.value) << endl;
-  os << setw(valueOffset) << left << boxMax.name << ":  " << autopas::utils::ArrayUtils::to_string(boxMax.value) << endl;
+  os << setw(valueOffset) << left << boxMin.name << ":  " << autopas::utils::ArrayUtils::to_string(boxMin.value)
+     << endl;
+  os << setw(valueOffset) << left << boxMax.name << ":  " << autopas::utils::ArrayUtils::to_string(boxMax.value)
+     << endl;
   os << setw(valueOffset) << left << cellSizeFactors.name << ":  " << *cellSizeFactors.value << endl;
   os << setw(valueOffset) << left << deltaT.name << ":  " << deltaT.value << endl;
   os << setw(valueOffset) << left << iterations.name << ":  " << iterations.value << endl;
@@ -152,7 +156,8 @@ void MDFlexConfig::addParticleType(unsigned long typeId, double epsilon, double 
   // check if type id is already existing and if there no error in input
   if (epsilonMap.value.count(typeId) == 1) {
     // check if type is already added
-    if (epsilonMap.value.at(typeId) == epsilon and sigmaMap.value.at(typeId) == sigma and massMap.value.at(typeId) == mass) {
+    if (epsilonMap.value.at(typeId) == epsilon and sigmaMap.value.at(typeId) == sigma and
+        massMap.value.at(typeId) == mass) {
       return;
     } else {  // wrong initialization:
       throw std::runtime_error("Wrong Particle initialization: using same typeId for different properties");

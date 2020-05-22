@@ -63,17 +63,20 @@ class MDFlexConfig {
      * @param getOptSwitchChar Char for the switch case that is used during cli argument parsing with getOpt.
      * @param newDescription String describing this option. This is displayed when md-flexible is invoked with --help.
      */
-    MDFlexOptionInterface(std::string newName, bool requiresArgument, char getOptSwitchChar,
-                 std::string newDescription)
-        : requiresArgument(requiresArgument), getoptSwitchChar(getOptSwitchChar), name(std::move(newName)), description(std::move(newDescription)) {
-    }
+    MDFlexOptionInterface(std::string newName, bool requiresArgument, char getOptSwitchChar, std::string newDescription)
+        : requiresArgument(requiresArgument),
+          getoptSwitchChar(getOptSwitchChar),
+          name(std::move(newName)),
+          description(std::move(newDescription)) {}
 
     /**
      * Returns a getopt option struct for this object.
      * @return
      */
     [[nodiscard]] struct option toGetoptOption() const {
-      struct option retStruct{name.c_str(), requiresArgument, nullptr, getoptSwitchChar};
+      struct option retStruct {
+        name.c_str(), requiresArgument, nullptr, getoptSwitchChar
+      };
       return retStruct;
     }
   };
@@ -97,11 +100,9 @@ class MDFlexConfig {
      * @param getOptSwitchChar Char for the switch case that is used during cli argument parsing with getOpt.
      * @param newDescription String describing this option. This is displayed when md-flexible is invoked with --help.
      */
-    MDFlexOption(T value, const std::string& newName, bool requiresArgument, char getOptSwitchChar,
+    MDFlexOption(T value, const std::string &newName, bool requiresArgument, char getOptSwitchChar,
                  std::string newDescription)
-        : MDFlexOptionInterface(newName, requiresArgument, getOptSwitchChar, newDescription), value(std::move(value)){
-    }
-
+        : MDFlexOptionInterface(newName, requiresArgument, getOptSwitchChar, newDescription), value(std::move(value)) {}
   };
 
   /**

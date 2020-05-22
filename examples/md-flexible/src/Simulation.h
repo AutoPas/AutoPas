@@ -157,7 +157,8 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
   _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibraryType>(_config->cutoff.value);
 
   for (auto [type, epsilon] : _config->epsilonMap.value) {
-    _particlePropertiesLibrary->addType(type, epsilon, _config->sigmaMap.value.at(type), _config->massMap.value.at(type));
+    _particlePropertiesLibrary->addType(type, epsilon, _config->sigmaMap.value.at(type),
+                                        _config->massMap.value.at(type));
   }
 }
 
@@ -313,7 +314,8 @@ void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, Par
       // applying Velocity scaling with Thermostat:
       if (_config->useThermostat.value and (iteration % _config->thermostatInterval.value) == 0) {
         _timers.thermostat.start();
-        Thermostat::apply(autopas, *_particlePropertiesLibrary, _config->targetTemperature.value, _config->deltaTemp.value);
+        Thermostat::apply(autopas, *_particlePropertiesLibrary, _config->targetTemperature.value,
+                          _config->deltaTemp.value);
         _timers.thermostat.stop();
       }
     }
@@ -335,7 +337,7 @@ void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, Par
 }
 
 template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Particle, ParticleCell> &autopas){
+void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Particle, ParticleCell> &autopas) {
   using namespace std;
   size_t flopsPerKernelCall = 0;
 

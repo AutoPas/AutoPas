@@ -7,12 +7,13 @@
 #include "CLIParser.h"
 
 #include <sys/stat.h>
+
 #include <any>
 
 bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
 
-  static const std::vector<MDFlexConfig::MDFlexOptionInterface> relevantOptions {
+  static const std::vector<MDFlexConfig::MDFlexOptionInterface> relevantOptions{
       config.newton3Options,
       config.checkpointfile,
       config.acquisitionFunctionOption,
@@ -58,13 +59,12 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   std::vector<struct option> long_options;
   // reserve space for all relevant options + "--help" and terminal field
   long_options.resize(relevantOptions.size() + 1);
-  for(int i = 0; i < relevantOptions.size(); ++i) {
+  for (int i = 0; i < relevantOptions.size(); ++i) {
     auto o = relevantOptions[i].toGetoptOption();
     long_options[i] = o;
   }
   // needed to signal the end of the array
   long_options.push_back({nullptr, no_argument, nullptr, 0});
-
 
   // reset getopt to scan from the start of argv
   optind = 1;
@@ -509,7 +509,6 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   }
 
   if (displayHelp) {
-
     // print everything
     cout << "Usage: " << argv[0] << endl;
     cout << "A simple molecular dynamics simulation program showcasing AutoPas." << endl << endl;
@@ -527,9 +526,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
     }
 
     std::sort(std::begin(outputLines), std::end(outputLines));
-    for_each(std::begin(outputLines), std::end(outputLines), [&](auto l) {
-      cout << l;
-    });
+    for_each(std::begin(outputLines), std::end(outputLines), [&](auto l) { cout << l; });
 
     cout << endl;
     cout << "md-flexible documentation locally available via: 'make doc_doxygen_md-flexible'" << endl;
@@ -579,7 +576,8 @@ void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
       case 'Y':
         config.yamlFilename.value = optarg;
         if (not checkFileExists(optarg)) {
-          throw std::runtime_error("CLIParser::inputFilesPresent: Yaml-File " + config.yamlFilename.value + " not found!");
+          throw std::runtime_error("CLIParser::inputFilesPresent: Yaml-File " + config.yamlFilename.value +
+                                   " not found!");
         }
         break;
       default: {
