@@ -620,7 +620,7 @@ class AutoPas {
    * List of container types AutoPas can choose from.
    * For possible container choices see options::ContainerOption::Value.
    */
-  std::set<ContainerOption> _allowedContainers{ContainerOption::getAllOptions()};
+  std::set<ContainerOption> _allowedContainers{ContainerOption::getMostOptions()};
 
   /**
    * List of traversals AutoPas can choose from.

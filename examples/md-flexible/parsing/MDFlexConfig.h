@@ -61,7 +61,7 @@ class MDFlexConfig {
 
   // AutoPas options:
   static inline const char *containerOptionsStr{"container"};
-  std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::getAllOptions()};
+  std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::getMostOptions)};
   static inline const char *dataLayoutOptionsStr{"data-layout"};
   std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::getAllOptions()};
   static inline const char *selectorStrategyStr{"selector-strategy"};

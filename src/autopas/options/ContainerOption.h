@@ -69,6 +69,17 @@ class ContainerOption : public Option<ContainerOption> {
     };
   };
 
+  /**
+   * Provides a way to iterate over the possible options.
+   * @return Set of all possible values of this option type minus those who are very unlikely to be good.
+   * @note This function is meant to provide sane defaults.
+   */
+  static std::set<ContainerOption> getMostOptions() {
+    auto returnSet = getAllOptions();
+    returnSet.erase(ContainerOption::directSum);
+    return returnSet;
+  }
+
  private:
   Value _value{Value(-1)};
 };
