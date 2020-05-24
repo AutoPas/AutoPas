@@ -21,7 +21,7 @@
 /**
  * Parser for input through YAML files.
  */
-namespace YamlParser {
+namespace MDFlexParser::YamlParser {
 /**
  * Parses the Input for the simulation from the Yaml File specified in the configuration
  * @param config configuration where the input is stored.
@@ -29,4 +29,4 @@ namespace YamlParser {
  * @FIXME: at the moment false is never returned
  */
 bool parseYamlFile(MDFlexConfig &config);
-};  // namespace YamlParser
+};  // namespace MDFlexParser::YamlParser

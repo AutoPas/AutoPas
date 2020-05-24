@@ -16,9 +16,14 @@ int main(int argc, char **argv) {
   // Parsing
   MDFlexConfig config;
 
-  if (not MDFlexParser::parseInput(argc, argv, config)) {
-    // TODO: parseInput should return some kind of exit code such that --help can return 0
-    exit(EXIT_FAILURE);
+  // parse input and only continue of parsing went without hickups
+  if (auto parserExitCode = MDFlexParser::parseInput(argc, argv, config);
+      parserExitCode != MDFlexParser::exitCodes::success) {
+    if (parserExitCode == MDFlexParser::exitCodes::parsingError) {
+      exit(EXIT_FAILURE);
+    } else {
+      exit(EXIT_SUCCESS);
+    }
   }
   // make sure sim box is big enough
   config.calcSimulationBox();

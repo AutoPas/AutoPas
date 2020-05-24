@@ -11,7 +11,7 @@
 #include <any>
 #include <fstream>
 
-bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
+MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
 
   static const std::vector<MDFlexConfig::MDFlexOptionInterface> relevantOptions{
@@ -210,12 +210,12 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
       }
       case 'h': {
         printHelpMessage(std::cout, argv[0], relevantOptions);
-        return false;
+        return MDFlexParser::exitCodes::helpFlagFound;
       }
       case 'Z': {
         // generate the completions file and do nothing else
         createZSHCompletionFile(relevantOptions);
-        return false;
+        return MDFlexParser::exitCodes::completionsFlagFound;
       }
       case 'i': {
         try {
@@ -519,9 +519,9 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
 
   if (displayHelp) {
     printHelpMessage(std::cout, argv[0], relevantOptions);
-    return false;
+    return MDFlexParser::exitCodes::parsingError;
   }
-  return true;
+  return MDFlexParser::exitCodes::success;
 }
 
 // anonymous namespace to hide helper function
@@ -539,7 +539,7 @@ bool checkFileExists(const std::string &filename) {
 
 }  // namespace
 
-void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
+void MDFlexParser::CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
   // suppress error messages since we only want to look if the yaml option is there
   auto opterrBefore = opterr;
   opterr = 0;
@@ -576,8 +576,9 @@ void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
   opterr = opterrBefore;
 }
 
-void CLIParser::printHelpMessage(std::ostream &ostream, const std::string &relPathOfExecutable,
-                                 const std::vector<MDFlexConfig::MDFlexOptionInterface> &relevantOptions) {
+void MDFlexParser::CLIParser::printHelpMessage(
+    std::ostream &ostream, const std::string &relPathOfExecutable,
+    const std::vector<MDFlexConfig::MDFlexOptionInterface> &relevantOptions) {
   ostream << "Usage: " << relPathOfExecutable << "\n";
   ostream << "A simple molecular dynamics simulation program showcasing AutoPas.\n\n";
 
@@ -602,7 +603,8 @@ void CLIParser::printHelpMessage(std::ostream &ostream, const std::string &relPa
   ostream << "Full AutoPas documentation at: https://www5.in.tum.de/AutoPas/doxygen_doc/master/\n";
 }
 
-void CLIParser::createZSHCompletionFile(const std::vector<MDFlexConfig::MDFlexOptionInterface> &cliOptions) {
+void MDFlexParser::CLIParser::createZSHCompletionFile(
+    const std::vector<MDFlexConfig::MDFlexOptionInterface> &cliOptions) {
   std::ofstream fileStream;
   fileStream.open("_md-flexible");
 

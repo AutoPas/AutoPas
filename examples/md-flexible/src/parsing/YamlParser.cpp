@@ -6,13 +6,9 @@
 
 #include "YamlParser.h"
 
-#include <sys/stat.h>
-
 #include <ostream>
 
-namespace YamlParser {
-
-bool parseYamlFile(MDFlexConfig &config) {
+bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   YAML::Node node = YAML::LoadFile(config.yamlFilename.value);
 
   if (node[config.containerOptions.name]) {
@@ -283,5 +279,3 @@ bool parseYamlFile(MDFlexConfig &config) {
   }
   return true;
 }
-
-}  // namespace YamlParser

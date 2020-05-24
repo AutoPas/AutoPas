@@ -6,7 +6,7 @@
 
 #include "MDFlexParser.h"
 
-bool MDFlexParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
+MDFlexParser::exitCodes MDFlexParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   // we need to copy argv because the call to getOpt in _cliParser.inputFilesPresent reorders it...
   auto *argvCopy = new char *[argc + 1];
   for (int i = 0; i < argc; i++) {
@@ -20,16 +20,16 @@ bool MDFlexParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
 
   if (not config.yamlFilename.value.empty()) {
     if (not YamlParser::parseYamlFile(config)) {
-      return false;
+      return MDFlexParser::exitCodes::parsingError;
     }
   }
 
-  auto parseSuccess = CLIParser::parseInput(argc, argvCopy, config);
+  auto cliParseExitCode = CLIParser::parseInput(argc, argvCopy, config);
 
   for (int i = 0; i < argc; i++) {
     delete[] argvCopy[i];
   }
   delete[] argvCopy;
 
-  return parseSuccess;
+  return cliParseExitCode;
 }

@@ -11,11 +11,12 @@
 #include <iostream>
 
 #include "MDFlexConfig.h"
+#include "ParserExitCodes.h"
 
 /**
  * Parser for input from the command line.
  */
-namespace CLIParser {
+namespace MDFlexParser::CLIParser {
 /**
  * Checks if a checkpoint or yaml file is specified in the given command line arguments.
  * If any files are found, their paths are saves in the respective fields of the given configuration.
@@ -32,9 +33,9 @@ void inputFilesPresent(int argc, char **argv, MDFlexConfig &config);
  * @param argc number of command line arguments.
  * @param argv command line argument array.
  * @param config configuration where the input is stored.
- * @return false if any errors occurred during parsing.
+ * @return Indicator of success. See MDFlexParser::exitCodes for possible values.
  */
-bool parseInput(int argc, char **argv, MDFlexConfig &config);
+MDFlexParser::exitCodes parseInput(int argc, char **argv, MDFlexConfig &config);
 
 /**
  * Prints the help message to the given stream.
@@ -51,4 +52,4 @@ void printHelpMessage(std::ostream &ostream, const std::string &relPathOfExecuta
  */
 void createZSHCompletionFile(const std::vector<MDFlexConfig::MDFlexOptionInterface> &cliOptions);
 
-};  // namespace CLIParser
+};  // namespace MDFlexParser::CLIParser
