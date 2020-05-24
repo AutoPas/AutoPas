@@ -12,11 +12,21 @@ assert sys.version_info >= (3, 8)
 
 # ---------------------------------------------- Input ----------------------------------------------
 
+parameterIdentifierString = 'parameter='
+parameterArg = []
+containsParameterArg = False
+
 # help message
 for arg in sys.argv[1:]:
     if "--help" in arg:
-        print("Usage: ./plotTuning.py [path/To//Output/*.out ...]")
+        print("Usage: ./plotTuning.py parameter=[number, size, density] [path/To//Output/*.out ...]. Meaning number = number of particles, size = boxSize and density = particle density")
         print("If no input is given the script looks for the latest testTuning directory in the current directory.")
+        exit(0)
+    elif parameterIdentifierString in arg:
+        parameterArg = arg.split("=", 1)[1]
+        containsParameterArg = True
+    elif not containsParameterArg and not parameterIdentifierString in arg:
+        print("Please specify the parameter for the x-axis: parameter=[number, size, density]")
         exit(0)
 
 # take all input files as source for a plot
@@ -46,7 +56,24 @@ else:
 # values for plotting in the end
 allTraversals = []
 numberOfParticlesPerTraversal = []
+boxSizePerTraversal = []
 timePerTravsersal = []
+number = False
+size = False
+density = False
+xAxisTitle = "empty"
+xAxis = []
+
+if parameterArg == 'number':
+    number = True
+    xAxisTitle = 'Number of particles'
+elif parameterArg == 'size':
+    size = True
+    xAxisTitle = 'Boxsize'
+elif parameterArg == 'density':
+    density = True
+    xAxisTitle = 'Density of particles'
+
 
 # gather data per file
 for datafile in datafiles:
@@ -54,10 +81,15 @@ for datafile in datafiles:
     # lists to gather data series
     values = []
     numberOfParticles = []
+    boxSize = []
+    boxSizeListMin = []
+    boxSizeListMax = []
     traversal = []
 
     regexIterTook = '.* IteratePairwise took +([0-9]+) .*'
     regexNumOfParticles = '.*particles-per-dimension*'
+    regexBoxMin = '.*box-min*'
+    regexBoxMax = '.*box-max*'
     regexTraversal = '.*traversal*'
 
     # parse file
@@ -73,18 +105,30 @@ for datafile in datafiles:
                 if (not allTraversals.__contains__(traversal)):
                     allTraversals.append(traversal)
                     numberOfParticlesPerTraversal.append([])
+                    boxSizePerTraversal.append([])
                     timePerTravsersal.append([])
                 foundTraversal = True
-            elif (match := re.search(regexNumOfParticles, line)) is not None:
+            elif number and (match := re.search(regexNumOfParticles, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')  # split content inside brackets and show as array
                 numberOfParticles = numpy.prod(list(map(int, arrayOfCurrentLine)))  # calculate overall number of particles
                 numberOfParticlesPerTraversal[allTraversals.index(traversal)].append(numberOfParticles)
+            elif size and (match := re.search(regexBoxMax, line)) is not None:
+                currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
+                arrayOfCurrentLine = currentLine[0].split(',')
+                boxSizeListMax = list(map(float, arrayOfCurrentLine))
+            elif size and (match := re.search(regexBoxMin, line)) is not None:
+                currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
+                arrayOfCurrentLine = currentLine[0].split(',')
+                boxSizeListMin = list(map(float, arrayOfCurrentLine))
             elif (match := re.search(regexIterTook, line)) is not None:
                 values.append(int(match.group(1)))  # append time needed to perform iteration
         foundTraversal = False
 
     timePerTravsersal[allTraversals.index(traversal)].append((sum(values)/len(values)))  # append mean time of this traversal
+    if size:
+        boxSize = numpy.prod([a - b for a, b in zip(boxSizeListMax, boxSizeListMin)])  # get size per dimension and then multiply to get overall boxsize
+        boxSizePerTraversal[allTraversals.index(traversal)].append(boxSize)
 
 
 # ---------------------------------------------- Plot ---------------------------------------------
@@ -113,16 +157,23 @@ colorrange=colorrange[0::distBetweenColors]
 fig = go.Figure(
     layout=dict(
         title_text="Plot per number of particles and per traversal",
-        xaxis_title_text="Number of Particles",
+        xaxis_title_text=xAxisTitle,
         yaxis_title_text="Time per Iteration [ns]",
     ),
 )
 
 # add data
 for t in allTraversals:
+    xAxis = []
+    if number:
+        xAxis = numberOfParticlesPerTraversal[allTraversals.index(t)]
+    elif size:
+        xAxis = boxSizePerTraversal[allTraversals.index(t)]
+    elif density:
+        exit(0)
     fig.add_trace(go.Scatter(
         name=t,
-        x=numberOfParticlesPerTraversal[allTraversals.index(t)],
+        x=xAxis,
         y=timePerTravsersal[allTraversals.index(t)],
         mode="lines+markers",
         hovertext=t,

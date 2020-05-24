@@ -24,6 +24,7 @@ traversalIdentifierString='traversal='
 simulation='./md-flexible'
 # placeholder for used traversal
 traversalArg=[]
+containsTraversalArg = False
 # list of input files or directories
 configsDirs=[]
 
@@ -32,11 +33,12 @@ for arg in sys.argv[1:]:
     if "help" in arg:
         print("Usage: ./testTimePerTraversal.py [traversal=chosenTraversal] [paths/to/yaml/files or/to/directories]")
         exit(0)
-    elif (not traversalIdentifierString in arg):
+    elif not containsTraversalArg and not traversalIdentifierString in arg:
         print("Traversal missing in input. Usage: ./testTimePerTraversal.py [traversal=chosenTraversal] [paths/to/yaml/files or/to/directories]")
         exit(0)
     elif traversalIdentifierString in arg:
         traversalArg = ["--traversal", arg.split('=', 1)[1]]
+        containsTraversalArg = True
     else:
         # everything else is considered a path to inputs
         configsDirs.append(arg)
