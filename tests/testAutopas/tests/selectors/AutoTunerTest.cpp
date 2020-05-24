@@ -41,6 +41,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // Direct Sum:            directSum traversal         (AoS <=> SoA, newton3 <=> noNewton3) = 4
   // LinkedCells:           c08 traversal               (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        sliced                      (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        csliced                     (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        c18                         (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        c01                         (AoS <=> SoA, noNewton3)             = 2
   //                        c01-combined-SoA            (SoA, noNewton3)                     = 1
@@ -57,28 +58,28 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3) = 4
   // VerletClusterCells:    verlet-cluster-cells        (AoS, newton3 <=> noNewton3)         = 2
   //                                                                                    --------
-  //                                                                                          52
+  //                                                                                          56
   // Additional with cuda
   // Direct Sum:            directSum traversal         (Cuda, newton3 <=> noNewton3)        = 2
   // LinkedCells:           c01Cuda traversal           (Cuda, newton3 <=> noNewton3)        = 2
   // VerletClusterCells:    verlet-cluster-cells traversal (Cuda, newton3 <=> noNewton3)     = 2
   //                                                                                    --------
-  //                                                                                          58
+  //                                                                                          62
   //
   // currently disabled:
   // NORMAL:
   //                                                                                    --------
-  // TOTAL:                                                                                   58
+  // TOTAL:                                                                                   62
   //
   // CUDA:
   // C01CudaTraversal for enabled N3, see #420                                                -1
   //                                                                                    --------
-  // TOTAL:                                                                                   57
+  // TOTAL:                                                                                   61
 
 #ifndef AUTOPAS_CUDA
-  const size_t expectedNumberOfIterations = 52 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 56 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 57 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 61 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;

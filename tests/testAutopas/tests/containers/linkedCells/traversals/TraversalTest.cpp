@@ -19,16 +19,27 @@ using ::testing::ValuesIn;
 
 void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const std::array<size_t, 3> &edgeLength,
                    int interactions, double cutoff = 1.0) {
+  const std::array<double, 3> linkedCellsBoxMax = {(double)(edgeLength[0]), (double)(edgeLength[1]),
+                                                   (double)(edgeLength[2])};
+  const std::array<double, 3> linkedCellsBoxMin = {0., 0., 0.};
+
   TraversalTest::CountFunctor functor(cutoff);
-  std::vector<FPCell> cells(edgeLength[0] * edgeLength[1] * edgeLength[2]);
+  autopas::LinkedCells<FPCell> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1.0 / cutoff);
 
-  autopasTools::generators::GridGenerator::fillWithParticles(cells, edgeLength, edgeLength);
+  autopasTools::generators::GridGenerator::fillWithParticles(linkedCells, edgeLength);
+  ASSERT_EQ(linkedCells.getNumParticles(), edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
+  std::array<unsigned long, 3> overlap = {};
+  for (unsigned int d = 0; d < 3; d++) {
+    overlap[d] = std::ceil(cutoff / 1.0);
+  }
+  const auto cellsPerDim =
+      autopas::utils::ArrayMath::add(edgeLength, autopas::utils::ArrayMath::mulScalar(overlap, 2ul));
   NumThreadGuard numThreadGuard(4);
   // clustersize is 32 if traversal has something like cluster in it, otherwise 0.
   unsigned int clusterSize = traversalOption.to_string().find("luster") != std::string::npos ? 32 : 0;
   // this test assumes a cell size of 1. in each direction
-  autopas::TraversalSelectorInfo tsi(edgeLength, cutoff, {1., 1., 1.}, clusterSize);
+  autopas::TraversalSelectorInfo tsi(cellsPerDim, cutoff, {1., 1., 1.}, clusterSize);
   std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::c01) {
     traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
@@ -41,10 +52,6 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
   }
 
   unsigned long cellId = 0;
-  std::array<unsigned long, 3> overlap = {};
-  for (unsigned int d = 0; d < 3; d++) {
-    overlap[d] = std::ceil(cutoff / 1.0);
-  }
 
   const auto boxMax = autopas::utils::ArrayMath::sub(edgeLength, overlap);
 
@@ -62,9 +69,8 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
     }
   }
 
-  auto *traversalInterface = dynamic_cast<autopas::CellPairTraversal<FPCell> *>(traversal.get());
-  traversalInterface->setCellsToTraverse(cells);
-  traversalInterface->traverseParticlePairs();
+  auto *traversalInterface = traversal.get();
+  linkedCells.iteratePairwise(traversalInterface);
 }
 
 TEST_P(TraversalTest, testTraversal_2x2x2) {
