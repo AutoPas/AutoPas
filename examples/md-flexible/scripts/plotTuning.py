@@ -14,7 +14,7 @@ assert sys.version_info >= (3,8)
 # help message
 for arg in sys.argv[1:]:
     if "--help" in arg:
-        print("Usage: ./plotTuning.py [path/To/mdFlex/std.out ...]")
+        print("Usage: ./plotTuning.py [path/To/mdFlex/std.out ...] or [path/To/mdFlex/directoryWithOutput]")
         print("If no input is given the script looks for the latest testTuning directory in the current directory.")
         exit(0)
 
