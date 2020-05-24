@@ -57,6 +57,7 @@ else:
 allTraversals = []
 numberOfParticlesPerTraversal = []
 boxSizePerTraversal = []
+densityPerTraversal = []
 timePerTravsersal = []
 number = False
 size = False
@@ -90,6 +91,7 @@ for datafile in datafiles:
     regexNumOfParticles = '.*particles-per-dimension*'
     regexBoxMin = '.*box-min*'
     regexBoxMax = '.*box-max*'
+    regexDensity = '.*particle-spacing*'
     regexTraversal = '.*traversal*'
 
     # parse file
@@ -106,6 +108,7 @@ for datafile in datafiles:
                     allTraversals.append(traversal)
                     numberOfParticlesPerTraversal.append([])
                     boxSizePerTraversal.append([])
+                    densityPerTraversal.append([])
                     timePerTravsersal.append([])
                 foundTraversal = True
             elif number and (match := re.search(regexNumOfParticles, line)) is not None:
@@ -121,6 +124,10 @@ for datafile in datafiles:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')
                 boxSizeListMin = list(map(float, arrayOfCurrentLine))
+            elif density and (match := re.search(regexDensity, line)) is not None:
+                currentLine = line.split(':', 1)[1]
+                currentLine.strip()
+                densityPerTraversal[allTraversals.index(traversal)].append(float(currentLine))
             elif (match := re.search(regexIterTook, line)) is not None:
                 values.append(int(match.group(1)))  # append time needed to perform iteration
         foundTraversal = False
@@ -170,7 +177,7 @@ for t in allTraversals:
     elif size:
         xAxis = boxSizePerTraversal[allTraversals.index(t)]
     elif density:
-        exit(0)
+        xAxis = densityPerTraversal[allTraversals.index(t)]
     fig.add_trace(go.Scatter(
         name=t,
         x=xAxis,
