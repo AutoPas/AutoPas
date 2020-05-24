@@ -10,6 +10,12 @@
 #include "Simulation.h"
 #include "parsing/MDFlexParser.h"
 
+/**
+ * The main function.
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char **argv) {
   // start simulation timer
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;

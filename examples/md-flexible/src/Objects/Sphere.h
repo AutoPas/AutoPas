@@ -98,17 +98,17 @@ class Sphere : public Object {
     return counter;
   }
 
-  const std::array<double, 3> getBoxMin() const override {
+  [[nodiscard]] std::array<double, 3> getBoxMin() const override {
     return {center[0] - ((double)radius) * particleSpacing, center[1] - ((double)radius) * particleSpacing,
             center[2] - ((double)radius) * particleSpacing};
   }
 
-  const std::array<double, 3> getBoxMax() const override {
+  [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return {center[0] + ((double)radius) * particleSpacing, center[1] + ((double)radius) * particleSpacing,
             center[2] + ((double)radius) * particleSpacing};
   }
 
-  std::string to_string() const override {
+  [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "center"
@@ -122,7 +122,7 @@ class Sphere : public Object {
   }
 
  private:
-  /*
+  /**
    * coordinates of the sphere's center
    */
   std::array<double, 3> center;

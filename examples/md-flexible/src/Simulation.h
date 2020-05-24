@@ -24,6 +24,11 @@
 #include "autopasTools/generators/RandomGenerator.h"
 #include "parsing/MDFlexConfig.h"
 
+/**
+ * The main simulation class.
+ * @tparam Particle
+ * @tparam ParticleCell
+ */
 template <class Particle, class ParticleCell>
 class Simulation {
  public:
@@ -43,9 +48,7 @@ class Simulation {
 
   /**
    * Writes a VTK file for the current state of the AutoPas object.
-   * @tparam AutoPasTemplate Template for the templetized autopas type.
-   * @param filename
-   * @param numParticles
+   * @param iteration
    * @param autopas
    */
   void writeVTKFile(unsigned int iteration, autopas::AutoPas<Particle, ParticleCell> &autopas);
@@ -58,6 +61,8 @@ class Simulation {
   /**
    * Initializes the AutoPas Object with the given config and initializes the simulation domain with the Object
    * Generators.
+   * @param mdFlexConfig
+   * @param autopas
    */
   void initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<Particle, ParticleCell> &autopas);
 
