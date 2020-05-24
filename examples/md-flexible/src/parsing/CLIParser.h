@@ -37,6 +37,15 @@ void inputFilesPresent(int argc, char **argv, MDFlexConfig &config);
 bool parseInput(int argc, char **argv, MDFlexConfig &config);
 
 /**
+ * Prints the help message to the given stream.
+ * @param ostream Typically std::out.
+ * @param relPathOfExecutable  Typically argv[0].
+ * @param relevantOptions vector of options to include in the help message.
+ */
+void printHelpMessage(std::ostream &ostream, const std::string &relPathOfExecutable,
+                      const std::vector<MDFlexConfig::MDFlexOptionInterface> &relevantOptions);
+
+/**
  * Creates a file "_md-flexible" containing the completions definitions for zsh.
  * @param cliOptions vector of options to include in the file.
  */

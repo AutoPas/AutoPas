@@ -209,8 +209,8 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
         break;
       }
       case 'h': {
-        displayHelp = true;
-        break;
+        printHelpMessage(std::cout, argv[0], relevantOptions);
+        return false;
       }
       case 'Z': {
         // generate the completions file and do nothing else
@@ -518,29 +518,7 @@ bool CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   }
 
   if (displayHelp) {
-    // print everything
-    cout << "Usage: " << argv[0] << endl;
-    cout << "A simple molecular dynamics simulation program showcasing AutoPas." << endl << endl;
-
-    cout << "Non-mandatory options to define a simulation:" << endl;
-    std::vector<std::string> outputLines;
-    outputLines.reserve(relevantOptions.size());
-
-    for (const auto &o : relevantOptions) {
-      std::stringstream ss;
-      ss << "    --" << setw(MDFlexConfig::valueOffset + 2) << left << o.name;
-      ss << o.description;
-      ss << endl;
-      outputLines.push_back(ss.str());
-    }
-
-    std::sort(std::begin(outputLines), std::end(outputLines));
-    for_each(std::begin(outputLines), std::end(outputLines), [&](auto l) { cout << l; });
-
-    cout << endl;
-    cout << "md-flexible documentation locally available via: 'make doc_doxygen_md-flexible'" << endl;
-    cout << "Report bugs to: https://github.com/AutoPas/AutoPas/issues" << endl;
-    cout << "Full AutoPas documentation at: https://www5.in.tum.de/AutoPas/doxygen_doc/master/" << endl;
+    printHelpMessage(std::cout, argv[0], relevantOptions);
     return false;
   }
   return true;
@@ -596,6 +574,32 @@ void CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
   }
 
   opterr = opterrBefore;
+}
+
+void CLIParser::printHelpMessage(std::ostream &ostream, const std::string &relPathOfExecutable,
+                                 const std::vector<MDFlexConfig::MDFlexOptionInterface> &relevantOptions) {
+  ostream << "Usage: " << relPathOfExecutable << "\n";
+  ostream << "A simple molecular dynamics simulation program showcasing AutoPas.\n\n";
+
+  ostream << "Non-mandatory options to define a simulation:\n";
+  std::vector<std::string> outputLines;
+  outputLines.reserve(relevantOptions.size());
+
+  for (const auto &o : relevantOptions) {
+    std::stringstream ss;
+    ss << "    --" << std::setw(MDFlexConfig::valueOffset + 2) << std::left << o.name;
+    ss << o.description;
+    ss << '\n';
+    outputLines.push_back(ss.str());
+  }
+
+  std::sort(std::begin(outputLines), std::end(outputLines));
+  for_each(std::begin(outputLines), std::end(outputLines), [&](auto l) { ostream << l; });
+
+  ostream << '\n';
+  ostream << "md-flexible documentation locally available via: 'make doc_doxygen_md-flexible'\n";
+  ostream << "Report bugs to: https://github.com/AutoPas/AutoPas/issues\n";
+  ostream << "Full AutoPas documentation at: https://www5.in.tum.de/AutoPas/doxygen_doc/master/\n";
 }
 
 void CLIParser::createZSHCompletionFile(const std::vector<MDFlexConfig::MDFlexOptionInterface> &cliOptions) {
