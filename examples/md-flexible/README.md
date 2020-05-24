@@ -51,6 +51,33 @@ particles positions, velocities, forces and typeIDs. All other options,
 especially the simulation box size and particle properties (still) need
 to be set through a YAML file.
 
+### Command line Completions
+
+md-flexible can generate a shell completions file with it's latest options.
+Feel free to add completions for your favorite shell.
+
+#### zsh
+
+1. Run:
+```zsh
+./md-flexible --zsh-completions
+```
+This will generate a file `_md-flexible` containing the completions definitions. 
+Store it where you feel appropriate.
+ 
+2. In your `.zshrc` prepend the path to the directory where `_md-flexible` is saved to `fpath`:
+```zsh
+fpath=("HereGoesThePath" $fpath)
+```
+
+3. Initialize the auto complete system by adding this line to `.zshrc` after the `fpath` line.:
+```zsh
+autoload -U compinit && compinit
+```
+
+4. Reload your `zsh`
+
+
 ### Misc
 
 * `tuning-phases` overwrites restrictions set by `iterations`

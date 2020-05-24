@@ -17,6 +17,7 @@ int main(int argc, char **argv) {
   MDFlexConfig config;
 
   if (not MDFlexParser::parseInput(argc, argv, config)) {
+    // TODO: parseInput should return some kind of exit code such that --help can return 0
     exit(EXIT_FAILURE);
   }
   // make sure sim box is big enough

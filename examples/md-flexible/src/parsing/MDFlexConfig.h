@@ -134,36 +134,36 @@ class MDFlexConfig {
    */
   enum class GeneratorOption { grid, uniform, gaussian, sphere };
 
-  MDFlexOption<std::string> yamlFilename{"", "yaml-filename", true, 'z', "Path to input file."};
+  MDFlexOption<std::string> yamlFilename{"", "yaml-filename", true, 'Y', "Path to input file."};
 
   // AutoPas options:
   MDFlexOption<std::set<autopas::ContainerOption>> containerOptions{
       autopas::ContainerOption::getAllOptions(), "container", true, 'c',
       "List of container options to use. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::ContainerOption::getAllOptions())};
+          autopas::utils::ArrayUtils::to_string(autopas::ContainerOption::getAllOptions(), " ", {"(", ")"})};
   MDFlexOption<std::set<autopas::DataLayoutOption>> dataLayoutOptions{
       autopas::DataLayoutOption::getAllOptions(), "data-layout", true, 'd',
       "List of data layout options to use. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions())};
+          autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
   MDFlexOption<autopas::SelectorStrategyOption> selectorStrategy{
       autopas::SelectorStrategyOption::fastestAbs, "selector-strategy", true, 'y',
       "Strategy how to reduce the sample measurements to a single value. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::SelectorStrategyOption::getAllOptions())};
+          autopas::utils::ArrayUtils::to_string(autopas::SelectorStrategyOption::getAllOptions(), " ", {"(", ")"})};
   MDFlexOption<std::set<autopas::TraversalOption>> traversalOptions{
       autopas::TraversalOption::getAllOptions(), "traversal", true, 't',
       "List of traversal options to use. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllOptions())};
+          autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllOptions(), " ", {"(", ")"})};
   MDFlexOption<std::set<autopas::Newton3Option>> newton3Options{
       autopas::Newton3Option::getAllOptions(), "newton3", true, '3',
       "List of newton3 options to use. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions())};
+          autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
   MDFlexOption<std::shared_ptr<autopas::NumberSet<double>>> cellSizeFactors{
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.}), "cell-size", true, 'a',
       "Factor for the interaction length to determine the cell size."};
-  MDFlexOption<std::string> logFileName{"", "log-file", true, 'L',
-                                        "Path to a file to store the log output. Possible Values: "};
+  MDFlexOption<std::string> logFileName{"", "log-file", true, 'L', "Path to a file to store the log output."};
   MDFlexOption<autopas::Logger::LogLevel> logLevel{autopas::Logger::LogLevel::info, "log-level", true, 'l',
-                                                   "Log level for AutoPas. Set to debug for tuning information."};
+                                                   "Log level for AutoPas. Set to debug for tuning information. "
+                                                   "Possible Values: (trace debug info warn error critical off)"};
   MDFlexOption<autopas::TuningStrategyOption> tuningStrategyOption{
       autopas::TuningStrategyOption::fullSearch, "tuning-strategy", true, 'T',
       "Strategy how to reduce the sample measurements to a single value."};
@@ -198,18 +198,18 @@ class MDFlexConfig {
       autopas::AcquisitionFunctionOption::lowerConfidenceBound, "tuning-acquisition-function", true, 'A',
       "For Bayesian based tuning strategies: Function to determine the predicted knowledge gain when testing a given "
       "configuration. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions())};
+          autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), " ", {"(", ")"})};
 
   // Simulation Options:
   MDFlexOption<double> cutoff{1., "cutoff", true, 'C', "Lennard-Jones force cutoff."};
   MDFlexOption<FunctorOption> functorOption{
       FunctorOption::lj12_6, "functor", true, 'f',
-      "Force functor to use. Possible Values: [lennard-jones, lennard-jones-AVX2, lennard-jones-globals]"};
+      "Force functor to use. Possible Values: (lennard-jones lennard-jones-AVX2 lennard-jones-globals)"};
   MDFlexOption<size_t> iterations{10, "iterations", true, 'i', "Number of iterations to simulate."};
   MDFlexOption<size_t> tuningPhases{0, "tuning-phases", true, 'P',
                                     "Number of tuning phases to simulate. This option overwrites --iterations."};
   MDFlexOption<bool> periodic{true, "periodic-boundaries", true, 'p',
-                              "(De)Activate periodic boundaries. Possible Values: [true, false] Default: true."};
+                              "(De)Activate periodic boundaries. Possible Values: (true false) Default: true."};
   // this starts with a "not" such that it can be used as a flag with a sane default.
   MDFlexOption<bool> dontMeasureFlops{true, "no-flops", false, 'F', "Set to omit the calculation of flops."};
   // this starts with a "not" such that it can be used as a flag with a sane default.
@@ -246,7 +246,7 @@ class MDFlexConfig {
                                        "Space between two particles for the grid generator."};
   MDFlexOption<GeneratorOption> generatorOption{
       GeneratorOption::grid, "particle-generator", true, 'g',
-      "Scenario generator. Possible Values: [grid, uniform, gaussian, sphere] Default: grid"};
+      "Scenario generator. Possible Values: (grid uniform gaussian sphere) Default: grid"};
 
   // Object Generation:
   static inline const char *objectsStr{"Objects"};
@@ -268,7 +268,7 @@ class MDFlexConfig {
   // Thermostat Options
   MDFlexOption<bool> useThermostat{false, "thermostat", true, 'u',
                                    "(De)Activate the thermostat. Only useful when used to overwrite a yaml file. "
-                                   "Possible Values: [true, false] Default: false"};
+                                   "Possible Values: (true false) Default: false"};
   MDFlexOption<double> initTemperature{0., "initialTemperature", true, 0,
                                        "Thermostat option. Initial temperature of the system."};
   MDFlexOption<double> targetTemperature{0., "targetTemperature", true, 0,
@@ -280,10 +280,10 @@ class MDFlexConfig {
       "Thermostat option. Number of Iterations between two applications of the thermostat."};
   MDFlexOption<bool> addBrownianMotion{true, "addBrownianMotion", true, 0,
                                        "Thermostat option. Whether the particle velocities should be initialized using "
-                                       "Brownian motion. Possible Options: [true, false] Default: true"};
+                                       "Brownian motion. Possible Values: (true false) Default: true"};
 
   // Checkpoint Options
-  MDFlexOption<std::string> checkpointfile{"", "checkpoint", true, '4', "Path to a VTK File to load as a checkpoint."};
+  MDFlexOption<std::string> checkpointfile{"", "checkpoint", true, 'C', "Path to a VTK File to load as a checkpoint."};
 
   // used for cli-output alignment
   static constexpr size_t valueOffset{33};

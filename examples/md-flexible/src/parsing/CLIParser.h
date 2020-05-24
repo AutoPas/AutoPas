@@ -36,4 +36,10 @@ void inputFilesPresent(int argc, char **argv, MDFlexConfig &config);
  */
 bool parseInput(int argc, char **argv, MDFlexConfig &config);
 
+/**
+ * Creates a file "_md-flexible" containing the completions definitions for zsh.
+ * @param cliOptions vector of options to include in the file.
+ */
+void createZSHCompletionFile(const std::vector<MDFlexConfig::MDFlexOptionInterface> &cliOptions);
+
 };  // namespace CLIParser
