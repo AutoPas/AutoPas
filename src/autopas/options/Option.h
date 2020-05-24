@@ -25,7 +25,7 @@ class Option {
    * Prevents cast to bool by deleting the conversion operator.
    * @return
    */
-  explicit operator bool() = delete;
+  virtual explicit operator bool() = delete;
 
   /**
    * Provides a way to iterate over the possible options.
