@@ -12,7 +12,7 @@ MDFlexParser::exitCodes MDFlexParser::parseInput(int argc, char **argv, MDFlexCo
   for (int i = 0; i < argc; i++) {
     auto len = std::string(argv[i]).length() + 1;
     argvCopy[i] = new char[len];
-    strncpy(argvCopy[i], argv[i], len);
+    strcpy(argvCopy[i], argv[i]);
   }
   argvCopy[argc] = nullptr;
 
