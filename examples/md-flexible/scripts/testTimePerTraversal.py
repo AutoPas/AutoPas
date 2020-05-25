@@ -50,7 +50,7 @@ allTraversals=[]
 # parse special args
 for arg in sys.argv[1:]:
     if "help" in arg:
-        print("Usage: ./testTimePerNumberOfParticlesOriginalSpacing.py [traversal=chosenTraversal] [paths/to/yaml/files or/to/directories]")
+        print("Usage: ./testTimePerTraversal.py [traversal=chosenTraversal] [paths/to/yaml/files or/to/directories]")
         exit(0)
     elif traversalIdentifierString in arg:
         traversalArg = ["--traversal", arg.split('=', 1)[1]]
@@ -70,7 +70,7 @@ simulation=os.path.abspath(simulation)
 
 # default search directory for inputs:
 if not configsDirs:
-    configsDirs=['../input/testTimePerNumberOfParticlesOriginalSpacing/']
+    configsDirs=['../input/testTimePerBoxSizeOriginalSpacing/']
 
 # directory for simulation output
 outputDir="timePerTraversal_"+"_"+datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
