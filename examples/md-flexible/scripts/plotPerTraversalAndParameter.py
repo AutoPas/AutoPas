@@ -94,15 +94,16 @@ for datafile in datafiles:
         counter = 0
         for line in f.readlines():
             if (match := re.search(regexTraversal, line)) is not None:
-                currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
-                traversal = currentLine[0]
-                if (not allTraversals.__contains__(traversal)):
-                    allTraversals.append(traversal)
-                    numberOfParticlesPerTraversal.append([])
-                    boxSizePerTraversal.append([])
-                    densityPerTraversal.append([])
-                    timePerTravsersal.append([])
-                foundTraversal = True
+                currentLine = re.findall('\[(.*?)\]', line)  # get content inside the brackets
+                if not foundTraversal:
+                    traversal = currentLine[0]
+                    if (not allTraversals.__contains__(traversal)):
+                        allTraversals.append(traversal)
+                        numberOfParticlesPerTraversal.append([])
+                        boxSizePerTraversal.append([])
+                        densityPerTraversal.append([])
+                        timePerTravsersal.append([])
+                    foundTraversal = True
             elif number and (match := re.search(regexNumOfParticles, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')  # split content inside brackets and show as array
