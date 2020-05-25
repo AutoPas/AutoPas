@@ -81,6 +81,7 @@ for datafile in datafiles:
 
     regexIterTook = '.* IteratePairwise took +([0-9]+) .*'
     regexNumOfParticles = '.*particles-per-dimension*'
+    regexNumOfParticlesAbsolute = '.*numberOfParticles*'
     regexBoxMin = '.*box-min*'
     regexBoxMax = '.*box-max*'
     regexDensity = '.*particle-spacing*'
@@ -88,6 +89,7 @@ for datafile in datafiles:
 
     # parse file
     with open(datafile) as f:
+        currentDensity = 0.0
         foundTraversal = False
         traversal = "noTraversal"
 
@@ -109,11 +111,15 @@ for datafile in datafiles:
                 arrayOfCurrentLine = currentLine[0].split(',')  # split content inside brackets and show as array
                 numberOfParticles = numpy.prod(list(map(int, arrayOfCurrentLine)))  # calculate overall number of particles
                 numberOfParticlesPerTraversal[allTraversals.index(traversal)].append(numberOfParticles)
-            elif size and (match := re.search(regexBoxMax, line)) is not None:
+            elif number and (match := re.search(regexNumOfParticlesAbsolute, line)) is not None:
+                currentLine = line.split(':', 1)[1]
+                currentLine.strip()
+                numberOfParticlesPerTraversal[allTraversals.index(traversal)].append(float(currentLine))
+            elif size or density and (match := re.search(regexBoxMax, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')
                 boxSizeListMax = list(map(float, arrayOfCurrentLine))
-            elif size and (match := re.search(regexBoxMin, line)) is not None:
+            elif size or density and  (match := re.search(regexBoxMin, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')
                 boxSizeListMin = list(map(float, arrayOfCurrentLine))
@@ -121,14 +127,23 @@ for datafile in datafiles:
                 currentLine = line.split(':', 1)[1]
                 currentLine.strip()
                 densityPerTraversal[allTraversals.index(traversal)].append(float(currentLine))
+            elif density and (match := re.search(regexNumOfParticlesAbsolute, line)) is not None:
+                currentLine = line.split(':', 1)[1]
+                currentLine.strip()
+                currentDensity = float(currentLine)
             elif (match := re.search(regexIterTook, line)) is not None:
                 values.append(int(match.group(1)))  # append time needed to perform iteration
         foundTraversal = False
 
     timePerTravsersal[allTraversals.index(traversal)].append((sum(values)/len(values)))  # append mean time of this traversal
-    if size:
+    if size or density:
         boxSize = numpy.prod([a - b for a, b in zip(boxSizeListMax, boxSizeListMin)])  # get size per dimension and then multiply to get overall boxsize
         boxSizePerTraversal[allTraversals.index(traversal)].append(boxSize)
+        if density:
+            currentDensity = currentDensity / boxSize
+            densityPerTraversal[allTraversals.index(traversal)].append(currentDensity)
+
+
 
 
 # ---------------------------------------------- Plot ---------------------------------------------
