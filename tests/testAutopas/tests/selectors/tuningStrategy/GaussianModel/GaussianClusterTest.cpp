@@ -10,7 +10,7 @@ using namespace autopas;
 
 TEST_F(GaussianClusterTest, wrongDimension) {
   Random rng(32);
-  GaussianCluster cluster({2, 2}, 2, 0.001, rng);
+  GaussianCluster cluster({2, 2}, 2, GaussianCluster::DistanceFunction::wasserstein2, 0.001, rng);
 
   Eigen::VectorXi fd = Eigen::VectorXi::Zero(2);
   Eigen::VectorXd f1 = Eigen::VectorXd::Ones(1);
@@ -89,30 +89,31 @@ void GaussianClusterTest::printMaps(int xChunks, int yChunks, const autopas::Num
 
   // precalculate acqMaps
   std::vector<std::vector<std::vector<double>>> acqMaps;
-  acqMaps.reserve(numFunctors);
+  acqMaps.reserve(yChunks);
   double acqMin = std::numeric_limits<double>::max();
   double acqMax = std::numeric_limits<double>::lowest();
-  for (size_t i = 0; i < numFunctors; ++i) {
-    std::vector<std::vector<double>> acqMap;
-    auto sampleDiscrete = utils::Math::makeVectorXi({static_cast<int>(i)});
+  for (int y = 0; y < xChunks; ++y) {
+    // calculate a row
+    std::vector<std::vector<double>> row;
+    row.reserve(xChunks);
+    for (int x = 0; x < xChunks; ++x) {
+      // calculate value of chunk for each discrete value
+      Eigen::Vector2d sampleContinuous(x * xSpace + domainX.getMin(), (y * ySpace + domainY.getMin()));
+      auto acquisitions = gc.sampleAcquisition(af, neighboursFun, {sampleContinuous});
 
-    for (int y = 0; y < xChunks; ++y) {
-      // calculate a row
-      std::vector<double> row;
-      for (int x = 0; x < xChunks; ++x) {
-        // calculate value of chunk
-        Eigen::Vector2d sampleContinuous(x * xSpace + domainX.getMin(), (y * ySpace + domainY.getMin()));
-        double val = gc.calcAcquisition(af, sampleDiscrete, sampleContinuous, neighboursFun(sampleDiscrete));
-
-        row.push_back(val);
+      std::vector<double> acqs;
+      acqs.reserve(numFunctors);
+      for (const auto &[vec, acq] : acquisitions) {
+        acqs.push_back(acq);
 
         // keep track min and max value
-        acqMin = std::min(val, acqMin);
-        acqMax = std::max(val, acqMax);
+        acqMin = std::min(acq, acqMin);
+        acqMax = std::max(acq, acqMax);
       }
-      acqMap.push_back(std::move(row));
+
+      row.push_back(acqs);
     }
-    acqMaps.push_back(std::move(acqMap));
+    acqMaps.push_back(std::move(row));
   }
 
   // get scaling such that acqMax=1 and acqMin=0
@@ -124,7 +125,7 @@ void GaussianClusterTest::printMaps(int xChunks, int yChunks, const autopas::Num
     for (size_t i = 0; i < numFunctors; ++i) {
       for (int x = 0; x < xChunks; ++x) {
         // map value between 0 to 1 and square for clearer differences of high values
-        double val = std::pow((acqMaps[i][y][x] - acqMin) * acqScale, 2);
+        double val = std::pow((acqMaps[y][x][i] - acqMin) * acqScale, 2);
 
         // map value to color
         int color = static_cast<int>(232 + 23 * val);

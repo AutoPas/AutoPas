@@ -40,7 +40,8 @@ class GaussianClusterTest : public AutoPasTestBase {
     constexpr size_t numEvidence = 10;     // number of samples allowed to make
     constexpr size_t lhsNumSamples = 850;  // number of samples to find max of acquisition function
 
-    autopas::GaussianCluster gc({static_cast<int>(functions.size())}, 2, 0.001, rng);
+    autopas::GaussianCluster gc({static_cast<int>(functions.size())}, 2,
+                                autopas::GaussianCluster::DistanceFunction::evidenceMatchingPDF, 0.001, rng);
 
     size_t idEvidence = 0;
 
@@ -67,10 +68,8 @@ class GaussianClusterTest : public AutoPasTestBase {
         lhsSamples.emplace_back(sample);
       }
 
-      // calculate all acquisitions
-      auto acquisitions = gc.sampleOrderedByAcquisition(acquisitionFunctionOption, neighboursFun, lhsSamples);
-
-      const auto &[amDiscrete, amContinuous] = acquisitions.back();
+      auto [amDiscrete, amContinuous] =
+          gc.sampleAcquisitionMax(acquisitionFunctionOption, neighboursFun, lhsSamples).first;
       double amOut = functions[amDiscrete[0]](amContinuous[0], amContinuous[1]);
 
       if (visualize) {

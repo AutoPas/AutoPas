@@ -73,6 +73,14 @@ class GaussianProcess {
   [[nodiscard]] size_t numEvidence() const { return _inputs.size(); }
 
   /**
+   * Get all currently stored evidence
+   * @return pair of inputs and outputs
+   */
+  [[nodiscard]] const std::pair<std::vector<Vector>, Eigen::VectorXd> getEvidence() const {
+    return std::make_pair(_inputs, _outputs);
+  }
+
+  /**
    * Provide a input-output pair as evidence.
    * Each evidence improve the quality of future predictions.
    * @param input x
@@ -81,8 +89,8 @@ class GaussianProcess {
    */
   void addEvidence(const Vector &input, double output, bool tuneHypers) {
     if (static_cast<size_t>(input.size()) != _dims) {
-      utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
-                                         input.size(), _dims);
+      utils::ExceptionHandler::exception(
+          "GaussianProcess.addEvidence: size of input {} does not match specified dimensions {}", input.size(), _dims);
     }
 
     if (_inputs.empty()) {
@@ -115,7 +123,7 @@ class GaussianProcess {
    * Get the evidence with the highest output value
    * @return input of max
    */
-  [[nodiscard]] Vector getEvidenceMax() {
+  [[nodiscard]] const Vector &getEvidenceMax() const {
     if (_inputs.empty()) {
       utils::ExceptionHandler::exception("GaussianProcess has no evidence");
     }
@@ -131,8 +139,8 @@ class GaussianProcess {
    */
   [[nodiscard]] double predictMean(const Vector &input) const {
     if (static_cast<size_t>(input.size()) != _dims) {
-      utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
-                                         input.size(), _dims);
+      utils::ExceptionHandler::exception(
+          "GaussianProcess.predictMean: size of input {} does not match specified dimensions {}", input.size(), _dims);
     }
 
     double result = 0.;
@@ -157,8 +165,8 @@ class GaussianProcess {
    */
   [[nodiscard]] double predictVar(const Vector &input) const {
     if (static_cast<size_t>(input.size()) != _dims) {
-      utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
-                                         input.size(), _dims);
+      utils::ExceptionHandler::exception(
+          "GaussianProcess.predictVar: size of input {} does not match specified dimensions {}", input.size(), _dims);
     }
 
     double result = 0.;
@@ -175,6 +183,17 @@ class GaussianProcess {
     }
 
     return result;
+  }
+
+  /**
+   * Calculate the probability density of provided output given provided input.
+   * @param input
+   * @param output
+   * @return
+   */
+  [[nodiscard]] double predictOutputPDF(const Vector &input, double output) const {
+    double stddev = std::sqrt(predictVar(input));
+    return utils::Math::normalPDF((predictMean(input) - output) / stddev) / stddev;
   }
 
   /**

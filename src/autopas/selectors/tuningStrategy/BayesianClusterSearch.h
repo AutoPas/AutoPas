@@ -79,7 +79,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _gaussianCluster(
             {static_cast<int>(allowedTraversalOptions.size()), static_cast<int>(allowedDataLayoutOptions.size()),
              static_cast<int>(allowedNewton3Options.size())},
-            continuousDims, sigma, _rng),
+            continuousDims, GaussianCluster::DistanceFunction::wasserstein2, sigma, _rng),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
         _predNumLHSamples(predNumLHSamples) {
