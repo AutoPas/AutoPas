@@ -169,7 +169,7 @@ class GaussianProcess {
       }
     } else {
       for (const auto &hyper : _hypers) {
-        Eigen::VectorXd kVec = kernelVector(input, hyper.theta, hyper.dimScales);
+        auto kVec = kernelVector(input, hyper.theta, hyper.dimScales);
         result += hyper.score * (kernel(input, input, hyper.theta, hyper.dimScales) - kVec.dot(hyper.covMatInv * kVec));
       }
     }

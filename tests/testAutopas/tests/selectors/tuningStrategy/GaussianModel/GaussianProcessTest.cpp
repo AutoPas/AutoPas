@@ -26,7 +26,7 @@ TEST_F(GaussianProcessTest, noEvidence) {
   double sigma = 0.001;  // noise
   GaussianProcess gp(1, sigma, rng);
 
-  auto f1 = autopas::utils::Math::makeVectorXd({0.});
+  auto f1 = utils::Math::makeVectorXd({0.});
 
   // predict without information -> should return default values
   EXPECT_NEAR(gp.predictMean(f1), 0., epsilon);
@@ -40,10 +40,10 @@ TEST_F(GaussianProcessTest, oneEvidence) {
   double sigma = 0.001;
   GaussianProcess gp(1, sigma, rng);
 
-  auto f1 = autopas::utils::Math::makeVectorXd({0.});
+  auto f1 = utils::Math::makeVectorXd({0.});
   double out1 = 42.;
 
-  auto f2 = autopas::utils::Math::makeVectorXd({1000.});
+  auto f2 = utils::Math::makeVectorXd({1000.});
 
   gp.addEvidence(f1, out1, true);
 
@@ -62,10 +62,10 @@ TEST_F(GaussianProcessTest, twoEvidence) {
   double sigma = 0.001;   // noise
   GaussianProcess gp(1, sigma, rng);
 
-  auto f1 = autopas::utils::Math::makeVectorXd({-100.});
+  auto f1 = utils::Math::makeVectorXd({-100.});
   double out1 = 42.;
 
-  auto f2 = autopas::utils::Math::makeVectorXd({100.});
+  auto f2 = utils::Math::makeVectorXd({100.});
   double out2 = -3.;
 
   gp.addEvidence(f1, out1, false);
@@ -87,10 +87,10 @@ TEST_F(GaussianProcessTest, clear) {
   double sigma = 0.001;   // noise
   GaussianProcess gp(1, sigma, rng);
 
-  auto f1 = autopas::utils::Math::makeVectorXd({-100.});
+  auto f1 = utils::Math::makeVectorXd({-100.});
   double out1 = 42.;
 
-  auto f2 = autopas::utils::Math::makeVectorXd({100.});
+  auto f2 = utils::Math::makeVectorXd({100.});
   double out2 = -3.;
 
   gp.addEvidence(f1, out1, false);
@@ -132,7 +132,7 @@ TEST_F(GaussianProcessTest, sine) {
   double evidenceStep = (domainEnd - domainStart) / (numEvidence - 1);
   for (unsigned indexFirst = 0; indexFirst < numEvidence; ++indexFirst) {
     double input = domainStart + evidenceStep * indexFirst;
-    auto f = autopas::utils::Math::makeVectorXd({input});
+    auto f = utils::Math::makeVectorXd({input});
     double output = functor(input);
 
     gp.addEvidence(f, output, true);
@@ -142,7 +142,7 @@ TEST_F(GaussianProcessTest, sine) {
   double predictStep = (domainEnd - domainStart) / (numPredictions - 1);
   for (unsigned indexFirst = 0; indexFirst < numPredictions; ++indexFirst) {
     double input = domainStart + predictStep * indexFirst;
-    auto f = autopas::utils::Math::makeVectorXd({input});
+    auto f = utils::Math::makeVectorXd({input});
     double output = functor(input);
 
     EXPECT_NEAR(gp.predictMean(f), output, epsilon);
@@ -156,7 +156,7 @@ TEST_F(GaussianProcessTest, 2dMax) {
   constexpr double maxError = 0.2;
 
   // max of function
-  auto max = autopas::utils::Math::makeVectorXd({-1, 1});
+  auto max = utils::Math::makeVectorXd({-1, 1});
 
   test2DFunction(functor, max, maxError, domain, AcquisitionFunctionOption::upperConfidenceBound, false);
 }
@@ -174,7 +174,7 @@ TEST_F(GaussianProcessTest, 2dMaxGrid) {
   constexpr double maxError = 0.5;
 
   // max of function
-  auto max = autopas::utils::Math::makeVectorXd({1, 1});
+  auto max = utils::Math::makeVectorXd({1, 1});
 
   test2DFunction(functor, max, maxError, domain, AcquisitionFunctionOption::expectedImprovement, false);
 }
@@ -194,7 +194,7 @@ TEST_F(GaussianProcessTest, 2dMaxGridBig) {
   constexpr double maxError = 10;
 
   // max of function
-  auto max = autopas::utils::Math::makeVectorXd({1, 1});
+  auto max = utils::Math::makeVectorXd({1, 1});
 
   test2DFunction(functor, max, maxError, domain, AcquisitionFunctionOption::upperConfidenceBound, false);
 }

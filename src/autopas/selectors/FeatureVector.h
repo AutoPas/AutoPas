@@ -116,7 +116,7 @@ class FeatureVector : public Configuration {
    * @param vec one-hot-encoded vector
    * @return decoded FeatureVector
    */
-  static FeatureVector oneHotDecode(Eigen::VectorXd vec) {
+  static FeatureVector oneHotDecode(const Eigen::VectorXd &vec) {
     if (static_cast<size_t>(vec.size()) != oneHotDims) {
       utils::ExceptionHandler::exception("FeatureVector.oneHotDecode: Expected size {}, got {}", oneHotDims,
                                          vec.size());

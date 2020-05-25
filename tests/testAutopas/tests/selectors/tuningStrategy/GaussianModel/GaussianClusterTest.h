@@ -31,8 +31,8 @@ class GaussianClusterTest : public AutoPasTestBase {
    */
   template <class NumberSetType>
   void test2DFunctions(const std::vector<std::function<double(double, double)>> &functions,
-                       std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> neighboursFun, int targetDiscrete,
-                       const Eigen::VectorXd &targetContinuous, double precision,
+                       std::function<std::vector<Eigen::VectorXi>(const Eigen::VectorXi &)> neighboursFun,
+                       int targetDiscrete, const Eigen::VectorXd &targetContinuous, double precision,
                        const std::pair<NumberSetType, NumberSetType> &domain,
                        autopas::AcquisitionFunctionOption acquisitionFunctionOption, bool visualize) {
     autopas::Random rng(42);  // random generator
@@ -46,9 +46,7 @@ class GaussianClusterTest : public AutoPasTestBase {
 
     auto evidenceContinuous = autopas::utils::Math::makeVectorXd({0, 0});
     for (idEvidence = 0; idEvidence < functions.size(); ++idEvidence) {
-      Eigen::VectorXi evidenceDiscrete(1);
-      evidenceDiscrete << idEvidence;
-
+      auto evidenceDiscrete = autopas::utils::Math::makeVectorXi({static_cast<int>(idEvidence)});
       auto evidenceOut = functions[evidenceDiscrete[0]](evidenceContinuous[0], evidenceContinuous[1]);
 
       if (visualize) {
@@ -102,7 +100,7 @@ class GaussianClusterTest : public AutoPasTestBase {
    */
   static void printMaps(int xChunks, int yChunks, const autopas::NumberSet<double> &domainX,
                         const autopas::NumberSet<double> &domainY, const autopas::GaussianCluster &gc,
-                        std::function<std::vector<Eigen::VectorXi>(Eigen::VectorXi)> neighboursFun,
+                        std::function<std::vector<Eigen::VectorXi>(const Eigen::VectorXi &)> neighboursFun,
                         autopas::AcquisitionFunctionOption af);
 
   /**
@@ -112,5 +110,6 @@ class GaussianClusterTest : public AutoPasTestBase {
    * @param out
    * @param evidenceNum
    */
-  static void printEvidence(Eigen::VectorXi vecDiscrete, Eigen::VectorXd vecContinuous, double out, size_t evidenceNum);
+  static void printEvidence(const Eigen::VectorXi &vecDiscrete, const Eigen::VectorXd &vecContinuous, double out,
+                            size_t evidenceNum);
 };
