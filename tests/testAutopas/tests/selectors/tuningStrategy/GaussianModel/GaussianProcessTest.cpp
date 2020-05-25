@@ -68,8 +68,6 @@ TEST_F(GaussianProcessTest, twoEvidence) {
   auto f2 = autopas::utils::Math::makeVectorXd({100.});
   double out2 = -3.;
 
-  auto f3 = autopas::utils::Math::makeVectorXd({0.});
-
   gp.addEvidence(f1, out1, false);
   gp.addEvidence(f2, out2, true);
 
