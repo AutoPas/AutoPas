@@ -26,6 +26,11 @@ class FeatureVector : public Configuration {
   static constexpr size_t featureSpaceDims = 4;
 
   /**
+   * Number of tune-able continuous dimensions.
+   */
+  static constexpr size_t featureSpaceContinuousDims = 1;
+
+  /**
    * Dimensions of a one-hot-encoded vector
    * = 1 (cellSizeFactor) + traversals + dataLayouts + newton3
    */
@@ -194,7 +199,7 @@ class FeatureVector : public Configuration {
         std::distance(newton3Options.begin(), std::find(newton3Options.begin(), newton3Options.end(), newton3)));
 
     Eigen::Vector3i vecDiscrete({containerTraversalIndex, dataLayoutIndex, newton3Index});
-    Eigen::VectorXd vecContinuous(1);
+    Eigen::VectorXd vecContinuous(featureSpaceContinuousDims);
     vecContinuous << cellSizeFactor;
     return std::make_pair(vecDiscrete, vecContinuous);
   }
@@ -300,7 +305,7 @@ class FeatureVector : public Configuration {
     std::vector<Eigen::VectorXd> result;
     result.reserve(n);
     for (size_t i = 0; i < n; ++i) {
-      Eigen::VectorXd vec(1);
+      Eigen::VectorXd vec(featureSpaceContinuousDims);
       vec << csf[i];
       result.emplace_back(vec);
     }

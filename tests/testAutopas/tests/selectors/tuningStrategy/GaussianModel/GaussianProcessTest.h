@@ -38,8 +38,7 @@ class GaussianProcessTest : public AutoPasTestBase {
     autopas::GaussianProcess gp(2, 0.001, rng);
 
     // add first evidence
-    Eigen::VectorXd firstEvidence(2);
-    firstEvidence << 0, 0;
+    auto firstEvidence = autopas::utils::Math::makeVectorXd({0, 0});
     gp.addEvidence(firstEvidence, function(0, 0), true);
 
     for (unsigned idEvidence = 1; idEvidence < numEvidence; ++idEvidence) {

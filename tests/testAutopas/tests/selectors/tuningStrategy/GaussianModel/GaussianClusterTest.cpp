@@ -38,8 +38,7 @@ TEST_F(GaussianClusterTest, maxNoNeighbours) {
 
   // max of function
   int maxDiscrete = 2;
-  Eigen::VectorXd maxContinuous(2);
-  maxContinuous << -1, 1;
+  auto maxContinuous = autopas::utils::Math::makeVectorXd({-1, 1});
 
   test2DFunctions({functor1, functor2, functor3}, neighboursFun, maxDiscrete, maxContinuous, maxError, domain,
                   AcquisitionFunctionOption::upperConfidenceBound, false);
@@ -74,8 +73,7 @@ TEST_F(GaussianClusterTest, maxAllNeighbours) {
 
   // max of function
   int maxDiscrete = 2;
-  Eigen::VectorXd maxContinuous(2);
-  maxContinuous << -1, 1;
+  auto maxContinuous = autopas::utils::Math::makeVectorXd({-1, 1});
 
   test2DFunctions(functors, neighboursFun, maxDiscrete, maxContinuous, maxError, domain,
                   AcquisitionFunctionOption::upperConfidenceBound, false);

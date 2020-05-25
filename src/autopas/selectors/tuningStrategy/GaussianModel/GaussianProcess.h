@@ -264,7 +264,7 @@ class GaussianProcess {
       for (size_t d = 0; d < dims; ++d) {
         dimScaleData.push_back(sample_dimScaleData[d][t]);
       }
-      sample_dimScales.emplace_back(Eigen::Map<Eigen::VectorXd>(dimScaleData.data(), dimScaleData.size()));
+      sample_dimScales.emplace_back(utils::Math::makeVectorXd(dimScaleData));
     }
 
     return std::make_tuple(sample_means, sample_thetas, sample_dimScales);
@@ -386,7 +386,7 @@ class GaussianProcess {
     for (size_t i = 0; i < k.size(); ++i) {
       k[i] = kernel(input, _inputs[i], theta, dimScale);
     }
-    return Eigen::Map<Eigen::VectorXd>(k.data(), k.size());
+    return utils::Math::makeVectorXd(k);
   }
 
   std::vector<Vector> _inputs;

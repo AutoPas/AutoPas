@@ -44,8 +44,7 @@ class GaussianClusterTest : public AutoPasTestBase {
 
     size_t idEvidence = 0;
 
-    Eigen::VectorXd evidenceContinuous(2);
-    evidenceContinuous << 0, 0;
+    auto evidenceContinuous = autopas::utils::Math::makeVectorXd({0, 0});
     for (idEvidence = 0; idEvidence < functions.size(); ++idEvidence) {
       Eigen::VectorXi evidenceDiscrete(1);
       evidenceDiscrete << idEvidence;
