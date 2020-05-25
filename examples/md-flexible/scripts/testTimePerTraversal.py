@@ -84,7 +84,7 @@ if not configsDirs:
     configsDirs=['../input/testTimePerBoxSizeOriginalSpacing/']
 
 # directory for simulation output
-outputDir="timePerTraversal_"+"_"+datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+outputDir="testTimePerTraversal_"+datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 # ------------------------------------------------- Functions -------------------------------------------------
 
@@ -114,7 +114,7 @@ def testScenario(yamlFile):
                 localTraversalArg = ["--traversal", t]
                 command=[simulation, "--log-level", "debug", "--no-end-config", "--yaml-filename", yamlFile] + localTraversalArg
                 print(" ".join(command))
-                outputFile=os.path.join(outputDir, scenarioName + t + '.out')
+                outputFile=os.path.join(outputDir, scenarioName + t + '_test' + str(test) + '.out')
                 with open(outputFile, 'w+') as outputLocation:
                     subprocess.call(command, stdout=outputLocation, shell=False)
 
@@ -130,7 +130,7 @@ def testScenario(yamlFile):
         for test in range(0, tests):
             command=[simulation, "--log-level", "debug", "--no-end-config", "--yaml-filename", yamlFile] + traversalArg
             print(" ".join(command))
-            outputFile=os.path.join(outputDir, scenarioName + traversalArg[1] + '.out')
+            outputFile=os.path.join(outputDir, scenarioName + traversalArg[1] + '_test' + str(test) + '.out')
             with open(outputFile, 'w+') as outputLocation:
                 subprocess.call(command, stdout=outputLocation, shell=False)
 
