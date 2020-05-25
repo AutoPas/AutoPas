@@ -26,7 +26,7 @@ Requirements:
 * python3 (tested with Python 3.8.3rc1)
 * [plotly](https://github.com/plotly/plotly.py) (tested with 4.7.1)
 
-Creates a plot of the predictions for each configuration for each md-flex output file given.
+Creates either a plot of the predictions or of the prediction and the tested times for each configuration for each md-flex output file given ddepending on the chosen option in the inout.
 
 ### plotDiffPredictionTest.py
 
@@ -34,7 +34,7 @@ Requirements:
 * python3 (tested with Python 3.8.3rc1)
 * [plotly](https://github.com/plotly/plotly.py) (tested with 4.7.1)
 
-Creates a plot of the difference between the predictions and the tested times for each configuration for each md-flex output file given.
+Creates a plot eighter of the total or the relative difference between the predictions and the tested times for each configuration for each md-flex output file given or both depending on the chosen option in the inout.
 
 ## Performance Measurements
 

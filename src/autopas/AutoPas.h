@@ -457,6 +457,7 @@ class AutoPas {
   /**
    * Set the number of tests that need to have happened for a configuration until the first prediction are going to be
    * calculated.
+   * @param testsUntilFirstPrediction
    */
   void setTestsUntilFirstPrediction(unsigned int testsUntilFirstPrediction) {
     AutoPas::_testsUntilFirstPrediction = testsUntilFirstPrediction;

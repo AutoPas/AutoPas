@@ -1,25 +1,31 @@
 #!/usr/bin/python3
 
 import sys
-import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import re
 
 # THIS SCRIPT NEEDS AT LEAST PYTHON 3.8.
 # However, lesser version will probably fail due to invalid syntax instead of this assertion
-assert sys.version_info >= (3, 8)
 
 # ---------------------------------------------- Input ----------------------------------------------
+for arg in sys.argv[1:]:
+    if "--help" in arg:
+        print("Usage: ./plotPrediction.py [output option] [path/To/mdFlex/std.out ...]")
+        print("Output options:\n prediction - Shows the predictions for every configuration\n "
+              "test - Shows the predictions and tests for every configuration")
+        print("If no input is given the script does not work.")
+        exit(0)
 
 # take all input files as source for a plot
-if len(sys.argv) > 1:
-    datafiles = sys.argv[1:]
+if len(sys.argv) > 2:
+    option = sys.argv[1]
+    if option != "prediction" and option != "test":
+        print("Error: Wrong input given! ./plotPrediction.py --help to see what is needed.")
+        sys.exit(-1)
+    datafiles = sys.argv[2:]
 else:
-    print("Error: No input file given!")
+    print("Error: No input file given! ./plotPrediction.py --help to see what is needed.")
     sys.exit(-1)
-
-# -------------------------------------------- Functions --------------------------------------------
-
 
 # ---------------------------------------------- Script ---------------------------------------------
 
@@ -31,10 +37,14 @@ for datafile in datafiles:
 
         # variables for data collection
         configurationPrediction = {}
+        configurationTest = {}
         iteration = 0
+        iterationBeginTuning = 0
+        tuning = True
 
         regexConfigurationPrediction = '.* Traversal time prediction for +({.*}).*: *([0-9]+)'
         regexNoPrediction = '.* No traversal time prediction for +({.*})'
+        regexCollectedTimes = '.* Collected times for +({.*})..*\[(.*)\].*: *([0-9]+)'
         regexIter = '.*Iteration +([0-9]+)'
 
         for line in file.readlines():
@@ -48,6 +58,8 @@ for datafile in datafiles:
                     configurationPrediction[match.group(1)].append((iteration, int(match.group(2))))
                 else:
                     configurationPrediction[match.group(1)] = [(iteration, int(match.group(2)))]
+            elif (match := re.search(regexCollectedTimes, line)) is not None:
+                configurationTest[match.group(1)] = (iteration, int(match.group(3)))
 
     # create figure and define layout
     fig = go.Figure(
@@ -62,7 +74,6 @@ for datafile in datafiles:
     # plotting predictions
     # probably a limited amount of configurations should be in one plot - probably like 5 or 10
     # maybe as user input if is should be in one or not
-    # md-flexible test to test this script is not created yet so this is a prototype
     configsInPlot = 0
     for configuration in configurationPrediction:
         allPrediction = []
@@ -73,6 +84,16 @@ for datafile in datafiles:
             allPrediction.append(prediction)
 
         fig.add_trace(go.Scatter(x=allIteration, y=allPrediction, mode='lines+markers', name=configuration))
+
+        if "test" == option:
+            # do not know if this is the right solution testing needed and some research on other options.
+            allTest = []
+            allIteration = []
+            for iteration, test in configurationTest[configuration]:
+                allIteration.append(iteration)
+                allPrediction.append(test)
+
+            fig.add_trace(go.Scatter(x=allIteration, y=allPrediction, mode='markers', name=configuration))
 
         configsInPlot = configsInPlot + 1
 
