@@ -1,0 +1,44 @@
+#compdef md-flexible
+
+typeset -A opt_args
+local context state line
+
+# doc: 
+# http://zsh.sourceforge.net/Doc/Release/Completion-System.html#Completion-System
+# format : "--arg[description.]: : (list of options)"
+
+_arguments -s -S \
+    "--box-length[Length of the simulation box as a cuboid.]: :()"\
+    "--cell-size[Factor for the interaction length to determine the cell size.]: :()" \
+    "--checkpoint[Path to VTK File to load as a checkpoint.]: :_files" \
+    "--container[List of container options to use.]: :(directSum linked-cells verletLists verletListsCells verletClusterLists verletClusterCells varVerletListsAsBuilt)"\
+    "--cutoff[LJ force cutoff.]: :()"\
+    "--data-layout[List of data layout options to use.]: :(aos soa cuda)"\
+    "--deltaT[Length of a timestep. Set to 0 to deactivate time integration.]: :()"\
+    "--distribution-mean[Mean of the gaussian distribution for random particle initialization.]: :()"\
+    "--distribution-stddeviation[Standard deviation of the gaussian distribution for random particle initialization.]: :()"\
+    "--functor[Force functor to use.]: :(lennard-jones lennard-jones-AVX2 lennard-jones-globals)"\
+    "--help[List options.]: :"\
+    "--iterations[Number of iterations to simulate.]: :()"\
+    "--log-file[Path to a file to store the log output.]: :_files"\
+    "--log-level[Log level for AutoPas. Set to debug for tuning information.]: :(trace debug info warn err critical off)"\
+    "--newton3[List of newton3 options to use.]: :(enabled disabled)"\
+    "--no-end-config[Set to omit the creation of a yaml file at the end of a simulation.]: :"\
+    "--no-flops[Set to omit the calculation of flops.]: :"\
+    "--particle-generator[Scenario generator.]: :(grid uniform gaussian sphere)"\
+    "--particle-spacing[Space between two particles for the grid generator.]: :()"\
+    "--particles-per-dimension[Size of the scenario for the grid generator.]: :()"\
+    "--particles-total[Total number of particles for the random distribution based generators.]: :()"\
+    "--periodic-boundaries[(De)Activate periodic boundaries. Default: true.]: :(true false)"\
+    "--selector-strategy[Strategy how to reduce the sample measurements to a single value.]: :(fastestAbs fastestMean fastestMedian)"\
+    "--thermostat[(De)Activate the thermostat. Default: false Only useful when used to overwrite a yaml file.]: :(true false)"\
+    "--traversal[List of traversal options to use.]: :(c08 sliced c18 c01 directSum verlet-sliced verlet-c18 verlet-c01 cuda-c01 verlet-lists c01-combined-SoA verlet-clusters c04 var-verlet-lists-as-build verlet-clusters-coloring c04SoA verlet-cluster-cells)"\
+    "--tuning-interval[Number of iterations between two tuning phases.]: :()"\
+    "--tuning-samples[Number of samples to collect per configuration.]: :()"\
+    "--tuning-strategy[Strategy for the auto tuner.]: :(full-search bayesian-search random-search active-harmony)"\
+    "--verlet-cluster-size[Number of particles in Verlet clusters.]: :()"\
+    "--verlet-rebuild-frequency[Number of iterations after which containers are rebuilt.]: :()"\
+    "--verlet-skin-radius[Skin added to the cutoff to form the interaction length.]: :()"\
+    "--vtk-filename[Basename for all VTK output files.]: :_files"\
+    "--vtk-write-frequency[Number of iterations after which a VTK file is written.]: :()"\
+    "--yaml-filename[Path to input file.]: :_files"
