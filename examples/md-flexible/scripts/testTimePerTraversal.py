@@ -6,6 +6,23 @@ import sys
 import subprocess
 from datetime import datetime
 
+# ------------------------------------------------- Preprocessing Functions ------------------------------------
+
+# extract all possible traversals from AllOptions
+def getAllTraversals():
+    regexTraversal = '.*traversal*'
+    with open("AllOptions.yaml") as f:
+        for line in f.readlines():
+            if (match := re.search(regexTraversal, line)) is not None:
+                currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
+                traversalList = currentLine[0].split(", ")
+                print("currentLine")
+                print(currentLine[0])
+                for c in traversalList:
+                    allTraversals.append(c)
+                print(allTraversals)
+                allTraversals.remove("cuda-c01")
+
 
 # ---------------------------------------- Global parameters and input ----------------------------------------
 
@@ -27,14 +44,13 @@ traversalArg=[]
 containsTraversalArg = False
 # list of input files or directories
 configsDirs=[]
+# list of all possible traversals
+allTraversals=[]
 
 # parse special args
 for arg in sys.argv[1:]:
     if "help" in arg:
-        print("Usage: ./testTimePerTraversal.py [traversal=chosenTraversal] [paths/to/yaml/files or/to/directories]")
-        exit(0)
-    elif not containsTraversalArg and not traversalIdentifierString in arg:
-        print("Traversal missing in input. Usage: ./testTimePerTraversal.py [traversal=chosenTraversal] [paths/to/yaml/files or/to/directories]")
+        print("Usage: ./testTimePerNumberOfParticlesOriginalSpacing.py [traversal=chosenTraversal] [paths/to/yaml/files or/to/directories]")
         exit(0)
     elif traversalIdentifierString in arg:
         traversalArg = ["--traversal", arg.split('=', 1)[1]]
@@ -42,6 +58,8 @@ for arg in sys.argv[1:]:
     else:
         # everything else is considered a path to inputs
         configsDirs.append(arg)
+        if not containsTraversalArg:
+            getAllTraversals()
 
 # sanitize parsed stuff
 if not os.path.isfile(simulation):
@@ -52,10 +70,10 @@ simulation=os.path.abspath(simulation)
 
 # default search directory for inputs:
 if not configsDirs:
-    configsDirs=['../input/testTimePerTraversal/']
+    configsDirs=['../input/testTimePerNumberOfParticlesOriginalSpacing/']
 
 # directory for simulation output
-outputDir="timePerTraversal_"+traversalArg[1]+"_"+datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+outputDir="timePerTraversal_"+"_"+datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 # ------------------------------------------------- Functions -------------------------------------------------
 
@@ -63,7 +81,7 @@ outputDir="timePerTraversal_"+traversalArg[1]+"_"+datetime.now().strftime("%Y-%m
 def getStringFromFile(filename, regex):
     with open(filename) as f:
         for line in f.readlines():
-            match=re.search(regex, line)
+            match = re.search(regex, line)
             if match:
                 return match.group(1)
 
@@ -79,19 +97,37 @@ def testScenario(yamlFile):
 
     # build and execute command for simulation
     # append tuningArg list (if nothing is set this is empty)
-    command=[simulation, "--log-level", "debug", "--no-end-config", "--yaml-filename", yamlFile] + traversalArg
-    print(" ".join(command))
-    outputFile=os.path.join(outputDir, scenarioName + traversalArg[1] + '.out')
-    with open(outputFile, 'w+') as outputLocation:
-        subprocess.call(command, stdout=outputLocation, shell=False)
+    if len(allTraversals) > 0:
+        for t in allTraversals:
+            localTraversalArg = ["--traversal", t]
+            command=[simulation, "--log-level", "debug", "--no-end-config", "--yaml-filename", yamlFile] + localTraversalArg
+            print(" ".join(command))
+            outputFile=os.path.join(outputDir, scenarioName + t + '.out')
+            with open(outputFile, 'w+') as outputLocation:
+                subprocess.call(command, stdout=outputLocation, shell=False)
 
-    # parse time of selected config
-    selected=getStringFromFile(outputFile, '.* Selected Configuration +({.*})')
-    selectedTime=int(getStringFromFile(outputFile, selected + ".* Reduced value: ([0-9]+)"))
+            # parse time of selected config
+            selected=getStringFromFile(outputFile, '.* Selected Configuration +({.*})')
+            selectedTime=int(getStringFromFile(outputFile, selected + ".* Reduced value: ([0-9]+)"))
 
-    # print result
-    print("Selected: " + selected + " : " + str(selectedTime))
-    print()
+            # print result
+            print("Selected: " + selected + " : " + str(selectedTime))
+            print()
+
+    else:
+        command=[simulation, "--log-level", "debug", "--no-end-config", "--yaml-filename", yamlFile] + traversalArg
+        print(" ".join(command))
+        outputFile=os.path.join(outputDir, scenarioName + traversalArg[1] + '.out')
+        with open(outputFile, 'w+') as outputLocation:
+            subprocess.call(command, stdout=outputLocation, shell=False)
+
+        # parse time of selected config
+        selected=getStringFromFile(outputFile, '.* Selected Configuration +({.*})')
+        selectedTime=int(getStringFromFile(outputFile, selected + ".* Reduced value: ([0-9]+)"))
+
+        # print result
+        print("Selected: " + selected + " : " + str(selectedTime))
+        print()
 
 
 # --------------------------------------------------- Script --------------------------------------------------
