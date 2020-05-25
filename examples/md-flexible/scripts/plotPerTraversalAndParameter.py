@@ -163,7 +163,7 @@ colorrange=colorrange[0::distBetweenColors]
 # create figure and define layout
 fig = go.Figure(
     layout=dict(
-        title_text="Plot per number of particles and per traversal",
+        title_text="Plot per " + xAxisTitle.lower() + " and per traversal",
         xaxis_title_text=xAxisTitle,
         yaxis_title_text="Time per Iteration [ns]",
     ),
@@ -178,6 +178,8 @@ for t in allTraversals:
         xAxis = boxSizePerTraversal[allTraversals.index(t)]
     elif density:
         xAxis = densityPerTraversal[allTraversals.index(t)]
+    xAxis.sort()  # TODO: sort according to related time
+    timePerTravsersal[allTraversals.index(t)].sort()
     fig.add_trace(go.Scatter(
         name=t,
         x=xAxis,
