@@ -20,10 +20,9 @@ containsParameterArg = False
 for arg in sys.argv[1:]:
     if "--help" in arg:
         print("Usage: ./plotTuning.py parameter=[number, size, density] [path/To//Output/*.out ...]. Meaning number = number of particles, size = boxSize and density = particle density")
-        print("If no input is given the script looks for the latest testTuning directory in the current directory.")
         exit(0)
     elif parameterIdentifierString in arg:
-        parameterArg = arg.split("=", 1)[1]
+        parameterArg = arg.split('=', 1)[1]
         containsParameterArg = True
     elif not containsParameterArg and not parameterIdentifierString in arg:
         print("Please specify the parameter for the x-axis: parameter=[number, size, density]")
@@ -32,24 +31,17 @@ for arg in sys.argv[1:]:
 # take all input files as source for a plot
 if len(sys.argv) > 1:
     if ".out" in arg:
-        datafiles = sys.argv[1:]
+        datafiles = sys.argv[2:]
     else:
-        datadirs = sys.argv[1:]
+        datadirs = sys.argv[2:]
         datadirs = list(datadirs)
         datadirs.sort(reverse=True)
         datafiles = os.listdir(datadirs[0])
         datafiles = filter(lambda s: s.endswith('.out'), datafiles)
         datafiles = map(lambda s: datadirs[0] + "/" + s, datafiles)
         datafiles = list(datafiles)
-else:
-    # if nothing is given search for the latest test dir
-    datadirs = os.listdir("./")
-    datadirs = list(filter(lambda s: s.startswith('testTuning_'), datadirs))
-    datadirs.sort(reverse=True)
-    datafiles = os.listdir(datadirs[0])
-    datafiles = filter(lambda s: s.endswith('.out'), datafiles)
-    datafiles = map(lambda s: datadirs[0] + "/" + s, datafiles)
-    datafiles = list(datafiles)
+
+#    TODO: if nothing is given search for the latest test dir
 
 # ---------------------------------------------- Script ---------------------------------------------
 
