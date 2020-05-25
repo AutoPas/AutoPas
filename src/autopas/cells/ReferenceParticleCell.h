@@ -46,7 +46,7 @@ namespace autopas {
          */
         void addParticleReference(Particle *p) {
             particlesLock.lock();
-            _particles.emplace_back(p);
+            _particles.push_back(p);
             particlesLock.unlock();
         }
 
