@@ -16,20 +16,18 @@ class ParticleList{
 
     public:
         ParticleList<Type>() {
-            dirty = false;
+            _dirty = false;
+            _dirtyIndex = 0;
             particleListImp = std::vector<Type>();
         }
 
-        Type* getReference(int index) {
-            return &particleListImp[index];
-        }
-
         bool isDirty() {
-            return dirty;
+            return _dirty;
         }
 
         void markAsClean() {
-            dirty = false;
+            _dirty = false;
+            _dirtyIndex = particleListImp.size()-1;
         }
 
         void set(int index, Type value) {
@@ -38,31 +36,13 @@ class ParticleList{
 
         void push_back(Type &value) {
             particleListLock.lock();
-            dirty &= particleListImp.capacity() == particleListImp.size();
+            _dirty &= particleListImp.capacity() == particleListImp.size();
+            if(!_dirty) {
+                _dirtyIndex++;
+            } else {
+                _dirtyIndex = 0;
+            }
             particleListImp.push_back(value);
-            particleListLock.unlock();
-        }
-
-        // TODO push back all or pass vector/template  push_back({p1, p2, p3}); - later
-//        void push_back(Type ...&value) {
-//            particleListLock.lock();
-//            dirty &= particleListImp.capacity() == particleListImp.size();
-//            particleListImp.push_back(value);
-//            particleListLock.unlock();
-//        }
-
-        void emblace_back(Type &value) {
-            // TODO factor out into function
-            particleListLock.lock();
-            dirty &= particleListImp.capacity() == particleListImp.size();
-            particleListImp.push_back(value);
-            particleListLock.unlock();
-        }
-
-        Type pop_back(Type &value) {
-            particleListLock.lock();
-            dirty &= particleListImp.capacity() == particleListImp.size();
-            particleListImp.pop_back(value);
             particleListLock.unlock();
         }
 
@@ -70,16 +50,16 @@ class ParticleList{
             return particleListImp.size();
         }
 
-        iterator begin() { return particleListImp.begin(); }
-        iterator end() { return particleListImp.end(); }
-        const_iterator begin() const { return particleListImp.begin(); }
+        iterator beginDirty() { return particleListImp.begin() + _dirtyIndex; }
+        iterator endDirty() { return particleListImp.end(); }
+        /*const_iterator begin() const { return particleListImp.begin(); }
         const_iterator end() const { return particleListImp.end(); }
         const_iterator cbegin() const { return particleListImp.cbegin(); }
-        const_iterator cend() const { return particleListImp.cend(); }
+        const_iterator cend() const { return particleListImp.cend(); }*/
 
     private:
-    // TODO index since markAsClean() / maybe not now
-        bool dirty;
+        bool _dirty;
+        int _dirtyIndex;
         autopas::AutoPasLock particleListLock;
         std::vector<Type> particleListImp;
 };
