@@ -498,7 +498,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
         _builder->rebuildTowersAndClusters();
     _isValid = ValidityState::cellsValidListsInvalid;
     for (auto &tower : _towers) {
-      tower.setParticleDeletionObserser(this);
+      tower.setParticleDeletionObserver(this);
     }
   }
 
