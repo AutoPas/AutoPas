@@ -255,7 +255,7 @@ class MDFlexConfig {
    * acquisitionFunctionOption
    */
   MDFlexOption<autopas::AcquisitionFunctionOption, 'A'> acquisitionFunctionOption{
-      autopas::AcquisitionFunctionOption::lowerConfidenceBound, "tuning-acquisition-function", true,
+      autopas::AcquisitionFunctionOption::upperConfidenceBound, "tuning-acquisition-function", true,
       "For Bayesian based tuning strategies: Function to determine the predicted knowledge gain when testing a given "
       "configuration. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), " ", {"(", ")"})};
