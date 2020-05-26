@@ -77,7 +77,6 @@ autoload -U compinit && compinit
 
 4. Reload your `zsh`
 
-
 ### Misc
 
 * `tuning-phases` overwrites restrictions set by `iterations`
