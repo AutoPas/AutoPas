@@ -36,6 +36,8 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
     _container = selector.getCurrentContainer();
   }
 
+  void testUpdateContainerDeletesDummy(bool previouslyOwned);
+
  protected:
   std::shared_ptr<autopas::ParticleContainerInterface<FPCell>> _container{};
 };

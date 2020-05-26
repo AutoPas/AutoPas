@@ -94,3 +94,66 @@ TEST_P(AllContainersTests, testUpdateContainerHalo) {
   auto iter = _container->begin();
   EXPECT_FALSE(iter.isValid());
 }
+
+/**
+ * Checks if updateContainer deletes dummy particles.
+ * @param previouslyOwned Specifies whether the particle was previously owned.
+ */
+void AllContainersTests::testUpdateContainerDeletesDummy(bool previouslyOwned) {
+  static unsigned long numParticles = 0;
+
+  class TestParticle : public autopas::Particle {
+   public:
+    TestParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {
+      ++numParticles;
+    }
+    ~TestParticle() { --numParticles; }
+  };
+
+  // Add particle
+  {
+    double pos = previouslyOwned ? 0.5 : -0.5;
+    TestParticle p({pos, pos, pos}, {0, 0, 0}, 42);
+    if (previouslyOwned) {
+      _container->addParticle(p);
+    } else {
+      _container->addHaloParticle(p);
+    }
+  }
+  // Mark particle as deleted
+  {
+    auto iter = _container->begin();
+    ASSERT_TRUE(iter.isValid());
+    iter->markAsDeleted();
+  }
+  // Check that we do not iterate over it.
+  {
+    auto iter = _container->begin();
+    ASSERT_FALSE(iter.isValid());
+  }
+
+  // There should now be one DUMMY! particle in the container.
+  EXPECT_EQ(numParticles, 1);
+
+  // This should remove the dummy particle, while not returning it as invalid particle.
+  auto invalidParticles = _container->updateContainer();
+
+  // No particle should be returned
+  EXPECT_EQ(invalidParticles.size(), 0);
+  // The particle should no longer exist, as it should be cleared.
+  EXPECT_EQ(numParticles, 0);
+
+  // no particle should remain
+  auto iter = _container->begin();
+  EXPECT_FALSE(iter.isValid());
+
+  _container->deleteAllParticles();
+  ASSERT_EQ(numParticles, 0) << "If this is not true, particles are propagated to other tests.";
+}
+
+/**
+ * Checks if updateContainer deletes dummy particles.
+ */
+TEST_P(AllContainersTests, testUpdateContainerDeletesPreviouslyOwnedDummy) { testUpdateContainerDeletesDummy(true); }
+
+TEST_P(AllContainersTests, testUpdateContainerDeletesPreviouslyHaloDummy) { testUpdateContainerDeletesDummy(false); }
