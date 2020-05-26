@@ -24,7 +24,7 @@ void for_each(T &&tuple, F &&f) {
       // function that takes all elements of the tuple as variadic argument
       [&](auto &... t) {
         // unpack the tuple using a fold (... op pack) with op as the comma operator to apply a lambda on every element
-        // This will cause problems if anyone overloads the comma operator for MDFlexOption and change its behavior!
+        // This will cause problems if anyone overloads the comma operator for elements of tuple!
         (..., f(t));
       },
       tuple);
