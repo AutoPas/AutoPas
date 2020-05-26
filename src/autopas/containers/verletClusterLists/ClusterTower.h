@@ -239,6 +239,11 @@ class ClusterTower : public ParticleCell<Particle> {
 
   [[nodiscard]] bool isNotEmpty() const override { return getNumActualParticles() > 0; }
 
+  void deleteDummyParticles() override {
+    _particles.deleteDummyParticles();
+    _numDummyParticles = 0;
+  }
+
   void deleteByIndex(size_t index) override {
     /// @note The implementation of this function prevents a regionIterator to make sorted assumptions of particles
     /// inside a cell! supporting this would mean that the deleted particle should be swapped to the end of the valid

@@ -103,6 +103,8 @@ class DirectSum : public ParticleContainer<ParticleCell> {
   [[nodiscard]] std::vector<ParticleType> updateContainer() override {
     // first we delete halo particles, as we don't want them here.
     deleteHaloParticles();
+    getCell().deleteDummyParticles();
+
     std::vector<ParticleType> invalidParticles{};
     for (auto iter = getCell().begin(); iter.isValid(); ++iter) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {

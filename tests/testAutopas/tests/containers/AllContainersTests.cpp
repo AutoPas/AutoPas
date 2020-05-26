@@ -102,11 +102,14 @@ TEST_P(AllContainersTests, testUpdateContainerHalo) {
 void AllContainersTests::testUpdateContainerDeletesDummy(bool previouslyOwned) {
   static unsigned long numParticles = 0;
 
+  //TODO: needs to use the other container!
+
   class TestParticle : public autopas::Particle {
    public:
     TestParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {
       ++numParticles;
     }
+    TestParticle(const TestParticle &testParticle) : Particle(testParticle) { ++numParticles; }
     ~TestParticle() { --numParticles; }
   };
 
