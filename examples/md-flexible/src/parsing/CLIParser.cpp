@@ -626,11 +626,11 @@ void MDFlexParser::CLIParser::createZSHCompletionFile(
     // the keyword to look for value suggestions
     const std::string keywordForValues{"Possible Values:"};
     std::string choices;
-    // if the option requires arguments and the description suggests some parse them
+    // If the option requires arguments and the description suggests some, parse them.
     if (option.requiresArgument and option.description.find("Possible Values:") != std::string::npos) {
       // start after (+1) first occurrence of '[' after "Possible Values:"
       const auto startPossibleValues{option.description.find('(', option.description.find("Possible Values:")) + 1};
-      // end is the first ']' after the start. The lenght of the substr is the index difference to start.
+      // end is the first ']' after the start. The length of the substr is the index difference to start.
       const auto strLengthPossibleValues{option.description.find(')', startPossibleValues) - startPossibleValues};
       choices = option.description.substr(startPossibleValues, strLengthPossibleValues);
     }
