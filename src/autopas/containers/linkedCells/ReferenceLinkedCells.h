@@ -20,6 +20,7 @@
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/containers/ParticleContainerInterface.h"
 
 namespace autopas {
 
@@ -62,17 +63,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
   void addParticleImpl(const ParticleType &p) override {
     ParticleType pCopy = p;
     _particleList.push_back(pCopy);
-  }
-
-    /**
-     * @copydoc ParticleContainerInterface::onAllParticlesAddedCallback()
-     */
-  void rebuildContainer() { // override
-      for(auto particlePtr = _particleList.begin(); particlePtr != _particleList.end(); particlePtr++) {
-          Particle particle = *particlePtr;
-          ParticleCell &cell = _cellBlock.getContainingCell(particle.getR());
-          cell.addParticleReference(particlePtr);
-      }
+      updateDirtyParticleReferences();
   }
 
   /**
@@ -81,14 +72,8 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwned(false);
-
-    // TODO does this method get called after onAllParticlesAddedCallback/does
-    // the onAllParticlesAddedCallback get called after every iteration?
     _particleList.push_back(pCopy);
-    ParticleType *p =  _particleList.getReference(_particleList.size()-1);
-
-    ParticleCell &cell = _cellBlock.getContainingCell(pCopy.getR());
-    cell.addParticleReference(p);
+    updateDirtyParticleReferences();
   }
 
   /**
@@ -114,7 +99,21 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    // nothing to do.
+      updateDirtyParticleReferences();
+  }
+
+  void updateDirtyParticleReferences() {
+      if(_particleList.isDirty()) {
+          for(auto &cell : this->_cells){
+              cell.clear();
+          }
+      }
+        for(auto it = _particleList.beginDirty(); it < _particleList.endDirty(); it++) {
+            ParticleCell &cell = _cellBlock.getContainingCell(it->getR());
+            auto address = &(*it);
+            cell.addParticleReference(address);
+        }
+        _particleList.markAsClean();
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
