@@ -18,6 +18,7 @@
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
 
@@ -118,7 +119,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   void addHaloParticleImpl(const Particle &haloParticle) override {
     _isValid = ValidityState::invalid;
     Particle copy = haloParticle;
-    copy.setOwned(false);
+    copy.setOwnershipState(OwnershipState::halo);
     _particlesToAdd.push_back(copy);
   }
 
@@ -127,7 +128,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    */
   bool updateHaloParticle(const Particle &haloParticle) override {
     Particle pCopy = haloParticle;
-    pCopy.setOwned(false);
+    pCopy.setOwnershipState(OwnershipState::halo);
 
     for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
                                      utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2),

@@ -11,6 +11,7 @@
 #include <sstream>
 #include <tuple>
 
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/CudaSoAType.h"
 #include "autopas/utils/SoAStorage.h"
@@ -28,7 +29,7 @@ namespace autopas {
 template <typename floatType, typename idType>
 class ParticleBase {
  public:
-  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0), _isOwned{true} {}
+  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
 
   /**
    * Constructor of the Particle class.
@@ -37,7 +38,7 @@ class ParticleBase {
    * @param id Id of the particle.
    */
   ParticleBase(std::array<double, 3> r, std::array<double, 3> v, idType id)
-      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id), _isOwned{true} {}
+      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
 
   /**
    * Destructor of ParticleBase class
@@ -155,13 +156,37 @@ class ParticleBase {
    * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is owned by the current AutoPas object, false otherwise
    */
-  bool isOwned() const { return _isOwned; }
+  bool isOwned() const { return _ownershipState == OwnershipState::owned; }
 
   /**
-   * Set the owned state to the given value
-   * @param owned
+   * Defines whether the particle is a halo particle, i.e., not owned by the current AutoPas object (aka (MPI-)process)
+   * @return true if the particle is not owned by the current AutoPas object, false otherwise.
+   * @note when a
    */
-  void setOwned(bool owned) { _isOwned = owned; }
+  bool isHalo() const { return _ownershipState == OwnershipState::halo; }
+
+  /**
+   * Returns whether the particle is a dummy particle.
+   * @return true if the particle is a dummy.
+   */
+  bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
+
+  /**
+   * Set the OwnershipState to the given value
+   * @param ownershipState
+   */
+  void setOwnershipState(OwnershipState ownershipState) { _ownershipState = ownershipState; }
+
+  /**
+   * Marks a particle as deleted.
+   */
+  void markAsDeleted() {
+    // Set ownership as dummy.
+    _ownershipState = OwnershipState::dummy;
+    // Also mark position as very big, this prevents misuse in the force calculation.
+    _r = {std::numeric_limits<floatType>::max(), std::numeric_limits<floatType>::max(),
+          std::numeric_limits<floatType>::max()};
+  }
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -209,7 +234,7 @@ class ParticleBase {
       case AttributeNames::forceZ:
         return getF()[2];
       case AttributeNames::owned:
-        return isOwned() ? 1. : 0.;
+        return _ownershipState == OwnershipState::owned ? 1. : 0.;
       default:
         utils::ExceptionHandler::exception("ParticleBase::get: unknown attribute");
         return 0;
@@ -247,7 +272,9 @@ class ParticleBase {
         _f[2] = value;
         break;
       case AttributeNames::owned:
-        setOwned(value == 1.);
+        if (_ownershipState != OwnershipState::dummy) {
+          _ownershipState = value == 1. ? OwnershipState::owned : OwnershipState::halo;
+        }
         break;
     }
   }
@@ -271,23 +298,26 @@ class ParticleBase {
    * Particle position as 3D coordinates.
    */
   std::array<double, 3> _r;
+
   /**
    * Particle velocity as 3D vector.
    */
   std::array<double, 3> _v;
+
   /**
    * Force the particle experiences as 3D vector.
    */
   std::array<double, 3> _f;
+
   /**
    * Particle id.
    */
   idType _id;
 
   /**
-   * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
+   * Defines the state of the ownership of the particle.
    */
-  bool _isOwned;
+  OwnershipState _ownershipState{OwnershipState::owned};
 };
 
 }  // namespace autopas

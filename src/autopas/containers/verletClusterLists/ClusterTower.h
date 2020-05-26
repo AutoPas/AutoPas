@@ -9,6 +9,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/verletClusterLists/Cluster.h"
+#include "autopas/particles/OwnershipState.h"
 
 namespace autopas::internal {
 
@@ -100,6 +101,7 @@ class ClusterTower : public ParticleCell<Particle> {
     auto &lastCluster = getCluster(getNumClusters() - 1);
     for (size_t index = 1; index <= _numDummyParticles; index++) {
       lastCluster[clusterSize - index] = lastCluster[0];  // use first Particle in last cluster as dummy particle!
+      lastCluster[clusterSize - index].setOwnershipState(OwnershipState::dummy);
       lastCluster[clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
       lastCluster[clusterSize - index].setID(std::numeric_limits<size_t>::max());
     }

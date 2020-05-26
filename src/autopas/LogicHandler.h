@@ -136,7 +136,7 @@ class LogicHandler {
     } else {
       _numParticlesHalo.fetch_sub(1, std::memory_order_relaxed);
     }
-    internal::deleteParticle(iter);
+    iter->markAsDeleted();
   }
 
   /**

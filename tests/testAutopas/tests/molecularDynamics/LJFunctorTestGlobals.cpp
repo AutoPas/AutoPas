@@ -47,9 +47,9 @@ void LJFunctorTestGlobals<FuncType>::testAoSGlobals(LJFunctorTestGlobals<FuncTyp
       FAIL() << "not in enum where_type";
   }
   Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0, 0);
-  p1.setOwned(owned1);
+  p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
   Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
-  p2.setOwned(owned2);
+  p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
   functor.initTraversal();
 
   functor.AoSFunctor(p1, p2, newton3);
@@ -134,10 +134,10 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
     }
 
     Molecule p1({0. + xOffset, 0. + 2. * replicaID, 0.}, {0., 0., 0.}, 2 * replicaID, 0);
-    p1.setOwned(owned1);
+    p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
     cell1.addParticle(p1);
     Molecule p2({0.1 + xOffset, 0.2 + 2. * replicaID, 0.3}, {0., 0., 0.}, 2 * replicaID + 1, 0);
-    p2.setOwned(owned2);
+    p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
 
     // calculate whereFactor:
     double currentWhereFactor = 0.;
@@ -161,7 +161,7 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
 
   if (interactionType == InteractionType::verlet) {
     Molecule pAdditional({1.2 + xOffset, 0., 0.}, {0., 0., 0.}, std::numeric_limits<uint64_t>::max(), 0);
-    pAdditional.setOwned(owned2);
+    pAdditional.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
     // add dummy particles outside of the cutoff. this will only change the number of particles in the verlet lists,
     // but will leave the desired result unchanged. the higher number of particles is useful to test the soa
     // functor version of verlet lists.

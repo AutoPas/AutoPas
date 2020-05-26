@@ -26,7 +26,6 @@ namespace autopas {
  * It is optimized for a constant, i.e. particle independent, cutoff radius of
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
- * @note This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
  * @todo deleting particles should also invalidate the verlet lists - should be
  * implemented somehow

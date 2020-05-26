@@ -177,10 +177,11 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    */
   bool isValid() const override {
     if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
-      return _additionalParticleVectorPosition < _additionalParticleVector->size() and particleHasCorrectOwnedState();
+      return _additionalParticleVectorPosition < _additionalParticleVector->size() and
+             particleHasCorrectOwnershipState();
     }
     return _vectorOfCells != nullptr and _iteratorAcrossCells < _vectorOfCells->end() and
-           _iteratorWithinOneCell.isValid() and particleHasCorrectOwnedState();
+           _iteratorWithinOneCell.isValid() and particleHasCorrectOwnershipState();
   }
 
   ParticleIteratorInterfaceImpl<Particle, modifiable> *clone() const override {
@@ -249,15 +250,19 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * Indicates whether the particle has the correct owned state.
    * @return
    */
-  bool particleHasCorrectOwnedState() const {
+  bool particleHasCorrectOwnershipState() const {
     switch (_behavior) {
       case haloAndOwned:
-        return true;
+        if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
+          return not(*_additionalParticleVector)[_additionalParticleVectorPosition].isDummy();
+        } else {
+          return not _iteratorWithinOneCell->isDummy();
+        }
       case haloOnly:
         if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
-          return not(*_additionalParticleVector)[_additionalParticleVectorPosition].isOwned();
+          return (*_additionalParticleVector)[_additionalParticleVectorPosition].isHalo();
         } else {
-          return not _iteratorWithinOneCell->isOwned();
+          return _iteratorWithinOneCell->isHalo();
         }
       case ownedOnly:
         if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {

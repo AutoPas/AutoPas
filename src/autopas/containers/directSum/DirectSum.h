@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <autopas/particles/OwnershipState.h>
+
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
@@ -63,7 +65,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType p_copy = haloParticle;
-    p_copy.setOwned(false);
+    p_copy.setOwnershipState(OwnershipState::halo);
     getHaloCell().addParticle(p_copy);
   }
 
@@ -72,7 +74,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
-    pCopy.setOwned(false);
+    pCopy.setOwnershipState(OwnershipState::halo);
     return internal::checkParticleInCellAndUpdateByIDAndPosition(getHaloCell(), pCopy, this->getSkin());
   }
 

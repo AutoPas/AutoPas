@@ -109,7 +109,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
     Particle p_copy = haloParticle;
     _isValid = ValidityState::invalid;
     removeDummiesFromFirstCell();
-    p_copy.setOwned(false);
+    p_copy.setOwnershipState(OwnershipState::halo);
     // add particle somewhere, because lists will be rebuild anyways
     this->_cells[0].addParticle(p_copy);
     ++_dummyStarts[0];
@@ -122,7 +122,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    */
   bool updateHaloParticle(const Particle &haloParticle) override {
     Particle pCopy = haloParticle;
-    pCopy.setOwned(false);
+    pCopy.setOwnershipState(OwnershipState::halo);
 
     for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
                                      utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2),
@@ -460,7 +460,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
                               _boxMaxWithHalo[1] + 8 * this->getInteractionLength() + static_cast<double>(j),
                               _boxMaxWithHalo[2] + 8 * this->getInteractionLength()});
           dummyParticle.setID(std::numeric_limits<size_t>::max());
-          dummyParticle.setOwned(false);
+          dummyParticle.setOwnershipState(OwnershipState::dummy);
           this->_cells[i].addParticle(dummyParticle);
         }
       }

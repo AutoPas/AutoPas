@@ -124,7 +124,9 @@ class MoleculeLJ : public Particle {
         setTypeId(value);
         break;
       case AttributeNames::owned:
-        setOwned(value == 1.);
+        if (_ownershipState != OwnershipState::dummy) {
+          _ownershipState = value == 1. ? OwnershipState::owned : OwnershipState::halo;
+        }
         break;
     }
   }
