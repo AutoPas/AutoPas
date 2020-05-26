@@ -48,6 +48,8 @@ void printHelpMessage(std::ostream &ostream, const std::string &relPathOfExecuta
 
 /**
  * Creates a file "_md-flexible" containing the completions definitions for zsh.
+ * The function expects possible options to be in the description of an option and in the form of:
+ * 'Possible Values: (val1 val2 ... valN)'
  * @param cliOptions vector of options to include in the file.
  */
 void createZSHCompletionFile(const std::vector<MDFlexConfig::MDFlexOptionInterface> &cliOptions);

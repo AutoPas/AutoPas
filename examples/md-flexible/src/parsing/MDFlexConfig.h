@@ -134,6 +134,9 @@ class MDFlexConfig {
    */
   enum class GeneratorOption { grid, uniform, gaussian, sphere };
 
+  //  All options in the config
+  //  Make sure that the description is parsable by `CLIParser::createZSHCompletionFile()`!
+
   /**
    * yamlFilename
    */
