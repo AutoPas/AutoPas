@@ -34,7 +34,7 @@ class MDFlexConfig {
 
   /**
    * Struct to bundle information for options.
-   * @tparam T
+   * @tparam T Datatype of the option
    * @tparam getOptChar Char for the switch case that is used during cli argument parsing with getOpt.
    * @note Set to 0 (not '0') if not intended to be used from command line.
    *
@@ -71,7 +71,6 @@ class MDFlexConfig {
      * @param value Default value for this option.
      * @param newName String representation of the option name.
      * @param requiresArgument Indicate whether this option is a flag or takes arguments.
-     * @param getOptSwitchChar Char for the switch case that is used during cli argument parsing with getOpt.
      * @param newDescription String describing this option. This is displayed when md-flexible is invoked with --help.
      */
     MDFlexOption(T value, std::string newName, bool requiresArgument, std::string newDescription)
