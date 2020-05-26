@@ -41,18 +41,19 @@ class Random : public std::mt19937 {
    * Sample n points from the pool. Each element in the pool will
    * appear about the same number of times in the sample.
    * @tparam T type of the elements
-   * @param pool
+   * @param poolBegin
+   * @param poolEnd
    * @param n number samples
    * @return samples
    */
-  template <class T>
-  std::vector<T> uniformSample(std::set<T> pool, size_t n) {
-    std::vector<T> result;
-    result.reserve(n + pool.size());
+  template <class Iter>
+  std::vector<typename std::iterator_traits<Iter>::value_type> uniformSample(Iter poolBegin, Iter poolEnd, size_t n) {
+    std::vector<typename std::iterator_traits<Iter>::value_type> result;
+    result.reserve(n);
 
     // copy the whole set until result is full
     while (result.size() < n) {
-      result.insert(result.end(), pool.begin(), pool.end());
+      result.insert(std::end(result), poolBegin, poolEnd);
     }
 
     // if too many elements added
