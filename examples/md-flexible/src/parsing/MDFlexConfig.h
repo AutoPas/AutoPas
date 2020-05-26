@@ -55,10 +55,16 @@ class MDFlexConfig {
      * String representation of the option name.
      */
     std::string name;
+
     /**
      * String describing this option. This is displayed when md-flexible is invoked with --help.
      */
     std::string description;
+
+    /**
+     * Member to access the template parameter.
+     */
+    constexpr static char getoptChar{getOptChar};
 
     /**
      * Constructor
@@ -454,7 +460,7 @@ class MDFlexConfig {
   /**
    * checkpointfile
    */
-  MDFlexOption<std::string, 'C'> checkpointfile{"", "checkpoint", true, "Path to a VTK File to load as a checkpoint."};
+  MDFlexOption<std::string, 'K'> checkpointfile{"", "checkpoint", true, "Path to a VTK File to load as a checkpoint."};
 
   /**
    * valueOffset used for cli-output alignment

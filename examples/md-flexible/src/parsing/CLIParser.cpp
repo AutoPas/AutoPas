@@ -59,7 +59,19 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
-  // TODO: verify getOptSwitchChars are unique
+  // sanity check that all getopt chars are unique. Brackets for scoping.
+  {
+    // map tracking mappings of getopt chars to strings
+    std::map<char, std::string> getoptCharsToName;
+    // look for clashes by checking if getopt chars are in the map and otherwise add them
+    autopas::utils::TupleUtils::for_each(relevantOptions, [&](auto &opt) {
+      if (auto iterAtClash = getoptCharsToName.find(opt.getoptChar); iterAtClash != getoptCharsToName.end()) {
+        throw std::runtime_error("CLIParser::parseInput: the following options share the same getopt char!\n" + opt.name +"\n" + iterAtClash->second);
+      } else {
+        getoptCharsToName.insert({opt.getoptChar, opt.name});
+      }
+    });
+  }
 
   // create data structure for options that getopt can use
   std::vector<struct option> long_options;
@@ -555,7 +567,7 @@ void MDFlexParser::CLIParser::inputFilesPresent(int argc, char **argv, MDFlexCon
        (cliOption = getopt_long(argc, argv, "", longOptions, &cliOptionIndex)) != -1;) {
     std::string strArg;
     switch (cliOption) {
-      case 'C':
+      case 'K':
         config.checkpointfile.value = optarg;
         if (not checkFileExists(optarg)) {
           throw std::runtime_error("CLIParser::inputFilesPresent: Checkpoint-File " + config.checkpointfile.value +
