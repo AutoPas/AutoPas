@@ -14,6 +14,12 @@
 MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
 
+  // utility options
+  const static auto helpOption{
+      MDFlexConfig::MDFlexOption<std::string, 'h'>("", "help", false, "Display this message.")};
+  const static auto zshCompletionsOption{
+      MDFlexConfig::MDFlexOption<std::string, 'Z'>("", "zsh-completions", false, "Generate completions file for zsh.")};
+
   // the following, shorter version does not work with icpc 2019.4.243. Error:
   // error: class template name must be a placeholder for the complete type being initialized
   // (not for a component of that type)
@@ -31,8 +37,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
       config.tuningStrategyOption, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
       config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
-      MDFlexConfig::MDFlexOption<std::string, 'Z'>("", "zsh-completions", false, "Generate completions file for zsh."),
-      MDFlexConfig::MDFlexOption<std::string, 'h'>("", "help", false, "Display this message."))};
+      zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -72,7 +77,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
     if (optarg != nullptr) strArg = optarg;
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     switch (cliOption) {
-      case '3': {
+      case decltype(config.newton3Options)::getoptChar: {
         config.newton3Options.value = autopas::Newton3Option::parseOptions(strArg);
         if (config.newton3Options.value.empty()) {
           cerr << "Unknown Newton3 option: " << strArg << endl;
@@ -80,11 +85,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case '4': {
+      case decltype(config.checkpointfile)::getoptChar: {
         // already parsed in CLIParser::inputFilesPresent
         break;
       }
-      case 'A': {
+      case decltype(config.acquisitionFunctionOption)::getoptChar: {
         auto parsedOptions = autopas::AcquisitionFunctionOption::parseOptions(strArg);
         if (parsedOptions.size() != 1) {
           cerr << "Pass exactly one tuning acquisition function." << endl
@@ -95,7 +100,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.acquisitionFunctionOption.value = *parsedOptions.begin();
         break;
       }
-      case 'a': {
+      case decltype(config.cellSizeFactors)::getoptChar: {
         config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(strArg);
         if (config.cellSizeFactors.value->isEmpty()) {
           cerr << "Error parsing cell size factors: " << optarg << endl;
@@ -103,7 +108,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'b': {
+      case decltype(config.boxLength)::getoptChar: {
         try {
           config.boxLength.value = stod(strArg);
           if (config.boxLength.value < 0) {
@@ -116,7 +121,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'c': {
+      case decltype(config.containerOptions)::getoptChar: {
         config.containerOptions.value = autopas::ContainerOption::parseOptions(strArg);
         if (config.containerOptions.value.empty()) {
           cerr << "Unknown container option: " << strArg << endl;
@@ -124,7 +129,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'C': {
+      case decltype(config.cutoff)::getoptChar: {
         try {
           config.cutoff.value = stod(strArg);
         } catch (const exception &) {
@@ -133,7 +138,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'D': {
+      case decltype(config.deltaT)::getoptChar: {
         try {
           config.deltaT.value = stod(strArg);
         } catch (const exception &) {
@@ -142,7 +147,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'd': {
+      case decltype(config.dataLayoutOptions)::getoptChar: {
         config.dataLayoutOptions.value = autopas::DataLayoutOption::parseOptions(strArg);
         if (config.dataLayoutOptions.value.empty()) {
           cerr << "Unknown data layouts: " << strArg << endl;
@@ -150,11 +155,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'e': {
+      case decltype(config.dontCreateEndConfig)::getoptChar: {
         config.dontCreateEndConfig.value = false;
         break;
       }
-      case 'E': {
+      case decltype(config.tuningMaxEvidence)::getoptChar: {
         try {
           config.tuningMaxEvidence.value = (unsigned int)stoul(strArg);
           if (config.tuningMaxEvidence.value < 1) {
@@ -167,7 +172,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'f': {
+      case decltype(config.functorOption)::getoptChar: {
         if (strArg.find("avx") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("glob") != string::npos) {
@@ -181,11 +186,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'F': {
+      case decltype(config.dontMeasureFlops)::getoptChar: {
         config.dontMeasureFlops.value = false;
         break;
       }
-      case 'g': {
+      case decltype(config.generatorOption)::getoptChar: {
         if (strArg.find("grid") != string::npos) {
           config.generatorOption.value = MDFlexConfig::GeneratorOption::grid;
         } else if (strArg.find("uni") != string::npos) {
@@ -201,16 +206,16 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'h': {
+      case decltype(helpOption)::getoptChar: {
         printHelpMessage(std::cout, argv[0], relevantOptions);
         return MDFlexParser::exitCodes::helpFlagFound;
       }
-      case 'Z': {
+      case decltype(zshCompletionsOption)::getoptChar: {
         // generate the completions file and do nothing else
         createZSHCompletionFile(relevantOptions);
         return MDFlexParser::exitCodes::completionsFlagFound;
       }
-      case 'i': {
+      case decltype(config.iterations)::getoptChar: {
         try {
           config.iterations.value = stoul(strArg);
           if (config.iterations.value < 1) {
@@ -223,7 +228,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'I': {
+      case decltype(config.tuningInterval)::getoptChar: {
         try {
           config.tuningInterval.value = (unsigned int)stoul(strArg);
           if (config.tuningInterval.value < 1) {
@@ -236,7 +241,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'l': {
+      case decltype(config.logLevel)::getoptChar: {
         switch (strArg[0]) {
           case 't': {
             config.logLevel.value = autopas::Logger::LogLevel::trace;
@@ -274,11 +279,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'L': {
+      case decltype(config.logFileName)::getoptChar: {
         config.logFileName.value = strArg;
         break;
       }
-      case 'm': {
+      case decltype(config.distributionMean)::getoptChar: {
         try {
           auto mean = stod(strArg);
           config.distributionMean.value = {mean, mean, mean};
@@ -288,7 +293,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'M': {
+      case decltype(config.maxTuningPhasesWithoutTest)::getoptChar: {
         try {
           config.maxTuningPhasesWithoutTest.value = (unsigned int)stoul(strArg);
           if (config.maxTuningPhasesWithoutTest.value < 1) {
@@ -301,7 +306,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'n': {
+      case decltype(config.particlesPerDim)::getoptChar: {
         try {
           config.particlesPerDim.value = stoul(strArg);
         } catch (const exception &) {
@@ -310,7 +315,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'N': {
+      case decltype(config.particlesTotal)::getoptChar: {
         try {
           config.particlesTotal.value = stoul(strArg);
         } catch (const exception &) {
@@ -319,7 +324,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'o': {
+      case decltype(config.relativeOptimumRange)::getoptChar: {
         try {
           config.relativeOptimumRange.value = (double)stoul(strArg);
           if (config.relativeOptimumRange.value < 1) {
@@ -332,7 +337,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'P': {
+      case decltype(config.tuningPhases)::getoptChar: {
         try {
           config.tuningPhases.value = stoul(strArg);
         } catch (const exception &) {
@@ -341,7 +346,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'p': {
+      case decltype(config.periodic)::getoptChar: {
         try {
           config.periodic.value = autopas::utils::StringUtils::parseBoolOption(strArg);
         } catch (const exception &) {
@@ -350,7 +355,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'q': {
+      case decltype(config.verletClusterSize)::getoptChar: {
         try {
           config.verletClusterSize.value = (unsigned int)stoul(strArg);
         } catch (const exception &) {
@@ -359,7 +364,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'r': {
+      case decltype(config.verletSkinRadius)::getoptChar: {
         try {
           config.verletSkinRadius.value = stod(strArg);
         } catch (const exception &) {
@@ -368,7 +373,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'S': {
+      case decltype(config.tuningSamples)::getoptChar: {
         try {
           config.tuningSamples.value = (unsigned int)stoul(strArg);
           if (config.tuningSamples.value < 1) {
@@ -381,7 +386,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 's': {
+      case decltype(config.particleSpacing)::getoptChar: {
         try {
           config.particleSpacing.value = stod(strArg);
         } catch (const exception &) {
@@ -390,7 +395,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 't': {
+      case decltype(config.traversalOptions)::getoptChar: {
         config.traversalOptions.value = autopas::TraversalOption::parseOptions(strArg);
         if (config.traversalOptions.value.empty()) {
           cerr << "Unknown Traversal: " << strArg << endl;
@@ -398,7 +403,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'T': {
+      case decltype(config.tuningStrategyOption)::getoptChar: {
         auto parsedOptions = autopas::TuningStrategyOption::parseOptions(strArg);
         if (parsedOptions.size() != 1) {
           cerr << "Pass exactly one tuning strategy option." << endl
@@ -409,11 +414,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.tuningStrategyOption.value = *parsedOptions.begin();
         break;
       }
-      case 'u': {
+      case decltype(config.useThermostat)::getoptChar: {
         config.useThermostat.value = autopas::utils::StringUtils::parseBoolOption(strArg);
         break;
       }
-      case 'v': {
+      case decltype(config.verletRebuildFrequency)::getoptChar: {
         try {
           config.verletRebuildFrequency.value = (unsigned int)stoul(strArg);
         } catch (const exception &) {
@@ -422,11 +427,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'w': {
+      case decltype(config.vtkFileName)::getoptChar: {
         config.vtkFileName.value = strArg;
         break;
       }
-      case 'W': {
+      case decltype(config.vtkWriteFrequency)::getoptChar: {
         try {
           config.vtkWriteFrequency.value = (size_t)stoul(strArg);
         } catch (const exception &) {
@@ -435,7 +440,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case 'y': {
+      case decltype(config.selectorStrategy)::getoptChar: {
         auto parsedOptions = autopas::SelectorStrategyOption::parseOptions(strArg);
         if (parsedOptions.size() != 1) {
           cerr << "Pass exactly one selector strategy option." << endl
@@ -446,11 +451,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.selectorStrategy.value = *parsedOptions.begin();
         break;
       }
-      case 'Y': {
+      case decltype(config.yamlFilename)::getoptChar: {
         // already parsed in CLIParser::inputFilesPresent
         break;
       }
-      case 'z': {
+      case decltype(config.distributionStdDev)::getoptChar: {
         try {
           auto stdDev = stod(strArg);
           config.distributionStdDev.value = {stdDev, stdDev, stdDev};
@@ -546,14 +551,14 @@ void MDFlexParser::CLIParser::inputFilesPresent(int argc, char **argv, MDFlexCon
        (cliOption = getopt_long(argc, argv, "", longOptions, &cliOptionIndex)) != -1;) {
     std::string strArg;
     switch (cliOption) {
-      case 'K':
+      case decltype(config.checkpointfile)::getoptChar:
         config.checkpointfile.value = optarg;
         if (not checkFileExists(optarg)) {
           throw std::runtime_error("CLIParser::inputFilesPresent: Checkpoint-File " + config.checkpointfile.value +
                                    " not found!");
         }
         break;
-      case 'Y':
+      case decltype(config.yamlFilename)::getoptChar:
         config.yamlFilename.value = optarg;
         if (not checkFileExists(optarg)) {
           throw std::runtime_error("CLIParser::inputFilesPresent: Yaml-File " + config.yamlFilename.value +
