@@ -22,7 +22,8 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
   }
 
  protected:
-  void SetUp() override {
+  template <class ParticleType = autopas::Particle>
+  auto getInitializedContainer() {
     auto containerOptionToTest = GetParam();
     std::array<double, 3> boxMin = {0, 0, 0};
     std::array<double, 3> boxMax = {10, 10, 10};
@@ -30,14 +31,11 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
     double skin = 0.2;
     double cellSizeFactor = 1;
 
-    autopas::ContainerSelector<Particle, FPCell> selector{boxMin, boxMax, cutoff};
+    autopas::ContainerSelector<ParticleType, autopas::FullParticleCell<ParticleType>> selector{boxMin, boxMax, cutoff};
     autopas::ContainerSelectorInfo selectorInfo{cellSizeFactor, skin, 32};
     selector.selectContainer(containerOptionToTest, selectorInfo);
-    _container = selector.getCurrentContainer();
+    return selector.getCurrentContainer();
   }
 
   void testUpdateContainerDeletesDummy(bool previouslyOwned);
-
- protected:
-  std::shared_ptr<autopas::ParticleContainerInterface<FPCell>> _container{};
 };
