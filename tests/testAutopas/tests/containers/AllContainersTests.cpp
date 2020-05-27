@@ -104,7 +104,7 @@ TEST_P(AllContainersTests, testUpdateContainerHalo) {
  * @param previouslyOwned Specifies whether the particle was previously owned.
  */
 void AllContainersTests::testUpdateContainerDeletesDummy(bool previouslyOwned) {
-  static unsigned long numParticles = 0;
+  static std::atomic<unsigned long> numParticles = 0;
 
   class TestParticle : public autopas::Particle {
    public:
@@ -140,10 +140,7 @@ void AllContainersTests::testUpdateContainerDeletesDummy(bool previouslyOwned) {
     ASSERT_FALSE(iter.isValid());
   }
 
-  // There should now be one DUMMY! particle in the container.
-  EXPECT_EQ(numParticles, 1);
-
-  // This should remove the dummy particle, while not returning it as invalid particle.
+  // This should remove the dummy particle(s), while not returning it as invalid particle.
   auto invalidParticles = container->updateContainer();
 
   // No particle should be returned
@@ -151,12 +148,11 @@ void AllContainersTests::testUpdateContainerDeletesDummy(bool previouslyOwned) {
   // The particle should no longer exist, as it should be cleared.
   EXPECT_EQ(numParticles, 0);
 
-  // no particle should remain
-  auto iter = container->begin();
-  EXPECT_FALSE(iter.isValid());
+  // no particle should remain, therefore the iterator should be invalid!
+  EXPECT_FALSE(container->begin().isValid());
 
   container->deleteAllParticles();
-  ASSERT_EQ(numParticles, 0) << "If this is not true, particles are propagated to other tests.";
+  ASSERT_EQ(numParticles, 0);
 }
 
 /**

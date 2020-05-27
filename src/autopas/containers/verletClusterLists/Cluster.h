@@ -48,6 +48,31 @@ class Cluster {
   const Particle &operator[](size_t index) const { return *(_firstParticle + index); }
 
   /**
+   * Get Minimum and Maximum of the particles in z-direction.
+   * @return Pair of minimum and maximum in z-direction.
+   */
+  std::pair<double, double> getZMinMax() const {
+    // this assumes that the particles are sorted along the z-direction!
+    double min = std::numeric_limits<double>::max();
+    for (size_t i = 0; i < clusterSize; ++i) {
+      auto &p = operator[](i);
+      if (not p.isDummy()) {
+        min = p.getR()[2];
+        break;
+      }
+    }
+    double max = std::numeric_limits<double>::min();
+    for (size_t i = clusterSize - 1; i >= 0; --i) {
+      auto &p = operator[](i);
+      if (not p.isDummy()) {
+        max = p.getR()[2];
+        break;
+      }
+    }
+    return {min, max};
+  }
+
+  /**
    * Returns the SoAView for this cluster.
    * @return the SoAView for this cluster.
    */

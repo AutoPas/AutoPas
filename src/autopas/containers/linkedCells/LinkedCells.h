@@ -119,6 +119,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 
   [[nodiscard]] std::vector<ParticleType> updateContainer() override {
     this->deleteHaloParticles();
+
     std::vector<ParticleType> invalidParticles;
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -130,6 +131,9 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 #pragma omp for
 #endif  // AUTOPAS_OPENMP
       for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
+        // Delete dummy particles of each cell.
+        this->getCells()[cellId].deleteDummyParticles();
+
         // if empty
         if (not this->getCells()[cellId].isNotEmpty()) continue;
 

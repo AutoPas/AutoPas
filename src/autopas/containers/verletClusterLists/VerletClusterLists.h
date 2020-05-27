@@ -165,8 +165,16 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @copydoc VerletLists::updateContainer()
    */
   [[nodiscard]] std::vector<Particle> updateContainer() override {
-    // first delete all halo particles.
+    // First delete all halo particles.
     this->deleteHaloParticles();
+
+    // Delete dummy particles.
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    for (auto &tower : _towers) {
+      tower.deleteDummyParticles();
+    }
 
     // next find invalid particles
     std::vector<Particle> invalidParticles;

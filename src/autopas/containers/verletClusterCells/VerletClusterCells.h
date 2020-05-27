@@ -192,6 +192,15 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
     // first delete all halo particles.
     this->deleteHaloParticles();
 
+    // Delete dummy particles.
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    for (auto &cell : this->_cells) {
+      cell.deleteDummyParticles();
+    }
+
+
     // next find invalid particles
     std::vector<Particle> invalidParticles;
 
