@@ -65,7 +65,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
     std::map<char, std::string> getoptCharsToName;
     // look for clashes by checking if getopt chars are in the map and otherwise add them
     autopas::utils::TupleUtils::for_each(relevantOptions, [&](auto &opt) {
-      if (auto iterAtClash = getoptCharsToName.find(opt.getoptChar); iterAtClash < getoptCharsToName.end()) {
+      if (auto iterAtClash = getoptCharsToName.find(opt.getoptChar); iterAtClash != getoptCharsToName.end()) {
         throw std::runtime_error("CLIParser::parseInput: the following options share the same getopt char!\n" +
                                  opt.name + "\n" + iterAtClash->second);
       } else {
