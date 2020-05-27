@@ -22,6 +22,8 @@ For all available option see:
  examples/md-flexible/md-flexible --help
 ```
 
+Have a look at the `completion/` directory for shell auto completion scripts.
+
 ### Input
 
 MD-Flexible accepts input via command line arguments and YAML files.

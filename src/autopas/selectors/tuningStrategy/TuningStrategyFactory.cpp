@@ -7,6 +7,7 @@
 #include "TuningStrategyFactory.h"
 
 #include "ActiveHarmony.h"
+#include "BayesianClusterSearch.h"
 #include "BayesianSearch.h"
 #include "FullSearch.h"
 #include "FullSearchMPI.h"
@@ -52,6 +53,12 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       return std::make_unique<BayesianSearch>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
                                               allowedDataLayouts, allowedNewton3Options, maxEvidence,
                                               acquisitionFunctionOption);
+    }
+
+    case TuningStrategyOption::bayesianClusterSearch: {
+      return std::make_unique<BayesianClusterSearch>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
+                                                     allowedDataLayouts, allowedNewton3Options, maxEvidence,
+                                                     acquisitionFunctionOption);
     }
 
     case TuningStrategyOption::activeHarmony: {
