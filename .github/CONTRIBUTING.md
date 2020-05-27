@@ -77,8 +77,8 @@ These tests include:
 * Builing of all targets and execution of the provided ctest tests.
 * Sanitizer runs (Address+Leak sanitizer, Thread Sanitizer)
 
-If you encounter problems within these tests check whether you can reproduce them.
-For encountering "unknown module" problems with the thread sanitizer, a library to override `dlclose()` can be found in the `libs` directory. Said library can be used to get better stack traces that are caused by dynamically loaded libraries (using `dlopen()`).
+If you encounter problems within these tests check whether you can reproduce them locally. Have a look at the [Jenkinsfile](https://github.com/AutoPas/AutoPas/blob/master/Jenkinsfile) for how the tools are used with AutoPas. If you do not have the respective compiler installed you can use the [AutoPas docker images](https://hub.docker.com/u/autopas).
+To circumvent "unknown module" problems with the thread sanitizer, a library to override `dlclose()` can be found in the `libs` directory. Said library can be used to get better stack traces that are caused by dynamically loaded libraries (using `dlopen()`).
 More details can be found [here](../libs/fake-dlclose/README.md).
 
 ## AutoPas
