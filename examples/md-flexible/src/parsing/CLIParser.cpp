@@ -14,48 +14,25 @@
 MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
 
-  static const std::tuple relevantOptions{
-      config.newton3Options,
-      config.checkpointfile,
-      config.acquisitionFunctionOption,
-      config.cellSizeFactors,
-      config.boxLength,
-      config.containerOptions,
-      config.cutoff,
-      config.dataLayoutOptions,
-      config.deltaT,
-      config.dontCreateEndConfig,
-      config.tuningMaxEvidence,
-      config.functorOption,
-      config.dontMeasureFlops,
-      config.generatorOption,
-      config.iterations,
-      config.tuningInterval,
-      config.logLevel,
-      config.logFileName,
-      config.distributionMean,
-      config.maxTuningPhasesWithoutTest,
-      config.particlesPerDim,
-      config.particlesTotal,
-      config.relativeOptimumRange,
-      config.periodic,
-      config.tuningPhases,
-      config.verletClusterSize,
-      config.verletSkinRadius,
-      config.particleSpacing,
-      config.tuningSamples,
-      config.traversalOptions,
-      config.tuningStrategyOption,
-      config.useThermostat,
-      config.verletRebuildFrequency,
-      config.vtkFileName,
-      config.vtkWriteFrequency,
-      config.selectorStrategy,
-      config.yamlFilename,
-      config.distributionStdDev,
+  // the following, shorter version does not work with icpc 2019.4.243. Error:
+  // error: class template name must be a placeholder for the complete type being initialized
+  // (not for a component of that type)
+  //
+  // static const std::tuple relevantOptions{
+  //
+  // therefore workaround with make_tuple and auto
+  static const auto relevantOptions{std::make_tuple(
+      config.newton3Options, config.checkpointfile, config.acquisitionFunctionOption, config.cellSizeFactors,
+      config.boxLength, config.containerOptions, config.cutoff, config.dataLayoutOptions, config.deltaT,
+      config.dontCreateEndConfig, config.tuningMaxEvidence, config.functorOption, config.dontMeasureFlops,
+      config.generatorOption, config.iterations, config.tuningInterval, config.logLevel, config.logFileName,
+      config.distributionMean, config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal,
+      config.relativeOptimumRange, config.periodic, config.tuningPhases, config.verletClusterSize,
+      config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
+      config.tuningStrategyOption, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
+      config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
       MDFlexConfig::MDFlexOption<std::string, 'Z'>("", "zsh-completions", false, "Generate completions file for zsh."),
-      MDFlexConfig::MDFlexOption<std::string, 'h'>("", "help", false, "Display this message."),
-  };
+      MDFlexConfig::MDFlexOption<std::string, 'h'>("", "help", false, "Display this message."))};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
