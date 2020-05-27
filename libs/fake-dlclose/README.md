@@ -1,9 +1,9 @@
 This shared library provides a fake `dlclose()` function which does not actually close a library.
 
 You can use this library if you want to get better traces for LSAN (leak sanitizer) using
-
+```
 LD_PRELOAD=PATH_TO_FAKE_DL_CLOSE_SHARED_LIBRARY ./executable
-
+```
 
 
 **Details**
