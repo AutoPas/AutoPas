@@ -390,7 +390,7 @@ void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Partic
   cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / iteration, digitsTimeTotalNS,
                         durationTotal);
   auto mfups = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) * iteration * 1e-6 /
-		  (_timers.forceUpdateTotal.getTotalTime() * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
+               (_timers.forceUpdateTotal.getTotalTime() * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
   cout << "Tuning iterations: " << numTuningIterations << " / " << iteration << " = "
        << ((double)numTuningIterations / iteration * 100) << "%" << endl;
   cout << "MFUPs/sec    : " << mfups << endl;
@@ -430,8 +430,7 @@ std::string Simulation<Particle, ParticleCell>::timerToString(const std::string 
 
   std::ostringstream ss;
   ss << std::fixed << std::setprecision(_floatStringPrecision);
-  ss << name << " : " << std::setw(numberWidth) << std::right << timeNS << " ns (" << ((double)timeNS * 1e-9)
-     << "s)";
+  ss << name << " : " << std::setw(numberWidth) << std::right << timeNS << " ns (" << ((double)timeNS * 1e-9) << "s)";
   if (maxTime != 0) {
     ss << " =" << std::setw(7) << std::right << ((double)timeNS / (double)maxTime * 100) << "%";
   }
