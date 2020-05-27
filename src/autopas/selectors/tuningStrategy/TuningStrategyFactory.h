@@ -24,7 +24,7 @@ namespace autopas::TuningStrategyFactory {
  * @param relativeOptimum
  * @param maxTuningPhasesWithoutTest
  * @param acquisitionFunctionOption
- * @param comm
+ * @param comm Default value only used for tests
  * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
  */
 std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
@@ -33,5 +33,5 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
     unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption,
-    AutoPas_MPI_Comm comm);
+    AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
 }  // namespace autopas::TuningStrategyFactory
