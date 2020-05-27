@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <Eigen/Core>
 #include <cmath>
 
 namespace autopas::utils::Math {
@@ -29,5 +30,19 @@ double normalCDF(double x);
  * @return S(x)
  */
 double sigmoid(double x);
+
+/**
+ * Create a vector of doubles from given elements
+ * @param elements
+ * @return
+ */
+Eigen::VectorXd makeVectorXd(const std::vector<double> &elements);
+
+/**
+ * Create a vector of ints from given elements
+ * @param elements
+ * @return
+ */
+Eigen::VectorXi makeVectorXi(const std::vector<int> &elements);
 
 }  // namespace autopas::utils::Math
