@@ -8,6 +8,8 @@
 
 #include <tuple>
 
+#include "autopas/utils/TupleUtils.h"
+
 namespace autopas::utils {
 
 /**
@@ -16,15 +18,6 @@ namespace autopas::utils {
  */
 template <class SoAArraysType>
 class SoAStorage {
- private:
-  template <std::size_t I = 0, typename FunctorT>
-  inline void for_each(FunctorT f) {
-    if constexpr (I < std::tuple_size<SoAArraysType>::value) {
-      f(get<I>());
-      for_each<I + 1, FunctorT>(f);
-    }
-  }
-
  public:
   /**
    * Apply the specific function to all vectors.
@@ -37,7 +30,7 @@ class SoAStorage {
    */
   template <typename FunctorT>
   void apply(FunctorT func) {
-    for_each(func);
+    utils::TupleUtils::for_each(soaStorageTuple, func);
   }
 
   /**
