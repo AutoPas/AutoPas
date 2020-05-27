@@ -60,7 +60,8 @@ class SortedCellView : public ParticleCell<Particle> {
 
   void deleteDummyParticles() override {
     _particles.erase(std::remove_if(_particles.begin(), _particles.end(),
-                                    [](const auto &particlePosPair) { return particlePosPair.second->isDummy(); }));
+                                    [](const auto &particlePosPair) { return particlePosPair.second->isDummy(); }),
+                     _particles.end());
   }
 
   void deleteByIndex(size_t index) override {

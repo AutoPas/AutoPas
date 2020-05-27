@@ -89,7 +89,9 @@ class FullParticleCell : public ParticleCell<Particle> {
   void clear() override { _particles.clear(); }
 
   void deleteDummyParticles() override {
-    _particles.erase(std::remove_if(_particles.begin(), _particles.end(), [](const auto& particle){return particle.isDummy();}));
+    _particles.erase(
+        std::remove_if(_particles.begin(), _particles.end(), [](const auto &particle) { return particle.isDummy(); }),
+        _particles.end());
   }
 
   void deleteByIndex(size_t index) override {
