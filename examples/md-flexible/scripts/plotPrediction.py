@@ -59,7 +59,10 @@ for datafile in datafiles:
                 else:
                     configurationPrediction[match.group(1)] = [(iteration, int(match.group(2)))]
             elif (match := re.search(regexCollectedTimes, line)) is not None:
-                configurationTest[match.group(1)] = (iteration, int(match.group(3)))
+                if match.group(1) in configurationTest:
+                    configurationTest[match.group(1)].append((iteration, int(match.group(3))))
+                else:
+                    configurationTest[match.group(1)] = [(iteration, int(match.group(3)))]
 
     # create figure and define layout
     fig = go.Figure(

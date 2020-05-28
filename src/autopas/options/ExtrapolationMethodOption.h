@@ -11,6 +11,7 @@
 #include "autopas/options/Option.h"
 
 namespace autopas {
+inline namespace options {
 /**
  * Class representing the choices of possible extrapolation methods for predictiveTuning.
  */
@@ -63,10 +64,13 @@ class ExtrapolationMethodOption : public Option<ExtrapolationMethodOption> {
     return {
         {ExtrapolationMethodOption::linePrediction, "line-prediction"},
         {ExtrapolationMethodOption::linearRegression, "linear-regression"},
+        {ExtrapolationMethodOption::lagrange, "lagrange"},
+        {ExtrapolationMethodOption::newton, "newton"},
     };
   };
 
  private:
   Value _value{Value(-1)};
 };
+}  // namespace options
 }  // namespace autopas

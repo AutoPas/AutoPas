@@ -3,6 +3,7 @@
 import sys
 import plotly.graph_objects as go
 import re
+from numpy import double
 
 # THIS SCRIPT NEEDS AT LEAST PYTHON 3.8.
 # However, lesser version will probably fail due to invalid syntax instead of this assertion
@@ -80,19 +81,19 @@ for datafile in datafiles:
                                             (iterationBeginTuning, prediction[1] - test[1]))
                                         if prediction[1] == 0:
                                             configurationDiffTestPredictionRelative[configuration].append(
-                                                (iterationBeginTuning, int(1 / test[1])))
+                                                (iterationBeginTuning, double(1 / test[1])))
                                         else:
                                             configurationDiffTestPredictionRelative[configuration].append(
-                                                (iterationBeginTuning, int(prediction[1] / test[1])))
+                                                (iterationBeginTuning, double(prediction[1] / test[1])))
                                     else:
                                         configurationDiffTestPredictionTotal[configuration] = \
                                             [(iterationBeginTuning, prediction[1] - test[1])]
                                         if prediction[1] == 0:
                                             configurationDiffTestPredictionRelative[configuration] = \
-                                                [(iterationBeginTuning, int(1 / test[1]))]
+                                                [(iterationBeginTuning, double(1 / test[1]))]
                                         else:
                                             configurationDiffTestPredictionRelative[configuration] = \
-                                                [(iterationBeginTuning, int(prediction[1] / test[1]))]
+                                                [(iterationBeginTuning, double(prediction[1] / test[1]))]
                     tuning = False
 
     # create figure and define layout
@@ -113,7 +114,7 @@ for datafile in datafiles:
     for configuration in configurationDiffTestPredictionTotal:
         allDiffTotal = []
         allIterationTotal = []
-        if "total" == option or "both":
+        if "total" == option or "both" == option:
             for iteration, diff in configurationDiffTestPredictionTotal[configuration]:
                 allIterationTotal.append(iteration)
                 allDiffTotal.append(diff)
@@ -122,7 +123,7 @@ for datafile in datafiles:
 
         allDiffRelative = []
         allIterationRelative = []
-        if "relative" == option or "both":
+        if "relative" == option or "both" == option:
             for iteration, diff in configurationDiffTestPredictionRelative[configuration]:
                 allIterationRelative.append(iteration)
                 allDiffRelative.append(diff)
