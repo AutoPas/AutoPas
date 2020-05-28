@@ -3,6 +3,14 @@
 This demo shows how to easily create and simulate molecular dynamic
 scenarios using AutoPas and flexibly configure all of it's options.
 
+## Documentation
+The documentation can be found at our website:
+ <https://www5.in.tum.de/AutoPas/doc_doxygen_md-flexible/master/>
+
+Alternatively you can build the documentation on your own:
+* requirements: [Doxygen](http://www.doxygen.nl/)
+* `make doc_doxygen_md-flexible`
+
 ## Compiling
 To build MD-Flexible execute the following from the AutoPas root folder:
 ```bash
@@ -17,7 +25,7 @@ When running md-flexible without any arguments a default simulation with
 all AutoPas options active is run and it's configuration printed. From
 there you can restrict any AutoPas options or change the simulation.
 
-For all available option see:
+For all available options see:
 ```bash
  examples/md-flexible/md-flexible --help
 ```
