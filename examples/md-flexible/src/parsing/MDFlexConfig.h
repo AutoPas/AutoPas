@@ -35,13 +35,15 @@ class MDFlexConfig {
   /**
    * Struct to bundle information for options.
    * @tparam T Datatype of the option
-   * @tparam getOptChar Char for the switch case that is used during cli argument parsing with getOpt.
-   * @note Set to 0 (not '0') if not intended to be used from command line.
+   * @tparam getOptChar int for the switch case that is used during cli argument parsing with getOpt.
+   * @note ints should be unique so they can be used for a switch case.
+   * @note getOptChar should never be -1 because getopt uses this value to indicate that there are no more cli arguments
+   * @note use __LINE__ as a cheap generator for unique ints.
    * @todo c++20: With support for non-type template parameters replace the template getOptChar with the name string
    * Then the getOptChar can be generated from that (e.g. with a hash) at compile time. Discussed here:
    * https://github.com/AutoPas/AutoPas/pull/469#discussion_r431270944
    */
-  template <class T, char getOptChar>
+  template <class T, int getOptChar>
   struct MDFlexOption {
     /**
      * Value of this option.
@@ -66,7 +68,7 @@ class MDFlexConfig {
     /**
      * Member to access the template parameter.
      */
-    constexpr static char getoptChar{getOptChar};
+    constexpr static int getoptChar{getOptChar};
 
     /**
      * Constructor
@@ -129,120 +131,122 @@ class MDFlexConfig {
   /**
    * yamlFilename
    */
-  MDFlexOption<std::string, 'Y'> yamlFilename{"", "yaml-filename", true, "Path to input file."};
+  MDFlexOption<std::string, __LINE__> yamlFilename{"", "yaml-filename", true, "Path to input file."};
 
   // AutoPas options:
   /**
    * containerOptions
    */
-  MDFlexOption<std::set<autopas::ContainerOption>, 'c'> containerOptions{
+  MDFlexOption<std::set<autopas::ContainerOption>, __LINE__> containerOptions{
       autopas::ContainerOption::getAllOptions(), "container", true,
       "List of container options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::ContainerOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * dataLayoutOptions
    */
-  MDFlexOption<std::set<autopas::DataLayoutOption>, 'd'> dataLayoutOptions{
+  MDFlexOption<std::set<autopas::DataLayoutOption>, __LINE__> dataLayoutOptions{
       autopas::DataLayoutOption::getAllOptions(), "data-layout", true,
       "List of data layout options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * selectorStrategy
    */
-  MDFlexOption<autopas::SelectorStrategyOption, 'y'> selectorStrategy{
+  MDFlexOption<autopas::SelectorStrategyOption, __LINE__> selectorStrategy{
       autopas::SelectorStrategyOption::fastestAbs, "selector-strategy", true,
       "Strategy how to reduce the sample measurements to a single value. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::SelectorStrategyOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * traversalOptions
    */
-  MDFlexOption<std::set<autopas::TraversalOption>, 't'> traversalOptions{
+  MDFlexOption<std::set<autopas::TraversalOption>, __LINE__> traversalOptions{
       autopas::TraversalOption::getAllOptions(), "traversal", true,
       "List of traversal options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * newton3Options
    */
-  MDFlexOption<std::set<autopas::Newton3Option>, '3'> newton3Options{
+  MDFlexOption<std::set<autopas::Newton3Option>, __LINE__> newton3Options{
       autopas::Newton3Option::getAllOptions(), "newton3", true,
       "List of newton3 options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
   /**
    * cellSizeFactors
    */
-  MDFlexOption<std::shared_ptr<autopas::NumberSet<double>>, 'a'> cellSizeFactors{
+  MDFlexOption<std::shared_ptr<autopas::NumberSet<double>>, __LINE__> cellSizeFactors{
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.}), "cell-size", true,
       "Factor for the interaction length to determine the cell size."};
   /**
    * logFileName
    */
-  MDFlexOption<std::string, 'L'> logFileName{"", "log-file", true, "Path to a file to store the log output."};
+  MDFlexOption<std::string, __LINE__> logFileName{"", "log-file", true, "Path to a file to store the log output."};
   /**
    * logLevel
    */
-  MDFlexOption<autopas::Logger::LogLevel, 'l'> logLevel{autopas::Logger::LogLevel::info, "log-level", true,
-                                                        "Log level for AutoPas. Set to debug for tuning information. "
-                                                        "Possible Values: (trace debug info warn error critical off)"};
+  MDFlexOption<autopas::Logger::LogLevel, __LINE__> logLevel{
+      autopas::Logger::LogLevel::info, "log-level", true,
+      "Log level for AutoPas. Set to debug for tuning information. "
+      "Possible Values: (trace debug info warn error critical off)"};
   /**
    * tuningStrategyOption
    */
-  MDFlexOption<autopas::TuningStrategyOption, 'T'> tuningStrategyOption{
+  MDFlexOption<autopas::TuningStrategyOption, __LINE__> tuningStrategyOption{
       autopas::TuningStrategyOption::fullSearch, "tuning-strategy", true,
       "Strategy how to reduce the sample measurements to a single value."};
   /**
    * tuningInterval
    */
-  MDFlexOption<unsigned int, 'I'> tuningInterval{100, "tuning-interval", true,
-                                                 "Number of iterations between two tuning phases."};
+  MDFlexOption<unsigned int, __LINE__> tuningInterval{100, "tuning-interval", true,
+                                                      "Number of iterations between two tuning phases."};
   /**
    * tuningSamples
    */
-  MDFlexOption<unsigned int, 'S'> tuningSamples{3, "tuning-samples", true,
-                                                "Number of samples to collect per configuration."};
+  MDFlexOption<unsigned int, __LINE__> tuningSamples{3, "tuning-samples", true,
+                                                     "Number of samples to collect per configuration."};
   /**
    * tuningMaxEvidence
    */
-  MDFlexOption<unsigned int, 'E'> tuningMaxEvidence{10, "tuning-max-evidence", true,
-                                                    "For Bayesian based tuning strategies: Maximum number of evidences "
-                                                    "tuning strategies that have no finishing indicator take."};
+  MDFlexOption<unsigned int, __LINE__> tuningMaxEvidence{
+      10, "tuning-max-evidence", true,
+      "For Bayesian based tuning strategies: Maximum number of evidences "
+      "tuning strategies that have no finishing indicator take."};
   /**
    * relativeOptimumRange
    */
-  MDFlexOption<double, 'o'> relativeOptimumRange{
+  MDFlexOption<double, __LINE__> relativeOptimumRange{
       1.2, "relative-optimum-range", true,
       "For predictive based tuning strategies: Configurations whose predicted performance lies within this range of "
       "the predicted optimal performance will be tested."};
   /**
    * maxTuningPhasesWithoutTest
    */
-  MDFlexOption<unsigned int, 'M'> maxTuningPhasesWithoutTest{
+  MDFlexOption<unsigned int, __LINE__> maxTuningPhasesWithoutTest{
       5, "max-tuning-phases-without-test", true,
       "For predictive based tuning strategies: Maximal number of "
       "tuning phases a configurations can be excluded from testing."};
   /**
    * vtkFileName
    */
-  MDFlexOption<std::string, 'w'> vtkFileName{"", "vtk-filename", true, "Basename for all VTK output files."};
+  MDFlexOption<std::string, __LINE__> vtkFileName{"", "vtk-filename", true, "Basename for all VTK output files."};
   /**
    * vtkWriteFrequency
    */
-  MDFlexOption<size_t, 'W'> vtkWriteFrequency{100, "vtk-write-frequency", true,
-                                              "Number of iterations after which a VTK file is written."};
+  MDFlexOption<size_t, __LINE__> vtkWriteFrequency{100, "vtk-write-frequency", true,
+                                                   "Number of iterations after which a VTK file is written."};
   /**
    * verletClusterSize
    */
-  MDFlexOption<unsigned int, 'q'> verletClusterSize{4, "verlet-cluster-size", true,
-                                                    "Number of particles in Verlet clusters."};
+  MDFlexOption<unsigned int, __LINE__> verletClusterSize{4, "verlet-cluster-size", true,
+                                                         "Number of particles in Verlet clusters."};
   /**
    * verletRebuildFrequency
    */
-  MDFlexOption<unsigned int, 'v'> verletRebuildFrequency{1, "verlet-rebuild-frequency", true,
-                                                         "Number of iterations after which containers are rebuilt."};
+  MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
+      1, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
   /**
    * verletSkinRadius
    */
-  MDFlexOption<double, 'r'> verletSkinRadius{.2, "verlet-skin-radius", true,
-                                             "Skin added to the cutoff to form the interaction length."};
+  MDFlexOption<double, __LINE__> verletSkinRadius{.2, "verlet-skin-radius", true,
+                                                  "Skin added to the cutoff to form the interaction length."};
   /**
    * boxMin
    */
@@ -256,7 +260,7 @@ class MDFlexConfig {
   /**
    * acquisitionFunctionOption
    */
-  MDFlexOption<autopas::AcquisitionFunctionOption, 'A'> acquisitionFunctionOption{
+  MDFlexOption<autopas::AcquisitionFunctionOption, __LINE__> acquisitionFunctionOption{
       autopas::AcquisitionFunctionOption::upperConfidenceBound, "tuning-acquisition-function", true,
       "For Bayesian based tuning strategies: Function to determine the predicted knowledge gain when testing a given "
       "configuration. Possible Values: " +
@@ -266,43 +270,44 @@ class MDFlexConfig {
   /**
    * cutoff
    */
-  MDFlexOption<double, 'C'> cutoff{1., "cutoff", true, "Lennard-Jones force cutoff."};
+  MDFlexOption<double, __LINE__> cutoff{1., "cutoff", true, "Lennard-Jones force cutoff."};
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, 'f'> functorOption{
+  MDFlexOption<FunctorOption, __LINE__> functorOption{
       FunctorOption::lj12_6, "functor", true,
       "Force functor to use. Possible Values: (lennard-jones lennard-jones-AVX2 lennard-jones-globals)"};
   /**
    * iterations
    */
-  MDFlexOption<size_t, 'i'> iterations{10, "iterations", true, "Number of iterations to simulate."};
+  MDFlexOption<size_t, __LINE__> iterations{10, "iterations", true, "Number of iterations to simulate."};
   /**
    * tuningPhases
    */
-  MDFlexOption<size_t, 'P'> tuningPhases{0, "tuning-phases", true,
-                                         "Number of tuning phases to simulate. This option overwrites --iterations."};
+  MDFlexOption<size_t, __LINE__> tuningPhases{
+      0, "tuning-phases", true, "Number of tuning phases to simulate. This option overwrites --iterations."};
   /**
    * Periodic boundaries.
    * This starts with a "not" such that it can be used as a flag with a sane default.
    */
-  MDFlexOption<bool, 'p'> periodic{true, "periodic-boundaries", true,
-                                   "(De)Activate periodic boundaries. Possible Values: (true false) Default: true."};
+  MDFlexOption<bool, __LINE__> periodic{
+      true, "periodic-boundaries", true,
+      "(De)Activate periodic boundaries. Possible Values: (true false) Default: true."};
   /**
    * dontMeasureFlops
    */
-  MDFlexOption<bool, 'F'> dontMeasureFlops{true, "no-flops", false, "Set to omit the calculation of flops."};
+  MDFlexOption<bool, __LINE__> dontMeasureFlops{true, "no-flops", false, "Set to omit the calculation of flops."};
   /**
    * Omit the creation of a config file at the end of the Simulation.
    * This starts with a "not" such that it can be used as a flag with a sane default.
    */
-  MDFlexOption<bool, 'e'> dontCreateEndConfig{true, "no-end-config", false,
-                                              "Set to omit the creation of a yaml file at the end of a simulation."};
+  MDFlexOption<bool, __LINE__> dontCreateEndConfig{
+      true, "no-end-config", false, "Set to omit the creation of a yaml file at the end of a simulation."};
   /**
    * deltaT
    */
-  MDFlexOption<double, 'D'> deltaT{0.001, "deltaT", true,
-                                   "Length of a timestep. Set to 0 to deactivate time integration."};
+  MDFlexOption<double, __LINE__> deltaT{0.001, "deltaT", true,
+                                        "Length of a timestep. Set to 0 to deactivate time integration."};
   /**
    * epsilonMap
    */
@@ -323,16 +328,16 @@ class MDFlexConfig {
   /**
    * boxLength
    */
-  MDFlexOption<double, 'b'> boxLength{10, "box-length", true, "Length of the simulation box as a cuboid."};
+  MDFlexOption<double, __LINE__> boxLength{10, "box-length", true, "Length of the simulation box as a cuboid."};
   /**
    * distributionMean
    */
-  MDFlexOption<std::array<double, 3>, 'm'> distributionMean{
+  MDFlexOption<std::array<double, 3>, __LINE__> distributionMean{
       {5., 5., 5.}, "distribution-mean", true, "Mean of the gaussian distribution for random particle initialization."};
   /**
    * distributionStdDev
    */
-  MDFlexOption<std::array<double, 3>, 'z'> distributionStdDev{
+  MDFlexOption<std::array<double, 3>, __LINE__> distributionStdDev{
       {2., 2., 2.},
       "distribution-stddeviation",
       true,
@@ -340,22 +345,22 @@ class MDFlexConfig {
   /**
    * particlesPerDim
    */
-  MDFlexOption<size_t, 'n'> particlesPerDim{10, "particles-per-dimension", true,
-                                            "Size of the scenario for the grid generator."};
+  MDFlexOption<size_t, __LINE__> particlesPerDim{10, "particles-per-dimension", true,
+                                                 "Size of the scenario for the grid generator."};
   /**
    * particlesTotal
    */
-  MDFlexOption<size_t, 'N'> particlesTotal{1000, "particles-total", true,
-                                           "Total number of particles for the random distribution based generators."};
+  MDFlexOption<size_t, __LINE__> particlesTotal{
+      1000, "particles-total", true, "Total number of particles for the random distribution based generators."};
   /**
    * particleSpacing
    */
-  MDFlexOption<double, 's'> particleSpacing{.5, "particle-spacing", true,
-                                            "Space between two particles for the grid generator."};
+  MDFlexOption<double, __LINE__> particleSpacing{.5, "particle-spacing", true,
+                                                 "Space between two particles for the grid generator."};
   /**
    * generatorOption
    */
-  MDFlexOption<GeneratorOption, 'g'> generatorOption{
+  MDFlexOption<GeneratorOption, __LINE__> generatorOption{
       GeneratorOption::grid, "particle-generator", true,
       "Scenario generator. Possible Values: (grid uniform gaussian sphere) Default: grid"};
 
@@ -425,9 +430,10 @@ class MDFlexConfig {
   /**
    * useThermostat
    */
-  MDFlexOption<bool, 'u'> useThermostat{false, "thermostat", true,
-                                        "(De)Activate the thermostat. Only useful when used to overwrite a yaml file. "
-                                        "Possible Values: (true false) Default: false"};
+  MDFlexOption<bool, __LINE__> useThermostat{
+      false, "thermostat", true,
+      "(De)Activate the thermostat. Only useful when used to overwrite a yaml file. "
+      "Possible Values: (true false) Default: false"};
   /**
    * initTemperature
    */
@@ -461,7 +467,8 @@ class MDFlexConfig {
   /**
    * checkpointfile
    */
-  MDFlexOption<std::string, 'K'> checkpointfile{"", "checkpoint", true, "Path to a VTK File to load as a checkpoint."};
+  MDFlexOption<std::string, __LINE__> checkpointfile{"", "checkpoint", true,
+                                                     "Path to a VTK File to load as a checkpoint."};
 
   /**
    * valueOffset used for cli-output alignment

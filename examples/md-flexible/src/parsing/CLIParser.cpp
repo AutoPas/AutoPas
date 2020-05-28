@@ -15,10 +15,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   using namespace std;
 
   // utility options
-  const static auto helpOption{
-      MDFlexConfig::MDFlexOption<std::string, 'h'>("", "help", false, "Display this message.")};
+  // getoptChars for all other options are line numbers so use negative numbers here to avoid clashes
+  // also do not use -1 because it is used by getopt to signal that there is no cli option
+  const static auto helpOption{MDFlexConfig::MDFlexOption<std::string, -2>("", "help", false, "Display this message.")};
   const static auto zshCompletionsOption{
-      MDFlexConfig::MDFlexOption<std::string, 'Z'>("", "zsh-completions", false, "Generate completions file for zsh.")};
+      MDFlexConfig::MDFlexOption<std::string, -3>("", "zsh-completions", false, "Generate completions file for zsh.")};
 
   // the following, shorter version does not work with icpc 2019.4.243. Error:
   // error: class template name must be a placeholder for the complete type being initialized
@@ -44,13 +45,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   // sanity check that all getopt chars are unique. Brackets for scoping.
   {
     // map tracking mappings of getopt chars to strings
-    std::map<char, std::string> getoptCharsToName;
+    std::map<int, std::string> getoptCharsToName;
     // look for clashes by checking if getopt chars are in the map and otherwise add them
     autopas::utils::TupleUtils::for_each(relevantOptions, [&](auto &opt) {
       if (auto iterAtClash = getoptCharsToName.find(opt.getoptChar); iterAtClash != getoptCharsToName.end()) {
         throw std::runtime_error("CLIParser::parseInput: the following options share the same getopt char!\n" +
-                                 opt.name + " : " + opt.getoptChar + "\n" + iterAtClash->second + " : " +
-                                 iterAtClash->first);
+                                 opt.name + " : " + std::to_string(opt.getoptChar) + "\n" + iterAtClash->second +
+                                 " : " + std::to_string(iterAtClash->first));
       } else {
         getoptCharsToName.insert({opt.getoptChar, opt.name});
       }
