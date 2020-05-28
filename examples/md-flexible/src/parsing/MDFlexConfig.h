@@ -37,7 +37,9 @@ class MDFlexConfig {
    * @tparam T Datatype of the option
    * @tparam getOptChar Char for the switch case that is used during cli argument parsing with getOpt.
    * @note Set to 0 (not '0') if not intended to be used from command line.
-   *
+   * @todo c++20: With support for non-type template parameters replace the template getOptChar with the name string
+   * Then the getOptChar can be generated from that (e.g. with a hash) at compile time. Discussed here:
+   * https://github.com/AutoPas/AutoPas/pull/469#discussion_r431270944
    */
   template <class T, char getOptChar>
   struct MDFlexOption {
