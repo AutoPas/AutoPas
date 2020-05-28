@@ -30,10 +30,6 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      */
     fullSearch,
     /**
-     * Test all allowed configurations using MPI parallelization.
-     */
-    fullSearchMPI,
-    /**
      * Predict the configuration which will yield the most
      * information if tested next.
      */
@@ -53,6 +49,11 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * range, and selects the best.
      */
     predictiveTuning,
+    /**
+     * Uses MPI to distribute the workload when tuning.
+     * Internally stores any other tuningStrategy that is then used for the local tuning
+     */
+     mpiParallelizedTuning,
   };
 
   /**
@@ -81,10 +82,10 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::bayesianSearch, "bayesian-Search"},
         {TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster-Search"},
         {TuningStrategyOption::fullSearch, "full-Search"},
-        {TuningStrategyOption::fullSearchMPI, "full-Search-MPI"},
         {TuningStrategyOption::randomSearch, "random-Search"},
         {TuningStrategyOption::activeHarmony, "active-harmony"},
         {TuningStrategyOption::predictiveTuning, "predictive-tuning"},
+        {TuningStrategyOption::mpiParallelizedTuning, "mpi-parallelized-tuning"},
     };
   }
 

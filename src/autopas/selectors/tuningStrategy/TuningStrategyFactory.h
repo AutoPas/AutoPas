@@ -9,6 +9,7 @@
 #include "TuningStrategyInterface.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/utils/WrapMPI.h"
 
 namespace autopas::TuningStrategyFactory {
@@ -33,5 +34,5 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
     unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption,
-    AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
+    MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
 }  // namespace autopas::TuningStrategyFactory
