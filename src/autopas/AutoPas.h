@@ -626,18 +626,18 @@ class AutoPas {
    * List of traversals AutoPas can choose from.
    * For possible traversal choices see options::TraversalOption::Value.
    */
-  std::set<TraversalOption> _allowedTraversals{TraversalOption::getAllOptions()};
+  std::set<TraversalOption> _allowedTraversals{TraversalOption::getMostOptions()};
 
   /**
    * List of data layouts AutoPas can choose from.
    * For possible data layout choices see options::DataLayoutOption::Value.
    */
-  std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getAllOptions()};
+  std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getMostOptions()};
 
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
-  std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getAllOptions()};
+  std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getMostOptions()};
 
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
