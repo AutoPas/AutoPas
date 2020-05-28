@@ -47,6 +47,12 @@ class AcquisitionFunctionOption : public Option<AcquisitionFunctionOption> {
   constexpr operator Value() const { return _value; }
 
   /**
+   * Set of options that are very unlikely to be interesting.
+   * @return
+   */
+  static std::set<AcquisitionFunctionOption> getDiscouragedOptions() { return {}; }
+
+  /**
    * Provides a way to iterate over the possible choices of AcquisitionFunction.
    * @return map option -> string representation
    */

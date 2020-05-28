@@ -25,7 +25,7 @@ class Option {
    * Prevents cast to bool by deleting the conversion operator.
    * @return
    */
-  virtual explicit operator bool() = delete;
+  explicit operator bool() = delete;
 
   /**
    * Provides a way to iterate over the possible options.
@@ -38,6 +38,20 @@ class Option {
                   [&retSet](auto pairOpStr) { retSet.insert(pairOpStr.first); });
     return retSet;
   };
+
+  /**
+   * Provides a way to iterate over the possible options minus those that are very unlikely to be on interest.
+   * @note This function is meant to provide sane defaults.
+   * @return
+   */
+  static std::set<actualOption> getMostOptions() {
+    std::set<actualOption> retSet;
+    auto allOptions = getAllOptions();
+    auto discouragedOptions = actualOption::getDiscouragedOptions();
+    std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
+                        std::inserter(retSet, retSet.begin()));
+    return retSet;
+  }
 
   /**
    * Converts an Option object to its respective string representation.

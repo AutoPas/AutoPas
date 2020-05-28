@@ -48,10 +48,10 @@ class ContainerOption : public Option<ContainerOption> {
   constexpr operator Value() const { return _value; }
 
   /**
-   * No cast to bool.
+   * Set of options that are very unlikely to be interesting.
    * @return
    */
-  explicit operator bool() = delete;
+  static std::set<ContainerOption> getDiscouragedOptions() { return {Value::directSum}; }
 
   /**
    * Provides a way to iterate over the possible choices of ContainerOption.
@@ -68,17 +68,6 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::verletClusterCells, "VerletClusterCells"},
     };
   };
-
-  /**
-   * Provides a way to iterate over the possible options.
-   * @return Set of all possible values of this option type minus those who are very unlikely to be good.
-   * @note This function is meant to provide sane defaults.
-   */
-  static std::set<ContainerOption> getMostOptions() {
-    auto returnSet = getAllOptions();
-    returnSet.erase(ContainerOption::directSum);
-    return returnSet;
-  }
 
  private:
   Value _value{Value(-1)};
