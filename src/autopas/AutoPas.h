@@ -639,7 +639,7 @@ class AutoPas {
    * Acquisition function used for tuning.
    * For possible acquisition function choices see options::AcquisitionFunction::Value.
    */
-  AcquisitionFunctionOption _acquisitionFunctionOption{AcquisitionFunctionOption::lowerConfidenceBound};
+  AcquisitionFunctionOption _acquisitionFunctionOption{AcquisitionFunctionOption::upperConfidenceBound};
 
   /**
    * Extrapolation method used in predictiveTuning.
