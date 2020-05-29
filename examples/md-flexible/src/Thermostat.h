@@ -26,7 +26,7 @@ namespace {
  * @param normalDistribution Distribution used for constructing the maxwell boltzmann distribution.
  */
 void addMaxwellBoltzmannDistributedVelocity(autopas::Particle &p, const double averageVelocity,
-                                            const std::default_random_engine &randomEngine,
+                                            std::default_random_engine &randomEngine,
                                             std::normal_distribution<double> &normalDistribution) {
   // when adding independent normally distributed values to all velocity components
   // the velocity change is maxwell boltzmann distributed
