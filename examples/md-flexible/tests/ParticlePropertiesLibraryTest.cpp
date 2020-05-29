@@ -5,10 +5,10 @@
  */
 #include "ParticlePropertiesLibraryTest.h"
 
-#include "Simulation.h"
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
-#include "parsing/YamlParser.h"
+#include "src/Simulation.h"
+#include "src/parsing/YamlParser.h"
 #include "testingHelpers/commonTypedefs.h"
 
 double ParticlePropertiesLibraryTest::mixingE(double e1, double e2) { return std::sqrt(e1 * e2); }
@@ -80,8 +80,8 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
   // this test need to be adapted if the input file changes
   MDFlexConfig config;
   autopas::AutoPas<Molecule, FMCell> autopas;
-  config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
-  YamlParser::parseYamlFile(config);
+  config.yamlFilename.value = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
+  MDFlexParser::YamlParser::parseYamlFile(config);
   config.calcSimulationBox();
   simulation.initialize(config, autopas);
   simulation.initializeParticlePropertiesLibrary();

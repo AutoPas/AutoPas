@@ -17,8 +17,6 @@ if (DOXYGEN_FOUND)
 
     # request to configure the file
     configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-    message(STATUS "Doxygen configured")
-
     # note the option ALL which allows to build the docs together with the application
     add_custom_target(
         doc_doxygen
@@ -27,6 +25,22 @@ if (DOXYGEN_FOUND)
         COMMENT "Generating API documentation with Doxygen"
         VERBATIM
     )
+
+    if(AUTOPAS_BUILD_EXAMPLES)
+        set(DOXYGEN_MD-FLEXIBLE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_md-flexible)
+        # request to configure the file
+        configure_file(examples/md-flexible/Doxyfile.in ${DOXYGEN_MD-FLEXIBLE_OUT} @ONLY)
+        # note the option ALL which allows to build the docs together with the application
+        add_custom_target(
+                doc_doxygen_md-flexible
+                COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_MD-FLEXIBLE_OUT}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                COMMENT "Generating documentation for md-flexible with Doxygen"
+                VERBATIM
+        )
+    endif()
+
+    message(STATUS "Doxygen configured")
 else ()
     message(
         WARNING
