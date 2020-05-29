@@ -317,23 +317,24 @@ void PredictiveTuning::linearRegression() {
           _configurationPredictionFunction[configuration][1];
       predictionOutput(configuration);
     } else if (_traversalTimesStorage[configuration].size() >= _testsUntilFirstPrediction) {
-      // TODO: Change casting
-      long iterationMultTime = 0, iterationSum = 0, iterationSquareSum = 0, timeSum = 0;
-      const long n = _traversalTimesStorage[configuration].size();
+      // TODO: Maybe look at casting again - already better than before
+      size_t iterationMultTime = 0, iterationSum = 0, iterationSquareSum = 0, timeSum = 0;
+      const auto n = _traversalTimesStorage[configuration].size();
 
       for (auto i = n - _testsUntilFirstPrediction; i < n; i++) {
         const auto &[iteration, time] = _traversalTimesStorage[configuration][i];
-        iterationMultTime += (long)iteration * time;
-        iterationSum += (long)iteration;
-        iterationSquareSum += (long)iteration * (long)iteration;
+        iterationMultTime += iteration * time;
+        iterationSum += iteration;
+        iterationSquareSum += iteration * iteration;
         timeSum += time;
       }
 
-      const double iterationMeanValue = (double)iterationSum / (double)_testsUntilFirstPrediction;
+      const double iterationMeanValue =
+          static_cast<double>(iterationSum) / static_cast<double>(_testsUntilFirstPrediction);
       const auto timeMeanValue = timeSum / n;
 
-      const auto numerator = (double)iterationMultTime - (double)iterationSum * timeMeanValue;
-      const auto denominator = (double)iterationSquareSum - (double)iterationSum * iterationMeanValue;
+      const auto numerator = iterationMultTime - iterationSum * timeMeanValue;
+      const auto denominator = iterationSquareSum - iterationSum * iterationMeanValue;
 
       // ((Sum iteration_i * time_i) - n * iterationMeanValue * timeMeanValue) / ((Sum iteration_i^2) - n *
       // iterationMeanValue ^ 2)
@@ -369,6 +370,7 @@ void PredictiveTuning::lagrangePolynomial() {
           if (i != j) {
             numerator *= _iterationBeginTuningPhase - _traversalTimesStorage[configuration][lengthTTS - j].first;
             denominator *= pointIIteration - _traversalTimesStorage[configuration][lengthTTS - j].first;
+            // TODO: Look if this is sufficient or if there is a better solution
             // Only needed when the datatype is to small
             if (denominator == 0) {
               denominator = std::numeric_limits<int>::max();
@@ -407,7 +409,7 @@ void PredictiveTuning::newtonPolynomial() {
       _configurationPredictions[configuration] = prediction;
       predictionOutput(configuration);
     } else if (_traversalTimesStorage[configuration].size() >= _testsUntilFirstPrediction) {
-      // TODO: Look at casting again
+      // TODO: Look at casting and declarations again
       std::vector<std::vector<double>> interimCalculation;
       std::vector<unsigned long> iterationValues;
       std::vector<double> coefficients;
@@ -425,7 +427,7 @@ void PredictiveTuning::newtonPolynomial() {
                 _traversalTimesStorage[configuration][lengthTTS - _testsUntilFirstPrediction + j].first);
           } else {
             ithColumn.emplace_back((interimCalculation[i - 1][j + 1] - interimCalculation[i - 1][j]) /
-                                   (double)(iterationValues[j + i] - iterationValues[j]));
+                                   static_cast<double>(iterationValues[j + i] - iterationValues[j]));
           }
         }
         interimCalculation.emplace_back(ithColumn);
@@ -437,7 +439,7 @@ void PredictiveTuning::newtonPolynomial() {
       for (unsigned int i = 0; i < _testsUntilFirstPrediction; i++) {
         auto interimValue = coefficients[i];
         for (unsigned int j = 0; j < i; j++) {
-          interimValue *= (double)_iterationBeginTuningPhase - iterationValues[j];
+          interimValue *= static_cast<double>(_iterationBeginTuningPhase - iterationValues[j]);
         }
         prediction += interimValue;
       }
