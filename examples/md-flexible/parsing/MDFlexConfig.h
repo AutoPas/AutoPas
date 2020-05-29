@@ -105,7 +105,7 @@ class MDFlexConfig {
   std::array<double, 3> boxMax{5, 5, 5};
   static inline const char *acquisitionFunctionOptionStr{"tuning-acquisition-function"};
   autopas::AcquisitionFunctionOption acquisitionFunctionOption{
-      autopas::AcquisitionFunctionOption::lowerConfidenceBound};
+      autopas::AcquisitionFunctionOption::upperConfidenceBound};
 
   // Simulation Options:
   static inline const char *cutoffStr{"cutoff"};

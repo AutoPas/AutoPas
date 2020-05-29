@@ -100,6 +100,7 @@ TEST(OptionTest, parseSelectorOptionsTest) {
 TEST(OptionTest, parseTuningStrategyOptionsTest) {
   std::map<autopas::TuningStrategyOption, std::string> mapEnumString = {
       {autopas::TuningStrategyOption::bayesianSearch, "bayesian"},
+      {autopas::TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster"},
       {autopas::TuningStrategyOption::fullSearch, "full"},
       {autopas::TuningStrategyOption::randomSearch, "random"},
       {autopas::TuningStrategyOption::activeHarmony, "harmony"},
@@ -115,10 +116,9 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
 TEST(OptionTest, parseAcquisitionFunctionOptionsTest) {
   std::map<autopas::AcquisitionFunctionOption, std::string> mapEnumString = {
       {autopas::AcquisitionFunctionOption::upperConfidenceBound, "upperconfbound"},
-      {autopas::AcquisitionFunctionOption::expectedDecrease, "expdecr"},
-      {autopas::AcquisitionFunctionOption::lowerConfidenceBound, "lowerconfbound"},
+      {autopas::AcquisitionFunctionOption::expectedImprovement, "expimprv"},
       {autopas::AcquisitionFunctionOption::mean, "mean"},
-      {autopas::AcquisitionFunctionOption::probabilityOfDecrease, "probofdecrease"},
+      {autopas::AcquisitionFunctionOption::probabilityOfImprovement, "probofimprv"},
       {autopas::AcquisitionFunctionOption::variance, "varianz"},
   };
 
