@@ -27,10 +27,15 @@ class BoundaryConditions {
    */
   BoundaryConditions() = default;
 
+  /**
+   * Default destructor.
+   */
   virtual ~BoundaryConditions() = default;
+
   /**
    * Convert the leaving particle to entering particles.
    * Hereby the periodic boundary position change is done.
+   * @param autopas
    * @param leavingParticles
    * @return vector of particles that will enter the container.
    */
@@ -63,8 +68,8 @@ class BoundaryConditions {
                                std::vector<ParticleType> &haloParticles);
 
   /**
-   * Realizes periodic Boundaries for the simulation
-   * By handling halo particles and updating the container
+   * Realizes periodic Boundaries for the simulation by handling halo particles and updating the container
+   * @param autoPas
    */
   static void applyPeriodic(autopas::AutoPas<ParticleType, ParticleCell> &autoPas);
 };

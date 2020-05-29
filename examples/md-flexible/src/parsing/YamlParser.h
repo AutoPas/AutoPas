@@ -15,18 +15,18 @@
 #include <string>
 
 #include "MDFlexConfig.h"
-#include "Objects/Objects.h"
 #include "autopas/utils/NumberSet.h"
+#include "src/Objects/Objects.h"
 
 /**
  * Parser for input through YAML files.
  */
-namespace YamlParser {
+namespace MDFlexParser::YamlParser {
 /**
  * Parses the Input for the simulation from the Yaml File specified in the configuration
  * @param config configuration where the input is stored.
  * @return false if any errors occurred during parsing.
- * @FIXME: at the moment false is never returned
+ * @note FIXME: at the moment false is never returned and the parser just ungracefully crashes.
  */
 bool parseYamlFile(MDFlexConfig &config);
-};  // namespace YamlParser
+};  // namespace MDFlexParser::YamlParser
