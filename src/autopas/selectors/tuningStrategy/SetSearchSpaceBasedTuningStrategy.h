@@ -8,7 +8,7 @@
 
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/loadEstimators.h"
+#include "autopas/containers/LoadEstimators.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
@@ -110,6 +110,7 @@ void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
 
     for (const auto &cellSizeFactor : allowedCellSizeFactors)
       for (const auto &traversalOption : allowedAndApplicable) {
+        // if load estimators are not applicable LoadEstimatorOption::none is returned.
         const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
             loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, allowedLoadEstimatorOptions);
         for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {

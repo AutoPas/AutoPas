@@ -12,7 +12,7 @@
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
-#include "autopas/containers/loadEstimators.h"
+#include "autopas/containers/LoadEstimators.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -111,17 +111,13 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    */
   BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
     switch (this->_loadEstimator) {
-      case LoadEstimatorOption::none: {
-        return
-            [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
-                const std::array<unsigned long, 3> &upperCorner) { return 1; };
-      }
       case LoadEstimatorOption::squaredParticlesPerCell: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
           return loadEstimators::squaredParticlesPerCell(this->_cells, cellsPerDimension, lowerCorner, upperCorner);
         };
       }
+      case LoadEstimatorOption::none: /* FALL THROUgh */
       default: {
         return
             [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
@@ -134,8 +130,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
-    auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal);
-    if (balancedTraversal) {
+    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
     if (traversalInterface && cellPairTraversal) {

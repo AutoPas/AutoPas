@@ -6,7 +6,7 @@
 
 #include "LoadEstimatorTest.h"
 
-#include "autopas/containers/loadEstimators.h"
+#include "autopas/containers/LoadEstimators.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 

@@ -1,5 +1,5 @@
 /**
- * @file loadEstimators.h
+ * @file LoadEstimators.h
  *
  * @date 24 Apr 2020
  * @author fischerv
@@ -18,12 +18,12 @@
 #include "autopas/utils/WrapOpenMP.h"
 
 /**
- * Collection of functions for estimating the load required to update a specific region within a containers
+ * Collection of functions for estimating the load required to update a specific region within a containers.
  */
 namespace autopas::loadEstimators {
 
 /**
- * Sums up the squared number of particles for all cells within region
+ * Sums up the squared number of particles for all cells within region.
  *
  * @param cells
  * @param cellsPerDimension
@@ -80,12 +80,12 @@ unsigned long neighborListLength(
 }
 
 /**
- * returns set of load estimators compatible with container.
+ * Returns set of load estimators compatible with the container.
  *
  * @param container
  * @return compatible load estimators
  */
-static const std::set<autopas::LoadEstimatorOption> allCompatibleLoadEstimators(autopas::ContainerOption container) {
+static std::set<autopas::LoadEstimatorOption> allCompatibleLoadEstimators(autopas::ContainerOption container) {
   switch (container) {
     case ContainerOption::linkedCells: {
       return std::set<autopas::LoadEstimatorOption>{LoadEstimatorOption::none,
@@ -124,16 +124,16 @@ static bool usesLoadEstimator(autopas::TraversalOption traversal) {
 
 /**
  * If traversal uses load estimation, returns all load estimators in allowedOptions,
- * that are compatible with container, but always allows none if intersection is empty.
+ * that are compatible with the container, but always allows none if the intersection is empty.
  *
  * @param container
  * @param traversal
  * @param allowedOptions
  * @return applicable traversals or {none}
  */
-static const std::set<autopas::LoadEstimatorOption> getApplicableLoadEstimators(
+static std::set<autopas::LoadEstimatorOption> getApplicableLoadEstimators(
     autopas::ContainerOption container, autopas::TraversalOption traversal,
-    std::set<autopas::LoadEstimatorOption> allowedOptions) {
+    const std::set<autopas::LoadEstimatorOption> allowedOptions) {
   if (usesLoadEstimator(traversal)) {
     auto compatible = allCompatibleLoadEstimators(container);
     std::set<autopas::LoadEstimatorOption> intersection;

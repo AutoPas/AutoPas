@@ -10,7 +10,7 @@
 #include <set>
 
 #include "TuningStrategyInterface.h"
-#include "autopas/containers/loadEstimators.h"
+#include "autopas/containers/LoadEstimators.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
 

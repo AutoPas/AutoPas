@@ -14,12 +14,12 @@
 namespace autopas {
 
 /**
- * Base class for traversals utilising load balancing
+ * Base class for traversals utilising load balancing.
  */
 class BalancedTraversal {
  public:
   /**
-   * Type signature for load estimators
+   * Type signature for load estimators.
    */
   using EstimatorFunction =
       std::function<unsigned long(const std::array<unsigned long, 3> &, const std::array<unsigned long, 3> &,
@@ -30,11 +30,11 @@ class BalancedTraversal {
    *
    * @param loadEstimator
    */
-  void setLoadEstimator(EstimatorFunction loadEstimator) { _loadEstimator = loadEstimator; }
+  void setLoadEstimator(EstimatorFunction loadEstimator) { _loadEstimator = std::move(loadEstimator); }
 
  protected:
   /**
-   * Algorithm to use for estimating load
+   * Algorithm to use for estimating load.
    *
    * parameters: cellsPerDimension, lowerCorner, upperCorner
    */
