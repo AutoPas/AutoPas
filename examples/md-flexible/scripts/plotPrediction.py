@@ -39,8 +39,6 @@ for datafile in datafiles:
         configurationPrediction = {}
         configurationTest = {}
         iteration = 0
-        iterationBeginTuning = 0
-        tuning = True
 
         regexConfigurationPrediction = '.* Traversal time prediction for +({.*}).*: *([0-9]+)'
         regexNoPrediction = '.* No traversal time prediction for +({.*})'
@@ -75,9 +73,6 @@ for datafile in datafiles:
     )
 
     # plotting predictions
-    # probably a limited amount of configurations should be in one plot - probably like 5 or 10
-    # maybe as user input if is should be in one or not
-    configsInPlot = 0
     for configuration in configurationPrediction:
         allPrediction = []
         allIteration = []
@@ -98,17 +93,4 @@ for datafile in datafiles:
 
             fig.add_trace(go.Scatter(x=allIteration, y=allPrediction, mode='markers', name=configuration))
 
-        configsInPlot = configsInPlot + 1
-
-        # if configsInPlot == 5:
-        #    fig.show()
-        #    configsInPlot = 0
-        #    fig = go.Figure(
-        #        layout=dict(
-        #            showlegend=True,
-        #            title_text=datafile,
-        #            xaxis_title_text="Iteration",
-        #            yaxis_title_text="Predicted time per Iteration",
-        #        ),
-        #    )
     fig.show()
