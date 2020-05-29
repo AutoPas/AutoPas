@@ -6,12 +6,11 @@
 
 #include "GeneratorsTest.h"
 
-#include "Generator.h"
-#include "PrintableMolecule.h"
 #include "autopas/AutoPas.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "autopasTools/generators/RandomGenerator.h"
-#include "parsing/YamlParser.h"
+#include "src/Generator.h"
+#include "src/parsing/YamlParser.h"
 #include "testingHelpers/commonTypedefs.h"
 
 // the following test only work if testParsing.yaml is well set
@@ -38,11 +37,11 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
 TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   auto autoPas = autopas::AutoPas<Molecule, FMCell>(std::cout);
   MDFlexConfig config;
-  config.yamlFilename = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
-  YamlParser::parseYamlFile(config);
+  config.yamlFilename.value = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
+  MDFlexParser::YamlParser::parseYamlFile(config);
   config.calcSimulationBox();
-  autoPas.setBoxMax(config.boxMax);
-  autoPas.setBoxMin(config.boxMin);
+  autoPas.setBoxMax(config.boxMax.value);
+  autoPas.setBoxMin(config.boxMin.value);
   autoPas.init();
   std::array<double, 3> velocity = {0., 0., 0.};
   // parses the multiple Objects input of "multipleObjectsWithMultipleTypesTest" and generates a VTK File from the Input
