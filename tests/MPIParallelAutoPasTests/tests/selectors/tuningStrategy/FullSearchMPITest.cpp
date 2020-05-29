@@ -44,6 +44,11 @@ TEST_F(FullSearchMPITest, testRemoveN3OptionRemoveAll) {
                autopas::utils::ExceptionHandler::AutoPasException);
 }
 
+/**
+ * Tests if the global optimum is selected correctly when calling tune() after the local search spaces are finished.
+ * Tests if the local configuration is used again after reset() instead of the global one (which isn't part of the
+ * search space for most ranks)
+ */
 TEST_F(FullSearchMPITest, testGlobalOptimumAndReset) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);

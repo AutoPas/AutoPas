@@ -569,7 +569,7 @@ class AutoPas {
 #if defined(AUTOPAS_MPI)
   /**
    * Setter for the MPI communicator that AutoPas uses for potential MPI calls.
-   * If not set, MPI_COMM_WOLRD will be used.
+   * If not set, MPI_COMM_WORLD will be used.
    * @param comm: communicator (handle)
    */
   void setMPICommunicator(MPI_Comm comm) { _autopasMPICommunicator = comm; }
