@@ -318,14 +318,14 @@ void PredictiveTuning::linearRegression() {
       predictionOutput(configuration);
     } else if (_traversalTimesStorage[configuration].size() >= _testsUntilFirstPrediction) {
       // TODO: Maybe look at casting again - already better than before
-      size_t iterationMultTime = 0, iterationSum = 0, iterationSquareSum = 0, timeSum = 0;
+      long iterationMultTime = 0, iterationSum = 0, iterationSquareSum = 0, timeSum = 0;
 
       for (auto i = _traversalTimesStorage[configuration].size() - _testsUntilFirstPrediction;
            i < _traversalTimesStorage[configuration].size(); i++) {
         const auto &[iteration, time] = _traversalTimesStorage[configuration][i];
-        iterationMultTime += iteration * time;
+        iterationMultTime += static_cast<long>(iteration) * time;
         iterationSum += iteration;
-        iterationSquareSum += iteration * iteration;
+        iterationSquareSum += static_cast<long>(iteration * iteration);
         timeSum += time;
       }
 
@@ -334,7 +334,8 @@ void PredictiveTuning::linearRegression() {
       const auto timeMeanValue = timeSum / _testsUntilFirstPrediction;
 
       const auto numerator = iterationMultTime - iterationSum * timeMeanValue;
-      const auto denominator = iterationSquareSum - iterationSum * iterationMeanValue;
+      const auto denominator =
+          static_cast<double>(iterationSquareSum) - static_cast<double>(iterationSum) * iterationMeanValue;
 
       // ((Sum iteration_i * time_i) - n * iterationMeanValue * timeMeanValue) / ((Sum iteration_i^2) - n *
       // iterationMeanValue ^ 2)
