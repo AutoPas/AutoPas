@@ -1,30 +1,31 @@
 /**
- * @file FulLSearchMPI.cpp
+ * @file FullSearchMPI.cpp
  * @author W. Thieme
  * @date 29.05.2020
  */
 
 #include "FullSearchMPI.h"
 
-autopas::FullSearchMPI::FullSearchMPI(const std::set<autopas::ContainerOption> &allowedContainerOptions,
-                                      const std::set<double> &allowedCellSizeFactors,
-                                      const std::set<autopas::TraversalOption> &allowedTraversalOptions,
-                                      const std::set<autopas::DataLayoutOption> &allowedDataLayoutOptions,
-                                      const std::set<autopas::Newton3Option> &allowedNewton3Options,
-                                      autopas::AutoPas_MPI_Comm comm)
-        : _containerOptions(allowedContainerOptions),
-          _optimalConfig(Configuration()),
-          _configurationCommunicator(AutoPasConfigurationCommunicator()),
-          _localOptimalTime(0),
-          _request(AUTOPAS_MPI_REQUEST_NULL),
-          _allLocalConfigsTested(false),
-          _allGlobalConfigsTested(false),
-          _autopasMPICommunicator(comm) {
+namespace autopas {
+
+FullSearchMPI::FullSearchMPI(const std::set<ContainerOption> &allowedContainerOptions,
+                             const std::set<double> &allowedCellSizeFactors,
+                             const std::set<TraversalOption> &allowedTraversalOptions,
+                             const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                             const std::set<Newton3Option> &allowedNewton3Options, AutoPas_MPI_Comm comm)
+    : _containerOptions(allowedContainerOptions),
+      _optimalConfig(Configuration()),
+      _configurationCommunicator(AutoPasConfigurationCommunicator()),
+      _localOptimalTime(0),
+      _request(AUTOPAS_MPI_REQUEST_NULL),
+      _allLocalConfigsTested(false),
+      _allGlobalConfigsTested(false),
+      _autopasMPICommunicator(comm) {
   // Count the total number of allowed and applicable configurations
   int totalNumConfigs = 0;
   for (auto &containerOption : allowedContainerOptions) {
     const std::set<TraversalOption> &allContainerTraversals =
-            compatibleTraversals::allCompatibleTraversals(containerOption);
+        compatibleTraversals::allCompatibleTraversals(containerOption);
     std::set<TraversalOption> allowedAndApplicable;
     std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
                           allContainerTraversals.begin(), allContainerTraversals.end(),
@@ -64,26 +65,26 @@ autopas::FullSearchMPI::FullSearchMPI(const std::set<autopas::ContainerOption> &
     populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                         allowedDataLayoutOptions, allowedNewton3Options, 0, totalNumConfigs);
     if (_searchSpace.empty()) {
-      autopas::utils::ExceptionHandler::exception("No valid configuration could be generated");
+      utils::ExceptionHandler::exception("No valid configuration could be generated");
     }
   }
   AutoPasLog(debug, "Points in search space: {}", _searchSpace.size());
   _tuningConfig = _searchSpace.begin();
 }
 
-void autopas::FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
-                                                 const std::set<double> &allowedCellSizeFactors,
-                                                 const std::set<TraversalOption> &allowedTraversalOptions,
-                                                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                                 const std::set<Newton3Option> &allowedNewton3Options, const int start,
-                                                 const int startNext) {
+void FullSearchMPI::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+                                        const std::set<double> &allowedCellSizeFactors,
+                                        const std::set<TraversalOption> &allowedTraversalOptions,
+                                        const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                                        const std::set<Newton3Option> &allowedNewton3Options, const int start,
+                                        const int startNext) {
   // Index to test which configurations apply to the current rank
   int i = 0;
   // Generate all potential configs
   for (auto &containerOption : allowedContainerOptions) {
     // Get all traversals of the container and restrict them to the allowed ones
     const std::set<TraversalOption> &allContainerTraversals =
-            compatibleTraversals::allCompatibleTraversals(containerOption);
+        compatibleTraversals::allCompatibleTraversals(containerOption);
     std::set<TraversalOption> allowedAndApplicable;
     std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
                           allContainerTraversals.begin(), allContainerTraversals.end(),
@@ -109,7 +110,7 @@ void autopas::FullSearchMPI::populateSearchSpace(const std::set<ContainerOption>
   }
 }
 
-bool autopas::FullSearchMPI::tune(bool currentInvalid) {
+bool FullSearchMPI::tune(bool currentInvalid) {
   // Repeat as long as traversals are not applicable or we run out of configs
   ++_tuningConfig;
 
@@ -135,7 +136,7 @@ bool autopas::FullSearchMPI::tune(bool currentInvalid) {
   AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
   if (_allGlobalConfigsTested) {
     _optimalConfig =
-            _configurationCommunicator.optimizeConfiguration(_autopasMPICommunicator, _optimalConfig, _localOptimalTime);
+        _configurationCommunicator.optimizeConfiguration(_autopasMPICommunicator, _optimalConfig, _localOptimalTime);
     AutoPasLog(debug, "Global optimal configuration: {}", _optimalConfig.toString());
 
     return false;
@@ -147,12 +148,12 @@ bool autopas::FullSearchMPI::tune(bool currentInvalid) {
   return true;
 }
 
-void autopas::FullSearchMPI::selectLocalOptimalConfiguration() {
+void FullSearchMPI::selectLocalOptimalConfiguration() {
   // Time measure strategy
   if (_traversalTimes.empty()) {
     utils::ExceptionHandler::exception(
-            "FullSearchMPI: Trying to determine fastest configuration without any measurements! "
-            "Either selectLocalOptimalConfiguration was called too early or no applicable configurations were found");
+        "FullSearchMPI: Trying to determine fastest configuration without any measurements! "
+        "Either selectLocalOptimalConfiguration was called too early or no applicable configurations were found");
   }
 
   auto optimum = std::min_element(_traversalTimes.begin(), _traversalTimes.end(),
@@ -169,7 +170,7 @@ void autopas::FullSearchMPI::selectLocalOptimalConfiguration() {
   _traversalTimes.erase(optimum->first);
 }
 
-void autopas::FullSearchMPI::removeN3Option(Newton3Option badNewton3Option) {
+void FullSearchMPI::removeN3Option(Newton3Option badNewton3Option) {
   for (auto ssIter = _searchSpace.begin(); ssIter != _searchSpace.end();) {
     if (ssIter->newton3 == badNewton3Option) {
       // change current config to the next non-deleted
@@ -187,7 +188,8 @@ void autopas::FullSearchMPI::removeN3Option(Newton3Option badNewton3Option) {
 
   if (this->searchSpaceIsEmpty()) {
     utils::ExceptionHandler::exception(
-            "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
+        "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
   }
 }
 
+}  // namespace autopas

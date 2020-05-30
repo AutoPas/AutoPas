@@ -696,6 +696,6 @@ class AutoPas {
   /**
    * Stores whether the mpi communicator was provided externally or not
    */
-   bool _externalMPICommunicator{false};
+  bool _externalMPICommunicator{false};
 };  // class AutoPas
 }  // namespace autopas
