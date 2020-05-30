@@ -23,14 +23,18 @@ class FeatureVector : public Configuration {
   /**
    * Number of tune-able dimensions.
    */
-  static constexpr size_t featureSpaceDims = 5;
+  static constexpr size_t featureSpaceDims = 4;
+
+  /**
+   * Number of tune-able continuous dimensions.
+   */
+  static constexpr size_t featureSpaceContinuousDims = 1;
 
   /**
    * Dimensions of a one-hot-encoded vector
-   * = 1 (cellSizeFactor) + traversals + loadEstimators + dataLayouts + newton3
+   * = 1 (cellSizeFactor) + traversals + dataLayouts + newton3
    */
   inline static size_t oneHotDims = 1 + TraversalOption::getOptionNames().size() +
-                                    LoadEstimatorOption::getOptionNames().size() +
                                     DataLayoutOption::getOptionNames().size() + Newton3Option::getOptionNames().size();
 
   /**
@@ -68,9 +72,7 @@ class FeatureVector : public Configuration {
   Eigen::VectorXd operator-(const FeatureVector &other) const {
     Eigen::VectorXd result(featureSpaceDims);
     result << cellSizeFactor - other.cellSizeFactor, traversal == other.traversal ? 0. : 1.,
-        loadEstimator == other.loadEstimator ? 0. : 1., dataLayout == other.dataLayout ? 0. : 1.,
-        newton3 == other.newton3 ? 0. : 1.;
-
+        dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1.;
     return result;
   }
 
@@ -80,8 +82,8 @@ class FeatureVector : public Configuration {
    */
   operator Eigen::VectorXd() const {
     Eigen::VectorXd result(featureSpaceDims);
-    result << cellSizeFactor, static_cast<double>(traversal), static_cast<double>(loadEstimator),
-        static_cast<double>(dataLayout), static_cast<double>(newton3);
+    result << cellSizeFactor, static_cast<double>(traversal), static_cast<double>(dataLayout),
+        static_cast<double>(newton3);
 
     return result;
   }
@@ -97,9 +99,6 @@ class FeatureVector : public Configuration {
     data.push_back(cellSizeFactor);
     for (auto &[option, _] : TraversalOption::getOptionNames()) {
       data.push_back((option == traversal) ? 1. : 0.);
-    }
-    for (auto &[option, _] : LoadEstimatorOption::getOptionNames()) {
-      data.push_back((option == loadEstimator) ? 1. : 0.);
     }
     for (auto &[option, _] : DataLayoutOption::getOptionNames()) {
       data.push_back((option == dataLayout) ? 1. : 0.);
@@ -118,7 +117,7 @@ class FeatureVector : public Configuration {
    * @param vec one-hot-encoded vector
    * @return decoded FeatureVector
    */
-  static FeatureVector oneHotDecode(Eigen::VectorXd vec) {
+  static FeatureVector oneHotDecode(const Eigen::VectorXd &vec) {
     if (static_cast<size_t>(vec.size()) != oneHotDims) {
       utils::ExceptionHandler::exception("FeatureVector.oneHotDecode: Expected size {}, got {}", oneHotDims,
                                          vec.size());
@@ -142,24 +141,6 @@ class FeatureVector : public Configuration {
     if (not traversal) {
       utils::ExceptionHandler::exception(
           "FeatureVector.oneHotDecode: Vector encodes no traversal. (All values for traversal equal 0.)");
-    }
-
-    // get load estimator
-    std::optional<LoadEstimatorOption> loadEstimator{};
-    for (auto &[option, _] : LoadEstimatorOption::getOptionNames()) {
-      if (vec[pos++] == 1.) {
-        if (loadEstimator) {
-          utils::ExceptionHandler::exception(
-              "FeatureVector.oneHotDecode: Vector encodes more than one load estimator. (More than one value for load "
-              "estimator "
-              "equals 1.)");
-        }
-        loadEstimator = option;
-      }
-    }
-    if (not loadEstimator) {
-      utils::ExceptionHandler::exception(
-          "FeatureVector.oneHotDecode: Vector encodes no load estimator. (All values for load estimator equal 0.)");
     }
 
     // get data layout
@@ -196,7 +177,84 @@ class FeatureVector : public Configuration {
           "FeatureVector.oneHotDecode: Vector encodes no newton3. (All values for newton3 equal 0.)");
     }
 
-    return FeatureVector(ContainerOption(), cellSizeFactor, *traversal, *loadEstimator, *dataLayout, *newton3);
+    return FeatureVector(ContainerOption(), cellSizeFactor, *traversal, LoadEstimatorOption(), *dataLayout, *newton3);
+  }
+
+  /**
+   * Convert Feature vector to cluster representation for GaussianCluster.
+   * Discrete values are encoded using their index in given std::vector.
+   * @param containerTraversalOptions allowed container-traversal pairs
+   * @param dataLayoutOptions allowed data layouts
+   * @param newton3Options allowed newton3 options
+   * @return cluster encoded vector
+   */
+  [[nodiscard]] std::pair<Eigen::VectorXi, Eigen::VectorXd> convertToCluster(
+      const std::vector<std::pair<ContainerOption, TraversalOption>> &containerTraversalOptions,
+      const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options) const {
+    int containerTraversalIndex = static_cast<int>(std::distance(
+        containerTraversalOptions.begin(), std::find(containerTraversalOptions.begin(), containerTraversalOptions.end(),
+                                                     std::make_pair(container, traversal))));
+    int dataLayoutIndex = static_cast<int>(std::distance(
+        dataLayoutOptions.begin(), std::find(dataLayoutOptions.begin(), dataLayoutOptions.end(), dataLayout)));
+    int newton3Index = static_cast<int>(
+        std::distance(newton3Options.begin(), std::find(newton3Options.begin(), newton3Options.end(), newton3)));
+
+    Eigen::Vector3i vecDiscrete({containerTraversalIndex, dataLayoutIndex, newton3Index});
+    Eigen::VectorXd vecContinuous(featureSpaceContinuousDims);
+    vecContinuous << cellSizeFactor;
+    return std::make_pair(vecDiscrete, vecContinuous);
+  }
+
+  /**
+   * Inverse of convertToCluster. Convert cluster representation back
+   * to Feature vector.
+   * @param vec cluster encoded vector
+   * @param containerTraversalOptions allowed container-traversal pairs
+   * @param dataLayoutOptions allowed data layouts
+   * @param newton3Options allowed newton3 options
+   * @return decoded vector
+   */
+  static FeatureVector convertFromCluster(
+      const std::pair<Eigen::VectorXi, Eigen::VectorXd> &vec,
+      const std::vector<std::pair<ContainerOption, TraversalOption>> &containerTraversalOptions,
+      const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options) {
+    const auto &[vecDiscrete, vecContinuous] = vec;
+    auto [container, traversal] = containerTraversalOptions[vecDiscrete[0]];
+
+    return FeatureVector(container, vecContinuous[0], traversal, loadEstimatorOption, dataLayoutOptions[vecDiscrete[1]],
+                         newton3Options[vecDiscrete[2]]);
+  }
+
+  /**
+   * Get cluster-encoded neighbours of given target.
+   * Neighbours are all configurations which differ in at most one configuration from target
+   * @param target
+   * @param dimRestrictions restriction on each dimension
+   * @return all neighbours
+   */
+  static std::vector<Eigen::VectorXi> neighboursManhattan1(const Eigen::VectorXi &target,
+                                                           const std::vector<int> &dimRestrictions) {
+    std::vector<Eigen::VectorXi> result;
+    // neighbours should contain #(possible values for each dimension) - #dimensions (initial vector is skipped once per
+    // dimension)
+    result.reserve(std::accumulate(dimRestrictions.begin(), dimRestrictions.end(), -dimRestrictions.size()));
+
+    // for each dimension
+    for (int i = 0; i < target.size(); ++i) {
+      // initial value
+      auto init = target[i];
+
+      // for each possible value of that dimension
+      for (int x = 0; x < dimRestrictions[i]; ++x) {
+        // skip initial value
+        if (x != init) {
+          auto neighbour = target;
+          neighbour[i] = x;
+          result.push_back(std::move(neighbour));
+        }
+      }
+    }
+    return result;
   }
 
   /**
@@ -207,26 +265,50 @@ class FeatureVector : public Configuration {
    * @param rng
    * @param cellSizeFactors
    * @param traversals
-   * @param loadEstimators
    * @param dataLayouts
    * @param newton3
    * @return vector of sample featureVectors
    */
-  static std::vector<FeatureVector> lhsSampleFeatures(size_t n, Random &rng, const NumberSet<double> &cellSizeFactors,
-                                                      const std::set<TraversalOption> &traversals,
-                                                      const std::set<LoadEstimatorOption> &loadEstimators,
-                                                      const std::set<DataLayoutOption> &dataLayouts,
-                                                      const std::set<Newton3Option> &newton3) {
+  template <typename TraversalContainer, typename DataLayoutContainer, typename Newton3Container>
+  static typename std::enable_if_t<
+      std::conjunction_v<std::is_same<typename TraversalContainer::value_type, TraversalOption>,
+                         std::is_same<typename DataLayoutContainer::value_type, DataLayoutOption>,
+                         std::is_same<typename Newton3Container::value_type, Newton3Option>>,
+      std::vector<FeatureVector>>
+  lhsSampleFeatures(size_t n, Random &rng, const NumberSet<double> &cellSizeFactors,
+                    const TraversalContainer &traversals, const DataLayoutContainer &dataLayouts,
+                    const Newton3Container &newton3) {
     // create n samples from each set
     auto csf = cellSizeFactors.uniformSample(n, rng);
-    auto tr = rng.uniformSample(traversals, n);
-    auto le = rng.uniformSample(loadEstimators, n);
-    auto dl = rng.uniformSample(dataLayouts, n);
-    auto n3 = rng.uniformSample(newton3, n);
+    auto tr = rng.uniformSample(traversals.begin(), traversals.end(), n);
+    auto dl = rng.uniformSample(dataLayouts.begin(), dataLayouts.end(), n);
+    auto n3 = rng.uniformSample(newton3.begin(), newton3.end(), n);
 
     std::vector<FeatureVector> result;
     for (size_t i = 0; i < n; ++i) {
-      result.emplace_back(ContainerOption(), csf[i], tr[i], le[i], dl[i], n3[i]);
+      result.emplace_back(ContainerOption(), csf[i], tr[i], dl[i], n3[i]);
+    }
+
+    return result;
+  }
+  /**
+   * Create n latin-hypercube-samples from given featureSpace only considering continuous values.
+   * @param n number of samples
+   * @param rng
+   * @param cellSizeFactors
+   * @return vector of sample featureVectors
+   */
+  static std::vector<Eigen::VectorXd> lhsSampleFeatureContinuous(size_t n, Random &rng,
+                                                                 const NumberSet<double> &cellSizeFactors) {
+    // create n samples from each set
+    auto csf = cellSizeFactors.uniformSample(n, rng);
+
+    std::vector<Eigen::VectorXd> result;
+    result.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+      Eigen::VectorXd vec(featureSpaceContinuousDims);
+      vec << csf[i];
+      result.emplace_back(vec);
     }
 
     return result;

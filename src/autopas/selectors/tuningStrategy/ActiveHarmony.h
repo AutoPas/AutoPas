@@ -58,6 +58,10 @@ class ActiveHarmony : public TuningStrategyInterface {
     AutoPasLog(debug, "Possible traversal options: {}",
                autopas::utils::ArrayUtils::to_string(_allowedTraversalOptions));
 
+    if (searchSpaceIsEmpty()) {
+      autopas::utils::ExceptionHandler::exception("BayesianSearch: No valid configurations could be created.");
+    }
+
     // set HARMONY_HOME environment variable; needed by active harmony library; the macro is set by cmake
     if (getenv("HARMONY_HOME") == nullptr) {
       putenv(const_cast<char *>(HARMONY_HOME));

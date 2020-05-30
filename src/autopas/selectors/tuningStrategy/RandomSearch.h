@@ -48,6 +48,10 @@ class RandomSearch : public TuningStrategyInterface {
         _currentConfig(),
         _rng(seed),
         _maxEvidence(maxEvidence) {
+    if (searchSpaceIsEmpty()) {
+      autopas::utils::ExceptionHandler::exception("RandomSearch: No valid configurations could be created.");
+    }
+
     tune();
   }
 

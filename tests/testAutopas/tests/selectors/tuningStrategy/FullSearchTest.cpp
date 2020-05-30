@@ -16,45 +16,6 @@ TEST_F(FullSearchTest, testSearchSpaceEmpty) {
   EXPECT_THAT(fullSearch.getAllowedContainerOptions(), ::testing::IsEmpty());
 }
 
-TEST_F(FullSearchTest, testSearchSpaceOneOption) {
-  autopas::FullSearch fullSearch({autopas::Configuration(
-      autopas::ContainerOption::directSum, 1., autopas::TraversalOption::directSumTraversal,
-      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)});
-  EXPECT_FALSE(fullSearch.searchSpaceIsEmpty());
-  EXPECT_TRUE(fullSearch.searchSpaceIsTrivial());
-  EXPECT_THAT(fullSearch.getAllowedContainerOptions(), ::testing::ElementsAre(autopas::ContainerOption::directSum));
-}
-
-TEST_F(FullSearchTest, testSearchSpaceMoreOptions) {
-  autopas::FullSearch fullSearch({autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08},
-                                 {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa},
-                                 {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
-  EXPECT_FALSE(fullSearch.searchSpaceIsEmpty());
-  EXPECT_FALSE(fullSearch.searchSpaceIsTrivial());
-  EXPECT_THAT(fullSearch.getAllowedContainerOptions(), ::testing::ElementsAre(autopas::ContainerOption::linkedCells));
-}
-
-TEST_F(FullSearchTest, testRemoveN3OptionRemoveAll) {
-  autopas::FullSearch fullSearch(
-      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
-      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-      {autopas::Newton3Option::enabled});
-
-  EXPECT_THROW(fullSearch.removeN3Option(autopas::Newton3Option::enabled),
-               autopas::utils::ExceptionHandler::AutoPasException);
-}
-
-TEST_F(FullSearchTest, testRemoveN3OptionRemoveSome) {
-  autopas::FullSearch fullSearch(
-      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
-      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-      {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
-
-  EXPECT_NO_THROW(fullSearch.removeN3Option(autopas::Newton3Option::enabled));
-  EXPECT_FALSE(fullSearch.searchSpaceIsEmpty());
-  EXPECT_FALSE(fullSearch.searchSpaceIsTrivial());
-}
-
 TEST_F(FullSearchTest, testTune) {
   autopas::FullSearch fullSearch(
       {autopas::ContainerOption::linkedCells}, {1.},
