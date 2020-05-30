@@ -104,6 +104,7 @@ class AutoPas {
   void init() {
     if (_autopasMPICommunicator == AUTOPAS_MPI_COMM_NULL) {
       AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_autopasMPICommunicator);
+      _externalMPICommunicator = true;
     }
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
@@ -118,10 +119,14 @@ class AutoPas {
 
   /**
    * Free the AutoPas MPI communicator.
-   * DO call if: No MPI_Comm was not externally provided or is not freed externally
-   * Do NOT call if: Externally provided MPI_Comm is freed externally
+   * To be called before MPI_Finalize.
+   * If no MPI is used just call this at the end of the program.
    */
-  void finalize() { AutoPas_MPI_Comm_free(&_autopasMPICommunicator); }
+  void finalize() {
+    if (not _externalMPICommunicator) {
+      AutoPas_MPI_Comm_free(&_autopasMPICommunicator);
+    }
+  }
 
   /**
    * Potentially updates the internal container.
@@ -687,5 +692,10 @@ class AutoPas {
    * Communicator that should be used for MPI calls inside of AutoPas
    */
   AutoPas_MPI_Comm _autopasMPICommunicator{AUTOPAS_MPI_COMM_NULL};
+
+  /**
+   * Stores whether the mpi communicator was provided externally or not
+   */
+   bool _externalMPICommunicator{false};
 };  // class AutoPas
 }  // namespace autopas
