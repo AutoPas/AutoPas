@@ -82,7 +82,7 @@ class FullSearchMPI : public TuningStrategyInterface {
     }
   }
 
-  inline void removeN3Option(Newton3Option badNewton3Option) override;
+  void removeN3Option(Newton3Option badNewton3Option) override;
 
   inline void addEvidence(long time, size_t /*iteration*/) override { _traversalTimes[*_tuningConfig] = time; }
 
@@ -97,7 +97,7 @@ class FullSearchMPI : public TuningStrategyInterface {
     _allGlobalConfigsTested = false;
   }
 
-  inline bool tune(bool = false) override;
+  bool tune(bool = false) override;
 
   inline std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptions; }
 

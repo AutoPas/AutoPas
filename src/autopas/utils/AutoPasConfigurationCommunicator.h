@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 
 #include "WrapMPI.h"
 #include "autopas/selectors/Configuration.h"
