@@ -40,6 +40,12 @@ class DataLayoutOption : public Option<DataLayoutOption> {
   constexpr operator Value() const { return _value; }
 
   /**
+   * Set of options that are very unlikely to be interesting.
+   * @return
+   */
+  static std::set<DataLayoutOption> getDiscouragedOptions() { return {}; }
+
+  /**
    * Provides a way to iterate over the possible choices of TraversalOption.
    * @return map option -> string representation
    */

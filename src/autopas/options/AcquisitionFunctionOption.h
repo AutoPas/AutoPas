@@ -22,11 +22,10 @@ class AcquisitionFunctionOption : public Option<AcquisitionFunctionOption> {
    */
   enum Value {
     upperConfidenceBound,
-    lowerConfidenceBound,
     mean,
     variance,
-    probabilityOfDecrease,
-    expectedDecrease,
+    probabilityOfImprovement,
+    expectedImprovement,
   };
 
   /**
@@ -47,19 +46,24 @@ class AcquisitionFunctionOption : public Option<AcquisitionFunctionOption> {
   constexpr operator Value() const { return _value; }
 
   /**
+   * Set of options that are very unlikely to be interesting.
+   * @return
+   */
+  static std::set<AcquisitionFunctionOption> getDiscouragedOptions() { return {}; }
+
+  /**
    * Provides a way to iterate over the possible choices of AcquisitionFunction.
    * @return map option -> string representation
    */
   static std::map<AcquisitionFunctionOption, std::string> getOptionNames() {
     return {
         {AcquisitionFunctionOption::upperConfidenceBound, "upper-confidence-bound"},
-        {AcquisitionFunctionOption::lowerConfidenceBound, "lower-confidence-bound"},
         {AcquisitionFunctionOption::mean, "mean"},
         {AcquisitionFunctionOption::variance, "variance"},
-        {AcquisitionFunctionOption::probabilityOfDecrease, "probability-of-decrease"},
-        {AcquisitionFunctionOption::expectedDecrease, "expected-decrease"},
+        {AcquisitionFunctionOption::probabilityOfImprovement, "probability-of-improvement"},
+        {AcquisitionFunctionOption::expectedImprovement, "expected-improvement"},
     };
-  };
+  }
 
  private:
   Value _value{Value(-1)};

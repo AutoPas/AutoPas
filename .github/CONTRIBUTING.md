@@ -67,6 +67,19 @@ docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-cuda \
   && ninja"
 ```
 You will not be able to completely compile the unit tests with CUDA without a GPU in your system since CMake will try to run tests during the build process.
+The tests executed within Jenkins are using these docker images.
+
+## Jenkins/CI
+A continuous integration setup (CI) is automatically run for each open pull request and for the master.
+The executed tests are defined within the Jenkinsfile in the root AutoPas directory.
+These tests include:
+* Formatting and documentation checks 
+* Builing of all targets and execution of the provided ctest tests.
+* Sanitizer runs (Address+Leak sanitizer, Thread Sanitizer)
+
+If you encounter problems within these tests check whether you can reproduce them locally. Have a look at the [Jenkinsfile](https://github.com/AutoPas/AutoPas/blob/master/Jenkinsfile) for how the tools are used with AutoPas. If you do not have the respective compiler installed you can use the [AutoPas docker images](https://hub.docker.com/u/autopas).
+To circumvent "unknown module" problems with the thread sanitizer, a library to override `dlclose()` can be found in the `libs` directory. Said library can be used to get better stack traces that are caused by dynamically loaded libraries (using `dlopen()`).
+More details can be found [here](../libs/fake-dlclose/README.md).
 
 ## AutoPas
 
@@ -131,3 +144,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Global options, which are represented by an enum, should be defined in an additional file in `src/autopas/options`.
 * Inherit from `src/autopas/options/Option.h`. This will also generate functions for conversion from and to strings.
 * Add new unit tests for your option, mainly in `tests/testAutopas/tests/options/OptionTest.cpp`.
+* Also add the new option to md-flexible! 
+  * The option needs to be added in `examples/md-flexible/src/parsing/MDFlexConfig.h`.
+  * Parsing for it in `examples/md-flexible/src/parsing/CLIParser.cpp` and `YamlParser.cpp`
+  * Make sure that the description is parsable by `CLIParser::createZSHCompletionFile()`
