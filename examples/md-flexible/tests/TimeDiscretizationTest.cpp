@@ -6,9 +6,9 @@
 
 #include "TimeDiscretizationTest.h"
 
-#include "TimeDiscretization.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopasTools/generators/GridGenerator.h"
+#include "src/TimeDiscretization.h"
 
 void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<Molecule, FMCell> &autopas) {
   autopas.setBoxMin({0., 0., 0.});
