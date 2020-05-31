@@ -22,7 +22,10 @@ namespace autopas {
  * The traversal finds the longest dimension of the simulation domain and cuts
  * the domain in one slice (block) per thread along this dimension. Unlike the regular
  * sliced traversal, this version uses a 2-coloring to prevent race conditions, instead of
- * locking the starting layers.
+ * locking the starting layers. This could also be describes as a c02-traversal. This class
+ * is however not derived from CBasedTraversal, as that would not allow varying slice thicknesses,
+ * and would prevent us from selecting the dimension in which we cut the slices.
+ *
  * @tparam ParticleCell The type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam dataLayout
