@@ -22,15 +22,14 @@ namespace {
  *
  * @param p The particle to initialize.
  * @param averageVelocity Average velocity per dimension to be added.
+ * @param randomEngine Random engine used for the generation of the velocity.
+ * @param normalDistribution Distribution used for constructing the maxwell boltzmann distribution.
  */
-void addMaxwellBoltzmannDistributedVelocity(autopas::Particle &p, const double averageVelocity) {
-  // we use a constant seed for repeatability.
-  // random engine needs static lifetime otherwise it would be recreated for every call.
-  static std::default_random_engine randomEngine(42);
-
+void addMaxwellBoltzmannDistributedVelocity(autopas::Particle &p, const double averageVelocity,
+                                            std::default_random_engine &randomEngine,
+                                            std::normal_distribution<double> &normalDistribution) {
   // when adding independent normally distributed values to all velocity components
   // the velocity change is maxwell boltzmann distributed
-  std::normal_distribution<double> normalDistribution{0, 1};
   std::array<double, 3> randomVelocity{};
   for (double &v : randomVelocity) {
     v = averageVelocity * normalDistribution(randomEngine);
@@ -151,8 +150,14 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel default(none) shared(autopas, factors)
 #endif
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    addMaxwellBoltzmannDistributedVelocity(*iter, factors[iter->getTypeId()]);
+  {
+    // we use a constant seed for repeatability.
+    // we need one random engine and distribution per thread
+    std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
+    std::normal_distribution<double> normalDistribution{0, 1};
+    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+      addMaxwellBoltzmannDistributedVelocity(*iter, factors[iter->getTypeId()], randomEngine, normalDistribution);
+    }
   }
 }
 

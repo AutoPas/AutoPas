@@ -139,14 +139,14 @@ class MDFlexConfig {
    * containerOptions
    */
   MDFlexOption<std::set<autopas::ContainerOption>, __LINE__> containerOptions{
-      autopas::ContainerOption::getAllOptions(), "container", true,
+      autopas::ContainerOption::getMostOptions(), "container", true,
       "List of container options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::ContainerOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * dataLayoutOptions
    */
   MDFlexOption<std::set<autopas::DataLayoutOption>, __LINE__> dataLayoutOptions{
-      autopas::DataLayoutOption::getAllOptions(), "data-layout", true,
+      autopas::DataLayoutOption::getMostOptions(), "data-layout", true,
       "List of data layout options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
   /**
@@ -160,14 +160,14 @@ class MDFlexConfig {
    * traversalOptions
    */
   MDFlexOption<std::set<autopas::TraversalOption>, __LINE__> traversalOptions{
-      autopas::TraversalOption::getAllOptions(), "traversal", true,
+      autopas::TraversalOption::getMostOptions(), "traversal", true,
       "List of traversal options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * newton3Options
    */
   MDFlexOption<std::set<autopas::Newton3Option>, __LINE__> newton3Options{
-      autopas::Newton3Option::getAllOptions(), "newton3", true,
+      autopas::Newton3Option::getMostOptions(), "newton3", true,
       "List of newton3 options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
   /**

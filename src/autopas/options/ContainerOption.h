@@ -48,10 +48,10 @@ class ContainerOption : public Option<ContainerOption> {
   constexpr operator Value() const { return _value; }
 
   /**
-   * No cast to bool.
+   * Set of options that are very unlikely to be interesting.
    * @return
    */
-  explicit operator bool() = delete;
+  static std::set<ContainerOption> getDiscouragedOptions() { return {Value::directSum}; }
 
   /**
    * Provides a way to iterate over the possible choices of ContainerOption.

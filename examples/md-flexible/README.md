@@ -1,4 +1,4 @@
-# MD-Flexible 
+# MD-Flexible
 
 This demo shows how to easily create and simulate molecular dynamic
 scenarios using AutoPas and flexibly configure all of it's options.
@@ -19,13 +19,13 @@ cmake ..
 make md-flexible
 ```
 
-## Usage 
+## Usage
 
-When running md-flexible without any arguments a default simulation with
-all AutoPas options active is run and it's configuration printed. From
-there you can restrict any AutoPas options or change the simulation.
+When starting md-flexible without any arguments a default simulation with
+most AutoPas options active is run and it's configuration printed. From
+there you can change any AutoPas options or change the simulation.
 
-For all available options see:
+For all available arguments and options see:
 ```bash
  examples/md-flexible/md-flexible --help
 ```
