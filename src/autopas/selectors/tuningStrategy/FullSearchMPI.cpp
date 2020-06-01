@@ -22,6 +22,7 @@ FullSearchMPI::FullSearchMPI(const std::set<ContainerOption> &allowedContainerOp
       _allGlobalConfigsTested(false),
       _autopasMPICommunicator(comm) {
   // Count the total number of allowed and applicable configurations
+  // Currently every rank does this independently and without communication, just based on rank and commSize
   int totalNumConfigs = 0;
   for (auto &containerOption : allowedContainerOptions) {
     const std::set<TraversalOption> &allContainerTraversals =
