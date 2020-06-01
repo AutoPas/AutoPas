@@ -105,6 +105,7 @@ class AutoPas {
   void init() {
     if (_autopasMPICommunicator == AUTOPAS_MPI_COMM_NULL) {
       AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_autopasMPICommunicator);
+      _externalMPICommunicator = true;
     }
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
@@ -119,10 +120,14 @@ class AutoPas {
 
   /**
    * Free the AutoPas MPI communicator.
-   * DO call if: No MPI_Comm was not externally provided or is not freed externally
-   * Do NOT call if: Externally provided MPI_Comm is freed externally
+   * To be called before MPI_Finalize.
+   * If no MPI is used just call this at the end of the program.
    */
-  void finalize() { AutoPas_MPI_Comm_free(&_autopasMPICommunicator); }
+  void finalize() {
+    if (not _externalMPICommunicator) {
+      AutoPas_MPI_Comm_free(&_autopasMPICommunicator);
+    }
+  }
 
   /**
    * Potentially updates the internal container.
@@ -578,7 +583,7 @@ class AutoPas {
 #if defined(AUTOPAS_MPI)
   /**
    * Setter for the MPI communicator that AutoPas uses for potential MPI calls.
-   * If not set, MPI_COMM_WOLRD will be used.
+   * If not set, MPI_COMM_WORLD will be used.
    * @param comm: communicator (handle)
    */
   void setMPICommunicator(MPI_Comm comm) { _autopasMPICommunicator = comm; }
@@ -657,24 +662,24 @@ class AutoPas {
    * List of container types AutoPas can choose from.
    * For possible container choices see options::ContainerOption::Value.
    */
-  std::set<ContainerOption> _allowedContainers{ContainerOption::getAllOptions()};
+  std::set<ContainerOption> _allowedContainers{ContainerOption::getMostOptions()};
 
   /**
    * List of traversals AutoPas can choose from.
    * For possible traversal choices see options::TraversalOption::Value.
    */
-  std::set<TraversalOption> _allowedTraversals{TraversalOption::getAllOptions()};
+  std::set<TraversalOption> _allowedTraversals{TraversalOption::getMostOptions()};
 
   /**
    * List of data layouts AutoPas can choose from.
    * For possible data layout choices see options::DataLayoutOption::Value.
    */
-  std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getAllOptions()};
+  std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getMostOptions()};
 
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
-  std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getAllOptions()};
+  std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getMostOptions()};
 
   /**
    * Whether the chosen tuning strategy will be parallelized by MPI
@@ -702,5 +707,9 @@ class AutoPas {
    */
   AutoPas_MPI_Comm _autopasMPICommunicator{AUTOPAS_MPI_COMM_NULL};
 
+  /**
+   * Stores whether the mpi communicator was provided externally or not
+   */
+  bool _externalMPICommunicator{false};
 };  // class AutoPas
 }  // namespace autopas

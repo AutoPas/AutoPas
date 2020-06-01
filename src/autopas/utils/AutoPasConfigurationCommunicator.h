@@ -8,6 +8,7 @@
 
 #include <array>
 #include <vector>
+#include <cstddef>
 
 #include "WrapMPI.h"
 #include "autopas/selectors/Configuration.h"

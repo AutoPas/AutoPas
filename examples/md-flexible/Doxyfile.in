@@ -1,0 +1,39 @@
+PROJECT_NAME           = "md-flexible"
+PROJECT_NUMBER         = @AUTOPAS_VERSION_MAJOR@.@AUTOPAS_VERSION_MINOR@.@AUTOPAS_VERSION_PATCH@
+STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@/examles
+OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doc_doxygen_md-flexible/
+INPUT                  = @PROJECT_SOURCE_DIR@/examples/md-flexible/README.md \
+                         @PROJECT_SOURCE_DIR@/examples/md-flexible/src
+FILE_PATTERNS          = *.h \
+                         *.cpp \
+                         *.md
+RECURSIVE              = YES
+USE_MDFILE_AS_MAINPAGE = @PROJECT_SOURCE_DIR@/examples/md-flexible/README.md
+HTML_HEADER            = @AUTOPAS_SOURCE_DIR@/docs/AutoPasHeader.html
+
+
+# EXTRACT_ALL           = NO # default NO
+# EXTRACT_PRIVATE       = NO # default NO
+EXTRACT_PACKAGE         = YES # default NO
+EXTRACT_STATIC          = YES # default NO
+# EXTRACT_LOCAL_CLASSES = YES # default YES
+# EXTRACT_LOCAL_METHODS = NO # default NO
+EXTRACT_ANON_NSPACES    = YES # default NO
+# HIDE_UNDOC_MEMBERS    = NO # default NO
+# HIDE_UNDOC_CLASSES    = NO # default NO
+# HIDE_FRIEND_COMPOUNDS = NO # default NO
+# HIDE_IN_BODY_DOCS     = NO # default NO
+
+JAVADOC_AUTOBRIEF      = YES # default NO
+QT_AUTOBRIEF           = YES # default NO
+
+#QUIET                 = NO # default NO
+#WARNINGS              = YES # default YES
+#WARN_IF_UNDOCUMENTED  = YES # default YES
+#WARN_IF_DOC_ERROR     = YES # default YES
+WARN_NO_PARAMDOC       = YES # default NO
+
+
+# Macro expansion settings:
+MACRO_EXPANSION        = YES
+IMAGE_PATH             = @PROJECT_SOURCE_DIR@/docs/graphics

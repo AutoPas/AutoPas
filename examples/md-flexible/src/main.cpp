@@ -10,14 +10,26 @@
 #include "Simulation.h"
 #include "parsing/MDFlexParser.h"
 
+/**
+ * The main function.
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char **argv) {
   // start simulation timer
   Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
   // Parsing
   MDFlexConfig config;
 
-  if (not MDFlexParser::parseInput(argc, argv, config)) {
-    exit(EXIT_FAILURE);
+  // parse input and only continue of parsing went without hickups
+  if (auto parserExitCode = MDFlexParser::parseInput(argc, argv, config);
+      parserExitCode != MDFlexParser::exitCodes::success) {
+    if (parserExitCode == MDFlexParser::exitCodes::parsingError) {
+      exit(EXIT_FAILURE);
+    } else {
+      exit(EXIT_SUCCESS);
+    }
   }
   // make sure sim box is big enough
   config.calcSimulationBox();
@@ -29,10 +41,10 @@ int main(int argc, char **argv) {
   // This does not affect md-flex output.
   std::streambuf *streamBuf;
   std::ofstream logFile;
-  if (config.logFileName.empty()) {
+  if (config.logFileName.value.empty()) {
     streamBuf = std::cout.rdbuf();
   } else {
-    logFile.open(config.logFileName);
+    logFile.open(config.logFileName.value);
     streamBuf = logFile.rdbuf();
   }
   std::ostream outputStream(streamBuf);
@@ -52,7 +64,7 @@ int main(int argc, char **argv) {
   simulation.printStatistics(autopas);
 
   // print config.yaml file of current run
-  if (config.dontCreateEndConfig) {
+  if (config.dontCreateEndConfig.value) {
     auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::ostringstream nowStrStr;
     tm unused;
