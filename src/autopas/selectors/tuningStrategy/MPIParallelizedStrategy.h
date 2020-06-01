@@ -15,16 +15,9 @@ namespace autopas {
 class MPIParallelizedStrategy : public TuningStrategyInterface {
 public:
 
-  MPIParallelizedStrategy(const std::set<ContainerOption> &allowedContainerOptions,
-                          const std::set<double> &allowedCellSizeFactors,
-                          const std::set<TraversalOption> &allowedTraversalOptions,
-                          const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                          const std::set<Newton3Option> &allowedNewton3Options,
-                          TuningStrategyInterface tuningStrategy,
-                          AutoPas_MPI_Comm comm)
-    : _tuningStrategy(std::make_unique<TuningStrategyInterface>(tuningStrategy)) {
-
-  }
+  MPIParallelizedStrategy(std::unique_ptr<TuningStrategyInterface> tuningStrategy, AutoPas_MPI_Comm comm)
+    : _tuningStrategy(std::move(tuningStrategy)),
+      _comm(comm) {}
 
   void addEvidence(long time, size_t iteration) {
     _tuningStrategy->addEvidence(time, iteration);
@@ -65,6 +58,7 @@ public:
 private:
 
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
+  AutoPas_MPI_Comm _comm;
 
 };
 

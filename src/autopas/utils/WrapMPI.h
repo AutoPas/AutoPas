@@ -33,6 +33,8 @@ namespace autopas {
 #define AUTOPAS_MPI_BYTE MPI_BYTE
 /** Wrapper for MPI_CXX_BOOL */
 #define AUTOPAS_MPI_CXX_BOOL MPI_CXX_BOOL
+/** Wrapper for MPI_DOUBLE */
+#define AUTOPAS_MPI_DOUBLE MPI_DOUBLE
 /** Wrapper for MPI_INT */
 #define AUTOPAS_MPI_INT MPI_INT
 /** Wrapper for MPI_LONG_INT */

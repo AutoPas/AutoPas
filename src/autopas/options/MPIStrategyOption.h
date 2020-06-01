@@ -20,11 +20,11 @@ public:
     /**
      * Do not use mpi. Every AutoPas instance acts independently
      */
-            noMPI,
+    noMPI,
     /**
      * local tuning in a reduced search space in each rank with subsequent global comparison for the best strategy
      */
-            divideAndConquer,
+    divideAndConquer,
   };
 
   /**
