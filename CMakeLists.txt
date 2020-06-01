@@ -69,7 +69,6 @@ include(clang-tidy)
 include(cmake-format)
 include(format)
 include(CodeCoverageAutopas)
-include(doxygen)
 include(OpenMP)
 include(mpi)
 
@@ -93,6 +92,8 @@ include(logging)
 include(other-compileroptions)
 include(vectorization)
 include(cuda)
+include(doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES
+
 # write version information
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(

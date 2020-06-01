@@ -24,42 +24,41 @@
 class Generator {
  public:
   /**
-   * Generates a Cube filled with Particles with dimensions: @param particlesPerDim
+   * Generates a 3d grid of particles that is specified by the given CubeGrid object.
+   * @tparam Particle
+   * @tparam ParticleCell
    * @param autopas
-   * @param particlesPerDim
-   * @param particleSpacing
+   * @param object
    */
   template <class Particle, class ParticleCell>
   static void cubeGrid(autopas::AutoPas<Particle, ParticleCell> &autopas, const CubeGrid &object);
 
   /**
-   * Fills Autopas Object with Particles with Gauss distribution
+   * Generates particles 3d gaussian distributed within a cube that is specified by the given CubeGauss object.
+   * @tparam Particle
+   * @tparam ParticleCell
    * @param autopas
-   * @param boxLength
-   * @param numParticles
-   * @param distributionMean
-   * @param distributionStdDev
+   * @param object
    */
   template <class Particle, class ParticleCell>
   static void cubeGauss(autopas::AutoPas<Particle, ParticleCell> &autopas, const CubeGauss &object);
 
   /**
-   * Fills Autopas Object randomly with Particles
+   * Generates particles uniformly distributed within a cube that is specified by the given CubeUniform object.
+   * @tparam Particle
+   * @tparam ParticleCell
    * @param autopas
-   * @param boxLength
-   * @param numParticles
+   * @param object
    */
   template <class Particle, class ParticleCell>
   static void cubeRandom(autopas::AutoPas<Particle, ParticleCell> &autopas, const CubeUniform &object);
 
   /**
-   * Generates a Sphere with @param radius number of Particles with initial @param velocity
-   * @param Autopas
-   * @param center
-   * @param radius
-   * @param velocity
-   * @param particleSpacing
-   * @param id
+   * Generates a sphere of particles that is specified by the given Sphere object.
+   * @tparam Particle
+   * @tparam ParticleCell
+   * @param autopas
+   * @param object
    */
   template <class Particle, class ParticleCell>
   static void sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const Sphere &object);

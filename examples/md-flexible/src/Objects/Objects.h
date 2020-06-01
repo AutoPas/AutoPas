@@ -46,13 +46,13 @@ class Object {
    * Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    */
-  virtual const std::array<double, 3> getBoxMin() const = 0;
+  [[nodiscard]] virtual std::array<double, 3> getBoxMin() const = 0;
 
   /**
    * Getter for the highest x,y,z coordinates for Object
    * @return BoxMax of Cube
    */
-  virtual const std::array<double, 3> getBoxMax() const = 0;
+  [[nodiscard]] virtual std::array<double, 3> getBoxMax() const = 0;
 
   /**
    * Returns the total amount of Particles in the Object
@@ -64,7 +64,7 @@ class Object {
    * String description string of the object.
    * @return multiline std::string
    */
-  virtual std::string to_string() const {
+  [[nodiscard]] virtual std::string to_string() const {
     std::ostringstream output;
     output << std::setw(_valueOffset) << std::left << "velocity"
            << ":  " << autopas::utils::ArrayUtils::to_string(_velocity) << std::endl;
@@ -79,18 +79,40 @@ class Object {
     return output.str();
   };
 
+  /**
+   * Stream operator
+   * @param os
+   * @param object
+   * @return
+   */
   friend std::ostream &operator<<(std::ostream &os, const Object &object) {
     os << object.to_string();
     return os;
   }
 
  protected:
+  /**
+   * Velocity of every particle in the object.
+   */
   std::array<double, 3> _velocity;
+  /**
+   * Type of every particle in the object.
+   */
   unsigned long _typeId;
+  /**
+   * Epsilon of every particle in the object.
+   */
   double _epsilon;
+  /**
+   * Sigma of every particle in the object.
+   */
   double _sigma;
+  /**
+   * Mass of every particle in the object.
+   */
   double _mass;
-
-  // valueOffset of MDFlexConfig - expected indent
+  /**
+   * valueOffset of MDFlexConfig - expected indent
+   */
   static constexpr size_t _valueOffset = 33 - 6;
 };

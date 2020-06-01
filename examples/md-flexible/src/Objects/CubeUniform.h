@@ -34,13 +34,13 @@ class CubeUniform : public Object {
 
   [[nodiscard]] size_t getParticlesTotal() const override { return numParticles; }
 
-  const std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
+  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
 
-  const std::array<double, 3> getBoxMax() const override {
+  [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength);
   }
 
-  std::string to_string() const override {
+  [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "numberOfParticles"

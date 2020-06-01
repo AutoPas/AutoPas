@@ -25,6 +25,11 @@ namespace utils::ArrayMath {}
 namespace utils::ArrayUtils {}
 
 /**
+ * In this namespace some helper functions for std::tuple can be found.
+ */
+namespace utils::TupleUtils {}
+
+/**
  * This namespace is used for implementation specifics.
  * If you are a developer of AutoPas you might want to take a look inside here.
  */
