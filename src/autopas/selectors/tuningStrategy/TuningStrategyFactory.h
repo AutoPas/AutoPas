@@ -29,10 +29,10 @@ namespace autopas::TuningStrategyFactory {
  * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
  */
 std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
-    autopas::TuningStrategyOption tuningStrategyOption, const std::set<autopas::ContainerOption> &allowedContainers,
-    autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<autopas::TraversalOption> &allowedTraversals,
-    const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
-    const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
+    autopas::TuningStrategyOption tuningStrategyOption,  std::set<autopas::ContainerOption> &allowedContainers,
+    autopas::NumberSet<double> &allowedCellSizeFactors,  std::set<autopas::TraversalOption> &allowedTraversals,
+    std::set<autopas::DataLayoutOption> &allowedDataLayouts,
+    std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
     unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption,
     MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
 }  // namespace autopas::TuningStrategyFactory

@@ -574,7 +574,7 @@ class AutoPas {
    * Setter for the mpi strategy option
    * @param mpiStrategyOption
    */
-  void setUseMPIStrategy(MPIStrategyOption mpiStrategyOption) {
+  void setMPIStrategy(MPIStrategyOption mpiStrategyOption) {
     _mpiStrategyOption = mpiStrategyOption;
   }
 
