@@ -26,7 +26,7 @@ namespace autopas {
  * The cuboids at the borders of the simulation domain are adapted to include possible
  * cut off due the flooring of the cubic root. Each cuboid (cellblock) is seperated
  * into 27 smaller cuboids (subcube), their size depending on the overlap length.
- * Each subcube forms a overlap-region with the corresponding subcubes from other cuboids.
+ * Each subcube forms an overlap-region with the corresponding subcubes from other cuboids.
  * Each overlap-region for the corresponding subcubes is locked by a thread accessing it,
  * leaving the largest subcube in the middle of the domain, with no necessary locking
  * for the corresponding thread. The lock is lifted as soon as the thread is finished
@@ -47,7 +47,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
-   * Constructor of the sliced traversal.
+   * Constructor of the sliced blk traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
@@ -293,7 +293,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 
     /**
      * Splitting each cellblock = slice into its subdomains = subBlocks
-     *            220      		     221      		    222
+     *            220      	     221    		222
      *           / |                / |                / |
      *       120   |            121   |            122   |
      *      / |   210          / |   211          / |   212
@@ -307,9 +307,8 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
      *
      * Above model shows the numbering of each sub_block, be aware that they can be different in cellsize.
      * And the _cellBlocks bordering the end of a dimension, will have different sizes for subBlocks bordering a
-     *      dimension end.
-     * Only, but very often, if the simulation-dimension will not be perfectly splittable into #thread-amount of
-     *      equally sized cubes.
+     * dimension end. Only, but very often, if the simulation-dimension will not be perfectly splittable into
+     * thread-amount of equally sized cubes.
      */
     // advanced subBlocks which carry knowledge about their location in space (i,j,k)
     // subBlocks accessing [x][0-2][0-1]
@@ -414,5 +413,5 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
     // same as above, but waiting until empty
   }
 
-}  // namespace autopas
+}
 }  // namespace autopas
