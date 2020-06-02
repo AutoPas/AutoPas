@@ -79,7 +79,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _gaussianCluster(
             {static_cast<int>(allowedTraversalOptions.size()), static_cast<int>(allowedDataLayoutOptions.size()),
              static_cast<int>(allowedNewton3Options.size())},
-            continuousDims, GaussianCluster::DistanceFunction::wasserstein2, sigma, _rng),
+            continuousDims, GaussianCluster::DistanceFunction::evidenceMatchingPDF, sigma, _rng),
+        _neighbourFun([this](const Eigen::VectorXi &target) -> std::vector<Eigen::VectorXi> {
+          return FeatureVector::neighboursManhattan1(target, _gaussianCluster.getDimensions());
+        }),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
         _predNumLHSamples(predNumLHSamples) {
@@ -166,6 +169,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Stochastic model used for predictions.
    */
   GaussianCluster _gaussianCluster;
+  /**
+   * Function to generate neighbours of given vector
+   */
+  std::function<std::vector<Eigen::VectorXi>(const Eigen::VectorXi&)> _neighbourFun;
   const size_t _maxEvidence;
   /**
    * Acquisition function used to predict informational gain.
@@ -194,6 +201,14 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
     _currentConfig = FeatureVector::convertFromCluster(_gaussianCluster.getEvidenceMax(), _containerTraversalOptions,
                                                        _dataLayoutOptions, _newton3Options);
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
+
+    // print graph of distances
+    size_t sampleSize = _cellSizeFactors->isFinite() ? _cellSizeFactors->size() : _predNumLHSamples;
+    auto continuousSamples = FeatureVector::lhsSampleFeatureContinuous(sampleSize, _rng, *_cellSizeFactors);
+    auto vecToStringFun = [this] (const GaussianCluster::VectorPairDiscreteContinuous& vec) -> std::string {
+      return FeatureVector::convertFromCluster(vec, _containerTraversalOptions, _dataLayoutOptions, _newton3Options).toString();
+    };
+    _gaussianCluster.logDebugGraph(_neighbourFun, continuousSamples, vecToStringFun);
     return false;
   }
 
@@ -231,12 +246,8 @@ void BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOpti
   // create n lhs samples
   auto continuousSamples = FeatureVector::lhsSampleFeatureContinuous(n, _rng, *_cellSizeFactors);
 
-  auto neighbourFun = [this](const Eigen::VectorXi &target) -> std::vector<Eigen::VectorXi> {
-    return FeatureVector::neighboursManhattan1(target, _gaussianCluster.getDimensions());
-  };
-
   // calculate all acquisitions
-  _currentAcquisitions = _gaussianCluster.sampleOrderedByAcquisition(af, neighbourFun, continuousSamples);
+  _currentAcquisitions = _gaussianCluster.sampleOrderedByAcquisition(af, _neighbourFun, continuousSamples);
 }
 
 bool BayesianClusterSearch::searchSpaceIsTrivial() const {
