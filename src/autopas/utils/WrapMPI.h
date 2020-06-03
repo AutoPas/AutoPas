@@ -118,6 +118,8 @@ struct AutoPas_MPI_Status {
  */
 enum AutoPas_MPI_Request {
   AUTOPAS_MPI_REQUEST_NULL,
+  // The following two Variables do not actually exist in the normal MPI.
+  // We create them for the wrapper.
   _AUTOPAS_MPI_COMPLETED_REQUEST,
   _AUTOPAS_MPI_INCOMPLETE_REQUEST,
 };
@@ -460,7 +462,7 @@ inline int AutoPas_MPI_Ibcast(void *buffer, int count, AutoPas_MPI_Datatype data
 
 inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
                                  AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
-  memcpy(recvbuf, sendbuf, datatype * count);
+  memcpy(recvbuf, sendbuf, static_cast<size_t>(datatype) * static_cast<size_t>(count));
   return AUTOPAS_MPI_SUCCESS;
 }
 
