@@ -111,9 +111,12 @@ void createZSHCompletionFile(const std::tuple<T...> &cliOptions) {
     constexpr std::pair<char, char> bracketsForValues = std::make_pair('(', ')');
     constexpr auto keywordForPaths{"Path to"};
 
-    std::string choices;
+    // basic name and description for every option.
+    fileStream << "     \"--" << option.name << "[" << option.description << "]";
+
     // If the option requires arguments and the description suggests some, parse them.
     if (option.requiresArgument) {
+      std::string choices;
       if (const auto posKeywordForValues = option.description.find(keywordForValues);
           posKeywordForValues != std::string::npos) {
         // start after (+1) first occurrence of '[' after "Possible Values:"
@@ -133,8 +136,12 @@ void createZSHCompletionFile(const std::tuple<T...> &cliOptions) {
           choices += " -g '*" + stringMatch[0].str() + "'";
         }
       }
+      // append completion for options
+      fileStream << ": :" << choices;
     }
-    fileStream << "     \"--" << option.name << "[" << option.description << "]: :" << choices << "\"\\\n";
+
+    // closing " and end the line
+    fileStream << "\"\\\n";
   });
 
   fileStream.close();
