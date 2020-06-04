@@ -109,19 +109,39 @@ void createZSHCompletionFile(const std::tuple<T...> &cliOptions) {
     // the keyword to look for value suggestions
     constexpr auto keywordForValues{"Possible Values:"};
     constexpr std::pair<char, char> bracketsForValues = std::make_pair('(', ')');
+    constexpr auto keywordForPaths{"Path to"};
 
-    std::string choices;
+    // basic name and description for every option.
+    fileStream << "     \"--" << option.name << "[" << option.description << "]";
+
     // If the option requires arguments and the description suggests some, parse them.
-    if (option.requiresArgument and option.description.find(keywordForValues) != std::string::npos) {
-      // start after (+1) first occurrence of '[' after "Possible Values:"
-      const auto startPossibleValues{
-          option.description.find(bracketsForValues.first, option.description.find(keywordForValues)) + 1};
-      // end is the first ']' after the start. The length of the substr is the index difference to start.
-      const auto strLengthPossibleValues{option.description.find(bracketsForValues.second, startPossibleValues) -
-                                         startPossibleValues};
-      choices = option.description.substr(startPossibleValues, strLengthPossibleValues);
+    if (option.requiresArgument) {
+      std::string choices;
+      if (const auto posKeywordForValues = option.description.find(keywordForValues);
+          posKeywordForValues != std::string::npos) {
+        // start after (+1) first occurrence of '[' after "Possible Values:"
+        const auto startPossibleValues{option.description.find(bracketsForValues.first, posKeywordForValues) + 1};
+        // end is the first ']' after the start. The length of the substr is the index difference to start.
+        const auto strLengthPossibleValues{option.description.find(bracketsForValues.second, startPossibleValues) -
+                                           startPossibleValues};
+        choices = "(" + option.description.substr(startPossibleValues, strLengthPossibleValues) + ")";
+      } else if (const auto posKeywordForPaths = option.description.find(keywordForPaths);
+                 posKeywordForPaths != std::string::npos) {
+        choices = "_files";
+        // look if a filetype is given
+        std::regex rgxFileType{"\\.[a-zA-Z]+"};
+        std::smatch stringMatch;
+        std::regex_search(option.description, stringMatch, rgxFileType);
+        if (not stringMatch.empty()) {
+          choices += " -g '*" + stringMatch[0].str() + "'";
+        }
+      }
+      // append completion for options
+      fileStream << ": :" << choices;
     }
-    fileStream << "     \"--" << option.name << "[" << option.description << "]: :(" << choices << ")\"\\\n";
+
+    // closing " and end the line
+    fileStream << "\"\\\n";
   });
 
   fileStream.close();

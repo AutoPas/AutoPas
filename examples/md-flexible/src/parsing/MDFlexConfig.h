@@ -131,7 +131,7 @@ class MDFlexConfig {
   /**
    * yamlFilename
    */
-  MDFlexOption<std::string, __LINE__> yamlFilename{"", "yaml-filename", true, "Path to input file."};
+  MDFlexOption<std::string, __LINE__> yamlFilename{"", "yaml-filename", true, "Path to a .yaml input file."};
 
   // AutoPas options:
   /**
@@ -178,7 +178,8 @@ class MDFlexConfig {
   /**
    * logFileName
    */
-  MDFlexOption<std::string, __LINE__> logFileName{"", "log-file", true, "Path to a file to store the log output."};
+  MDFlexOption<std::string, __LINE__> logFileName{"", "log-file", true,
+                                                  "Path to an .out file to store the log output."};
   /**
    * logLevel
    */
@@ -191,7 +192,8 @@ class MDFlexConfig {
    */
   MDFlexOption<autopas::TuningStrategyOption, __LINE__> tuningStrategyOption{
       autopas::TuningStrategyOption::fullSearch, "tuning-strategy", true,
-      "Strategy how to reduce the sample measurements to a single value."};
+      "Strategy how to reduce the sample measurements to a single value. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions())};
   /**
    * tuningInterval
    */
@@ -469,7 +471,7 @@ class MDFlexConfig {
    * checkpointfile
    */
   MDFlexOption<std::string, __LINE__> checkpointfile{"", "checkpoint", true,
-                                                     "Path to a VTK File to load as a checkpoint."};
+                                                     "Path to a .vtk File to load as a checkpoint."};
 
   /**
    * valueOffset used for cli-output alignment
