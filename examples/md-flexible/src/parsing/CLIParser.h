@@ -130,7 +130,7 @@ void createZSHCompletionFile(const std::tuple<T...> &cliOptions) {
         std::smatch stringMatch;
         std::regex_search(option.description, stringMatch, rgxFileType);
         if (not stringMatch.empty()) {
-          choices += " -g *" + stringMatch[0].str();
+          choices += " -g '*" + stringMatch[0].str() + "'";
         }
       }
     }
