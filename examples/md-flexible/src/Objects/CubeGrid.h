@@ -35,11 +35,7 @@ class CubeGrid : public Object {
         particleSpacing(particleSpacing),
         bottomLeftCorner(bottomLeftCorner) {}
 
-  /**
-   * Getter for ParticleSpacing
-   * @return particleSpacing
-   */
-  [[nodiscard]] double getParticleSpacing() const { return particleSpacing; }
+  [[nodiscard]] double getParticleSpacing() const override { return particleSpacing; }
 
   /**
    * Getter for ParticlesPerDim
