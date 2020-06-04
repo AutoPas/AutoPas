@@ -8,8 +8,8 @@
 
 #include "TuningStrategyInterface.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
-#include "autopas/options/TuningStrategyOption.h"
 #include "autopas/options/MPIStrategyOption.h"
+#include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/WrapMPI.h"
 
 namespace autopas::TuningStrategyFactory {
@@ -29,10 +29,10 @@ namespace autopas::TuningStrategyFactory {
  * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
  */
 std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
-    autopas::TuningStrategyOption tuningStrategyOption,  std::set<autopas::ContainerOption> &allowedContainers,
-    autopas::NumberSet<double> &allowedCellSizeFactors,  std::set<autopas::TraversalOption> &allowedTraversals,
-    std::set<autopas::DataLayoutOption> &allowedDataLayouts,
-    std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
-    unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption,
-    MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
+    autopas::TuningStrategyOption tuningStrategyOption, std::set<autopas::ContainerOption> &allowedContainers,
+    autopas::NumberSet<double> &allowedCellSizeFactors, std::set<autopas::TraversalOption> &allowedTraversals,
+    std::set<autopas::DataLayoutOption> &allowedDataLayouts, std::set<autopas::Newton3Option> &allowedNewton3Options,
+    unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
+    AcquisitionFunctionOption acquisitionFunctionOption, MPIStrategyOption mpiStrategyOption,
+    AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
 }  // namespace autopas::TuningStrategyFactory

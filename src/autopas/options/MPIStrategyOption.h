@@ -2,7 +2,7 @@
  * @file MPIStrategyOption.h
  * @author W.Thieme
  * @date 28.05.2020
-*/
+ */
 
 #pragma once
 
@@ -12,7 +12,7 @@ namespace autopas {
 inline namespace options {
 
 class MPIStrategyOption : public Option<MPIStrategyOption> {
-public:
+ public:
   /**
    * Possible options for the use of mpi in tuning
    */
@@ -50,14 +50,13 @@ public:
    */
   static std::map<MPIStrategyOption, std::string> getOptionNames() {
     return {
-            {MPIStrategyOption::noMPI,            "no-mpi"},
-            {MPIStrategyOption::divideAndConquer, "divide-and-conquer"},
+        {MPIStrategyOption::noMPI, "no-mpi"},
+        {MPIStrategyOption::divideAndConquer, "divide-and-conquer"},
     };
   }
 
-private:
+ private:
   Value _value{Value(-1)};
-
 };
-} // namespace options
-} // namespace autopas
+}  // namespace options
+}  // namespace autopas

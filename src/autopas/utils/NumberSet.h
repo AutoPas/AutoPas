@@ -30,6 +30,12 @@ class NumberSet {
   virtual std::unique_ptr<NumberSet> clone() const = 0;
 
   /**
+   * Basically a combination of clone() and a constructor with a unified signature for all derived classes.
+   * @return
+   */
+  virtual std::unique_ptr<NumberSet> createWithValues(std::set<Number> &) = 0;
+
+  /**
    * Get a string representation of the set
    * @return string representation
    */

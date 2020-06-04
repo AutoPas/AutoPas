@@ -13,8 +13,8 @@
 
 #include "autopas/LogicHandler.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
-#include "autopas/options/TuningStrategyOption.h"
 #include "autopas/options/MPIStrategyOption.h"
+#include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
 #include "autopas/utils/NumberSet.h"
@@ -574,9 +574,7 @@ class AutoPas {
    * Setter for the mpi strategy option
    * @param mpiStrategyOption
    */
-  void setMPIStrategy(MPIStrategyOption mpiStrategyOption) {
-    _mpiStrategyOption = mpiStrategyOption;
-  }
+  void setMPIStrategy(MPIStrategyOption mpiStrategyOption) { _mpiStrategyOption = mpiStrategyOption; }
 
 // Only define the interface for the MPI communicator if AUTOPAS_MPI=ON
 // The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_MPI

@@ -7,14 +7,14 @@
 #pragma once
 
 #include <array>
-#include <vector>
 #include <cstddef>
+#include <vector>
 
 #include "WrapMPI.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
-#include "autopas/containers/CompatibleTraversals.h"
 
 /**
  * Provides several functions for handling configurations among mpi ranks.
@@ -49,26 +49,17 @@ inline std::byte castToByte(TOption option) {
  * @param newton3Options
  * @param comm
  */
-void distributeConfigurations(std::set<ContainerOption> &containerOptions,
-                              std::unique_ptr<NumberSet<double>> &cellSizeFactors,
-                              std::set<TraversalOption> &traversalOptions, std::set<DataLayoutOption> &dataLayoutOptions,
-                              std::set<Newton3Option> &newton3Options, AutoPas_MPI_Comm comm);
+void distributeConfigurations(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
+                              std::set<TraversalOption> &traversalOptions,
+                              std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
+                              AutoPas_MPI_Comm comm);
 
 /**
  * Serializes a configuration object for communication via MPI
  * @param configuration: the configuration to be sent
  * @return The serialization
  */
-SerializedConfiguration serializeConfiguration(Configuration configuration) {
-  // @todo maybe consider endianness for different processors
-  SerializedConfiguration config;
-  config[0] = castToByte(configuration.container);
-  config[1] = castToByte(configuration.traversal);
-  config[2] = castToByte(configuration.dataLayout);
-  config[3] = castToByte(configuration.newton3);
-  std::memcpy(&config[4], &configuration.cellSizeFactor, sizeof(double));
-  return config;
-}
+SerializedConfiguration serializeConfiguration(Configuration configuration);
 
 /**
  * Recreates a Configuration object from the object obtained by _serializeConfiguration
@@ -79,8 +70,8 @@ static Configuration deserializeConfig(SerializedConfiguration config) {
   double cellSizeFactor;
   std::memcpy(&cellSizeFactor, &config[4], sizeof(double));
   return Configuration(static_cast<ContainerOption::Value>(config[0]), cellSizeFactor,
-                       static_cast<TraversalOption::Value>(config[1]),
-                       static_cast<DataLayoutOption::Value>(config[2]), static_cast<Newton3Option::Value>(config[3]));
+                       static_cast<TraversalOption::Value>(config[1]), static_cast<DataLayoutOption::Value>(config[2]),
+                       static_cast<Newton3Option::Value>(config[3]));
 }
 
 /**
@@ -91,7 +82,5 @@ static Configuration deserializeConfig(SerializedConfiguration config) {
  * @return The globally optimal configuration
  */
 Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime);
-}
 
-
-}  // namespace autopas
+}  // namespace autopas::AutoPasConfigurationCommunicator

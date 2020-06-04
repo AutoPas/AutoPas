@@ -15,6 +15,9 @@
 #if defined(AUTOPAS_MPI)
 #include <mpi.h>
 #else
+#include <string.h>
+
+#include <map>
 #include <set>
 #endif
 

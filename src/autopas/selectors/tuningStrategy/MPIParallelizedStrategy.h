@@ -2,13 +2,13 @@
  * @file MPIParallelizedStrategy.h
  * @author W. Thieme
  * @date 27.05.2020
-*/
+ */
 
 #pragma once
 
 #include "TuningStrategyInterface.h"
-#include "autopas/utils/WrapMPI.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/utils/WrapMPI.h"
 
 namespace autopas {
 
@@ -18,8 +18,7 @@ namespace autopas {
  * This mainly overwrites the tune() method to globally compare the best configuration.
  */
 class MPIParallelizedStrategy : public TuningStrategyInterface {
-public:
-
+ public:
   /**
    * Constructor for the wrapper. Assumes that the tuningStrategy has already been constructed with the appropriate
    * search space.
@@ -27,51 +26,33 @@ public:
    * @param comm The communicator holding all ranks which participate in this tuning strategy
    */
   MPIParallelizedStrategy(std::unique_ptr<TuningStrategyInterface> tuningStrategy, const AutoPas_MPI_Comm comm)
-    : _tuningStrategy(std::move(tuningStrategy)),
-      _comm(comm) {}
+      : _tuningStrategy(std::move(tuningStrategy)), _comm(comm) {}
 
-  void addEvidence(long time, size_t iteration) override {
-    _tuningStrategy->addEvidence(time, iteration);
-  }
+  void addEvidence(long time, size_t iteration) override { _tuningStrategy->addEvidence(time, iteration); }
 
-  const Configuration &getCurrentConfiguration() const override {
-    return _tuningStrategy->getCurrentConfiguration();
-  }
+  const Configuration &getCurrentConfiguration() const override { return _tuningStrategy->getCurrentConfiguration(); }
 
-  bool tune(bool currentInvalid) override {
-   return  _tuningStrategy->tune(currentInvalid);
-  }
+  bool tune(bool currentInvalid) override { return _tuningStrategy->tune(currentInvalid); }
 
-  void reset(size_t iteration) override {
-    _tuningStrategy->reset(iteration);
-  }
+  void reset(size_t iteration) override { _tuningStrategy->reset(iteration); }
 
   std::set<ContainerOption> getAllowedContainerOptions() const override {
     return _tuningStrategy->getAllowedContainerOptions();
   }
 
-  void removeN3Option(Newton3Option badN3Option) override {
-    _tuningStrategy->removeN3Option(badN3Option);
-  }
+  void removeN3Option(Newton3Option badN3Option) override { _tuningStrategy->removeN3Option(badN3Option); }
 
-  bool searchSpaceIsTrivial() const override {
-    return _tuningStrategy->searchSpaceIsTrivial();
-  }
+  bool searchSpaceIsTrivial() const override { return _tuningStrategy->searchSpaceIsTrivial(); }
 
-  bool searchSpaceIsEmpty () const override {
-    return _tuningStrategy->searchSpaceIsEmpty();
-  }
+  bool searchSpaceIsEmpty() const override { return _tuningStrategy->searchSpaceIsEmpty(); }
 
   /**
    * Getter for the internal tuningStrategy
    * @return the tuning strategy which was provided in the constructor
    */
-  inline const TuningStrategyInterface &getTuningStrategy() const {
-    return *_tuningStrategy;
-  }
+  inline const TuningStrategyInterface &getTuningStrategy() const { return *_tuningStrategy; }
 
-private:
-
+ private:
   /**
    * The tuning strategy tuning locally
    */
@@ -81,7 +62,6 @@ private:
    * The mpi communicator holding all ranks that participate in this tuning strategy
    */
   AutoPas_MPI_Comm _comm;
-
 };
 
-}
+}  // namespace autopas
