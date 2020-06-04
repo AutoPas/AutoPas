@@ -56,7 +56,7 @@ class CubeGrid : public Object {
     auto lastParticleRelative = autopas::utils::ArrayMath::mulScalar(particlesPerDimSubOne, particleSpacing);
     auto lastParticleAbsolute = autopas::utils::ArrayMath::add(bottomLeftCorner, lastParticleRelative);
 
-    return lastParticleRelative;
+    return lastParticleAbsolute;
   }
 
   [[nodiscard]] std::string to_string() const override {
