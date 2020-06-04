@@ -195,7 +195,7 @@ class MDFlexConfig {
   /**
    * tuningInterval
    */
-  MDFlexOption<unsigned int, __LINE__> tuningInterval{100, "tuning-interval", true,
+  MDFlexOption<unsigned int, __LINE__> tuningInterval{5000, "tuning-interval", true,
                                                       "Number of iterations between two tuning phases."};
   /**
    * tuningSamples
@@ -241,7 +241,7 @@ class MDFlexConfig {
    * verletRebuildFrequency
    */
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
-      1, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
+      20, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
   /**
    * verletSkinRadius
    */
