@@ -270,7 +270,7 @@ class MDFlexConfig {
   /**
    * cutoff
    */
-  MDFlexOption<double, __LINE__> cutoff{1., "cutoff", true, "Lennard-Jones force cutoff."};
+  MDFlexOption<double, __LINE__> cutoff{2., "cutoff", true, "Lennard-Jones force cutoff."};
   /**
    * functorOption
    */
@@ -354,8 +354,9 @@ class MDFlexConfig {
       1000, "particles-total", true, "Total number of particles for the random distribution based generators."};
   /**
    * particleSpacing
+   * For a stable grid initialize this as 2^(1/6) sigma
    */
-  MDFlexOption<double, __LINE__> particleSpacing{.5, "particle-spacing", true,
+  MDFlexOption<double, __LINE__> particleSpacing{1.1225*1, "particle-spacing", true,
                                                  "Space between two particles for the grid generator."};
   /**
    * generatorOption
