@@ -54,11 +54,13 @@ class CubeGrid : public Object {
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
 
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
-    std::array<double, 3> dppD;
-    // copy for type conversion
-    std::copy(std::begin(particlesPerDim), std::end(particlesPerDim), std::begin(dppD));
-    return autopas::utils::ArrayMath::add(bottomLeftCorner,
-                                          (autopas::utils::ArrayMath::mulScalar(dppD, particleSpacing)));
+    auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_array<double>(particlesPerDim);
+    // subtract one because the first particle is at bottomLeftCorner
+    auto particlesPerDimSubOne = autopas::utils::ArrayMath::subScalar(particlesPerDimDouble, 1.);
+    auto lastParticleRelative = autopas::utils::ArrayMath::mulScalar(particlesPerDimSubOne, particleSpacing);
+    auto lastParticleAbsolute = autopas::utils::ArrayMath::add(bottomLeftCorner, lastParticleRelative);
+
+    return lastParticleRelative;
   }
 
   [[nodiscard]] std::string to_string() const override {
