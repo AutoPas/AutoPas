@@ -192,7 +192,8 @@ class MDFlexConfig {
    */
   MDFlexOption<autopas::TuningStrategyOption, __LINE__> tuningStrategyOption{
       autopas::TuningStrategyOption::fullSearch, "tuning-strategy", true,
-      "Strategy how to reduce the sample measurements to a single value."};
+      "Strategy how to reduce the sample measurements to a single value. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions())};
   /**
    * tuningInterval
    */
