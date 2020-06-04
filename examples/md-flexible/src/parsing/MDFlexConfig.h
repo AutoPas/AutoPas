@@ -256,7 +256,7 @@ class MDFlexConfig {
    * boxMax
    */
   MDFlexOption<std::array<double, 3>, 0> boxMax{
-      {5, 5, 5}, "box-max", true, "Upper back right corner of the simulation box."};
+      {1, 1, 1}, "box-max", true, "Upper back right corner of the simulation box."};
   /**
    * acquisitionFunctionOption
    */
