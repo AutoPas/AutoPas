@@ -358,7 +358,7 @@ class MDFlexConfig {
    * particleSpacing
    * For a stable grid initialize this as 2^(1/6) sigma
    */
-  MDFlexOption<double, __LINE__> particleSpacing{1.1225*1, "particle-spacing", true,
+  MDFlexOption<double, __LINE__> particleSpacing{1.1225 * 1, "particle-spacing", true,
                                                  "Space between two particles for the grid generator."};
   /**
    * generatorOption
