@@ -191,6 +191,7 @@ class FeatureVectorEncoder {
                          _newton3Options[vecDiscrete[2]]);
   }
 
+ private:
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
   std::vector<DataLayoutOption> _dataLayoutOptions;
   std::vector<Newton3Option> _newton3Options;
