@@ -46,8 +46,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
 
     case TuningStrategyOption::bayesianClusterSearch: {
       return std::make_unique<BayesianClusterSearch>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
-                                                     allowedDataLayouts, allowedNewton3Options, maxEvidence,
-                                                     acquisitionFunctionOption);
+                                                     allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
+                                                     maxEvidence, acquisitionFunctionOption);
     }
 
     case TuningStrategyOption::activeHarmony: {
