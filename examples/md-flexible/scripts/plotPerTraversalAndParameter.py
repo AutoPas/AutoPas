@@ -115,11 +115,11 @@ for datafile in datafiles:
                 currentLine = line.split(':', 1)[1]
                 currentLine.strip()
                 numberOfParticlesPerTraversal[allTraversals.index(traversal)].append(float(currentLine))
-            elif size or density and (match := re.search(regexBoxMax, line)) is not None:
+            elif (size or density) and (match := re.search(regexBoxMax, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')
                 boxSizeListMax = list(map(float, arrayOfCurrentLine))
-            elif size or density and  (match := re.search(regexBoxMin, line)) is not None:
+            elif (size or density) and (match := re.search(regexBoxMin, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')
                 boxSizeListMin = list(map(float, arrayOfCurrentLine))
