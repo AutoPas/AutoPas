@@ -11,6 +11,11 @@
 namespace autopas {
 inline namespace options {
 
+/**
+ * Class representing the choices for mpi parallelization.
+ * The choices do not directly represent a tuningStrategy or part of a configuration, but will influence how those
+ * are treated with respect to parallelization over several processes
+ */
 class MPIStrategyOption : public Option<MPIStrategyOption> {
  public:
   /**

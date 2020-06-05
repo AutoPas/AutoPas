@@ -13,10 +13,10 @@ using namespace autopas::AutoPasConfigurationCommunicator;
 using namespace autopas;
 
 TEST(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
-   Configuration config = Configuration(ContainerOption::directSum, 1.2, TraversalOption::sliced,
-                                        DataLayoutOption::cuda, Newton3Option::disabled);
-   Configuration passedConfig = deserializeConfiguration(serializeConfiguration(config));
-   EXPECT_EQ(passedConfig, config);
+  Configuration config = Configuration(ContainerOption::directSum, 1.2, TraversalOption::sliced, DataLayoutOption::cuda,
+                                       Newton3Option::disabled);
+  Configuration passedConfig = deserializeConfiguration(serializeConfiguration(config));
+  EXPECT_EQ(passedConfig, config);
 }
 
 TEST(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
@@ -27,9 +27,8 @@ TEST(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
                                        DataLayoutOption::aos, Newton3Option::enabled);
   Configuration optimized = optimizeConfiguration(MPI_COMM_WORLD, config, rank);
 
-  EXPECT_EQ(optimized,
-            Configuration(ContainerOption::directSum, 1, TraversalOption::sliced,
-                                DataLayoutOption::aos, Newton3Option::enabled));
+  EXPECT_EQ(optimized, Configuration(ContainerOption::directSum, 1, TraversalOption::sliced, DataLayoutOption::aos,
+                                     Newton3Option::enabled));
 }
 
 TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCellSizeFactors) {
@@ -42,14 +41,14 @@ TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCel
   distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, dataLayoutOptions, newton3Options,
                            MPI_COMM_WORLD);
 
-  EXPECT_FALSE(containerOptions.empty() or cellSizeFactors.isEmpty() or traversalOptions.empty()
-               or dataLayoutOptions.empty() or newton3Options.empty());
+  EXPECT_FALSE(containerOptions.empty() or cellSizeFactors.isEmpty() or traversalOptions.empty() or
+               dataLayoutOptions.empty() or newton3Options.empty());
 
   distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, dataLayoutOptions, newton3Options,
                            MPI_COMM_SELF);
 
-  EXPECT_FALSE(containerOptions.empty() or cellSizeFactors.isEmpty() or traversalOptions.empty()
-               or dataLayoutOptions.empty() or newton3Options.empty());
+  EXPECT_FALSE(containerOptions.empty() or cellSizeFactors.isEmpty() or traversalOptions.empty() or
+               dataLayoutOptions.empty() or newton3Options.empty());
 }
 
 TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfiniteCellSizeFactors) {
@@ -65,8 +64,8 @@ TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfiniteC
   distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, dataLayoutOptions, newton3Options,
                            MPI_COMM_WORLD);
 
-  EXPECT_FALSE(containerOptions.empty() or cellSizeFactors.isEmpty() or traversalOptions.empty()
-               or dataLayoutOptions.empty() or newton3Options.empty());
-  EXPECT_EQ(cellSizeFactors.getMin(), 0.8 + (0.4/commSize)*rank);
-  EXPECT_EQ(cellSizeFactors.getMax(), 0.8 + (0.4/commSize)*(rank+1));
+  EXPECT_FALSE(containerOptions.empty() or cellSizeFactors.isEmpty() or traversalOptions.empty() or
+               dataLayoutOptions.empty() or newton3Options.empty());
+  EXPECT_EQ(cellSizeFactors.getMin(), 0.8 + (0.4 / commSize) * rank);
+  EXPECT_EQ(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1));
 }

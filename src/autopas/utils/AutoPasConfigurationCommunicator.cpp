@@ -8,16 +8,28 @@
 
 namespace autopas {
 
-int getSearchSpaceSize(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
-                       std::set<TraversalOption> &traversalOptions, std::set<DataLayoutOption> &dataLayoutOptions,
-                       std::set<Newton3Option> &newton3Options) {
-  int numConfigs = 0;
-  int cellSizeFactorArraySize;
+/**
+ * Calculates the maximum number of valid configs from several sets of options.
+ * This does not equal the cartesian product as not all containers are compatible with all traversals.
+ * @param containerOptions
+ * @param cellSizeFactors The size of cellSizeFactors will only be taken into account if the NumberSet is finite
+ * @param traversalOptions
+ * @param dataLayoutOptions
+ * @param newton3Options
+ * @return
+ */
+size_t getSearchSpaceSize(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
+                          std::set<TraversalOption> &traversalOptions, std::set<DataLayoutOption> &dataLayoutOptions,
+                          std::set<Newton3Option> &newton3Options) {
+  size_t numConfigs = 0;
+  // only take into account finite sets of cellSizeFactors
+  size_t cellSizeFactorArraySize;
   if (cellSizeFactors.isFinite()) {
     cellSizeFactorArraySize = cellSizeFactors.size();
   } else {
     cellSizeFactorArraySize = 1;
   }
+
   for (const auto &containerOption : containerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
     const std::set<TraversalOption> &allContainerTraversals =
@@ -32,80 +44,74 @@ int getSearchSpaceSize(std::set<ContainerOption> &containerOptions, NumberSet<do
   return numConfigs;
 }
 
-inline void advanceIterators(std::set<ContainerOption>::iterator &containerIT,
-                             std::set<double>::iterator &cellSizeFactorsIT, const std::set<double> &cellSizeFactors,
-                             std::set<TraversalOption>::iterator &traversalIT,
-                             const std::set<TraversalOption> &traversalOptions,
-                             std::set<DataLayoutOption>::iterator &dataLayoutIT,
-                             const std::set<DataLayoutOption> &dataLayouts,
-                             std::set<Newton3Option>::iterator &newton3OptionIT,
-                             const std::set<Newton3Option> &newton3Options, int &rankIterator, int &remainingBlockSize,
-                             int &remainder, int &infiniteCellSizeFactorsOffset, int &infiniteCellSizeFactorsBlockSize,
-                             const int numConfigs, const int commSize) {
-  if (numConfigs >= commSize or remainingBlockSize == 0) {
+void AutoPasConfigurationCommunicator::IteratorHandler::advanceIterators(const int numConfigs, const int commSize) {
+  if (numConfigs >= commSize or _remainingBlockSize == 0) {
     // advance to the next valid config
-    ++newton3OptionIT;
-    if (newton3OptionIT != newton3Options.end()) return;
-    newton3OptionIT = newton3Options.begin();
-    ++dataLayoutIT;
-    if (dataLayoutIT != dataLayouts.end()) return;
-    dataLayoutIT = dataLayouts.begin();
+    ++_newton3It;
+    if (_newton3It != _newton3Options->end()) return;
+    _newton3It = _newton3Options->begin();
+    ++_dataLayoutIt;
+    if (_dataLayoutIt != _dataLayoutOptions->end()) return;
+    _dataLayoutIt = _dataLayoutOptions->begin();
     // @todo handle invalid combinations of containers and traversals
-    ++traversalIT;
-    if (traversalIT != traversalOptions.end()) return;
-    traversalIT = traversalOptions.begin();
-    ++cellSizeFactorsIT;
-    if (cellSizeFactorsIT != cellSizeFactors.end()) return;
-    cellSizeFactorsIT = cellSizeFactors.begin();
-    ++containerIT;
+    ++_traversalIt;
+    if (_traversalIt != _traversalOptions->end()) return;
+    _traversalIt = _traversalOptions->begin();
+    ++_cellSizeFactorIt;
+    if (_cellSizeFactorIt != _cellSizeFactors->end()) return;
+    _cellSizeFactorIt = _cellSizeFactors->begin();
+    ++_containerIt;
   }
 
-  if (commSize >= numConfigs or remainingBlockSize == 0) {
+  if (commSize >= numConfigs or _remainingBlockSize == 0) {
     // advance to the next rank
-    ++rankIterator;
+    ++_rankIterator;
 
-    ++infiniteCellSizeFactorsOffset;
+    ++_infiniteCellSizeFactorsOffset;
   }
 
-  if (remainingBlockSize == 0) {
+  if (_remainingBlockSize == 0) {
     if (numConfigs >= commSize) {
-      remainingBlockSize = numConfigs / commSize;
+      _remainingBlockSize = numConfigs / commSize;
     } else {
-      remainingBlockSize = commSize / numConfigs;
+      _remainingBlockSize = commSize / numConfigs;
 
-      infiniteCellSizeFactorsBlockSize = remainingBlockSize;
-      infiniteCellSizeFactorsOffset = 0;
+      _infiniteCellSizeFactorsBlockSize = _remainingBlockSize;
+      _infiniteCellSizeFactorsOffset = 0;
     }
-    if (remainder > 0) {
-      ++remainingBlockSize;
-      --remainder;
+    if (_remainder > 0) {
+      ++_remainingBlockSize;
+      --_remainder;
     }
   }
 }
 
+/**
+ * Calculates which Options the current rank should handle based on the total number of options and ranks
+ * @param numConfigs in
+ * @param commSize in
+ * @param rank in
+ * @param containerOptions inout
+ * @param cellSizeFactors inout
+ * @param traversalOptions inout
+ * @param dataLayoutOptions inout
+ * @param newton3Options inout
+ */
 void generateDistribution(const int numConfigs, const int commSize, const int rank,
                           std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
                           std::set<TraversalOption> &traversalOptions, std::set<DataLayoutOption> &dataLayoutOptions,
                           std::set<Newton3Option> &newton3Options) {
   // ============== setup ======================================================
 
+  // These will be set to the Options specific to this rank and will overwrite the input sets
   auto newContainerOptions = std::set<ContainerOption>();
   auto newCellSizeFactors = std::set<double>();
   auto newTraversalOptions = std::set<TraversalOption>();
   auto newDataLayoutOptions = std::set<DataLayoutOption>();
   auto newNewton3Options = std::set<Newton3Option>();
-  // If there are more configurations than ranks, the ranks partition the configurations.
-  // If there are more ranks than configurations, the configurations partition the ranks.
 
-  int remainingBlockSize = 0;
-  int rankIterator = 0;
-  int remainder;
-  if (commSize >= numConfigs) {
-    remainder = commSize % numConfigs;
-  } else {
-    remainder = numConfigs % commSize;
-  }
-
+  // Distribution works only with finite sets of cellSizeFactors.
+  // If the set is infinite a dummy value will be used and replaced later on.
   std::set<double> finiteCellSizeFactors;
   if (cellSizeFactors.isFinite()) {
     finiteCellSizeFactors = cellSizeFactors.getAll();
@@ -114,35 +120,29 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     finiteCellSizeFactors = std::set<double>{-1};
   }
 
-  auto containerIt = containerOptions.begin();
-  auto cellSizeIt = finiteCellSizeFactors.begin();
-  auto traversalIt = traversalOptions.begin();
-  auto dataLayoutIt = dataLayoutOptions.begin();
-  auto newton3It = newton3Options.begin();
-
-  int infiniteCellSizeFactorsOffset = 0;
-  int infiniteCellSizeFactorsBlockSize = 1;
-
   // ============== main computation ===========================================
 
-  while (rankIterator < rank) {
-    advanceIterators(containerIt, cellSizeIt, finiteCellSizeFactors, traversalIt, traversalOptions, dataLayoutIt,
-                     dataLayoutOptions, newton3It, newton3Options, rankIterator, remainingBlockSize, remainder,
-                     infiniteCellSizeFactorsOffset, infiniteCellSizeFactorsBlockSize, numConfigs, commSize);
+  AutoPasConfigurationCommunicator::IteratorHandler iteratorHandler(containerOptions, finiteCellSizeFactors,
+                                                                    traversalOptions, dataLayoutOptions, newton3Options,
+                                                                    numConfigs, commSize);
+
+  while (iteratorHandler.getRankIterator() < rank) {
+    iteratorHandler.advanceIterators(numConfigs, commSize);
   }
 
-  while (rankIterator == rank) {
-    // std::set handles duplicate elements
-    newContainerOptions.emplace(*containerIt);
-    newCellSizeFactors.emplace(*cellSizeIt);
-    newTraversalOptions.emplace(*traversalIt);
-    newDataLayoutOptions.emplace(*dataLayoutIt);
-    newNewton3Options.emplace(*newton3It);
+  // Only important for infinite cellSizeFactors if commSize > numConfigs
+  int infiniteCellSizeFactorsOffset = iteratorHandler.getInfiniteCellSizeFactorsOffset();
+  int infiniteCellSizeFactorsBlockSize = iteratorHandler.getInfiniteCellSizeFactorsBlockSize();
 
-    int dummy;
-    advanceIterators(containerIt, cellSizeIt, finiteCellSizeFactors, traversalIt, traversalOptions, dataLayoutIt,
-                     dataLayoutOptions, newton3It, newton3Options, rankIterator, remainingBlockSize, remainder, dummy,
-                     dummy, numConfigs, commSize);
+  while (iteratorHandler.getRankIterator() == rank) {
+    // std::set handles duplicate elements
+    newContainerOptions.emplace(*iteratorHandler.getContainerIterator());
+    newCellSizeFactors.emplace(*iteratorHandler.getCellSizeFactorIterator());
+    newTraversalOptions.emplace(*iteratorHandler.getTraversalIterator());
+    newDataLayoutOptions.emplace(*iteratorHandler.getDataLayoutIterator());
+    newNewton3Options.emplace(*iteratorHandler.getNewton3Iterator());
+
+    iteratorHandler.advanceIterators(numConfigs, commSize);
   }
 
   // ============== assigning to local search space ============================
@@ -215,6 +215,14 @@ AutoPasConfigurationCommunicator::SerializedConfiguration AutoPasConfigurationCo
   config[3] = castToByte(configuration.newton3);
   std::memcpy(&config[4], &configuration.cellSizeFactor, sizeof(double));
   return config;
+}
+
+Configuration AutoPasConfigurationCommunicator::deserializeConfiguration(SerializedConfiguration config) {
+  double cellSizeFactor;
+  std::memcpy(&cellSizeFactor, &config[4], sizeof(double));
+  return Configuration(static_cast<ContainerOption::Value>(config[0]), cellSizeFactor,
+                       static_cast<TraversalOption::Value>(config[1]), static_cast<DataLayoutOption::Value>(config[2]),
+                       static_cast<Newton3Option::Value>(config[3]));
 }
 
 }  // namespace autopas

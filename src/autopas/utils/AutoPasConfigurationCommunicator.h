@@ -39,13 +39,142 @@ inline std::byte castToByte(TOption option) {
 }
 
 /**
+ * Holds functionality needed to iterate through ranks and configurations simultaneously in an evenly distributed manner
+ * Also provides useful information for dealing with infinite NumberSets as cellSizeFactors
+ */
+struct IteratorHandler {
+  /**
+   * Constructor for IteratorHandler
+   * @param containerOptions
+   * @param cellSizeFactors
+   * @param traversalOptions
+   * @param dataLayoutOptions
+   * @param newton3Options
+   * @param numConfigs
+   * @param commSize
+   */
+  IteratorHandler(std::set<ContainerOption> &containerOptions, std::set<double> &cellSizeFactors,
+                  std::set<TraversalOption> &traversalOptions, std::set<DataLayoutOption> &dataLayoutOptions,
+                  std::set<Newton3Option> &newton3Options, const int numConfigs, const int commSize)
+      : _containerOptions(std::make_unique<std::set<ContainerOption>>(containerOptions)),
+        _cellSizeFactors(std::make_unique<std::set<double>>(cellSizeFactors)),
+        _traversalOptions(std::make_unique<std::set<TraversalOption>>(traversalOptions)),
+        _dataLayoutOptions(std::make_unique<std::set<DataLayoutOption>>(dataLayoutOptions)),
+        _newton3Options(std::make_unique<std::set<Newton3Option>>(newton3Options)),
+        _containerIt(containerOptions.begin()),
+        _cellSizeFactorIt(cellSizeFactors.begin()),
+        _traversalIt(traversalOptions.begin()),
+        _dataLayoutIt(dataLayoutOptions.begin()),
+        _newton3It(newton3Options.begin()),
+        _rankIterator(0),
+        _remainingBlockSize(0),
+        _remainder(commSize >= numConfigs ? commSize / numConfigs : numConfigs / commSize),
+        _infiniteCellSizeFactorsOffset(0),
+        _infiniteCellSizeFactorsBlockSize(1) {}
+
+  /**
+   * Advances the rankIterator (getRankIterator()) and/or the Option iterators for a single step such that repeated
+   * execution of this function ends up in both reaching their respective ends simultaneously
+   * @param numConfigs
+   * @param commSize
+   */
+  void advanceIterators(const int numConfigs, const int commSize);
+
+  /**
+   * Alternative getter for all Configuration iterators
+   * @param containerIt out
+   * @param cellSizeFactorIt out
+   * @param traversalIt out
+   * @param dataLayoutIt out
+   * @param newton3It out
+   */
+  inline void getConfigIterators(std::set<ContainerOption>::iterator &containerIt,
+                                 std::set<double>::iterator &cellSizeFactorIt,
+                                 std::set<TraversalOption>::iterator &traversalIt,
+                                 std::set<DataLayoutOption>::iterator &dataLayoutIt,
+                                 std::set<Newton3Option>::iterator &newton3It) {
+    containerIt = _containerIt;
+    cellSizeFactorIt = _cellSizeFactorIt;
+    traversalIt = _traversalIt;
+    dataLayoutIt = _dataLayoutIt;
+    newton3It = _newton3It;
+  }
+
+  /**
+   * Getter for the rankIterator. The value will correspond to the rank that holds the Options that the other iterators
+   * point to
+   * @return
+   */
+  inline int getRankIterator() const { return _rankIterator; }
+
+  /**
+   * Getter for the number of ranks smaller than getRankIterator that have the exact same configs assigned to them.
+   * @return
+   */
+  inline int getInfiniteCellSizeFactorsOffset() const { return _infiniteCellSizeFactorsOffset; }
+
+  /**
+   * Getter for the number of ranks in total that have the exact same configs assigned to them.
+   * @return
+   */
+  inline int getInfiniteCellSizeFactorsBlockSize() const { return _infiniteCellSizeFactorsBlockSize; }
+
+  /**
+   * Getter for containerIterator
+   * @return
+   */
+  inline std::set<ContainerOption>::iterator getContainerIterator() const { return _containerIt; }
+
+  /**
+   * Getter for the CellSizeFactorIterator
+   * @return
+   */
+  inline std::set<double>::iterator getCellSizeFactorIterator() const { return _cellSizeFactorIt; }
+
+  /**
+   * Getter for the TraversalIterator
+   * @return
+   */
+  inline std::set<TraversalOption>::iterator getTraversalIterator() const { return _traversalIt; }
+
+  /**
+   * Getter for the DataLayoutIterator
+   * @return
+   */
+  inline std::set<DataLayoutOption>::iterator getDataLayoutIterator() const { return _dataLayoutIt; }
+
+  /**
+   * Getter for the Newton3Iterator
+   * @return
+   */
+  inline std::set<Newton3Option>::iterator getNewton3Iterator() const { return _newton3It; }
+
+ private:
+  const std::unique_ptr<const std::set<ContainerOption>> _containerOptions;
+  const std::unique_ptr<const std::set<double>> _cellSizeFactors;
+  const std::unique_ptr<const std::set<TraversalOption>> _traversalOptions;
+  const std::unique_ptr<const std::set<DataLayoutOption>> _dataLayoutOptions;
+  const std::unique_ptr<const std::set<Newton3Option>> _newton3Options;
+  std::set<ContainerOption>::iterator _containerIt;
+  std::set<double>::iterator _cellSizeFactorIt;
+  std::set<TraversalOption>::iterator _traversalIt;
+  std::set<DataLayoutOption>::iterator _dataLayoutIt;
+  std::set<Newton3Option>::iterator _newton3It;
+  int _rankIterator;
+  int _remainingBlockSize;
+  int _remainder;
+  int _infiniteCellSizeFactorsOffset;
+  int _infiniteCellSizeFactorsBlockSize;
+};
+
+/**
  * Distributes the provided configurations globally for equal work loads.
  * All parameters' values (except for comm) are only relevant at the root node (0).
  * All parameters' values (except for comm) will be changed by this function
  * @param containerOptions
  * @param cellSizeFactors
  * @param traversalOptions
- * @param datalayouts
+ * @param dataLayoutOptions
  * @param newton3Options
  * @param comm
  */
@@ -66,13 +195,7 @@ SerializedConfiguration serializeConfiguration(Configuration configuration);
  * @param config: The SerializedConfiguration objects returned by _serializeConfiguration
  * @return The deserialized Configuration object
  */
-Configuration deserializeConfiguration(SerializedConfiguration config) {
-  double cellSizeFactor;
-  std::memcpy(&cellSizeFactor, &config[4], sizeof(double));
-  return Configuration(static_cast<ContainerOption::Value>(config[0]), cellSizeFactor,
-                       static_cast<TraversalOption::Value>(config[1]), static_cast<DataLayoutOption::Value>(config[2]),
-                       static_cast<Newton3Option::Value>(config[3]));
-}
+Configuration deserializeConfiguration(SerializedConfiguration config);
 
 /**
  * Handles communication to select the globally best configuration.

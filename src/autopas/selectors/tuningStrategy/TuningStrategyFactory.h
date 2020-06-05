@@ -25,6 +25,7 @@ namespace autopas::TuningStrategyFactory {
  * @param relativeOptimum
  * @param maxTuningPhasesWithoutTest
  * @param acquisitionFunctionOption
+ * @param mpiStrategyOption
  * @param comm Default value only used for tests
  * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
  */
