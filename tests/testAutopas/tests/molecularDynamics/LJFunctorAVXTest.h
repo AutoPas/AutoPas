@@ -37,7 +37,7 @@ class LJFunctorAVXTest : public AutoPasTestBase {
    * Expects that particles are loaded and extracted in the same order.
    * In all comparisons first is AVX2, second non-AVX2
    *
-   * Checks SoAFunctorSingle(soa, newton3, cellWiseOwnedState)
+   * Checks SoAFunctorSingle(soa, newton3)
    *
    * @param newton3
    */

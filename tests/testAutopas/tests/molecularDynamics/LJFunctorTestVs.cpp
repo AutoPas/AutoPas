@@ -36,9 +36,8 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
   FMCell cell2PPL(cell2NoPPL);
 
   constexpr bool newton3 = true;
-  constexpr bool cellWiseOwnedState = true;
-  funNoPPL.SoAFunctorPair(cell1NoPPL._particleSoABuffer, cell2NoPPL._particleSoABuffer, newton3, cellWiseOwnedState);
-  funPPL.SoAFunctorPair(cell1PPL._particleSoABuffer, cell2PPL._particleSoABuffer, newton3, cellWiseOwnedState);
+  funNoPPL.SoAFunctorPair(cell1NoPPL._particleSoABuffer, cell2NoPPL._particleSoABuffer, newton3);
+  funPPL.SoAFunctorPair(cell1PPL._particleSoABuffer, cell2PPL._particleSoABuffer, newton3);
 
   funPPL.SoAExtractor(cell1PPL, cell1PPL._particleSoABuffer);
   funPPL.SoAExtractor(cell2PPL, cell2PPL._particleSoABuffer);

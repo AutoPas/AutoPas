@@ -8,6 +8,7 @@
 
 #include <array>
 #include <functional>
+#include <iostream>
 
 #include "autopas/utils/inBox.h"
 

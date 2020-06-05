@@ -136,11 +136,11 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
           switch (interactionType) {
             case TestType::InteractionType::own:
               // Interation of one cell with itself
-              functor->SoAFunctorSingle(cell1._particleSoABuffer, newton3, true);
+              functor->SoAFunctorSingle(cell1._particleSoABuffer, newton3);
               break;
             case TestType::InteractionType::pair:
               // Interation of a cell pair
-              functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3, true);
+              functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
               break;
             case TestType::InteractionType::verlet:
               // Build verlet list
@@ -205,7 +205,7 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     if (interactionType == TestType::InteractionType::pair) {
       functor->SoALoader(cell1, cell1._particleSoABuffer);
       functor->SoALoader(cell2, cell2._particleSoABuffer);
-      functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3, true);
+      functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
       functor->SoAExtractor(cell1, cell1._particleSoABuffer);
       functor->SoAExtractor(cell2, cell2._particleSoABuffer);
 

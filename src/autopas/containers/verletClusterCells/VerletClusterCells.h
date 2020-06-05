@@ -200,7 +200,6 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
       cell.deleteDummyParticles();
     }
 
-
     // next find invalid particles
     std::vector<Particle> invalidParticles;
 

@@ -146,10 +146,8 @@ class Functor {
    *
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
-   * @param cellWiseOwnedState defines whether it is safe to assume that an entire cell has the same owned state. This
-   * information can be used for optimizing functors, but can also be ignored.
    */
-  virtual void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState) {
+  virtual void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctorSingle: not yet implemented");
   }
 
@@ -181,11 +179,8 @@ class Functor {
    * @param soa1 First structure of arrays.
    * @param soa2 Second structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
-   * @param cellWiseOwnedState defines whether it is safe to assume that an entire cell has the same owned state. This
-   * information can be used for optimizing functors, but can also be ignored.
    */
-  virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3,
-                              bool cellWiseOwnedState) {
+  virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctorPair: not yet implemented");
   }
 

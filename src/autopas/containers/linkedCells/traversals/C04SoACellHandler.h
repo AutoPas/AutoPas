@@ -210,15 +210,14 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewt
         cell1 = &combinationSlice[currentSlice];
         auto stripeView = cell1->_particleSoABuffer.constructView(0, numParticlesBaseCell);
         if (slice == currentSlice) {
-          // Process stripe with itself, this contains particles of a single cell, so all particles have the same owned
-          // state.
-          _pairwiseFunctor->SoAFunctorSingle(stripeView, useNewton3, true);
+          // Process stripe with itself
+          _pairwiseFunctor->SoAFunctorSingle(stripeView, useNewton3);
 
           auto restView = cell1->_particleSoABuffer.constructView(numParticlesBaseCell,
                                                                   cell1->_particleSoABuffer.getNumParticles());
-          _pairwiseFunctor->SoAFunctorPair(stripeView, restView, useNewton3, false);
+          _pairwiseFunctor->SoAFunctorPair(stripeView, restView, useNewton3);
           if (not useNewton3) {
-            _pairwiseFunctor->SoAFunctorPair(restView, stripeView, useNewton3, false);
+            _pairwiseFunctor->SoAFunctorPair(restView, stripeView, useNewton3);
           }
           cell1ViewEnd = cell1->_particleSoABuffer.getNumParticles();
           continue;
@@ -250,9 +249,9 @@ inline void C04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewt
 
       auto cell1View = cell1->_particleSoABuffer.constructView(cell1ViewStart, cell1ViewEnd);
       auto currentCSView = currentCS._particleSoABuffer.constructView(currentCSViewStart, currentCSViewEnd);
-      _pairwiseFunctor->SoAFunctorPair(cell1View, currentCSView, useNewton3, false);
+      _pairwiseFunctor->SoAFunctorPair(cell1View, currentCSView, useNewton3);
       if (not useNewton3) {
-        _pairwiseFunctor->SoAFunctorPair(currentCSView, cell1View, useNewton3, false);
+        _pairwiseFunctor->SoAFunctorPair(currentCSView, cell1View, useNewton3);
       }
     }
   }
