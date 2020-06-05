@@ -66,7 +66,7 @@ SerializedConfiguration serializeConfiguration(Configuration configuration);
  * @param config: The SerializedConfiguration objects returned by _serializeConfiguration
  * @return The deserialized Configuration object
  */
-static Configuration deserializeConfig(SerializedConfiguration config) {
+Configuration deserializeConfiguration(SerializedConfiguration config) {
   double cellSizeFactor;
   std::memcpy(&cellSizeFactor, &config[4], sizeof(double));
   return Configuration(static_cast<ContainerOption::Value>(config[0]), cellSizeFactor,

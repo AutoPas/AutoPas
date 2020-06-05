@@ -202,7 +202,7 @@ Configuration AutoPasConfigurationCommunicator::optimizeConfiguration(AutoPas_MP
 
   AutoPas_MPI_Bcast(&serializedConfiguration, sizeof(serializedConfiguration), AUTOPAS_MPI_BYTE, optimalRankOut, comm);
 
-  return deserializeConfig(serializedConfiguration);
+  return deserializeConfiguration(serializedConfiguration);
 }
 
 AutoPasConfigurationCommunicator::SerializedConfiguration AutoPasConfigurationCommunicator::serializeConfiguration(
