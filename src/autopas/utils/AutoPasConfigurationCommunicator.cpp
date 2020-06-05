@@ -8,6 +8,57 @@
 
 namespace autopas {
 
+inline void AutoPasConfigurationCommunicator::IteratorHandler::advanceConfigIterators() {
+  // advance to the next valid config
+  ++_newton3It;
+  if (_newton3It != _newton3Options->end()) return;
+  _newton3It = _newton3Options->begin();
+  ++_dataLayoutIt;
+  if (_dataLayoutIt != _dataLayoutOptions->end()) return;
+  _dataLayoutIt = _dataLayoutOptions->begin();
+  // @todo handle invalid combinations of containers and traversals
+  ++_traversalIt;
+  if (_traversalIt != _traversalOptions->end()) return;
+  _traversalIt = _traversalOptions->begin();
+  ++_cellSizeFactorIt;
+  if (_cellSizeFactorIt != _cellSizeFactors->end()) return;
+  _cellSizeFactorIt = _cellSizeFactors->begin();
+  ++_containerIt;
+}
+
+void AutoPasConfigurationCommunicator::IteratorHandler::advanceIterators(const int numConfigs, const int commSize) {
+  if (numConfigs >= commSize or _remainingBlockSize == 0) {
+    advanceConfigIterators();
+  }
+
+  if (commSize >= numConfigs or _remainingBlockSize == 0) {
+    // advance to the next rank
+    ++_rankIterator;
+
+    ++_infiniteCellSizeFactorsOffset;
+  }
+
+  // Set information necessary to compute the next block.
+  // Block here means either a block of ranks that all have the same configuration or a set of configuration that all
+  // have the same ranks.
+  if (_remainingBlockSize == 0) {
+    if (numConfigs >= commSize) {
+      _remainingBlockSize = numConfigs / commSize;
+    } else {
+      _remainingBlockSize = commSize / numConfigs;
+
+      _infiniteCellSizeFactorsBlockSize = _remainingBlockSize;
+      _infiniteCellSizeFactorsOffset = 0;
+    }
+    if (_remainder > 0) {
+      ++_remainingBlockSize;
+      --_remainder;
+    }
+  }
+
+  --_remainingBlockSize;
+}
+
 /**
  * Calculates the maximum number of valid configs from several sets of options.
  * This does not equal the cartesian product as not all containers are compatible with all traversals.
@@ -42,48 +93,6 @@ size_t getSearchSpaceSize(std::set<ContainerOption> &containerOptions, NumberSet
         cellSizeFactorArraySize * allowedAndApplicable.size() * dataLayoutOptions.size() * newton3Options.size();
   }
   return numConfigs;
-}
-
-void AutoPasConfigurationCommunicator::IteratorHandler::advanceIterators(const int numConfigs, const int commSize) {
-  if (numConfigs >= commSize or _remainingBlockSize == 0) {
-    // advance to the next valid config
-    ++_newton3It;
-    if (_newton3It != _newton3Options->end()) return;
-    _newton3It = _newton3Options->begin();
-    ++_dataLayoutIt;
-    if (_dataLayoutIt != _dataLayoutOptions->end()) return;
-    _dataLayoutIt = _dataLayoutOptions->begin();
-    // @todo handle invalid combinations of containers and traversals
-    ++_traversalIt;
-    if (_traversalIt != _traversalOptions->end()) return;
-    _traversalIt = _traversalOptions->begin();
-    ++_cellSizeFactorIt;
-    if (_cellSizeFactorIt != _cellSizeFactors->end()) return;
-    _cellSizeFactorIt = _cellSizeFactors->begin();
-    ++_containerIt;
-  }
-
-  if (commSize >= numConfigs or _remainingBlockSize == 0) {
-    // advance to the next rank
-    ++_rankIterator;
-
-    ++_infiniteCellSizeFactorsOffset;
-  }
-
-  if (_remainingBlockSize == 0) {
-    if (numConfigs >= commSize) {
-      _remainingBlockSize = numConfigs / commSize;
-    } else {
-      _remainingBlockSize = commSize / numConfigs;
-
-      _infiniteCellSizeFactorsBlockSize = _remainingBlockSize;
-      _infiniteCellSizeFactorsOffset = 0;
-    }
-    if (_remainder > 0) {
-      ++_remainingBlockSize;
-      --_remainder;
-    }
-  }
 }
 
 /**
@@ -155,9 +164,9 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     double delta = (max - min) / infiniteCellSizeFactorsBlockSize;
     std::set<double> values{min + delta * infiniteCellSizeFactorsOffset,
                             min + delta * (infiniteCellSizeFactorsOffset + 1)};
-    cellSizeFactors = *cellSizeFactors.createWithValues(values);
+    cellSizeFactors.resetValues(values);
   } else {
-    cellSizeFactors = *cellSizeFactors.createWithValues(newCellSizeFactors);
+    cellSizeFactors.resetValues(newCellSizeFactors);
   }
   traversalOptions = newTraversalOptions;
   dataLayoutOptions = newDataLayoutOptions;
@@ -173,8 +182,14 @@ void AutoPasConfigurationCommunicator::distributeConfigurations(std::set<Contain
   int rank, commSize;
   AutoPas_MPI_Comm_rank(comm, &rank);
   AutoPas_MPI_Comm_size(comm, &commSize);
+
   int numConfigs =
       getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, dataLayoutOptions, newton3Options);
+
+  if (numConfigs == 0) {
+    utils::ExceptionHandler::exception("Could not generate valid configurations, aborting");
+    return;
+  }
 
   // Creates a set for each option and each rank containing the serialized versions (std::byte or double) of all
   // options assigned to that rank.

@@ -34,15 +34,22 @@ TEST(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
 TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCellSizeFactors) {
   std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists, ContainerOption::linkedCells};
   NumberSetFinite<double> cellSizeFactors{0.9, 1.0, 1.1};
-  std::set<TraversalOption> traversalOptions{TraversalOption::c01, TraversalOption::c01Verlet};
+  std::set<TraversalOption> traversalOptions{TraversalOption::verletClusters, TraversalOption::sliced};
   std::set<DataLayoutOption> dataLayoutOptions{DataLayoutOption::aos, DataLayoutOption::soa};
   std::set<Newton3Option> newton3Options{Newton3Option::enabled, Newton3Option::disabled};
+  int rank, commSize;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &commSize);
 
   distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, dataLayoutOptions, newton3Options,
                            MPI_COMM_WORLD);
 
   EXPECT_FALSE(containerOptions.empty() or cellSizeFactors.isEmpty() or traversalOptions.empty() or
                dataLayoutOptions.empty() or newton3Options.empty());
+
+  // multiplying all options together gives 48 possible configurations
+  EXPECT_GE(containerOptions.size() * cellSizeFactors.size() * traversalOptions.size() * dataLayoutOptions.size()
+            * newton3Options.size(), 48/commSize);
 
   distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, dataLayoutOptions, newton3Options,
                            MPI_COMM_SELF);
@@ -54,7 +61,7 @@ TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCel
 TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfiniteCellSizeFactors) {
   std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists};
   NumberInterval<double> cellSizeFactors{0.8, 1.2};
-  std::set<TraversalOption> traversalOptions{TraversalOption::c01};
+  std::set<TraversalOption> traversalOptions{TraversalOption::verletClusters};
   std::set<DataLayoutOption> dataLayoutOptions{DataLayoutOption::aos};
   std::set<Newton3Option> newton3Options{Newton3Option::enabled};
   int rank, commSize;
@@ -66,6 +73,9 @@ TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfiniteC
 
   EXPECT_FALSE(containerOptions.empty() or cellSizeFactors.isEmpty() or traversalOptions.empty() or
                dataLayoutOptions.empty() or newton3Options.empty());
-  EXPECT_EQ(cellSizeFactors.getMin(), 0.8 + (0.4 / commSize) * rank);
-  EXPECT_EQ(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1));
+  double error = 0.001;
+  EXPECT_GE(cellSizeFactors.getMin(), 0.8 + (0.4 / commSize) * rank - error);
+  EXPECT_LE(cellSizeFactors.getMin(), 0.8 + (0.4 / commSize) * rank + error);
+  EXPECT_GE(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1) - error);
+  EXPECT_LE(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1) + error);
 }

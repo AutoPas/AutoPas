@@ -56,21 +56,21 @@ struct IteratorHandler {
   IteratorHandler(std::set<ContainerOption> &containerOptions, std::set<double> &cellSizeFactors,
                   std::set<TraversalOption> &traversalOptions, std::set<DataLayoutOption> &dataLayoutOptions,
                   std::set<Newton3Option> &newton3Options, const int numConfigs, const int commSize)
-      : _containerOptions(std::make_unique<std::set<ContainerOption>>(containerOptions)),
-        _cellSizeFactors(std::make_unique<std::set<double>>(cellSizeFactors)),
-        _traversalOptions(std::make_unique<std::set<TraversalOption>>(traversalOptions)),
-        _dataLayoutOptions(std::make_unique<std::set<DataLayoutOption>>(dataLayoutOptions)),
-        _newton3Options(std::make_unique<std::set<Newton3Option>>(newton3Options)),
+      : _containerOptions(&containerOptions),
+        _cellSizeFactors(&cellSizeFactors),
+        _traversalOptions(&traversalOptions),
+        _dataLayoutOptions(&dataLayoutOptions),
+        _newton3Options(&newton3Options),
         _containerIt(containerOptions.begin()),
         _cellSizeFactorIt(cellSizeFactors.begin()),
         _traversalIt(traversalOptions.begin()),
         _dataLayoutIt(dataLayoutOptions.begin()),
         _newton3It(newton3Options.begin()),
         _rankIterator(0),
-        _remainingBlockSize(0),
-        _remainder(commSize >= numConfigs ? commSize / numConfigs : numConfigs / commSize),
+        _remainingBlockSize(commSize >= numConfigs ? commSize / numConfigs : numConfigs / commSize),
+        _remainder(commSize >= numConfigs ? commSize % numConfigs : numConfigs % commSize),
         _infiniteCellSizeFactorsOffset(0),
-        _infiniteCellSizeFactorsBlockSize(1) {}
+        _infiniteCellSizeFactorsBlockSize(commSize >= numConfigs ? commSize / numConfigs : numConfigs / commSize) {}
 
   /**
    * Advances the rankIterator (getRankIterator()) and/or the Option iterators for a single step such that repeated
@@ -150,11 +150,17 @@ struct IteratorHandler {
   inline std::set<Newton3Option>::iterator getNewton3Iterator() const { return _newton3It; }
 
  private:
-  const std::unique_ptr<const std::set<ContainerOption>> _containerOptions;
-  const std::unique_ptr<const std::set<double>> _cellSizeFactors;
-  const std::unique_ptr<const std::set<TraversalOption>> _traversalOptions;
-  const std::unique_ptr<const std::set<DataLayoutOption>> _dataLayoutOptions;
-  const std::unique_ptr<const std::set<Newton3Option>> _newton3Options;
+  /**
+   * Selects the next config from containers X cellSizeFactors X traversals X dataLayouts X newton3Options
+   * Later named options are changed first, because they are easier to switch between simulation steps
+   */
+  inline void advanceConfigIterators();
+
+  const std::set<ContainerOption> * const _containerOptions;
+  const std::set<double> * const _cellSizeFactors;
+  const std::set<TraversalOption> * const _traversalOptions;
+  const std::set<DataLayoutOption> * const _dataLayoutOptions;
+  const std::set<Newton3Option> * const _newton3Options;
   std::set<ContainerOption>::iterator _containerIt;
   std::set<double>::iterator _cellSizeFactorIt;
   std::set<TraversalOption>::iterator _traversalIt;

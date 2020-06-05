@@ -38,12 +38,12 @@ class NumberSetFinite : public NumberSet<Number> {
 
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberSetFinite>(*this); }
   /**
-   * Constructor for a new NumberSetFinite
+   * Setter for NumberSetFinite
    * @param numbers The set of numbers the new NumberSetFinite represents
    * @return
    */
-  std::unique_ptr<NumberSet<Number>> createWithValues(std::set<Number> &numbers) override {
-    return std::make_unique<NumberSetFinite>(numbers);
+  inline void resetValues(std::set<Number> &numbers) override {
+    _set = numbers;
   }
 
   std::string to_string() const override { return "" + utils::ArrayUtils::to_string(_set) + ""; }

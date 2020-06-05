@@ -41,24 +41,24 @@ class NumberInterval : public NumberSet<Number> {
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberInterval>(*this); }
 
   /**
-   * Constructor for a new NumberInterval.
+   * Setter for NumberInterval
    * @param numbers One or two values, like the available constructors for NumberInterval.
-   * If two are provided the smaller one with automatically be assumed to be the min value.
+   * If two are provided the smaller one is assumed to be the min value.
    * @return
    */
-  std::unique_ptr<NumberSet<Number>> createWithValues(std::set<Number> &numbers) override {
+  inline void resetValues(std::set<Number> &numbers) override {
     if (numbers.size() == 1) {
-      return std::make_unique<NumberInterval>(*numbers.begin());
+      _min = *numbers.begin();
+      _max = *numbers.begin();
+    } else if (numbers.size() == 2) {
+      _min = std::min(*numbers.begin(), *++numbers.begin());
+      _max = std::max(*numbers.begin(), *++numbers.begin());
+
+    } else {
+      utils::ExceptionHandler::exception(
+          "NumberInterval::resetValues: NumberInterval constructor takes exactly"
+          " one or two values");
     }
-    if (numbers.size() == 2) {
-      Number min = std::min(*numbers.begin(), *numbers.end());
-      Number max = std::max(*numbers.begin(), *numbers.end());
-      return std::make_unique<NumberInterval>(min, max);
-    }
-    utils::ExceptionHandler::exception(
-        "NumberInterval::createWithValues: NumberInterval constructor takes exactly"
-        " one or two values");
-    return nullptr;
   }
 
   std::string to_string() const override {
