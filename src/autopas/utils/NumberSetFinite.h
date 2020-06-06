@@ -50,6 +50,8 @@ class NumberSetFinite : public NumberSet<Number> {
   inline std::set<Number> getAll() const override { return _set; }
 
   inline Number getRandom(Random &rng) const override { return rng.pickRandom(_set); }
-  std::vector<Number> uniformSample(size_t n, Random &rng) const override { return rng.uniformSample(_set, n); }
+  std::vector<Number> uniformSample(size_t n, Random &rng) const override {
+    return rng.uniformSample(_set.begin(), _set.end(), n);
+  }
 };
 }  // namespace autopas

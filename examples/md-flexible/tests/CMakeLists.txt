@@ -1,19 +1,21 @@
 file(
     GLOB_RECURSE
-    MDFlex_SRC
-    "../*.cpp"
-    "../*.h"
+    MDFlexTest_SRC
+    "../src/*.cpp"
+    "../src/*.h"
+    "./*.cpp"
+    "./*.h"
 )
 
 # remove main
-foreach (FILE_PATH ${MDFlex_SRC})
+foreach (FILE_PATH ${MDFlexTest_SRC})
     string(FIND ${FILE_PATH} "main.cpp" EXCLUDE_FILE)
     if (NOT ${EXCLUDE_FILE} EQUAL -1)
-        list(REMOVE_ITEM MDFlex_SRC ${FILE_PATH})
+        list(REMOVE_ITEM MDFlexTest_SRC ${FILE_PATH})
     endif ()
 endforeach ()
 
-add_executable(mdFlexTests ${MDFlex_SRC})
+add_executable(mdFlexTests ${MDFlexTest_SRC})
 
 target_compile_definitions(
     mdFlexTests PRIVATE
