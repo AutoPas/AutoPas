@@ -22,7 +22,7 @@ Creates an interactive plot for each md-flex output file given. If no input is g
 
 ## Compare Traversals per time
 
-Enables you to compare several traversals per time and number of particles or domainsize or density.
+Enables you to compare several traversals per time and number of particles or domain size or density.
 In the plot you will find the time as the x-axis and the other parameter as y-axis.
 
 Requirements:
@@ -30,6 +30,8 @@ Requirements:
 * [plotly](https://github.com/plotly/plotly.py) (tested with 4.7.1)
 
 ### testTimePerTraversal.py
+Test several traversals at once.
+
 Examples can be found in AutoPas/examples/md-flexible/input/testTimePerTraversal/
 
 Command:
