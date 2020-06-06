@@ -57,6 +57,7 @@ allTraversals=[]
 for arg in sys.argv[1:]:
     if "help" in arg:
         print("Usage: ./testTimePerTraversal.py [traversal=chosenTraversal] [tests=iterations of tests] [paths/to/yaml/files or/to/directories]")
+        print("Please use at least python 3.8.")
         exit(0)
     elif traversalIdentifierString in arg:
         traversalArg = ["--traversal", arg.split('=', 1)[1]]

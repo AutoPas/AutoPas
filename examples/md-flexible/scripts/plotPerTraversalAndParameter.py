@@ -20,6 +20,7 @@ containsParameterArg = False
 for arg in sys.argv[1:]:
     if "--help" in arg:
         print("Usage: ./plotTuning.py parameter=[number, size, density] [path/To//Output/*.out ...]. Meaning number = number of particles, size = boxSize and density = particle density")
+        print("Please use at least python 3.8.")
         exit(0)
     elif parameterIdentifierString in arg:
         parameterArg = arg.split('=', 1)[1]
