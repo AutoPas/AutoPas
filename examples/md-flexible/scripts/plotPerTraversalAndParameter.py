@@ -47,6 +47,7 @@ if len(sys.argv) > 1:
 
 # values for plotting in the end
 allTraversals = []
+allContainers = [[]] * 7
 numberOfParticlesPerTraversal = []
 boxSizePerTraversal = []
 densityPerTraversal = []
@@ -56,6 +57,9 @@ size = False
 density = False
 xAxisTitle = "empty"
 xAxis = []
+meanXaxis = []
+meanYaxis = []
+
 
 if parameterArg == 'number':
     number = True
@@ -66,6 +70,14 @@ elif parameterArg == 'size':
 elif parameterArg == 'density':
     density = True
     xAxisTitle = 'Density of particles'
+
+allContainers[0] = ["directSum"]  # directSum
+allContainers[1] = ["c01", "c08", "c18", "sliced", "c01-combined-SoA", "c04", "c04SoA", "c04HCP"]  # linkedCells
+allContainers[2] = ["verlet-clusters", "verlet-clusters-coloring", "verlet-clusters-static"]  # verletClusterLists
+allContainers[3] = ["verlet-sliced", "verlet-c18", "verlet-c01"]  # verletListsCells
+allContainers[4] = ["verlet-cluster-cells"]  # verletClusterCells
+allContainers[5] = ["var-verlet-lists-as-build"]  # varVerletListsAsBuild
+allContainers[6] = ["verlet-lists"]  # verletLists
 
 
 # gather data per file
@@ -144,28 +156,37 @@ for datafile in datafiles:
             densityPerTraversal[allTraversals.index(traversal)].append(currentDensity)
 
 
+# ---------------------------------------------- Functions ----------------------------------------
 
+def getContainerByTraversal(traversal):
+    for c in allContainers:
+        if c.__contains__(traversal):
+            return c
+
+def calculateMeans(xAxis, yAxis):
+    global meanYaxis
+    global meanXaxis
+    meanXaxis = []
+    meanYaxis = []
+    for x in xAxis:
+        if meanXaxis.__contains__(x):
+            meanYaxis[meanXaxis.index(x)] += yAxis[xAxis.index(x)]
+        else:
+            meanXaxis.append(x)
+            meanYaxis.append(yAxis[xAxis.index(x)])
+    divisor = len(yAxis) / len(meanYaxis)
+
+    yAxis.sort()
+    meanYaxis.sort()
+    meanYaxis = [y / divisor for y in meanYaxis]
+    meanXaxis.sort()
+
+    # TODO: sort depending
 
 # ---------------------------------------------- Plot ---------------------------------------------
 
 # build the full rgb color space
-numcolors=len(allTraversals)
-distBetweenColors=int((6*256)/numcolors)
-colorrange=[]
-for g in range(0,256):
-    colorrange.append('rgb(255, ' + str(g) + ',   0)')
-for r in reversed(range(0,256)):
-    colorrange.append('rgb(' + str(r) + ', 255,   0)')
-for b in range(0,256):
-    colorrange.append('rgb(  0, 255, ' + str(b) + ')')
-for g in reversed(range(0,256)):
-    colorrange.append('rgb(  0, ' + str(g) + ', 255)')
-for r in range(0,256):
-    colorrange.append('rgb(' + str(r) + ',   0, 255)')
-for b in reversed(range(0,256)):
-    colorrange.append('rgb(255,   0, ' + str(b) + ')')
-# select equidistant colors
-colorrange=colorrange[0::distBetweenColors]
+colorrange = ['rgb(  0, 0, 0)', 'rgb(0, 100,   100)', 'rgb(255, 219,   0)', 'rgb(255, 0,   0)', 'rgb(  0, 147, 255)', 'rgb(71, 0, 255)', 'rgb(73, 255,   0)', 'rgb(255,   0, 221)']
 
 
 # create figure and define layout
@@ -186,19 +207,18 @@ for t in allTraversals:
         xAxis = boxSizePerTraversal[allTraversals.index(t)]
     elif density:
         xAxis = densityPerTraversal[allTraversals.index(t)]
-    xAxis.sort()  # TODO: sort according to related time
-    timePerTravsersal[allTraversals.index(t)].sort()
+    calculateMeans(xAxis, timePerTravsersal[allTraversals.index(t)])
     fig.add_trace(go.Scatter(
         name=t,
-        x=xAxis,
-        y=timePerTravsersal[allTraversals.index(t)],
+        x=meanXaxis,
+        y=meanYaxis,
         mode="lines+markers",
         hovertext=t,
         marker=dict(
             color=allTraversals.index(t),
         ),
         line=dict(
-            color=colorrange[allTraversals.index(t)],
+            color=colorrange[allContainers.index(getContainerByTraversal(t))],
         ),
         )
     )
