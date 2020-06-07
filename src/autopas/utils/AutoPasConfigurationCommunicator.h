@@ -58,19 +58,20 @@ struct IteratorHandler {
                   std::set<Newton3Option> &newton3Options, const int numConfigs, const int commSize)
       : _containerOptions(&containerOptions),
         _cellSizeFactors(&cellSizeFactors),
-        _traversalOptions(&traversalOptions),
+        _allowedTraversalOptions(&traversalOptions),
         _dataLayoutOptions(&dataLayoutOptions),
         _newton3Options(&newton3Options),
         _containerIt(containerOptions.begin()),
         _cellSizeFactorIt(cellSizeFactors.begin()),
-        _traversalIt(traversalOptions.begin()),
         _dataLayoutIt(dataLayoutOptions.begin()),
         _newton3It(newton3Options.begin()),
         _rankIterator(0),
         _remainingBlockSize(commSize >= numConfigs ? commSize / numConfigs : numConfigs / commSize),
         _remainder(commSize >= numConfigs ? commSize % numConfigs : numConfigs % commSize),
         _infiniteCellSizeFactorsOffset(0),
-        _infiniteCellSizeFactorsBlockSize(commSize >= numConfigs ? commSize / numConfigs : numConfigs / commSize) {}
+        _infiniteCellSizeFactorsBlockSize(commSize >= numConfigs ? commSize / numConfigs : numConfigs / commSize) {
+    selectTraversalsForCurrentContainer();
+  }
 
   /**
    * Advances the rankIterator (getRankIterator()) and/or the Option iterators for a single step such that repeated
@@ -78,7 +79,7 @@ struct IteratorHandler {
    * @param numConfigs
    * @param commSize
    */
-  void advanceIterators(const int numConfigs, const int commSize);
+  void advanceIterators(int numConfigs, int commSize);
 
   /**
    * Alternative getter for all Configuration iterators
@@ -105,51 +106,56 @@ struct IteratorHandler {
    * point to
    * @return
    */
-  inline int getRankIterator() const { return _rankIterator; }
+  [[nodiscard]] inline int getRankIterator() const { return _rankIterator; }
 
   /**
    * Getter for the number of ranks smaller than getRankIterator that have the exact same configs assigned to them.
    * @return
    */
-  inline int getInfiniteCellSizeFactorsOffset() const { return _infiniteCellSizeFactorsOffset; }
+  [[nodiscard]] inline int getInfiniteCellSizeFactorsOffset() const { return _infiniteCellSizeFactorsOffset; }
 
   /**
    * Getter for the number of ranks in total that have the exact same configs assigned to them.
    * @return
    */
-  inline int getInfiniteCellSizeFactorsBlockSize() const { return _infiniteCellSizeFactorsBlockSize; }
+  [[nodiscard]] inline int getInfiniteCellSizeFactorsBlockSize() const { return _infiniteCellSizeFactorsBlockSize; }
 
   /**
    * Getter for containerIterator
    * @return
    */
-  inline std::set<ContainerOption>::iterator getContainerIterator() const { return _containerIt; }
+  [[nodiscard]] inline std::set<ContainerOption>::iterator getContainerIterator() const { return _containerIt; }
 
   /**
    * Getter for the CellSizeFactorIterator
    * @return
    */
-  inline std::set<double>::iterator getCellSizeFactorIterator() const { return _cellSizeFactorIt; }
+  [[nodiscard]] inline std::set<double>::iterator getCellSizeFactorIterator() const { return _cellSizeFactorIt; }
 
   /**
    * Getter for the TraversalIterator
    * @return
    */
-  inline std::set<TraversalOption>::iterator getTraversalIterator() const { return _traversalIt; }
+  [[nodiscard]] inline std::set<TraversalOption>::iterator getTraversalIterator() const { return _traversalIt; }
 
   /**
    * Getter for the DataLayoutIterator
    * @return
    */
-  inline std::set<DataLayoutOption>::iterator getDataLayoutIterator() const { return _dataLayoutIt; }
+  [[nodiscard]] inline std::set<DataLayoutOption>::iterator getDataLayoutIterator() const { return _dataLayoutIt; }
 
   /**
    * Getter for the Newton3Iterator
    * @return
    */
-  inline std::set<Newton3Option>::iterator getNewton3Iterator() const { return _newton3It; }
+  [[nodiscard]] inline std::set<Newton3Option>::iterator getNewton3Iterator() const { return _newton3It; }
 
  private:
+  /**
+   * Resets _allowedAndApplicableTraversalOptions to fit with whatever _containerOptions is pointing to.
+   */
+  void selectTraversalsForCurrentContainer();
+
   /**
    * Selects the next config from containers X cellSizeFactors X traversals X dataLayouts X newton3Options
    * Later named options are changed first, because they are easier to switch between simulation steps
@@ -158,9 +164,10 @@ struct IteratorHandler {
 
   const std::set<ContainerOption> * const _containerOptions;
   const std::set<double> * const _cellSizeFactors;
-  const std::set<TraversalOption> * const _traversalOptions;
+  const std::set<TraversalOption> * const _allowedTraversalOptions;
   const std::set<DataLayoutOption> * const _dataLayoutOptions;
   const std::set<Newton3Option> * const _newton3Options;
+  std::set<TraversalOption> _allowedAndApplicableTraversalOptions;
   std::set<ContainerOption>::iterator _containerIt;
   std::set<double>::iterator _cellSizeFactorIt;
   std::set<TraversalOption>::iterator _traversalIt;

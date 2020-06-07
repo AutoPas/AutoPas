@@ -5,6 +5,7 @@
  */
 
 #include "AutoPasConfigurationCommunicator.h"
+#include "autopas/utils/Logger.h"
 
 namespace autopas {
 
@@ -16,14 +17,14 @@ inline void AutoPasConfigurationCommunicator::IteratorHandler::advanceConfigIter
   ++_dataLayoutIt;
   if (_dataLayoutIt != _dataLayoutOptions->end()) return;
   _dataLayoutIt = _dataLayoutOptions->begin();
-  // @todo handle invalid combinations of containers and traversals
   ++_traversalIt;
-  if (_traversalIt != _traversalOptions->end()) return;
-  _traversalIt = _traversalOptions->begin();
+  if (_traversalIt != _allowedAndApplicableTraversalOptions.end()) return;
+  _traversalIt = _allowedAndApplicableTraversalOptions.begin();
   ++_cellSizeFactorIt;
   if (_cellSizeFactorIt != _cellSizeFactors->end()) return;
   _cellSizeFactorIt = _cellSizeFactors->begin();
   ++_containerIt;
+  selectTraversalsForCurrentContainer();
 }
 
 void AutoPasConfigurationCommunicator::IteratorHandler::advanceIterators(const int numConfigs, const int commSize) {
@@ -57,6 +58,17 @@ void AutoPasConfigurationCommunicator::IteratorHandler::advanceIterators(const i
   }
 
   --_remainingBlockSize;
+}
+
+void AutoPasConfigurationCommunicator::IteratorHandler::selectTraversalsForCurrentContainer() {
+  // get all traversals of the container and restrict them to the allowed ones
+  const std::set<TraversalOption> &allContainerTraversals =
+      compatibleTraversals::allCompatibleTraversals(*_containerIt);
+  std::set_intersection(_allowedTraversalOptions->begin(), _allowedTraversalOptions->end(),
+                        allContainerTraversals.begin(), allContainerTraversals.end(),
+                        std::inserter(_allowedAndApplicableTraversalOptions,
+                                             _allowedAndApplicableTraversalOptions.begin()));
+  _traversalIt = _allowedAndApplicableTraversalOptions.begin();
 }
 
 /**
@@ -195,6 +207,11 @@ void AutoPasConfigurationCommunicator::distributeConfigurations(std::set<Contain
   // options assigned to that rank.
   generateDistribution(numConfigs, commSize, rank, containerOptions, cellSizeFactors, traversalOptions,
                        dataLayoutOptions, newton3Options);
+
+  size_t cellSizeFactorsSize = cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1;
+  //AutoPasLog(debug, "After distributing {} containers, {} cellSizeFactors, {} traversals, {} dataLayouts, {} newton3s",
+  //           containerOptions.size(), cellSizeFactorsSize, traversalOptions.size(),
+  //           dataLayoutOptions.size(), newton3Options.size());
 }
 
 Configuration AutoPasConfigurationCommunicator::optimizeConfiguration(AutoPas_MPI_Comm comm,
@@ -217,7 +234,10 @@ Configuration AutoPasConfigurationCommunicator::optimizeConfiguration(AutoPas_MP
 
   AutoPas_MPI_Bcast(&serializedConfiguration, sizeof(serializedConfiguration), AUTOPAS_MPI_BYTE, optimalRankOut, comm);
 
-  return deserializeConfiguration(serializedConfiguration);
+  Configuration deserializedConfig = deserializeConfiguration(serializedConfiguration);
+  //AutoPasLog(debug, "Globally best configuration: {}", deserializedConfig.toString());
+
+  return deserializedConfig;
 }
 
 AutoPasConfigurationCommunicator::SerializedConfiguration AutoPasConfigurationCommunicator::serializeConfiguration(
