@@ -23,7 +23,7 @@ namespace autopas::TuningStrategyFactory {
  * @param maxEvidence
  * @param relativeOptimum
  * @param maxTuningPhasesWithoutTest
- * @param testsUntilFirstPrediction
+ * @param evidenceFirstPrediction
  * @param acquisitionFunctionOption
  * @param extrapolationMethodOption
  * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
@@ -33,6 +33,6 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<autopas::TraversalOption> &allowedTraversals,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
-    unsigned int maxTuningPhasesWithoutTest, unsigned int testsUntilFirstPrediction,
+    unsigned int maxTuningPhasesWithoutTest, unsigned int evidenceFirstPrediction,
     AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption);
 }  // namespace autopas::TuningStrategyFactory

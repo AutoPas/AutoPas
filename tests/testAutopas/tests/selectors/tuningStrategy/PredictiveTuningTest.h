@@ -24,11 +24,11 @@ class PredictiveTuningTest : public AutoPasTestBase {
       autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
                              autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
 
-  static constexpr double relativeOptimumRange = 1.2;
+  static constexpr double relativeOptimumRange{1.2};
 
-  static constexpr unsigned int maxTuningIterationsWithoutTest = 5;
+  static constexpr unsigned int maxTuningIterationsWithoutTest{5};
 
-  static constexpr unsigned int testsUntilFirstPrediction = 2;
+  static constexpr unsigned int evidenceFirstPrediction{2};
 
   static constexpr autopas::ExtrapolationMethodOption linePrediction =
       autopas::ExtrapolationMethodOption::linePrediction;

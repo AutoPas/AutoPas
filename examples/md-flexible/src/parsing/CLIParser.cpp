@@ -32,7 +32,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.newton3Options, config.checkpointfile, config.acquisitionFunctionOption, config.cellSizeFactors,
       config.boxLength, config.containerOptions, config.cutoff, config.dataLayoutOptions, config.deltaT,
       config.dontCreateEndConfig, config.tuningMaxEvidence, config.extrapolationMethodOption,
-      config.testsUntilFirstPrediction, config.functorOption, config.dontMeasureFlops, config.generatorOption,
+      config.evidenceForPrediction, config.functorOption, config.dontMeasureFlops, config.generatorOption,
       config.iterations, config.tuningInterval, config.logLevel, config.logFileName, config.distributionMean,
       config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal, config.relativeOptimumRange,
       config.periodic, config.tuningPhases, config.verletClusterSize, config.verletSkinRadius, config.particleSpacing,
@@ -184,11 +184,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.extrapolationMethodOption.value = *parsedOptions.begin();
         break;
       }
-      case decltype(config.testsUntilFirstPrediction)::getoptChar: {
+      case decltype(config.evidenceForPrediction)::getoptChar: {
         try {
-          config.testsUntilFirstPrediction.value = (unsigned int)stoul(strArg);
-          if (config.testsUntilFirstPrediction.value < 2) {
-            cerr << "Tests until first prediction has to greater equal two!" << endl;
+          config.evidenceForPrediction.value = (unsigned int)stoul(strArg);
+          if (config.evidenceForPrediction.value < 2) {
+            cerr << "The number of evidence for the first prediction has to be at least two!" << endl;
             displayHelp = true;
           }
         } catch (const exception &) {

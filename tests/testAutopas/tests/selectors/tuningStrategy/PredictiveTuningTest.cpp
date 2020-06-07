@@ -9,56 +9,6 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
-TEST_F(PredictiveTuningTest, testSearchSpaceEmpty) {
-  autopas::PredictiveTuning predictiveTuning({});
-  EXPECT_TRUE(predictiveTuning.searchSpaceIsEmpty());
-  EXPECT_FALSE(predictiveTuning.searchSpaceIsTrivial());
-  EXPECT_THAT(predictiveTuning.getAllowedContainerOptions(), ::testing::IsEmpty());
-}
-
-TEST_F(PredictiveTuningTest, testSearchSpaceOneOption) {
-  autopas::PredictiveTuning predictiveTuning(
-      {autopas::Configuration(autopas::ContainerOption::directSum, 1., autopas::TraversalOption::directSumTraversal,
-                              autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)});
-  EXPECT_FALSE(predictiveTuning.searchSpaceIsEmpty());
-  EXPECT_TRUE(predictiveTuning.searchSpaceIsTrivial());
-  EXPECT_THAT(predictiveTuning.getAllowedContainerOptions(),
-              ::testing::ElementsAre(autopas::ContainerOption::directSum));
-}
-
-TEST_F(PredictiveTuningTest, testSearchSpaceMoreOptions) {
-  autopas::PredictiveTuning predictiveTuning(
-      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08}, {autopas::DataLayoutOption::soa},
-      {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, relativeOptimumRange,
-      maxTuningIterationsWithoutTest, testsUntilFirstPrediction, linePrediction);
-  EXPECT_FALSE(predictiveTuning.searchSpaceIsEmpty());
-  EXPECT_FALSE(predictiveTuning.searchSpaceIsTrivial());
-  EXPECT_THAT(predictiveTuning.getAllowedContainerOptions(),
-              ::testing::ElementsAre(autopas::ContainerOption::linkedCells));
-}
-
-TEST_F(PredictiveTuningTest, testRemoveN3OptionRemoveAll) {
-  autopas::PredictiveTuning predictiveTuning(
-      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
-      {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos}, {autopas::Newton3Option::enabled},
-      relativeOptimumRange, maxTuningIterationsWithoutTest, testsUntilFirstPrediction, linePrediction);
-
-  EXPECT_THROW(predictiveTuning.removeN3Option(autopas::Newton3Option::enabled),
-               autopas::utils::ExceptionHandler::AutoPasException);
-}
-
-TEST_F(PredictiveTuningTest, testRemoveN3OptionRemoveSome) {
-  autopas::PredictiveTuning predictiveTuning(
-      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
-      {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-      {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, relativeOptimumRange,
-      maxTuningIterationsWithoutTest, testsUntilFirstPrediction, linePrediction);
-
-  EXPECT_NO_THROW(predictiveTuning.removeN3Option(autopas::Newton3Option::enabled));
-  EXPECT_FALSE(predictiveTuning.searchSpaceIsEmpty());
-  EXPECT_FALSE(predictiveTuning.searchSpaceIsTrivial());
-}
-
 /*
  * Tests the prediction and the selection of the right optimum.
  * Three different configurations:
@@ -73,7 +23,7 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, relativeOptimumRange,
-      maxTuningIterationsWithoutTest, testsUntilFirstPrediction, linePrediction);
+      maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 
@@ -354,7 +304,7 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, relativeOptimumRange,
-      maxTuningIterationsWithoutTest, testsUntilFirstPrediction, linePrediction);
+      maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 
@@ -390,7 +340,7 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, relativeOptimumRange,
-      maxTuningIterationsWithoutTest, testsUntilFirstPrediction, linePrediction);
+      maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 
@@ -461,7 +411,7 @@ TEST_F(PredictiveTuningTest, testTooLongNotTested) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, relativeOptimumRange,
-      maxTuningIterationsWithoutTest, testsUntilFirstPrediction, linePrediction);
+      maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 
@@ -535,7 +485,7 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, relativeOptimumRange,
-      maxTuningIterationsWithoutTest, testsUntilFirstPrediction, linePrediction);
+      maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 
@@ -607,7 +557,7 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, relativeOptimumRange,
-      maxTuningIterationsWithoutTest, testsUntilFirstPrediction, linePrediction);
+      maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 

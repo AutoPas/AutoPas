@@ -107,7 +107,7 @@ class AutoPas {
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
-            _maxTuningPhasesWithoutTest, _testsUntilFirstPrediction, _acquisitionFunctionOption,
+            _maxTuningPhasesWithoutTest, _evidenceFirstPrediction, _acquisitionFunctionOption,
             _extrapolationMethodOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
@@ -448,19 +448,19 @@ class AutoPas {
   }
 
   /**
-   * Get the number of tests that need to have happened for a configuration until the first prediction are going to be
+   * Get the number of tests that need to have happened for a configuration until the first predictions are going to be
    * calculated.
    * @return
    */
-  [[nodiscard]] unsigned int getTestsUntilFirstPrediction() const { return _testsUntilFirstPrediction; }
+  [[nodiscard]] unsigned int getEvidenceFirstPrediction() const { return _evidenceFirstPrediction; }
 
   /**
-   * Set the number of tests that need to have happened for a configuration until the first prediction are going to be
+   * Set the number of tests that need to have happened for a configuration until the first predictions are going to be
    * calculated.
-   * @param testsUntilFirstPrediction
+   * @param evidenceFirstPrediction
    */
-  void setTestsUntilFirstPrediction(unsigned int testsUntilFirstPrediction) {
-    AutoPas::_testsUntilFirstPrediction = testsUntilFirstPrediction;
+  void setEvidenceFirstPrediction(unsigned int evidenceFirstPrediction) {
+    AutoPas::_evidenceFirstPrediction = evidenceFirstPrediction;
   }
 
   /**
@@ -634,7 +634,7 @@ class AutoPas {
    * Specifies how many tests that need to have happened for a configuration until the first prediction is calculated in
    * PredictiveTuning.
    */
-  unsigned int _testsUntilFirstPrediction{3};
+  unsigned int _evidenceFirstPrediction{3};
   /**
    * Acquisition function used for tuning.
    * For possible acquisition function choices see options::AcquisitionFunction::Value.

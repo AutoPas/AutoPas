@@ -95,14 +95,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.maxTuningPhasesWithoutTest.name]) {
     config.maxTuningPhasesWithoutTest.value = node[config.maxTuningPhasesWithoutTest.name].as<unsigned int>();
   }
-  if (node[config.testsUntilFirstPrediction.name]) {
-    config.testsUntilFirstPrediction.value = node[config.testsUntilFirstPrediction.name].as<unsigned int>();
+  if (node[config.evidenceForPrediction.name]) {
+    config.evidenceForPrediction.value = node[config.evidenceForPrediction.name].as<unsigned int>();
   }
   if (node[config.extrapolationMethodOption.name]) {
     auto parsedOptions =
         autopas::ExtrapolationMethodOption::parseOptions(node[config.extrapolationMethodOption.name].as<std::string>());
     if (parsedOptions.size() != 1) {
-      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one tuning strategy option!");
+      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one extrapolation method option!");
     }
     config.extrapolationMethodOption.value = *parsedOptions.begin();
   }

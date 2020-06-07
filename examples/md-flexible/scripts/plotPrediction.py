@@ -10,9 +10,10 @@ import re
 # ---------------------------------------------- Input ----------------------------------------------
 for arg in sys.argv[1:]:
     if "--help" in arg:
-        print("Usage: ./plotPrediction.py [output option] [path/To/mdFlex/std.out ...]")
-        print("Output options:\n prediction - Shows the predictions for every configuration\n "
-              "test - Shows the predictions and tests for every configuration")
+        print("Usage: ./plotPrediction.py OPTION path/To/mdFlex/std.out ...")
+        print("Output options:\n "
+              " prediction  - Shows the predictions for every configuration\n "
+              " test        - Shows the predictions and tests for every configuration")
         print("If no input is given the script does not work.")
         exit(0)
 

@@ -22,19 +22,19 @@ class ExtrapolationMethodOption : public Option<ExtrapolationMethodOption> {
    */
   enum Value {
     /**
-     * Places a line trough the last to data points
+     * Places a line through the last two data points.
      */
     linePrediction,
     /**
-     * Places a line trough all data points
+     * Places a line through the last _evidenceFirstPrediction points.
      */
     linearRegression,
     /**
-     * Places a polynomial function trough a certain number of data points using Lagrange interpolation
+     * Places a polynomial function through a certain number of data points using Lagrange interpolation.
      */
     lagrange,
     /**
-     * Places a polynomial function trough a certain number of data points using Newtons method.
+     * Places a polynomial function through a certain number of data points using Newtons method.
      */
     newton,
   };

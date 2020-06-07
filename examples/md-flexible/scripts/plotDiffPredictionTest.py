@@ -13,10 +13,11 @@ from numpy import double
 # help message
 for arg in sys.argv[1:]:
     if "--help" in arg:
-        print("Usage: ./plotDiffPredictionTest.py [output option] [path/To/mdFlex/std.out ...]")
-        print("Output options:\n relative - Shows the relative difference between prediction and test\n "
-              "total - Shows the total difference between prediction and test\n"
-              "both - Shows the total and relative difference between prediction and test")
+        print("Usage: ./plotDiffPredictionTest.py OPTION path/To/mdFlex/std.out ...")
+        print("Output options:\n "
+              " relative - Shows the relative difference between prediction and test\n "
+              " total    - Shows the total difference between prediction and test\n"
+              " both     - Shows the total and relative difference between prediction and test")
         print("If no input is given the script does not work.")
         exit(0)
 

@@ -225,12 +225,13 @@ class MDFlexConfig {
       "For predictive based tuning strategies: Maximal number of "
       "tuning phases a configurations can be excluded from testing."};
   /**
-   * testsUntilFirstPrediction
+   * evidenceForPrediction
    */
-  MDFlexOption<unsigned int, __LINE__> testsUntilFirstPrediction{
-      3, "tests-until-first-prediction", true,
-      "For predictive based tuning strategies: The number a configuration has to be tested until the first prediction "
-      "is calculated and for a polynomial extrapolation method this is the power of the function."};
+  MDFlexOption<unsigned int, __LINE__> evidenceForPrediction{
+      3, "evidence-for-prediction", true,
+      "For predictive based tuning strategies: The number of evidence for a configuration that needs to be gathered "
+      "before the first prediction is made. This number also determines how much evidence is used for the calculation "
+      "of the prediction and for a polynomial extrapolation method, this is also the degree of the polynomial."};
   /**
    * extrapolationMethodOption
    */
