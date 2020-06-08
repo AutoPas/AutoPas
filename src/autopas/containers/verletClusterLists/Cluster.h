@@ -62,7 +62,7 @@ class Cluster {
       }
     }
     double max = std::numeric_limits<double>::min();
-    for (size_t i = clusterSize - 1; i >= 0; --i) {
+    for (long i = clusterSize - 1; i >= 0; --i) {
       auto &p = operator[](i);
       if (not p.isDummy()) {
         max = p.getR()[2];
