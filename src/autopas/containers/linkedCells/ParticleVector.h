@@ -27,16 +27,12 @@ class ParticleVector{
 
         void markAsClean() {
             _dirty = false;
-            _dirtyIndex = particleListImp.size()-1;
-        }
-
-        void set(int index, Type value) {
-            particleListImp[index] = value;
+            _dirtyIndex = particleListImp.size();
         }
 
         void push_back(Type &value) {
             particleListLock.lock();
-            _dirty &= particleListImp.capacity() == particleListImp.size();
+            _dirty |= particleListImp.capacity() == particleListImp.size();
             if(_dirty) {
                 _dirtyIndex = 0;
             }
@@ -44,16 +40,16 @@ class ParticleVector{
             particleListLock.unlock();
         }
 
-        int size() {
+        int totalSize() {
             return particleListImp.size();
+        }
+
+        int dirtySize(){
+            return totalSize() - _dirtyIndex;
         }
 
         iterator beginDirty() { return particleListImp.begin() + _dirtyIndex; }
         iterator endDirty() { return particleListImp.end(); }
-        /*const_iterator begin() const { return particleListImp.begin(); }
-        const_iterator end() const { return particleListImp.end(); }
-        const_iterator cbegin() const { return particleListImp.cbegin(); }
-        const_iterator cend() const { return particleListImp.cend(); }*/
 
     private:
         bool _dirty;
