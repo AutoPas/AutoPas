@@ -7,12 +7,15 @@
 #include "LinkedCellsTest.h"
 
 #include <gmock/gmock-generated-matchers.h>
+#include <autopas/containers/linkedCells/ReferenceLinkedCells.h>
 
-LinkedCellsTest::LinkedCellsTest() : _linkedCells({0., 0., 0.}, {10., 10., 10.}, 1., 0., 1.) {}
+TYPED_TEST_SUITE_P(LinkedCellsTest);
 
-TEST_F(LinkedCellsTest, testUpdateContainer) {
-  autopas::LinkedCells<autopas::FullParticleCell<autopas::Particle>> linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0.,
-                                                                                 1.);
+TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
+    using LinkedCellsType = TypeParam;
+    LinkedCellsType linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
+//    LinkedCellsType<autopas::FullParticleCell<autopas::Particle>> linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0.,
+//                                                                                 1.);
 
   autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
   autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
@@ -77,19 +80,19 @@ TEST_F(LinkedCellsTest, testUpdateContainer) {
   }
 }
 
-TEST_F(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
+TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   int id = 1;
   for (double x : {0., 5., 9.999}) {
     for (double y : {0., 5., 9.999}) {
       for (double z : {0., 5., 9.999}) {
         autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
-        EXPECT_NO_THROW(_linkedCells.addParticle(p));  // inside, therefore ok!
+        EXPECT_NO_THROW(this->_linkedCells.addParticle(p));  // inside, therefore ok!
       }
     }
   }
   std::set<unsigned long> movedIDs;
   // we move particles that are close to the boundary to outside of the container and remember the id's we moved
-  for (auto iter = _linkedCells.begin(); iter.isValid(); ++iter) {
+  for (auto iter = this->_linkedCells.begin(); iter.isValid(); ++iter) {
     for (unsigned short dim = 0; dim < 3; ++dim) {
       if (iter->getR()[dim] < 0.5) {
         auto r = iter->getR();
@@ -108,10 +111,10 @@ TEST_F(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   }
 
   // now update the container!
-  auto invalidParticles = _linkedCells.updateContainer();
+  auto invalidParticles = this->_linkedCells.updateContainer();
 
   // the particles should no longer be in the inner cells!
-  for (auto iter = _linkedCells.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = this->_linkedCells.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     EXPECT_EQ(movedIDs.count(iter->getID()), 0);
   }
 
@@ -121,3 +124,8 @@ TEST_F(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
     EXPECT_EQ(movedIDs.count(particle.getID()), 1);
   }
 }
+
+REGISTER_TYPED_TEST_SUITE_P(LinkedCellsTest, testUpdateContainer, testUpdateContainerCloseToBoundary);
+
+using MyTypes = ::testing::Types<autopas::LinkedCells<FPCell>, autopas::ReferenceLinkedCells<FPCell>>;
+INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LinkedCellsTest, MyTypes);
