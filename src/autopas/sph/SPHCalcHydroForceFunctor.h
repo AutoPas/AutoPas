@@ -48,6 +48,9 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
    * @param newton3 defines whether or whether not to use newton 3
    */
   void AoSFunctor(SPHParticle &i, SPHParticle &j, bool newton3 = true) override {
+    if (i.isDummy() or j.isDummy()) {
+      return;
+    }
     const std::array<double, 3> dr = utils::ArrayMath::sub(i.getR(), j.getR());
     // const PS::F64vec dr = ep_i[i].pos - ep_j[j].pos;
 

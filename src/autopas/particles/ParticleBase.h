@@ -184,14 +184,14 @@ class ParticleBase {
     // Set ownership as dummy.
     _ownershipState = OwnershipState::dummy;
     // Also mark position as very big, this prevents misuse in the force calculation.
-    _r = {std::numeric_limits<floatType>::max(), std::numeric_limits<floatType>::max(),
-          std::numeric_limits<floatType>::max()};
+    //_r = {std::numeric_limits<floatType>::max(), std::numeric_limits<floatType>::max(),
+    //      std::numeric_limits<floatType>::max()};
   }
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, owned };
+  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
 
   /**
    * Floating Point Type used for this particle
@@ -207,8 +207,9 @@ class ParticleBase {
    * The type for the soa storage.
    * owned is currently used as a floatType to ease calculations within the functors.
    */
-  using SoAArraysType = typename autopas::utils::SoAType<idType, floatType, floatType, floatType, floatType, floatType,
-                                                         floatType, floatType>::Type;
+  using SoAArraysType = typename autopas::utils::SoAType<idType /*id*/, floatType /*x*/, floatType /*y*/,
+                                                         floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
+                                                         floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
@@ -218,26 +219,24 @@ class ParticleBase {
    */
   template <AttributeNames attribute>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
-    switch (attribute) {
-      case AttributeNames::id:
-        return getID();
-      case AttributeNames::posX:
-        return getR()[0];
-      case AttributeNames::posY:
-        return getR()[1];
-      case AttributeNames::posZ:
-        return getR()[2];
-      case AttributeNames::forceX:
-        return getF()[0];
-      case AttributeNames::forceY:
-        return getF()[1];
-      case AttributeNames::forceZ:
-        return getF()[2];
-      case AttributeNames::owned:
-        return _ownershipState == OwnershipState::owned ? 1. : 0.;
-      default:
-        utils::ExceptionHandler::exception("ParticleBase::get: unknown attribute");
-        return 0;
+    if constexpr (attribute == AttributeNames::id) {
+      return getID();
+    } else if constexpr (attribute == AttributeNames::posX) {
+      return getR()[0];
+    } else if constexpr (attribute == AttributeNames::posY) {
+      return getR()[1];
+    } else if constexpr (attribute == AttributeNames::posZ) {
+      return getR()[2];
+    } else if constexpr (attribute == AttributeNames::forceX) {
+      return getF()[0];
+    } else if constexpr (attribute == AttributeNames::forceY) {
+      return getF()[1];
+    } else if constexpr (attribute == AttributeNames::forceZ) {
+      return getF()[2];
+    } else if constexpr (attribute == AttributeNames::ownershipState) {
+      return this->_ownershipState;
+    } else {
+      utils::ExceptionHandler::exception("ParticleBase::get() unknown attribute {}", attribute);
     }
   }
 
@@ -249,33 +248,24 @@ class ParticleBase {
    */
   template <AttributeNames attribute>
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
-    switch (attribute) {
-      case AttributeNames::id:
-        setID(value);
-        break;
-      case AttributeNames::posX:
-        _r[0] = value;
-        break;
-      case AttributeNames::posY:
-        _r[1] = value;
-        break;
-      case AttributeNames::posZ:
-        _r[2] = value;
-        break;
-      case AttributeNames::forceX:
-        _f[0] = value;
-        break;
-      case AttributeNames::forceY:
-        _f[1] = value;
-        break;
-      case AttributeNames::forceZ:
-        _f[2] = value;
-        break;
-      case AttributeNames::owned:
-        if (_ownershipState != OwnershipState::dummy) {
-          _ownershipState = value == 1. ? OwnershipState::owned : OwnershipState::halo;
-        }
-        break;
+    if constexpr (attribute == AttributeNames::id) {
+      setID(value);
+    } else if constexpr (attribute == AttributeNames::posX) {
+      _r[0] = value;
+    } else if constexpr (attribute == AttributeNames::posY) {
+      _r[1] = value;
+    } else if constexpr (attribute == AttributeNames::posZ) {
+      _r[2] = value;
+    } else if constexpr (attribute == AttributeNames::forceX) {
+      _f[0] = value;
+    } else if constexpr (attribute == AttributeNames::forceY) {
+      _f[1] = value;
+    } else if constexpr (attribute == AttributeNames::forceZ) {
+      _f[2] = value;
+    } else if constexpr (attribute == AttributeNames::ownershipState) {
+      this->_ownershipState = value;
+    } else {
+      utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
     }
   }
 

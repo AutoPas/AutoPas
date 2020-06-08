@@ -162,8 +162,8 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
 
   functor.initTraversal();
 
-  functor.SoALoader(cell1, cell1._particleSoABuffer);
-  functor.SoALoader(cell2, cell2._particleSoABuffer);
+  functor.SoALoader(cell1, cell1._particleSoABuffer, 0);
+  functor.SoALoader(cell2, cell2._particleSoABuffer, 0);
 
   switch (interactionType) {
     case InteractionType::verlet: {
@@ -195,8 +195,8 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
       }
       break;
   }
-  functor.SoAExtractor(cell1, cell1._particleSoABuffer);
-  functor.SoAExtractor(cell2, cell2._particleSoABuffer);
+  functor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+  functor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
 
   functor.endTraversal(newton3);
 

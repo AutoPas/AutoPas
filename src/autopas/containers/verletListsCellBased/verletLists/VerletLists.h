@@ -155,9 +155,9 @@ class VerletLists
   size_t updateIdMapAoS() {
     size_t i = 0;
     _aosNeighborLists.clear();
-    // DON'T simply parallelize this loop!!! this needs modifications if you
-    // want to parallelize it!
-    for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
+    // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
+    // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
+    for (auto iter = this->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++i) {
       // create the verlet list entries for all particles
       _aosNeighborLists[&(*iter)];
     }
@@ -176,7 +176,10 @@ class VerletLists
 
     _aos2soaMap.reserve(_aosNeighborLists.size());
     size_t i = 0;
-    for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
+
+    // Here we have to iterate over all particles, as particles might be later on marked for deletion, and we cannot
+    // differentiate them from particles already marked for deletion.
+    for (auto iter = this->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++i) {
       // set the map
       _aos2soaMap[&(*iter)] = i;
     }

@@ -263,6 +263,9 @@ class AutoPas {
       case IteratorBehavior::haloAndOwned: {
         return _logicHandler->getNumParticlesOwned() + _logicHandler->getNumParticlesHalo();
       }
+      case IteratorBehavior::haloOwnedAndDummy: {
+        utils::ExceptionHandler::exception("behavior == haloOwnedAndDummy is not supported for getNumberOfParticles.");
+      }
     }
     return 0;
   }

@@ -147,6 +147,10 @@ class DirectSum : public ParticleContainer<ParticleCell> {
         break;
       case IteratorBehavior::haloOnly:
         // for haloOnly all cells can contain halo particles!
+        /// @todo: this might not be true anymore.
+        [[fallthrough]];
+      case IteratorBehavior::haloOwnedAndDummy:
+        // dummy particles can be in all cells.
         [[fallthrough]];
       case IteratorBehavior::haloAndOwned:
         cellsOfInterest.push_back(0);
@@ -170,6 +174,9 @@ class DirectSum : public ParticleContainer<ParticleCell> {
         break;
       case IteratorBehavior::haloOnly:
         // for haloOnly all cells can contain halo particles!
+        [[fallthrough]];
+      case IteratorBehavior::haloOwnedAndDummy:
+        // dummy particles can be in all cells.
         [[fallthrough]];
       case IteratorBehavior::haloAndOwned:
         cellsOfInterest.push_back(0);

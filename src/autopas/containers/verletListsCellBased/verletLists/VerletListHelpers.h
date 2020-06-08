@@ -69,6 +69,9 @@ class VerletListHelpers {
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
+      if (i.isDummy() or j.isDummy()) {
+        return;
+      }
       auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
 
       double distsquare = utils::ArrayMath::dot(dist, dist);
@@ -173,9 +176,9 @@ class VerletListHelpers {
      * @param soa
      * @param offset
      */
-    void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
+    void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset) override {
       if (offset > 0) {
-        utils::ExceptionHandler::exception("VerletListGeneratorFunctor: requires offset > 0");
+        utils::ExceptionHandler::exception("VerletListGeneratorFunctor: requires offset == 0");
       }
       soa.resizeArrays(cell.numParticles());
 
@@ -196,6 +199,13 @@ class VerletListHelpers {
         zptr[i] = cellIter->getR()[2];
       }
     }
+
+    /**
+     * Does nothing
+     * @param cell
+     * @param soa
+     */
+    void SoAExtractor(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t /*offset*/) override {}
 
     /**
      * @copydoc Functor::getNeededAttr()

@@ -29,8 +29,8 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
   autopasTools::generators::RandomGenerator::fillWithParticles(cell2NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
                                                                numParticlesPerCell, 43);
 
-  funNoPPL.SoALoader(cell1NoPPL, cell1NoPPL._particleSoABuffer);
-  funNoPPL.SoALoader(cell2NoPPL, cell2NoPPL._particleSoABuffer);
+  funNoPPL.SoALoader(cell1NoPPL, cell1NoPPL._particleSoABuffer, 0);
+  funNoPPL.SoALoader(cell2NoPPL, cell2NoPPL._particleSoABuffer, 0);
 
   FMCell cell1PPL(cell1NoPPL);
   FMCell cell2PPL(cell2NoPPL);
@@ -39,10 +39,10 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
   funNoPPL.SoAFunctorPair(cell1NoPPL._particleSoABuffer, cell2NoPPL._particleSoABuffer, newton3);
   funPPL.SoAFunctorPair(cell1PPL._particleSoABuffer, cell2PPL._particleSoABuffer, newton3);
 
-  funPPL.SoAExtractor(cell1PPL, cell1PPL._particleSoABuffer);
-  funPPL.SoAExtractor(cell2PPL, cell2PPL._particleSoABuffer);
-  funNoPPL.SoAExtractor(cell1NoPPL, cell1NoPPL._particleSoABuffer);
-  funNoPPL.SoAExtractor(cell2NoPPL, cell2NoPPL._particleSoABuffer);
+  funPPL.SoAExtractor(cell1PPL, cell1PPL._particleSoABuffer, 0);
+  funPPL.SoAExtractor(cell2PPL, cell2PPL._particleSoABuffer, 0);
+  funNoPPL.SoAExtractor(cell1NoPPL, cell1NoPPL._particleSoABuffer, 0);
+  funNoPPL.SoAExtractor(cell2NoPPL, cell2NoPPL._particleSoABuffer, 0);
 
   for (size_t i = 0; i < numParticlesPerCell; ++i) {
     for (size_t j = 0; j < 3; ++j) {

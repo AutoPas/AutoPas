@@ -234,6 +234,8 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    */
   bool isCellTypeBehaviorCorrect() const {
     switch (_behavior) {
+      case haloOwnedAndDummy:
+        return true;
       case haloAndOwned:
         return true;
       case haloOnly:
@@ -252,6 +254,8 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    */
   bool particleHasCorrectOwnershipState() const {
     switch (_behavior) {
+      case haloOwnedAndDummy:
+        return true;
       case haloAndOwned:
         if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
           return not(*_additionalParticleVector)[_additionalParticleVectorPosition].isDummy();

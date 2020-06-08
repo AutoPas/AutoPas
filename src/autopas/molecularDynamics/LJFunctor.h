@@ -12,6 +12,7 @@
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
@@ -195,7 +196,7 @@ class LJFunctor
     const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
+    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     SoAFloatPrecision *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
@@ -214,10 +215,9 @@ class LJFunctor
     SoAFloatPrecision virialSumZ = 0.;
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
-      SoAFloatPrecision isOwnedI;
-      if (calculateGlobals) {
-        // save the owned state of particle i. This is only needed if we calculate globals (calculateGlobals)
-        isOwnedI = ownedPtr[i];
+      const auto ownedStateI = ownedStatePtr[i];
+      if (ownedStateI == OwnershipState::dummy) {
+        continue;
       }
 
       SoAFloatPrecision fxacc = 0.;
@@ -255,6 +255,9 @@ class LJFunctor
             shift6 = shift6s[j];
           }
         }
+
+        const auto ownedStateJ = ownedStatePtr[j];
+
         const SoAFloatPrecision drx = xptr[i] - xptr[j];
         const SoAFloatPrecision dry = yptr[i] - yptr[j];
         const SoAFloatPrecision drz = zptr[i] - zptr[j];
@@ -265,14 +268,16 @@ class LJFunctor
 
         const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-        const SoAFloatPrecision mask = (dr2 > cutoffsquare) ? 0. : 1.;
+        // ownedStateI is already checked.
+        const bool mask =
+            dr2 <= cutoffsquare and /*ownedStateI != OwnershipState::dummy and */ ownedStateJ != OwnershipState::dummy;
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmasquare * invdr2;
         const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
         const SoAFloatPrecision lj12 = lj6 * lj6;
         const SoAFloatPrecision lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
+        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
@@ -291,11 +296,12 @@ class LJFunctor
           const SoAFloatPrecision virialx = drx * fx;
           const SoAFloatPrecision virialy = dry * fy;
           const SoAFloatPrecision virialz = drz * fz;
-          const SoAFloatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
+          const SoAFloatPrecision upot = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
 
           // In this functor, all pairs are only traversed once (newton3-scheme!).
           // In this case, the calculations are later divided by two!
-          double energyFactor = isOwnedI + ownedPtr[j];
+          SoAFloatPrecision energyFactor =
+              (ownedStateI == OwnershipState::owned ? 1. : 0.) + (ownedStateJ == OwnershipState::owned ? 1. : 0.);
           upotSum += upot * energyFactor;
           virialSumX += virialx * energyFactor;
           virialSumY += virialy * energyFactor;
@@ -349,8 +355,8 @@ class LJFunctor
     const auto *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict__ ownedPtr1 = soa1.template begin<Particle::AttributeNames::owned>();
-    const auto *const __restrict__ ownedPtr2 = soa2.template begin<Particle::AttributeNames::owned>();
+    const auto *const __restrict__ ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict__ ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
 
     auto *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
@@ -376,9 +382,9 @@ class LJFunctor
       SoAFloatPrecision fyacc = 0;
       SoAFloatPrecision fzacc = 0;
 
-      SoAFloatPrecision isOwnedI;
-      if constexpr (calculateGlobals) {
-        isOwnedI = ownedPtr1[i];
+      const auto ownedStateI = ownedStatePtr1[i];
+      if (ownedStateI == OwnershipState::dummy) {
+        continue;
       }
 
       // preload all sigma and epsilons for next vectorized region
@@ -413,6 +419,8 @@ class LJFunctor
           }
         }
 
+        const auto ownedStateJ = ownedStatePtr2[j];
+
         const SoAFloatPrecision drx = x1ptr[i] - x2ptr[j];
         const SoAFloatPrecision dry = y1ptr[i] - y2ptr[j];
         const SoAFloatPrecision drz = z1ptr[i] - z2ptr[j];
@@ -423,14 +431,16 @@ class LJFunctor
 
         const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-        const SoAFloatPrecision mask = (dr2 > cutoffsquare) ? 0. : 1.;
+        // ownedStateI is already checked.
+        const bool mask =
+            dr2 <= cutoffsquare and /*ownedStateI != OwnershipState::dummy and */ ownedStateJ != OwnershipState::dummy;
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmasquare * invdr2;
         const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
         const SoAFloatPrecision lj12 = lj6 * lj6;
         const SoAFloatPrecision lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
+        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 * mask : 0.;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
@@ -451,9 +461,9 @@ class LJFunctor
           SoAFloatPrecision virialz = drz * fz;
           SoAFloatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
 
-          double energyFactor = isOwnedI;
+          SoAFloatPrecision energyFactor = (ownedStateI == OwnershipState::owned ? 1. : 0.);
           if constexpr (newton3) {
-            energyFactor += ownedPtr2[j];
+            energyFactor += (ownedStateJ == OwnershipState::owned ? 1. : 0.);
           }
 
           // if newton3 is enabled, we multiply by 0.5 at the end of this function call when adding up the values to
@@ -548,6 +558,7 @@ class LJFunctor
     _cudawrapper.loadConstants(&constants);
 #endif
   }
+
   /**
    * @brief Functor using Cuda on SoAs in device Memory
    *
@@ -596,7 +607,7 @@ class LJFunctor
           device_handle.template get<Particle::AttributeNames::forceX>().get(),
           device_handle.template get<Particle::AttributeNames::forceY>().get(),
           device_handle.template get<Particle::AttributeNames::forceZ>().get(),
-          device_handle.template get<Particle::AttributeNames::owned>().get(), _cudaGlobals.get());
+          device_handle.template get<Particle::AttributeNames::ownershipState>().get(), _cudaGlobals.get());
     } else {
       return std::make_unique<LJFunctorCudaSoA<SoAFloatPrecision>>(
           device_handle.template get<Particle::AttributeNames::posX>().size(),
@@ -673,7 +684,7 @@ class LJFunctor
     return std::array<typename Particle::AttributeNames, 9>{
         Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
   }
 
   /**
@@ -682,7 +693,7 @@ class LJFunctor
   constexpr static auto getNeededAttr(std::false_type) {
     return std::array<typename Particle::AttributeNames, 6>{
         Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
+        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
   }
 
   /**
@@ -824,7 +835,7 @@ class LJFunctor
     [[maybe_unused]] auto *const __restrict__ typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict__ typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
 
-    const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
+    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     const SoAFloatPrecision cutoffsquare = _cutoffsquare;
     SoAFloatPrecision shift6 = _shift6;
@@ -843,12 +854,9 @@ class LJFunctor
     const size_t *const __restrict__ neighborListPtr = neighborList.data();
 
     // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
-    SoAFloatPrecision inbox1Mul = 0.;
-    if (calculateGlobals) {
-      inbox1Mul = ownedPtr[indexFirst];
-      if (newton3) {
-        inbox1Mul *= 0.5;
-      }
+    const auto ownedStateI = ownedStatePtr[indexFirst];
+    if (ownedStateI == OwnershipState::dummy) {
+      return;
     }
 
     // this is a magic number, that should correspond to at least
@@ -870,8 +878,8 @@ class LJFunctor
     // if the size of the verlet list is larger than the given size vecsize,
     // we will use a vectorized version.
     if (neighborListSize >= vecsize) {
-      alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr,
-          ownedArr;
+      alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
+      alignas(64) std::array<OwnershipState, vecsize> ownedStateArr;
       // broadcast of the position of particle i
       for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
         xtmp[tmpj] = xptr[indexFirst];
@@ -903,7 +911,7 @@ class LJFunctor
           xArr[tmpj] = xptr[neighborListPtr[joff + tmpj]];
           yArr[tmpj] = yptr[neighborListPtr[joff + tmpj]];
           zArr[tmpj] = zptr[neighborListPtr[joff + tmpj]];
-          ownedArr[tmpj] = ownedPtr[neighborListPtr[joff + tmpj]];
+          ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
         // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
@@ -917,6 +925,8 @@ class LJFunctor
           }
           // const size_t j = currentList[jNeighIndex];
 
+          const auto ownedStateJ = ownedStateArr[j];
+
           const SoAFloatPrecision drx = xtmp[j] - xArr[j];
           const SoAFloatPrecision dry = ytmp[j] - yArr[j];
           const SoAFloatPrecision drz = ztmp[j] - zArr[j];
@@ -927,14 +937,16 @@ class LJFunctor
 
           const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-          const SoAFloatPrecision mask = (dr2 <= cutoffsquare) ? 1. : 0.;
+          // ownedStateI is already checked.
+          const bool mask = dr2 <= cutoffsquare and
+                            /*ownedStateI != OwnershipState::dummy and */ ownedStateJ != OwnershipState::dummy;
 
-          const SoAFloatPrecision invdr2 = 1. / dr2 * mask;
+          const SoAFloatPrecision invdr2 = 1. / dr2;
           const SoAFloatPrecision lj2 = sigmasquare * invdr2;
           const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
           const SoAFloatPrecision lj12 = lj6 * lj6;
           const SoAFloatPrecision lj12m6 = lj12 - lj6;
-          const SoAFloatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+          const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
 
           const SoAFloatPrecision fx = drx * fac;
           const SoAFloatPrecision fy = dry * fac;
@@ -952,14 +964,16 @@ class LJFunctor
             SoAFloatPrecision virialx = drx * fx;
             SoAFloatPrecision virialy = dry * fy;
             SoAFloatPrecision virialz = drz * fz;
-            SoAFloatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
+            SoAFloatPrecision upot = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
 
-            // for non-newton3 the division is in the post-processing step.
-            SoAFloatPrecision inboxMul = inbox1Mul + (newton3 ? ownedArr[j] * .5 : 0.);
-            upotSum += upot * inboxMul;
-            virialSumX += virialx * inboxMul;
-            virialSumY += virialy * inboxMul;
-            virialSumZ += virialz * inboxMul;
+            SoAFloatPrecision energyFactor = (ownedStateI == OwnershipState::owned ? 1. : 0.);
+            if constexpr (newton3) {
+              energyFactor += (ownedStateJ == OwnershipState::owned ? 1. : 0.);
+            }
+            upotSum += upot * energyFactor;
+            virialSumX += virialx * energyFactor;
+            virialSumY += virialy * energyFactor;
+            virialSumZ += virialz * energyFactor;
           }
         }
         // scatter the forces to where they belong, this is only needed for newton3
@@ -986,6 +1000,11 @@ class LJFunctor
         }
       }
 
+      const auto ownedStateJ = ownedStatePtr[j];
+      if (ownedStateJ == OwnershipState::dummy) {
+        continue;
+      }
+
       const SoAFloatPrecision drx = xptr[indexFirst] - xptr[j];
       const SoAFloatPrecision dry = yptr[indexFirst] - yptr[j];
       const SoAFloatPrecision drz = zptr[indexFirst] - zptr[j];
@@ -996,7 +1015,9 @@ class LJFunctor
 
       const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-      if (dr2 > cutoffsquare) continue;
+      if (dr2 > cutoffsquare) {
+        continue;
+      }
 
       const SoAFloatPrecision invdr2 = 1. / dr2;
       const SoAFloatPrecision lj2 = sigmasquare * invdr2;
@@ -1023,26 +1044,14 @@ class LJFunctor
         SoAFloatPrecision virialz = drz * fz;
         SoAFloatPrecision upot = (epsilon24 * lj12m6 + shift6);
 
-        // for non-newton3 the division is in the post-processing step.
-        if (newton3) {
-          upot *= 0.5;
-          virialx *= 0.5;
-          virialy *= 0.5;
-          virialz *= 0.5;
+        SoAFloatPrecision energyFactor = (ownedStateI == OwnershipState::owned ? 1. : 0.);
+        if constexpr (newton3) {
+          energyFactor += (ownedStateJ == OwnershipState::owned ? 1. : 0.);
         }
-        if (inbox1Mul) {
-          upotSum += upot;
-          virialSumX += virialx;
-          virialSumY += virialy;
-          virialSumZ += virialz;
-        }
-        // for non-newton3 the second particle will be considered in a separate calculation
-        if (newton3 and ownedPtr[j]) {
-          upotSum += upot;
-          virialSumX += virialx;
-          virialSumY += virialy;
-          virialSumZ += virialz;
-        }
+        upotSum += upot * energyFactor;
+        virialSumX += virialx * energyFactor;
+        virialSumY += virialy * energyFactor;
+        virialSumZ += virialz * energyFactor;
       }
     }
 
@@ -1055,10 +1064,12 @@ class LJFunctor
     if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
 
-      _aosThreadData[threadnum].upotSum += upotSum;
-      _aosThreadData[threadnum].virialSum[0] += virialSumX;
-      _aosThreadData[threadnum].virialSum[1] += virialSumY;
-      _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+      SoAFloatPrecision energyMul = newton3 ? 0.5 : 1.;
+
+      _aosThreadData[threadnum].upotSum += upotSum * energyMul;
+      _aosThreadData[threadnum].virialSum[0] += virialSumX * energyMul;
+      _aosThreadData[threadnum].virialSum[1] += virialSumY * energyMul;
+      _aosThreadData[threadnum].virialSum[2] += virialSumZ * energyMul;
     }
   }
 
@@ -1113,5 +1124,5 @@ class LJFunctor
 
 #endif
 
-};  // class LJFunctor
+};  // namespace autopas
 }  // namespace autopas

@@ -395,14 +395,16 @@ class SPHParticle : public autopas::Particle {
     accX,
     accY,
     accZ,
-    engDot
+    engDot,
+    ownershipState
   };
 
   /**
    * SoA arrays type, cf. AttributeNames
    */
-  using SoAArraysType = autopas::utils::SoAType<double, double, double, double, double, double, double, double, double,
-                                                double, double, double, double, double, double, double>::Type;
+  using SoAArraysType =
+      autopas::utils::SoAType<double, double, double, double, double, double, double, double, double, double, double,
+                              double, double, double, double, double, std::underlying_type_t<OwnershipState>>::Type;
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
@@ -411,42 +413,42 @@ class SPHParticle : public autopas::Particle {
    */
   template <AttributeNames attribute>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
-    switch (attribute) {
-      case AttributeNames::mass:
-        return getMass();
-      case AttributeNames::posX:
-        return getR()[0];
-      case AttributeNames::posY:
-        return getR()[1];
-      case AttributeNames::posZ:
-        return getR()[2];
-      case AttributeNames::smth:
-        return getSmoothingLength();
-      case AttributeNames::density:
-        return getDensity();
-      case AttributeNames::velX:
-        return getV()[0];
-      case AttributeNames::velY:
-        return getV()[1];
-      case AttributeNames::velZ:
-        return getV()[2];
-      case AttributeNames::soundSpeed:
-        return getSoundSpeed();
-      case AttributeNames::pressure:
-        return getPressure();
-      case AttributeNames::vsigmax:
-        return getVSigMax();
-      case AttributeNames::accX:
-        return getAcceleration()[0];
-      case AttributeNames::accY:
-        return getAcceleration()[1];
-      case AttributeNames::accZ:
-        return getAcceleration()[2];
-      case AttributeNames::engDot:
-        return getEngDot();
-      default:
-        utils::ExceptionHandler::exception("SPHParticle::get: unknown attribute");
-        return 0;
+    if constexpr (attribute == AttributeNames::mass) {
+      return getMass();
+    } else if constexpr (attribute == AttributeNames::posX) {
+      return getR()[0];
+    } else if constexpr (attribute == AttributeNames::posY) {
+      return getR()[1];
+    } else if constexpr (attribute == AttributeNames::posZ) {
+      return getR()[2];
+    } else if constexpr (attribute == AttributeNames::smth) {
+      return getSmoothingLength();
+    } else if constexpr (attribute == AttributeNames::density) {
+      return getDensity();
+    } else if constexpr (attribute == AttributeNames::velX) {
+      return getV()[0];
+    } else if constexpr (attribute == AttributeNames::velY) {
+      return getV()[1];
+    } else if constexpr (attribute == AttributeNames::velZ) {
+      return getV()[2];
+    } else if constexpr (attribute == AttributeNames::soundSpeed) {
+      return getSoundSpeed();
+    } else if constexpr (attribute == AttributeNames::pressure) {
+      return getPressure();
+    } else if constexpr (attribute == AttributeNames::vsigmax) {
+      return getVSigMax();
+    } else if constexpr (attribute == AttributeNames::accX) {
+      return getAcceleration()[0];
+    } else if constexpr (attribute == AttributeNames::accY) {
+      return getAcceleration()[1];
+    } else if constexpr (attribute == AttributeNames::accZ) {
+      return getAcceleration()[2];
+    } else if constexpr (attribute == AttributeNames::engDot) {
+      return getEngDot();
+    } else if constexpr (attribute == AttributeNames::ownershipState) {
+      return _ownershipState;
+    } else {
+      utils::ExceptionHandler::exception("SPHParticle::get: unknown attribute");
     }
   }
 
@@ -457,55 +459,42 @@ class SPHParticle : public autopas::Particle {
    */
   template <AttributeNames attribute>
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
-    switch (attribute) {
-      case AttributeNames::mass:
-        setMass(value);
-        break;
-      case AttributeNames::posX:
-        _r[0] = value;
-        break;
-      case AttributeNames::posY:
-        _r[1] = value;
-        break;
-      case AttributeNames::posZ:
-        _r[2] = value;
-        break;
-      case AttributeNames::smth:
-        setSmoothingLength(value);
-        break;
-      case AttributeNames::density:
-        setDensity(value);
-        break;
-      case AttributeNames::velX:
-        _v[0] = value;
-        break;
-      case AttributeNames::velY:
-        _v[1] = value;
-        break;
-      case AttributeNames::velZ:
-        _v[2] = value;
-        break;
-      case AttributeNames::soundSpeed:
-        setSoundSpeed(value);
-        break;
-      case AttributeNames::pressure:
-        setPressure(value);
-        break;
-      case AttributeNames::vsigmax:
-        setVSigMax(value);
-        break;
-      case AttributeNames::accX:
-        _acc[0] = value;
-        break;
-      case AttributeNames::accY:
-        _acc[1] = value;
-        break;
-      case AttributeNames::accZ:
-        _acc[2] = value;
-        break;
-      case AttributeNames::engDot:
-        setEngDot(value);
-        break;
+    if (attribute == AttributeNames::mass) {
+      setMass(value);
+    } else if constexpr (attribute == AttributeNames::posX) {
+      _r[0] = value;
+    } else if constexpr (attribute == AttributeNames::posY) {
+      _r[1] = value;
+    } else if constexpr (attribute == AttributeNames::posZ) {
+      _r[2] = value;
+    } else if constexpr (attribute == AttributeNames::smth) {
+      setSmoothingLength(value);
+    } else if constexpr (attribute == AttributeNames::density) {
+      setDensity(value);
+    } else if constexpr (attribute == AttributeNames::velX) {
+      _v[0] = value;
+    } else if constexpr (attribute == AttributeNames::velY) {
+      _v[1] = value;
+    } else if constexpr (attribute == AttributeNames::velZ) {
+      _v[2] = value;
+    } else if constexpr (attribute == AttributeNames::soundSpeed) {
+      setSoundSpeed(value);
+    } else if constexpr (attribute == AttributeNames::pressure) {
+      setPressure(value);
+    } else if constexpr (attribute == AttributeNames::vsigmax) {
+      setVSigMax(value);
+    } else if constexpr (attribute == AttributeNames::accX) {
+      _acc[0] = value;
+    } else if constexpr (attribute == AttributeNames::accY) {
+      _acc[1] = value;
+    } else if constexpr (attribute == AttributeNames::accZ) {
+      _acc[2] = value;
+    } else if constexpr (attribute == AttributeNames::engDot) {
+      setEngDot(value);
+    } else if constexpr (attribute == AttributeNames::ownershipState) {
+      _ownershipState = value;
+    } else {
+      utils::ExceptionHandler::exception("SPHParticle::set: unknown attribute");
     }
   }
 

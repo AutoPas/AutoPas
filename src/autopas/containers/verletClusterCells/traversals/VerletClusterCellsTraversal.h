@@ -197,7 +197,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
       }
       case DataLayoutOption::soa: {
         for (size_t i = 0; i < (*this->_cells).size(); ++i) {
-          _functor->SoALoader((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer);
+          _functor->SoALoader((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer, 0);
         }
 
         return;
@@ -227,7 +227,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
 #pragma omp parallel for
 #endif
         for (size_t i = 0; i < (*this->_cells).size(); ++i) {
-          _functor->SoAExtractor((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer);
+          _functor->SoAExtractor((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer, 0);
         }
 
         return;

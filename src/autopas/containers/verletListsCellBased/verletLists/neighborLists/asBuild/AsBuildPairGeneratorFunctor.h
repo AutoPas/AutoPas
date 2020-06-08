@@ -153,7 +153,7 @@ class AsBuildPairGeneratorFunctor
    * @param soa
    * @param offset
    */
-  void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
+  void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset) override {
     if (offset != 0ul) {
       utils::ExceptionHandler::exception("offset must be 0, is: {}", offset);
     }
@@ -181,9 +181,8 @@ class AsBuildPairGeneratorFunctor
    * Does nothing
    * @param cell
    * @param soa
-   * @param offset
    */
-  void SoAExtractor(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {}
+  void SoAExtractor(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t /*offset*/) override {}
 
  private:
   /**

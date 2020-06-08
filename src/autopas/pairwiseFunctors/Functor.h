@@ -241,7 +241,7 @@ class Functor {
    * @param offset Offset within the SoA. The data of the cell should be added
    * to the SoA with the specified offset.
    */
-  virtual void SoALoader(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
+  virtual void SoALoader(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) {
     SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Impl_t::getNeededAttr().size()>{});
   }
 
@@ -253,7 +253,7 @@ class Functor {
    * @param offset Offset within the SoA. The data of the soa should be
    * extracted starting at offset.
    */
-  virtual void SoAExtractor(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
+  virtual void SoAExtractor(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) {
     SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Impl_t::getComputedAttr().size()>{});
   }
 

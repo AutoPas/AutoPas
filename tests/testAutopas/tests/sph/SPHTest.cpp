@@ -255,7 +255,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
   densityFunctor.SoAFunctorSingle(cellUsingSoA._particleSoABuffer, true);
 
   // extract soa
-  densityFunctor.SoAExtractor(cellUsingSoA, cellUsingSoA._particleSoABuffer);
+  densityFunctor.SoAExtractor(cellUsingSoA, cellUsingSoA._particleSoABuffer, 0);
 
   // check same densities
   {
@@ -319,7 +319,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
   hydroForceFunctor.SoAFunctorSingle(cellUsingSoA._particleSoABuffer, true);
 
   // extract soa
-  hydroForceFunctor.SoAExtractor(cellUsingSoA, cellUsingSoA._particleSoABuffer);
+  hydroForceFunctor.SoAExtractor(cellUsingSoA, cellUsingSoA._particleSoABuffer, 0);
 
   // check same values
   {
@@ -380,8 +380,8 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
   densityFunctor.SoAFunctorPair(cellUsingSoA1._particleSoABuffer, cellUsingSoA2._particleSoABuffer, true);
 
   // extract soa
-  densityFunctor.SoAExtractor(cellUsingSoA1, cellUsingSoA1._particleSoABuffer);
-  densityFunctor.SoAExtractor(cellUsingSoA2, cellUsingSoA2._particleSoABuffer);
+  densityFunctor.SoAExtractor(cellUsingSoA1, cellUsingSoA1._particleSoABuffer, 0);
+  densityFunctor.SoAExtractor(cellUsingSoA2, cellUsingSoA2._particleSoABuffer, 0);
 
   // check same densities
   {
@@ -471,8 +471,8 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
   hydroForceFunctor.SoAFunctorPair(cellUsingSoA1._particleSoABuffer, cellUsingSoA2._particleSoABuffer, true);
 
   // extract soa
-  hydroForceFunctor.SoAExtractor(cellUsingSoA1, cellUsingSoA1._particleSoABuffer);
-  hydroForceFunctor.SoAExtractor(cellUsingSoA2, cellUsingSoA2._particleSoABuffer);
+  hydroForceFunctor.SoAExtractor(cellUsingSoA1, cellUsingSoA1._particleSoABuffer, 0);
+  hydroForceFunctor.SoAExtractor(cellUsingSoA2, cellUsingSoA2._particleSoABuffer, 0);
 
   // check same results properties
   {

@@ -136,6 +136,8 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    */
   bool fitsBehavior(const Particle &p) const {
     switch (_behavior) {
+      case IteratorBehavior::haloOwnedAndDummy:
+        return true;
       case IteratorBehavior::haloAndOwned:
         return not p.isDummy();
       case IteratorBehavior::ownedOnly:
