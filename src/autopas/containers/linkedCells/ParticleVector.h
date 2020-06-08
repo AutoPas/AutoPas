@@ -7,7 +7,7 @@
 #include <vector>
 
 template <class Type>
-class ParticleList{
+class ParticleVector{
 
     using particleListImpType = std::vector<Type>;
 
@@ -15,7 +15,7 @@ class ParticleList{
     using const_iterator = typename particleListImpType::const_iterator;
 
     public:
-        ParticleList<Type>() {
+        ParticleVector<Type>() {
             _dirty = false;
             _dirtyIndex = 0;
             particleListImp = std::vector<Type>();
@@ -37,9 +37,7 @@ class ParticleList{
         void push_back(Type &value) {
             particleListLock.lock();
             _dirty &= particleListImp.capacity() == particleListImp.size();
-            if(!_dirty) {
-                _dirtyIndex++;
-            } else {
+            if(_dirty) {
                 _dirtyIndex = 0;
             }
             particleListImp.push_back(value);

@@ -12,7 +12,7 @@ file(
     "*.cuh"
 )
 
-add_library(autopas STATIC $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC} containers/linkedCells/ParticleList.h)
+add_library(autopas STATIC $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC} containers/linkedCells/ParticleVector.h)
 
 target_link_libraries(
     autopas

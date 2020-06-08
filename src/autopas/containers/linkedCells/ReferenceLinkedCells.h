@@ -11,7 +11,7 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
-#include "autopas/containers/linkedCells/ParticleList.h"
+#include "autopas/containers/linkedCells/ParticleVector.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -286,7 +286,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
   /**
    * object to manage the block of cells.
    */
-  ParticleList<ParticleType> _particleList;
+  ParticleVector<ParticleType> _particleList;
   internal::CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
 };
