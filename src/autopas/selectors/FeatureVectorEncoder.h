@@ -15,7 +15,7 @@
 namespace autopas {
 
 /**
- * Encoder to convert FeatureVector from and to Eigen:Vector
+ * Encoder to convert FeatureVector from and to Eigen::Vector.
  */
 class FeatureVectorEncoder {
  public:
@@ -57,7 +57,7 @@ class FeatureVectorEncoder {
    * Get the dimensions of a one-hot encoded vector.
    * @return
    */
-  [[nodiscard]] size_t getOneHotDims() { return _oneHotDims; }
+  [[nodiscard]] size_t getOneHotDims() const { return _oneHotDims; }
 
   /**
    * Encode FeatureVector to Eigen::VectorXd using one-hot-encoding.
@@ -199,7 +199,7 @@ class FeatureVectorEncoder {
   /**
    * Dimensions of a one-hot-encoded vector
    */
-  size_t _oneHotDims;
+  size_t _oneHotDims{0};
 };
 
 }  // namespace autopas
