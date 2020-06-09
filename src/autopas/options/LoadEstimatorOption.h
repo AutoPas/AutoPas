@@ -44,6 +44,12 @@ class LoadEstimatorOption : public Option<LoadEstimatorOption> {
   constexpr operator Value() const { return _value; }
 
   /**
+   * Set of options that are very unlikely to be interesting.
+   * @return
+   */
+  static std::set<LoadEstimatorOption> getDiscouragedOptions() { return {}; }
+
+  /**
    * Provides a way to iterate over the possible choices of LoadEstimatorOption.
    * @return map option -> string representation
    */
