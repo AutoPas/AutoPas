@@ -10,7 +10,7 @@ periodic-boundaries              :  false
 Objects:
   CubeUniform:
     0:
-      numberOfParticles          :  300
+      numberOfParticles          :  1000
       box-length                 :  [5, 5, 5]
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
