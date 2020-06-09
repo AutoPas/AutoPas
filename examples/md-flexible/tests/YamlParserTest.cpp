@@ -14,10 +14,10 @@ TEST_F(YamlParserTest, calcAutoPasBox) {
   config.yamlFilename.value = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
   MDFlexParser::YamlParser::parseYamlFile(config);
   config.calcSimulationBox();
-  std::array<double, 3> compBoxMin = {-0.25, -15.25, -15.25};
-  std::array<double, 3> compBoxMax = {23.25, 10.25, 13.25};
-  EXPECT_EQ(config.boxMin.value, compBoxMin);
-  EXPECT_EQ(config.boxMax.value, compBoxMax);
+  std::array<double, 3> expectedBoxMin = {-10.75, -25.75, -15.75};
+  EXPECT_EQ(config.boxMin.value, expectedBoxMin);
+  std::array<double, 3> expectedBoxMax = {23, 10, 15.75};
+  EXPECT_EQ(config.boxMax.value, expectedBoxMax);
 }
 
 TEST_F(YamlParserTest, addType) {

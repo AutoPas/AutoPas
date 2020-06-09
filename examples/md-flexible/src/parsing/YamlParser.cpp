@@ -47,6 +47,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   }
   if (node[config.functorOption.name]) {
     auto strArg = node[config.functorOption.name].as<std::string>();
+    transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     if (strArg.find("avx") != std::string::npos) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
     } else if (strArg.find("glob") != std::string::npos) {
