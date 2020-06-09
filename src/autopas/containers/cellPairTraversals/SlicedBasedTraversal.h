@@ -122,12 +122,6 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   std::array<unsigned long, 3> _overlap;
 
- private:
-  /**
-   * Store ids of dimensions ordered by number of cells per dimensions.
-   */
-  std::array<int, 3> _dimsPerLength;
-
   /**
    * Interaction length (cutoff + skin).
    */
@@ -137,6 +131,12 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * Cell length in CellBlock3D.
    */
   std::array<double, 3> _cellLength;
+
+ private:
+  /**
+   * Store ids of dimensions ordered by number of cells per dimensions.
+   */
+  std::array<int, 3> _dimsPerLength;
 
   /**
    * Overlap of interacting cells along the longest axis.

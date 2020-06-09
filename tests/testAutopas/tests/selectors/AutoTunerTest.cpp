@@ -9,13 +9,14 @@
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopasTools/generators/GridGenerator.h"
 
 using ::testing::_;
 
 TEST_F(AutoTunerTest, testAllConfigurations) {
-  std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 42};
+  std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 42, 10};
   // adaptive domain size so sliced is always applicable.
-  bBoxMax[2] = autopas::autopas_get_max_threads() * 2;
+  bBoxMax[1] = autopas::autopas_get_max_threads() * 2;
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
@@ -31,6 +32,9 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
                                                  100, maxSamples);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
+  // add particles, so VerletClusterLists uses more than one tower.
+  const std::array<size_t, 3> particlesPerDim = {3, 3, 3};
+  autopasTools::generators::GridGenerator::fillWithParticles(*autoTuner.getContainer().get(), particlesPerDim);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
   auto prevConfig = autopas::Configuration();
@@ -53,32 +57,33 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        verlet-c01                  (AoS, noNewton3)                     = 1
   // VerletClusterLists:    verlet-clusters             (AoS <=> SoA, noNewton3)             = 2
   //                        verlet-clusters-coloring    (AoS <=> SoA, newton3 <=> noNewton3) = 4
+  //                        verlet-clusters-sliced      (AoS <=> SoA, newton3 <=> noNewton3) = 4
   //                        verlet-clusters-static      (AoS <=> SoA, noNewton3)             = 2
   // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3) = 4
   // VerletClusterCells:    verlet-cluster-cells        (AoS, newton3 <=> noNewton3)         = 2
   //                                                                                    --------
-  //                                                                                          52
+  //                                                                                          56
   // Additional with cuda
   // Direct Sum:            directSum traversal         (Cuda, newton3 <=> noNewton3)        = 2
   // LinkedCells:           c01Cuda traversal           (Cuda, newton3 <=> noNewton3)        = 2
   // VerletClusterCells:    verlet-cluster-cells traversal (Cuda, newton3 <=> noNewton3)     = 2
   //                                                                                    --------
-  //                                                                                          58
+  //                                                                                          62
   //
   // currently disabled:
   // NORMAL:
   //                                                                                    --------
-  // TOTAL:                                                                                   58
+  // TOTAL:                                                                                   62
   //
   // CUDA:
   // C01CudaTraversal for enabled N3, see #420                                                -1
   //                                                                                    --------
-  // TOTAL:                                                                                   57
+  // TOTAL:                                                                                   61
 
 #ifndef AUTOPAS_CUDA
-  const size_t expectedNumberOfIterations = 52 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 56 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 57 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 61 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;

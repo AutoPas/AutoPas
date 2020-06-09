@@ -46,6 +46,7 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
  */
 static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::verletClusters, TraversalOption::verletClustersColoring,
+                                           TraversalOption::verletClustersSliced,
                                            TraversalOption::verletClustersStatic};
   return s;
 }
