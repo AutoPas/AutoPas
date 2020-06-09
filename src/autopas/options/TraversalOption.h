@@ -39,7 +39,8 @@ class TraversalOption : public Option<TraversalOption> {
     c04SoA = 15,
     verletClusterCells = 16,
     verletClustersStatic = 17,
-    c04HCP = 18
+    c04HCP = 18,
+    verletClustersSliced = 19,
   };
 
   /**
@@ -90,6 +91,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::verletClusterCells, "verlet-cluster-cells"},
         {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
         {TraversalOption::c04HCP, "c04HCP"},
+        {TraversalOption::verletClustersSliced, "verlet-clusters-sliced"},
     };
   };
 
