@@ -2,7 +2,7 @@ selector-strategy                :  Fastest-Absolute-Value
 tuning-strategy                  :  full-Search
 tuning-interval                  :  1000
 tuning-samples                   :  3
-tuning-max-evidence              :  30
+tuning-max-evidence              :  50
 functor                          :  Lennard-Jones (12-6)
 cutoff                           :  2
 deltaT                           :  0

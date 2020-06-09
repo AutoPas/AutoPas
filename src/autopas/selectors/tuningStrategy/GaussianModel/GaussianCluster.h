@@ -35,6 +35,12 @@ class GaussianCluster {
   // function that generate all neighbouring vectors of given vector
   using NeighbourFunction = std::function<std::vector<VectorDiscrete>(VectorDiscrete)>;
 
+  // for each vector store a vector of each neighborus and corresponding distance
+  using NeighboursDistances = std::vector<std::vector<std::pair<size_t, double>>>;
+
+  // std::string stream for nodes and edges
+  using GraphStream = std::pair<std::stringstream, std::stringstream>;
+
   // number of samples to find optimal hyperparameters
   static constexpr size_t hp_sample_size = 500;
   // number of hyperparameters
@@ -45,6 +51,11 @@ class GaussianCluster {
    * Vector described by a discrete and a continuous part
    */
   using VectorPairDiscreteContinuous = std::pair<VectorDiscrete, VectorContinuous>;
+
+  /**
+   * function to convert a vector to a string
+   */
+  using VectorToStringFun = std::function<std::string(const VectorPairDiscreteContinuous &)>;
 
   /**
    * Different distance functions between clusters
@@ -58,9 +69,10 @@ class GaussianCluster {
    * @param distanceFun function to calculate distance between clusters
    * @param sigma fixed noise
    * @param rngRef reference to random number generator
+   * @param vectorToString function to convert vectors to a readable string
    */
   GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims, DistanceFunction distanceFun,
-                  double sigma, Random &rngRef)
+                  double sigma, Random &rngRef, const VectorToStringFun &vectorToString = defaultVecToString)
       : _dimRestriction(dimRestriction),
         _continuousDims(continuousDims),
         _clusters(),
@@ -69,7 +81,8 @@ class GaussianCluster {
         _evidenceMaxValue(0),
         _numEvidence(0),
         _sigma(sigma),
-        _rng(rngRef) {
+        _rng(rngRef),
+        _vecToStringFun(vectorToString) {
     initClusters();
   }
 
@@ -191,29 +204,6 @@ class GaussianCluster {
   }
 
   /**
-   * Calculate mean, variance and stddev for all clusters for given continous tuple
-   * @param continuousTuple
-   * @return Vectors means, vars, stddevs containing corresponding values for each cluster
-   */
-  [[nodiscard]] std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> precalculateDistributions(const VectorContinuous& continuousTuple) const {
-    std::vector<double> means;
-    std::vector<double> vars;
-    std::vector<double> stddevs;
-    means.reserve(_clusters.size());
-    vars.reserve(_clusters.size());
-    stddevs.reserve(_clusters.size());
-    for (const auto &cluster : _clusters) {
-      means.push_back(cluster.predictMean(continuousTuple));
-
-      double var = cluster.predictVar(continuousTuple);
-      vars.push_back(var);
-      stddevs.push_back(std::sqrt(var));
-    }
-
-    return std::make_tuple(means, vars, stddevs);
-  }
-
-  /**
    * Generate all possible combinations of discrete tuples and continuous tuples in samples
    * and calculate their corresponding aquisition.
    * @param af function to optimize
@@ -228,15 +218,18 @@ class GaussianCluster {
     // pair up all discrete with all continuous samples
     acquisitions.reserve(_clusters.size() * continuousSamples.size());
 
+    auto graphStream = logGraphInit();
+
     auto neighbourDistances = initNeighbourDistances(neighbourFun);
 
-    for (const auto &currentContinuous : continuousSamples) {
-      auto [means, vars, stddevs] = precalculateDistributions(currentContinuous);
+    for (const auto &continuousSample : continuousSamples) {
+      auto [means, vars, stddevs] = precalculateDistributions(continuousSample);
       updateNeighbourDistances(neighbourDistances, means, vars, stddevs);
 
+      logGraphAdd(graphStream, continuousSample, means, vars, neighbourDistances);
+
       // get acquisition considering neighbours
-      VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
-      for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
+      for (size_t i = 0; i < _clusters.size(); ++i) {
         double mixMean = means[i];
         double mixVar = vars[i];
         double weightSum = 1.;
@@ -255,9 +248,11 @@ class GaussianCluster {
 
         // calc acquisition
         double currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMaxValue);
-        acquisitions.emplace_back(std::make_pair(currentDiscrete, currentContinuous), currentValue);
+        acquisitions.emplace_back(std::make_pair(_discreteVectorMap[i], continuousSample), currentValue);
       }
     }
+
+    logGraphEnd(graphStream);
 
     return acquisitions;
   }
@@ -267,49 +262,26 @@ class GaussianCluster {
    * and calculate their distance to each other. Output graph in AutoPasLog Debug.
    * @param neighbourFun function which generates neighbours of given discrete tuple
    * @param continuousSamples continuous tuples
-   * @param vectorToPrintString function to convert vectors to readable string
    */
-  void logDebugGraph(const std::function<std::vector<VectorDiscrete>(const VectorDiscrete&)> &neighbourFun, const std::vector<VectorContinuous> &continuousSamples, const std::function<std::string(const VectorPairDiscreteContinuous&)>& vectorToPrintString) const {
-    std::stringstream logStream;
+  void logDebugGraph(const std::function<std::vector<VectorDiscrete>(const VectorDiscrete &)> &neighbourFun,
+                     const std::vector<VectorContinuous> &continuousSamples) const {
+    auto graphStream = logGraphInit();
 
-    // log nodes
-    // id of a node equals i + c * numClusters. Where i is the cluster index and c the index in continuousSamples
-    logStream << "GaussianCluster Graph: Nodes" << std::endl;
-    logStream << "id,Label,prediction,numEvidence" << std::endl;
-    for (size_t c = 0; c < continuousSamples.size(); ++c) {
-      VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
-      for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
-        size_t id = i + c * _clusters.size();
-        std::string label = vectorToPrintString(std::make_pair(currentDiscrete, continuousSamples[c]));
-        double prediction = _clusters[i].predictMean(continuousSamples[c]);
-        size_t numEvidence = _clusters[i].numEvidence();
-        logStream << id << ",\"" << label << "\"," << prediction << "," << numEvidence << std::endl;
-      }
-    }
-
-    // log edges
-    logStream << "GaussianCluster Graph: Edges" << std::endl;
-    logStream << "Source,Target,Weight" << std::endl;
     auto neighbourDistances = initNeighbourDistances(neighbourFun);
-    for (size_t c = 0; c < continuousSamples.size(); ++c) {
-      auto [means, vars, stddevs] = precalculateDistributions(continuousSamples[c]);
+    for (const auto &continuousSample : continuousSamples) {
+      auto [means, vars, stddevs] = precalculateDistributions(continuousSample);
       updateNeighbourDistances(neighbourDistances, means, vars, stddevs);
 
-      VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
-      for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
-        for (const auto &[n, distance] : neighbourDistances[i]) {
-          double weight = vars[i] / (vars[i] + distance);
-          double sourceID = i + c * _clusters.size();
-          double targetID = n + c * _clusters.size();
-          logStream << sourceID << "," << targetID << "," << weight << std::endl;
-        }
-      }
+      logGraphAdd(graphStream, continuousSample, means, vars, neighbourDistances);
     }
 
-    logStream << "GaussianCluster Graph: End";
-
-    AutoPasLog(debug, logStream.str());
+    logGraphEnd(graphStream);
   }
+  /**
+   * Change the used function to convert from vector to string.
+   * @param fun new converter
+   */
+  void setVectorToStringFun(const VectorToStringFun &fun) { _vecToStringFun = fun; }
 
   /**
    * Generate all possible combinations of discrete tuples and continuous tuples in samples and
@@ -378,11 +350,16 @@ class GaussianCluster {
     }
 
     _clusters.clear();
+    _discreteVectorMap.clear();
     _numEvidence = 0;
 
     _clusters.reserve(numClusters);
-    for (size_t i = 0; i < numClusters; ++i) {
+    _discreteVectorMap.reserve(numClusters);
+
+    VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
+    for (size_t i = 0; i < numClusters; ++i, discreteIncrement(currentDiscrete)) {
       _clusters.emplace_back(_continuousDims, _sigma, _rng);
+      _discreteVectorMap.emplace_back(currentDiscrete);
     }
   }
 
@@ -429,19 +406,41 @@ class GaussianCluster {
   }
 
   /**
+   * Calculate mean, variance and stddev for all clusters for given continous tuple
+   * @param continuousTuple
+   * @return Vectors means, vars, stddevs containing corresponding values for each cluster
+   */
+  [[nodiscard]] std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> precalculateDistributions(
+      const VectorContinuous &continuousTuple) const {
+    std::vector<double> means;
+    std::vector<double> vars;
+    std::vector<double> stddevs;
+    means.reserve(_clusters.size());
+    vars.reserve(_clusters.size());
+    stddevs.reserve(_clusters.size());
+    for (const auto &cluster : _clusters) {
+      means.push_back(cluster.predictMean(continuousTuple));
+
+      double var = cluster.predictVar(continuousTuple);
+      vars.push_back(var);
+      stddevs.push_back(std::sqrt(var));
+    }
+
+    return std::make_tuple(means, vars, stddevs);
+  }
+
+  /**
    * Initalize the neighbour-distance list for each cluster
    * @param neighbourFun function which generates neighbours of given discrete tuple
    * @return
    */
-  [[nodiscard]] std::vector<std::vector<std::pair<size_t, double>>> initNeighbourDistances(
-      const NeighbourFunction &neighbourFun) const {
+  [[nodiscard]] NeighboursDistances initNeighbourDistances(const NeighbourFunction &neighbourFun) const {
     std::vector<std::vector<std::pair<size_t, double>>> result;
     result.reserve(_clusters.size());
 
     // for each cluster create a neighbour list
-    VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
-    for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
-      auto neighbours = neighbourFun(currentDiscrete);
+    for (size_t i = 0; i < _clusters.size(); ++i) {
+      auto neighbours = neighbourFun(_discreteVectorMap[i]);
 
       // calculate initial distance for each neighbour
       std::vector<std::pair<size_t, double>> neighbourDistances;
@@ -483,9 +482,8 @@ class GaussianCluster {
    * @param stddev standard deviation for each cluster
    * @return
    */
-  void updateNeighbourDistances(std::vector<std::vector<std::pair<size_t, double>>> &neighbourDistances,
-                                const std::vector<double> &means, const std::vector<double> &vars,
-                                const std::vector<double> &stddevs) const {
+  void updateNeighbourDistances(NeighboursDistances &neighbourDistances, const std::vector<double> &means,
+                                const std::vector<double> &vars, const std::vector<double> &stddevs) const {
     // for each cluster create a neighbour list
     VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
     for (size_t i = 0; i < _clusters.size(); ++i) {
@@ -504,6 +502,88 @@ class GaussianCluster {
   }
 
   /**
+   * Create and initialize streams for nodes and edges.
+   * @return
+   */
+  GraphStream logGraphInit() const {
+    std::stringstream nodeStream;
+    nodeStream << "GaussianCluster Graph: Nodes" << std::endl;
+    nodeStream << "Label,prediction,numEvidence" << std::endl;
+
+    std::stringstream edgeStream;
+    edgeStream << "GaussianCluster Graph: Edges" << std::endl;
+    edgeStream << "Source,Target,Weight" << std::endl;
+
+    return std::make_pair(std::move(nodeStream), std::move(edgeStream));
+  }
+
+  /**
+   * Add nodes and edges for given continous sample.
+   * @param graphStream stream generated by logGraphInit()
+   * @param currentContinous continuous sample
+   * @param means predicted mean for each cluster
+   * @param vars predicted variance for each cluster
+   * @param neighbourDistances neighbours for each cluster
+   */
+  void logGraphAdd(GraphStream &graphStream, const VectorContinuous &currentContinous, std::vector<double> means,
+                   std::vector<double> vars, const NeighboursDistances &neighbourDistances) const {
+    auto &[nodeStream, edgeStream] = graphStream;
+
+    // log nodes
+    for (size_t i = 0; i < _clusters.size(); ++i) {
+      std::string label = _vecToStringFun(std::make_pair(_discreteVectorMap[i], currentContinous));
+      double prediction = means[i];
+      size_t numEvidence = _clusters[i].numEvidence();
+      nodeStream << "\"" << label << "\"," << prediction << "," << numEvidence << std::endl;
+    }
+
+    // log edges
+    for (size_t i = 0; i < _clusters.size(); ++i) {
+      for (const auto &[n, distance] : neighbourDistances[i]) {
+        double weight = vars[i] / (vars[i] + distance);
+        std::string source = _vecToStringFun(std::make_pair(_discreteVectorMap[i], currentContinous));
+        std::string target = _vecToStringFun(std::make_pair(_discreteVectorMap[n], currentContinous));
+        edgeStream << "\"" << source << "\",\"" << target << "\"," << weight << std::endl;
+      }
+    }
+  }
+
+  /**
+   * Output graph stream in AutoPasLog debug.
+   * @param graphStream stream generated by logGraphInit()
+   */
+  void logGraphEnd(GraphStream &graphStream) const {
+    const auto &[nodeStream, edgeStream] = graphStream;
+
+    AutoPasLog(debug, nodeStream.str());
+    AutoPasLog(debug, edgeStream.str());
+    AutoPasLog(debug, "GaussianCluster Graph: End");
+  }
+
+  /**
+   * Default function used to convert vectors to readable strings.
+   * @param vec
+   * @return string with format (a,b,...,n) beginning with discrete values.
+   */
+  static std::string defaultVecToString(const VectorPairDiscreteContinuous &vec) {
+    std::stringstream result;
+    const auto &[discreteVec, continuousVec] = vec;
+
+    result << "(" << discreteVec[0];
+    for (size_t d = 1; d < discreteVec.size(); ++d) {
+      result << "," << discreteVec[d];
+    }
+
+    for (auto continuousVal : continuousVec) {
+      result << "," << continuousVal;
+    }
+
+    result << ")";
+
+    return result.str();
+  }
+
+  /**
    * Number of clusters per discrete dimension.
    */
   std::vector<int> _dimRestriction;
@@ -516,6 +596,11 @@ class GaussianCluster {
    * Gaussian process for each discrete tuple.
    */
   std::vector<GaussianProcess> _clusters;
+
+  /**
+   * Vector to easiliy map from index to DiscreteVector
+   */
+  std::vector<VectorDiscrete> _discreteVectorMap;
 
   /**
    * Function used to calculate the distance between two clusters.
@@ -545,5 +630,10 @@ class GaussianCluster {
   const double _sigma;
 
   Random &_rng;
+
+  /**
+   * Function to convert vectors to strings.
+   */
+  VectorToStringFun _vecToStringFun;
 };
 }  // namespace autopas

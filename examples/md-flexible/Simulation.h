@@ -179,6 +179,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   autopas.setRelativeOptimumRange(_config->relativeOptimumRange);
   autopas.setMaxTuningPhasesWithoutTest(_config->maxTuningPhasesWithoutTest);
   autopas.setNumSamples(_config->tuningSamples);
+  autopas.setMaxEvidence(_config->tuningMaxEvidence);
   autopas.setSelectorStrategy(_config->selectorStrategy);
   autopas.setTuningInterval(_config->tuningInterval);
   autopas.setTuningStrategyOption(_config->tuningStrategyOption);

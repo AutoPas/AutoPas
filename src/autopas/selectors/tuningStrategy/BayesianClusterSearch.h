@@ -108,6 +108,12 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       autopas::utils::ExceptionHandler::exception("BayesianClusterSearch: No valid configurations could be created.");
     }
 
+    _gaussianCluster.setVectorToStringFun(
+        [this](const GaussianCluster::VectorPairDiscreteContinuous &vec) -> std::string {
+          return FeatureVector::convertFromCluster(vec, _containerTraversalOptions, _dataLayoutOptions, _newton3Options)
+              .toString();
+        });
+
     tune();
   }
 
@@ -172,7 +178,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * Function to generate neighbours of given vector
    */
-  std::function<std::vector<Eigen::VectorXi>(const Eigen::VectorXi&)> _neighbourFun;
+  std::function<std::vector<Eigen::VectorXi>(const Eigen::VectorXi &)> _neighbourFun;
   const size_t _maxEvidence;
   /**
    * Acquisition function used to predict informational gain.
@@ -205,10 +211,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
     // print graph of distances
     size_t sampleSize = _cellSizeFactors->isFinite() ? _cellSizeFactors->size() : _predNumLHSamples;
     auto continuousSamples = FeatureVector::lhsSampleFeatureContinuous(sampleSize, _rng, *_cellSizeFactors);
-    auto vecToStringFun = [this] (const GaussianCluster::VectorPairDiscreteContinuous& vec) -> std::string {
-      return FeatureVector::convertFromCluster(vec, _containerTraversalOptions, _dataLayoutOptions, _newton3Options).toString();
-    };
-    _gaussianCluster.logDebugGraph(_neighbourFun, continuousSamples, vecToStringFun);
+    _gaussianCluster.logDebugGraph(_neighbourFun, continuousSamples);
     return false;
   }
 
@@ -270,6 +273,12 @@ void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
                         _newton3Options.end());
 
   _gaussianCluster.setDimension(discreteNewtonDim, _newton3Options.size());
+  _gaussianCluster.setVectorToStringFun(
+      [this](const GaussianCluster::VectorPairDiscreteContinuous &vec) -> std::string {
+        return FeatureVector::convertFromCluster(vec, _containerTraversalOptions, _dataLayoutOptions, _newton3Options)
+            .toString();
+      });
+
   _currentAcquisitions.clear();
 
   if (this->searchSpaceIsEmpty()) {
