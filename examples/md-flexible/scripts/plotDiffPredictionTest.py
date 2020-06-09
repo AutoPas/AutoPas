@@ -97,6 +97,14 @@ for datafile in datafiles:
                                                 [(iterationBeginTuning, double(prediction[1] / test[1]))]
                     tuning = False
 
+    # test if the file contains information that can be plotted
+    if len(configurationDiffTestPredictionTotal) == 0 and ("total" == option or "both == option"):
+        print(datafile + ": No information could be extracted from this file!")
+        continue
+    if len(configurationDiffTestPredictionRelative) == 0 and "relative" == option:
+        print(datafile + ": No information could be extracted from this file!")
+        continue
+
     # create figure and define layout
     fig = go.Figure(
         layout=dict(
@@ -112,6 +120,7 @@ for datafile in datafiles:
         allDiffTotal = []
         allIterationTotal = []
         if "total" == option or "both" == option:
+
             for iteration, diff in configurationDiffTestPredictionTotal[configuration]:
                 allIterationTotal.append(iteration)
                 allDiffTotal.append(diff)

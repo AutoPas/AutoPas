@@ -65,12 +65,22 @@ for datafile in datafiles:
 
         if len(comparisonBase) == 0:
             comparisonBase = configurationsSelected
+            # test if the base file contains information that can be compared
+            if len(comparisonBase) == 0:
+                print(datafiles[0] + ": Base file does not contain any information that can be compared!")
+                exit(0)
         else:
             comparisonFiles.append(configurationsSelected)
 
 # compare the files with the base file
 j = 1
 for fileToCompare in comparisonFiles:
+    # test if the file contains information that can be compared
+    if len(fileToCompare) == 0:
+        print(datafiles[0] + " vs " + datafiles[j] + ":\n" + datafiles[j] + 
+              "does not contain any information that can be compared!")
+        continue
+
     loopInt = 0
     if len(comparisonBase) <= len(fileToCompare):
         loopInt = len(comparisonBase)

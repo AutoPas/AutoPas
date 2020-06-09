@@ -63,6 +63,11 @@ for datafile in datafiles:
                 else:
                     configurationTest[match.group(1)] = [(iteration, int(match.group(3)))]
 
+    # test if the file contains information that can be plotted
+    if len(configurationPrediction) == 0:
+        print(datafile + ": No information could be extracted from this file!")
+        continue
+
     # create figure and define layout
     fig = go.Figure(
         layout=dict(
