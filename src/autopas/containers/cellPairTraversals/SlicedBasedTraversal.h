@@ -7,11 +7,10 @@
 
 #pragma once
 
-#include <algorithm>
-
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -20,7 +19,7 @@ namespace autopas {
  * This class provides the sliced traversal.
  *
  * The traversal finds the longest dimension of the simulation domain and cuts
- * the domain in one slice (block) per thread along this dimension. Slices are
+ * the domain into multiple slices along this dimension. Slices are
  * assigned to the threads in a round robin fashion. Each thread locks the cells
  * on the boundary wall to the previous slice with one lock. This lock is lifted
  * as soon the boundary wall is fully processed.
@@ -50,9 +49,9 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
         _cellLength(cellLength),
         _overlapLongestAxis(0),
         _sliceThickness{},
-        locks(),
+        _locks(),
         _dataLayoutConverter(pairwiseFunctor) {
-    init(dims);
+    this->init(dims);
   }
 
   /**
@@ -60,23 +59,33 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @return true iff the traversal can be applied.
    */
   bool isApplicable() const override {
-    return not(dataLayout == DataLayoutOption::cuda) and this->_sliceThickness.size() > 0;
+    auto minSliceThickness = _overlapLongestAxis + 1;
+    auto maxNumSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
+    return not(dataLayout == DataLayoutOption::cuda) and maxNumSlices > 0;
   }
 
   /**
-   * Load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
+   * Load Data Layouts and sets up slice thicknesses.
    */
   void initTraversal() override {
-    if (this->_cells) {
-      auto &cells = *(this->_cells);
-#ifdef AUTOPAS_OPENMP
-      /// @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
-      for (size_t i = 0; i < cells.size(); ++i) {
-        _dataLayoutConverter.loadDataLayout(cells[i]);
-      }
-    }
+    loadDataLayout();
+    // split domain across its longest dimension
+
+    auto minSliceThickness = _overlapLongestAxis + 1;
+    auto numSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
+
+    _sliceThickness.clear();
+
+    // abort if domain is too small -> cleared _sliceThickness array indicates non applicability
+    if (numSlices < 1) return;
+
+    _sliceThickness.insert(_sliceThickness.begin(), numSlices, minSliceThickness);
+    auto rest = this->_cellsPerDimension[_dimsPerLength[0]] - _sliceThickness[0] * numSlices;
+    for (size_t i = 0; i < rest; ++i) ++_sliceThickness[i];
+    // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
+    _sliceThickness.back() -= _overlapLongestAxis;
+
+    _locks.resize((numSlices - 1) * _overlapLongestAxis);
   }
 
   /**
@@ -118,25 +127,29 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   inline void slicedTraversal(LoopBody &&loopBody);
 
   /**
+   * Load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
+   */
+  void loadDataLayout() {
+    if (this->_cells) {
+      auto &cells = *(this->_cells);
+#ifdef AUTOPAS_OPENMP
+      /// @todo find a condition on when to use omp or when it is just overhead
+#pragma omp parallel for
+#endif
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _dataLayoutConverter.loadDataLayout(cells[i]);
+      }
+    }
+  }
+  /**
    * Overlap of interacting cells. Array allows asymmetric cell sizes.
    */
   std::array<unsigned long, 3> _overlap;
 
- private:
   /**
    * Store ids of dimensions ordered by number of cells per dimensions.
    */
   std::array<int, 3> _dimsPerLength;
-
-  /**
-   * Interaction length (cutoff + skin).
-   */
-  double _interactionLength;
-
-  /**
-   * Cell length in CellBlock3D.
-   */
-  std::array<double, 3> _cellLength;
 
   /**
    * Overlap of interacting cells along the longest axis.
@@ -147,7 +160,27 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * The number of cells per slice in the dimension that was sliced.
    */
   std::vector<unsigned long> _sliceThickness;
-  std::vector<AutoPasLock> locks;
+
+  /**
+   * locks for synchronising access to cells on boundary layers
+   */
+  std::vector<AutoPasLock> _locks;
+
+  /**
+   * whether to use static or dynamic scheduling.
+   */
+  bool dynamic = true;
+
+ private:
+  /**
+   * Interaction length (cutoff + skin).
+   */
+  double _interactionLength;
+
+  /**
+   * Cell length in CellBlock3D.
+   */
+  std::array<double, 3> _cellLength;
 
   /**
    * Data Layout Converter to be used with this traversal.
@@ -169,29 +202,6 @@ inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useN
   _dimsPerLength[1] = 3 - (_dimsPerLength[0] + _dimsPerLength[2]);
 
   _overlapLongestAxis = _overlap[_dimsPerLength[0]];
-
-  // split domain across its longest dimension
-
-  auto numSlices = (size_t)autopas_get_max_threads();
-  auto minSliceThickness = this->_cellsPerDimension[_dimsPerLength[0]] / numSlices;
-  if (minSliceThickness < _overlapLongestAxis + 1) {
-    minSliceThickness = _overlapLongestAxis + 1;
-    numSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
-    AutoPasLog(debug, "Sliced traversal only using {} threads because the number of cells is too small.", numSlices);
-  }
-
-  _sliceThickness.clear();
-
-  // abort if domain is too small -> cleared _sliceThickness array indicates non applicability
-  if (numSlices < 1) return;
-
-  _sliceThickness.insert(_sliceThickness.begin(), numSlices, minSliceThickness);
-  auto rest = this->_cellsPerDimension[_dimsPerLength[0]] - _sliceThickness[0] * numSlices;
-  for (size_t i = 0; i < rest; ++i) ++_sliceThickness[i];
-  // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
-  _sliceThickness.back() -= _overlapLongestAxis;
-
-  locks.resize((numSlices - 1) * _overlapLongestAxis);
 }
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 template <bool allCells, typename LoopBody>
@@ -207,28 +217,43 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
     _sliceThickness.back() += _overlapLongestAxis;
   }
 
+  std::vector<utils::Timer> timers;
+  std::vector<double> threadTimes;
+
+  timers.resize(numSlices);
+  threadTimes.resize(numSlices);
+
 #ifdef AUTOPAS_OPENMP
-// although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
-#pragma omp parallel for schedule(static, 1) num_threads(numSlices)
+  // although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
+  auto numThreads = static_cast<size_t>(autopas_get_max_threads());
+  if (dynamic) {
+    omp_set_schedule(omp_sched_dynamic, 1);
+  } else {
+    omp_set_schedule(omp_sched_static, 1);
+  }
+#pragma omp parallel for schedule(runtime) num_threads(numThreads)
 #endif
   for (size_t slice = 0; slice < numSlices; ++slice) {
+    timers[slice].start();
     array<unsigned long, 3> myStartArray{0, 0, 0};
     for (size_t i = 0; i < slice; ++i) {
       myStartArray[_dimsPerLength[0]] += _sliceThickness[i];
     }
 
     // all but the first slice need to lock their starting layers.
+    const unsigned long lockBaseIndex = (slice - 1) * _overlapLongestAxis;
     if (slice > 0) {
       for (unsigned long i = 0ul; i < _overlapLongestAxis; i++) {
-        locks[((slice - 1) * _overlapLongestAxis) + i].lock();
+        _locks[lockBaseIndex + i].lock();
       }
     }
     const auto lastLayer = myStartArray[_dimsPerLength[0]] + _sliceThickness[slice];
-    for (unsigned long dimSlice = myStartArray[_dimsPerLength[0]]; dimSlice < lastLayer; ++dimSlice) {
+    for (unsigned long sliceOffset = 0ul; sliceOffset < _sliceThickness[slice]; ++sliceOffset) {
+      const auto dimSlice = myStartArray[_dimsPerLength[0]] + sliceOffset;
       // at the last layers request lock for the starting layer of the next
       // slice. Does not apply for the last slice.
-      if (slice != numSlices - 1 && dimSlice >= lastLayer - _overlapLongestAxis) {
-        locks[((slice + 1) * _overlapLongestAxis) - (lastLayer - dimSlice)].lock();
+      if (slice != numSlices - 1 and dimSlice >= lastLayer - _overlapLongestAxis) {
+        _locks[((slice + 1) * _overlapLongestAxis) - (lastLayer - dimSlice)].lock();
       }
       for (unsigned long dimMedium = 0; dimMedium < this->_cellsPerDimension[_dimsPerLength[1]] - overLapps23[0];
            ++dimMedium) {
@@ -238,32 +263,50 @@ void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
           idArray[_dimsPerLength[0]] = dimSlice;
           idArray[_dimsPerLength[1]] = dimMedium;
           idArray[_dimsPerLength[2]] = dimShort;
+
           loopBody(idArray[0], idArray[1], idArray[2]);
         }
       }
       // at the end of the first layers release the lock
-      if (slice > 0 && dimSlice < myStartArray[_dimsPerLength[0]] + _overlapLongestAxis) {
-        const unsigned long index = ((slice - 1) * _overlapLongestAxis) + (dimSlice - myStartArray[_dimsPerLength[0]]);
-        locks[index].unlock();
-        // if lastLayer is reached within overlap area, unlock all following locks
+      if (slice > 0 and dimSlice < myStartArray[_dimsPerLength[0]] + _overlapLongestAxis) {
+        _locks[lockBaseIndex + sliceOffset].unlock();
+        // if lastLayer is reached within overlap area, unlock all following _locks
+        // this should never be the case if slice thicknesses are set up properly; thickness should always be
+        // greater than the overlap along the longest axis, or the slices won't be processed in parallel.
         if (dimSlice == lastLayer - 1) {
-          for (unsigned long i = dimSlice + 1; i < myStartArray[_dimsPerLength[0]] + _overlapLongestAxis; ++i) {
-            const unsigned long index = ((slice - 1) * _overlapLongestAxis) + (i - myStartArray[_dimsPerLength[0]]);
-            locks[index].unlock();
+          for (unsigned long i = sliceOffset + 1; i < _overlapLongestAxis; ++i) {
+            _locks[lockBaseIndex + i].unlock();
           }
         }
-      } else if (slice != numSlices - 1 && dimSlice == lastLayer - 1) {
-        // clearing of the locks set on the last layers of each slice
+      } else if (slice != numSlices - 1 and dimSlice == lastLayer - 1) {
+        // clearing of the _locks set on the last layers of each slice
         for (size_t i = (slice * _overlapLongestAxis); i < (slice + 1) * _overlapLongestAxis; ++i) {
-          locks[i].unlock();
+          _locks[i].unlock();
         }
       }
     }
+    threadTimes[slice] = timers[slice].stop();
   }
 
   if (allCells) {
     _sliceThickness.back() -= _overlapLongestAxis;
   }
+
+  std::string timesStr;
+  for (auto t : threadTimes) {
+    timesStr += std::to_string(t) + ", ";
+  }
+  auto minMax = std::minmax_element(threadTimes.begin(), threadTimes.end());
+  auto avg = std::accumulate(threadTimes.begin(), threadTimes.end(), 0.0) / numSlices;
+  auto variance = std::accumulate(threadTimes.cbegin(), threadTimes.cend(), 0.0,
+                                  [avg](double a, double b) -> double { return a + std::pow(avg - b, 2.0); }) /
+                  numSlices;
+  auto stddev = std::sqrt(variance);
+
+  AutoPasLog(debug, "times per slice: [{}].", timesStr);
+  AutoPasLog(debug, "Difference between longest and shortest time: {:.3G}", *minMax.second - *minMax.first);
+  AutoPasLog(debug, "Ratio between longest and shortest time: {:.3G}", (float)*minMax.second / *minMax.first);
+  AutoPasLog(debug, "avg: {:.3G}, std-deviation: {:.3G} ({:.3G}%)", avg, stddev, 100 * stddev / avg);
 }
 
 }  // namespace autopas

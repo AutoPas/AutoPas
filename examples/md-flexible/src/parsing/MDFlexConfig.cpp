@@ -114,34 +114,31 @@ std::string MDFlexConfig::to_string() const {
 
 void MDFlexConfig::calcSimulationBox() {
   const double interactionLength = cutoff.value + verletSkinRadius.value;
-  std::array<std::vector<double>, 3> mins;
-  std::array<std::vector<double>, 3> maxs;
 
-  // helper function
-  auto emplaceObjectLimits = [&](const auto &objectCollection) {
+  // helper function so that we can do the same for every object collection
+  // resizes the domain to the maximal extents of all objects
+  auto resizeToObjectLimits = [&](const auto &objectCollection) {
     for (auto &object : objectCollection) {
+      auto objectMin = object.getBoxMin();
+      auto objectMax = object.getBoxMax();
+      auto objectSpacing = object.getParticleSpacing();
+
       for (size_t i = 0; i < 3; ++i) {
-        mins[i].emplace_back(object.getBoxMin()[i]);
-        maxs[i].emplace_back(object.getBoxMax()[i]);
+        // pad domain such that periodic boundaries can work.
+        // This is necessary if the given min/max is not at least half the spacing away of the farthest object.
+        boxMin.value[i] = std::min(boxMin.value[i], objectMin[i] - objectSpacing / 2);
+        boxMax.value[i] = std::max(boxMax.value[i], objectMax[i] + objectSpacing / 2);
       }
     }
   };
 
-  emplaceObjectLimits(cubeGaussObjects);
-  emplaceObjectLimits(cubeGridObjects);
-  emplaceObjectLimits(cubeUniformObjects);
-  emplaceObjectLimits(sphereObjects);
+  resizeToObjectLimits(cubeGaussObjects);
+  resizeToObjectLimits(cubeGridObjects);
+  resizeToObjectLimits(cubeUniformObjects);
+  resizeToObjectLimits(sphereObjects);
 
+  // guarantee the box is at least of size interationLength
   for (int i = 0; i < 3; i++) {
-    // pad domain such that periodic boundaries can work.
-    // This is necessary if the given min/max is not at least half the spacing away of the farthest object.
-    if (not mins[0].empty()) {
-      auto objectMin = *std::min_element(mins[i].begin(), mins[i].end());
-      auto objectMax = *std::max_element(maxs[i].begin(), maxs[i].end());
-      boxMin.value[i] = std::min(boxMin.value[i], objectMin - particleSpacing.value / 2);
-      boxMax.value[i] = std::max(boxMax.value[i], objectMax + particleSpacing.value / 2);
-    }
-
     // needed for 2D Simulation, that BoxLength >= interactionLength for all Dimensions
     if (boxMax.value[i] - boxMin.value[i] < interactionLength) {
       std::cout << "WARNING: Simulation box in dimension " << i
