@@ -108,6 +108,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     }
     config.tuningStrategyOption.value = *parsedOptions.begin();
   }
+  if (node[config.acquisitionFunctionOption.name]) {
+    auto parsedOptions =
+        autopas::AcquisitionFunctionOption::parseOptions(node[config.acquisitionFunctionOption.name].as<std::string>());
+    if (parsedOptions.size() != 1) {
+      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one acquisition function option!");
+    }
+    config.acquisitionFunctionOption.value = *parsedOptions.begin();
+  }
   if (node[config.logLevel.name]) {
     auto strArg = node[config.logLevel.name].as<std::string>();
     switch (strArg[0]) {
