@@ -40,6 +40,20 @@ class Option {
   };
 
   /**
+   * Provides a way to iterate over the possible options minus those that are very unlikely to be on interest.
+   * @note This function is meant to provide sane defaults.
+   * @return
+   */
+  static std::set<actualOption> getMostOptions() {
+    std::set<actualOption> retSet;
+    auto allOptions = getAllOptions();
+    auto discouragedOptions = actualOption::getDiscouragedOptions();
+    std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
+                        std::inserter(retSet, retSet.begin()));
+    return retSet;
+  }
+
+  /**
    * Converts an Option object to its respective string representation.
    * @return The string representation or "Unknown Option (<IntValue>)".
    */

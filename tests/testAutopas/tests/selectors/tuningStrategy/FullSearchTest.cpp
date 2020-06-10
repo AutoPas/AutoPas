@@ -20,27 +20,31 @@ TEST_F(FullSearchTest, testTune) {
   autopas::FullSearch fullSearch(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
-      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
+      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
 
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
-                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+                                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
+                                   autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(10, 0);
 
   fullSearch.tune();
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
-                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+                                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
+                                   autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(1, 0);
 
   fullSearch.tune();
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c01,
-                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+                                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
+                                   autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(20, 0);
 
   fullSearch.tune();
   EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
-                                   autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled),
+                                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
+                                   autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
 }

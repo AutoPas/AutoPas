@@ -1,7 +1,15 @@
-# MD-Flexible 
+# MD-Flexible
 
 This demo shows how to easily create and simulate molecular dynamic
 scenarios using AutoPas and flexibly configure all of it's options.
+
+## Documentation
+The documentation can be found at our website:
+ <https://www5.in.tum.de/AutoPas/doc_doxygen_md-flexible/master/>
+
+Alternatively you can build the documentation on your own:
+* requirements: [Doxygen](http://www.doxygen.nl/)
+* `make doc_doxygen_md-flexible`
 
 ## Compiling
 To build MD-Flexible execute the following from the AutoPas root folder:
@@ -11,18 +19,16 @@ cmake ..
 make md-flexible
 ```
 
-## Usage 
+## Usage
 
-When running md-flexible without any arguments a default simulation with
-all AutoPas options active is run and it's configuration printed. From
-there you can restrict any AutoPas options or change the simulation.
+When starting md-flexible without any arguments a default simulation with
+most AutoPas options active is run and it's configuration printed. From
+there you can change any AutoPas options or change the simulation.
 
-For all available option see:
+For all available arguments and options see:
 ```bash
  examples/md-flexible/md-flexible --help
 ```
-
-Have a look at the `completion/` directory for shell auto completion scripts.
 
 ### Input
 
@@ -32,8 +38,19 @@ counterparts.
 
 The keywords for the YAML file are the same as for the command line
 input. However, since there are options that can only be defined
-through the YAML file there is also the file `input/ALLOptions.yaml`
+through the YAML file there is also the file [`input/AllOptions.yaml`](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible/input/AllOptions.yaml)
 to be used as a reference.
+
+#### Object generators
+
+To quickly set up scenarios md-flexible provides a couple of object
+generators that create 3D shapes filled with particles. From the command line
+only one generator can be used at a time, however when using a YAML file one
+can use as an arbitrary amount of generators. In YAML files it is also
+possible to generate multiple objects from the same generator as one
+specifies the objects directly. For a list of all possible objects and their
+descriptions see [`src/Objects`](https://www5.in.tum.de/AutoPas/doc_doxygen_md-flexible/master/dir_8e5023335c6d80afeb9fe41ac1daf95f.html).
+For examples how to define and configure each object see [`input/AllOptions.yaml`](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible/input/AllOptions.yaml).
 
 ### Output
 
@@ -50,6 +67,32 @@ rather strict. The VTK file only contains Information about all
 particles positions, velocities, forces and typeIDs. All other options,
 especially the simulation box size and particle properties (still) need
 to be set through a YAML file.
+
+### Command line Completions
+
+md-flexible can generate a shell completions file with it's latest options.
+Feel free to add completions for your favorite shell.
+
+#### zsh
+
+1. Run:
+```zsh
+./md-flexible --zsh-completions
+```
+This will generate a file `_md-flexible` containing the completions definitions. 
+Store it where you feel appropriate.
+ 
+2. In your `.zshrc` prepend the path to the directory where `_md-flexible` is saved to `fpath`:
+```zsh
+fpath=("HereGoesThePath" $fpath)
+```
+
+3. Initialize the auto complete system by adding this line to `.zshrc` after the `fpath` line.:
+```zsh
+autoload -U compinit && compinit
+```
+
+4. Reload your `zsh`
 
 ### Misc
 

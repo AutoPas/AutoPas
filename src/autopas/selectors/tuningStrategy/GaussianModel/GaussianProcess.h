@@ -58,6 +58,15 @@ class GaussianProcess {
   }
 
   /**
+   * Change input dimension. Current evidence will be discarded.
+   * @param dims
+   */
+  void setDimension(size_t dims) {
+    _dims = dims;
+    clear();
+  }
+
+  /**
    * Discard all evidence.
    */
   void clear() {
@@ -414,7 +423,7 @@ class GaussianProcess {
   /**
    * Number of input dimensions.
    */
-  const size_t _dims;
+  size_t _dims;
 
   /**
    * Current smallest evidence output.
