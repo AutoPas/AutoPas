@@ -32,7 +32,7 @@ INSTANTIATE_TEST_SUITE_P(
 
               // container factory
               autopas::ContainerSelector<Particle, FPCell> containerSelector({0., 0., 0.}, {10., 10., 10.}, 1.);
-              autopas::ContainerSelectorInfo containerInfo(1., 0., 64);
+              autopas::ContainerSelectorInfo containerInfo(1., 0., 64, autopas::LoadEstimatorOption::none);
 
               // generate for all containers, even those to come
               for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
@@ -81,7 +81,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   }
 
   autopas::ContainerSelector<Particle, FPCell> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
-  autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin(), 64);
+  autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin(), 64,
+                                               autopas::LoadEstimatorOption::none);
 
   containerSelector.selectContainer(containerOption, containerInfo);
 

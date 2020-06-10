@@ -9,6 +9,11 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/selectors/FeatureVector.h"
+#include "autopas/selectors/FeatureVectorEncoder.h"
 
-class FeatureVectorTest : public AutoPasTestBase {};
+class FeatureVectorTest : public AutoPasTestBase {
+ public:
+  FeatureVectorTest();
+
+  std::vector<autopas::FeatureVector::ContainerTraversalEstimatorOption> allCompatibleContainerTraversalEstimators;
+};

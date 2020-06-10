@@ -81,6 +81,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.traversalOptions.value = autopas::TraversalOption::parseOptions(
         autopas::utils::ArrayUtils::to_string(node[config.traversalOptions.name], ", ", {"", ""}));
   }
+  if (node[config.loadEstimatorOptions.name]) {
+    config.loadEstimatorOptions.value = autopas::LoadEstimatorOption::parseOptions(
+        autopas::utils::ArrayUtils::to_string(node[config.loadEstimatorOptions.name], ", ", {"", ""}));
+  }
   if (node[config.tuningInterval.name]) {
     config.tuningInterval.value = node[config.tuningInterval.name].as<unsigned int>();
   }
