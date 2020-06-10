@@ -361,6 +361,7 @@ void ActiveHarmony::resetHarmony() {
     configureTuningParameter(hdef, traversalOptionName, _allowedTraversalOptions);
     configureTuningParameter(hdef, dataLayoutOptionName, _allowedDataLayoutOptions);
     configureTuningParameter(hdef, newton3OptionName, _allowedNewton3Options);
+    configureTuningParameter(hdef, loadEstimatorOptionName, _allowedLoadEstimatorOptions);
 
     // use ActiveHarmony's implementation of the Nelder-Mead method
     ah_def_strategy(hdef, "nm.so");
