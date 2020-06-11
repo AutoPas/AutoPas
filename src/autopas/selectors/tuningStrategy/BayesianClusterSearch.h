@@ -118,12 +118,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       autopas::utils::ExceptionHandler::exception("BayesianClusterSearch: No valid configurations could be created.");
     }
 
-
     _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
     _gaussianCluster.setVectorToStringFun(
         [this](const GaussianCluster::VectorPairDiscreteContinuous &vec) -> std::string {
-          return _encoder.convertFromCluster(vec)
-              .toString();
+          return _encoder.convertFromCluster(vec).toString();
         });
 
     tune();
@@ -285,8 +283,8 @@ void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
   _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option),
                         _newton3Options.end());
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
-  _gaussianCluster.setDimension(discreteNewtonDim, _newton3Options.size());
 
+  _gaussianCluster.setDimension(discreteNewtonDim, _newton3Options.size());
   _currentAcquisitions.clear();
 
   if (this->searchSpaceIsEmpty()) {
