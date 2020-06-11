@@ -1,25 +1,22 @@
 /**
- * @file AutoPasConfigurationCommunicator.h
+ * @file AutoPasConfigurationCommunicatorTest.h
  * @author W. Thieme
  * @date 05.06.2020
  */
 
-#include <gtest/gtest.h>
-#include <mpi.h>
-
-#include "autopas/utils/AutoPasConfigurationCommunicator.h"
+#include "AutoPasConfigurationCommunicatorTest.h"
 
 using namespace autopas::AutoPasConfigurationCommunicator;
 using namespace autopas;
 
-TEST(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
+TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
   Configuration config = Configuration(ContainerOption::directSum, 1.2, TraversalOption::sliced, DataLayoutOption::cuda,
                                        Newton3Option::disabled);
   Configuration passedConfig = deserializeConfiguration(serializeConfiguration(config));
   EXPECT_EQ(passedConfig, config);
 }
 
-TEST(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
+TEST_F(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -31,7 +28,7 @@ TEST(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
                                      Newton3Option::enabled));
 }
 
-TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCellSizeFactors) {
+TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCellSizeFactors) {
   std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists, ContainerOption::linkedCells};
   NumberSetFinite<double> cellSizeFactors{0.9, 1.0, 1.1};
   std::set<TraversalOption> traversalOptions{TraversalOption::verletClusters, TraversalOption::sliced};
@@ -53,7 +50,7 @@ TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCel
 
 }
 
-TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfiniteCellSizeFactors) {
+TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfiniteCellSizeFactors) {
   std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists};
   NumberInterval<double> cellSizeFactors{0.8, 1.2};
   std::set<TraversalOption> traversalOptions{TraversalOption::verletClusters};
@@ -75,7 +72,7 @@ TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfiniteC
   EXPECT_LE(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1) + error);
 }
 
-TEST(AutoPasConfigurationCommunicator, testDistributeConfigurationsOneRank) {
+TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsOneRank) {
   std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists, ContainerOption::linkedCells};
   NumberSetFinite<double> cellSizeFactors{0.9, 1.0, 1.1};
   std::set<TraversalOption> traversalOptions{TraversalOption::verletClusters, TraversalOption::sliced};
