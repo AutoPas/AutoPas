@@ -19,7 +19,6 @@ def getAllTraversals():
                 for c in traversalList:
                     allTraversals.append(c)
                 allTraversals.remove("cuda-c01")
-                allTraversals.remove("directSum")  # TODO: delete this line as soon as directSum works again
                 print(allTraversals)
 
 
