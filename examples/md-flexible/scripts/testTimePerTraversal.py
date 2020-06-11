@@ -16,12 +16,11 @@ def getAllTraversals():
             if (match := re.search(regexTraversal, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 traversalList = currentLine[0].split(", ")
-                print("currentLine")
-                print(currentLine[0])
                 for c in traversalList:
                     allTraversals.append(c)
-                print(allTraversals)
                 allTraversals.remove("cuda-c01")
+                allTraversals.remove("directSum")  # TODO: delete this line as soon as directSum works again
+                print(allTraversals)
 
 
 # ---------------------------------------- Global parameters and input ----------------------------------------
