@@ -85,6 +85,10 @@ class Option {
     std::vector<std::string> haystack;
     auto needles = autopas::utils::StringUtils::tokenize(optionsString, autopas::utils::StringUtils::delimiters);
 
+    if (needles.size() == 1 and needles[0] == "all") {
+      return actualOption::getAllOptions();
+    }
+
     // create a map of enum -> string with lowercase enums as a lookup and fill strings in the haystack
     std::map<std::string, actualOption> allOptionNamesLower;
     for (auto &[optionEnum, optionString] : actualOption::getOptionNames()) {
