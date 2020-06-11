@@ -1,20 +1,5 @@
-container                        :  [LinkedCells, VerletLists, VerletListsCells, VarVerletListsAsBuild]
-verlet-rebuild-frequency         :  10
-verlet-skin-radius               :  0.3
-verlet-cluster-size              :  4
-selector-strategy                :  Fastest-Absolute-Value
-data-layout                      :  [AoS, SoA]
-traversal                        :  [c08, sliced, c18, c01, verlet-sliced, verlet-c18, verlet-c01, cuda-c01, verlet-lists, c01-combined-SoA, c04, var-verlet-lists-as-build, c04SoA]
-tuning-strategy                  :  active-harmony
-tuning-interval                  :  1000
-tuning-samples                   :  3
-tuning-max-evidence              :  10
 functor                          :  Lennard-Jones (12-6)
-newton3                          :  [enabled, disabled]
 cutoff                           :  2.5
-box-min                          :  [-0.25, -0.25, -0.25]
-box-max                          :  [241.25, 241.25, 241.25]
-cell-size                        :  [0.34-2]
 deltaT                           :  0.00182367
 iterations                       :  100000
 periodic-boundaries              :  true

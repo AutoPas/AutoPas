@@ -43,11 +43,7 @@ class Sphere : public Object {
    */
   [[nodiscard]] int getRadius() const { return radius; }
 
-  /**
-   * Getter for particleSpacing
-   * @return particleSpacing
-   */
-  [[nodiscard]] double getParticleSpacing() const { return particleSpacing; }
+  [[nodiscard]] double getParticleSpacing() const override { return particleSpacing; }
 
   /**
    * Call f for every point on the sphere where a particle should be.

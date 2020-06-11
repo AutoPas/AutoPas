@@ -17,6 +17,7 @@ namespace autopas::TuningStrategyFactory {
  * @param allowedContainers
  * @param allowedCellSizeFactors
  * @param allowedTraversals
+ * @param allowedLoadEstimators
  * @param allowedDataLayouts
  * @param allowedNewton3Options
  * @param maxEvidence
@@ -28,6 +29,7 @@ namespace autopas::TuningStrategyFactory {
 std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     autopas::TuningStrategyOption tuningStrategyOption, const std::set<autopas::ContainerOption> &allowedContainers,
     autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<autopas::TraversalOption> &allowedTraversals,
+    const std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
     unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption);

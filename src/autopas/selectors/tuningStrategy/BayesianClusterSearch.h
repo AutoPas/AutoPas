@@ -14,7 +14,8 @@
 #include "GaussianModel/GaussianCluster.h"
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/selectors/FeatureVector.h"
+#include "autopas/containers/LoadEstimators.h"
+#include "autopas/selectors/FeatureVectorEncoder.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StringUtils.h"
@@ -53,6 +54,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Constructor
    * @param allowedContainerOptions
    * @param allowedTraversalOptions
+   * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
@@ -65,6 +67,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
       const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
+      const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
@@ -73,6 +76,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
         _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
         _cellSizeFactors(allowedCellSizeFactors.clone()),
+        _encoder(),
         _currentConfig(),
         _invalidConfigs(),
         _rng(seed),
@@ -88,22 +92,30 @@ class BayesianClusterSearch : public TuningStrategyInterface {
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
     }
 
-    // generate all compatible container-traversal pairs
-    for (auto traversal : allowedTraversalOptions) {
-      auto compatibleContainerOptions = compatibleTraversals::allCompatibleContainers(traversal);
-      std::set<ContainerOption> allowedAndCompatible;
-      std::set_intersection(allowedContainerOptions.begin(), allowedContainerOptions.end(),
-                            compatibleContainerOptions.begin(), compatibleContainerOptions.end(),
-                            std::inserter(allowedAndCompatible, allowedAndCompatible.begin()));
+    for (const auto &containerOption : allowedContainerOptions) {
+      // get all traversals of the container and restrict them to the allowed ones
+      const std::set<TraversalOption> &allContainerTraversals =
+          compatibleTraversals::allCompatibleTraversals(containerOption);
+      std::set<TraversalOption> allowedAndApplicable;
+      std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
+                            allContainerTraversals.begin(), allContainerTraversals.end(),
+                            std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
-      for (auto container : allowedAndCompatible) {
-        _containerTraversalOptions.emplace_back(container, traversal);
+      for (const auto &traversalOption : allowedAndApplicable) {
+        // if load estimators are not applicable LoadEstimatorOption::none is returned.
+        const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
+            loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, allowedLoadEstimatorOptions);
+        for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
+          _containerTraversalEstimatorOptions.emplace_back(containerOption, traversalOption, loadEstimatorOption);
+        }
       }
     }
 
     if (searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("BayesianClusterSearch: No valid configurations could be created.");
     }
+
+    _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
 
     tune();
   }
@@ -114,7 +126,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
   inline void addEvidence(long time, size_t) override {
     // encoded vector
-    auto vec = _currentConfig.convertToCluster(_containerTraversalOptions, _dataLayoutOptions, _newton3Options);
+    auto vec = _encoder.convertToCluster(_currentConfig);
     // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
     // represent a maximization problem
     _gaussianCluster.addEvidence(vec, -time * secondsPerMicroseconds);
@@ -146,10 +158,11 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   inline void sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
 
   std::set<ContainerOption> _containerOptionsSet;
-  std::vector<std::pair<ContainerOption, TraversalOption>> _containerTraversalOptions;
+  std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
   std::vector<DataLayoutOption> _dataLayoutOptions;
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
+  FeatureVectorEncoder _encoder;
 
   FeatureVector _currentConfig;
   /**
@@ -191,8 +204,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
   // no more tunings steps
   if (_gaussianCluster.numEvidence() >= _maxEvidence) {
     // select best config
-    _currentConfig = FeatureVector::convertFromCluster(_gaussianCluster.getEvidenceMax(), _containerTraversalOptions,
-                                                       _dataLayoutOptions, _newton3Options);
+    _currentConfig = _encoder.convertFromCluster(_gaussianCluster.getEvidenceMax());
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
     return false;
   }
@@ -205,8 +217,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
 
     // test best vectors until empty
     while (not _currentAcquisitions.empty()) {
-      auto best = FeatureVector::convertFromCluster(_currentAcquisitions.back(), _containerTraversalOptions,
-                                                    _dataLayoutOptions, _newton3Options);
+      auto best = _encoder.convertFromCluster(_currentAcquisitions.back());
 
       if (_invalidConfigs.find(best) == _invalidConfigs.end()) {
         // valid config found!
@@ -244,19 +255,22 @@ bool BayesianClusterSearch::searchSpaceIsTrivial() const {
     return false;
   }
 
-  return _containerTraversalOptions.size() == 1 and (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 1) and
-         _dataLayoutOptions.size() == 1 and _newton3Options.size() == 1;
+  return _containerTraversalEstimatorOptions.size() == 1 and
+         (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 1) and _dataLayoutOptions.size() == 1 and
+         _newton3Options.size() == 1;
 }
 
 bool BayesianClusterSearch::searchSpaceIsEmpty() const {
   // if one enum is empty return true
-  return _containerTraversalOptions.empty() or (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or
-         _dataLayoutOptions.empty() or _newton3Options.empty();
+  return _containerTraversalEstimatorOptions.empty() or
+         (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or _dataLayoutOptions.empty() or
+         _newton3Options.empty();
 }
 
 void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
   _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option),
                         _newton3Options.end());
+  _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
 
   _gaussianCluster.setDimension(discreteNewtonDim, _newton3Options.size());
   _currentAcquisitions.clear();
