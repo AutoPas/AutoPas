@@ -60,6 +60,8 @@ xAxisTitle = "empty"
 xAxis = []
 meanXaxis = []
 meanYaxis = []
+valuesErrorPlus = []
+valuesErrorMinus = []
 
 
 if parameterArg == 'number':
@@ -167,17 +169,33 @@ def getContainerByTraversal(traversal):
 def calculateMeans(xAxis, yAxis):
     global meanYaxis
     global meanXaxis
+    global valuesErrorMinus
+    global valuesErrorPlus
     meanXaxis = []
     meanYaxis = []
+    valuesErrorMinus = []
+    valuesErrorPlus = []
+    counter = 0
     for x in xAxis:
         if meanXaxis.__contains__(x):
-            meanYaxis[meanXaxis.index(x)] += yAxis[xAxis.index(x)]
+            newIndex = meanXaxis.index(x)
+            oldIndex = counter
+            meanYaxis[newIndex] += yAxis[oldIndex]
+            if valuesErrorMinus[newIndex] > yAxis[oldIndex]:
+                valuesErrorMinus[newIndex] = yAxis[oldIndex]
+            if valuesErrorPlus[newIndex] < yAxis[oldIndex]:
+                valuesErrorPlus[newIndex] = yAxis[oldIndex]
+            counter += 1
         else:
+            # append x in x-axis and y ind y-axis as well as for the highest and lowest y value so far
             meanXaxis.append(x)
             meanYaxis.append(yAxis[xAxis.index(x)])
+            valuesErrorMinus.append(yAxis[xAxis.index(x)])
+            valuesErrorPlus.append(yAxis[xAxis.index(x)])
+            counter += 1
     divisor = len(yAxis) / len(meanYaxis)
-
-    yAxis.sort()
+    valuesErrorMinus.sort()
+    valuesErrorPlus.sort()
     meanYaxis.sort()
     meanYaxis = [y / divisor for y in meanYaxis]
     meanXaxis.sort()
@@ -209,11 +227,19 @@ for t in allTraversals:
     elif density:
         xAxis = densityPerTraversal[allTraversals.index(t)]
     calculateMeans(xAxis, timePerTravsersal[allTraversals.index(t)])
+    upperErrorBound = [x1 - x2 for (x1, x2) in zip(valuesErrorPlus, meanYaxis)]
+    lowerErrorBound = [x1 - x2 for (x1, x2) in zip(meanYaxis, valuesErrorMinus)]
     fig.add_trace(go.Scatter(
         name=t,
         x=meanXaxis,
         y=meanYaxis,
         mode="lines+markers",
+        error_y=dict(
+            type='data',
+            symmetric=False,
+            array=upperErrorBound,
+            arrayminus=lowerErrorBound,
+        ),
         hovertext=t,
         marker=dict(
             color=allTraversals.index(t),
