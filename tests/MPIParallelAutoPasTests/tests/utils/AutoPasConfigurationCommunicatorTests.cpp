@@ -51,11 +51,6 @@ TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCel
   EXPECT_GE(containerOptions.size() * cellSizeFactors.size() * traversalOptions.size() * dataLayoutOptions.size()
             * newton3Options.size(), 48/commSize);
 
-  distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, dataLayoutOptions, newton3Options,
-                           MPI_COMM_SELF);
-
-  EXPECT_FALSE(containerOptions.empty() or cellSizeFactors.isEmpty() or traversalOptions.empty() or
-               dataLayoutOptions.empty() or newton3Options.empty());
 }
 
 TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfiniteCellSizeFactors) {
@@ -78,4 +73,24 @@ TEST(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfiniteC
   EXPECT_LE(cellSizeFactors.getMin(), 0.8 + (0.4 / commSize) * rank + error);
   EXPECT_GE(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1) - error);
   EXPECT_LE(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1) + error);
+}
+
+TEST(AutoPasConfigurationCommunicator, testDistributeConfigurationsOneRank) {
+  std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists, ContainerOption::linkedCells};
+  NumberSetFinite<double> cellSizeFactors{0.9, 1.0, 1.1};
+  std::set<TraversalOption> traversalOptions{TraversalOption::verletClusters, TraversalOption::sliced};
+  std::set<DataLayoutOption> dataLayoutOptions{DataLayoutOption::aos, DataLayoutOption::soa};
+  std::set<Newton3Option> newton3Options{Newton3Option::enabled, Newton3Option::disabled};
+  
+  // approximate the number of valid configurations from options
+  int numLocalConfigs = containerOptions.size() * cellSizeFactors.size() * traversalOptions.size() *
+                        dataLayoutOptions.size() * newton3Options.size();
+  distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, dataLayoutOptions, newton3Options,
+                           MPI_COMM_SELF);
+
+  EXPECT_EQ(numLocalConfigs,
+            containerOptions.size() * cellSizeFactors.size() * traversalOptions.size() * dataLayoutOptions.size()
+            * newton3Options.size());
+  EXPECT_FALSE(containerOptions.empty() or cellSizeFactors.isEmpty() or traversalOptions.empty() or
+               dataLayoutOptions.empty() or newton3Options.empty());
 }

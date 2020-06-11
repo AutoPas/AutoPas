@@ -56,11 +56,11 @@ struct IteratorHandler {
   IteratorHandler(std::set<ContainerOption> &containerOptions, std::set<double> &cellSizeFactors,
                   std::set<TraversalOption> &traversalOptions, std::set<DataLayoutOption> &dataLayoutOptions,
                   std::set<Newton3Option> &newton3Options, const int numConfigs, const int commSize)
-      : _containerOptions(&containerOptions),
-        _cellSizeFactors(&cellSizeFactors),
-        _allowedTraversalOptions(&traversalOptions),
-        _dataLayoutOptions(&dataLayoutOptions),
-        _newton3Options(&newton3Options),
+      : _containerOptions(containerOptions),
+        _cellSizeFactors(cellSizeFactors),
+        _allowedTraversalOptions(traversalOptions),
+        _dataLayoutOptions(dataLayoutOptions),
+        _newton3Options(newton3Options),
         _containerIt(containerOptions.begin()),
         _cellSizeFactorIt(cellSizeFactors.begin()),
         _dataLayoutIt(dataLayoutOptions.begin()),
@@ -162,11 +162,11 @@ struct IteratorHandler {
    */
   inline void advanceConfigIterators();
 
-  const std::set<ContainerOption> * const _containerOptions;
-  const std::set<double> * const _cellSizeFactors;
-  const std::set<TraversalOption> * const _allowedTraversalOptions;
-  const std::set<DataLayoutOption> * const _dataLayoutOptions;
-  const std::set<Newton3Option> * const _newton3Options;
+  const std::set<ContainerOption> &_containerOptions;
+  const std::set<double> &_cellSizeFactors;
+  const std::set<TraversalOption> &_allowedTraversalOptions;
+  const std::set<DataLayoutOption> &_dataLayoutOptions;
+  const std::set<Newton3Option> &_newton3Options;
   std::set<TraversalOption> _allowedAndApplicableTraversalOptions;
   std::set<ContainerOption>::iterator _containerIt;
   std::set<double>::iterator _cellSizeFactorIt;
