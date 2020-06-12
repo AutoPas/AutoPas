@@ -65,6 +65,7 @@ void AutoPasConfigurationCommunicator::IteratorHandler::selectTraversalsForCurre
   // get all traversals of the container and restrict them to the allowed ones
   const std::set<TraversalOption> &allContainerTraversals =
       compatibleTraversals::allCompatibleTraversals(*_containerIt);
+  _allowedAndApplicableTraversalOptions.clear();
   std::set_intersection(_allowedTraversalOptions.begin(), _allowedTraversalOptions.end(),
                         allContainerTraversals.begin(), allContainerTraversals.end(),
                         std::inserter(_allowedAndApplicableTraversalOptions,
@@ -72,19 +73,11 @@ void AutoPasConfigurationCommunicator::IteratorHandler::selectTraversalsForCurre
   _traversalIt = _allowedAndApplicableTraversalOptions.begin();
 }
 
-/**
- * Calculates the maximum number of valid configs from several sets of options.
- * This does not equal the cartesian product as not all containers are compatible with all traversals.
- * @param containerOptions
- * @param cellSizeFactors The size of cellSizeFactors will only be taken into account if the NumberSet is finite
- * @param traversalOptions
- * @param dataLayoutOptions
- * @param newton3Options
- * @return
- */
-size_t getSearchSpaceSize(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
-                          std::set<TraversalOption> &traversalOptions, std::set<DataLayoutOption> &dataLayoutOptions,
-                          std::set<Newton3Option> &newton3Options) {
+size_t AutoPasConfigurationCommunicator::getSearchSpaceSize(std::set<ContainerOption> &containerOptions,
+                                                            NumberSet<double> &cellSizeFactors,
+                                                            std::set<TraversalOption> &traversalOptions,
+                                                            std::set<DataLayoutOption> &dataLayoutOptions,
+                                                            std::set<Newton3Option> &newton3Options) {
   size_t numConfigs = 0;
   // only take into account finite sets of cellSizeFactors
   size_t cellSizeFactorArraySize;
@@ -191,11 +184,7 @@ void AutoPasConfigurationCommunicator::distributeConfigurations(std::set<Contain
                                                                 std::set<TraversalOption> &traversalOptions,
                                                                 std::set<DataLayoutOption> &dataLayoutOptions,
                                                                 std::set<Newton3Option> &newton3Options,
-                                                                AutoPas_MPI_Comm comm) {
-  int rank, commSize;
-  AutoPas_MPI_Comm_rank(comm, &rank);
-  AutoPas_MPI_Comm_size(comm, &commSize);
-
+                                                                const int rank, const int commSize) {
   int numConfigs =
       getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, dataLayoutOptions, newton3Options);
 
@@ -210,9 +199,9 @@ void AutoPasConfigurationCommunicator::distributeConfigurations(std::set<Contain
                        dataLayoutOptions, newton3Options);
 
   size_t cellSizeFactorsSize = cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1;
-  //AutoPasLog(debug, "After distributing {} containers, {} cellSizeFactors, {} traversals, {} dataLayouts, {} newton3s",
-  //           containerOptions.size(), cellSizeFactorsSize, traversalOptions.size(),
-  //           dataLayoutOptions.size(), newton3Options.size());
+  AutoPasLog(debug, "After distributing {} containers, {} cellSizeFactors, {} traversals, {} dataLayouts, {} newton3s",
+             containerOptions.size(), cellSizeFactorsSize, traversalOptions.size(),
+             dataLayoutOptions.size(), newton3Options.size());
 }
 
 Configuration AutoPasConfigurationCommunicator::optimizeConfiguration(AutoPas_MPI_Comm comm,
@@ -233,10 +222,11 @@ Configuration AutoPasConfigurationCommunicator::optimizeConfiguration(AutoPas_MP
   }
   AutoPas_MPI_Allreduce(&optimalRankIn, &optimalRankOut, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_MIN, comm);
 
-  AutoPas_MPI_Bcast(&serializedConfiguration, sizeof(serializedConfiguration), AUTOPAS_MPI_BYTE, optimalRankOut, comm);
+  AutoPas_MPI_Bcast(serializedConfiguration.data(), serializedConfiguration.size(), AUTOPAS_MPI_BYTE,
+                    optimalRankOut, comm);
 
   Configuration deserializedConfig = deserializeConfiguration(serializedConfiguration);
-  //AutoPasLog(debug, "Globally best configuration: {}", deserializedConfig.toString());
+  AutoPasLog(debug, "Globally best configuration: {}", deserializedConfig.toString());
 
   return deserializedConfig;
 }

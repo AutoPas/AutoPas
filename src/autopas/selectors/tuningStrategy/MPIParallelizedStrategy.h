@@ -9,6 +9,7 @@
 #include "TuningStrategyInterface.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/AutoPasConfigurationCommunicator.h"
 
 namespace autopas {
 
@@ -26,15 +27,34 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * @param comm The communicator holding all ranks which participate in this tuning strategy
    */
   MPIParallelizedStrategy(std::unique_ptr<TuningStrategyInterface> tuningStrategy, const AutoPas_MPI_Comm comm)
-      : _tuningStrategy(std::move(tuningStrategy)), _comm(comm) {}
+      : _tuningStrategy(std::move(tuningStrategy)),
+        _comm(comm) {}
 
-  void addEvidence(long time, size_t iteration) override { _tuningStrategy->addEvidence(time, iteration); }
+  void addEvidence(long time, size_t iteration) override {
+    if (time < _localOptimalTime || _localOptimalTime == -1) {
+      _localOptimalTime = time;
+    }
+    _tuningStrategy->addEvidence(time, iteration);
+  }
 
-  const Configuration &getCurrentConfiguration() const override { return _tuningStrategy->getCurrentConfiguration(); }
+  const Configuration &getCurrentConfiguration() const override {
+    // cellSizeFactor == -1 iff a config is invalid
+    if (_optimalConfiguration.cellSizeFactor == -1) {
+      return _tuningStrategy->getCurrentConfiguration();
+    } else {
+      return _optimalConfiguration;
+    }
+  }
 
-  bool tune(bool currentInvalid) override { return _tuningStrategy->tune(currentInvalid); }
+  bool tune(bool currentInvalid) override;
 
-  void reset(size_t iteration) override { _tuningStrategy->reset(iteration); }
+  void reset(size_t iteration) override {
+    _tuningStrategy->reset(iteration);
+    _optimalConfiguration = Configuration();
+    _allGlobalConfigurationsTested = false;
+    _allLocalConfigurationsTested = false;
+    _localOptimalTime = -1;
+  }
 
   std::set<ContainerOption> getAllowedContainerOptions() const override {
     return _tuningStrategy->getAllowedContainerOptions();
@@ -58,10 +78,41 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    */
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
 
-  /**
-   * The mpi communicator holding all ranks that participate in this tuning strategy
-   */
   AutoPas_MPI_Comm _comm;
+  AutoPas_MPI_Request _request{AUTOPAS_MPI_REQUEST_NULL};
+
+  /**
+   * The globally optimal configuration.
+   * Usually holds a value that is not in a given rank's search space
+   */
+   Configuration _optimalConfiguration{Configuration()};
+
+   bool _allLocalConfigurationsTested{false};
+   bool _allGlobalConfigurationsTested{false};
+
+   long _localOptimalTime{-1};
 };
+
+bool MPIParallelizedStrategy::tune(bool currentInvalid) {
+  if (not _allLocalConfigurationsTested) {
+    _allLocalConfigurationsTested = not _tuningStrategy->tune(currentInvalid);
+  }
+
+  // Wait for the Iallreduce from the last tuning step to finish
+  // Make all ranks ready for global tuning simultaneously
+  AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
+  if (_allGlobalConfigurationsTested) {
+    _optimalConfiguration = AutoPasConfigurationCommunicator::optimizeConfiguration(
+        _comm, _tuningStrategy->getCurrentConfiguration(), _localOptimalTime);
+
+    return false;
+  }
+
+  AutoPas_MPI_Iallreduce(&_allLocalConfigurationsTested, &_allGlobalConfigurationsTested, 1, AUTOPAS_MPI_CXX_BOOL,
+                         AUTOPAS_MPI_LAND, _comm, &_request);
+
+  return true;
+}
+
 
 }  // namespace autopas

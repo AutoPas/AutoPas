@@ -28,9 +28,12 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     case MPIStrategyOption::divideAndConquer: {
+      int rank, commSize;
+      AutoPas_MPI_Comm_rank(comm, &rank);
+      AutoPas_MPI_Comm_size(comm, &commSize);
       AutoPasConfigurationCommunicator::distributeConfigurations(allowedContainers, allowedCellSizeFactors,
                                                                  allowedTraversals, allowedDataLayouts,
-                                                                 allowedNewton3Options, comm);
+                                                                 allowedNewton3Options, rank, commSize);
       break;
     }
   }
