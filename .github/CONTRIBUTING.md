@@ -139,7 +139,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Add new unit tests for your strategy.
 
 ### Adding a new Option
-* If applicable add a new setter to `src/autopas/AutoPas.h`.
+* If applicable add a new setter to `src/autopas/AutoPas.h` (this is required for tunable options).
 * Check that the new option is added to the md-flexible example. Parser and main.
 * Global options, which are represented by an enum, should be defined in an additional file in `src/autopas/options`.
 * Inherit from `src/autopas/options/Option.h`. This will also generate functions for conversion from and to strings.
@@ -148,3 +148,18 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * The option needs to be added in `examples/md-flexible/src/parsing/MDFlexConfig.h`.
   * Parsing for it in `examples/md-flexible/src/parsing/CLIParser.cpp` and `YamlParser.cpp`
   * Make sure that the description is parsable by `CLIParser::createZSHCompletionFile()`
+
+### Making an Option tunable
+* If not already done, add a new setter to `src/autopas/AutoPas.h`.
+* Initiate the set of allowed options to all options in the constructor of AutoPas.
+* Add your option to `src/autopas/selectors/Configuration.h` and adjust constructors, comparison operators and ConfigHash function accordingly.
+* Add a parameter for your option to `TuningStrategyFactory::generateTuningStrategy` and pass it to the constructors for each tuning strategy.
+* Adjust the individual tuning strategies accordingly; the exact implementation will depend on the purpose of your option, but some general advice is:
+  * `FullSearch` and `PredictiveTuning` inherit from `SetSearchSpaceBasedTuningStrategy`, adjust the constructor for this class and the method `populateSearchSpace()`.
+  * For `ActiveHarmony` your option will also have to be integrated into `FeatureVector`.
+  * Make sure to declare your option by calling `configureTuningParameter()` in `ActiveHarmony::resetHarmony()`.
+* Adjust any tests that are affected by these changes. The following tests will definately require changes:
+  * `tests/testAutopas/tests/autopasInterface/AutoPasInterfaceTest.{h,cpp}`
+  * `tests/testAutopas/tests/selectors/AutoTunerTest.cpp`
+  * `tests/testAutopas/tests/selectors/FeatureVectorTest.cpp`
+  * Tests for the individual tuning strategies. See files in `tests/testAutopas/tests/selectors/tuningStrategy/`.
