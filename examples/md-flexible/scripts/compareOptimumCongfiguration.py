@@ -25,12 +25,12 @@ for arg in sys.argv[1:]:
 # take all input files as source for a plot
 if len(sys.argv) > 2:
     try:
-            relativeDifference = float(sys.argv[1])
-            if len(sys.argv) > 3:
-                datafiles = sys.argv[2:]
-            else:
-                print("Error: No or wrong input given! ./compareOptimumConfiguration.py --help to see what is needed.")
-                sys.exit(-1)
+        relativeDifference = float(sys.argv[1])
+        if len(sys.argv) > 3:
+            datafiles = sys.argv[2:]
+        else:
+            print("Error: No or wrong input given! ./compareOptimumConfiguration.py --help to see what is needed.")
+            sys.exit(-1)
     except ValueError:
         relativeDifference = 0
         datafiles = sys.argv[1:]
@@ -77,7 +77,7 @@ j = 1
 for fileToCompare in comparisonFiles:
     # test if the file contains information that can be compared
     if len(fileToCompare) == 0:
-        print(datafiles[0] + " vs " + datafiles[j] + ":\n" + datafiles[j] + 
+        print(datafiles[0] + " vs " + datafiles[j] + ":\n" + datafiles[j] +
               "does not contain any information that can be compared!")
         continue
 
@@ -106,5 +106,5 @@ for fileToCompare in comparisonFiles:
     if relativeDifference != 0:
         print("Selected configuration that is within " + str(relativeDifference * 100) + "% of the reference: " + str(
             countSameTimeSelected) + "/" + str(loopInt) + " = " + str(double(countSameTimeSelected / loopInt * 100)) +
-            "%")
+              "%")
     j += 1

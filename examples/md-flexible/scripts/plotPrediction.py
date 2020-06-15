@@ -95,8 +95,8 @@ for datafile in datafiles:
             allIteration = []
             for iteration, test in configurationTest[configuration]:
                 allIteration.append(iteration)
-                allPrediction.append(test)
+                allTest.append(test)
 
-            fig.add_trace(go.Scatter(x=allIteration, y=allPrediction, mode='markers', name=configuration))
+            fig.add_trace(go.Scatter(x=allIteration, y=allTest, mode='markers', name=configuration))
 
     fig.show()

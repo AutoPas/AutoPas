@@ -134,6 +134,6 @@ for datafile in datafiles:
                 allIterationRelative.append(iteration)
                 allDiffRelative.append(diff)
 
-            fig.add_trace(go.Scatter(x=allIterationRelative, y=allDiffRelative, mode='markers', name=configuration))
+            fig.add_trace(go.Scatter(x=allIterationRelative, y=allDiffRelative, mode='lines+markers', name=configuration))
 
     fig.show()
