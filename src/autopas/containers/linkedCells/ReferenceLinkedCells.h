@@ -124,7 +124,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwise. TraversalID: {}",
+          "Trying to use a traversal of wrong type in ReferenceLinkedCells::iteratePairwise. TraversalID: {}",
           traversal->getTraversalType());
     }
 
