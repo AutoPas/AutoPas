@@ -37,13 +37,13 @@ class TraversalVerlet
    */
   explicit TraversalVerlet(PairwiseFunctor *pairwiseFunctor) : _functor(pairwiseFunctor) {}
 
-  TraversalOption getTraversalType() const override { return TraversalOption::verletTraversal; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::verletTraversal; }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     return dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa;
   }
 

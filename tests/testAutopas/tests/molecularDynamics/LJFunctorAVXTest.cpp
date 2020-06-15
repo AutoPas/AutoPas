@@ -56,6 +56,12 @@ bool LJFunctorAVXTest::particleEqual(Particle &p1, Particle &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
   double tolerance = 1e-8;
+
+  /*
+std::cout << "comparing:" << std::endl
+            << "P1: " << p1.toString() << std::endl
+            << "P2: " << p2.toString() << std::endl;
+*/
   EXPECT_NEAR(p1.getR()[0], p2.getR()[0], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[1], p2.getR()[1], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[2], p2.getR()[2], tolerance) << "for particle pair " << p1.getID();
@@ -119,8 +125,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   ASSERT_TRUE(SoAParticlesEqual(cell2AVX._particleSoABuffer, cell2NoAVX._particleSoABuffer))
       << "Cells 2 not equal after loading.";
 
-  ljFunctorNoAVX.SoAFunctorPair(cell1NoAVX._particleSoABuffer, cell2NoAVX._particleSoABuffer, newton3, true);
-  ljFunctorAVX.SoAFunctorPair(cell1AVX._particleSoABuffer, cell2AVX._particleSoABuffer, newton3, true);
+  ljFunctorNoAVX.SoAFunctorPair(cell1NoAVX._particleSoABuffer, cell2NoAVX._particleSoABuffer, newton3);
+  ljFunctorAVX.SoAFunctorPair(cell1AVX._particleSoABuffer, cell2AVX._particleSoABuffer, newton3);
 
   ASSERT_TRUE(SoAParticlesEqual(cell1AVX._particleSoABuffer, cell1NoAVX._particleSoABuffer))
       << "Cells 1 not equal after applying functor.";
@@ -172,8 +178,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellNoAVX._particleSoABuffer))
       << "Cells not equal after loading.";
 
-  ljFunctorNoAVX.SoAFunctorSingle(cellNoAVX._particleSoABuffer, newton3, true);
-  ljFunctorAVX.SoAFunctorSingle(cellAVX._particleSoABuffer, newton3, true);
+  ljFunctorNoAVX.SoAFunctorSingle(cellNoAVX._particleSoABuffer, newton3);
+  ljFunctorAVX.SoAFunctorSingle(cellAVX._particleSoABuffer, newton3);
 
   ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellNoAVX._particleSoABuffer))
       << "Cells not equal after applying functor.";

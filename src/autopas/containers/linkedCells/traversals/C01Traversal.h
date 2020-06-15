@@ -109,9 +109,9 @@ class C01Traversal
 
   void traverseParticlePairs() override;
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   /**
    * C01 traversals are only usable if useNewton3 is disabled and combined SoA buffers are only applicable if SoA is set
@@ -122,12 +122,12 @@ class C01Traversal
    *
    * @return
    */
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     return not(dataLayout == DataLayoutOption::cuda) and not useNewton3 and
            not(combineSoA && dataLayout != DataLayoutOption::soa);
   }
 
-  TraversalOption getTraversalType() const override {
+  [[nodiscard]] TraversalOption getTraversalType() const override {
     return (combineSoA) ? TraversalOption::c01CombinedSoA : TraversalOption::c01;
   }
 
@@ -303,8 +303,7 @@ inline void C01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, 
         auto startIndex = baseCell.numParticles();
         auto endIndex = combinationSlice[slice]._particleSoABuffer.getNumParticles();
         _pairwiseFunctor->SoAFunctorPair(baseCell._particleSoABuffer,
-                                         {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false,
-                                         true);
+                                         {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
         // compute base cell
         this->_cellFunctor.processCell(baseCell);
       } else {

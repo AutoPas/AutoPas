@@ -146,10 +146,8 @@ class Functor {
    *
    * @param soa Structure of arrays
    * @param newton3 defines whether or whether not to use newton 3
-   * @param cellWiseOwnedState defines whether it is safe to assume that an entire cell has the same owned state. This
-   * information can be used for optimizing functors, but can also be ignored.
    */
-  virtual void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState) {
+  virtual void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctorSingle: not yet implemented");
   }
 
@@ -181,11 +179,8 @@ class Functor {
    * @param soa1 First structure of arrays.
    * @param soa2 Second structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
-   * @param cellWiseOwnedState defines whether it is safe to assume that an entire cell has the same owned state. This
-   * information can be used for optimizing functors, but can also be ignored.
    */
-  virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3,
-                              bool cellWiseOwnedState) {
+  virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctorPair: not yet implemented");
   }
 
@@ -246,7 +241,7 @@ class Functor {
    * @param offset Offset within the SoA. The data of the cell should be added
    * to the SoA with the specified offset.
    */
-  virtual void SoALoader(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
+  virtual void SoALoader(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) {
     SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Impl_t::getNeededAttr().size()>{});
   }
 
@@ -258,7 +253,7 @@ class Functor {
    * @param offset Offset within the SoA. The data of the soa should be
    * extracted starting at offset.
    */
-  virtual void SoAExtractor(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset = 0) {
+  virtual void SoAExtractor(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) {
     SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Impl_t::getComputedAttr().size()>{});
   }
 

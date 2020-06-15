@@ -69,6 +69,9 @@ class VerletListHelpers {
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
+      if (i.isDummy() or j.isDummy()) {
+        return;
+      }
       auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
 
       double distsquare = utils::ArrayMath::dot(dist, dist);
@@ -89,7 +92,7 @@ class VerletListHelpers {
      * @param soa the soa
      * @param newton3 whether to use newton 3
      */
-    void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool /*cellWiseOwnedstate*/) override {
+    void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
       if (soa.getNumParticles() == 0) return;
 
       auto **const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
@@ -128,10 +131,8 @@ class VerletListHelpers {
      * @param soa1 soa of first cell
      * @param soa2 soa of second cell
      * @note newton3 is ignored here, as for newton3=false SoAFunctorPair(soa2, soa1) will also be called.
-     * @note cellWiseOwnedState is ignored.
      */
-    void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/,
-                        bool /*cellWiseOwnedState*/) override {
+    void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
       auto **const __restrict__ ptr1ptr = soa1.template begin<AttributeNames::ptr>();
@@ -175,9 +176,9 @@ class VerletListHelpers {
      * @param soa
      * @param offset
      */
-    void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
+    void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset) override {
       if (offset > 0) {
-        utils::ExceptionHandler::exception("VerletListGeneratorFunctor: requires offset > 0");
+        utils::ExceptionHandler::exception("VerletListGeneratorFunctor: requires offset == 0");
       }
       soa.resizeArrays(cell.numParticles());
 
@@ -198,6 +199,13 @@ class VerletListHelpers {
         zptr[i] = cellIter->getR()[2];
       }
     }
+
+    /**
+     * Does nothing
+     * @param cell
+     * @param soa
+     */
+    void SoAExtractor(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t /*offset*/) override {}
 
     /**
      * @copydoc Functor::getNeededAttr()

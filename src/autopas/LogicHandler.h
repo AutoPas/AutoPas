@@ -35,8 +35,7 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    * @param forced specifies whether an update of the container is enforced.
    */
-  AUTOPAS_WARN_UNUSED_RESULT
-  std::pair<std::vector<Particle>, bool> updateContainer(bool forced) {
+  [[nodiscard]] std::pair<std::vector<Particle>, bool> updateContainer(bool forced) {
     if (not isContainerValid() or forced) {
       AutoPasLog(debug, "Initiating container update.");
       _containerIsValid = false;
@@ -137,7 +136,7 @@ class LogicHandler {
     } else {
       _numParticlesHalo.fetch_sub(1, std::memory_order_relaxed);
     }
-    internal::deleteParticle(iter);
+    iter->markAsDeleted();
   }
 
   /**
@@ -198,13 +197,13 @@ class LogicHandler {
    * Get the number of owned particles.
    * @return
    */
-  unsigned long getNumParticlesOwned() const { return _numParticlesOwned; }
+  [[nodiscard]] unsigned long getNumParticlesOwned() const { return _numParticlesOwned; }
 
   /**
    * Get the number of halo particles.
    * @return
    */
-  unsigned long getNumParticlesHalo() const { return _numParticlesHalo; }
+  [[nodiscard]] unsigned long getNumParticlesHalo() const { return _numParticlesHalo; }
 
  private:
   void checkMinimalSize() {

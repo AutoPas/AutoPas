@@ -25,11 +25,31 @@ pipeline{
                         stash includes: 'build-doxygen/doc_doxygen/html/**', name: 'doxydocs'
 
                         // get doxygen warnings
-                        recordIssues filters: [excludeFile('.*README.*')], tools: [doxygen(pattern: 'build-doxygen/DoxygenWarningLog.txt')], failedTotalAll: 1
+                        recordIssues filters: [excludeFile('.*README.*')], tools: [doxygen(id: 'docAutoPas', pattern: 'build-doxygen/DoxygenWarningLog.txt')], failedTotalAll: 1
                     }
                     post {
                         failure {
                             error "warnings in doxygen documentation"
+                        }
+                    }
+                }
+                stage("build md-flexible documentation") {
+                    steps {
+                        container('autopas-cmake-doxygen-make') {
+                            dir("build-doxygen-md-flexible") {
+                                sh 'entrypoint.sh ccache -s'
+                                sh 'cmake ..'
+                                sh 'make doc_doxygen_md-flexible 2>DoxygenWarningLog.txt'
+                            }
+                        }
+                        stash includes: 'build-doxygen-md-flexible/doc_doxygen_md-flexible/html/**', name: 'doxydocs_md-flexible'
+
+                        // get doxygen warnings
+                        recordIssues filters: [excludeFile('.*README.*')], tools: [doxygen(id: 'docMdFlex', pattern: 'build-doxygen-md-flexible/DoxygenWarningLog.txt')], failedTotalAll: 1
+                    }
+                    post {
+                        failure {
+                            error "warnings in doxygen documentation for md-flexible"
                         }
                     }
                 }
@@ -239,14 +259,14 @@ pipeline{
                 }
                 stage("archer") {
                     steps{
-                        container('autopas-archer'){
+                        container('autopas-llvm-archer'){
                             dir("build-archer"){
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang-archer CXX=clang-archer++ cmake -G Ninja -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_USE_VECTORIZATION=OFF .."
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON -DAUTOPAS_OPENMP=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_USE_VECTORIZATION=OFF .."
                                 sh "entrypoint.sh ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
-                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest --verbose'
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest --verbose'
                             }
                             dir("build-archer/examples"){
-                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && export ARCHER_OPTIONS="print_ompt_counters=1" && ctest -C checkExamples -j8 --verbose'
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest -C checkExamples -j8 --verbose'
                             }
                         }
                     }
@@ -311,6 +331,18 @@ pipeline{
                     sh 'touch /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
                     sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
                     sh 'cp -r doc_doxygen/html /import/www/wwwsccs/html/AutoPas/doxygen_doc/master'
+                }
+            }
+        }
+        stage("publish md-flexible documentation"){
+            when{ branch 'master' }
+            agent{ label 'www_access' }
+            steps{
+                unstash 'doxydocs_md-flexible'
+                dir("build-doxygen-md-flexible"){
+                    sh 'touch /import/www/wwwsccs/html/AutoPas/doc_doxygen_md-flexible/master || echo 0'
+                    sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doc_doxygen_md-flexible/master || echo 0'
+                    sh 'cp -r doc_doxygen_md-flexible/html /import/www/wwwsccs/html/AutoPas/doc_doxygen_md-flexible/master'
                 }
             }
         }

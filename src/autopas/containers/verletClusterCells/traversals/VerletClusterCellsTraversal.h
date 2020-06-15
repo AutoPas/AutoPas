@@ -46,9 +46,9 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         _neighborMatrixDim(nullptr),
         _clusterSize(clusterSize) {}
 
-  TraversalOption getTraversalType() const override { return TraversalOption::verletClusterCells; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::verletClusterCells; }
 
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     if (dataLayout == DataLayoutOption::cuda) {
       int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
@@ -61,9 +61,9 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
     }
   }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
   std::tuple<TraversalOption, DataLayoutOption, bool> getSignature() override {
     return std::make_tuple(TraversalOption::verletClusterCells, dataLayout, useNewton3);
@@ -197,7 +197,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
       }
       case DataLayoutOption::soa: {
         for (size_t i = 0; i < (*this->_cells).size(); ++i) {
-          _functor->SoALoader((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer);
+          _functor->SoALoader((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer, 0);
         }
 
         return;
@@ -227,7 +227,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
 #pragma omp parallel for
 #endif
         for (size_t i = 0; i < (*this->_cells).size(); ++i) {
-          _functor->SoAExtractor((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer);
+          _functor->SoAExtractor((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer, 0);
         }
 
         return;
@@ -317,14 +317,12 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
           const size_t c2start = clusterSize * neighbor.second;
           SoAView cluster2(&(*cells)[neighbor.first]._particleSoABuffer, c2start, c2start + clusterSize);
 
-          // assumptions for owned state can probably not be made here, therefore false
-          _functor->SoAFunctorPair(cluster1, cluster2, useNewton3, false);
+          _functor->SoAFunctorPair(cluster1, cluster2, useNewton3);
         }
         // same cluster
         SoAView clusterSelf(&(*cells)[i]._particleSoABuffer, clusterId * clusterSize,
                             clusterId * clusterSize + clusterSize);
-        // assumptions for owned state can probably not be made here, therefore false
-        _functor->SoAFunctorSingle(clusterSelf, useNewton3, false);
+        _functor->SoAFunctorSingle(clusterSelf, useNewton3);
       }
     }
   }
@@ -361,7 +359,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
    * @param box2
    * @return distance
    */
-  inline double getMinDist(const std::array<double, 6> &box1, const std::array<double, 6> &box2) const {
+  [[nodiscard]] inline double getMinDist(const std::array<double, 6> &box1, const std::array<double, 6> &box2) const {
     double sqrDist = 0;
     for (int i = 0; i < 3; ++i) {
       if (box2[i + 3] < box1[i]) {

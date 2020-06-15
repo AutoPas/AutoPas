@@ -46,6 +46,9 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
    * @param newton3 defines whether or whether not to use newton 3
    */
   inline void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
+    if (i.isDummy() or j.isDummy()) {
+      return;
+    }
     const std::array<double, 3> dr = utils::ArrayMath::sub(j.getR(), i.getR());  // ep_j[j].pos - ep_i[i].pos;
     const double density =
         j.getMass() * SPHKernels::W(dr, i.getSmoothingLength());  // ep_j[j].mass * W(dr, ep_i[i].smth)
@@ -72,10 +75,10 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType>, bool, bool)
+   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType>, bool)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -116,10 +119,9 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
   }
 
   /**
-   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool, bool)
+   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool)
    */
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3,
-                      bool cellWiseOwnedState) override {
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     double *const __restrict__ xptr1 = soa1.template begin<Particle::AttributeNames::posX>();

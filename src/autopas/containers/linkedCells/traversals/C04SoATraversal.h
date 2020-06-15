@@ -44,11 +44,11 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
 
   void traverseParticlePairs() override;
 
-  TraversalOption getTraversalType() const override { return TraversalOption::c04SoA; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c04SoA; }
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   /**
    * c04SoA traversals are only usable with dataLayout SoA.
@@ -57,7 +57,7 @@ class C04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 
    * once this bug is fixed, reenable this traversal again for arbitrary `_overlap`s.
    * @return
    */
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     return dataLayout == DataLayoutOption::soa and
            (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1);
   }

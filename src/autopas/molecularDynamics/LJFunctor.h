@@ -12,6 +12,7 @@
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
@@ -30,6 +31,8 @@ namespace autopas {
 
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
+ * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
+ * scheme.
  * @tparam Particle The type of particle.
  * @tparam ParticleCell The type of particlecell.
  * @tparam applyShift Switch for the lj potential to be truncated shifted.
@@ -59,11 +62,9 @@ class LJFunctor
   /**
    * Internal, actual constructor.
    * @param cutoff
-   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
-   * simulation boundary. e.g. eightShell: false, fullShell: true.
    * @param dummy unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctor(double cutoff, bool duplicatedCalculation, void * /*dummy*/)
+  explicit LJFunctor(double cutoff, void * /*dummy*/)
       : Functor<
             Particle, ParticleCell, SoAArraysType,
             LJFunctor<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
@@ -72,7 +73,6 @@ class LJFunctor
         _upotSum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
-        _duplicatedCalculations{duplicatedCalculation},
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
@@ -87,11 +87,8 @@ class LJFunctor
    * @note Only to be used with mixing == false.
    *
    * @param cutoff
-   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
-   * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctor(double cutoff, bool duplicatedCalculation = true)
-      : LJFunctor(cutoff, duplicatedCalculation, nullptr) {
+  explicit LJFunctor(double cutoff) : LJFunctor(cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -102,12 +99,9 @@ class LJFunctor
    * properties like sigma, epsilon and shift.
    * @param cutoff
    * @param particlePropertiesLibrary
-   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
-   * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
-                     bool duplicatedCalculation = true)
-      : LJFunctor(cutoff, duplicatedCalculation, nullptr) {
+  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : LJFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -137,6 +131,9 @@ class LJFunctor
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    if (i.isDummy() or j.isDummy()) {
+      return;
+    }
     auto sigmasquare = _sigmasquare;
     auto epsilon24 = _epsilon24;
     auto shift6 = _shift6;
@@ -150,7 +147,9 @@ class LJFunctor
     auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
     double dr2 = utils::ArrayMath::dot(dr, dr);
 
-    if (dr2 > _cutoffsquare) return;
+    if (dr2 > _cutoffsquare) {
+      return;
+    }
 
     double invdr2 = 1. / dr2;
     double lj6 = sigmasquare * invdr2;
@@ -169,23 +168,17 @@ class LJFunctor
       double upot = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();
-      if (_duplicatedCalculations) {
-        // for non-newton3 the division is in the post-processing step.
-        if (newton3) {
-          upot *= 0.5;
-          virial = utils::ArrayMath::mulScalar(virial, (double)0.5);
-        }
-        if (i.isOwned()) {
-          _aosThreadData[threadnum].upotSum += upot;
-          _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
-        }
-        // for non-newton3 the second particle will be considered in a separate calculation
-        if (newton3 and j.isOwned()) {
-          _aosThreadData[threadnum].upotSum += upot;
-          _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
-        }
-      } else {
-        // for non-newton3 we divide by 2 only in the postprocess step!
+      // for non-newton3 the division is in the post-processing step.
+      if (newton3) {
+        upot *= 0.5;
+        virial = utils::ArrayMath::mulScalar(virial, (double)0.5);
+      }
+      if (i.isOwned()) {
+        _aosThreadData[threadnum].upotSum += upot;
+        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+      }
+      // for non-newton3 the second particle will be considered in a separate calculation
+      if (newton3 and j.isOwned()) {
         _aosThreadData[threadnum].upotSum += upot;
         _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
       }
@@ -193,17 +186,17 @@ class LJFunctor
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState)
+   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
    * This functor ignores will use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
+    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     SoAFloatPrecision *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
@@ -215,14 +208,6 @@ class LJFunctor
     SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmasquare = _sigmasquare;
     SoAFloatPrecision epsilon24 = _epsilon24;
-    const bool duplicatedCalculations = _duplicatedCalculations;
-    if (calculateGlobals and cellWiseOwnedState and duplicatedCalculations) {
-      bool isHaloCell = not ownedPtr[0];
-      // Checks if the cell is a halo cell, if it is, we skip it.
-      if (isHaloCell) {
-        return;
-      }
-    }
 
     SoAFloatPrecision upotSum = 0.;
     SoAFloatPrecision virialSumX = 0.;
@@ -230,12 +215,9 @@ class LJFunctor
     SoAFloatPrecision virialSumZ = 0.;
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
-      SoAFloatPrecision isOwnedI;
-      if (calculateGlobals and not cellWiseOwnedState and duplicatedCalculations) {
-        // save the owned state of particle i. This is only needed if we calculate globals (calculateGlobals), the owned
-        // state is not constant throughout the cell (not cellWiseOwnedState) and there are duplicated calculations
-        // (duplicatedCalculations)
-        isOwnedI = ownedPtr[i];
+      const auto ownedStateI = ownedStatePtr[i];
+      if (ownedStateI == OwnershipState::dummy) {
+        continue;
       }
 
       SoAFloatPrecision fxacc = 0.;
@@ -273,6 +255,9 @@ class LJFunctor
             shift6 = shift6s[j];
           }
         }
+
+        const auto ownedStateJ = ownedStatePtr[j];
+
         const SoAFloatPrecision drx = xptr[i] - xptr[j];
         const SoAFloatPrecision dry = yptr[i] - yptr[j];
         const SoAFloatPrecision drz = zptr[i] - zptr[j];
@@ -283,14 +268,16 @@ class LJFunctor
 
         const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-        const SoAFloatPrecision mask = (dr2 > cutoffsquare) ? 0. : 1.;
+        // ownedStateI is already checked.
+        const bool mask =
+            dr2 <= cutoffsquare and /*ownedStateI != OwnershipState::dummy and */ ownedStateJ != OwnershipState::dummy;
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmasquare * invdr2;
         const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
         const SoAFloatPrecision lj12 = lj6 * lj6;
         const SoAFloatPrecision lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
+        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
@@ -309,25 +296,16 @@ class LJFunctor
           const SoAFloatPrecision virialx = drx * fx;
           const SoAFloatPrecision virialy = dry * fy;
           const SoAFloatPrecision virialz = drz * fz;
-          const SoAFloatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
+          const SoAFloatPrecision upot = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
 
-          if (cellWiseOwnedState or not duplicatedCalculations) {
-            // these calculations are only safe if it is called for an owned cell of if no duplicated calculations are
-            // happening.
-            upotSum += upot;
-            virialSumX += virialx;
-            virialSumY += virialy;
-            virialSumZ += virialz;
-          } else {
-            // In this functor, all pairs are only traversed once (newton3-scheme!).
-            // In this case,
-            // The calculations are later divided by two!
-            double energyFactor = isOwnedI + ownedPtr[j];
-            upotSum += upot * energyFactor;
-            virialSumX += virialx * energyFactor;
-            virialSumY += virialy * energyFactor;
-            virialSumZ += virialz * energyFactor;
-          }
+          // In this functor, all pairs are only traversed once (newton3-scheme!).
+          // In this case, the calculations are later divided by two!
+          SoAFloatPrecision energyFactor =
+              (ownedStateI == OwnershipState::owned ? 1. : 0.) + (ownedStateJ == OwnershipState::owned ? 1. : 0.);
+          upotSum += upot * energyFactor;
+          virialSumX += virialx * energyFactor;
+          virialSumY += virialy * energyFactor;
+          virialSumZ += virialz * energyFactor;
         }
       }
 
@@ -340,10 +318,7 @@ class LJFunctor
       double factor = 1.;
       // we assume newton3 to be enabled in this functor call, thus we multiply by two if the value of newton3 is false,
       // since for newton3 disabled we divide by two later on.
-      factor *= newton3 ? 1. : 2.;
-      // In case we have a non-cell-wise owned state and duplicated_calculations is false, we have multiplied everything
-      // by two, so we divide it by 2 again.
-      factor *= (not cellWiseOwnedState and duplicatedCalculations) ? .5 : 1.;
+      factor *= newton3 ? .5 : 1.;
       _aosThreadData[threadnum].upotSum += upotSum * factor;
       _aosThreadData[threadnum].virialSum[0] += virialSumX * factor;
       _aosThreadData[threadnum].virialSum[1] += virialSumY * factor;
@@ -353,41 +328,24 @@ class LJFunctor
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3, bool cellWiseOwnedState)
+   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
   // clang-format on
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3,
-                      const bool cellWiseOwnedState) override {
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
     // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
     /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
-    utils::withStaticBool(newton3, [&](auto newton3) {
-      if (cellWiseOwnedState) {
-        if (_duplicatedCalculations) {
-          SoAFunctorPairImpl<newton3, true /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<newton3, true /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa1, soa2);
-        }
-      } else {
-        if (_duplicatedCalculations) {
-          SoAFunctorPairImpl<newton3, false /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<newton3, false /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa1, soa2);
-        }
-      }
-    });
+    utils::withStaticBool(newton3, [&](auto newton3) { SoAFunctorPairImpl<newton3>(soa1, soa2); });
   }
 
  private:
   /**
-   * Implementation function of SoAFunctorPair(soa1, soa2, newton3, cellWiseOwnedState)
+   * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
    *
    * @tparam newton3
-   * @tparam cellWiseOwnedState
-   * @tparam duplicatedCalculations
    * @param soa1
    * @param soa2
    */
-  template <bool newton3, bool cellWiseOwnedState, bool duplicatedCalculations>
+  template <bool newton3>
   void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
@@ -397,8 +355,8 @@ class LJFunctor
     const auto *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict__ ownedPtr1 = soa1.template begin<Particle::AttributeNames::owned>();
-    const auto *const __restrict__ ownedPtr2 = soa2.template begin<Particle::AttributeNames::owned>();
+    const auto *const __restrict__ ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict__ ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
 
     auto *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
@@ -409,19 +367,7 @@ class LJFunctor
     [[maybe_unused]] auto *const __restrict__ typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict__ typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
 
-    bool isHaloCell1 = false;
-    bool isHaloCell2 = false;
     // Checks whether the cells are halo cells.
-    if constexpr (calculateGlobals and cellWiseOwnedState) {
-      isHaloCell1 = ownedPtr1[0] ? false : true;
-      isHaloCell2 = ownedPtr2[0] ? false : true;
-
-      // This if is commented out because the AoS vs SoA test would fail otherwise. Even though it is physically
-      // correct!
-      /*if(_duplicatedCalculations and isHaloCell1 and isHaloCell2){
-        return;
-      }*/
-    }
     SoAFloatPrecision upotSum = 0.;
     SoAFloatPrecision virialSumX = 0.;
     SoAFloatPrecision virialSumY = 0.;
@@ -436,9 +382,9 @@ class LJFunctor
       SoAFloatPrecision fyacc = 0;
       SoAFloatPrecision fzacc = 0;
 
-      SoAFloatPrecision isOwnedI;
-      if constexpr (calculateGlobals and not cellWiseOwnedState and duplicatedCalculations) {
-        isOwnedI = ownedPtr1[i];
+      const auto ownedStateI = ownedStatePtr1[i];
+      if (ownedStateI == OwnershipState::dummy) {
+        continue;
       }
 
       // preload all sigma and epsilons for next vectorized region
@@ -473,6 +419,8 @@ class LJFunctor
           }
         }
 
+        const auto ownedStateJ = ownedStatePtr2[j];
+
         const SoAFloatPrecision drx = x1ptr[i] - x2ptr[j];
         const SoAFloatPrecision dry = y1ptr[i] - y2ptr[j];
         const SoAFloatPrecision drz = z1ptr[i] - z2ptr[j];
@@ -483,14 +431,16 @@ class LJFunctor
 
         const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-        const SoAFloatPrecision mask = (dr2 > cutoffsquare) ? 0. : 1.;
+        // ownedStateI is already checked.
+        const bool mask =
+            dr2 <= cutoffsquare and /*ownedStateI != OwnershipState::dummy and */ ownedStateJ != OwnershipState::dummy;
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmasquare * invdr2;
         const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
         const SoAFloatPrecision lj12 = lj6 * lj6;
         const SoAFloatPrecision lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2 * mask;
+        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 * mask : 0.;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
@@ -511,27 +461,17 @@ class LJFunctor
           SoAFloatPrecision virialz = drz * fz;
           SoAFloatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
 
-          if constexpr (cellWiseOwnedState or not duplicatedCalculations) {
-            upotSum += upot;
-            virialSumX += virialx;
-            virialSumY += virialy;
-            virialSumZ += virialz;
-          } else {
-            // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
-            // that we do not add the energy multiple times!
-            // Here, a cell-wise optimization is not possible, as cellWiseOwnedState is false.
-            double energyFactor = isOwnedI;
-            if constexpr (newton3) {
-              energyFactor += ownedPtr2[j];
-            }
-
-            // if newton3 is enabled, we multiply by 0.5 at the end of this function call when adding up the values to
-            // the threadData.
-            upotSum += upot * energyFactor;
-            virialSumX += virialx * energyFactor;
-            virialSumY += virialy * energyFactor;
-            virialSumZ += virialz * energyFactor;
+          SoAFloatPrecision energyFactor = (ownedStateI == OwnershipState::owned ? 1. : 0.);
+          if constexpr (newton3) {
+            energyFactor += (ownedStateJ == OwnershipState::owned ? 1. : 0.);
           }
+
+          // if newton3 is enabled, we multiply by 0.5 at the end of this function call when adding up the values to
+          // the threadData.
+          upotSum += upot * energyFactor;
+          virialSumX += virialx * energyFactor;
+          virialSumY += virialy * energyFactor;
+          virialSumZ += virialz * energyFactor;
         }
       }
       fx1ptr[i] += fxacc;
@@ -540,31 +480,14 @@ class LJFunctor
     }
     if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
-      if constexpr (cellWiseOwnedState or not duplicatedCalculations) {
-        SoAFloatPrecision energyfactor = 1.;
-        if constexpr (duplicatedCalculations) {
-          // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
-          // that we do not add the energy multiple times!
-          energyfactor = isHaloCell1 ? 0. : 1.;
-          if (newton3) {
-            energyfactor += isHaloCell2 ? 0. : 1.;
-            energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
-          }
-        }
-        _aosThreadData[threadnum].upotSum += upotSum * energyfactor;
-        _aosThreadData[threadnum].virialSum[0] += virialSumX * energyfactor;
-        _aosThreadData[threadnum].virialSum[1] += virialSumY * energyfactor;
-        _aosThreadData[threadnum].virialSum[2] += virialSumZ * energyfactor;
-      } else {
-        SoAFloatPrecision newton3Factor = 1.;
-        if constexpr (newton3) {
-          newton3Factor *= 0.5;  // we count the energies partly to one of the two cells!
-        }
-        _aosThreadData[threadnum].upotSum += upotSum * newton3Factor;
-        _aosThreadData[threadnum].virialSum[0] += virialSumX * newton3Factor;
-        _aosThreadData[threadnum].virialSum[1] += virialSumY * newton3Factor;
-        _aosThreadData[threadnum].virialSum[2] += virialSumZ * newton3Factor;
+      SoAFloatPrecision newton3Factor = 1.;
+      if constexpr (newton3) {
+        newton3Factor *= 0.5;  // we count the energies partly to one of the two cells!
       }
+      _aosThreadData[threadnum].upotSum += upotSum * newton3Factor;
+      _aosThreadData[threadnum].virialSum[0] += virialSumX * newton3Factor;
+      _aosThreadData[threadnum].virialSum[1] += virialSumY * newton3Factor;
+      _aosThreadData[threadnum].virialSum[2] += virialSumZ * newton3Factor;
     }
   }
 
@@ -580,17 +503,9 @@ class LJFunctor
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {
     if (newton3) {
-      if (_duplicatedCalculations) {
-        SoAFunctorImpl<true, true>(soa, indexFirst, neighborList);
-      } else {
-        SoAFunctorImpl<true, false>(soa, indexFirst, neighborList);
-      }
+      SoAFunctorImpl<true>(soa, indexFirst, neighborList);
     } else {
-      if (_duplicatedCalculations) {
-        SoAFunctorImpl<false, true>(soa, indexFirst, neighborList);
-      } else {
-        SoAFunctorImpl<false, false>(soa, indexFirst, neighborList);
-      }
+      SoAFunctorImpl<false>(soa, indexFirst, neighborList);
     }
   }
 
@@ -643,6 +558,7 @@ class LJFunctor
     _cudawrapper.loadConstants(&constants);
 #endif
   }
+
   /**
    * @brief Functor using Cuda on SoAs in device Memory
    *
@@ -691,7 +607,7 @@ class LJFunctor
           device_handle.template get<Particle::AttributeNames::forceX>().get(),
           device_handle.template get<Particle::AttributeNames::forceY>().get(),
           device_handle.template get<Particle::AttributeNames::forceZ>().get(),
-          device_handle.template get<Particle::AttributeNames::owned>().get(), _cudaGlobals.get());
+          device_handle.template get<Particle::AttributeNames::ownershipState>().get(), _cudaGlobals.get());
     } else {
       return std::make_unique<LJFunctorCudaSoA<SoAFloatPrecision>>(
           device_handle.template get<Particle::AttributeNames::posX>().size(),
@@ -768,7 +684,7 @@ class LJFunctor
     return std::array<typename Particle::AttributeNames, 9>{
         Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
   }
 
   /**
@@ -777,7 +693,7 @@ class LJFunctor
   constexpr static auto getNeededAttr(std::false_type) {
     return std::array<typename Particle::AttributeNames, 6>{
         Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::owned};
+        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
   }
 
   /**
@@ -904,7 +820,7 @@ class LJFunctor
   SoAFloatPrecision getSigmaSquare() const { return _sigmasquare; }
 
  private:
-  template <bool newton3, bool duplicatedCalculations>
+  template <bool newton3>
   void SoAFunctorImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
                       const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
     if (soa.getNumParticles() == 0) return;
@@ -919,7 +835,7 @@ class LJFunctor
     [[maybe_unused]] auto *const __restrict__ typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict__ typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
 
-    const auto *const __restrict__ ownedPtr = soa.template begin<Particle::AttributeNames::owned>();
+    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     const SoAFloatPrecision cutoffsquare = _cutoffsquare;
     SoAFloatPrecision shift6 = _shift6;
@@ -937,13 +853,10 @@ class LJFunctor
     const size_t neighborListSize = neighborList.size();
     const size_t *const __restrict__ neighborListPtr = neighborList.data();
 
-    // checks whether particle 1 is in the domain box, unused if _duplicatedCalculations is false!
-    SoAFloatPrecision inbox1Mul = 0.;
-    if (duplicatedCalculations) {  // only for duplicated calculations we need this value
-      inbox1Mul = ownedPtr[indexFirst];
-      if (newton3) {
-        inbox1Mul *= 0.5;
-      }
+    // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+    const auto ownedStateI = ownedStatePtr[indexFirst];
+    if (ownedStateI == OwnershipState::dummy) {
+      return;
     }
 
     // this is a magic number, that should correspond to at least
@@ -965,8 +878,8 @@ class LJFunctor
     // if the size of the verlet list is larger than the given size vecsize,
     // we will use a vectorized version.
     if (neighborListSize >= vecsize) {
-      alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr,
-          ownedArr;
+      alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
+      alignas(64) std::array<OwnershipState, vecsize> ownedStateArr;
       // broadcast of the position of particle i
       for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
         xtmp[tmpj] = xptr[indexFirst];
@@ -998,7 +911,7 @@ class LJFunctor
           xArr[tmpj] = xptr[neighborListPtr[joff + tmpj]];
           yArr[tmpj] = yptr[neighborListPtr[joff + tmpj]];
           zArr[tmpj] = zptr[neighborListPtr[joff + tmpj]];
-          ownedArr[tmpj] = ownedPtr[neighborListPtr[joff + tmpj]];
+          ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
         // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
@@ -1012,6 +925,8 @@ class LJFunctor
           }
           // const size_t j = currentList[jNeighIndex];
 
+          const auto ownedStateJ = ownedStateArr[j];
+
           const SoAFloatPrecision drx = xtmp[j] - xArr[j];
           const SoAFloatPrecision dry = ytmp[j] - yArr[j];
           const SoAFloatPrecision drz = ztmp[j] - zArr[j];
@@ -1022,14 +937,16 @@ class LJFunctor
 
           const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-          const SoAFloatPrecision mask = (dr2 <= cutoffsquare) ? 1. : 0.;
+          // ownedStateI is already checked.
+          const bool mask = dr2 <= cutoffsquare and
+                            /*ownedStateI != OwnershipState::dummy and */ ownedStateJ != OwnershipState::dummy;
 
-          const SoAFloatPrecision invdr2 = 1. / dr2 * mask;
+          const SoAFloatPrecision invdr2 = 1. / dr2;
           const SoAFloatPrecision lj2 = sigmasquare * invdr2;
           const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
           const SoAFloatPrecision lj12 = lj6 * lj6;
           const SoAFloatPrecision lj12m6 = lj12 - lj6;
-          const SoAFloatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+          const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
 
           const SoAFloatPrecision fx = drx * fac;
           const SoAFloatPrecision fy = dry * fac;
@@ -1047,23 +964,16 @@ class LJFunctor
             SoAFloatPrecision virialx = drx * fx;
             SoAFloatPrecision virialy = dry * fy;
             SoAFloatPrecision virialz = drz * fz;
-            SoAFloatPrecision upot = (epsilon24 * lj12m6 + shift6) * mask;
+            SoAFloatPrecision upot = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
 
-            if (duplicatedCalculations) {
-              // for non-newton3 the division is in the post-processing step.
-              SoAFloatPrecision inboxMul = inbox1Mul + (newton3 ? ownedArr[j] * .5 : 0.);
-              upotSum += upot * inboxMul;
-              virialSumX += virialx * inboxMul;
-              virialSumY += virialy * inboxMul;
-              virialSumZ += virialz * inboxMul;
-
-            } else {
-              // for non-newton3 we divide by 2 only in the postprocess step!
-              upotSum += upot;
-              virialSumX += virialx;
-              virialSumY += virialy;
-              virialSumZ += virialz;
+            SoAFloatPrecision energyFactor = (ownedStateI == OwnershipState::owned ? 1. : 0.);
+            if constexpr (newton3) {
+              energyFactor += (ownedStateJ == OwnershipState::owned ? 1. : 0.);
             }
+            upotSum += upot * energyFactor;
+            virialSumX += virialx * energyFactor;
+            virialSumY += virialy * energyFactor;
+            virialSumZ += virialz * energyFactor;
           }
         }
         // scatter the forces to where they belong, this is only needed for newton3
@@ -1090,6 +1000,11 @@ class LJFunctor
         }
       }
 
+      const auto ownedStateJ = ownedStatePtr[j];
+      if (ownedStateJ == OwnershipState::dummy) {
+        continue;
+      }
+
       const SoAFloatPrecision drx = xptr[indexFirst] - xptr[j];
       const SoAFloatPrecision dry = yptr[indexFirst] - yptr[j];
       const SoAFloatPrecision drz = zptr[indexFirst] - zptr[j];
@@ -1100,7 +1015,9 @@ class LJFunctor
 
       const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-      if (dr2 > cutoffsquare) continue;
+      if (dr2 > cutoffsquare) {
+        continue;
+      }
 
       const SoAFloatPrecision invdr2 = 1. / dr2;
       const SoAFloatPrecision lj2 = sigmasquare * invdr2;
@@ -1127,34 +1044,14 @@ class LJFunctor
         SoAFloatPrecision virialz = drz * fz;
         SoAFloatPrecision upot = (epsilon24 * lj12m6 + shift6);
 
-        if (duplicatedCalculations) {
-          // for non-newton3 the division is in the post-processing step.
-          if (newton3) {
-            upot *= 0.5;
-            virialx *= 0.5;
-            virialy *= 0.5;
-            virialz *= 0.5;
-          }
-          if (inbox1Mul) {
-            upotSum += upot;
-            virialSumX += virialx;
-            virialSumY += virialy;
-            virialSumZ += virialz;
-          }
-          // for non-newton3 the second particle will be considered in a separate calculation
-          if (newton3 and ownedPtr[j]) {
-            upotSum += upot;
-            virialSumX += virialx;
-            virialSumY += virialy;
-            virialSumZ += virialz;
-          }
-        } else {
-          // for non-newton3 we divide by 2 only in the postprocess step!
-          upotSum += upot;
-          virialSumX += virialx;
-          virialSumY += virialy;
-          virialSumZ += virialz;
+        SoAFloatPrecision energyFactor = (ownedStateI == OwnershipState::owned ? 1. : 0.);
+        if constexpr (newton3) {
+          energyFactor += (ownedStateJ == OwnershipState::owned ? 1. : 0.);
         }
+        upotSum += upot * energyFactor;
+        virialSumX += virialx * energyFactor;
+        virialSumY += virialy * energyFactor;
+        virialSumZ += virialz * energyFactor;
       }
     }
 
@@ -1167,10 +1064,12 @@ class LJFunctor
     if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
 
-      _aosThreadData[threadnum].upotSum += upotSum;
-      _aosThreadData[threadnum].virialSum[0] += virialSumX;
-      _aosThreadData[threadnum].virialSum[1] += virialSumY;
-      _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+      SoAFloatPrecision energyMul = newton3 ? 0.5 : 1.;
+
+      _aosThreadData[threadnum].upotSum += upotSum * energyMul;
+      _aosThreadData[threadnum].virialSum[0] += virialSumX * energyMul;
+      _aosThreadData[threadnum].virialSum[1] += virialSumY * energyMul;
+      _aosThreadData[threadnum].virialSum[2] += virialSumZ * energyMul;
     }
   }
 
@@ -1211,9 +1110,6 @@ class LJFunctor
   // thread buffer for aos
   std::vector<AoSThreadData> _aosThreadData;
 
-  // bool that defines whether duplicate calculations are happening
-  bool _duplicatedCalculations;
-
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
 
@@ -1228,5 +1124,5 @@ class LJFunctor
 
 #endif
 
-};  // class LJFunctor
+};  // namespace autopas
 }  // namespace autopas

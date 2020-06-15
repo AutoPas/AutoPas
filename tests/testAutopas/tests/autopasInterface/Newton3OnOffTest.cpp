@@ -97,11 +97,11 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   if (dataLayout == autopas::DataLayoutOption::soa or dataLayout == autopas::DataLayoutOption::cuda) {
     // loader and extractor will be called, we don't care how often.
-    EXPECT_CALL(mockFunctor, SoALoader(_, _))
+    EXPECT_CALL(mockFunctor, SoALoader(_, _, _))
         .Times(testing::AtLeast(1))
         .WillRepeatedly(testing::WithArgs<0, 1>(
             testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
-    EXPECT_CALL(mockFunctor, SoAExtractor(_, _)).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, SoAExtractor(_, _, _)).Times(testing::AtLeast(1));
   }
 #if defined(AUTOPAS_CUDA)
   if (dataLayout == autopas::DataLayoutOption::cuda) {
@@ -148,17 +148,17 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
   switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // single cell
-      EXPECT_CALL(mockFunctor, SoAFunctorSingle(_, useNewton3, _))
+      EXPECT_CALL(mockFunctor, SoAFunctorSingle(_, useNewton3))
           .Times(testing::AtLeast(1))
           .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsSC++; }));
 
       // pair of cells
-      EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, useNewton3, _))
+      EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, useNewton3))
           .Times(testing::AtLeast(1))
           .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsPair++; }));
 
       // non useNewton3 variant should not happen
-      EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, not useNewton3, _)).Times(0);
+      EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, not useNewton3)).Times(0);
       iterate(
           container,
           autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,

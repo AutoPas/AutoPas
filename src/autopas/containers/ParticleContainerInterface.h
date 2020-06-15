@@ -68,7 +68,7 @@ class ParticleContainerInterface {
    * Return a enum representing the name of the container class.
    * @return Enum representing the container.
    */
-  virtual ContainerOption getContainerType() const = 0;
+  [[nodiscard]] virtual ContainerOption getContainerType() const = 0;
 
   /**
    * Adds a particle to the container.
@@ -158,30 +158,29 @@ class ParticleContainerInterface {
    * Get the number of particles saved in the container.
    * @return Number of particles in the container.
    */
-  virtual unsigned long getNumParticles() const = 0;
+  [[nodiscard]] virtual unsigned long getNumParticles() const = 0;
 
   /**
    * Iterate over all particles using
    * for(auto iter = container.begin(); iter.isValid(); ++iter) .
    * @param behavior Behavior of the iterator, see IteratorBehavior.
    * @return Iterator to the first particle.
-   * @todo implement IteratorBehavior.
    */
-  virtual ParticleIteratorWrapper<Particle, true> begin(
+  [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, true> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
 
   /**
    * @copydoc begin()
    * @note const version
    */
-  virtual ParticleIteratorWrapper<Particle, false> begin(
+  [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const = 0;
 
   /**
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  virtual ParticleIteratorWrapper<Particle, false> cbegin(
+  [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> cbegin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const final {
     return begin(behavior);
   };
@@ -194,7 +193,7 @@ class ParticleContainerInterface {
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
    * @return Iterator to iterate over all particles in a specific region.
    */
-  virtual ParticleIteratorWrapper<Particle, true> getRegionIterator(
+  [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
 
@@ -202,7 +201,7 @@ class ParticleContainerInterface {
    * @copydoc getRegionIterator()
    * @note const version
    */
-  virtual ParticleIteratorWrapper<Particle, false> getRegionIterator(
+  [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const = 0;
 
@@ -211,7 +210,7 @@ class ParticleContainerInterface {
    * Allows range-based for loops.
    * @return false
    */
-  constexpr bool end() const { return false; }
+  [[nodiscard]] constexpr bool end() const { return false; }
 
   /**
    * Iterates over all particle pairs in the container.
@@ -223,7 +222,7 @@ class ParticleContainerInterface {
    * Get the upper corner of the container.
    * @return Upper corner of the container.
    */
-  virtual const std::array<double, 3> &getBoxMax() const = 0;
+  [[nodiscard]] virtual const std::array<double, 3> &getBoxMax() const = 0;
 
   /**
    * Set the upper corner of the container.
@@ -235,7 +234,7 @@ class ParticleContainerInterface {
    * Get the lower corner of the container.
    * @return Lower corner of the container.
    */
-  virtual const std::array<double, 3> &getBoxMin() const = 0;
+  [[nodiscard]] virtual const std::array<double, 3> &getBoxMin() const = 0;
 
   /**
    * Set the lower corner of the container.
@@ -247,7 +246,7 @@ class ParticleContainerInterface {
    * Return the cutoff of the container.
    * @return Cutoff radius.
    */
-  virtual double getCutoff() const = 0;
+  [[nodiscard]] virtual double getCutoff() const = 0;
 
   /**
    * Set the cutoff of the container.
@@ -259,7 +258,7 @@ class ParticleContainerInterface {
    * Return the skin of the container.
    * @return skin radius.
    */
-  virtual double getSkin() const = 0;
+  [[nodiscard]] virtual double getSkin() const = 0;
 
   /**
    * Set the skin of the container.
@@ -271,7 +270,7 @@ class ParticleContainerInterface {
    * Return the interaction length (cutoff+skin) of the container.
    * @return interaction length
    */
-  virtual double getInteractionLength() const = 0;
+  [[nodiscard]] virtual double getInteractionLength() const = 0;
 
   /**
    * Updates the container.
@@ -279,14 +278,13 @@ class ParticleContainerInterface {
    * container, if necessary.
    * @return A vector of invalid particles that do not belong into the container.
    */
-  AUTOPAS_WARN_UNUSED_RESULT
-  virtual std::vector<Particle> updateContainer() = 0;
+  [[nodiscard]] virtual std::vector<ParticleType> updateContainer() = 0;
 
   /**
    * Generates a traversal selector info for this container.
    * @return Traversal selector info for this container.
    */
-  virtual TraversalSelectorInfo getTraversalSelectorInfo() const = 0;
+  [[nodiscard]] virtual TraversalSelectorInfo getTraversalSelectorInfo() const = 0;
 
   /**
    * Generates a list of all traversals that are theoretically applicable to this container.
@@ -295,7 +293,7 @@ class ParticleContainerInterface {
    *
    * @return Vector of traversal options.
    */
-  std::set<TraversalOption> getAllTraversals() const {
+  [[nodiscard]] std::set<TraversalOption> getAllTraversals() const {
     return compatibleTraversals::allCompatibleTraversals(this->getContainerType());
   }
 };

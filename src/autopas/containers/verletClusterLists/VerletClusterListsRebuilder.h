@@ -338,8 +338,8 @@ class VerletClusterListsRebuilder {
     for (size_t towerIndex = 0; towerIndex < tower.getNumClusters(); towerIndex++) {
       auto startIndexNeighbor = useNewton3 and isSameTower ? towerIndex + 1 : 0;
       auto &towerCluster = tower.getCluster(towerIndex);
-      double towerClusterBoxBottom = towerCluster[0].getR()[2];
-      double towerClusterBoxTop = towerCluster[clusterSize - 1].getR()[2];
+
+      auto [towerClusterBoxBottom, towerClusterBoxTop] = towerCluster.getZMinMax();
 
       for (size_t neighborIndex = startIndexNeighbor; neighborIndex < neighborTower.getNumClusters(); neighborIndex++) {
         const bool isSameCluster = towerIndex == neighborIndex;
@@ -347,8 +347,7 @@ class VerletClusterListsRebuilder {
           continue;
         }
         auto &neighborCluster = neighborTower.getCluster(neighborIndex);
-        double neighborClusterBoxBottom = neighborCluster[0].getR()[2];
-        double neighborClusterBoxTop = neighborCluster[clusterSize - 1].getR()[2];
+        auto [neighborClusterBoxBottom, neighborClusterBoxTop] = neighborCluster.getZMinMax();
 
         double distZ =
             bboxDistance(towerClusterBoxBottom, towerClusterBoxTop, neighborClusterBoxBottom, neighborClusterBoxTop);

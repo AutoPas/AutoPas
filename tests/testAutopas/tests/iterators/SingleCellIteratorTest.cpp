@@ -8,8 +8,6 @@
 
 #include <gtest/gtest.h>
 
-#include "autopas/cells/RMMParticleCell3T.h"
-
 using namespace autopas;
 
 void SingleCellIteratorTest::SetUp() {
@@ -37,22 +35,5 @@ TEST_F(SingleCellIteratorTest, testFullParticleCell) {
       ASSERT_DOUBLE_EQ(iter->getR()[d], _vecOfMolecules[i].getR()[d]);
     }
     ASSERT_EQ(iter->getID(), _vecOfMolecules[i].getID());
-  }
-}
-
-TEST_F(SingleCellIteratorTest, testRMMParticleCell) {
-  RMMParticleCell<Molecule> fpc;
-
-  fillWithParticles(&fpc);
-
-  auto iter = fpc.begin();
-  int i = 0;
-  for (; iter.isValid(); ++iter, ++i) {
-    for (int d = 0; d < 3; ++d) {
-      ASSERT_DOUBLE_EQ(iter->getR()[d], _vecOfMolecules[i].getR()[d]);
-    }
-
-    //		IDs are not set by the RMM Cell yet!
-    //		ASSERT_EQ(iter->getID(), _vecOfMolecules[i].getID());
   }
 }

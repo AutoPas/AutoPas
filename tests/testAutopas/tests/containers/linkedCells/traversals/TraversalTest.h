@@ -57,6 +57,9 @@ class TraversalTest : public AutoPasTestBase,
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+      if (i.isDummy() or j.isDummy()) {
+        return;
+      }
       const auto coordsI = i.getR();
       const auto coordsJ = j.getR();
 

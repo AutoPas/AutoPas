@@ -1,7 +1,7 @@
 /**
  * @file OptionTest.h
  * @author F. Gratl
- * @date 10/29/19
+ * @date 29.10.2019
  */
 
 #pragma once

@@ -1,7 +1,7 @@
 /**
  * @file OptionTest.cpp
  * @author F. Gratl
- * @date 10/29/19
+ * @date 29.10.2019
  */
 
 #include "OptionTest.h"
@@ -43,6 +43,7 @@ TEST(OptionTest, parseTraversalOptionsTest) {
       {autopas::TraversalOption::verletClustersColoring, "verlet-clusters-coloring"},
       {autopas::TraversalOption::verletTraversal, "verletlists"},
       {autopas::TraversalOption::verletClustersStatic, "verlet-cluste-static"},
+      {autopas::TraversalOption::c04HCP, "c04HCP"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TraversalOption::getOptionNames().size());
@@ -99,9 +100,11 @@ TEST(OptionTest, parseSelectorOptionsTest) {
 TEST(OptionTest, parseTuningStrategyOptionsTest) {
   std::map<autopas::TuningStrategyOption, std::string> mapEnumString = {
       {autopas::TuningStrategyOption::bayesianSearch, "bayesian"},
+      {autopas::TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster"},
       {autopas::TuningStrategyOption::fullSearch, "full"},
       {autopas::TuningStrategyOption::randomSearch, "random"},
       {autopas::TuningStrategyOption::activeHarmony, "harmony"},
+      {autopas::TuningStrategyOption::predictiveTuning, "predictive"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TuningStrategyOption::getOptionNames().size());
@@ -113,10 +116,9 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
 TEST(OptionTest, parseAcquisitionFunctionOptionsTest) {
   std::map<autopas::AcquisitionFunctionOption, std::string> mapEnumString = {
       {autopas::AcquisitionFunctionOption::upperConfidenceBound, "upperconfbound"},
-      {autopas::AcquisitionFunctionOption::expectedDecrease, "expdecr"},
-      {autopas::AcquisitionFunctionOption::lowerConfidenceBound, "lowerconfbound"},
+      {autopas::AcquisitionFunctionOption::expectedImprovement, "expimprv"},
       {autopas::AcquisitionFunctionOption::mean, "mean"},
-      {autopas::AcquisitionFunctionOption::probabilityOfDecrease, "probofdecrease"},
+      {autopas::AcquisitionFunctionOption::probabilityOfImprovement, "probofimprv"},
       {autopas::AcquisitionFunctionOption::variance, "varianz"},
   };
 

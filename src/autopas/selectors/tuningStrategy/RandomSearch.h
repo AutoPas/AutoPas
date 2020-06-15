@@ -1,7 +1,7 @@
 /**
  * @file RandomSearch.h
  * @author Jan Nguyen
- * @date 10.07.19
+ * @date 10.07.2019
  */
 
 #pragma once
@@ -44,6 +44,10 @@ class RandomSearch : public TuningStrategyInterface {
         _currentConfig(),
         _rng(seed),
         _maxEvidence(maxEvidence) {
+    if (searchSpaceIsEmpty()) {
+      autopas::utils::ExceptionHandler::exception("RandomSearch: No valid configurations could be created.");
+    }
+
     tune();
   }
 
@@ -53,7 +57,7 @@ class RandomSearch : public TuningStrategyInterface {
 
   inline void addEvidence(long time, size_t iteration) override { _traversalTimes[_currentConfig] = time; }
 
-  inline void reset() override {
+  inline void reset(size_t iteration) override {
     _traversalTimes.clear();
     tune();
   }

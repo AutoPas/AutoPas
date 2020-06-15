@@ -1,7 +1,7 @@
 /**
  * @file ActiveHarmony.h
  * @author Jakob Englhauser
- * @date 21.10.19
+ * @date 21.10.2019
  */
 
 #pragma once
@@ -54,12 +54,16 @@ class ActiveHarmony : public TuningStrategyInterface {
     AutoPasLog(debug, "Possible traversal options: {}",
                autopas::utils::ArrayUtils::to_string(_allowedTraversalOptions));
 
+    if (searchSpaceIsEmpty()) {
+      autopas::utils::ExceptionHandler::exception("BayesianSearch: No valid configurations could be created.");
+    }
+
     // set HARMONY_HOME environment variable; needed by active harmony library; the macro is set by cmake
     if (getenv("HARMONY_HOME") == nullptr) {
       putenv(const_cast<char *>(HARMONY_HOME));
     }
 
-    reset();
+    reset(0);
   }
 
   ~ActiveHarmony() override {
@@ -85,7 +89,7 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   inline const Configuration &getCurrentConfiguration() const override;
 
-  inline void reset() override;
+  inline void reset(size_t iteration) override;
 
   inline std::set<ContainerOption> getAllowedContainerOptions() const override;
 
@@ -279,7 +283,7 @@ void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, con
   }
 }
 
-void ActiveHarmony::reset() {
+void ActiveHarmony::reset(size_t iteration) {
   _traversalTimes.clear();
   resetHarmony();
 }

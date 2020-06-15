@@ -23,6 +23,8 @@ namespace autopas {
 
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
+ * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
+ * scheme.
  * This Version is implemented using AVX intrinsics.
  * @tparam Particle The type of particle.
  * @tparam ParticleCell The type of particlecell.
@@ -49,13 +51,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
  private:
   /**
-   * Interal, actual constructor.
+   * Internal, actual constructor.
    * @param cutoff
-   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
-   * simulation boundary. e.g. eightShell: false, fullShell: true.
    * @param dummy unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctorAVX(double cutoff, bool duplicatedCalculation, void * /*dummy*/)
+  explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
       : Functor<Particle, ParticleCell, SoAArraysType,
                 LJFunctorAVX<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals,
@@ -70,7 +70,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
         _upotSum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
-        _duplicatedCalculations{duplicatedCalculation},
         _postProcessed{false} {
     if (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
@@ -96,11 +95,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * @note Only to be used with mixing == false.
    *
    * @param cutoff
-   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
-   * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctorAVX(double cutoff, bool duplicatedCalculation = true)
-      : LJFunctorAVX(cutoff, duplicatedCalculation, nullptr) {
+  explicit LJFunctorAVX(double cutoff) : LJFunctorAVX(cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -110,12 +106,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * Constructor, which sets the global values, i.e. cutoff, epsilon, sigma and shift.
    * @param cutoff
    * @param particlePropertiesLibrary
-   * @param duplicatedCalculation Defines whether duplicated calculations are happening across processes / over the
-   * simulation boundary. e.g. eightShell: false, fullShell: true.
    */
-  explicit LJFunctorAVX(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
-                        bool duplicatedCalculation = true)
-      : LJFunctorAVX(cutoff, duplicatedCalculation, nullptr) {
+  explicit LJFunctorAVX(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : LJFunctorAVX(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -141,64 +134,31 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState)
+   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
     /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
-    utils::withStaticBool(newton3, [&](auto newton3) {
-      if (cellWiseOwnedState) {
-        if (_duplicatedCalculations) {
-          SoAFunctorSingleImpl<newton3, true /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa);
-        } else {
-          SoAFunctorSingleImpl<newton3, true /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa);
-        }
-      } else {
-        if (_duplicatedCalculations) {
-          SoAFunctorSingleImpl<newton3, false /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa);
-        } else {
-          SoAFunctorSingleImpl<newton3, false /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa);
-        }
-      }
-    });
+    utils::withStaticBool(newton3, [&](auto newton3) { SoAFunctorSingleImpl<newton3>(soa); });
   }
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3, bool cellWiseOwnedState)
+   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
   // clang-format on
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3,
-                      const bool cellWiseOwnedState) override {
-    // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
-    /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
-    utils::withStaticBool(newton3, [&](auto newton3) {
-      if (cellWiseOwnedState) {
-        if (_duplicatedCalculations) {
-          SoAFunctorPairImpl<newton3, true /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<newton3, true /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa1, soa2);
-        }
-      } else {
-        if (_duplicatedCalculations) {
-          SoAFunctorPairImpl<newton3, false /*cellWiseOwnedState*/, true /*duplicatedCalculations*/>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<newton3, false /*cellWiseOwnedState*/, false /*duplicatedCalculations*/>(soa1, soa2);
-        }
-      }
-    });
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
+    utils::withStaticBool(newton3, [&](auto newton3) { SoAFunctorPairImpl<newton3>(soa1, soa2); });
   }
 
  private:
   /**
-   * Templetized version of SoAFunctorSingle actually doing what the latter should.
+   * Templatized version of SoAFunctorSingle actually doing what the latter should.
    * @tparam newton3
-   * @tparam cellWiseOwnedState
-   * @tparam duplicatedCalculations
    * @param soa
    */
-  template <bool newton3, bool cellWiseOwnedState, bool duplicatedCalculations>
+  template <bool newton3>
   void SoAFunctorSingleImpl(SoAView<SoAArraysType> soa) {
 #ifdef __AVX__
     if (soa.getNumParticles() == 0) return;
@@ -220,22 +180,12 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     __m256d virialSumZ = _mm256_setzero_pd();
     __m256d upotSum = _mm256_setzero_pd();
 
-    if constexpr (calculateGlobals and cellWiseOwnedState and duplicatedCalculations) {
-      bool isHaloCell = not ownedPtr[0];
-      // Checks if the cell is a halo cell, if it is, we skip it.
-      if (isHaloCell) {
-        return;
-      }
-    }
-
     // reverse outer loop s.th. inner loop always beginns at aligned array start
     // typecast to detect underflow
     for (size_t i = soa.getNumParticles() - 1; (long)i >= 0; --i) {
       __m256d isOwnedI = _mm256_setzero_pd();
-      if constexpr (calculateGlobals and not cellWiseOwnedState and duplicatedCalculations) {
-        // save the owned state of particle i. This is only needed if we calculate globals (calculateGlobals), the owned
-        // state is not constant throughout the cell (not cellWiseOwnedState) and there are duplicated calculations
-        // (duplicatedCalculations)
+      if constexpr (calculateGlobals) {
+        // save the owned state of particle i. This is only needed if we calculate globals (calculateGlobals).
         isOwnedI = _mm256_broadcast_sd(&ownedPtr[i]);
       }
 
@@ -250,15 +200,13 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       // floor soa numParticles to multiple of vecLength
       size_t j = 0;
       for (; j < (i & ~(vecLength - 1)); j += 4) {
-        SoAKernel<true, cellWiseOwnedState, duplicatedCalculations, false>(
-            j, isOwnedI, ownedPtr, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc,
-            fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+        SoAKernel<true, false>(j, isOwnedI, ownedPtr, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, typeIDptr,
+                               typeIDptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
       }
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
-        SoAKernel<true, cellWiseOwnedState, duplicatedCalculations, true>(
-            j, isOwnedI, ownedPtr, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc,
-            fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+        SoAKernel<true, true>(j, isOwnedI, ownedPtr, x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr, typeIDptr,
+                              typeIDptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
       }
 
       // horizontally reduce fDacc to sumfD
@@ -306,9 +254,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       double factor = 1.;
       // we assume newton3 to be enabled in this functor call, thus we multiply by two if the value of newton3 is false,
       // since for newton3 disabled we divide by two later on.
-      factor *= newton3 ? 1. : 2.;
-      // In case we have a non-cell-wise owned state and duplicated_calculations is false, we have multiplied everything
-      // by two, so we divide it by 2 again.
+      factor *= newton3 ? .5 : 1.;
+      // In case we have a non-cell-wise owned state, we have multiplied everything by two, so we divide it by 2 again.
       _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
       _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
       _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
@@ -317,11 +264,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 #endif
   }
 
-  template <bool newton3, bool cellWiseOwnedState, bool duplicatedCalculations>
+  template <bool newton3>
   void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
-    if constexpr (not cellWiseOwnedState) {
-      autopas::utils::ExceptionHandler::exception("cellWiseOwnedState=false not yet supported!");
-    }
 #ifdef __AVX__
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
@@ -350,30 +294,13 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     __m256d virialSumZ = _mm256_setzero_pd();
     __m256d upotSum = _mm256_setzero_pd();
 
-    // Copied from pairwiseFunctor/LJFunctor.h:264-281
-    bool isHaloCell1 = false;
-    bool isHaloCell2 = false;
-    // Checks whether the cells are halo cells.
-    // This check cannot be done if _lowCorner and _highCorner are not set. So we do this only if calculateGlobals is
-    // defined. (as of 23.11.2018)
-    if constexpr (calculateGlobals and cellWiseOwnedState) {
-      isHaloCell1 = not ownedPtr1[0];
-      isHaloCell2 = not ownedPtr2[0];
-
-      // This if is commented out because the AoS vs SoA test would fail otherwise. Even though it is physically
-      // correct!
-      /*if(_duplicatedCalculations and isHaloCell1 and isHaloCell2){
-        return;
-      }*/
-    }
-
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       __m256d fxacc = _mm256_setzero_pd();
       __m256d fyacc = _mm256_setzero_pd();
       __m256d fzacc = _mm256_setzero_pd();
 
       __m256d isOwnedI = _mm256_setzero_pd();
-      if constexpr (calculateGlobals and not cellWiseOwnedState and duplicatedCalculations) {
+      if constexpr (calculateGlobals) {
         isOwnedI = _mm256_broadcast_sd(&ownedPtr1[i]);
       }
 
@@ -384,15 +311,15 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       // floor soa2 numParticles to multiple of vecLength
       unsigned int j = 0;
       for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-        SoAKernel<newton3, cellWiseOwnedState, duplicatedCalculations, false>(
-            j, isOwnedI, ownedPtr2, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
-            fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+        SoAKernel<newton3, false>(j, isOwnedI, ownedPtr2, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr,
+                                  typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ,
+                                  &upotSum, 0);
       }
       const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
       if (rest > 0)
-        SoAKernel<newton3, cellWiseOwnedState, duplicatedCalculations, true>(
-            j, isOwnedI, ownedPtr2, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr,
-            fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+        SoAKernel<newton3, true>(j, isOwnedI, ownedPtr2, x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr,
+                                 typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ,
+                                 &upotSum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -436,15 +363,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzUpotVec);
 
+      // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
+      // that we do not add the energy multiple times!
       double energyfactor = 1.;
-      if constexpr (duplicatedCalculations) {
-        // if we have duplicated calculations, i.e., we calculate interactions multiple times, we have to take care
-        // that we do not add the energy multiple times!
-        energyfactor = isHaloCell1 ? 0. : 1.;
-        if constexpr (newton3) {
-          energyfactor += isHaloCell2 ? 0. : 1.;
-          energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
-        }
+      if constexpr (newton3) {
+        energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
       }
 
       _aosThreadData[threadnum].virialSum[0] += globals[0] * energyfactor;
@@ -482,7 +405,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * @param upotSum
    * @param rest
    */
-  template <bool newton3, bool cellWiseOwnedState, bool duplicatedCalculations, bool masked>
+  template <bool newton3, bool masked>
   inline void SoAKernel(const size_t j, const __m256d isOwnedI, const double *const __restrict__ ownedPtr2,
                         const __m256d &x1, const __m256d &y1, const __m256d &z1, const double *const __restrict__ x2ptr,
                         const double *const __restrict__ y2ptr, const double *const __restrict__ z2ptr,
@@ -508,9 +431,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
                         not masked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
                         _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)));
       if constexpr (applyShift) {
-        shift6s = _mm256_set_pd(not masked or rest > 3 ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-                                not masked or rest > 2 ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                                not masked or rest > 1 ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+        shift6s = _mm256_set_pd((not masked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                                (not masked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                                (not masked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
                                 _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0)));
       }
     }
@@ -589,23 +512,16 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
           masked ? _mm256_and_pd(upot, _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(_masks[rest - 1])))
                  : _mm256_and_pd(upot, cutoffMask);
 
-      if (cellWiseOwnedState or not duplicatedCalculations) {
-        *upotSum = _mm256_add_pd(*upotSum, upotMasked);
-        *virialSumX = _mm256_add_pd(*virialSumX, virialX);
-        *virialSumY = _mm256_add_pd(*virialSumY, virialY);
-        *virialSumZ = _mm256_add_pd(*virialSumZ, virialZ);
-      } else {
-        const __m256d ownedPtrJ =
-            masked ? _mm256_maskload_pd(&ownedPtr2[j], _masks[rest - 1]) : _mm256_load_pd(&ownedPtr2[j]);
-        __m256d energyFactor = isOwnedI;
-        if constexpr (newton3) {
-          energyFactor = _mm256_add_pd(isOwnedI, ownedPtrJ);
-        }
-        *upotSum = wrapperFMA(energyFactor, upot, *upotSum);
-        *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
-        *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
-        *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
+      const __m256d ownedPtrJ =
+          masked ? _mm256_maskload_pd(&ownedPtr2[j], _masks[rest - 1]) : _mm256_load_pd(&ownedPtr2[j]);
+      __m256d energyFactor = isOwnedI;
+      if constexpr (newton3) {
+        energyFactor = _mm256_add_pd(isOwnedI, ownedPtrJ);
       }
+      *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
+      *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
+      *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
+      *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
     }
 #endif
   }
@@ -820,9 +736,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
   // thread buffer for aos
   std::vector<AoSThreadData> _aosThreadData;
-
-  // bool that defines whether duplicate calculations are happening
-  bool _duplicatedCalculations;
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
