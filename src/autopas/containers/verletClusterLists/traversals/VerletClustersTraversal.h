@@ -24,15 +24,15 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 class VerletClustersTraversal : public TraversalInterface,
                                 public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
-  static constexpr size_t clusterSize = VerletClusterLists<Particle>::clusterSize;
 
  public:
   /**
    * Constructor of the VerletClustersTraversal.
-   * @param pairwiseFunctor The functor to use for the traveral.
+   * @param pairwiseFunctor The functor to use for the traversal.
+   * @param clusterSize Number of particles per cluster.
    */
-  explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor)
-      : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor) {}
+  explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
+      : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor, clusterSize) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::verletClusters; }
 
@@ -59,7 +59,7 @@ class VerletClustersTraversal : public TraversalInterface,
   void traverseParticlePairs() override {
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
 
-    const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle, clusterSize> &cluster) {
+    const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle> &cluster) {
       _clusterFunctor.traverseCluster(cluster);
       for (auto *neighborCluster : cluster.getNeighbors()) {
         _clusterFunctor.traverseClusterPair(cluster, *neighborCluster);
@@ -71,6 +71,6 @@ class VerletClustersTraversal : public TraversalInterface,
 
  private:
   PairwiseFunctor *_functor;
-  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, clusterSize> _clusterFunctor;
+  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;
 };
 }  // namespace autopas
