@@ -583,7 +583,7 @@ class AutoPas {
    */
   double _cutoff{1.0};
   /**
-   * Length added to the cutoff for the verlet lists' skin.
+   * Length added to the cutoff for the Verlet lists' skin.
    */
   double _verletSkin{0.2};
   /**
@@ -591,9 +591,9 @@ class AutoPas {
    */
   unsigned int _verletRebuildFrequency{20};
   /**
-   * Specifies the size of clusters for verlet lists.
+   * Specifies the size of clusters for Verlet lists.
    */
-  unsigned int _verletClusterSize{64};
+  unsigned int _verletClusterSize{4};
   /**
    * Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */
