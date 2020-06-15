@@ -55,11 +55,12 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
   /**
    * Constructor of the VerletClustersTraversal.
    * @param pairwiseFunctor The functor to use for the traveral.
+   * @param clusterSize Size of the clusters in particles.
    */
-  explicit VerletClustersColoringTraversal(PairwiseFunctor *pairwiseFunctor)
+  explicit VerletClustersColoringTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
       : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>({0, 0, 0}, pairwiseFunctor, 0, {}),
         _functor(pairwiseFunctor),
-        _clusterFunctor(pairwiseFunctor) {}
+        _clusterFunctor(pairwiseFunctor, clusterSize) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::verletClustersColoring; }
 
@@ -105,8 +106,7 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
 
  private:
   PairwiseFunctor *_functor;
-  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, VerletClusterLists<Particle>::clusterSize>
-      _clusterFunctor;
+  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>

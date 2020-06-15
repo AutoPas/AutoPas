@@ -20,7 +20,7 @@ namespace autopas::internal {
  * @tparam Particle The type of the particles this cluster consists of.
  * @tparam clusterSize The number of particles in the cluster.
  */
-template <class Particle, size_t clusterSize>
+template <class Particle>
 class Cluster {
  public:
   /**
@@ -30,7 +30,8 @@ class Cluster {
    *
    * @param firstParticle A pointer to the first particle of the cluster.
    */
-  explicit Cluster(Particle *firstParticle) : _firstParticle(firstParticle) {}
+  explicit Cluster(Particle *firstParticle, size_t clusterSize)
+      : _firstParticle(firstParticle), _clusterSize(clusterSize) {}
 
   /**
    * Returns the particle at position index in the cluster.
@@ -69,7 +70,7 @@ class Cluster {
    * Adds the given cluster to the neighbor list of this cluster.
    * @param neighbor The cluster to add as neighbor.
    */
-  void addNeighbor(Cluster<Particle, clusterSize> &neighbor) { _neighborClusters.push_back(&neighbor); }
+  void addNeighbor(Cluster<Particle> &neighbor) { _neighborClusters.push_back(&neighbor); }
 
   /**
    * Remove all neighbors.
@@ -77,6 +78,11 @@ class Cluster {
   void clearNeighbors() { _neighborClusters.clear(); }
 
  private:
+  /**
+   * The number of particles in a full cluster.
+   */
+  size_t _clusterSize;
+
   /**
    * A pointer to the first particle of the cluster.
    */

@@ -23,16 +23,13 @@ namespace autopas {
  */
 template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VerletClustersStaticTraversal : public TraversalInterface, public VerletClustersTraversalInterface<Particle> {
- private:
-  static constexpr size_t clusterSize = VerletClusterLists<Particle>::clusterSize;
-
  public:
   /**
    * Constructor of the VerletClustersStaticTraversal.
    * @param pairwiseFunctor The functor to use for the traveral.
    */
-  explicit VerletClustersStaticTraversal(PairwiseFunctor *pairwiseFunctor)
-      : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor) {}
+  explicit VerletClustersStaticTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
+      : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor, clusterSize) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::verletClustersStatic; }
 
@@ -98,6 +95,6 @@ class VerletClustersStaticTraversal : public TraversalInterface, public VerletCl
 
  private:
   PairwiseFunctor *_functor;
-  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, clusterSize> _clusterFunctor;
+  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;
 };
 }  // namespace autopas

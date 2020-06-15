@@ -20,24 +20,24 @@ namespace autopas::internal {
  * @tparam useNewton3 If newton 3 should be used or not.
  * @tparam clusterSize The number of particles in each cluster.
  */
-template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          size_t clusterSize>
+template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class ClusterFunctor {
  public:
   /**
    * Constructs a ClusterFunctor that uses the given functor internally.
    * @param functor The functor to use internally.
    */
-  explicit ClusterFunctor(PairwiseFunctor *functor) : _functor(functor) {}
+  explicit ClusterFunctor(PairwiseFunctor *functor, size_t clusterSize)
+      : _functor(functor), _clusterSize(clusterSize) {}
 
   /**
    * Traverses pairs of all particles in the given cluster. Always uses newton 3 in the AoS data layout.
    * @param cluster The cluster to traverse.
    */
-  void traverseCluster(internal::Cluster<Particle, clusterSize> &cluster) {
+  void traverseCluster(internal::Cluster<Particle> &cluster) {
     if constexpr (dataLayout == DataLayoutOption::aos) {
-      for (size_t i = 0; i < clusterSize; i++) {
-        for (size_t j = i + 1; j < clusterSize; j++) {
+      for (size_t i = 0; i < _clusterSize; i++) {
+        for (size_t j = i + 1; j < _clusterSize; j++) {
           // this if else branch is needed because of https://github.com/AutoPas/AutoPas/issues/426
           if constexpr (useNewton3) {
             _functor->AoSFunctor(cluster[i], cluster[j], true);
@@ -58,11 +58,10 @@ class ClusterFunctor {
    * @param cluster The first cluster.
    * @param neighborCluster The second cluster.
    */
-  void traverseClusterPair(internal::Cluster<Particle, clusterSize> &cluster,
-                           internal::Cluster<Particle, clusterSize> &neighborCluster) {
+  void traverseClusterPair(internal::Cluster<Particle> &cluster, internal::Cluster<Particle> &neighborCluster) {
     if constexpr (dataLayout == DataLayoutOption::aos) {
-      for (size_t i = 0; i < clusterSize; i++) {
-        for (size_t j = 0; j < clusterSize; j++) {
+      for (size_t i = 0; i < _clusterSize; i++) {
+        for (size_t j = 0; j < _clusterSize; j++) {
           _functor->AoSFunctor(cluster[i], neighborCluster[j], useNewton3);
         }
       }
@@ -74,6 +73,7 @@ class ClusterFunctor {
 
  private:
   PairwiseFunctor *_functor;
+  size_t _clusterSize;
 };
 
 }  // namespace autopas::internal
