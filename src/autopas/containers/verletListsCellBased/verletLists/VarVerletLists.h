@@ -32,7 +32,7 @@ class VarVerletLists
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
    * @param skin The skin radius.
-   * @param cellSizeFactor cell size factor ralative to cutoff
+   * @param cellSizeFactor cell size factor relative to cutoff
    */
   VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                  const double skin, const double cellSizeFactor = 1.0)
@@ -40,7 +40,10 @@ class VarVerletLists
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
         _neighborList{} {}
 
-  ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
+  /**
+   * @copydoc ParticleContainerInterface::getContainerType()
+   */
+  [[nodiscard]] ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     auto *traversalInterface = dynamic_cast<VarVerletTraversalInterface<NeighborList> *>(traversal);
