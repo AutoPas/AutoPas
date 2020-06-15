@@ -7,15 +7,13 @@
 #include "LinkedCellsTest.h"
 
 #include <gmock/gmock-generated-matchers.h>
-#include <autopas/containers/linkedCells/ReferenceLinkedCells.h>
 
 TYPED_TEST_SUITE_P(LinkedCellsTest);
 
 TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
     using LinkedCellsType = TypeParam;
-    LinkedCellsType linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
-//    LinkedCellsType<autopas::FullParticleCell<autopas::Particle>> linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0.,
-//                                                                                 1.);
+    LinkedCellsType linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0.,
+                                                                                 1.);
 
   autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
   autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
@@ -127,5 +125,5 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
 
 REGISTER_TYPED_TEST_SUITE_P(LinkedCellsTest, testUpdateContainer, testUpdateContainerCloseToBoundary);
 
-using MyTypes = ::testing::Types<autopas::LinkedCells<FPCell>, autopas::ReferenceLinkedCells<FPCell>>;
+using MyTypes = ::testing::Types<autopas::LinkedCells<FPCell>, autopas::ReferenceLinkedCells<RPCell>>;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LinkedCellsTest, MyTypes);

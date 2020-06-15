@@ -9,6 +9,8 @@
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/particles/Particle.h"
 #include "mocks/MockFunctor.h"
+#include "autopas/cells/ReferenceParticleCell.h"
+#include "autopas/cells/FullParticleCell.h"
 
 // a place for usings that are commonly used in tests
 
@@ -20,6 +22,11 @@ using Particle = autopas::Particle;
  * Short for a FullParticle Cell with the AutoPas Particle
  */
 using FPCell = autopas::FullParticleCell<autopas::Particle>;
+
+/**
+ * Short for a ReferenceParticle Cell with the AutoPas Particle
+ */
+using RPCell = autopas::ReferenceParticleCell<autopas::Particle>;
 
 /**
  * Short for the AutoPas single center Lennard-Jones molecule

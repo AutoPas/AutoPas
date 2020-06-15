@@ -8,7 +8,9 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include <autopas/containers/linkedCells/ReferenceLinkedCells.h>
 #include "autopas/particles/Particle.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -19,5 +21,4 @@ class LinkedCellsTest : public AutoPasTestBase {
 
 protected:
   LinkedCellsType _linkedCells;
-  // autopas::LinkedCells<FPCell> _linkedCells;
 };
