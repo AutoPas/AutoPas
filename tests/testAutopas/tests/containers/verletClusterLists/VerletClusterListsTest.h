@@ -100,7 +100,6 @@ int CollectParticlesPerThreadFunctor::_currentColor = 0;
 class ColoringTraversalWithColorChangeNotify
     : public autopas::VerletClustersColoringTraversal<FPCell, CollectParticlesPerThreadFunctor,
                                                       autopas::DataLayoutOption::aos, true> {
-
  public:
   ColoringTraversalWithColorChangeNotify(CollectParticlesPerThreadFunctor *functor, size_t clusterSize,
                                          std::function<void(int)> whenColorChanges)

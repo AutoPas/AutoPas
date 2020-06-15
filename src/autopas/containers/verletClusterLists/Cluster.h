@@ -29,6 +29,7 @@ class Cluster {
    * Caller is responsible that there are enough particles after this particle in memory.
    *
    * @param firstParticle A pointer to the first particle of the cluster.
+   * @param clusterSize Number of particles in the cluster.
    */
   explicit Cluster(Particle *firstParticle, size_t clusterSize)
       : _firstParticle(firstParticle), _clusterSize(clusterSize) {}

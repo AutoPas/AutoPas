@@ -26,6 +26,7 @@ class ClusterFunctor {
   /**
    * Constructs a ClusterFunctor that uses the given functor internally.
    * @param functor The functor to use internally.
+   * @param clusterSize Number of particles per cluster.
    */
   explicit ClusterFunctor(PairwiseFunctor *functor, size_t clusterSize)
       : _functor(functor), _clusterSize(clusterSize) {}

@@ -28,7 +28,8 @@ class VerletClustersTraversal : public TraversalInterface,
  public:
   /**
    * Constructor of the VerletClustersTraversal.
-   * @param pairwiseFunctor The functor to use for the traveral.
+   * @param pairwiseFunctor The functor to use for the traversal.
+   * @param clusterSize Number of particles per cluster.
    */
   explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
       : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor, clusterSize) {}

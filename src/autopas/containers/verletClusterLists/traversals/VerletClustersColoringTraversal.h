@@ -54,8 +54,8 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
  public:
   /**
    * Constructor of the VerletClustersTraversal.
-   * @param pairwiseFunctor The functor to use for the traveral.
-   * @param clusterSize Size of the clusters in particles.
+   * @param pairwiseFunctor The functor to use for the traversal.
+   * @param clusterSize Number of particles per cluster.
    */
   explicit VerletClustersColoringTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
       : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>({0, 0, 0}, pairwiseFunctor, 0, {}),

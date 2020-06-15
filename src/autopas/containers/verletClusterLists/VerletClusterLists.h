@@ -58,10 +58,11 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * The neighbor lists are build using a estimated density.
    * The box is divided into cuboids with roughly the
    * same side length.
-   * @param boxMin the lower corner of the domain
-   * @param boxMax the upper corner of the domain
-   * @param cutoff the cutoff radius of the interaction
-   * @param skin the skin radius
+   * @param boxMin The lower corner of the domain.
+   * @param boxMax The upper corner of the domain.
+   * @param cutoff The cutoff radius of the interaction.
+   * @param skin The skin radius.
+   * @param clusterSize Number of particles per cluster.
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
                      size_t clusterSize)
