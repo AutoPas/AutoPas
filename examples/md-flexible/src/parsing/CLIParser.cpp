@@ -428,6 +428,14 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
+      case decltype(config.loadEstimatorOptions)::getoptChar: {
+        config.loadEstimatorOptions.value = autopas::LoadEstimatorOption::parseOptions(strArg);
+        if (config.loadEstimatorOptions.value.empty()) {
+          cerr << "Unknown load estimator: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case decltype(config.tuningStrategyOption)::getoptChar: {
         auto parsedOptions = autopas::TuningStrategyOption::parseOptions(strArg);
         if (parsedOptions.size() != 1) {

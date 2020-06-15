@@ -41,6 +41,9 @@ input. However, since there are options that can only be defined
 through the YAML file there is also the file [`input/AllOptions.yaml`](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible/input/AllOptions.yaml)
 to be used as a reference.
 
+Additionally, that options that require a list of choices also
+accept the keyword `all` to enable all, even discouraged choices.
+
 #### Object generators
 
 To quickly set up scenarios md-flexible provides a couple of object

@@ -10,6 +10,7 @@
 
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LoadEstimators.h"
 #include "autopas/selectors/Configuration.h"
 #include "hclient.h"
 
@@ -25,17 +26,20 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param allowedContainerOptions
    * @param allowedCellSizeFactors
    * @param allowedTraversalOptions
+   * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    */
   ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
                 const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
                 const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
+                const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
                 const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions())
       : _allowedContainerOptions(),
         _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
         _allowedTraversalOptions(allowedTraversalOptions),
+        _allowedLoadEstimatorOptions(allowedLoadEstimatorOptions),
         _allowedDataLayoutOptions(allowedDataLayoutOptions),
         _allowedNewton3Options(allowedNewton3Options),
         _currentConfig() {
@@ -106,6 +110,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   std::set<ContainerOption> _allowedContainerOptions;
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;
   std::set<TraversalOption> _allowedTraversalOptions;
+  std::set<LoadEstimatorOption> _allowedLoadEstimatorOptions;
   std::set<DataLayoutOption> _allowedDataLayoutOptions;
   std::set<Newton3Option> _allowedNewton3Options;
 
@@ -154,6 +159,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   static constexpr int cellSizeSamples = 100;
 
   static constexpr const char *traversalOptionName = "traversalOption";
+  static constexpr const char *loadEstimatorOptionName = "loadEstimatorOption";
   static constexpr const char *dataLayoutOptionName = "dataLayoutOption";
   static constexpr const char *cellSizeFactorsName = "cellSizeFactor";
   static constexpr const char *newton3OptionName = "newton3Option";
@@ -187,6 +193,10 @@ void ActiveHarmony::fetchConfiguration() {
   TraversalOption traversalOption = fetchTuningParameter(traversalOptionName, _allowedTraversalOptions);
   DataLayoutOption dataLayoutOption = fetchTuningParameter(dataLayoutOptionName, _allowedDataLayoutOptions);
   Newton3Option newton3Option = fetchTuningParameter(newton3OptionName, _allowedNewton3Options);
+  ContainerOption containerOption = *compatibleTraversals::allCompatibleContainers(traversalOption).begin();
+  auto applicableLoadEstimators =
+      loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, _allowedLoadEstimatorOptions);
+  LoadEstimatorOption loadEstimatorOption = fetchTuningParameter(loadEstimatorOptionName, applicableLoadEstimators);
 
   double cellSizeFactor = 0;
   if (_allowedCellSizeFactors->isFinite()) {
@@ -199,8 +209,8 @@ void ActiveHarmony::fetchConfiguration() {
     cellSizeFactor = ah_get_real(htask, cellSizeFactorsName);
   }
 
-  _currentConfig = Configuration(*compatibleTraversals::allCompatibleContainers(traversalOption).begin(),
-                                 cellSizeFactor, traversalOption, dataLayoutOption, newton3Option);
+  _currentConfig = Configuration(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
+                                 dataLayoutOption, newton3Option);
 }
 
 void ActiveHarmony::invalidateConfiguration() {
@@ -351,6 +361,7 @@ void ActiveHarmony::resetHarmony() {
     configureTuningParameter(hdef, traversalOptionName, _allowedTraversalOptions);
     configureTuningParameter(hdef, dataLayoutOptionName, _allowedDataLayoutOptions);
     configureTuningParameter(hdef, newton3OptionName, _allowedNewton3Options);
+    configureTuningParameter(hdef, loadEstimatorOptionName, _allowedLoadEstimatorOptions);
 
     // use ActiveHarmony's implementation of the Nelder-Mead method
     ah_def_strategy(hdef, "nm.so");

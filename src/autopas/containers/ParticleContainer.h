@@ -138,6 +138,12 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
     return numParticles;
   }
 
+  /**
+   * Get immutable vector of cells.
+   * @return immutable reference to _cells
+   */
+  const std::vector<ParticleCell> &getCells() const { return _cells; }
+
  protected:
   /**
    * Vector of particle cells.

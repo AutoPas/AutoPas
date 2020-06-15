@@ -101,10 +101,10 @@ class ColoringTraversalWithColorChangeNotify
     : public autopas::VerletClustersColoringTraversal<FPCell, CollectParticlesPerThreadFunctor,
                                                       autopas::DataLayoutOption::aos, true> {
  public:
-  ColoringTraversalWithColorChangeNotify(CollectParticlesPerThreadFunctor *functor,
+  ColoringTraversalWithColorChangeNotify(CollectParticlesPerThreadFunctor *functor, size_t clusterSize,
                                          std::function<void(int)> whenColorChanges)
       : autopas::VerletClustersColoringTraversal<FPCell, CollectParticlesPerThreadFunctor,
-                                                 autopas::DataLayoutOption::aos, true>(functor) {
+                                                 autopas::DataLayoutOption::aos, true>(functor, clusterSize) {
     _whenColorChanges = std::move(whenColorChanges);
   }
 

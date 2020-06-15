@@ -16,6 +16,7 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -163,6 +164,13 @@ class MDFlexConfig {
       autopas::TraversalOption::getMostOptions(), "traversal", true,
       "List of traversal options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllOptions(), " ", {"(", ")"})};
+  /**
+   * traversalOptions
+   */
+  MDFlexOption<std::set<autopas::LoadEstimatorOption>, __LINE__> loadEstimatorOptions{
+      autopas::LoadEstimatorOption::getMostOptions(), "load-estimator", true,
+      "List of load estimator function choices for traversals that do heuristic load balancing. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::LoadEstimatorOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * newton3Options
    */

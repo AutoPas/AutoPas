@@ -13,6 +13,7 @@
 
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/DirectSumTraversal.h"
+#include "autopas/containers/linkedCells/traversals/BalancedSlicedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/C04HCP.h"
@@ -27,6 +28,7 @@
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VarVerletTraversalAsBuild.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/BalancedSlicedTraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C01TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C18TraversalVerlet.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/SlicedTraversalVerlet.h"
@@ -103,6 +105,10 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       return std::make_unique<SlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
+    case TraversalOption::BalancedSliced: {
+      return std::make_unique<BalancedSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
     case TraversalOption::c18: {
       return std::make_unique<C18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
@@ -132,6 +138,10 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       return std::make_unique<SlicedTraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
+    case TraversalOption::BalancedSlicedVerlet: {
+      return std::make_unique<BalancedSlicedTraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
     case TraversalOption::c18Verlet: {
       return std::make_unique<C18TraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
@@ -149,7 +159,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     }
     case TraversalOption::verletClusters: {
       return std::make_unique<VerletClustersTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          &pairwiseFunctor);
+          &pairwiseFunctor, info.clusterSize);
     }
     case TraversalOption::verletClusterCells: {
       return std::make_unique<VerletClusterCellsTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
@@ -157,7 +167,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     }
     case TraversalOption::verletClustersColoring: {
       return std::make_unique<VerletClustersColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          &pairwiseFunctor);
+          &pairwiseFunctor, info.clusterSize);
     }
     case TraversalOption::varVerletTraversalAsBuild: {
       return std::make_unique<VarVerletTraversalAsBuild<ParticleCell, typename ParticleCell::ParticleType,
@@ -166,7 +176,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     case TraversalOption::verletClustersStatic: {
       return std::make_unique<
           VerletClustersStaticTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
-          &pairwiseFunctor);
+          &pairwiseFunctor, info.clusterSize);
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());

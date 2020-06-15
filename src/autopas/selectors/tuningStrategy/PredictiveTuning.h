@@ -11,6 +11,9 @@
 #include <utility>
 
 #include "SetSearchSpaceBasedTuningStrategy.h"
+#include "TuningStrategyInterface.h"
+#include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LoadEstimators.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -28,6 +31,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * Constructor for the PredictiveTuning that generates the search space from the allowed options.
    * @param allowedContainerOptions
    * @param allowedTraversalOptions
+   * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
@@ -39,12 +43,13 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   PredictiveTuning(const std::set<ContainerOption> &allowedContainerOptions,
                    const std::set<double> &allowedCellSizeFactors,
                    const std::set<TraversalOption> &allowedTraversalOptions,
+                   const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                    const std::set<Newton3Option> &allowedNewton3Options, double relativeOptimum,
                    unsigned int maxTuningIterationsWithoutTest, unsigned int testsUntilFirstPrediction,
                    ExtrapolationMethodOption extrapolationMethodOption)
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                                          allowedDataLayoutOptions, allowedNewton3Options),
+                                          allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options),
         _currentConfig(_searchSpace.begin()),
         _relativeOptimumRange(relativeOptimum),
         _maxTuningIterationsWithoutTest(maxTuningIterationsWithoutTest),

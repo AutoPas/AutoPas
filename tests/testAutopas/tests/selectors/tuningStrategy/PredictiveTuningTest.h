@@ -14,15 +14,15 @@
 
 class PredictiveTuningTest : public AutoPasTestBase {
  protected:
-  const autopas::Configuration configurationC01{
-      autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c01,
-                             autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled)};
-  const autopas::Configuration configurationC08{
-      autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
-                             autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled)};
-  const autopas::Configuration configurationSliced{
-      autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
-                             autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled)};
+  const autopas::Configuration configurationC01 = autopas::Configuration(
+      autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c01, autopas::LoadEstimatorOption::none,
+      autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
+  const autopas::Configuration configurationC08 = autopas::Configuration(
+      autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08, autopas::LoadEstimatorOption::none,
+      autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
+  const autopas::Configuration configurationSliced = autopas::Configuration(
+      autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced, autopas::LoadEstimatorOption::none,
+      autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
 
   static constexpr double relativeOptimumRange{1.2};
   static constexpr unsigned int maxTuningIterationsWithoutTest{5};

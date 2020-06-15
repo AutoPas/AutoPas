@@ -16,9 +16,6 @@ class VerletClusterLists;
  */
 template <class Particle>
 class VerletClustersTraversalInterface {
- private:
-  static constexpr size_t clusterSize = VerletClusterLists<Particle>::clusterSize;
-
  public:
   /**
    * virtual default destructor.
@@ -37,7 +34,7 @@ class VerletClustersTraversalInterface {
    * Sets the towers of the cluster list for the traversal to iterate over.
    * @param towers towers of the cluster list for the traversal to iterate over.
    */
-  virtual void setTowers(std::vector<internal::ClusterTower<Particle, clusterSize>> &towers) { _towers = &towers; }
+  virtual void setTowers(std::vector<internal::ClusterTower<Particle>> &towers) { _towers = &towers; }
   /**
    * Returns whether this traversal needs the static cluster thread partiton of the cluster list.
    * @returns whether this traversal needs the static cluster thread partiton of the cluster list.
@@ -57,6 +54,6 @@ class VerletClustersTraversalInterface {
    * The towers of the cluster list to iterate over. These directly contain the particles to be modified by the
    * traversal.
    */
-  std::vector<internal::ClusterTower<Particle, clusterSize>> *_towers;
+  std::vector<internal::ClusterTower<Particle>> *_towers;
 };
 }  // namespace autopas

@@ -27,9 +27,11 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
 
   // every particle interacts with 13 others. Last layer of each dim is covered
   // by previous interactions
+  EXPECT_TRUE(slicedTraversal.isApplicable());
   EXPECT_CALL(functor, AoSFunctor(_, _, true))
       .Times((edgeLength[0] - 1) * (edgeLength[1] - 1) * (edgeLength[2] - 1) * 13);
   slicedTraversal.setCellsToTraverse(cells);
+  slicedTraversal.initTraversal();
   slicedTraversal.traverseParticlePairs();
 }
 
