@@ -110,7 +110,7 @@ class ClusterTower : public ParticleCell<Particle> {
     for (size_t index = 1; index <= _numDummyParticles; index++) {
       lastCluster[_clusterSize - index] = lastCluster[0];  // use first Particle in last cluster as dummy particle!
       lastCluster[_clusterSize - index].setOwnershipState(OwnershipState::dummy);
-      lastCluster[clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
+      lastCluster[_clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
       lastCluster[_clusterSize - index].setID(std::numeric_limits<size_t>::max());
     }
   }
