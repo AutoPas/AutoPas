@@ -197,10 +197,10 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
 
     // Delete dummy particles.
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel
+#pragma omp parallel for
 #endif
-    for (auto &cell : this->_cells) {
-      cell.deleteDummyParticles();
+    for (auto i = 0ul; i < this->_cells.size(); ++i) {
+      this->_cells[i].deleteDummyParticles();
     }
 
     // next find invalid particles

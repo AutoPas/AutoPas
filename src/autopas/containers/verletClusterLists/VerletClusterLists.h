@@ -176,10 +176,10 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
 
     // Delete dummy particles.
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel
+#pragma omp parallel for
 #endif
-    for (auto &tower : _towers) {
-      tower.deleteDummyParticles();
+    for (size_t i = 0ul; i < _towers.size(); ++i) {
+      _towers[i].deleteDummyParticles();
     }
 
     // next find invalid particles
