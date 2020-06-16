@@ -14,8 +14,7 @@ Output of GaussianCluster should contain multiple graphs marked by graphNodeStar
 Between the lines containing graphNodeStartStr and graphEdgeStartStr is a valid csv-file containg all nodes.
 Between the lines containing graphEdgeStartStr and graphEndStr is a valid csv-file containg all edges.
 
-All graphs are combined into one graph. Some special attributes stay the same across all graphs.
-Other attributes are combined into the format "<[0,1,value1);[1,2,value2);...;[N-1,N,valueN)>".
+For each graph in the output a pair of nodesFile and edgesFile is created.
 """
 
 # ---------------------------------------------- Constants ---------------------------------------------
@@ -29,21 +28,20 @@ graphEndStr = 'GaussianCluster Graph: End'
 
 # special headers
 idStr = 'id'
-timesetStr = 'timeset'
 labelStr = 'Label'
 sourceStr = 'Source'
 targetStr = 'Target'
 
 # output file names
-nodesFile = 'graphNodes.csv'
-edgesFile = 'graphEdges.csv'
+nodesFile = 'graph{}_nodes.csv'
+edgesFile = 'graph{}_edges.csv'
 
 # -------------------------------------------- Functions --------------------------------------------
 
 def printHelp():
     print("Usage: ./extractClusterGraph.py path/To/mdFlex/std.out [path/To/mdFelx/fullsearch/std.out]")
     print("If FullSearch is provided, measured runtimes will be added to the nodes")
-    exit(0)
+    sys.exit(0)
     
 def getStringFromLines(lines, regex):
     """extracts first capturing group of first line matching regex"""
@@ -102,72 +100,57 @@ outputDir="clusterGraph_"+datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 class GraphNode:
     """Class to store a node"""
-    def __init__(self, label):
+    def __init__(self, label, values):
         self.id = str(getID(label))
         self.label = label
-        self.timeValues = {}
+        self.values = values
         
     def getRow(self, nodeHeaders, labelHeaders):
         """
         Convert node to csv row.
-        Columns: id, Label, timeset, configurations... , remaining headers...
+        Columns: id, Label, configurations... , remaining headers...
         """
-        # initialize empty list for each header
-        columns = {header:[] for header in nodeHeaders}
-            
-        # collect time-value-pairs for each header
-        for time,values in self.timeValues.items():
-            for header,value in values.items():
-                columns[header].append((time,time+1,value))
     
         # first rows: id, Label
         row = [self.id, self.label]
-        
-        # timeset format: <[time1,time1+1);[time2,time2+1);...;[timeN,timeN+1)>
-        row.append('<{}>'.format(';'.join(['[{:d},{:d})'.format(time,time+1) for time in self.timeValues.keys()])))
         
         # extract label information
         configurations = getLabelDict(self.label)
         for header in labelHeaders:
             row.append(configurations[header])
         
+        # get value for each header
         for header in nodeHeaders:
-            # print each column in format: <[time1,time1+1,value1);[time2,time2+1,value2);...;[timeN,timeN+1,valueN)>
-            row.append('<{}>'.format(';'.join(['[{:d},{:d},{})'.format(*interval) for interval in columns[header]])))
+            row.append(self.values[header])
             
         return row
         
 class GraphEdge:
     """Class to store a edge"""
-    def __init__(self, src, target):
+    def __init__(self, src, target, values):
         self.src = src
         self.target = target
-        self.timeValues = {}
+        self.values = values
         
     def getRow(self, headers):
         """
         Convert edge to csv row
-        Columns: Source, Target, timeset, remaining headers...
+        Columns: Source, Target, remaining headers...
         """
-        # initialize empty list for each header
-        columns = {header:[] for header in headers}
-            
-        # collect time-value-pairs for each header
-        for time,values in self.timeValues.items():
-            for header,value in values.items():
-                columns[header].append((time,time+1,value))
     
         # first rows: Source, Target
         row = [str(self.src), str(self.target)]
         
-        # timeset format: <[time1,time1+1);[time2,time2+1);...;[timeN,timeN+1)>
-        row.append('<{}>'.format(';'.join(['[{:d},{:d})'.format(time,time+1) for time in self.timeValues.keys()])))
-
         for header in headers:
-            # print each column in format: <[time1,time1+1,value1);[time2,time2+1,value2);...;[timeN,timeN+1,valueN)>
-            row.append('<{}>'.format(';'.join(['[{:d},{:d},{})'.format(*interval) for interval in columns[header]])))
+            row.append(self.values[header])
             
         return row
+                       
+class Graph:
+    """Graph consists of a list of nodes and edges"""
+    def __init__(self, nodes, edges):
+        self.nodes = nodes
+        self.edges = edges
 
 # ---------------------------------------------- Script ---------------------------------------------
 
@@ -191,25 +174,26 @@ for i in range(len(lines)):
 # check that all markers appear equally often
 if (not len(graphNodeStartPos) == len(graphEdgeStartPos) == len(graphEndPos)):
     print('Error: number of markers not equal! Node {:d}, Edge {:d}, End {:d}.'.format(len(graphNodeStartPos), len(graphEdgeStartPos), len(graphEndPos)))
-    exit(1)
+    sys.exit(1)
     
 numGraphs = len(graphNodeStartPos)
+graphPos = [(graphNodeStartPos[i], graphEdgeStartPos[i], graphEndPos[i]) for i in range(numGraphs)]
     
 # check that all markers repeatedly appear in order: node, edge, end
-if (not all([(graphNodeStartPos[i] < graphEdgeStartPos[i] < graphEndPos[i]) for i in range(numGraphs)])) or (not all([(graphEndPos[i-1] < graphEdgeStartPos[i]) for i in range(1,numGraphs)])):
+if (not all([node < edge < end for (node, edge, end) in graphPos])) or (not all([(graphEndPos[i-1] < graphEdgeStartPos[i]) for i in range(1,numGraphs)])):
     print('Error: unexpected order of markers!')
-    exit(1)
+    sys.exit(1)
+
 
 # ------ read all graphs ------
-nodes = {}
+graphs = []
 nodeHeaders = set()
-edges = {}
 edgeHeaders = set()
-for i in range(numGraphs):
-    print('Graph found from line {:d} to {:d}'.format(graphNodeStartPos[i], graphEndPos[i]))
+for nodeStart, edgeStart, graphEnd in graphPos:
+    print('Graph found from line {:d} to {:d}'.format(nodeStart, graphEnd))
     
     # ----- read nodes -----
-    nodesReader = csv.reader(lines[graphNodeStartPos[i]+1:graphEdgeStartPos[i]], delimiter=',', quotechar='"')
+    nodesReader = csv.reader(lines[nodeStart+1:edgeStart], delimiter=',', quotechar='"')
     
     # find index labels
     header = next(nodesReader)
@@ -219,6 +203,7 @@ for i in range(numGraphs):
         else:
             nodeHeaders.add(header[c])
     
+    nodes = {}
     for row in nodesReader:
         if (row):
             # get values of current row
@@ -233,19 +218,10 @@ for i in range(numGraphs):
                     values[header[c]] = value
             
             nodeId = getID(label)
-            
-            # create new node if not already otherwise check that label is the same
-            if nodeId in nodes:
-                if label != nodes[nodeId].label:
-                    print('Error: label {} expected {}.'.format(label, nodes[nodeId].label))
-                    exit(1)
-            else:
-                nodes[nodeId] = GraphNode(label)
-                
-            nodes[nodeId].timeValues[i] = values
+            nodes[nodeId] = GraphNode(label, values)
     
     # ----- read edges -----
-    edgeReader = csv.reader(lines[graphEdgeStartPos[i]+1:graphEndPos[i]], delimiter=',', quotechar='"')
+    edgeReader = csv.reader(lines[edgeStart+1:graphEnd], delimiter=',', quotechar='"')
     
     # find index of src and target
     header = next(edgeReader)
@@ -257,6 +233,7 @@ for i in range(numGraphs):
         else:
             edgeHeaders.add(header[c])
     
+    edges = {}
     for row in edgeReader:
         if (row):
             # get values of current row
@@ -272,12 +249,10 @@ for i in range(numGraphs):
                 else:
                     values[header[c]] = value
             
-            # create new edge if not already exists
-            if not (src,target) in edges:
-                edges[src,target] = GraphEdge(src, target)
-                
-            edges[src,target].timeValues[i] = values
-                
+            edges[src,target] = GraphEdge(src, target, values)
+    
+    graphs.append(Graph(nodes,edges))
+   
                 
 # convert header sets to lists
 nodeHeaders = list(nodeHeaders)
@@ -291,10 +266,13 @@ labelHeaders = list(getLabelDict(nodes[0].label).keys())
 
 # create output directory
 try:
-    os.mkdir(outputDir)
+    os.makedirs(outputDir)
 except OSError:
     print('Could not create the output directory: ' + outputDir)
-    exit(2)
+    sys.exit(2)
+    
+allNodeHeaders = [idStr, labelStr] + labelHeaders + nodeHeaders
+allEdgeHeaders = [sourceStr, targetStr] + edgeHeaders
     
 if (fullSearchFile):
     # if fullSearchFile given, append time found in this file to each row
@@ -302,31 +280,35 @@ if (fullSearchFile):
     with open(fullSearchFile) as f:
         fullSearchLines = f.readlines()
     
-    with open(os.path.join(outputDir, nodesFile), 'w', newline='') as f:
-        nodesWriter = csv.writer(f, delimiter=',', quotechar='"')
-        nodesWriter.writerow([idStr, labelStr, timesetStr] + labelHeaders + nodeHeaders +['runtime'])
-        for node in nodes.values():
-            row = node.getRow(nodeHeaders, labelHeaders)
-            
-            # extract label from row and find corresponding runtime in fullSearchFile
-            runtime = getStringFromLines(fullSearchLines, node.label + '.* Reduced value: ([0-9]+)')
+    for i,graph in enumerate(graphs):
+        with open(os.path.join(outputDir, nodesFile.format(i)), 'w', newline='') as f:
+            nodesWriter = csv.writer(f, delimiter=',', quotechar='"')
+            nodesWriter.writerow(allNodeHeaders + ['runtime'])
+            for node in graph.nodes.values():
+                row = node.getRow(nodeHeaders, labelHeaders)
 
-            # append runtime to row if found otherwise discard row
-            if runtime:
-                row.append(runtime)
-                nodesWriter.writerow(row)
+                # extract label from row and find corresponding runtime in fullSearchFile
+                runtime = getStringFromLines(fullSearchLines, node.label + '.* Reduced value: ([0-9]+)')
+
+                # append runtime to row if found otherwise discard row
+                if runtime:
+                    row.append(runtime)
+                    nodesWriter.writerow(row)
             
 else:
     # without fullSearchFile just write lines into file
-    with open(os.path.join(outputDir, nodesFile), 'w', newline='') as f:
-        nodesWriter = csv.writer(f, delimiter=',', quotechar='"')
-        nodesWriter.writerow([idStr, labelStr, timesetStr] + labelHeaders + nodeHeaders)
-        for node in nodes.values():
-            nodesWriter.writerow(node.getRow(nodeHeaders, labelHeaders))
+    for i,graph in enumerate(graphs):
+        with open(os.path.join(outputDir, nodesFile.format(i)), 'w', newline='') as f:
+            nodesWriter = csv.writer(f, delimiter=',', quotechar='"')
+            nodesWriter.writerow(allNodeHeaders)
+            for node in graph.nodes.values():
+                nodesWriter.writerow(node.getRow(nodeHeaders, labelHeaders))
+                    
 
 # write edges into file
-with open(os.path.join(outputDir, edgesFile), 'w', newline='') as f:
-    edgeWriter = csv.writer(f, delimiter=',', quotechar='"')
-    edgeWriter.writerow([sourceStr, targetStr, timesetStr] + edgeHeaders)
-    for edge in edges.values():
-        edgeWriter.writerow(edge.getRow(edgeHeaders))
+for i,graph in enumerate(graphs):
+    with open(os.path.join(outputDir, edgesFile.format(i)), 'w', newline='') as f:
+        edgeWriter = csv.writer(f, delimiter=',', quotechar='"')
+        edgeWriter.writerow(allEdgeHeaders)
+        for edge in graph.edges.values():
+            edgeWriter.writerow(edge.getRow(edgeHeaders))
