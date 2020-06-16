@@ -542,10 +542,10 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
                             : _mm256_and_pd(upot, cutoffDummyMask);
 
       __m256i ownedMaskI = _mm256_cmpeq_epi64(ownedStateI, _ownedStateOwnedMM256i);
-      __m256d energyFactor = _mm256_blendv_pd(_one, _zero, ownedMaskI);
+      __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskI);
       if constexpr (newton3) {
         __m256i ownedMaskJ = _mm256_cmpeq_epi64(ownedStateJ, _ownedStateOwnedMM256i);
-        energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_one, _zero, ownedMaskJ));
+        energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskJ));
       }
       *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
       *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
