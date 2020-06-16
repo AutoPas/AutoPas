@@ -36,6 +36,11 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
                                                                  allowedNewton3Options, rank, commSize);
       break;
     }
+
+    default: {
+      utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown MPIStrategyOption: {}",
+                                         mpiStrategyOption);
+    }
   }
 
   std::unique_ptr<autopas::TuningStrategyInterface> tuningStrategy = nullptr;

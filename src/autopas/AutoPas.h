@@ -682,7 +682,7 @@ class AutoPas {
   /**
    * Whether the chosen tuning strategy will be parallelized by MPI
    */
-  MPIStrategyOption _mpiStrategyOption;
+  MPIStrategyOption _mpiStrategyOption{MPIStrategyOption::noMPI};
 
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
