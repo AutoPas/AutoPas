@@ -115,10 +115,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   ASSERT_TRUE(AoSParticlesEqual(cell1AVX, cell1NoAVX)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2AVX, cell2NoAVX)) << "Cells 2 not equal after copy initialization.";
 
-  ljFunctorNoAVX.SoALoader(cell1NoAVX, cell1NoAVX._particleSoABuffer);
-  ljFunctorNoAVX.SoALoader(cell2NoAVX, cell2NoAVX._particleSoABuffer);
-  ljFunctorAVX.SoALoader(cell1AVX, cell1AVX._particleSoABuffer);
-  ljFunctorAVX.SoALoader(cell2AVX, cell2AVX._particleSoABuffer);
+  ljFunctorNoAVX.SoALoader(cell1NoAVX, cell1NoAVX._particleSoABuffer, 0);
+  ljFunctorNoAVX.SoALoader(cell2NoAVX, cell2NoAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoALoader(cell1AVX, cell1AVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoALoader(cell2AVX, cell2AVX._particleSoABuffer, 0);
 
   ASSERT_TRUE(SoAParticlesEqual(cell1AVX._particleSoABuffer, cell1NoAVX._particleSoABuffer))
       << "Cells 1 not equal after loading.";
@@ -133,10 +133,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   ASSERT_TRUE(SoAParticlesEqual(cell2AVX._particleSoABuffer, cell2NoAVX._particleSoABuffer))
       << "Cells 2 not equal after applying functor.";
 
-  ljFunctorAVX.SoAExtractor(cell1AVX, cell1AVX._particleSoABuffer);
-  ljFunctorAVX.SoAExtractor(cell2AVX, cell2AVX._particleSoABuffer);
-  ljFunctorAVX.SoAExtractor(cell1NoAVX, cell1NoAVX._particleSoABuffer);
-  ljFunctorAVX.SoAExtractor(cell2NoAVX, cell2NoAVX._particleSoABuffer);
+  ljFunctorAVX.SoAExtractor(cell1AVX, cell1AVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoAExtractor(cell2AVX, cell2AVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoAExtractor(cell1NoAVX, cell1NoAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoAExtractor(cell2NoAVX, cell2NoAVX._particleSoABuffer, 0);
 
   ASSERT_TRUE(AoSParticlesEqual(cell1AVX, cell1NoAVX)) << "Cells 1 not equal after extracting.";
   ASSERT_TRUE(AoSParticlesEqual(cell2AVX, cell2NoAVX)) << "Cells 2 not equal after extracting.";
@@ -172,8 +172,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   ljFunctorAVX.initTraversal();
   ljFunctorNoAVX.initTraversal();
 
-  ljFunctorNoAVX.SoALoader(cellNoAVX, cellNoAVX._particleSoABuffer);
-  ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer);
+  ljFunctorNoAVX.SoALoader(cellNoAVX, cellNoAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer, 0);
 
   ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellNoAVX._particleSoABuffer))
       << "Cells not equal after loading.";
@@ -184,8 +184,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellNoAVX._particleSoABuffer))
       << "Cells not equal after applying functor.";
 
-  ljFunctorAVX.SoAExtractor(cellAVX, cellAVX._particleSoABuffer);
-  ljFunctorAVX.SoAExtractor(cellNoAVX, cellNoAVX._particleSoABuffer);
+  ljFunctorAVX.SoAExtractor(cellAVX, cellAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoAExtractor(cellNoAVX, cellNoAVX._particleSoABuffer, 0);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells 1 not equal after extracting.";
 
