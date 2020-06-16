@@ -210,9 +210,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       }
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
-        SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr, zptr, fxptr, fyptr, fzptr,
-                              typeIDptr, typeIDptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ,
-                              &upotSum, rest);
+        SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
+                              zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
+                              &virialSumY, &virialSumZ, &upotSum, rest);
       }
 
       // horizontally reduce fDacc to sumfD
@@ -323,15 +323,15 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       // floor soa2 numParticles to multiple of vecLength
       unsigned int j = 0;
       for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-        SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr,
-                                  fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
-                                  &virialSumZ, &upotSum, 0);
+        SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
+                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
+                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
       }
       const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
       if (rest > 0)
-        SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr,
-                                 fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
-                                 &virialSumZ, &upotSum, rest);
+        SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
+                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
+                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
