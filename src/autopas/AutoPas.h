@@ -13,6 +13,7 @@
 
 #include "autopas/LogicHandler.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
@@ -105,7 +106,7 @@ class AutoPas {
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
-            _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
+            _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
             _maxTuningPhasesWithoutTest, _acquisitionFunctionOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
@@ -473,6 +474,21 @@ class AutoPas {
   void setSelectorStrategy(SelectorStrategyOption selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
 
   /**
+   * Get the list of allowed load estimation algorithms.
+   * @return
+   */
+  const std::set<LoadEstimatorOption> &getAllowedLoadEstimators() const { return _allowedLoadEstimators; }
+
+  /**
+   * Set the list of allowed load estimation algorithms.
+   * For possible container choices see AutoPas::LoadEstimatorOption.
+   * @param allowedLoadEstimators
+   */
+  void setAllowedLoadEstimators(const std::set<LoadEstimatorOption> &allowedLoadEstimators) {
+    AutoPas::_allowedLoadEstimators = allowedLoadEstimators;
+  }
+
+  /**
    * Get the list of allowed containers.
    * @return
    */
@@ -567,7 +583,7 @@ class AutoPas {
    */
   double _cutoff{1.0};
   /**
-   * Length added to the cutoff for the verlet lists' skin.
+   * Length added to the cutoff for the Verlet lists' skin.
    */
   double _verletSkin{0.2};
   /**
@@ -575,9 +591,9 @@ class AutoPas {
    */
   unsigned int _verletRebuildFrequency{20};
   /**
-   * Specifies the size of clusters for verlet lists.
+   * Specifies the size of clusters for Verlet lists.
    */
-  unsigned int _verletClusterSize{64};
+  unsigned int _verletClusterSize{4};
   /**
    * Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */
@@ -644,6 +660,12 @@ class AutoPas {
    */
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors{
       std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
+
+  /***
+   * Load estimation algorithm to be used for efficient parallelisation (only relevant for BalancedSlicedTraversal and
+   * BalancedSlicedTraversalVerlet).
+   */
+  std::set<LoadEstimatorOption> _allowedLoadEstimators{LoadEstimatorOption::getAllOptions()};
 
   /**
    * LogicHandler of autopas.

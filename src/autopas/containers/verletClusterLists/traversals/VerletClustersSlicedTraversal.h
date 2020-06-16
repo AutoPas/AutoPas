@@ -31,8 +31,7 @@ class VerletClustersSlicedTraversal
   using Particle = typename ParticleCell::ParticleType;
 
   PairwiseFunctor *_functor;
-  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3, VerletClusterLists<Particle>::clusterSize>
-      _clusterFunctor;
+  internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;
 
   void processBaseStep(unsigned long x, unsigned long y) {
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
@@ -55,11 +54,12 @@ class VerletClustersSlicedTraversal
    * @param cellLength cell length.
    */
   explicit VerletClustersSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                         const double interactionLength, const std::array<double, 3> &cellLength)
+                                         const double interactionLength, const std::array<double, 3> &cellLength,
+                                         size_t clusterSize)
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                     interactionLength, cellLength),
         _functor(pairwiseFunctor),
-        _clusterFunctor(pairwiseFunctor) {}
+        _clusterFunctor(pairwiseFunctor, clusterSize) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::verletClustersSliced; }
 
@@ -71,12 +71,14 @@ class VerletClustersSlicedTraversal
     if constexpr (dataLayout == DataLayoutOption::soa) {
       VerletClustersTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
     }
+    SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::initTraversal();
   }
 
   void endTraversal() override {
     if constexpr (dataLayout == DataLayoutOption::soa) {
       VerletClustersTraversalInterface<Particle>::_verletClusterLists->extractParticlesFromSoAs(_functor);
     }
+    SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::endTraversal();
   }
 
   void traverseParticlePairs() override {
