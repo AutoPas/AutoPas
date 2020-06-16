@@ -60,11 +60,6 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       : Functor<Particle, ParticleCell, SoAArraysType,
                 LJFunctorAVX<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals,
                              relevantForTuning>>(cutoff),
-        _masks{
-            _mm256_set_epi64x(0, 0, 0, -1),
-            _mm256_set_epi64x(0, 0, -1, -1),
-            _mm256_set_epi64x(0, -1, -1, -1),
-        },
         _cutoffsquare{_mm256_set1_pd(cutoff * cutoff)},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
@@ -77,13 +72,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 #else
       : Functor<Particle, ParticleCell, SoAArraysType,
                 LJFunctorAVX<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals,
-                             relevantForTuning>>(cutoff),
-        _one{0},
-        _masks{0, 0, 0},
-        _cutoffsquare{0},
-        _shift6{0},
-        _epsilon24{0},
-        _sigmaSquare{0} {
+                             relevantForTuning>>(cutoff) {
     utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
@@ -749,20 +738,27 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
+#ifdef __AVX__
   const __m256d _zero{_mm256_set1_pd(0.)};
   const __m256d _one{_mm256_set1_pd(1.)};
-  const __m256i _masks[3];
+  const __m256i _masks[3]{
+      _mm256_set_epi64x(0, 0, 0, -1),
+      _mm256_set_epi64x(0, 0, -1, -1),
+      _mm256_set_epi64x(0, -1, -1, -1),
+  };
   const __m256i _ownedStateDummyMM256i{0x0};
   const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
-  const __m256d _cutoffsquare;
+  const __m256d _cutoffsquare{};
   __m256d _shift6 = _mm256_setzero_pd();
-  __m256d _epsilon24;
-  __m256d _sigmaSquare;
+  __m256d _epsilon24{};
+  __m256d _sigmaSquare{};
+#endif
 
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _upotSum;
+
   // sum of the virial, only calculated if calculateGlobals is true
   std::array<double, 3> _virialSum;
 
