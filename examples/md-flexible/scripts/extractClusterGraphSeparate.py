@@ -42,14 +42,14 @@ def printHelp():
     print("Usage: ./extractClusterGraph.py path/To/mdFlex/std.out [path/To/mdFelx/fullsearch/std.out]")
     print("If FullSearch is provided, measured runtimes will be added to the nodes")
     sys.exit(0)
-    
+
 def getStringFromLines(lines, regex):
     """extracts first capturing group of first line matching regex"""
     for line in lines:
         match = re.search(regex, line)
         if match:
             return match.group(1)
-        
+
 def getLabelDict(label):
     """
     Given label of form: { key1 : value1 , key2 : value 2 , ... }
@@ -73,7 +73,6 @@ def getID(label):
     return getID.labelDict[label]
 
 getID.labelDict = {}
-    
 
 # ---------------------------------------------- Input ----------------------------------------------
 
@@ -163,12 +162,12 @@ with open(graphFile) as f:
     lines = f.readlines()
 
 # get lines containing markers
-for i in range(len(lines)):
-    if graphNodeStartStr in lines[i]:
+for i,line in enumerate(lines):
+    if graphNodeStartStr in line:
         graphNodeStartPos.append(i)
-    elif graphEdgeStartStr in lines[i]:
+    elif graphEdgeStartStr in line:
         graphEdgeStartPos.append(i)
-    elif graphEndStr in lines[i]:
+    elif graphEndStr in line:
         graphEndPos.append(i)
 
 # check that all markers appear equally often
@@ -197,25 +196,25 @@ for nodeStart, edgeStart, graphEnd in graphPos:
     
     # find index labels
     header = next(nodesReader)
-    for c in range(len(header)):
-        if header[c] == labelStr:
+    for c,column in enumerate(header):
+        if column == labelStr:
             labelIndex = c
         else:
-            nodeHeaders.add(header[c])
+            nodeHeaders.add(column)
     
     nodes = {}
     for row in nodesReader:
         if (row):
             # get values of current row
             values = { }
-            for c in range(len(header)):
+            for c,column in enumerate(header):
                 value = row[c]
                 
                 # get Label seperately. Rest in dict values.
                 if c == labelIndex:
                     label = value
                 else:
-                    values[header[c]] = value
+                    values[column] = value
             
             nodeId = getID(label)
             nodes[nodeId] = GraphNode(label, values)
@@ -225,20 +224,20 @@ for nodeStart, edgeStart, graphEnd in graphPos:
     
     # find index of src and target
     header = next(edgeReader)
-    for c in range(len(header)):
-        if header[c] == sourceStr:
+    for c,column in enumerate(header):
+        if column == sourceStr:
             srcIndex = c
-        elif header[c] == targetStr:
+        elif column == targetStr:
             targetIndex = c
         else:
-            edgeHeaders.add(header[c])
+            edgeHeaders.add(column)
     
     edges = {}
     for row in edgeReader:
         if (row):
             # get values of current row
             values = { }
-            for c in range(len(header)):
+            for c,column in enumerate(header):
                 value = row[c]
                 
                 # get Source and Target seperately and convert them to unique ids. Rest in dict values.
@@ -247,7 +246,7 @@ for nodeStart, edgeStart, graphEnd in graphPos:
                 elif c == targetIndex:
                     target = getID(value)
                 else:
-                    values[header[c]] = value
+                    values[column] = value
             
             edges[src,target] = GraphEdge(src, target, values)
     
