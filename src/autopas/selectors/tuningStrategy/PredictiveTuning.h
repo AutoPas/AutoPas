@@ -66,6 +66,16 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
     _lastTest[*_currentConfig] = _tuningIterationsCounter;
   }
 
+  inline long getEvidence(Configuration configuration) const override {
+    // compute the average of times for this configuration
+    auto times = _traversalTimesStorage.at(configuration);
+    long result = 0;
+    for (auto time : times) {
+      result += time.second;
+    }
+    return result / times.size();
+  }
+
   inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
 
   inline void reset(size_t iteration) override {

@@ -79,6 +79,8 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   inline void addEvidence(long time, size_t iteration) override;
 
+  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
+
   inline bool tune(bool currentInvalid) override;
 
   inline void removeN3Option(Newton3Option option) override;

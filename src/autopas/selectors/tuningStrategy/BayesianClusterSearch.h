@@ -117,8 +117,14 @@ class BayesianClusterSearch : public TuningStrategyInterface {
     auto vec = _currentConfig.convertToCluster(_containerTraversalOptions, _dataLayoutOptions, _newton3Options);
     // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
     // represent a maximization problem
-    _gaussianCluster.addEvidence(vec, -time * secondsPerMicroseconds);
+    _gaussianCluster.addEvidence(vec, -static_cast<double>(time) * secondsPerMicroseconds);
     _currentAcquisitions.clear();
+  }
+
+  inline long getEvidence(Configuration configuration) const override {
+    auto vec = FeatureVector(configuration).convertToCluster(_containerTraversalOptions, _dataLayoutOptions,
+                                                             _newton3Options);
+    return -static_cast<long>(_gaussianCluster.getOutput(vec) / secondsPerMicroseconds);
   }
 
   inline void reset(size_t) override {

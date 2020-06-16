@@ -25,6 +25,13 @@ class TuningStrategyInterface {
   virtual void addEvidence(long time, size_t iteration) = 0;
 
   /**
+   * Get the stored time for the given configuration
+   * @param configuration
+   * @return
+   */
+   virtual long getEvidence(Configuration configuration) const = 0;
+
+  /**
    * Returns the currently selected configuration object.
    * @return
    */

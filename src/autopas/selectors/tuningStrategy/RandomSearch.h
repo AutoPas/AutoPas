@@ -57,6 +57,8 @@ class RandomSearch : public TuningStrategyInterface {
 
   inline void addEvidence(long time, size_t iteration) override { _traversalTimes[_currentConfig] = time; }
 
+  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
+
   inline void reset(size_t iteration) override {
     _traversalTimes.clear();
     tune();
@@ -133,7 +135,7 @@ void RandomSearch::selectOptimalConfiguration() {
   _currentConfig = optimum->first;
 
   // measurements are not needed anymore
-  _traversalTimes.clear();
+  // _traversalTimes.clear();
 
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
 }

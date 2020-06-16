@@ -30,14 +30,13 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
       : _tuningStrategy(std::move(tuningStrategy)),
         _comm(comm) {}
 
-  void addEvidence(long time, size_t iteration) override {
-    if (time < _localOptimalTime || _localOptimalTime == -1) {
-      _localOptimalTime = time;
-    }
-    _tuningStrategy->addEvidence(time, iteration);
+  inline void addEvidence(long time, size_t iteration) override { _tuningStrategy->addEvidence(time, iteration); }
+
+  [[nodiscard]] inline long getEvidence(Configuration configuration) const override {
+    return _tuningStrategy->getEvidence(configuration);
   }
 
-  const Configuration &getCurrentConfiguration() const override {
+  [[nodiscard]] const Configuration &getCurrentConfiguration() const override {
     // cellSizeFactor == -1 iff a config is invalid
     if (_optimalConfiguration.cellSizeFactor == -1) {
       return _tuningStrategy->getCurrentConfiguration();
@@ -53,18 +52,17 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     _optimalConfiguration = Configuration();
     _allGlobalConfigurationsTested = false;
     _allLocalConfigurationsTested = false;
-    _localOptimalTime = -1;
   }
 
-  std::set<ContainerOption> getAllowedContainerOptions() const override {
+  [[nodiscard]] std::set<ContainerOption> getAllowedContainerOptions() const override {
     return _tuningStrategy->getAllowedContainerOptions();
   }
 
-  void removeN3Option(Newton3Option badN3Option) override { _tuningStrategy->removeN3Option(badN3Option); }
+  inline void removeN3Option(Newton3Option badN3Option) override { _tuningStrategy->removeN3Option(badN3Option); }
 
-  bool searchSpaceIsTrivial() const override { return _tuningStrategy->searchSpaceIsTrivial(); }
+  [[nodiscard]] inline bool searchSpaceIsTrivial() const override { return _tuningStrategy->searchSpaceIsTrivial(); }
 
-  bool searchSpaceIsEmpty() const override { return _tuningStrategy->searchSpaceIsEmpty(); }
+  [[nodiscard]] inline bool searchSpaceIsEmpty() const override { return _tuningStrategy->searchSpaceIsEmpty(); }
 
   /**
    * Getter for the internal tuningStrategy
@@ -89,8 +87,6 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
 
    bool _allLocalConfigurationsTested{false};
    bool _allGlobalConfigurationsTested{false};
-
-   long _localOptimalTime{-1};
 };
 
 bool MPIParallelizedStrategy::tune(bool currentInvalid) {
@@ -102,8 +98,9 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
   // Make all ranks ready for global tuning simultaneously
   AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
   if (_allGlobalConfigurationsTested) {
+    auto config = _tuningStrategy->getCurrentConfiguration();
     _optimalConfiguration = AutoPasConfigurationCommunicator::optimizeConfiguration(
-        _comm, _tuningStrategy->getCurrentConfiguration(), _localOptimalTime);
+        _comm, config, _tuningStrategy->getEvidence(config));
 
     return false;
   }

@@ -118,35 +118,6 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
   EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::verletClusters});
   EXPECT_EQ(dataLayoutTmp, dataLayoutOptions);
   EXPECT_EQ(newton3Tmp, newton3Options);
-
-  // ============= DEBUG ===============
-  //int i = 1;
-  //for (auto it = containerOptions.begin(); it != containerOptions.end(); ++it) {
-  //  std::cout << "container " << i << ": " << it->to_string() << std::endl;
-  //  ++i;
-  //}
-  //i = 1;
-  //auto numbers = cellSizeFactors.getAll();
-  //for (auto it = numbers.begin(); it != numbers.end(); ++it) {
-  //  std::cout << "cellSizeFactor " << i << ": " << *it << std::endl;
-  //  ++i;
-  //}
-  //i = 1;
-  //for (auto it = traversalOptions.begin(); it != traversalOptions.end(); ++it) {
-  //  std::cout << "traversal " << i << ": " << it->to_string() << std::endl;
-  //  ++i;
-  //}
-  //i = 1;
-  //for (auto it = dataLayoutOptions.begin(); it != dataLayoutOptions.end(); ++it) {
-  //  std::cout << "dataLayout " << i << ": " << it->to_string() << std::endl;
-  //  ++i;
-  //}
-  //i = 1;
-  //for (auto it = newton3Options.begin(); it != newton3Options.end(); ++it) {
-  //  std::cout << "newton3 " << i << ": " << it->to_string() << std::endl;
-  //  ++i;
-  //}
-  // ===================================
 }
 
 TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfiniteCellSizeFactors) {

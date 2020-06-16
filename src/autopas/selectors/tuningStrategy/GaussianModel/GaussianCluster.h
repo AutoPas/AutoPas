@@ -180,6 +180,16 @@ class GaussianCluster {
   }
 
   /**
+   * Get the stored ouput value for a given evidence
+   * @param input
+   * @return
+   */
+  inline double getOutput(VectorPairDiscreteContinuous &input) const {
+    // @todo implement properly
+    return _evidenceMaxValue;
+  }
+
+  /**
    * Calculates the acquisition function for given input.
    * @param af acquisition function a:input->double
    * @param inputDiscrete x
