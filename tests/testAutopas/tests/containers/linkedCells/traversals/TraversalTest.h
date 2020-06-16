@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
+#include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "autopasTools/generators/RandomGenerator.h"
@@ -19,8 +20,9 @@
 /**
  * Test to check if all traversals consider all particles within cutoff
  */
-class TraversalTest : public AutoPasTestBase,
-                      public ::testing::WithParamInterface<std::tuple<autopas::TraversalOption, bool>> {
+class TraversalTest
+    : public AutoPasTestBase,
+      public ::testing::WithParamInterface<std::tuple<autopas::TraversalOption, bool, autopas::LoadEstimatorOption>> {
  public:
   void SetUp() override {}
 
@@ -31,9 +33,11 @@ class TraversalTest : public AutoPasTestBase,
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       auto inputTuple = static_cast<ParamType>(info.param);
       auto traversal(std::get<0>(inputTuple).to_string());
+      auto loadEstimator(std::get<2>(inputTuple).to_string());
       // replace all '-' with '_', otherwise the test name is invalid
       std::replace(traversal.begin(), traversal.end(), '-', '_');
-      return traversal + "_" + (std::get<1>(inputTuple) ? "N3on" : "N3off");
+      std::replace(loadEstimator.begin(), loadEstimator.end(), '-', '_');
+      return traversal + "_" + loadEstimator + "_" + (std::get<1>(inputTuple) ? "N3on" : "N3off");
     }
   };
 

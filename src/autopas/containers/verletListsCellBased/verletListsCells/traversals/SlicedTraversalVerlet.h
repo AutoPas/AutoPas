@@ -20,7 +20,7 @@ namespace autopas {
  * This class provides the sliced traversal.
  *
  * The traversal finds the longest dimension of the simulation domain and cuts
- * the domain in one slice (block) per thread along this dimension. Slices are
+ * the domain into multiple slices along this dimension. Slices are
  * assigned to the threads in a round robin fashion. Each thread locks the cells
  * on the boundary wall to the previous slice with one lock. This lock is lifted
  * as soon the boundary wall is fully processed.

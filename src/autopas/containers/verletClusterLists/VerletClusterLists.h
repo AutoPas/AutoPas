@@ -37,12 +37,6 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
                            public internal::ParticleDeletedObserver {
  public:
   /**
-   * The number of particles in a full cluster. Currently, constexpr is necessary so it can be passed to ClusterTower as
-   * a template parameter.
-   */
-  static constexpr size_t clusterSize = 4;
-
-  /**
    * Defines a cluster range used in the static cluster-thread-partition.
    */
   struct ClusterRange {
@@ -65,13 +59,16 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * The neighbor lists are build using a estimated density.
    * The box is divided into cuboids with roughly the
    * same side length.
-   * @param boxMin the lower corner of the domain
-   * @param boxMax the upper corner of the domain
-   * @param cutoff the cutoff radius of the interaction
-   * @param skin the skin radius
+   * @param boxMin The lower corner of the domain.
+   * @param boxMax The upper corner of the domain.
+   * @param cutoff The cutoff radius of the interaction.
+   * @param skin The skin radius.
+   * @param clusterSize Number of particles per cluster.
    */
-  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
+  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
+                     size_t clusterSize)
       : ParticleContainerInterface<FullParticleCell<Particle>>(),
+        _clusterSize{clusterSize},
         _numClusters{0},
         _numTowersPerInteractionLength{0},
         _boxMin{boxMin},
@@ -79,10 +76,19 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
         _haloBoxMin{utils::ArrayMath::subScalar(boxMin, cutoff + skin)},
         _haloBoxMax{utils::ArrayMath::addScalar(boxMax, cutoff + skin)},
         _cutoff{cutoff},
-        _skin{skin} {}
+        _skin{skin} {
+    // always have at least one tower.
+    _towers.push_back(internal::ClusterTower<Particle>(_clusterSize));
+  }
 
+  /**
+   * @copydoc ParticleContainerInterface::getContainerType()
+   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 
+  /**
+   * @copydoc ParticleContainerInterface::iteratePairwise()
+   */
   void iteratePairwise(TraversalInterface *traversal) override {
     if (_isValid == ValidityState::cellsAndListsValid) {
       autopas::utils::ExceptionHandler::exception(
@@ -201,11 +207,14 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     return invalidParticles;
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
+   */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     std::array<double, 3> towerSize = {_towerSideLength, _towerSideLength,
                                        this->getHaloBoxMax()[2] - this->getHaloBoxMin()[2]};
     std::array<unsigned long, 3> towerDimensions = {_towersPerDim[0], _towersPerDim[1], 1};
-    return TraversalSelectorInfo(towerDimensions, this->getInteractionLength(), towerSize, clusterSize);
+    return TraversalSelectorInfo(towerDimensions, this->getInteractionLength(), towerSize, _clusterSize);
   }
 
   /**
@@ -223,7 +232,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     }
     // there is an implicit barrier at end of single!
     return ParticleIteratorWrapper<Particle, true>(
-        new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, true>(
+        new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
             &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior));
   }
 
@@ -242,12 +251,12 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
       }
       // If the particles are sorted into the towers, we can simply use the iteration over towers.
       return ParticleIteratorWrapper<Particle, false>{
-          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
+          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
               &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior)};
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       return ParticleIteratorWrapper<Particle, false>{
-          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
+          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
               &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, &_particlesToAdd)};
     }
   }
@@ -280,7 +289,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     std::iota(cellsOfInterest.begin(), cellsOfInterest.end(), 0);
 
     return ParticleIteratorWrapper<Particle, true>(
-        new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, true>(
+        new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
             &this->_towers, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
             &internal::unknowingCellBorderAndFlagManager, behavior));
   }
@@ -309,12 +318,15 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     std::iota(cellsOfInterest.begin(), cellsOfInterest.end(), 0);
 
     return ParticleIteratorWrapper<Particle, false>(
-        new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle, clusterSize>, false>(
+        new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
             &this->_towers, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
             &internal::unknowingCellBorderAndFlagManager, behavior,
             _isValid != ValidityState::invalid ? nullptr : &_particlesToAdd));
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::rebuildNeighborLists()
+   */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     if (_isValid == ValidityState::invalid) {
       rebuildTowersAndClusters();
@@ -349,6 +361,9 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     }
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getNumParticles()
+   */
   [[nodiscard]] unsigned long getNumParticles() const override {
     unsigned long sum = 0;
     for (size_t index = 0; index < _towers.size(); index++) {
@@ -386,7 +401,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * Returns the number of particles in each cluster.
    * @return the number of particles in each cluster.
    */
-  constexpr auto getClusterSize() const { return clusterSize; }
+  auto getClusterSize() const { return _clusterSize; }
 
   /**
    * Returns the towers per interaction length. That is how many towers fit into one interaction length rounded up.
@@ -459,8 +474,14 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     return towerIndex2DTo1D(x, y, _towersPerDim);
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getBoxMax()
+   */
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
 
+  /**
+   * @copydoc ParticleContainerInterface::setBoxMax()
+   */
   void setBoxMax(const std::array<double, 3> &boxMax) override { _boxMax = boxMax; }
 
   /**
@@ -469,8 +490,14 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    */
   [[nodiscard]] const std::array<double, 3> &getHaloBoxMax() const { return _haloBoxMax; }
 
+  /**
+   * @copydoc ParticleContainerInterface::getBoxMin()
+   */
   [[nodiscard]] const std::array<double, 3> &getBoxMin() const override { return _boxMin; }
 
+  /**
+   * @copydoc ParticleContainerInterface::setBoxMin()
+   */
   void setBoxMin(const std::array<double, 3> &boxMin) override { _boxMin = boxMin; }
 
   /**
@@ -479,16 +506,34 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    */
   [[nodiscard]] const std::array<double, 3> &getHaloBoxMin() const { return _haloBoxMin; }
 
+  /**
+   * @copydoc ParticleContainerInterface::getCutoff()
+   */
   [[nodiscard]] double getCutoff() const override { return _cutoff; }
 
+  /**
+   * @copydoc ParticleContainerInterface::setCutoff()
+   */
   void setCutoff(double cutoff) override { _cutoff = cutoff; }
 
+  /**
+   * @copydoc ParticleContainerInterface::getSkin()
+   */
   [[nodiscard]] double getSkin() const override { return _skin; }
 
+  /**
+   * @copydoc ParticleContainerInterface::setSkin()
+   */
   void setSkin(double skin) override { _skin = skin; }
 
+  /**
+   * @copydoc ParticleContainerInterface::getInteractionLength()
+   */
   [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skin; }
 
+  /**
+   * @copydoc ParticleContainerInterface::deleteAllParticles()
+   */
   void deleteAllParticles() override {
     _isValid = ValidityState::invalid;
     _particlesToAdd.clear();
@@ -501,7 +546,8 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * This function sets the container structure to valid.
    */
   void rebuildTowersAndClusters() {
-    _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, _particlesToAdd);
+    _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, _particlesToAdd,
+                                                                                 _clusterSize);
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
         _builder->rebuildTowersAndClusters();
     _isValid = ValidityState::cellsValidListsInvalid;
@@ -659,9 +705,14 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
 
  private:
   /**
+   * The number of particles in a full cluster.
+   */
+  size_t _clusterSize;
+
+  /**
    * internal storage, particles are split into a grid in xy-dimension
    */
-  std::vector<internal::ClusterTower<Particle, clusterSize>> _towers{1};
+  std::vector<internal::ClusterTower<Particle>> _towers;
 
   /**
    * Dimensions of the 2D xy-grid.

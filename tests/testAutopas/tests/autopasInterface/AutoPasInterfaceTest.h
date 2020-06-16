@@ -12,8 +12,9 @@
 
 #include "autopas/AutoPas.h"
 
-using testingTuple = std::tuple<std::tuple<autopas::ContainerOption, autopas::TraversalOption>,
-                                autopas::DataLayoutOption, autopas::Newton3Option, double /*cell size factor*/>;
+using testingTuple =
+    std::tuple<std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::LoadEstimatorOption>,
+               autopas::DataLayoutOption, autopas::Newton3Option, double /*cell size factor*/>;
 
 class AutoPasInterfaceTest : public testing::Test, public ::testing::WithParamInterface<testingTuple> {
  public:
@@ -24,6 +25,7 @@ class AutoPasInterfaceTest : public testing::Test, public ::testing::WithParamIn
       std::string str;
       str += std::get<0>(std::get<0>(inputTuple)).to_string() + "_";
       str += std::get<1>(std::get<0>(inputTuple)).to_string() + "_";
+      str += std::get<2>(std::get<0>(inputTuple)).to_string() + "_";
       str += std::get<1>(inputTuple).to_string() + "_";
       str += "N3" + std::get<2>(inputTuple).to_string() + "_";
       str += std::string{"cellSizeFactor"} + std::to_string(std::get<3>(inputTuple));

@@ -40,6 +40,12 @@ class Newton3Option : public Option<Newton3Option> {
   constexpr operator Value() const { return _value; }
 
   /**
+   * Set of options that are very unlikely to be interesting.
+   * @return
+   */
+  static std::set<Newton3Option> getDiscouragedOptions() { return {}; }
+
+  /**
    * Provides a way to iterate over the possible choices of TraversalOption.
    * @return map option -> string representation
    */

@@ -60,7 +60,10 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
     _dummyStarts = {0};
   }
 
-  ContainerOption getContainerType() const override { return ContainerOption::verletClusterCells; }
+  /**
+   * @copydoc ParticleContainerInterface::getContainerType()
+   */
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterCells; }
 
   /**
    * Function to iterate over all pairs of particles.
@@ -223,6 +226,9 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
     return invalidParticles;
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
+   */
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(_cellsPerDim, this->getInteractionLength(),
                                  {_gridSideLength, _gridSideLength, this->getBoxMax()[2] - this->getBoxMin()[2]},
