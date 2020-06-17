@@ -465,7 +465,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     std::array<unsigned char, 4> ownedStateJ{};
     if constexpr (remainderIsMasked) {
       switch (rest) {
-          // std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], 4 - rest);
+          // std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], rest);
           // without the switch a call to std::memcpy is generated, which we do not want!
           // using a switch the compiler knows what rest can be 1, 2 or 3, and can optimize things.
         case 1:
