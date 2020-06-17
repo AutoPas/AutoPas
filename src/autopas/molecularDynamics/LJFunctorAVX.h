@@ -176,11 +176,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
         continue;
       }
 
-      static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
-                    "OwnershipStates underlying type should be int64_t!");
-      // ownedStatePtr contains int64_t, so we broadcast these to make an __m256i.
-      // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
-      __m256i ownedStateI = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr[i]));
+      static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, unsigned char>,
+                    "OwnershipStates underlying type should be unsigned char!");
+      std::array<unsigned char, 4> ownedStateI{
+          static_cast<unsigned char>(ownedStatePtr[i]), static_cast<unsigned char>(ownedStatePtr[i]),
+          static_cast<unsigned char>(ownedStatePtr[i]), static_cast<unsigned char>(ownedStatePtr[i])};
 
       __m256d fxacc = _mm256_setzero_pd();
       __m256d fyacc = _mm256_setzero_pd();
@@ -193,14 +193,14 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       // floor soa numParticles to multiple of vecLength
       size_t j = 0;
       for (; j < (i & ~(vecLength - 1)); j += 4) {
-        SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
+        SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const unsigned char *>(ownedStatePtr), x1, y1, z1, xptr,
+                               yptr, zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
                                &virialSumY, &virialSumZ, &upotSum, 0);
       }
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
-        SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                              zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
+        SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const unsigned char *>(ownedStatePtr), x1, y1, z1, xptr,
+                              yptr, zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
                               &virialSumY, &virialSumZ, &upotSum, rest);
       }
 
@@ -299,11 +299,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       __m256d fyacc = _mm256_setzero_pd();
       __m256d fzacc = _mm256_setzero_pd();
 
-      static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
-                    "OwnershipStates underlying type should be int64_t!");
-      // ownedStatePtr1 contains int64_t, so we broadcast these to make an __m256i.
-      // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
-      __m256i ownedStateI = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr1[i]));
+      static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, unsigned char>,
+                    "OwnershipStates underlying type should be unsigned char!");
+      std::array<unsigned char, 4> ownedStateI{
+          static_cast<unsigned char>(ownedStatePtr1[i]), static_cast<unsigned char>(ownedStatePtr1[i]),
+          static_cast<unsigned char>(ownedStatePtr1[i]), static_cast<unsigned char>(ownedStatePtr1[i])};
 
       const __m256d x1 = _mm256_broadcast_sd(&x1ptr[i]);
       const __m256d y1 = _mm256_broadcast_sd(&y1ptr[i]);
@@ -312,15 +312,15 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       // floor soa2 numParticles to multiple of vecLength
       unsigned int j = 0;
       for (; j < (soa2.getNumParticles() & ~(vecLength - 1)); j += 4) {
-        SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
-                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+        SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const unsigned char *>(ownedStatePtr2), x1, y1, z1,
+                                  x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc,
+                                  fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
       }
       const int rest = (int)(soa2.getNumParticles() & (vecLength - 1));
       if (rest > 0)
-        SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
-                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+        SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const unsigned char *>(ownedStatePtr2), x1, y1, z1,
+                                 x2ptr, y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc,
+                                 fzacc, &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -407,8 +407,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * @param rest
    */
   template <bool newton3, bool remainderIsMasked>
-  inline void SoAKernel(const size_t j, const __m256i ownedStateI, const int64_t *const __restrict__ ownedStatePtr2,
-                        const __m256d &x1, const __m256d &y1, const __m256d &z1, const double *const __restrict__ x2ptr,
+  inline void SoAKernel(const size_t j, const std::array<unsigned char, 4> ownedStateI,
+                        const unsigned char *const __restrict__ ownedStatePtr2, const __m256d &x1, const __m256d &y1,
+                        const __m256d &z1, const double *const __restrict__ x2ptr,
                         const double *const __restrict__ y2ptr, const double *const __restrict__ z2ptr,
                         double *const __restrict__ fx2ptr, double *const __restrict__ fy2ptr,
                         double *const __restrict__ fz2ptr, const size_t *const typeID1ptr,
@@ -461,13 +462,32 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     const __m256d cutoffMask = _mm256_cmp_pd(dr2, _cutoffsquare, _CMP_LE_OS);
 
     // This requires that dummy is zero (otherwise when loading using a mask the owned state will not be zero)
-    const __m256i ownedStateJ =
-        remainderIsMasked
-            ? _mm256_maskload_epi64(reinterpret_cast<long long const *>(&ownedStatePtr2[j]), _masks[rest - 1])
-            : _mm256_load_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr2[j]));
-    // This requires that dummy is the first entry in OwnershipState!
-    const __m256i dummyMask = _mm256_cmpgt_epi64(ownedStateJ, _ownedStateDummyMM256i);
-    const __m256d cutoffDummyMask = _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(dummyMask));
+    std::array<unsigned char, 4> ownedStateJ{};
+    if constexpr (remainderIsMasked) {
+      switch (rest) {
+          // std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], 4 - rest);
+          // the above line would produce a call to std::memcpy, which we do not want!
+          // using a switch the compiler knows what rest can be and can optimize things.
+        case 1:
+          std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], 4 - rest);
+          break;
+        case 2:
+          std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], 4 - rest);
+          break;
+        case 3:
+          std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], 4 - rest);
+          break;
+      }
+      //_mm256_maskload_epi64(reinterpret_cast<long long const *>(&ownedStatePtr2[j]), _masks[rest - 1]);
+    } else {
+      std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], 4);
+      //_mm256_load_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr2[j]));
+    }
+    // This requires that OwnershipState::dummy is zero!
+    static_assert(static_cast<unsigned char>(OwnershipState::dummy) == 0,
+                  "OwnershipState::dummy has to have the value 0.");
+    const int32_t dummyMask = reinterpret_cast<int &>(*ownedStateJ.data());
+    const __m256d cutoffDummyMask = _mm256_blend_pd(_zero, cutoffMask, dummyMask);
 
     // if everything is masked away return from this function.
     if (_mm256_movemask_pd(cutoffDummyMask) == 0) {
@@ -530,11 +550,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
           remainderIsMasked ? _mm256_and_pd(upot, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
                             : _mm256_and_pd(upot, cutoffDummyMask);
 
-      __m256i ownedMaskI = _mm256_cmpeq_epi64(ownedStateI, _ownedStateOwnedMM256i);
-      __m256d energyFactor = _mm256_blendv_pd(_zero, _one, _mm256_castsi256_pd(ownedMaskI));
+      const int32_t ownedMaskI = reinterpret_cast<const int32_t &>(*ownedStateI.data()) & _ownedStateOwnedMask;
+      __m256d energyFactor = _mm256_blend_pd(_zero, _one, ownedMaskI);
       if constexpr (newton3) {
-        __m256i ownedMaskJ = _mm256_cmpeq_epi64(ownedStateJ, _ownedStateOwnedMM256i);
-        energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, _mm256_castsi256_pd(ownedMaskJ)));
+        const int32_t ownedMaskJ = reinterpret_cast<const int32_t &>(*ownedStateJ.data()) & _ownedStateOwnedMask;
+        energyFactor = _mm256_add_pd(energyFactor, _mm256_blend_pd(_zero, _one, ownedMaskJ));
       }
       *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
       *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
@@ -746,8 +766,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       _mm256_set_epi64x(0, 0, -1, -1),
       _mm256_set_epi64x(0, -1, -1, -1),
   };
-  const __m256i _ownedStateDummyMM256i{0x0};
-  const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
+
+  static_assert(static_cast<unsigned char>(OwnershipState::owned) == 1,
+                "OwnershipState::owned has to have the value 1.");
+  static constexpr int32_t _ownedStateOwnedMask{0x01010101};
+
   const __m256d _cutoffsquare{};
   __m256d _shift6 = _mm256_setzero_pd();
   __m256d _epsilon24{};
