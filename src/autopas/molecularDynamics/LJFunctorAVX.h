@@ -461,13 +461,13 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     const __m256d cutoffMask = _mm256_cmp_pd(dr2, _cutoffsquare, _CMP_LE_OS);
 
     // This requires that dummy is zero (otherwise when loading using a mask the owned state will not be zero)
-    const __m256i ownedStateJ =
-        remainderIsMasked
-            ? _mm256_maskload_epi64(reinterpret_cast<long long const *>(&ownedStatePtr2[j]), _masks[rest - 1])
-            : _mm256_load_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr2[j]));
+    const __m256i ownedStateJ = remainderIsMasked
+                                    ? _mm256_castpd_si256(_mm256_maskload_pd(
+                                          reinterpret_cast<double const *>(&ownedStatePtr2[j]), _masks[rest - 1]))
+                                    : _mm256_load_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr2[j]));
     // This requires that dummy is the first entry in OwnershipState!
-    const __m256i dummyMask = _mm256_cmpgt_epi64(ownedStateJ, _ownedStateDummyMM256i);
-    const __m256d cutoffDummyMask = _mm256_and_pd(cutoffMask, _mm256_castsi256_pd(dummyMask));
+    const __m256d dummyMask = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _zero, _CMP_NEQ_UQ);
+    const __m256d cutoffDummyMask = _mm256_and_pd(cutoffMask, dummyMask);
 
     // if everything is masked away return from this function.
     if (_mm256_movemask_pd(cutoffDummyMask) == 0) {
@@ -530,10 +530,12 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
           remainderIsMasked ? _mm256_and_pd(upot, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
                             : _mm256_and_pd(upot, cutoffDummyMask);
 
-      __m256i ownedMaskI = _mm256_cmpeq_epi64(ownedStateI, _ownedStateOwnedMM256i);
+      __m256i ownedMaskI =
+          _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateI), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
       __m256d energyFactor = _mm256_blendv_pd(_zero, _one, _mm256_castsi256_pd(ownedMaskI));
       if constexpr (newton3) {
-        __m256i ownedMaskJ = _mm256_cmpeq_epi64(ownedStateJ, _ownedStateOwnedMM256i);
+        __m256i ownedMaskJ =
+            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
         energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, _mm256_castsi256_pd(ownedMaskJ)));
       }
       *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
