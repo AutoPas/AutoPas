@@ -469,13 +469,13 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
           // without the switch a call to std::memcpy is generated, which we do not want!
           // using a switch the compiler knows what rest can be 1, 2 or 3, and can optimize things.
         case 1:
-          std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], 4 - rest);
+          std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], rest);
           break;
         case 2:
-          std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], 4 - rest);
+          std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], rest);
           break;
         case 3:
-          std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], 4 - rest);
+          std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], rest);
           break;
       }
       //_mm256_maskload_epi64(reinterpret_cast<long long const *>(&ownedStatePtr2[j]), _masks[rest - 1]);
@@ -487,9 +487,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     static_assert(static_cast<unsigned char>(OwnershipState::dummy) == 0,
                   "OwnershipState::dummy has to have the value 0.");
     // const int32_t dummyMask = reinterpret_cast<int &>(*ownedStateJ.data());
-    // TODO: possibly other way around!
-    const __m256i dummyMaskPartial = _mm256_set_epi64x(ownedStateJ[0], ownedStateJ[1], ownedStateJ[2], ownedStateJ[3]);
-    const __m256d dummyMask = _mm256_castsi256_pd(_mm256_cmp_pd(dummyMaskPartial, _zero, _CMP_NEQ_OQ));
+    const __m256i ownershipStateJ = _mm256_set_epi64x(ownedStateJ[3], ownedStateJ[2], ownedStateJ[1], ownedStateJ[0]);
+    const __m256d dummyMask = _mm256_castsi256_pd(_mm256_cmp_pd(ownershipStateJ, _zero, _CMP_NEQ_OQ));
     const __m256d cutoffDummyMask = _mm256_and_pd(cutoffMask, dummyMask);
     // const __m256d cutoffDummyMask = _mm256_blendv_pd(_zero, cutoffMask, dummyMaskPartial);
 
@@ -554,18 +553,18 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
           remainderIsMasked ? _mm256_and_pd(upot, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
                             : _mm256_and_pd(upot, cutoffDummyMask);
 
-      const __m256i ownershipStateI = _mm256_set_epi64x(ownedStateI[0], ownedStateI[1], ownedStateI[2], ownedStateI[3]);
+      // ownedstateI is always the same!
+      const __m256i ownershipStateI = _mm256_set1_epi64x(ownedStateI[0]);
+
       const __m256i ownedI = _mm256_and_pd(ownershipStateI, _ownedStateOwnedMask);
-      // const __m256d ownedMaskI = _mm256_cmp_pd(_mm256_castsi256_pd(ownedI), _zero, _CMP_NEQ_OQ);
-      //__m256d energyFactor = _mm256_and_pd(_one, ownedMaskI);
-      __m256d energyFactor = _mm256_blendv_pd(_zero, _one, _mm256_castsi256_pd(ownedI));
+      const __m256d ownedMaskI = _mm256_cmp_pd(_mm256_castsi256_pd(ownedI), _zero, _CMP_NEQ_OQ);
+      __m256d energyFactor = _mm256_and_pd(_one, ownedMaskI);
+      //__m256d energyFactor = _mm256_blendv_pd(_zero, _one, _mm256_castsi256_pd(ownedI));
       if constexpr (newton3) {
-        const __m256i ownershipStateJ =
-            _mm256_set_epi64x(ownedStateJ[0], ownedStateJ[1], ownedStateJ[2], ownedStateJ[3]);
         const __m256i ownedJ = _mm256_and_pd(ownershipStateJ, _ownedStateOwnedMask);
-        // const __m256d ownedMaskJ = _mm256_cmp_pd(_mm256_castsi256_pd(ownedJ), _zero, _CMP_NEQ_OQ);
-        // energyFactor = _mm256_add_pd(energyFactor, _mm256_and_pd(_FFFFMASK, ownedMaskJ));
-        energyFactor = _mm256_blendv_pd(_zero, _one, _mm256_castsi256_pd(ownedJ));
+        const __m256d ownedMaskJ = _mm256_cmp_pd(_mm256_castsi256_pd(ownedJ), _zero, _CMP_NEQ_OQ);
+        energyFactor = _mm256_add_pd(energyFactor, _mm256_and_pd(_one, ownedMaskJ));
+        // energyFactor = _mm256_blendv_pd(_zero, _one, _mm256_castsi256_pd(ownedJ));
       }
       *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
       *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
