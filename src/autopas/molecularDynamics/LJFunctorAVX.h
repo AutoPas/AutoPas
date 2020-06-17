@@ -466,8 +466,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     if constexpr (remainderIsMasked) {
       switch (rest) {
           // std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], 4 - rest);
-          // the above line would produce a call to std::memcpy, which we do not want!
-          // using a switch the compiler knows what rest can be and can optimize things.
+          // without the switch a call to std::memcpy is generated, which we do not want!
+          // using a switch the compiler knows what rest can be 1, 2 or 3, and can optimize things.
         case 1:
           std::memcpy(ownedStateJ.data(), &ownedStatePtr2[j], 4 - rest);
           break;
@@ -486,8 +486,12 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     // This requires that OwnershipState::dummy is zero!
     static_assert(static_cast<unsigned char>(OwnershipState::dummy) == 0,
                   "OwnershipState::dummy has to have the value 0.");
-    const int32_t dummyMask = reinterpret_cast<int &>(*ownedStateJ.data());
-    const __m256d cutoffDummyMask = _mm256_blend_pd(_zero, cutoffMask, dummyMask);
+    // const int32_t dummyMask = reinterpret_cast<int &>(*ownedStateJ.data());
+    // TODO: possibly other way around!
+    const __m256i dummyMaskPartial = _mm256_set_epi64x(ownedStateJ[0], ownedStateJ[1], ownedStateJ[2], ownedStateJ[3]);
+    const __m256d dummyMask = _mm256_castsi256_pd(_mm256_cmp_pd(dummyMaskPartial, _zero, _CMP_NEQ_OQ));
+    const __m256d cutoffDummyMask = _mm256_and_pd(cutoffMask, dummyMask);
+    // const __m256d cutoffDummyMask = _mm256_blendv_pd(_zero, cutoffMask, dummyMaskPartial);
 
     // if everything is masked away return from this function.
     if (_mm256_movemask_pd(cutoffDummyMask) == 0) {
@@ -550,11 +554,18 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
           remainderIsMasked ? _mm256_and_pd(upot, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
                             : _mm256_and_pd(upot, cutoffDummyMask);
 
-      const int32_t ownedMaskI = reinterpret_cast<const int32_t &>(*ownedStateI.data()) & _ownedStateOwnedMask;
-      __m256d energyFactor = _mm256_blend_pd(_zero, _one, ownedMaskI);
+      const __m256i ownershipStateI = _mm256_set_epi64x(ownedStateI[0], ownedStateI[1], ownedStateI[2], ownedStateI[3]);
+      const __m256i ownedI = _mm256_and_pd(ownershipStateI, _ownedStateOwnedMask);
+      // const __m256d ownedMaskI = _mm256_cmp_pd(_mm256_castsi256_pd(ownedI), _zero, _CMP_NEQ_OQ);
+      //__m256d energyFactor = _mm256_and_pd(_one, ownedMaskI);
+      __m256d energyFactor = _mm256_blendv_pd(_zero, _one, _mm256_castsi256_pd(ownedI));
       if constexpr (newton3) {
-        const int32_t ownedMaskJ = reinterpret_cast<const int32_t &>(*ownedStateJ.data()) & _ownedStateOwnedMask;
-        energyFactor = _mm256_add_pd(energyFactor, _mm256_blend_pd(_zero, _one, ownedMaskJ));
+        const __m256i ownershipStateJ =
+            _mm256_set_epi64x(ownedStateJ[0], ownedStateJ[1], ownedStateJ[2], ownedStateJ[3]);
+        const __m256i ownedJ = _mm256_and_pd(ownershipStateJ, _ownedStateOwnedMask);
+        // const __m256d ownedMaskJ = _mm256_cmp_pd(_mm256_castsi256_pd(ownedJ), _zero, _CMP_NEQ_OQ);
+        // energyFactor = _mm256_add_pd(energyFactor, _mm256_and_pd(_FFFFMASK, ownedMaskJ));
+        energyFactor = _mm256_blendv_pd(_zero, _one, _mm256_castsi256_pd(ownedJ));
       }
       *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
       *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
@@ -761,6 +772,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 #ifdef __AVX__
   const __m256d _zero{_mm256_set1_pd(0.)};
   const __m256d _one{_mm256_set1_pd(1.)};
+  const __m256d _FFFFMASK{_mm256_castsi256_pd(_mm256_set1_epi8(0xFF))};
   const __m256i _masks[3]{
       _mm256_set_epi64x(0, 0, 0, -1),
       _mm256_set_epi64x(0, 0, -1, -1),
@@ -769,7 +781,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
   static_assert(static_cast<unsigned char>(OwnershipState::owned) == 1,
                 "OwnershipState::owned has to have the value 1.");
-  static constexpr int32_t _ownedStateOwnedMask{0x01010101};
+  const __m256i _ownedStateOwnedMask{_mm256_set1_epi64x(1)};
 
   const __m256d _cutoffsquare{};
   __m256d _shift6 = _mm256_setzero_pd();
