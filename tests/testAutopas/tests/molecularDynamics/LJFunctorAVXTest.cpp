@@ -86,7 +86,7 @@ bool LJFunctorAVXTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
   return ret;
 }
 
-void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
+void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool doDeleteSomeParticles) {
   FMCell cell1AVX;
   FMCell cell2AVX;
 
@@ -97,6 +97,15 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
       cell1AVX, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
   autopasTools::generators::RandomGenerator::fillWithParticles(
       cell2AVX, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
+
+  if (doDeleteSomeParticles) {
+    for (auto &particle : cell1AVX) {
+      if (particle.getID() == 3) particle.markAsDeleted();
+    }
+    for (auto &particle : cell2AVX) {
+      if (particle.getID() == 4) particle.markAsDeleted();
+    }
+  }
 
   // copy cells
   FMCell cell1NoAVX(cell1AVX);
@@ -149,7 +158,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
-void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
+void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles) {
   FMCell cellAVX;
 
   size_t numParticles = 7;
@@ -157,6 +166,12 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
+
+  if (doDeleteSomeParticles) {
+    for (auto &particle : cellAVX) {
+      if (particle.getID() == 3) particle.markAsDeleted();
+    }
+  }
 
   // copy cells
   FMCell cellNoAVX(cellAVX);
@@ -197,12 +212,30 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
-TEST_F(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCellNewton3) { testLJFunctorVSLJFunctorAVXOneCell(true); }
+TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCell) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorAVXOneCell(newton3, doDeleteSomeParticle);
+}
 
-TEST_F(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCellNoNewton3) { testLJFunctorVSLJFunctorAVXOneCell(false); }
+TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXTwoCells) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorAVXTwoCells(newton3, doDeleteSomeParticle);
+}
 
-TEST_F(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXTwoCellNewton3) { testLJFunctorVSLJFunctorAVXTwoCells(true); }
+/**
+ * Lambda to generate a readable string out of the parameters of this test.
+ */
+static auto toString = [](const auto &info) {
+  auto [newton3, doDeleteSomeParticle] = info.param;
+  std::stringstream resStream;
+  resStream << (newton3 ? "N3" : "noN3") << "_" << (doDeleteSomeParticle ? "withDeletions" : "noDeletions");
+  std::string res = resStream.str();
+  std::replace(res.begin(), res.end(), '-', '_');
+  std::replace(res.begin(), res.end(), '.', '_');
+  return res;
+};
 
-TEST_F(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXTwoCellNoNewton3) { testLJFunctorVSLJFunctorAVXTwoCells(false); }
+INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorAVXTest, ::testing::Combine(::testing::Bool(), ::testing::Bool()),
+                         toString);
 
 #endif  // __AVX__
