@@ -147,7 +147,9 @@ class ParticleBase {
          << "\nVelocity: "
          << _v[0] << " | " << _v[1] << " | " << _v[2]
          << "\nForce   : "
-         << _f[0] << " | " << _f[1] << " | " << _f[2];
+         << _f[0] << " | " << _f[1] << " | " << _f[2]
+         << "\nOwnershipState : "
+         << _ownershipState;
     // clang-format on
     return text.str();
   }
