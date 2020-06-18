@@ -26,6 +26,7 @@ enum class OwnershipState : int64_t {
   halo
 };
 
+[[maybe_unused]]
 static std::ostream &operator<<(std::ostream &os, const OwnershipState &ownershipState) {
   switch (ownershipState) {
     case OwnershipState::dummy:
