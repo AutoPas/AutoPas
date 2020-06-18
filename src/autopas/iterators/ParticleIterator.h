@@ -189,7 +189,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
 
  protected:
   /**
-   * @copydoc ParticleIteratorInterface::deleteCurrentParticle()
+   * @copydoc ParticleIteratorInterface::deleteCurrentParticleImpl()
    */
   inline void deleteCurrentParticleImpl() override {
     if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
