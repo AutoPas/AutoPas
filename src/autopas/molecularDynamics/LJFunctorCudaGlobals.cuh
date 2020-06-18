@@ -8,6 +8,7 @@
 #pragma once
 
 #include "autopas/pairwiseFunctors/FunctorCuda.cuh"
+#include "autopas/particles/OwnershipState.h"
 #include "cuda_runtime.h"
 
 namespace autopas {
@@ -26,8 +27,8 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
    * @posY y positions of the particles
    * @posZ z positions of the particles
    */
-  LJFunctorCudaGlobalsSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ, bool *owned,
-                          floatType *globals)
+  LJFunctorCudaGlobalsSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ,
+                          OwnershipState *ownershipState, floatType *globals)
       : _size(size),
         _posX(posX),
         _posY(posY),
@@ -35,7 +36,7 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
         _forceX(nullptr),
         _forceY(nullptr),
         _forceZ(nullptr),
-        _owned(owned),
+        _ownershipState(ownershipState),
         _globals(globals) {}
 
   /**
@@ -49,7 +50,7 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
    * @forceZ z forces of the particles
    */
   LJFunctorCudaGlobalsSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ, floatType *forceX,
-                          floatType *forceY, floatType *forceZ, floatType *owned, floatType *globals)
+                          floatType *forceY, floatType *forceZ, OwnershipState *ownershipState, floatType *globals)
       : _size(size),
         _posX(posX),
         _posY(posY),
@@ -57,7 +58,7 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
         _forceX(forceX),
         _forceY(forceY),
         _forceZ(forceZ),
-        _owned(owned),
+        _ownershipState(ownershipState),
         _globals(globals) {}
 
   /**
@@ -72,7 +73,7 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
         _forceX(obj._forceX),
         _forceY(obj._forceY),
         _forceZ(obj._forceZ),
-        _owned(obj._owned),
+        _ownershipState(obj._ownershipState),
         _globals(obj._globals) {}
 
   unsigned int _size;
@@ -82,7 +83,7 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
   floatType *_forceX;
   floatType *_forceY;
   floatType *_forceZ;
-  floatType *_owned;
+  OwnershipState *_ownershipState;
   floatType *_globals;
 };
 

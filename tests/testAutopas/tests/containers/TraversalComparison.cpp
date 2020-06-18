@@ -246,7 +246,7 @@ auto TraversalComparison::getTestParams() {
                 for (auto numHalo : {0ul, 200ul}) {
                   for (bool slightMove : {true, false}) {
                     for (DeletionPosition particleDeletionPosition :
-                         {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
+                         {DeletionPosition::never, DeletionPosition::beforeLists, DeletionPosition::afterLists,
                           DeletionPosition::beforeAndAfterLists}) {
                       if (dataLayoutOption == autopas::DataLayoutOption::Value::cuda and
                           traversalOption == autopas::TraversalOption::Value::c01Cuda and (boxMax[0] < 5.) and

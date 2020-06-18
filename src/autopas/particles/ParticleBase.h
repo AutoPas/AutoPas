@@ -273,8 +273,10 @@ class ParticleBase {
   /**
    * The type for storage arrays for Cuda.
    */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<idType, floatType, floatType, floatType, floatType,
-                                                                    floatType, floatType, floatType>::Type;
+  using CudaDeviceArraysType =
+      typename autopas::utils::CudaSoAType<idType /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
+                                           floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
+                                           OwnershipState /*ownershipState*/>::Type;
 #else
   /**
    * The type for storage arrays for Cuda.

@@ -110,10 +110,10 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   ASSERT_TRUE(AoSParticlesEqual(cell1Cuda, cell1NoCuda)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2Cuda, cell2NoCuda)) << "Cells 2 not equal after copy initialization.";
 
-  ljFunctorNoCuda.SoALoader(cell1NoCuda, cell1NoCuda._particleSoABuffer);
-  ljFunctorNoCuda.SoALoader(cell2NoCuda, cell2NoCuda._particleSoABuffer);
-  ljFunctorCuda.SoALoader(cell1Cuda, cell1Cuda._particleSoABuffer);
-  ljFunctorCuda.SoALoader(cell2Cuda, cell2Cuda._particleSoABuffer);
+  ljFunctorNoCuda.SoALoader(cell2NoCuda, cell2NoCuda._particleSoABuffer, 0);
+  ljFunctorNoCuda.SoALoader(cell1NoCuda, cell1NoCuda._particleSoABuffer, 0);
+  ljFunctorCuda.SoALoader(cell1Cuda, cell1Cuda._particleSoABuffer, 0);
+  ljFunctorCuda.SoALoader(cell2Cuda, cell2Cuda._particleSoABuffer, 0);
 
   ljFunctorCuda.deviceSoALoader(cell1Cuda._particleSoABuffer, cell1Cuda._particleSoABufferDevice);
   ljFunctorCuda.deviceSoALoader(cell2Cuda._particleSoABuffer, cell2Cuda._particleSoABufferDevice);
@@ -130,10 +130,10 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   ASSERT_TRUE(SoAParticlesEqual<Molecule>(cell2Cuda._particleSoABuffer, cell2NoCuda._particleSoABuffer))
       << "Cells 2 not equal after applying functor and extracting to SoA.";
 
-  ljFunctorCuda.SoAExtractor(cell1Cuda, cell1Cuda._particleSoABuffer);
-  ljFunctorCuda.SoAExtractor(cell2Cuda, cell2Cuda._particleSoABuffer);
-  ljFunctorCuda.SoAExtractor(cell1NoCuda, cell1NoCuda._particleSoABuffer);
-  ljFunctorCuda.SoAExtractor(cell2NoCuda, cell2NoCuda._particleSoABuffer);
+  ljFunctorCuda.SoAExtractor(cell1Cuda, cell1Cuda._particleSoABuffer, 0);
+  ljFunctorCuda.SoAExtractor(cell2Cuda, cell2Cuda._particleSoABuffer, 0);
+  ljFunctorCuda.SoAExtractor(cell1NoCuda, cell1NoCuda._particleSoABuffer, 0);
+  ljFunctorCuda.SoAExtractor(cell2NoCuda, cell2NoCuda._particleSoABuffer, 0);
 
   ljFunctorNoCuda.endTraversal(useNewton3);
   ljFunctorCuda.endTraversal(useNewton3);
@@ -174,8 +174,8 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
 
   ASSERT_TRUE(AoSParticlesEqual(cellCuda, cellNoCuda)) << "Cells not equal after copy initialization.";
 
-  ljFunctorNoCuda.SoALoader(cellNoCuda, cellNoCuda._particleSoABuffer);
-  ljFunctorCuda.SoALoader(cellCuda, cellCuda._particleSoABuffer);
+  ljFunctorNoCuda.SoALoader(cellNoCuda, cellNoCuda._particleSoABuffer, 0);
+  ljFunctorCuda.SoALoader(cellCuda, cellCuda._particleSoABuffer, 0);
   ljFunctorCuda.deviceSoALoader(cellCuda._particleSoABuffer, cellCuda._particleSoABufferDevice);
 
   // functor calls
@@ -187,8 +187,8 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
   ASSERT_TRUE(SoAParticlesEqual<Molecule>(cellCuda._particleSoABuffer, cellNoCuda._particleSoABuffer))
       << "Cells not equal after applying functor and extracting to SoA.";
 
-  ljFunctorCuda.SoAExtractor(cellCuda, cellCuda._particleSoABuffer);
-  ljFunctorCuda.SoAExtractor(cellNoCuda, cellNoCuda._particleSoABuffer);
+  ljFunctorCuda.SoAExtractor(cellCuda, cellCuda._particleSoABuffer, 0);
+  ljFunctorCuda.SoAExtractor(cellNoCuda, cellNoCuda._particleSoABuffer, 0);
 
   ljFunctorNoCuda.endTraversal(useNewton3);
   ljFunctorCuda.endTraversal(useNewton3);

@@ -66,7 +66,7 @@ TEST_F(AoSvsCudaTest, testAoSvsCuda) {
     cell.addParticle(p);
   }
 
-  ljFunctor.SoALoader(cell, cell._particleSoABuffer);
+  ljFunctor.SoALoader(cell, cell._particleSoABuffer, 0);
   ljFunctor.deviceSoALoader(cell._particleSoABuffer, cell._particleSoABufferDevice);
 
   start = std::chrono::high_resolution_clock::now();
@@ -80,7 +80,7 @@ TEST_F(AoSvsCudaTest, testAoSvsCuda) {
   particlesSoA.clear();
 
   ljFunctor.deviceSoAExtractor(cell._particleSoABuffer, cell._particleSoABufferDevice);
-  ljFunctor.SoAExtractor(cell, cell._particleSoABuffer);
+  ljFunctor.SoAExtractor(cell, cell._particleSoABuffer, 0);
 
   //  ASSERT_EQ(particlesAoS.size(), particlesSoA.size());
   ASSERT_EQ(particlesAoS.size(), cell.numParticles());
