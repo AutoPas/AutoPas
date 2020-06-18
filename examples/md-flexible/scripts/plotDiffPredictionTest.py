@@ -125,7 +125,8 @@ for datafile in datafiles:
                 allIterationTotal.append(iteration)
                 allDiffTotal.append(diff)
 
-            fig.add_trace(go.Scatter(x=allIterationTotal, y=allDiffTotal, mode='lines+markers', name=configuration))
+            fig.add_trace(go.Scatter(x=allIterationTotal, y=allDiffTotal, mode='lines+markers',
+                                     name="Total Difference - " + configuration))
 
         allDiffRelative = []
         allIterationRelative = []
@@ -134,6 +135,7 @@ for datafile in datafiles:
                 allIterationRelative.append(iteration)
                 allDiffRelative.append(diff)
 
-            fig.add_trace(go.Scatter(x=allIterationRelative, y=allDiffRelative, mode='lines+markers', name=configuration))
+            fig.add_trace(go.Scatter(x=allIterationRelative, y=allDiffRelative, mode='lines+markers',
+                                     name="Realtive Difference - " + configuration))
 
     fig.show()

@@ -32,7 +32,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.newton3Options, config.checkpointfile, config.acquisitionFunctionOption, config.cellSizeFactors,
       config.boxLength, config.containerOptions, config.cutoff, config.dataLayoutOptions, config.deltaT,
       config.dontCreateEndConfig, config.tuningMaxEvidence, config.extrapolationMethodOption,
-      config.evidenceForPrediction, config.functorOption, config.dontMeasureFlops, config.generatorOption,
+      config.evidenceFirstPrediction, config.functorOption, config.dontMeasureFlops, config.generatorOption,
       config.iterations, config.tuningInterval, config.logLevel, config.logFileName, config.distributionMean,
       config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal, config.relativeOptimumRange,
       config.periodic, config.tuningPhases, config.verletClusterSize, config.verletSkinRadius, config.particleSpacing,
@@ -184,10 +184,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.extrapolationMethodOption.value = *parsedOptions.begin();
         break;
       }
-      case decltype(config.evidenceForPrediction)::getoptChar: {
+      case decltype(config.evidenceFirstPrediction)::getoptChar: {
         try {
-          config.evidenceForPrediction.value = (unsigned int)stoul(strArg);
-          if (config.evidenceForPrediction.value < 2) {
+          config.evidenceFirstPrediction.value = (unsigned int)stoul(strArg);
+          if (config.evidenceFirstPrediction.value < 2) {
             cerr << "The number of evidence for the first prediction has to be at least two!" << endl;
             displayHelp = true;
           }

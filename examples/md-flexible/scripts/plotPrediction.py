@@ -87,7 +87,8 @@ for datafile in datafiles:
             allIteration.append(iteration)
             allPrediction.append(prediction)
 
-        fig.add_trace(go.Scatter(x=allIteration, y=allPrediction, mode='lines+markers', name=configuration))
+        fig.add_trace(go.Scatter(x=allIteration, y=allPrediction, mode='lines+markers', name="Predictions - " +
+                                                                                             configuration))
 
         if "test" == option:
             # do not know if this is the right solution testing needed and some research on other options.
@@ -97,6 +98,6 @@ for datafile in datafiles:
                 allIteration.append(iteration)
                 allTest.append(test)
 
-            fig.add_trace(go.Scatter(x=allIteration, y=allTest, mode='markers', name=configuration))
+            fig.add_trace(go.Scatter(x=allIteration, y=allTest, mode='markers', name="Evidence - " + configuration))
 
     fig.show()

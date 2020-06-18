@@ -100,8 +100,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.maxTuningPhasesWithoutTest.name]) {
     config.maxTuningPhasesWithoutTest.value = node[config.maxTuningPhasesWithoutTest.name].as<unsigned int>();
   }
-  if (node[config.evidenceForPrediction.name]) {
-    config.evidenceForPrediction.value = node[config.evidenceForPrediction.name].as<unsigned int>();
+  if (node[config.evidenceFirstPrediction.name]) {
+    config.evidenceFirstPrediction.value = node[config.evidenceFirstPrediction.name].as<unsigned int>();
   }
   if (node[config.extrapolationMethodOption.name]) {
     auto parsedOptions =

@@ -235,9 +235,9 @@ class MDFlexConfig {
       "For predictive based tuning strategies: Maximal number of "
       "tuning phases a configurations can be excluded from testing."};
   /**
-   * evidenceForPrediction
+   * evidenceFirstPrediction
    */
-  MDFlexOption<unsigned int, __LINE__> evidenceForPrediction{
+  MDFlexOption<unsigned int, __LINE__> evidenceFirstPrediction{
       3, "evidence-for-prediction", true,
       "For predictive based tuning strategies: The number of evidence for a configuration that needs to be gathered "
       "before the first prediction is made. This number also determines how much evidence is used for the calculation "
