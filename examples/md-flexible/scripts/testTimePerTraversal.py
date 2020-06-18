@@ -80,10 +80,17 @@ simulation=os.path.abspath(simulation)
 
 # default search directory for inputs:
 if not configsDirs:
-    configsDirs=['../input/testTimePerBoxSizeOriginalSpacing/']
+    configsDirs = ['../input/testTimePerBoxSizeOriginalSpacing/']
 
-# directory for simulation output
-outputDir="testTimePerTraversal_"+datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+outputDir = ""
+# directory for simulation
+for arg in configsDirs:
+    dirNames = arg.split('/')
+    if os.path.isdir(arg):
+        outputDir = outputDir + dirNames[len(dirNames)-1] + '_'
+outputDir = outputDir + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+outputDirName = "outputDir: " + outputDir
+print(outputDirName)
 
 # ------------------------------------------------- Functions -------------------------------------------------
 
