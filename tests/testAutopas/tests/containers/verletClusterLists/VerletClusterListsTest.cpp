@@ -19,7 +19,8 @@ TEST_F(VerletClusterListsTest, VerletListConstructor) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
+  size_t clusterSize = 4;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 }
 
 TEST_F(VerletClusterListsTest, testVerletListBuild) {
@@ -27,7 +28,8 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
+  size_t clusterSize = 4;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -39,7 +41,7 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, _)).Times(AtLeast(1));
   autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
-      &emptyFunctor);
+      &emptyFunctor, clusterSize);
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
 }
@@ -50,14 +52,15 @@ TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
   double cutoff = 1.;
   double skin = 0.2;
   unsigned long numParticles = 271;
-  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
+  size_t clusterSize = 4;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
   autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
-      &emptyFunctor);
+      &emptyFunctor, clusterSize);
   verletLists.rebuildNeighborLists(&verletTraversal);
   EXPECT_EQ(verletLists.getNumParticles(), numParticles);
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -70,14 +73,15 @@ TEST_F(VerletClusterListsTest, testIterator) {
   double cutoff = 1.;
   double skin = 0.2;
   unsigned long numParticles = 271;
-  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
+  size_t clusterSize = 4;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
   autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
-      &emptyFunctor);
+      &emptyFunctor, clusterSize);
   verletLists.rebuildNeighborLists(&verletTraversal);
 
   int numParticlesInIterator = 0;
@@ -119,13 +123,14 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
   double cutoffSqr = cutoff * cutoff;
   double skin = 0.2;
   unsigned long numParticles = 271;
-  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
+  size_t clusterSize = 4;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
   CollectParticlePairsFunctor functor{cutoff, min, max};
   autopas::VerletClustersTraversal<FPCell, CollectParticlePairsFunctor, autopas::DataLayoutOption::aos, false>
-      verletTraversal(&functor);
+      verletTraversal(&functor, clusterSize);
   verletLists.rebuildNeighborLists(&verletTraversal);
 
   std::vector<autopas::Particle *> particles;
@@ -191,21 +196,21 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.1;
-
   int numParticles = 2431;
-  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
+  size_t clusterSize = 4;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
   MockFunctor<Particle, FPCell> functor;
   autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> traversalNoN3(
-      &functor);
+      &functor, clusterSize);
   verletLists.rebuildNeighborLists(&traversalNoN3);
   auto neighborsNoN3 = getClusterNeighbors(verletLists);
 
   autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversalN3(
-      &functor);
+      &functor, clusterSize);
   verletLists.rebuildNeighborLists(&traversalN3);
   auto neighborsN3 = getClusterNeighbors(verletLists);
 
@@ -229,14 +234,15 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
   double cutoff = 1.;
   double skin = 0.1;
   int numParticles = 5000;
-  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin);
+  size_t clusterSize = 4;
+  autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, min, max,
                                                                numParticles);
 
   CollectParticlesPerThreadFunctor functor;
   ColoringTraversalWithColorChangeNotify traversal(
-      &functor, [](int currentColor) { CollectParticlesPerThreadFunctor::nextColor(currentColor); });
+      &functor, clusterSize, [](int currentColor) { CollectParticlesPerThreadFunctor::nextColor(currentColor); });
   functor.initTraversal();
   verletLists.rebuildNeighborLists(&traversal);
   verletLists.iteratePairwise(&traversal);

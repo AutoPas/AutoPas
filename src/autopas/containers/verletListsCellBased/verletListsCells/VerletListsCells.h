@@ -62,7 +62,10 @@ class VerletListsCells
         _buildTraversal(buildTraversal),
         _loadEstimator(loadEstimator) {}
 
-  ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
+  /**
+   * @copydoc ParticleContainerInterface::getContainerType()
+   */
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
 
   /**
    * Generates the load estimation function depending on _loadEstimator.
