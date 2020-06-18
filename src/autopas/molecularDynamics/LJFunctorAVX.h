@@ -126,9 +126,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
-    // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
-    /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
-    utils::withStaticBool(newton3, [&](auto newton3) { SoAFunctorSingleImpl<newton3>(soa); });
+    if (newton3) {
+      SoAFunctorSingleImpl<true>(soa);
+    } else {
+      SoAFunctorSingleImpl<false>(soa);
+    }
   }
 
   // clang-format off
@@ -137,7 +139,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    */
   // clang-format on
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
-    utils::withStaticBool(newton3, [&](auto newton3) { SoAFunctorPairImpl<newton3>(soa1, soa2); });
+    if (newton3) {
+      SoAFunctorPairImpl<true>(soa1, soa2);
+    } else {
+      SoAFunctorPairImpl<false>(soa1, soa2);
+    }
   }
 
  private:
@@ -530,13 +536,13 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
           remainderIsMasked ? _mm256_and_pd(upot, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
                             : _mm256_and_pd(upot, cutoffDummyMask);
 
-      __m256i ownedMaskI =
+      __m256d ownedMaskI =
           _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateI), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
-      __m256d energyFactor = _mm256_blendv_pd(_zero, _one, _mm256_castsi256_pd(ownedMaskI));
+      __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskI);
       if constexpr (newton3) {
-        __m256i ownedMaskJ =
+        __m256d ownedMaskJ =
             _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
-        energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, _mm256_castsi256_pd(ownedMaskJ)));
+        energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskJ));
       }
       *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
       *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
