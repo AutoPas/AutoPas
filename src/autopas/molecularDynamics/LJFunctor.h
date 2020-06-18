@@ -332,9 +332,11 @@ class LJFunctor
    */
   // clang-format on
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
-    // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
-    /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
-    utils::withStaticBool(newton3, [&](auto newton3) { SoAFunctorPairImpl<newton3>(soa1, soa2); });
+    if (newton3) {
+      SoAFunctorPairImpl<true>(soa1, soa2);
+    } else {
+      SoAFunctorPairImpl<false>(soa1, soa2);
+    }
   }
 
  private:
@@ -645,10 +647,8 @@ class LJFunctor
     device_handle.template get<Particle::AttributeNames::forceZ>().copyHostToDevice(
         size, soa.template begin<Particle::AttributeNames::forceZ>());
 
-    if (calculateGlobals) {
-      device_handle.template get<Particle::AttributeNames::owned>().copyHostToDevice(
-          size, soa.template begin<Particle::AttributeNames::owned>());
-    }
+    device_handle.template get<Particle::AttributeNames::ownershipState>().copyHostToDevice(
+        size, soa.template begin<Particle::AttributeNames::ownershipState>());
 
 #else
     utils::ExceptionHandler::exception("LJFunctor::deviceSoALoader: AutoPas was compiled without CUDA support!");
