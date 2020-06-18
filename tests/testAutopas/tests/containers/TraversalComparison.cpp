@@ -175,7 +175,7 @@ TEST_P(TraversalComparison, traversalTest) {
   // empirically determined and set near the minimal possible value for 2000 particles
   // i.e. if something changes, it may be needed to increase value
   // (and OK to do so)
-  constexpr double rel_err_tolerance = 1.0e-11;
+  constexpr double rel_err_tolerance = 1.0e-10;
   constexpr double rel_err_tolerance_globals = 1.0e-12;
 
   auto [calculatedForces, calculatedGlobals] =
@@ -246,7 +246,7 @@ auto TraversalComparison::getTestParams() {
                 for (auto numHalo : {0ul, 200ul}) {
                   for (bool slightMove : {true, false}) {
                     for (DeletionPosition particleDeletionPosition :
-                         {DeletionPosition::never, DeletionPosition::beforeLists, DeletionPosition::afterLists,
+                         {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
                           DeletionPosition::beforeAndAfterLists}) {
                       if (dataLayoutOption == autopas::DataLayoutOption::Value::cuda and
                           traversalOption == autopas::TraversalOption::Value::c01Cuda and (boxMax[0] < 5.) and
