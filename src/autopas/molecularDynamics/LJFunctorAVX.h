@@ -126,9 +126,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
-    // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
-    /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
-    utils::withStaticBool(newton3, [&](auto newton3) { SoAFunctorSingleImpl<newton3>(soa); });
+    if (newton3) {
+      SoAFunctorSingleImpl<true>(soa);
+    } else {
+      SoAFunctorSingleImpl<false>(soa);
+    }
   }
 
   // clang-format off
@@ -137,7 +139,11 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    */
   // clang-format on
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
-    utils::withStaticBool(newton3, [&](auto newton3) { SoAFunctorPairImpl<newton3>(soa1, soa2); });
+    if (newton3) {
+      SoAFunctorPairImpl<true>(soa1, soa2);
+    } else {
+      SoAFunctorPairImpl<false>(soa1, soa2);
+    }
   }
 
  private:
