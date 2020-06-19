@@ -12,7 +12,9 @@
 #include "testingHelpers/commonTypedefs.h"
 
 class LJFunctorCudaTest : public AutoPasTestBase,
-                          public ::testing::WithParamInterface<std::tuple<bool, bool, int, int>> {
+                          public ::testing::WithParamInterface<
+                              std::tuple<bool /*newton3 */, bool /*calculateGlobals*/, bool /*withDeletions*/,
+                                         int /*ParticlesCell1*/, int /*ParticlesCell2*/>> {
  public:
   LJFunctorCudaTest()
       : AutoPasTestBase(), _cutoff{1.}, _epsilon{2}, _sigma{0.05}, _lowCorner{0, 0, 0}, _highCorner{2, 1, 1} {}
@@ -31,8 +33,8 @@ class LJFunctorCudaTest : public AutoPasTestBase,
    * LJFunctor works only with MoleculeLJ
    * @param newton3
    */
-  template <typename ParticleType, bool useNewton3, bool calculateGlobals>
-  void testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2);
+  template <typename ParticleType, bool calculateGlobals>
+  void testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2, bool useNewton3, bool withDeletions);
 
   /**
    * Checks equality of SoALoader, SoAFunctor and SoAExtractor.
@@ -43,8 +45,8 @@ class LJFunctorCudaTest : public AutoPasTestBase,
    * LJFunctor only works with MoleculeLJ
    * @param newton3
    */
-  template <typename ParticleType, bool useNewton3, bool calculateGlobals>
-  void testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles);
+  template <typename ParticleType, bool calculateGlobals>
+  void testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles, bool useNewton3, bool withDeletions);
 
   /**
    * Checks that two non empty SoAs' particles are equal
