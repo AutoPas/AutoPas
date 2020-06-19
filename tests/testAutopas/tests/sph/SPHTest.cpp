@@ -654,7 +654,7 @@ void densityCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
     double d2 = densityLinked[i];
     EXPECT_NEAR(d1, d2, std::fabs(d1 * relErrTolerance));
   }
-};
+}
 
 void hydroInit(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists) {
   for (auto itVerlet = verletLists.begin(); itVerlet.isValid(); ++itVerlet) {
@@ -663,7 +663,7 @@ void hydroInit(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists) {
     itVerlet->setDensity(density);
     itVerlet->setPressure(pressure);
   }
-};
+}
 
 void hydroCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
                 autopas::LinkedCells<autopas::FullParticleCell<autopas::sph::SPHParticle>> &linkedCells,
@@ -693,7 +693,7 @@ void hydroCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
     EXPECT_NEAR(accVerlet[i][1], accLinked[i][1], relErrTolerance * fabs(accLinked[i][1]));
     EXPECT_NEAR(accVerlet[i][2], accLinked[i][2], relErrTolerance * fabs(accLinked[i][2]));
   }
-};
+}
 
 template <typename FunctorType, typename InitType, typename CheckType>
 void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas::DataLayoutOption dataLayoutOption) {
