@@ -13,16 +13,32 @@ using namespace autopas;
  * @param mpiParallelizedStrategy
  * @param rank
  */
-void finiteCellSizeFactorsSetup(MPIParallelizedStrategy &mpiParallelizedStrategy, int rank) {
-  // complicated, because I cannot assume any order in configurations
-  // for every configuration with cellSizeFactor with cellSizeFactor 1.0 + (2 * rank + x) / 10,
-  // the evidence should be 2 * rank + x (with x in {0, 1})
-  int evidenceOffset =
-      static_cast<int>((mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor - 1.0) * 10.0) - (2 * rank);
+void finiteCellSizeFactorsSetup(MPIParallelizedStrategy &mpiParallelizedStrategy) {
   do {
-    mpiParallelizedStrategy.addEvidence(2 * rank + evidenceOffset, 0);
-    evidenceOffset = 1 - evidenceOffset;
+    long evidence = static_cast<long>(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor * 100.0);
+    mpiParallelizedStrategy.addEvidence(evidence, 0);
   } while (mpiParallelizedStrategy.tune(false));
+}
+
+/**
+ * Simple setup for configurations differing only in the min-max value of their cellSizeFactors
+ * @param mpiParallelizedStrategy
+ * @param rank
+ * @return the smallest cellSizeFactor that was generated
+ */
+double infiniteCellSizeFactorSetup(MPIParallelizedStrategy &mpiParallelizedStrategy) {
+  double smallestLocalCellSizeFactor = mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor;
+
+  do {
+    long evidence = static_cast<long>(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor * 100.0);
+
+    mpiParallelizedStrategy.addEvidence(evidence, 0);
+
+    if (smallestLocalCellSizeFactor > mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor) {
+      smallestLocalCellSizeFactor = mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor;
+    }
+  } while (mpiParallelizedStrategy.tune(false));
+  return smallestLocalCellSizeFactor;
 }
 
 /**
@@ -41,7 +57,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneFullSearch) {
                                                std::set<Newton3Option>{Newton3Option::enabled});
 
   auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD);
-  finiteCellSizeFactorsSetup(mpiParallelizedStrategy, rank);
+  finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
   EXPECT_EQ(mpiParallelizedStrategy.getCurrentConfiguration(),
             Configuration(ContainerOption::linkedCells, 1.0, TraversalOption::sliced, DataLayoutOption::aos,
@@ -61,7 +77,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchFiniteCellSizeFactors) {
                                                  2);
 
   auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD);
-  finiteCellSizeFactorsSetup(mpiParallelizedStrategy, rank);
+  finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
   EXPECT_LE(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor, 1.1);
 }
@@ -79,22 +95,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchInfiniteCellSizeFactors)
                                                  2);
 
   auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD);
-
-  double smallestLocalCellSizeFactor = mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor;
-  int evidence = static_cast<int>(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor * 100.0);
-
-  mpiParallelizedStrategy.addEvidence(evidence, 0);
-  mpiParallelizedStrategy.tune(false);
-
-  if (smallestLocalCellSizeFactor > mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor) {
-    smallestLocalCellSizeFactor = mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor;
-  }
-  evidence = static_cast<int>(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor * 100.0);
-  mpiParallelizedStrategy.addEvidence(evidence, 0);
-  mpiParallelizedStrategy.tune(false);
-
-  // now the local search spaces should be finished, so tune one last time for global tuning
-  mpiParallelizedStrategy.tune(false);
+  auto smallestLocalCellSizeFactor = infiniteCellSizeFactorSetup(mpiParallelizedStrategy);
 
   EXPECT_LE(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor, smallestLocalCellSizeFactor);
 }
@@ -111,9 +112,26 @@ TEST_F(MPIParallelizedStrategyTest, testTuneActiveHarmonyFiniteCellSizeFactors) 
                                                   std::set<Newton3Option>{Newton3Option::enabled});
 
   auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD);
-  finiteCellSizeFactorsSetup(mpiParallelizedStrategy, rank);
+  finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
   EXPECT_EQ(mpiParallelizedStrategy.getCurrentConfiguration(),
             Configuration(ContainerOption::linkedCells, 1.0, TraversalOption::sliced, DataLayoutOption::aos,
                           Newton3Option::enabled));
+}
+
+TEST_F(MPIParallelizedStrategyTest, testTuneBayesianClusterSearchInfiniteCellSizeFactors) {
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  auto strategy = std::make_unique<BayesianClusterSearch>(std::set<ContainerOption>{ContainerOption::linkedCells},
+                                                          NumberSetFinite<double>{1.0 + (2 * rank) / 10.0,
+                                                                                  1.0 + (2 * rank + 1) / 10.0},
+                                                          std::set<TraversalOption>{TraversalOption::sliced},
+                                                          std::set<DataLayoutOption>{DataLayoutOption::aos},
+                                                          std::set<Newton3Option>{Newton3Option::enabled});
+
+  auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD);
+  auto smallestCellSizeFactor = infiniteCellSizeFactorSetup(mpiParallelizedStrategy);
+
+  EXPECT_LE(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor, smallestCellSizeFactor);
 }

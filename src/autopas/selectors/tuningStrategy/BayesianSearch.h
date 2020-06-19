@@ -111,7 +111,7 @@ class BayesianSearch : public TuningStrategyInterface {
   }
 
   inline long getEvidence(Configuration configuration) const override {
-    return -static_cast<long>(_gaussianProcess.predictMean(FeatureVector(configuration).oneHotEncode())
+    return -static_cast<long>(_gaussianProcess.getOutput(FeatureVector(configuration).oneHotEncode())
                               / secondsPerMicroseconds);
   }
 

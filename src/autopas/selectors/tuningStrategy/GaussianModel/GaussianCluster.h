@@ -180,13 +180,24 @@ class GaussianCluster {
   }
 
   /**
-   * Get the stored ouput value for a given evidence
+   * Get the output value to corresponding inputs if such has been saved
+   * @param inputDiscrete
+   * @param inputContinuous
+   * @return
+   */
+  [[nodiscard]] inline double getOutput(const VectorDiscrete &inputDiscrete, const VectorContinuous &inputContinuous)
+      const {
+    auto index = getIndex(inputDiscrete);
+    return _clusters[index].getOutput(inputContinuous);
+  }
+
+  /**
+   * Get the output value to a corresponding input pair if such has been saved
    * @param input
    * @return
    */
-  inline double getOutput(VectorPairDiscreteContinuous &input) const {
-    // @todo implement properly
-    return _evidenceMaxValue;
+  [[nodiscard]] inline double getOutput(const VectorPairDiscreteContinuous &input) const {
+    return getOutput(input.first, input.second);
   }
 
   /**
