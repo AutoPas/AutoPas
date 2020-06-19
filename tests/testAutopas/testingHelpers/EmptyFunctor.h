@@ -59,6 +59,9 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
   void CudaFunctor(autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
                    autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {}
 
+  /**
+   * @copydoc autopas::Functor::deviceSoALoader()
+   */
   void deviceSoALoader(autopas::SoA<SoAArraysType> &soa,
                        autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {}
 #endif
