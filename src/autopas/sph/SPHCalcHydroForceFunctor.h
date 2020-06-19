@@ -495,22 +495,23 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, FullParticleCell<Parti
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static std::array<typename Particle::AttributeNames, 16> getNeededAttr() {
-    ///@todo distinguish between N3 and notN3
-    return std::array<typename Particle::AttributeNames, 16>{
-        Particle::AttributeNames::mass,       Particle::AttributeNames::density,  Particle::AttributeNames::smth,
-        Particle::AttributeNames::soundSpeed, Particle::AttributeNames::pressure, Particle::AttributeNames::vsigmax,
-        Particle::AttributeNames::engDot,     Particle::AttributeNames::posX,     Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,       Particle::AttributeNames::velX,     Particle::AttributeNames::velY,
-        Particle::AttributeNames::velZ,       Particle::AttributeNames::accX,     Particle::AttributeNames::accY,
-        Particle::AttributeNames::accZ};
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 17>{
+        Particle::AttributeNames::mass,          Particle::AttributeNames::density,
+        Particle::AttributeNames::smth,          Particle::AttributeNames::soundSpeed,
+        Particle::AttributeNames::pressure,      Particle::AttributeNames::vsigmax,
+        Particle::AttributeNames::engDot,        Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,          Particle::AttributeNames::posZ,
+        Particle::AttributeNames::velX,          Particle::AttributeNames::velY,
+        Particle::AttributeNames::velZ,          Particle::AttributeNames::accX,
+        Particle::AttributeNames::accY,          Particle::AttributeNames::accZ,
+        Particle::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    ///@todo distinguish between N3 and notN3
     return std::array<typename Particle::AttributeNames, 12>{
         Particle::AttributeNames::mass,     Particle::AttributeNames::density,
         Particle::AttributeNames::smth,     Particle::AttributeNames::soundSpeed,
