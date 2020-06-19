@@ -619,7 +619,8 @@ class LJFunctor
           device_handle.template get<Particle::AttributeNames::posZ>().get(),
           device_handle.template get<Particle::AttributeNames::forceX>().get(),
           device_handle.template get<Particle::AttributeNames::forceY>().get(),
-          device_handle.template get<Particle::AttributeNames::forceZ>().get());
+          device_handle.template get<Particle::AttributeNames::forceZ>().get(),
+          device_handle.template get<Particle::AttributeNames::ownershipState>().get());
     }
   }
 #endif
