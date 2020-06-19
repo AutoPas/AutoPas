@@ -23,9 +23,11 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
   /**
    * Constructor for only positions
    * @param size Number of particles
-   * @posX x positions of the particles
-   * @posY y positions of the particles
-   * @posZ z positions of the particles
+   * @param posX x positions of the particles
+   * @param posY y positions of the particles
+   * @param posZ z positions of the particles
+   * @param ownershipState
+   * @param globals
    */
   LJFunctorCudaGlobalsSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ,
                           OwnershipState *ownershipState, floatType *globals)
@@ -42,12 +44,14 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
   /**
    * Constructor for only positions
    * @param size Number of particles
-   * @posX x positions of the particles
-   * @posY y positions of the particles
-   * @posZ z positions of the particles
-   * @forceX x forces of the particles
-   * @forceY y forces of the particles
-   * @forceZ z forces of the particles
+   * @param posX x positions of the particles
+   * @param posY y positions of the particles
+   * @param posZ z positions of the particles
+   * @param forceX x forces of the particles
+   * @param forceY y forces of the particles
+   * @param forceZ z forces of the particles
+   * @param ownershipState
+   * @param globals
    */
   LJFunctorCudaGlobalsSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ, floatType *forceX,
                           floatType *forceY, floatType *forceZ, OwnershipState *ownershipState, floatType *globals)

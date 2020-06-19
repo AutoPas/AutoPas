@@ -467,6 +467,7 @@ __global__ void SoAFunctorN3(LJFunctorCudaGlobalsSoA<floatType> cell1) {
     cell1_forces_shared[threadIdx.x] = {0, 0, 0};
     cell1_ownershipState_shared[threadIdx.x] = cell1._ownershipState[idx];
     __syncthreads();
+
     if (myOwnershipState != OwnershipState::dummy) {
       for (int j = threadIdx.x - 1; j >= 0; --j) {
         if (cell1_ownershipState_shared[j] != OwnershipState::dummy) {
@@ -540,6 +541,7 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaGlobalsSoA<floatType> cell1, LJFun
     cell2_forces_shared[threadIdx.x] = {0, 0, 0};
     cell2_ownershipState_shared[threadIdx.x] = cell2._ownershipState[idx];
     __syncthreads();
+
     if (myOwnershipState != OwnershipState::dummy) {
       for (int j = 0; j < block_size; ++j) {
         unsigned int offset;
@@ -738,6 +740,7 @@ __global__ void LinkedCellsTraversalNoN3(LJFunctorCudaGlobalsSoA<floatType> cell
                                      cell._posZ[cell2Start + threadIdx.x]};
     cell2_ownershipState_shared[threadIdx.x] = cell._ownershipState[cell2Start + threadIdx.x];
     __syncthreads();
+
     if (myOwnershipState != OwnershipState::dummy) {
       for (int j = 0; j < sizeCell2; ++j) {
         if (cell2_ownershipState_shared[j] != OwnershipState::dummy) {
@@ -837,6 +840,7 @@ __global__ void LinkedCellsTraversalN3(LJFunctorCudaGlobalsSoA<floatType> cell, 
                                      cell._posZ[cell1Start + threadIdx.x]};
     cell2_ownershipState_shared[threadIdx.x] = cell._ownershipState[cell1Start + threadIdx.x];
     __syncthreads();
+
     if (myOwnershipState != OwnershipState::dummy) {
       for (int j = 0; j < sizeCell1; ++j) {
         if (cell2_ownershipState_shared[j] != OwnershipState::dummy) {
@@ -1036,11 +1040,10 @@ __global__ void CellVerletTraversalN3(LJFunctorCudaGlobalsSoA<floatType> cell, u
 
   typename vec3<floatType>::Type myf = {0, 0, 0};
   typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
-  OwnershipState myOwnershipState = OwnershipState::dummy;
 
   int index = blockIdx.x * block_size + threadIdx.x;
   typename vec3<floatType>::Type myposition = {cell._posX[index], cell._posY[index], cell._posZ[index]};
-  myOwnershipState = cell._ownershipState[index];
+  OwnershipState myOwnershipState = cell._ownershipState[index];
 
   // other cells
   unsigned int cid;
