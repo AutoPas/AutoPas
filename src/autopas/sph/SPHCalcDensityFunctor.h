@@ -88,8 +88,16 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
     double *const __restrict__ densityptr = soa.template begin<Particle::AttributeNames::density>();
     double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
     double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
+
+    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
     size_t numParticles = soa.getNumParticles();
     for (unsigned int i = 0; i < numParticles; ++i) {
+      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      if (ownedStatePtr[i] == OwnershipState::dummy) {
+        continue;
+      }
+
       double densacc = 0.;
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
@@ -105,7 +113,10 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        const double density = massptr[j] * SPHKernels::W(dr2, smthptr[i]);
+        // if second particle is a dummy, we skip the interaction.
+        const bool mask = ownedStatePtr[j] != OwnershipState::dummy;
+
+        const double density = mask ? massptr[j] * SPHKernels::W(dr2, smthptr[i]) : 0.;
         densacc += density;
 
         // Newton 3:
@@ -140,8 +151,16 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
     double *const __restrict__ smthptr2 = soa2.template begin<Particle::AttributeNames::smth>();
     double *const __restrict__ massptr2 = soa2.template begin<Particle::AttributeNames::mass>();
 
+    const auto *const __restrict__ ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict__ ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+
     size_t numParticlesi = soa1.getNumParticles();
     for (unsigned int i = 0; i < numParticlesi; ++i) {
+      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      if (ownedStatePtr1[i] == OwnershipState::dummy) {
+        continue;
+      }
+
       double densacc = 0.;
       size_t numParticlesj = soa2.getNumParticles();
 // icpc vectorizes this.
@@ -158,7 +177,10 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        const double density = massptr2[j] * SPHKernels::W(dr2, smthptr1[i]);
+        // if second particle is a dummy, we skip the interaction.
+        const bool mask = ownedStatePtr2[j] != OwnershipState::dummy;
+
+        const double density = mask ? massptr2[j] * SPHKernels::W(dr2, smthptr1[i]) : 0.;
         densacc += density;
         if (newton3) {
           // Newton 3:
@@ -182,6 +204,13 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
                         bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
+    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+    if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+      return;
+    }
+
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
     double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
@@ -191,7 +220,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
     double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
 
     double densacc = 0;
-    auto &currentList = neighborList;
+    const auto &currentList = neighborList;
     size_t listSize = currentList.size();
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
@@ -207,7 +236,10 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
       const double dr2 = drx2 + dry2 + drz2;
 
-      const double density = massptr[currentList[j]] * SPHKernels::W(dr2, smthptr[indexFirst]);
+      // if second particle is a dummy, we skip the interaction.
+      const bool mask = ownedStatePtr[currentList[j]] != OwnershipState::dummy;
+
+      const double density = mask ? massptr[currentList[j]] * SPHKernels::W(dr2, smthptr[indexFirst]) : 0.;
       densacc += density;
       if (newton3) {
         // Newton 3:

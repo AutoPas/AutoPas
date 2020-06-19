@@ -134,7 +134,14 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
     double *const __restrict__ accYptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accY>();
     double *const __restrict__ accZptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
 
+    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
     for (unsigned int indexFirst = 0; indexFirst < soa.getNumParticles(); ++indexFirst) {
+      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+        continue;
+      }
+
       double localvsigmax = 0.;
       double localengdotsum = 0.;
       double localAccX = 0.;
@@ -155,7 +162,7 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
 
         const double dr2 = drx2 + dry2 + drz2;
         double cutoff = smthptr[indexFirst] * autopas::sph::SPHKernels::getKernelSupportRadius();
-        if (dr2 >= cutoff * cutoff) continue;
+        if (dr2 >= cutoff * cutoff or ownedStatePtr[j] == OwnershipState::dummy) continue;
 
         const double dvX = velXptr[indexFirst] - velXptr[j];
         const double dvY = velYptr[indexFirst] - velYptr[j];
@@ -266,7 +273,15 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
     double *const __restrict__ accYptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::accY>();
     double *const __restrict__ accZptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
 
+    const auto *const __restrict__ ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict__ ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+
     for (unsigned int indexFirst = 0; indexFirst < soa1.getNumParticles(); ++indexFirst) {
+      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      if (ownedStatePtr1[indexFirst] == OwnershipState::dummy) {
+        continue;
+      }
+
       double localvsigmax = 0.;
       double localengdotsum = 0.;
       double localAccX = 0.;
@@ -287,7 +302,7 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
 
         const double dr2 = drx2 + dry2 + drz2;
         double cutoff = smthptr1[indexFirst] * autopas::sph::SPHKernels::getKernelSupportRadius();
-        if (dr2 >= cutoff * cutoff) continue;
+        if (dr2 >= cutoff * cutoff or ownedStatePtr2[j] == OwnershipState::dummy) continue;
 
         const double dvX = velXptr1[indexFirst] - velXptr2[j];
         const double dvY = velYptr1[indexFirst] - velYptr2[j];
@@ -364,6 +379,13 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
                         bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
+    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+    if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+      return;
+    }
+
     double *const __restrict__ massptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::mass>();
     double *const __restrict__ densityptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::density>();
     double *const __restrict__ smthptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::smth>();
@@ -389,7 +411,7 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
     double localAccY = 0.;
     double localAccZ = 0.;
 
-    auto &currentList = neighborList;
+    const auto &currentList = neighborList;
     size_t listSize = currentList.size();
 
     // icpc vectorizes this.
@@ -406,7 +428,7 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
 
       const double dr2 = drx2 + dry2 + drz2;
       double cutoff = smthptr[indexFirst] * autopas::sph::SPHKernels::getKernelSupportRadius();
-      if (dr2 >= cutoff * cutoff) continue;
+      if (dr2 >= cutoff * cutoff or ownedStatePtr[currentList[j]] == OwnershipState::dummy) continue;
 
       const double dvX = velXptr[indexFirst] - velXptr[currentList[j]];
       const double dvY = velYptr[indexFirst] - velYptr[currentList[j]];
