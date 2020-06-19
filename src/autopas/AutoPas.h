@@ -105,6 +105,7 @@ class AutoPas {
   void init() {
     if (_autopasMPICommunicator == AUTOPAS_MPI_COMM_NULL) {
       AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_autopasMPICommunicator);
+    } else {
       _externalMPICommunicator = true;
     }
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(

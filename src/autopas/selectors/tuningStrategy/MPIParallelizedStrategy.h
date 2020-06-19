@@ -90,8 +90,14 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
 };
 
 bool MPIParallelizedStrategy::tune(bool currentInvalid) {
+  int rank;
+  AutoPas_MPI_Comm_rank(_comm, &rank);
+
   if (not _allLocalConfigurationsTested) {
     _allLocalConfigurationsTested = not _tuningStrategy->tune(currentInvalid);
+    if (currentInvalid) {
+      return true;
+    }
   }
 
   // Wait for the Iallreduce from the last tuning step to finish
