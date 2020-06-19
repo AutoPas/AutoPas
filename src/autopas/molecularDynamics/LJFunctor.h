@@ -505,9 +505,9 @@ class LJFunctor
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {
     if (newton3) {
-      SoAFunctorImpl<true>(soa, indexFirst, neighborList);
+      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
     } else {
-      SoAFunctorImpl<false>(soa, indexFirst, neighborList);
+      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
     }
   }
 
@@ -821,7 +821,7 @@ class LJFunctor
 
  private:
   template <bool newton3>
-  void SoAFunctorImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
                       const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
     if (soa.getNumParticles() == 0) return;
 
