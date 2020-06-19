@@ -7,8 +7,8 @@
 #pragma once
 
 #include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/sph/SPHKernels.h"
-#include "autopas/sph/SPHParticle.h"
 
 namespace autopas {
 namespace sph {
@@ -121,7 +121,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
         // Newton 3:
         // W is symmetric in dr, so no -dr needed, i.e. we can reuse dr
-        const double density2 = massptr[i] * SPHKernels::W(dr2, smthptr[j]);
+        const double density2 = mask ? massptr[i] * SPHKernels::W(dr2, smthptr[j]) : 0.;
         densityptr[j] += density2;
       }
 
@@ -185,7 +185,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
         if (newton3) {
           // Newton 3:
           // W is symmetric in dr, so no -dr needed, i.e. we can reuse dr
-          const double density2 = massptr1[i] * SPHKernels::W(dr2, smthptr2[j]);
+          const double density2 = mask ? massptr1[i] * SPHKernels::W(dr2, smthptr2[j]) : 0.;
           densityptr2[j] += density2;
         }
       }
@@ -244,7 +244,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
       if (newton3) {
         // Newton 3:
         // W is symmetric in dr, so no -dr needed, i.e. we can reuse dr
-        const double density2 = massptr[indexFirst] * SPHKernels::W(dr2, smthptr[currentList[j]]);
+        const double density2 = mask ? massptr[indexFirst] * SPHKernels::W(dr2, smthptr[currentList[j]]) : 0.;
         densityptr[currentList[j]] += density2;
       }
     }
@@ -255,25 +255,26 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static std::array<typename SPHParticle::AttributeNames, 6> getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 6>{
-        Particle::AttributeNames::mass, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::smth, Particle::AttributeNames::density};
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 7>{
+        Particle::AttributeNames::mass,          Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,          Particle::AttributeNames::smth, Particle::AttributeNames::density,
+        Particle::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static std::array<typename SPHParticle::AttributeNames, 5> getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 5>{
+  constexpr static auto getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 6>{
         Particle::AttributeNames::mass, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::smth};
+        Particle::AttributeNames::posZ, Particle::AttributeNames::smth, Particle::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static std::array<typename SPHParticle::AttributeNames, 1> getComputedAttr() {
+  constexpr static auto getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 1>{Particle::AttributeNames::density};
   }
 };
