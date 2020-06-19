@@ -822,7 +822,7 @@ class LJFunctor
  private:
   template <bool newton3>
   void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                      const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
     if (soa.getNumParticles() == 0) return;
 
     const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
