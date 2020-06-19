@@ -87,7 +87,10 @@ outputDir = ""
 for arg in configsDirs:
     dirNames = arg.split('/')
     if os.path.isdir(arg):
-        outputDir = outputDir + dirNames[len(dirNames)-1] + '_'
+        if dirNames[len(dirNames) - 1].__eq__(''):
+            outputDir = outputDir + dirNames[len(dirNames)-2] + '_'
+        else:
+            outputDir = outputDir + dirNames[len(dirNames)-1] + '_'
 outputDir = outputDir + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 outputDirName = "outputDir: " + outputDir
 print(outputDirName)
