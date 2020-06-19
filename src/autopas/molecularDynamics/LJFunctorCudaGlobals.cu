@@ -1,13 +1,13 @@
 /**
- * @file LJFunctorCuda.cu
+ * @file LJFunctorCudaGlobals.cu
  *
  * @date 26.4.2019
  * @author jspahl
  */
 #include <iostream>
 
+#include "LJFunctorCudaConstants.cuh"
 #include "LJFunctorCudaGlobals.cuh"
-#include "autopas/molecularDynamics/LJFunctorCuda.cuh"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/CudaExceptionHandler.h"
 #include "autopas/utils/ExceptionHandler.h"

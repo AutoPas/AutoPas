@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include "LJFunctorCuda.cuh"
+#include "LJFunctorCudaConstants.cuh"
 #include "autopas/utils/CudaExceptionHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "math_constants.h"

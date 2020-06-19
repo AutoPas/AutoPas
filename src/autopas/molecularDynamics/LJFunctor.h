@@ -19,6 +19,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 #if defined(AUTOPAS_CUDA)
+#include "LJFunctorCudaConstants.cuh"
 #include "autopas/molecularDynamics/LJFunctorCuda.cuh"
 #include "autopas/molecularDynamics/LJFunctorCudaGlobals.cuh"
 #include "autopas/utils/CudaDeviceVector.h"

@@ -1,5 +1,5 @@
 /**
- * @file LJFunctorCuda.cuh
+ * @file LJFunctorCudaGlobals.cuh
  *
  * @date 26.4.2019
  * @author jspahl
