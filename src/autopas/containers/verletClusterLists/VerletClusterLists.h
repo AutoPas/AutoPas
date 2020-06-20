@@ -65,6 +65,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @param cutoff The cutoff radius of the interaction.
    * @param skin The skin radius.
    * @param clusterSize Number of particles per cluster.
+   * @param loadEstimator load estimation algorithm for balanced traversals.
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
                      size_t clusterSize, LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)

@@ -52,6 +52,7 @@ class VerletClustersSlicedTraversal
    * @param pairwiseFunctor The functor to use for the traveral.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
+   * @param clusterSize the number of particles per cluster.
    */
   explicit VerletClustersSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                          const double interactionLength, const std::array<double, 3> &cellLength,

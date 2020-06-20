@@ -134,6 +134,7 @@ class VerletClusterListsRebuilder {
    * Estimates the optimal grid side length.
    * @param numParticles The number of particles in the container.
    * @param boxSize The size of the domain.
+   * @param clusterSize the number of particles per cluster.
    * @return an estimated optimal grid side length.
    */
   [[nodiscard]] static double estimateOptimalGridSideLength(size_t numParticles, std::array<double, 3> boxSize,
@@ -151,8 +152,8 @@ class VerletClusterListsRebuilder {
 
   /**
    * Calculates the cells per dimension in the container using the _towerSideLengthReciprocal.
-   * @param numParticles The number of particles in the container.
    * @param boxSize the size of the domain.
+   * @param towerSideLengthReciprocal 1.0 / towerSidelength.
    * @return the cells per dimension in the container.
    */
   [[nodiscard]] static std::array<size_t, 2> calculateTowersPerDim(std::array<double, 3> boxSize,
