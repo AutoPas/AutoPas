@@ -43,6 +43,8 @@ TEST(OptionTest, parseTraversalOptionsTest) {
       {autopas::TraversalOption::verletClustersColoring, "verlet-clusters-coloring"},
       {autopas::TraversalOption::verletTraversal, "verletlists"},
       {autopas::TraversalOption::verletClustersStatic, "verlet-cluste-static"},
+      {autopas::TraversalOption::BalancedSliced, "balancedsliced"},
+      {autopas::TraversalOption::BalancedSlicedVerlet, "balancedsliced-verlet"},
       {autopas::TraversalOption::c04HCP, "c04HCP"},
       {autopas::TraversalOption::cSliced, "coloured-sliced"},
       {autopas::TraversalOption::cSlicedVerlet, "coloured-sliced-verlet"},

@@ -8,6 +8,8 @@
 #include <array>
 #include <memory>
 
+#include "autopas/options/LoadEstimatorOption.h"
+
 namespace autopas {
 /**
  * Info to generate a container.
@@ -17,7 +19,8 @@ class ContainerSelectorInfo {
   /**
    * Default Constructor.
    */
-  ContainerSelectorInfo() : cellSizeFactor(1.), verletSkin(0.), verletClusterSize(64) {}
+  ContainerSelectorInfo()
+      : cellSizeFactor(1.), verletSkin(0.), verletClusterSize(64), loadEstimator(autopas::LoadEstimatorOption::none) {}
 
   /**
    * Constructor.
@@ -25,9 +28,14 @@ class ContainerSelectorInfo {
    * VerletListsCells).
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletClusterSize Size of verlet Clusters
+   * @param loadEstimator load estimation algorithm for balanced traversals.
    */
-  explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkin, unsigned int verletClusterSize)
-      : cellSizeFactor(cellSizeFactor), verletSkin(verletSkin), verletClusterSize(verletClusterSize) {}
+  explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkin, unsigned int verletClusterSize,
+                                 autopas::LoadEstimatorOption loadEstimator)
+      : cellSizeFactor(cellSizeFactor),
+        verletSkin(verletSkin),
+        verletClusterSize(verletClusterSize),
+        loadEstimator(loadEstimator) {}
 
   /**
    * Equality between ContainerSelectorInfo
@@ -36,7 +44,7 @@ class ContainerSelectorInfo {
    */
   bool operator==(const ContainerSelectorInfo &other) const {
     return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin and
-           verletClusterSize == other.verletClusterSize;
+           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator;
   }
 
   /**
@@ -48,14 +56,15 @@ class ContainerSelectorInfo {
 
   /**
    * Comparison operator for ContainerSelectorInfo objects.
-   * Configurations are compared member wise in the order: _cellSizeFactor, _verletSkin, _verletRebuildFrequency
+   * Configurations are compared member wise in the order: _cellSizeFactor, _verletSkin, _verlerRebuildFrequency,
+   * loadEstimator
    *
    * @param other
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkin, verletClusterSize) <
-           std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize);
+    return std::tie(cellSizeFactor, verletSkin, verletClusterSize, loadEstimator) <
+           std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize, other.loadEstimator);
   }
 
   /**
@@ -71,6 +80,11 @@ class ContainerSelectorInfo {
    * Size of Verlet Clusters
    */
   unsigned int verletClusterSize;
+
+  /**
+   * Load estimator for balanced sliced traversals.
+   */
+  autopas::LoadEstimatorOption loadEstimator;
 };
 
 }  // namespace autopas

@@ -61,6 +61,13 @@ class Object {
   [[nodiscard]] virtual size_t getParticlesTotal() const = 0;
 
   /**
+   * Getter for ParticleSpacing.
+   * Objects that are not based on a grid return 0 since this is the minimal guaranteed spacing.
+   * @return particleSpacing
+   */
+  [[nodiscard]] virtual double getParticleSpacing() const { return 0; }
+
+  /**
    * String description string of the object.
    * @return multiline std::string
    */

@@ -8,6 +8,7 @@
 
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/selectors/TraversalSelectorInfo.h"
 #include "testingHelpers/NumThreadGuard.h"
@@ -17,14 +18,15 @@ using ::testing::Bool;
 using ::testing::Combine;
 using ::testing::ValuesIn;
 
-void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const std::array<size_t, 3> &edgeLength,
-                   int interactions, double cutoff = 1.0) {
+void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstimatorOption loadEstimatorOption,
+                   bool useN3, const std::array<size_t, 3> &edgeLength, int interactions, double cutoff = 1.0) {
   const std::array<double, 3> linkedCellsBoxMax = {(double)(edgeLength[0]), (double)(edgeLength[1]),
                                                    (double)(edgeLength[2])};
   const std::array<double, 3> linkedCellsBoxMin = {0., 0., 0.};
 
   TraversalTest::CountFunctor functor(cutoff);
-  autopas::LinkedCells<FPCell> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1.0 / cutoff);
+  autopas::LinkedCells<FPCell> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1.0 / cutoff,
+                                           loadEstimatorOption);
 
   autopasTools::generators::GridGenerator::fillWithParticles(linkedCells, edgeLength);
   ASSERT_EQ(linkedCells.getNumParticles(), edgeLength[0] * edgeLength[1] * edgeLength[2]);
@@ -75,42 +77,47 @@ void testTraversal(autopas::TraversalOption traversalOption, bool useN3, const s
 
 TEST_P(TraversalTest, testTraversal_2x2x2) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
+  autopas::LoadEstimatorOption loadEstimatorOption = std::get<2>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {2ul, 2ul, 2ul};
   const auto cutoff = 1.0;
 
-  testTraversal(traversalOption, newton3, domain, 6, cutoff);
+  testTraversal(traversalOption, loadEstimatorOption, newton3, domain, 6, cutoff);
 }
 
 TEST_P(TraversalTest, testTraversal_2x3x4) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
+  autopas::LoadEstimatorOption loadEstimatorOption = std::get<2>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {2ul, 3ul, 4ul};
   const auto cutoff = 1.0;
 
-  testTraversal(traversalOption, newton3, domain, 6, cutoff);
+  testTraversal(traversalOption, loadEstimatorOption, newton3, domain, 6, cutoff);
 }
 
 TEST_P(TraversalTest, testTraversal_3x3x3) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
+  autopas::LoadEstimatorOption loadEstimatorOption = std::get<2>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {3ul, 3ul, 3ul};
   const auto cutoff = 1.0;
 
-  testTraversal(traversalOption, newton3, domain, 6, cutoff);
+  testTraversal(traversalOption, loadEstimatorOption, newton3, domain, 6, cutoff);
 }
 
 TEST_P(TraversalTest, testTraversal_8x8x8) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
+  autopas::LoadEstimatorOption loadEstimatorOption = std::get<2>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {8ul, 8ul, 8ul};
   const auto cutoff = 1.0;
 
-  testTraversal(traversalOption, newton3, domain, 6, cutoff);
+  testTraversal(traversalOption, loadEstimatorOption, newton3, domain, 6, cutoff);
 }
 
 TEST_P(TraversalTest, testTraversal_8x8x8_overlap2) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
+  autopas::LoadEstimatorOption loadEstimatorOption = std::get<2>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {8ul, 8ul, 8ul};
   const auto cutoff = 2.0;
@@ -118,20 +125,22 @@ TEST_P(TraversalTest, testTraversal_8x8x8_overlap2) {
   if (traversalOption == autopas::TraversalOption::c04) {
     GTEST_SKIP_("C04 doesn't support cellSizeFactors < 1.0");
   }
-  testTraversal(traversalOption, newton3, domain, 32, cutoff);
+  testTraversal(traversalOption, loadEstimatorOption, newton3, domain, 32, cutoff);
 }
 
 TEST_P(TraversalTest, testTraversal_6x7x8) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
+  autopas::LoadEstimatorOption loadEstimatorOption = std::get<2>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {6ul, 7ul, 8ul};
   const auto cutoff = 1.0;
 
-  testTraversal(traversalOption, newton3, domain, 6, cutoff);
+  testTraversal(traversalOption, loadEstimatorOption, newton3, domain, 6, cutoff);
 }
 
 TEST_P(TraversalTest, testTraversal_6x7x8_overlap2) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
+  autopas::LoadEstimatorOption loadEstimatorOption = std::get<2>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {6ul, 7ul, 8ul};
   const auto cutoff = 2.0;
@@ -139,11 +148,12 @@ TEST_P(TraversalTest, testTraversal_6x7x8_overlap2) {
   if (traversalOption == autopas::TraversalOption::c04) {
     GTEST_SKIP_("C04 doesn't support cellSizeFactors < 1.0");
   }
-  testTraversal(traversalOption, newton3, domain, 32, cutoff);
+  testTraversal(traversalOption, loadEstimatorOption, newton3, domain, 32, cutoff);
 }
 
 TEST_P(TraversalTest, testTraversal_7x8x9_overlap3) {
   autopas::TraversalOption traversalOption = std::get<0>(GetParam());
+  autopas::LoadEstimatorOption loadEstimatorOption = std::get<2>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {7ul, 8ul, 9ul};
   const auto cutoff = 3.0;
@@ -151,16 +161,24 @@ TEST_P(TraversalTest, testTraversal_7x8x9_overlap3) {
   if (traversalOption == autopas::TraversalOption::c04) {
     GTEST_SKIP_("C04 doesn't support cellSizeFactors < 1.0");
   }
-  testTraversal(traversalOption, newton3, domain, 122, cutoff);
+  testTraversal(traversalOption, loadEstimatorOption, newton3, domain, 122, cutoff);
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, TraversalTest,
-                         Combine(ValuesIn([]() -> std::set<autopas::TraversalOption> {
-                                   auto allTraversals = autopas::compatibleTraversals::allLCCompatibleTraversals();
-                                   allTraversals.erase(autopas::TraversalOption::c01Cuda);
-                                   allTraversals.erase(autopas::TraversalOption::c01CombinedSoA);
-                                   allTraversals.erase(autopas::TraversalOption::c04SoA);
-                                   return allTraversals;
-                                 }()),
-                                 Bool()),
-                         TraversalTest::PrintToStringParamName());
+INSTANTIATE_TEST_SUITE_P(
+    Generated, TraversalTest,
+    ValuesIn([]() -> std::set<std::tuple<autopas::TraversalOption, bool, autopas::LoadEstimatorOption>> {
+      auto allTraversals = autopas::compatibleTraversals::allLCCompatibleTraversals();
+      allTraversals.erase(autopas::TraversalOption::c01Cuda);
+      allTraversals.erase(autopas::TraversalOption::c01CombinedSoA);
+      allTraversals.erase(autopas::TraversalOption::c04SoA);
+      std::set<std::tuple<autopas::TraversalOption, bool, autopas::LoadEstimatorOption>> res;
+      for (const auto &traversal : allTraversals) {
+        for (const auto &loadEstimator : autopas::loadEstimators::getApplicableLoadEstimators(
+                 autopas::ContainerOption::linkedCells, traversal, autopas::LoadEstimatorOption::getAllOptions())) {
+          res.emplace(traversal, false, loadEstimator);
+          res.emplace(traversal, true, loadEstimator);
+        }
+      }
+      return res;
+    }()),
+    TraversalTest::PrintToStringParamName());

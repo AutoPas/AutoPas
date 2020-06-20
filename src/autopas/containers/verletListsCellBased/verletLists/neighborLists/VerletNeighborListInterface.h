@@ -31,7 +31,7 @@ class VerletNeighborListInterface {
    * Returns the ContainerOption this neighbor list is for.
    * @return the ContainerOption this neighbor list is for.
    */
-  virtual ContainerOption getContainerType() const = 0;
+  [[nodiscard]] virtual ContainerOption getContainerType() const = 0;
 
   /**
    * Builds the neighbor list from a LinkedCells object. This only builds the AoS.

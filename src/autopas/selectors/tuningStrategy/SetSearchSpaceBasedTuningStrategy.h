@@ -8,6 +8,7 @@
 
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LoadEstimators.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
@@ -21,6 +22,7 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
    * Constructor for the SetSearchSpaceBasedTuningStrategy that generates the search space from the allowed options.
    * @param allowedContainerOptions
    * @param allowedTraversalOptions
+   * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
@@ -28,12 +30,13 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
   SetSearchSpaceBasedTuningStrategy(const std::set<ContainerOption> &allowedContainerOptions,
                                     const std::set<double> &allowedCellSizeFactors,
                                     const std::set<TraversalOption> &allowedTraversalOptions,
+                                    const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                     const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                     const std::set<Newton3Option> &allowedNewton3Options)
       : _allowedContainerOptions(allowedContainerOptions) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                        allowedDataLayoutOptions, allowedNewton3Options);
+                        allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options);
   }
 
   /**
@@ -62,12 +65,14 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
    * @param allowedContainerOptions
    * @param allowedCellSizeFactors
    * @param allowedTraversalOptions
+   * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    */
   inline void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
                                   const std::set<double> &allowedCellSizeFactors,
                                   const std::set<TraversalOption> &allowedTraversalOptions,
+                                  const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                   const std::set<Newton3Option> &allowedNewton3Options);
 
@@ -88,11 +93,11 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
   std::set<Configuration> _searchSpace;
 };
 
-void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
-                                                            const std::set<double> &allowedCellSizeFactors,
-                                                            const std::set<TraversalOption> &allowedTraversalOptions,
-                                                            const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                                            const std::set<Newton3Option> &allowedNewton3Options) {
+void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
+    const std::set<ContainerOption> &allowedContainerOptions, const std::set<double> &allowedCellSizeFactors,
+    const std::set<TraversalOption> &allowedTraversalOptions,
+    const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+    const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options) {
   // generate all potential configs
   for (const auto &containerOption : allowedContainerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
@@ -105,9 +110,15 @@ void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(const std::set<Conta
 
     for (const auto &cellSizeFactor : allowedCellSizeFactors)
       for (const auto &traversalOption : allowedAndApplicable) {
-        for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
-          for (const auto &newton3Option : allowedNewton3Options) {
-            _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, dataLayoutOption, newton3Option);
+        // if load estimators are not applicable LoadEstimatorOption::none is returned.
+        const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
+            loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, allowedLoadEstimatorOptions);
+        for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
+          for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
+            for (const auto &newton3Option : allowedNewton3Options) {
+              _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
+                                   dataLayoutOption, newton3Option);
+            }
           }
         }
       }

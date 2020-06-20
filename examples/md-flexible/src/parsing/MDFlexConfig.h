@@ -15,6 +15,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -131,7 +132,7 @@ class MDFlexConfig {
   /**
    * yamlFilename
    */
-  MDFlexOption<std::string, __LINE__> yamlFilename{"", "yaml-filename", true, "Path to input file."};
+  MDFlexOption<std::string, __LINE__> yamlFilename{"", "yaml-filename", true, "Path to a .yaml input file."};
 
   // AutoPas options:
   /**
@@ -163,6 +164,13 @@ class MDFlexConfig {
       "List of traversal options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllOptions(), " ", {"(", ")"})};
   /**
+   * traversalOptions
+   */
+  MDFlexOption<std::set<autopas::LoadEstimatorOption>, __LINE__> loadEstimatorOptions{
+      autopas::LoadEstimatorOption::getMostOptions(), "load-estimator", true,
+      "List of load estimator function choices for traversals that do heuristic load balancing. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::LoadEstimatorOption::getAllOptions(), " ", {"(", ")"})};
+  /**
    * newton3Options
    */
   MDFlexOption<std::set<autopas::Newton3Option>, __LINE__> newton3Options{
@@ -178,7 +186,8 @@ class MDFlexConfig {
   /**
    * logFileName
    */
-  MDFlexOption<std::string, __LINE__> logFileName{"", "log-file", true, "Path to a file to store the log output."};
+  MDFlexOption<std::string, __LINE__> logFileName{"", "log-file", true,
+                                                  "Path to an .out file to store the log output."};
   /**
    * logLevel
    */
@@ -191,11 +200,12 @@ class MDFlexConfig {
    */
   MDFlexOption<autopas::TuningStrategyOption, __LINE__> tuningStrategyOption{
       autopas::TuningStrategyOption::fullSearch, "tuning-strategy", true,
-      "Strategy how to reduce the sample measurements to a single value."};
+      "Strategy how to reduce the sample measurements to a single value. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * tuningInterval
    */
-  MDFlexOption<unsigned int, __LINE__> tuningInterval{100, "tuning-interval", true,
+  MDFlexOption<unsigned int, __LINE__> tuningInterval{5000, "tuning-interval", true,
                                                       "Number of iterations between two tuning phases."};
   /**
    * tuningSamples
@@ -241,7 +251,7 @@ class MDFlexConfig {
    * verletRebuildFrequency
    */
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
-      1, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
+      20, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
   /**
    * verletSkinRadius
    */
@@ -256,7 +266,7 @@ class MDFlexConfig {
    * boxMax
    */
   MDFlexOption<std::array<double, 3>, 0> boxMax{
-      {5, 5, 5}, "box-max", true, "Upper back right corner of the simulation box."};
+      {1, 1, 1}, "box-max", true, "Upper back right corner of the simulation box."};
   /**
    * acquisitionFunctionOption
    */
@@ -270,7 +280,7 @@ class MDFlexConfig {
   /**
    * cutoff
    */
-  MDFlexOption<double, __LINE__> cutoff{1., "cutoff", true, "Lennard-Jones force cutoff."};
+  MDFlexOption<double, __LINE__> cutoff{2., "cutoff", true, "Lennard-Jones force cutoff."};
   /**
    * functorOption
    */
@@ -354,8 +364,9 @@ class MDFlexConfig {
       1000, "particles-total", true, "Total number of particles for the random distribution based generators."};
   /**
    * particleSpacing
+   * For a stable grid initialize this as 2^(1/6) sigma
    */
-  MDFlexOption<double, __LINE__> particleSpacing{.5, "particle-spacing", true,
+  MDFlexOption<double, __LINE__> particleSpacing{1.1225 * 1, "particle-spacing", true,
                                                  "Space between two particles for the grid generator."};
   /**
    * generatorOption
@@ -468,7 +479,7 @@ class MDFlexConfig {
    * checkpointfile
    */
   MDFlexOption<std::string, __LINE__> checkpointfile{"", "checkpoint", true,
-                                                     "Path to a VTK File to load as a checkpoint."};
+                                                     "Path to a .vtk File to load as a checkpoint."};
 
   /**
    * valueOffset used for cli-output alignment
