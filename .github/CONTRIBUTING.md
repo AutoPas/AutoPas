@@ -155,8 +155,9 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Add your option to `src/autopas/selectors/Configuration.h` and adjust constructors, comparison operators and ConfigHash function accordingly.
 * Add a parameter for your option to `TuningStrategyFactory::generateTuningStrategy` and pass it to the constructors for each tuning strategy.
 * Adjust the individual tuning strategies accordingly; the exact implementation will depend on the purpose of your option, but some general advice is:
+  * Depending on your new option, it might make sense for some tuning strategies to merge it with another option to avoid sparse dimensions.
   * `FullSearch` and `PredictiveTuning` inherit from `SetSearchSpaceBasedTuningStrategy`, adjust the constructor for this class and the method `populateSearchSpace()`.
-  * For `ActiveHarmony` your option will also have to be integrated into `FeatureVector`.
+  * For bayesian based tuning strategies your option will also have to be integrated into `FeatureVector`.
   * Make sure to declare your option by calling `configureTuningParameter()` in `ActiveHarmony::resetHarmony()`.
 * Adjust any tests that are affected by these changes. The following tests will definately require changes:
   * `tests/testAutopas/tests/autopasInterface/AutoPasInterfaceTest.{h,cpp}`
