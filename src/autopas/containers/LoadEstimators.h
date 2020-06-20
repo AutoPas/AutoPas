@@ -96,6 +96,9 @@ static std::set<autopas::LoadEstimatorOption> allCompatibleLoadEstimators(autopa
                                                     LoadEstimatorOption::squaredParticlesPerCell,
                                                     LoadEstimatorOption::neighborListLength};
     }
+    case ContainerOption::verletClusterLists: {
+      return std::set<autopas::LoadEstimatorOption>{LoadEstimatorOption::none, LoadEstimatorOption::neighborListLength};
+    }
     default: {
       return std::set<autopas::LoadEstimatorOption>{};
     }
@@ -110,10 +113,9 @@ static std::set<autopas::LoadEstimatorOption> allCompatibleLoadEstimators(autopa
  */
 static bool usesLoadEstimator(autopas::TraversalOption traversal) {
   switch (traversal) {
-    case TraversalOption::BalancedSliced: {
-      return true;
-    }
-    case TraversalOption::BalancedSlicedVerlet: {
+    case TraversalOption::BalancedSliced:       /* FALL THROUGH */
+    case TraversalOption::BalancedSlicedVerlet: /* FALL THROUGH */
+    case TraversalOption::verletClustersBalancedSliced: {
       return true;
     }
     default: {

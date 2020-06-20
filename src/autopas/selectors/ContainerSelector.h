@@ -110,8 +110,9 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
       break;
     }
     case ContainerOption::verletClusterLists: {
-      container = std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                                 containerInfo.verletClusterSize);
+      container =
+          std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                         containerInfo.verletClusterSize, containerInfo.loadEstimator);
       break;
     }
     case ContainerOption::verletClusterCells: {
