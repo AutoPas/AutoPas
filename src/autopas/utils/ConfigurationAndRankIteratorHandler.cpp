@@ -6,6 +6,9 @@
 
 #include "ConfigurationAndRankIteratorHandler.h"
 
+#include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LoadEstimators.h"
+
 namespace autopas::utils {
 
 inline void ConfigurationAndRankIteratorHandler::advanceConfigIterators() {
@@ -16,14 +19,23 @@ inline void ConfigurationAndRankIteratorHandler::advanceConfigIterators() {
   ++_dataLayoutIt;
   if (_dataLayoutIt != _dataLayoutOptions.end()) return;
   _dataLayoutIt = _dataLayoutOptions.begin();
+  ++_loadEstimatorIt;
+  if (_loadEstimatorIt != _allowedAndApplicableLoadEstimatorOptions.end()) return;
+  _loadEstimatorIt = _allowedAndApplicableLoadEstimatorOptions.begin();
   ++_traversalIt;
-  if (_traversalIt != _allowedAndApplicableTraversalOptions.end()) return;
-  _traversalIt = _allowedAndApplicableTraversalOptions.begin();
+  if (_traversalIt != _allowedAndApplicableTraversalOptions.end()) {
+    selectLoadEstimatorsForCurrentContainerAndTraversal();
+    return;
+  } else {
+    _traversalIt = _allowedAndApplicableTraversalOptions.begin();
+    selectLoadEstimatorsForCurrentContainerAndTraversal();
+  }
   ++_cellSizeFactorIt;
   if (_cellSizeFactorIt != _cellSizeFactors.end()) return;
   _cellSizeFactorIt = _cellSizeFactors.begin();
   ++_containerIt;
   selectTraversalsForCurrentContainer();
+  selectLoadEstimatorsForCurrentContainerAndTraversal();
 }
 
 void ConfigurationAndRankIteratorHandler::advanceIterators(const int numConfigs, const int commSize) {
@@ -70,6 +82,13 @@ void ConfigurationAndRankIteratorHandler::selectTraversalsForCurrentContainer() 
       allContainerTraversals.end(),
       std::inserter(_allowedAndApplicableTraversalOptions, _allowedAndApplicableTraversalOptions.begin()));
   _traversalIt = _allowedAndApplicableTraversalOptions.begin();
+}
+
+void ConfigurationAndRankIteratorHandler::selectLoadEstimatorsForCurrentContainerAndTraversal() {
+  // if load estimators are not applicable LoadEstimatorOption::none is returned.
+  _allowedAndApplicableLoadEstimatorOptions =
+      loadEstimators::getApplicableLoadEstimators(*_containerIt, *_traversalIt, _allowedLoadEstimatorOptions);
+  _loadEstimatorIt = _allowedAndApplicableLoadEstimatorOptions.begin();
 }
 
 }  // namespace autopas::utils

@@ -6,6 +6,8 @@
 
 #include "AutoPasConfigurationCommunicator.h"
 
+#include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LoadEstimators.h"
 #include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
 #include "autopas/utils/Logger.h"
 
@@ -28,12 +30,18 @@ size_t getSearchSpaceSize(std::set<ContainerOption> &containerOptions, NumberSet
     // get all traversals of the container and restrict them to the allowed ones
     const std::set<TraversalOption> &allContainerTraversals =
         compatibleTraversals::allCompatibleTraversals(containerOption);
-    std::set<TraversalOption> allowedAndApplicable;
-    std::set_intersection(traversalOptions.begin(), traversalOptions.end(), allContainerTraversals.begin(),
-                          allContainerTraversals.end(),
-                          std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
-    numConfigs +=
-        cellSizeFactorArraySize * allowedAndApplicable.size() * dataLayoutOptions.size() * newton3Options.size();
+    std::set<TraversalOption> allowedAndApplicableTraversalOptions;
+    std::set_intersection(
+        traversalOptions.begin(), traversalOptions.end(), allContainerTraversals.begin(), allContainerTraversals.end(),
+        std::inserter(allowedAndApplicableTraversalOptions, allowedAndApplicableTraversalOptions.begin()));
+
+    for (const auto &traversalOption : allowedAndApplicableTraversalOptions) {
+      // if load estimators are not applicable LoadEstimatorOption::none is returned.
+      const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
+          loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, loadEstimatorOptions);
+      numConfigs += cellSizeFactorArraySize * allowedAndApplicableLoadEstimators.size() * dataLayoutOptions.size() *
+                    newton3Options.size();
+    }
   }
   return numConfigs;
 }

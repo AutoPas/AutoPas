@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
@@ -25,6 +24,7 @@ class ConfigurationAndRankIteratorHandler {
    * @param containerOptions
    * @param cellSizeFactors
    * @param traversalOptions
+   * @param loadEstimatorOptions
    * @param dataLayoutOptions
    * @param newton3Options
    * @param numConfigs
@@ -38,7 +38,7 @@ class ConfigurationAndRankIteratorHandler {
       : _containerOptions(containerOptions),
         _cellSizeFactors(cellSizeFactors),
         _allowedTraversalOptions(traversalOptions),
-        _loadEstimatorOptions(loadEstimatorOptions),
+        _allowedLoadEstimatorOptions(loadEstimatorOptions),
         _dataLayoutOptions(dataLayoutOptions),
         _newton3Options(newton3Options),
         _containerIt(containerOptions.begin()),
@@ -51,6 +51,7 @@ class ConfigurationAndRankIteratorHandler {
         _infiniteCellSizeFactorsOffset(0),
         _infiniteCellSizeFactorsBlockSize(commSize >= numConfigs ? commSize / numConfigs : numConfigs / commSize) {
     selectTraversalsForCurrentContainer();
+    selectLoadEstimatorsForCurrentContainerAndTraversal();
   }
 
   /**
@@ -148,6 +149,11 @@ class ConfigurationAndRankIteratorHandler {
   void selectTraversalsForCurrentContainer();
 
   /**
+   * Resets _allowedAndApplicableLoadEstimatorOptions to fit with the current container and traversal.
+   */
+  void selectLoadEstimatorsForCurrentContainerAndTraversal();
+
+  /**
    * Selects the next config from containers X cellSizeFactors X traversals X dataLayouts X newton3Options
    * Later named options are changed first, because they are easier to switch between simulation steps
    */
@@ -156,10 +162,11 @@ class ConfigurationAndRankIteratorHandler {
   const std::set<ContainerOption> &_containerOptions;
   const std::set<double> &_cellSizeFactors;
   const std::set<TraversalOption> &_allowedTraversalOptions;
-  const std::set<LoadEstimatorOption> &_loadEstimatorOptions;
+  const std::set<LoadEstimatorOption> &_allowedLoadEstimatorOptions;
   const std::set<DataLayoutOption> &_dataLayoutOptions;
   const std::set<Newton3Option> &_newton3Options;
   std::set<TraversalOption> _allowedAndApplicableTraversalOptions;
+  std::set<LoadEstimatorOption> _allowedAndApplicableLoadEstimatorOptions;
   std::set<ContainerOption>::iterator _containerIt;
   std::set<double>::iterator _cellSizeFactorIt;
   std::set<TraversalOption>::iterator _traversalIt;
