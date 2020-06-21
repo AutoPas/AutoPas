@@ -185,8 +185,8 @@ class GaussianCluster {
    * @param inputContinuous
    * @return
    */
-  [[nodiscard]] inline double getOutput(const VectorDiscrete &inputDiscrete, const VectorContinuous &inputContinuous)
-      const {
+  [[nodiscard]] inline double getOutput(const VectorDiscrete &inputDiscrete,
+                                        const VectorContinuous &inputContinuous) const {
     auto index = getIndex(inputDiscrete);
     return _clusters[index].getOutput(inputContinuous);
   }

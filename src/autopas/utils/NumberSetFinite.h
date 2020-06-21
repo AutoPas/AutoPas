@@ -42,9 +42,7 @@ class NumberSetFinite : public NumberSet<Number> {
    * @param numbers The set of numbers the new NumberSetFinite represents
    * @return
    */
-  inline void resetValues(std::set<Number> &numbers) override {
-    _set = numbers;
-  }
+  inline void resetValues(std::set<Number> &numbers) override { _set = numbers; }
 
   std::string to_string() const override { return "" + utils::ArrayUtils::to_string(_set) + ""; }
 

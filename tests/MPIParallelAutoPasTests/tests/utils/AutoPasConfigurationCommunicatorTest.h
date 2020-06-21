@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 #include <mpi.h>
 
-#include "autopas/utils/AutoPasConfigurationCommunicator.h"
 #include "AutoPasMPITestBase.h"
+#include "autopas/utils/AutoPasConfigurationCommunicator.h"
 
 class AutoPasConfigurationCommunicatorTest : public AutoPasMPITestBase {};

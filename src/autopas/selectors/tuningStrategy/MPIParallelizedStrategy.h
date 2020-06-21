@@ -8,8 +8,8 @@
 
 #include "TuningStrategyInterface.h"
 #include "autopas/options/TuningStrategyOption.h"
-#include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
+#include "autopas/utils/WrapMPI.h"
 
 namespace autopas {
 
@@ -27,8 +27,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * @param comm The communicator holding all ranks which participate in this tuning strategy
    */
   MPIParallelizedStrategy(std::unique_ptr<TuningStrategyInterface> tuningStrategy, const AutoPas_MPI_Comm comm)
-      : _tuningStrategy(std::move(tuningStrategy)),
-        _comm(comm) {}
+      : _tuningStrategy(std::move(tuningStrategy)), _comm(comm) {}
 
   inline void addEvidence(long time, size_t iteration) override { _tuningStrategy->addEvidence(time, iteration); }
 
@@ -83,10 +82,10 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * The globally optimal configuration.
    * Usually holds a value that is not in a given rank's search space
    */
-   Configuration _optimalConfiguration{Configuration()};
+  Configuration _optimalConfiguration{Configuration()};
 
-   bool _allLocalConfigurationsTested{false};
-   bool _allGlobalConfigurationsTested{false};
+  bool _allLocalConfigurationsTested{false};
+  bool _allGlobalConfigurationsTested{false};
 };
 
 bool MPIParallelizedStrategy::tune(bool currentInvalid) {
@@ -116,6 +115,5 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
 
   return true;
 }
-
 
 }  // namespace autopas

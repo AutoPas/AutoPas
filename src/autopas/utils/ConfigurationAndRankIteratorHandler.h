@@ -6,12 +6,12 @@
 
 #pragma once
 
-#include "autopas/options/ContainerOption.h"
-#include "autopas/options/TraversalOption.h"
-#include "autopas/options/LoadEstimatorOption.h"
-#include "autopas/options/DataLayoutOption.h"
-#include "autopas/options/Newton3Option.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/options/Newton3Option.h"
+#include "autopas/options/TraversalOption.h"
 
 namespace autopas::utils {
 /**
@@ -173,4 +173,4 @@ class ConfigurationAndRankIteratorHandler {
   int _infiniteCellSizeFactorsBlockSize;
 };
 
-} // namespace autopas::utils
+}  // namespace autopas::utils

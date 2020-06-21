@@ -11,8 +11,7 @@ using namespace autopas;
 
 TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
   Configuration config = Configuration(ContainerOption::directSum, 1.2, TraversalOption::sliced,
-                                       LoadEstimatorOption::none, DataLayoutOption::cuda,
-                                       Newton3Option::disabled);
+                                       LoadEstimatorOption::none, DataLayoutOption::cuda, Newton3Option::disabled);
   Configuration passedConfig = deserializeConfiguration(serializeConfiguration(config));
   EXPECT_EQ(passedConfig, config);
 }
@@ -21,19 +20,22 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  Configuration config = Configuration(ContainerOption::directSum, 1 + rank, TraversalOption::sliced,
-                                       LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled);
+  Configuration config =
+      Configuration(ContainerOption::directSum, 1 + rank, TraversalOption::sliced,
+                    LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled);
   Configuration optimized = optimizeConfiguration(MPI_COMM_WORLD, config, rank);
 
-  EXPECT_EQ(optimized, Configuration(ContainerOption::directSum, 1, TraversalOption::sliced, LoadEstimatorOption::neighborListLength,DataLayoutOption::aos,
-                                     Newton3Option::enabled));
+  EXPECT_EQ(optimized,
+            Configuration(ContainerOption::directSum, 1, TraversalOption::sliced,
+                          LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled));
 }
 
 TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCellSizeFactors) {
   std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists, ContainerOption::linkedCells};
   NumberSetFinite<double> cellSizeFactors{0.9, 1.0, 1.1};
   std::set<TraversalOption> traversalOptions{TraversalOption::verletClusters, TraversalOption::sliced};
-  std::set<LoadEstimatorOption> loadEstimatorOptions{LoadEstimatorOption::none, LoadEstimatorOption::squaredParticlesPerCell};
+  std::set<LoadEstimatorOption> loadEstimatorOptions{LoadEstimatorOption::none,
+                                                     LoadEstimatorOption::squaredParticlesPerCell};
   std::set<DataLayoutOption> dataLayoutOptions{DataLayoutOption::aos, DataLayoutOption::soa};
   std::set<Newton3Option> newton3Options{Newton3Option::enabled, Newton3Option::disabled};
   int rank, commSize;
@@ -41,19 +43,17 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
   MPI_Comm_size(MPI_COMM_WORLD, &commSize);
 
   int totalNumConfigsBefore = getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions,
-                                                 loadEstimatorOptions, dataLayoutOptions,
-                                                 newton3Options);
-  distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,dataLayoutOptions, newton3Options,
-                           rank, commSize);
-  int totalNumConfigsAfter = getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,dataLayoutOptions,
-                                                newton3Options);
+                                                 loadEstimatorOptions, dataLayoutOptions, newton3Options);
+  distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions,
+                           newton3Options, rank, commSize);
+  int totalNumConfigsAfter = getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions,
+                                                loadEstimatorOptions, dataLayoutOptions, newton3Options);
 
   if (commSize <= totalNumConfigsBefore) {
     EXPECT_GE(totalNumConfigsAfter, totalNumConfigsBefore / commSize);
   } else {
     EXPECT_EQ(totalNumConfigsAfter, 1);
   }
-
 }
 
 // tests the precise outcomes of each rank for a fictional commSize of 4
@@ -75,7 +75,8 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
   auto firstAndSecondCellSizes = std::set<double>{0.9, 1.0};
   auto secondAndThirdCellSizes = std::set<double>{1.0, 1.1};
 
-  distributeConfigurations(containersTmp, cellSizeFactorsTmp, traversalsTmp, loadEstimatorTmp, dataLayoutTmp, newton3Tmp, 0, 4);
+  distributeConfigurations(containersTmp, cellSizeFactorsTmp, traversalsTmp, loadEstimatorTmp, dataLayoutTmp,
+                           newton3Tmp, 0, 4);
   EXPECT_EQ(containersTmp, std::set<ContainerOption>{ContainerOption::linkedCells});
   EXPECT_EQ(cellSizeFactorsTmp.getAll(), firstAndSecondCellSizes);
   EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::sliced});
@@ -91,7 +92,8 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
   dataLayoutTmp = std::set<DataLayoutOption>(dataLayoutOptions);
   newton3Tmp = std::set<Newton3Option>(newton3Options);
 
-  distributeConfigurations(containersTmp, cellSizeFactorsTmp, traversalsTmp, loadEstimatorTmp,dataLayoutTmp, newton3Tmp, 1, 4);
+  distributeConfigurations(containersTmp, cellSizeFactorsTmp, traversalsTmp, loadEstimatorTmp, dataLayoutTmp,
+                           newton3Tmp, 1, 4);
   EXPECT_EQ(containersTmp, std::set<ContainerOption>{ContainerOption::linkedCells});
   EXPECT_EQ(cellSizeFactorsTmp.getAll(), secondAndThirdCellSizes);
   EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::sliced});
@@ -107,7 +109,8 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
   dataLayoutTmp = std::set<DataLayoutOption>(dataLayoutOptions);
   newton3Tmp = std::set<Newton3Option>(newton3Options);
 
-  distributeConfigurations(containersTmp, cellSizeFactorsTmp, traversalsTmp, loadEstimatorOptions, dataLayoutTmp, newton3Tmp, 2, 4);
+  distributeConfigurations(containersTmp, cellSizeFactorsTmp, traversalsTmp, loadEstimatorOptions, dataLayoutTmp,
+                           newton3Tmp, 2, 4);
   EXPECT_EQ(containersTmp, std::set<ContainerOption>{ContainerOption::verletClusterLists});
   EXPECT_EQ(cellSizeFactorsTmp.getAll(), firstAndSecondCellSizes);
   EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::verletClusters});
@@ -123,7 +126,8 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
   dataLayoutTmp = std::set<DataLayoutOption>(dataLayoutOptions);
   newton3Tmp = std::set<Newton3Option>(newton3Options);
 
-  distributeConfigurations(containersTmp, cellSizeFactorsTmp, traversalsTmp, loadEstimatorTmp,dataLayoutTmp, newton3Tmp, 3, 4);
+  distributeConfigurations(containersTmp, cellSizeFactorsTmp, traversalsTmp, loadEstimatorTmp, dataLayoutTmp,
+                           newton3Tmp, 3, 4);
   EXPECT_EQ(containersTmp, std::set<ContainerOption>{ContainerOption::verletClusterLists});
   EXPECT_EQ(cellSizeFactorsTmp.getAll(), secondAndThirdCellSizes);
   EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::verletClusters});
@@ -143,8 +147,8 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfinit
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &commSize);
 
-  distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
-                           rank, commSize);
+  distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions,
+                           newton3Options, rank, commSize);
 
   EXPECT_FALSE(containerOptions.empty() or cellSizeFactors.isEmpty() or traversalOptions.empty() or
                dataLayoutOptions.empty() or newton3Options.empty());
@@ -154,4 +158,3 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfinit
   EXPECT_GE(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1) - error);
   EXPECT_LE(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1) + error);
 }
-

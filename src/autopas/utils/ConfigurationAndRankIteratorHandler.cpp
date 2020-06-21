@@ -72,4 +72,4 @@ void ConfigurationAndRankIteratorHandler::selectTraversalsForCurrentContainer() 
   _traversalIt = _allowedAndApplicableTraversalOptions.begin();
 }
 
-} // namespace autopas::utils
+}  // namespace autopas::utils

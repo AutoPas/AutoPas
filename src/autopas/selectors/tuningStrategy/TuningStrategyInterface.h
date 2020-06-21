@@ -29,7 +29,7 @@ class TuningStrategyInterface {
    * @param configuration
    * @return
    */
-   virtual long getEvidence(Configuration configuration) const = 0;
+  virtual long getEvidence(Configuration configuration) const = 0;
 
   /**
    * Returns the currently selected configuration object.

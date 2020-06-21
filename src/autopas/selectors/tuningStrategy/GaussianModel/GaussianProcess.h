@@ -137,15 +137,15 @@ class GaussianProcess {
    * @param input
    * @return
    */
-   [[nodiscard]] double getOutput(const Vector &input) const {
-     size_t index = std::distance(_inputs.begin(), std::find(_inputs.begin(), _inputs.end(),
-                                  input));
-     if (index >= _inputs.size()) {
-       utils::ExceptionHandler::exception("GaussianProcess::getOutput:"
-                                             "provided input value has not been stored before");
-     }
-     return _outputs.data()[index];
-   }
+  [[nodiscard]] double getOutput(const Vector &input) const {
+    size_t index = std::distance(_inputs.begin(), std::find(_inputs.begin(), _inputs.end(), input));
+    if (index >= _inputs.size()) {
+      utils::ExceptionHandler::exception(
+          "GaussianProcess::getOutput:"
+          "provided input value has not been stored before");
+    }
+    return _outputs.data()[index];
+  }
 
   /**
    * Try to predict f(x) using the evidence

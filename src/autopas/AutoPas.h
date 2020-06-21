@@ -13,8 +13,8 @@
 
 #include "autopas/LogicHandler.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
-#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"

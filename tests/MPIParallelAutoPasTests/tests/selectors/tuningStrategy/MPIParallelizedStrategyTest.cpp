@@ -49,34 +49,29 @@ TEST_F(MPIParallelizedStrategyTest, testTuneFullSearch) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  auto strategy = std::make_unique<FullSearch>(std::set<ContainerOption>{ContainerOption::linkedCells},
-                                               std::set<double>{1.0 + (2 * rank) / 10.0,
-                                                                                   1.0 + (2 * rank + 1) / 10.0},
-                                               std::set<TraversalOption>{TraversalOption::sliced},
-                                               std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
-                                               std::set<DataLayoutOption>{DataLayoutOption::aos},
-                                               std::set<Newton3Option>{Newton3Option::enabled});
+  auto strategy = std::make_unique<FullSearch>(
+      std::set<ContainerOption>{ContainerOption::linkedCells},
+      std::set<double>{1.0 + (2 * rank) / 10.0, 1.0 + (2 * rank + 1) / 10.0},
+      std::set<TraversalOption>{TraversalOption::sliced}, std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
+      std::set<DataLayoutOption>{DataLayoutOption::aos}, std::set<Newton3Option>{Newton3Option::enabled});
 
   auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD);
   finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
   EXPECT_EQ(mpiParallelizedStrategy.getCurrentConfiguration(),
-            Configuration(ContainerOption::linkedCells, 1.0, TraversalOption::sliced, LoadEstimatorOption::none,DataLayoutOption::aos,
-                          Newton3Option::enabled));
+            Configuration(ContainerOption::linkedCells, 1.0, TraversalOption::sliced, LoadEstimatorOption::none,
+                          DataLayoutOption::aos, Newton3Option::enabled));
 }
 
 TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchFiniteCellSizeFactors) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  auto strategy = std::make_unique<RandomSearch>(std::set<ContainerOption>{ContainerOption::linkedCells},
-                                                 NumberSetFinite<double>{1.0 + (2 * rank) / 10.0,
-                                                                         1.0 + (2 * rank + 1) / 10.0},
-                                                 std::set<TraversalOption>{TraversalOption::sliced},
-                                                 std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
-                                                 std::set<DataLayoutOption>{DataLayoutOption::aos},
-                                                 std::set<Newton3Option>{Newton3Option::enabled},
-                                                 2);
+  auto strategy = std::make_unique<RandomSearch>(
+      std::set<ContainerOption>{ContainerOption::linkedCells},
+      NumberSetFinite<double>{1.0 + (2 * rank) / 10.0, 1.0 + (2 * rank + 1) / 10.0},
+      std::set<TraversalOption>{TraversalOption::sliced}, std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
+      std::set<DataLayoutOption>{DataLayoutOption::aos}, std::set<Newton3Option>{Newton3Option::enabled}, 2);
 
   auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD);
   finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
@@ -88,14 +83,11 @@ TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchInfiniteCellSizeFactors)
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  auto strategy = std::make_unique<RandomSearch>(std::set<ContainerOption>{ContainerOption::linkedCells},
-                                                 NumberInterval<double>{1.0 + (2 * rank) / 10.0,
-                                                                        1.0 + (2 * rank + 1) / 10.0},
-                                                 std::set<TraversalOption>{TraversalOption::sliced},
-                                                 std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
-                                                 std::set<DataLayoutOption>{DataLayoutOption::aos},
-                                                 std::set<Newton3Option>{Newton3Option::enabled},
-                                                 2);
+  auto strategy = std::make_unique<RandomSearch>(
+      std::set<ContainerOption>{ContainerOption::linkedCells},
+      NumberInterval<double>{1.0 + (2 * rank) / 10.0, 1.0 + (2 * rank + 1) / 10.0},
+      std::set<TraversalOption>{TraversalOption::sliced}, std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
+      std::set<DataLayoutOption>{DataLayoutOption::aos}, std::set<Newton3Option>{Newton3Option::enabled}, 2);
 
   auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD);
   auto smallestLocalCellSizeFactor = infiniteCellSizeFactorSetup(mpiParallelizedStrategy);
@@ -107,33 +99,29 @@ TEST_F(MPIParallelizedStrategyTest, testTuneActiveHarmonyFiniteCellSizeFactors) 
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  auto strategy = std::make_unique<ActiveHarmony>(std::set<ContainerOption>{ContainerOption::linkedCells},
-                                                  NumberSetFinite<double>{1.0 + (2 * rank) / 10.0,
-                                                                          1.0 + (2 * rank + 1) / 10.0},
-                                                  std::set<TraversalOption>{TraversalOption::sliced},
-                                                  std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
-                                                  std::set<DataLayoutOption>{DataLayoutOption::aos},
-                                                  std::set<Newton3Option>{Newton3Option::enabled});
+  auto strategy = std::make_unique<ActiveHarmony>(
+      std::set<ContainerOption>{ContainerOption::linkedCells},
+      NumberSetFinite<double>{1.0 + (2 * rank) / 10.0, 1.0 + (2 * rank + 1) / 10.0},
+      std::set<TraversalOption>{TraversalOption::sliced}, std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
+      std::set<DataLayoutOption>{DataLayoutOption::aos}, std::set<Newton3Option>{Newton3Option::enabled});
 
   auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD);
   finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
   EXPECT_EQ(mpiParallelizedStrategy.getCurrentConfiguration(),
-            Configuration(ContainerOption::linkedCells, 1.0, TraversalOption::sliced, LoadEstimatorOption::none, DataLayoutOption::aos,
-                          Newton3Option::enabled));
+            Configuration(ContainerOption::linkedCells, 1.0, TraversalOption::sliced, LoadEstimatorOption::none,
+                          DataLayoutOption::aos, Newton3Option::enabled));
 }
 
 TEST_F(MPIParallelizedStrategyTest, testTuneBayesianClusterSearchInfiniteCellSizeFactors) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  auto strategy = std::make_unique<BayesianClusterSearch>(std::set<ContainerOption>{ContainerOption::linkedCells},
-                                                          NumberSetFinite<double>{1.0 + (2 * rank) / 10.0,
-                                                                                  1.0 + (2 * rank + 1) / 10.0},
-                                                          std::set<TraversalOption>{TraversalOption::sliced},
-                                                          std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
-                                                          std::set<DataLayoutOption>{DataLayoutOption::aos},
-                                                          std::set<Newton3Option>{Newton3Option::enabled});
+  auto strategy = std::make_unique<BayesianClusterSearch>(
+      std::set<ContainerOption>{ContainerOption::linkedCells},
+      NumberSetFinite<double>{1.0 + (2 * rank) / 10.0, 1.0 + (2 * rank + 1) / 10.0},
+      std::set<TraversalOption>{TraversalOption::sliced}, std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
+      std::set<DataLayoutOption>{DataLayoutOption::aos}, std::set<Newton3Option>{Newton3Option::enabled});
 
   auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD);
   auto smallestCellSizeFactor = infiniteCellSizeFactorSetup(mpiParallelizedStrategy);
