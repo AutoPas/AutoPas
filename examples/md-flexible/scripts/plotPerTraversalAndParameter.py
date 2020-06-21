@@ -99,7 +99,6 @@ for datafile in datafiles:
     regexNumOfParticlesAbsolute = '.*numberOfParticles*'
     regexBoxMin = '.*box-min*'
     regexBoxMax = '.*box-max*'
-    regexDensity = '.*particle-spacing*'
     regexTraversal = '.*traversal*'
 
     # parse file
@@ -121,11 +120,12 @@ for datafile in datafiles:
                         densityPerTraversal.append([])
                         timePerTravsersal.append([])
                     foundTraversal = True
-            elif number and (match := re.search(regexNumOfParticles, line)) is not None:
+            elif (number or density) and (match := re.search(regexNumOfParticles, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')  # split content inside brackets and show as array
                 numberOfParticles = numpy.prod(list(map(int, arrayOfCurrentLine)))  # calculate overall number of particles
                 numberOfParticlesPerTraversal[allTraversals.index(traversal)].append(numberOfParticles)
+                currentDensity += numberOfParticles
             elif number and (match := re.search(regexNumOfParticlesAbsolute, line)) is not None:
                 currentLine = line.split(':', 1)[1]
                 currentLine.strip()
@@ -138,10 +138,6 @@ for datafile in datafiles:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')
                 boxSizeListMin = list(map(float, arrayOfCurrentLine))
-            elif density and (match := re.search(regexDensity, line)) is not None:
-                currentLine = line.split(':', 1)[1]
-                currentLine.strip()
-                densityPerTraversal[allTraversals.index(traversal)].append(float(currentLine))
             elif density and (match := re.search(regexNumOfParticlesAbsolute, line)) is not None:
                 currentLine = line.split(':', 1)[1]
                 currentLine.strip()
