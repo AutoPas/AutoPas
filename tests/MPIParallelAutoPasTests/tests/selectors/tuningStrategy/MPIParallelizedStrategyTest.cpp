@@ -53,6 +53,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneFullSearch) {
                                                std::set<double>{1.0 + (2 * rank) / 10.0,
                                                                                    1.0 + (2 * rank + 1) / 10.0},
                                                std::set<TraversalOption>{TraversalOption::sliced},
+                                               std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
                                                std::set<DataLayoutOption>{DataLayoutOption::aos},
                                                std::set<Newton3Option>{Newton3Option::enabled});
 
@@ -60,7 +61,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneFullSearch) {
   finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
   EXPECT_EQ(mpiParallelizedStrategy.getCurrentConfiguration(),
-            Configuration(ContainerOption::linkedCells, 1.0, TraversalOption::sliced, DataLayoutOption::aos,
+            Configuration(ContainerOption::linkedCells, 1.0, TraversalOption::sliced, LoadEstimatorOption::none,DataLayoutOption::aos,
                           Newton3Option::enabled));
 }
 
@@ -72,6 +73,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchFiniteCellSizeFactors) {
                                                  NumberSetFinite<double>{1.0 + (2 * rank) / 10.0,
                                                                          1.0 + (2 * rank + 1) / 10.0},
                                                  std::set<TraversalOption>{TraversalOption::sliced},
+                                                 std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
                                                  std::set<DataLayoutOption>{DataLayoutOption::aos},
                                                  std::set<Newton3Option>{Newton3Option::enabled},
                                                  2);
@@ -90,6 +92,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchInfiniteCellSizeFactors)
                                                  NumberInterval<double>{1.0 + (2 * rank) / 10.0,
                                                                         1.0 + (2 * rank + 1) / 10.0},
                                                  std::set<TraversalOption>{TraversalOption::sliced},
+                                                 std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
                                                  std::set<DataLayoutOption>{DataLayoutOption::aos},
                                                  std::set<Newton3Option>{Newton3Option::enabled},
                                                  2);
@@ -108,6 +111,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneActiveHarmonyFiniteCellSizeFactors) 
                                                   NumberSetFinite<double>{1.0 + (2 * rank) / 10.0,
                                                                           1.0 + (2 * rank + 1) / 10.0},
                                                   std::set<TraversalOption>{TraversalOption::sliced},
+                                                  std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
                                                   std::set<DataLayoutOption>{DataLayoutOption::aos},
                                                   std::set<Newton3Option>{Newton3Option::enabled});
 
@@ -115,7 +119,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneActiveHarmonyFiniteCellSizeFactors) 
   finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
   EXPECT_EQ(mpiParallelizedStrategy.getCurrentConfiguration(),
-            Configuration(ContainerOption::linkedCells, 1.0, TraversalOption::sliced, DataLayoutOption::aos,
+            Configuration(ContainerOption::linkedCells, 1.0, TraversalOption::sliced, LoadEstimatorOption::none, DataLayoutOption::aos,
                           Newton3Option::enabled));
 }
 
@@ -127,6 +131,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneBayesianClusterSearchInfiniteCellSiz
                                                           NumberSetFinite<double>{1.0 + (2 * rank) / 10.0,
                                                                                   1.0 + (2 * rank + 1) / 10.0},
                                                           std::set<TraversalOption>{TraversalOption::sliced},
+                                                          std::set<LoadEstimatorOption>{LoadEstimatorOption::none},
                                                           std::set<DataLayoutOption>{DataLayoutOption::aos},
                                                           std::set<Newton3Option>{Newton3Option::enabled});
 

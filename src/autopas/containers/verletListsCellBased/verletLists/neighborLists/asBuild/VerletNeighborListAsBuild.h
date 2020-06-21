@@ -75,7 +75,10 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    */
   VerletNeighborListAsBuild() : _neighborList{}, _soaListIsValid(false) {}
 
-  ContainerOption getContainerType() const override { return ContainerOption::varVerletListsAsBuild; }
+  /**
+   * @copydoc VerletNeighborListInterface::getContainerType()
+   */
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::varVerletListsAsBuild; }
 
   /**
    * @copydoc VerletNeighborListInterface::buildNeighborList()
@@ -105,6 +108,9 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     }
   }
 
+  /**
+   * @copydoc VerletNeighborListInterface::checkNeighborListValidity()
+   */
   bool checkNeighborListValidity(bool useNewton3, double cutoff) override {
     _allPairsPresent = true;
     if (_baseLinkedCells == nullptr) return false;
@@ -141,6 +147,9 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    */
   const auto &getInternalSoANeighborList() { return _soaNeighborList; }
 
+  /**
+   * @copydoc ColorChangeObserver::receiveColorChange()
+   */
   void receiveColorChange(unsigned long newColor) override { _currentColor = newColor; }
 
   /**
@@ -216,8 +225,14 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     }
   }
 
+  /**
+   * @copydoc VerletNeighborListInterface::isSoAListValid()
+   */
   bool isSoAListValid() const override { return _soaListIsValid; }
 
+  /**
+   * @copydoc VerletNeighborListInterface::getNumberOfNeighborPairs()
+   */
   long getNumberOfNeighborPairs() const override {
     long numPairs = 0;
     for (const auto &colorList : _neighborList) {

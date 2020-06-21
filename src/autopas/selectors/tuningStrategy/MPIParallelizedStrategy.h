@@ -105,7 +105,7 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
   AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
   if (_allGlobalConfigurationsTested) {
     auto config = _tuningStrategy->getCurrentConfiguration();
-    _optimalConfiguration = AutoPasConfigurationCommunicator::optimizeConfiguration(
+    _optimalConfiguration = utils::AutoPasConfigurationCommunicator::optimizeConfiguration(
         _comm, config, _tuningStrategy->getEvidence(config));
 
     return false;

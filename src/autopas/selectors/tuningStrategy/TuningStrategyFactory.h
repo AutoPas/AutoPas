@@ -19,6 +19,7 @@ namespace autopas::TuningStrategyFactory {
  * @param allowedContainers
  * @param allowedCellSizeFactors
  * @param allowedTraversals
+ * @param allowedLoadEstimators
  * @param allowedDataLayouts
  * @param allowedNewton3Options
  * @param maxEvidence
@@ -32,8 +33,9 @@ namespace autopas::TuningStrategyFactory {
 std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     autopas::TuningStrategyOption tuningStrategyOption, std::set<autopas::ContainerOption> &allowedContainers,
     autopas::NumberSet<double> &allowedCellSizeFactors, std::set<autopas::TraversalOption> &allowedTraversals,
-    std::set<autopas::DataLayoutOption> &allowedDataLayouts, std::set<autopas::Newton3Option> &allowedNewton3Options,
-    unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
-    AcquisitionFunctionOption acquisitionFunctionOption, MPIStrategyOption mpiStrategyOption,
-    AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
+    std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
+    std::set<autopas::DataLayoutOption> &allowedDataLayouts,
+    std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
+    unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption,
+    MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
 }  // namespace autopas::TuningStrategyFactory

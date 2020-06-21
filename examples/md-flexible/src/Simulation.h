@@ -180,18 +180,21 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   autopas.setAllowedDataLayouts(_config->dataLayoutOptions.value);
   autopas.setAllowedNewton3Options(_config->newton3Options.value);
   autopas.setAllowedTraversals(_config->traversalOptions.value);
+  autopas.setAllowedLoadEstimators(_config->loadEstimatorOptions.value);
   autopas.setBoxMax(_config->boxMax.value);
   autopas.setBoxMin(_config->boxMin.value);
   autopas.setCutoff(_config->cutoff.value);
   autopas.setRelativeOptimumRange(_config->relativeOptimumRange.value);
   autopas.setMaxTuningPhasesWithoutTest(_config->maxTuningPhasesWithoutTest.value);
   autopas.setNumSamples(_config->tuningSamples.value);
+  autopas.setMaxEvidence(_config->tuningMaxEvidence.value);
   autopas.setSelectorStrategy(_config->selectorStrategy.value);
   autopas.setTuningInterval(_config->tuningInterval.value);
   autopas.setTuningStrategyOption(_config->tuningStrategyOption.value);
   autopas.setVerletClusterSize(_config->verletClusterSize.value);
   autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency.value);
   autopas.setVerletSkin(_config->verletSkinRadius.value);
+  autopas.setAcquisitionFunction(_config->acquisitionFunctionOption.value);
   autopas::Logger::get()->set_level(_config->logLevel.value);
   autopas.init();
 

@@ -19,7 +19,9 @@
 std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory::generateTuningStrategy(
     autopas::TuningStrategyOption tuningStrategyOption, std::set<autopas::ContainerOption> &allowedContainers,
     autopas::NumberSet<double> &allowedCellSizeFactors, std::set<autopas::TraversalOption> &allowedTraversals,
-    std::set<autopas::DataLayoutOption> &allowedDataLayouts, std::set<autopas::Newton3Option> &allowedNewton3Options,
+    std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
+    std::set<autopas::DataLayoutOption> &allowedDataLayouts,
+    std::set<autopas::Newton3Option> &allowedNewton3Options,
     unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
     AcquisitionFunctionOption acquisitionFunctionOption, MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
   switch (static_cast<autopas::MPIStrategyOption>(mpiStrategyOption)) {
@@ -31,9 +33,10 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       int rank, commSize;
       AutoPas_MPI_Comm_rank(comm, &rank);
       AutoPas_MPI_Comm_size(comm, &commSize);
-      AutoPasConfigurationCommunicator::distributeConfigurations(allowedContainers, allowedCellSizeFactors,
-                                                                 allowedTraversals, allowedDataLayouts,
-                                                                 allowedNewton3Options, rank, commSize);
+      utils::AutoPasConfigurationCommunicator::distributeConfigurations(allowedContainers, allowedCellSizeFactors,
+                                                                 allowedTraversals, allowedLoadEstimators,
+                                                                 allowedDataLayouts, allowedNewton3Options, rank,
+                                                                 commSize);
       break;
     }
 
@@ -44,11 +47,11 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
   }
 
   std::unique_ptr<autopas::TuningStrategyInterface> tuningStrategy = nullptr;
-  // clang compiler bug requires static cast
   switch (static_cast<autopas::TuningStrategyOption>(tuningStrategyOption)) {
     case TuningStrategyOption::randomSearch: {
       tuningStrategy = std::make_unique<RandomSearch>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
-                                                      allowedDataLayouts, allowedNewton3Options, maxEvidence);
+                                                      allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
+                                                      maxEvidence);
       break;
     }
 
@@ -60,34 +63,36 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       }
 
       tuningStrategy = std::make_unique<FullSearch>(allowedContainers, allowedCellSizeFactors.getAll(),
-                                                    allowedTraversals, allowedDataLayouts, allowedNewton3Options);
+                                                    allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
+                                                    allowedNewton3Options);
       break;
     }
 
     case TuningStrategyOption::bayesianSearch: {
       tuningStrategy = std::make_unique<BayesianSearch>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
-                                                        allowedDataLayouts, allowedNewton3Options, maxEvidence,
-                                                        acquisitionFunctionOption);
+                                                        allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
+                                                        maxEvidence, acquisitionFunctionOption);
       break;
     }
 
     case TuningStrategyOption::bayesianClusterSearch: {
       tuningStrategy = std::make_unique<BayesianClusterSearch>(
-          allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedDataLayouts, allowedNewton3Options,
-          maxEvidence, acquisitionFunctionOption);
+          allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
+          allowedNewton3Options, maxEvidence, acquisitionFunctionOption);
       break;
     }
 
     case TuningStrategyOption::activeHarmony: {
       tuningStrategy = std::make_unique<ActiveHarmony>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
-                                                       allowedDataLayouts, allowedNewton3Options);
+                                                       allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options);
       break;
     }
 
     case TuningStrategyOption::predictiveTuning: {
       tuningStrategy = std::make_unique<PredictiveTuning>(allowedContainers, allowedCellSizeFactors.getAll(),
-                                                          allowedTraversals, allowedDataLayouts, allowedNewton3Options,
-                                                          relativeOptimum, maxTuningPhasesWithoutTest);
+                                                          allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
+                                                          allowedNewton3Options, relativeOptimum,
+                                                          maxTuningPhasesWithoutTest);
       break;
     }
 

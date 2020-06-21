@@ -6,76 +6,14 @@
 
 #include "AutoPasConfigurationCommunicator.h"
 #include "autopas/utils/Logger.h"
+#include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
 
-namespace autopas {
+namespace autopas::utils::AutoPasConfigurationCommunicator {
 
-inline void AutoPasConfigurationCommunicator::IteratorHandler::advanceConfigIterators() {
-  // advance to the next valid config
-  ++_newton3It;
-  if (_newton3It != _newton3Options.end()) return;
-  _newton3It = _newton3Options.begin();
-  ++_dataLayoutIt;
-  if (_dataLayoutIt != _dataLayoutOptions.end()) return;
-  _dataLayoutIt = _dataLayoutOptions.begin();
-  ++_traversalIt;
-  if (_traversalIt != _allowedAndApplicableTraversalOptions.end()) return;
-  _traversalIt = _allowedAndApplicableTraversalOptions.begin();
-  ++_cellSizeFactorIt;
-  if (_cellSizeFactorIt != _cellSizeFactors.end()) return;
-  _cellSizeFactorIt = _cellSizeFactors.begin();
-  ++_containerIt;
-  selectTraversalsForCurrentContainer();
-}
-
-void AutoPasConfigurationCommunicator::IteratorHandler::advanceIterators(const int numConfigs, const int commSize) {
-  if (numConfigs >= commSize or _remainingBlockSize == 0) {
-    advanceConfigIterators();
-  }
-
-  if (commSize >= numConfigs or _remainingBlockSize == 0) {
-    // advance to the next rank
-    ++_rankIterator;
-
-    // advance offset to the position relative to the first rank with the same configuration
-    ++_infiniteCellSizeFactorsOffset;
-  }
-
-  // Set information necessary to compute the next block.
-  // Block here means either a block of ranks that all have the same configuration or a set of configuration that all
-  // have the same ranks.
-  if (_remainingBlockSize == 0) {
-    if (numConfigs >= commSize) {
-      _remainingBlockSize = numConfigs / commSize;
-    } else {
-      _remainingBlockSize = commSize / numConfigs;
-
-      _infiniteCellSizeFactorsBlockSize = _remainingBlockSize;
-      _infiniteCellSizeFactorsOffset = 0;
-    }
-    if (_remainder > 0) {
-      ++_remainingBlockSize;
-      --_remainder;
-    }
-  }
-
-  --_remainingBlockSize;
-}
-
-void AutoPasConfigurationCommunicator::IteratorHandler::selectTraversalsForCurrentContainer() {
-  // get all traversals of the container and restrict them to the allowed ones
-  const std::set<TraversalOption> &allContainerTraversals =
-      compatibleTraversals::allCompatibleTraversals(*_containerIt);
-  _allowedAndApplicableTraversalOptions.clear();
-  std::set_intersection(_allowedTraversalOptions.begin(), _allowedTraversalOptions.end(),
-                        allContainerTraversals.begin(), allContainerTraversals.end(),
-                        std::inserter(_allowedAndApplicableTraversalOptions,
-                                             _allowedAndApplicableTraversalOptions.begin()));
-  _traversalIt = _allowedAndApplicableTraversalOptions.begin();
-}
-
-size_t AutoPasConfigurationCommunicator::getSearchSpaceSize(std::set<ContainerOption> &containerOptions,
+size_t getSearchSpaceSize(std::set<ContainerOption> &containerOptions,
                                                             NumberSet<double> &cellSizeFactors,
                                                             std::set<TraversalOption> &traversalOptions,
+                                                            std::set<LoadEstimatorOption> &loadEstimatorOptions,
                                                             std::set<DataLayoutOption> &dataLayoutOptions,
                                                             std::set<Newton3Option> &newton3Options) {
   size_t numConfigs = 0;
@@ -114,14 +52,16 @@ size_t AutoPasConfigurationCommunicator::getSearchSpaceSize(std::set<ContainerOp
  */
 void generateDistribution(const int numConfigs, const int commSize, const int rank,
                           std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
-                          std::set<TraversalOption> &traversalOptions, std::set<DataLayoutOption> &dataLayoutOptions,
-                          std::set<Newton3Option> &newton3Options) {
+                          std::set<TraversalOption> &traversalOptions,
+                          std::set<LoadEstimatorOption> &loadEstimatorOptions,
+                          std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options) {
   // ============== setup ======================================================
 
   // These will be set to the Options specific to this rank and will overwrite the input sets
   auto newContainerOptions = std::set<ContainerOption>();
   auto newCellSizeFactors = std::set<double>();
   auto newTraversalOptions = std::set<TraversalOption>();
+  auto newLoadEstimatorOptions = std::set<LoadEstimatorOption>();
   auto newDataLayoutOptions = std::set<DataLayoutOption>();
   auto newNewton3Options = std::set<Newton3Option>();
 
@@ -137,9 +77,9 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
 
   // ============== main computation ===========================================
 
-  AutoPasConfigurationCommunicator::IteratorHandler iteratorHandler(containerOptions, finiteCellSizeFactors,
-                                                                    traversalOptions, dataLayoutOptions, newton3Options,
-                                                                    numConfigs, commSize);
+  ConfigurationAndRankIteratorHandler iteratorHandler(
+      containerOptions, finiteCellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions,
+      newton3Options, numConfigs, commSize);
 
   while (iteratorHandler.getRankIterator() < rank) {
     iteratorHandler.advanceIterators(numConfigs, commSize);
@@ -179,14 +119,16 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
   newton3Options = newNewton3Options;
 }
 
-void AutoPasConfigurationCommunicator::distributeConfigurations(std::set<ContainerOption> &containerOptions,
+void distributeConfigurations(std::set<ContainerOption> &containerOptions,
                                                                 NumberSet<double> &cellSizeFactors,
                                                                 std::set<TraversalOption> &traversalOptions,
+                                                                std::set<LoadEstimatorOption> &loadEstimatorOptions,
                                                                 std::set<DataLayoutOption> &dataLayoutOptions,
                                                                 std::set<Newton3Option> &newton3Options,
                                                                 const int rank, const int commSize) {
   int numConfigs =
-      getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, dataLayoutOptions, newton3Options);
+      getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions,
+                         newton3Options);
 
   if (numConfigs == 0) {
     utils::ExceptionHandler::exception("Could not generate valid configurations, aborting");
@@ -196,7 +138,7 @@ void AutoPasConfigurationCommunicator::distributeConfigurations(std::set<Contain
   // Creates a set for each option and each rank containing the serialized versions (std::byte or double) of all
   // options assigned to that rank.
   generateDistribution(numConfigs, commSize, rank, containerOptions, cellSizeFactors, traversalOptions,
-                       dataLayoutOptions, newton3Options);
+                       loadEstimatorOptions, dataLayoutOptions, newton3Options);
 
   size_t cellSizeFactorsSize = cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1;
   AutoPasLog(debug, "After distributing {} containers, {} cellSizeFactors, {} traversals, {} dataLayouts, {} newton3s",
@@ -204,7 +146,7 @@ void AutoPasConfigurationCommunicator::distributeConfigurations(std::set<Contain
              dataLayoutOptions.size(), newton3Options.size());
 }
 
-Configuration AutoPasConfigurationCommunicator::optimizeConfiguration(AutoPas_MPI_Comm comm,
+Configuration optimizeConfiguration(AutoPas_MPI_Comm comm,
                                                                       Configuration localOptimalConfig,
                                                                       size_t localOptimalTime) {
   SerializedConfiguration serializedConfiguration = serializeConfiguration(localOptimalConfig);
@@ -231,24 +173,26 @@ Configuration AutoPasConfigurationCommunicator::optimizeConfiguration(AutoPas_MP
   return deserializedConfig;
 }
 
-AutoPasConfigurationCommunicator::SerializedConfiguration AutoPasConfigurationCommunicator::serializeConfiguration(
-    Configuration configuration) {
+SerializedConfiguration serializeConfiguration(Configuration configuration) {
   // @todo maybe consider endianness for different processors
   SerializedConfiguration config;
   config[0] = castToByte(configuration.container);
   config[1] = castToByte(configuration.traversal);
-  config[2] = castToByte(configuration.dataLayout);
-  config[3] = castToByte(configuration.newton3);
-  std::memcpy(&config[4], &configuration.cellSizeFactor, sizeof(double));
+  config[2] = castToByte(configuration.loadEstimator);
+  config[3] = castToByte(configuration.dataLayout);
+  config[4] = castToByte(configuration.newton3);
+  std::memcpy(&config[5], &configuration.cellSizeFactor, sizeof(double));
   return config;
 }
 
-Configuration AutoPasConfigurationCommunicator::deserializeConfiguration(SerializedConfiguration config) {
+Configuration deserializeConfiguration(SerializedConfiguration config) {
   double cellSizeFactor;
-  std::memcpy(&cellSizeFactor, &config[4], sizeof(double));
+  std::memcpy(&cellSizeFactor, &config[5], sizeof(double));
   return Configuration(static_cast<ContainerOption::Value>(config[0]), cellSizeFactor,
-                       static_cast<TraversalOption::Value>(config[1]), static_cast<DataLayoutOption::Value>(config[2]),
-                       static_cast<Newton3Option::Value>(config[3]));
+                       static_cast<TraversalOption::Value>(config[1]),
+                       static_cast<LoadEstimatorOption::Value>(config[2]),
+                       static_cast<DataLayoutOption::Value>(config[3]),
+                       static_cast<Newton3Option::Value>(config[4]));
 }
 
-}  // namespace autopas
+}  // namespace autopas::utils::AutoPasConfigurationCommunicator
