@@ -736,9 +736,11 @@ __global__ void LinkedCellsTraversalNoN3(LJFunctorCudaGlobalsSoA<floatType> cell
     const size_t cell2Start = cellSizes[other_id];
     const unsigned int sizeCell2 = cellSizes[other_id + 1] - cell2Start;
 
-    cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start + threadIdx.x], cell._posY[cell2Start + threadIdx.x],
-                                     cell._posZ[cell2Start + threadIdx.x]};
-    cell2_ownershipState_shared[threadIdx.x] = cell._ownershipState[cell2Start + threadIdx.x];
+    if (threadIdx.x < sizeCell2) {
+      cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start + threadIdx.x], cell._posY[cell2Start + threadIdx.x],
+                                       cell._posZ[cell2Start + threadIdx.x]};
+      cell2_ownershipState_shared[threadIdx.x] = cell._ownershipState[cell2Start + threadIdx.x];
+    }
     __syncthreads();
 
     if (myOwnershipState != OwnershipState::dummy) {
