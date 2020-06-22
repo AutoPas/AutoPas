@@ -60,11 +60,13 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
     _dummyStarts = {0};
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getContainerType()
+   */
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterCells; }
     [[nodiscard]] ParticleCellTypeEnum getParticleCellTypeEnum() const {
         return FullParticleCellEnum;
     };
-
-  ContainerOption getContainerType() const override { return ContainerOption::verletClusterCells; }
 
   /**
    * Function to iterate over all pairs of particles.
@@ -198,10 +200,10 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
 
     // Delete dummy particles.
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel
+#pragma omp parallel for
 #endif
-    for (auto &cell : this->_cells) {
-      cell.deleteDummyParticles();
+    for (auto i = 0ul; i < this->_cells.size(); ++i) {
+      this->_cells[i].deleteDummyParticles();
     }
 
     // next find invalid particles
@@ -227,6 +229,9 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
     return invalidParticles;
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
+   */
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(_cellsPerDim, this->getInteractionLength(),
                                  {_gridSideLength, _gridSideLength, this->getBoxMax()[2] - this->getBoxMin()[2]},

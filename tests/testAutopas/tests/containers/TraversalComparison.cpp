@@ -100,7 +100,8 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   // Construct container
   autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
   constexpr double skin = _cutoff * 0.1;
-  selector.selectContainer(containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, 32});
+  selector.selectContainer(
+      containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, 32, autopas::LoadEstimatorOption::none});
   auto container = selector.getCurrentContainer();
   autopas::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
                      true /*calculateGlobals*/>
@@ -245,7 +246,7 @@ auto TraversalComparison::getTestParams() {
                 for (auto numHalo : {0ul, 200ul}) {
                   for (bool slightMove : {true, false}) {
                     for (DeletionPosition particleDeletionPosition :
-                         {DeletionPosition::never, DeletionPosition::beforeLists, DeletionPosition::afterLists,
+                         {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
                           DeletionPosition::beforeAndAfterLists}) {
                       if (dataLayoutOption == autopas::DataLayoutOption::Value::cuda and
                           traversalOption == autopas::TraversalOption::Value::c01Cuda and (boxMax[0] < 5.) and

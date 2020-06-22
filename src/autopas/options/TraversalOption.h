@@ -39,7 +39,9 @@ class TraversalOption : public Option<TraversalOption> {
     c04SoA = 15,
     verletClusterCells = 16,
     verletClustersStatic = 17,
-    c04HCP = 18
+    BalancedSliced = 18,
+    BalancedSlicedVerlet = 19,
+    c04HCP = 20,
   };
 
   /**
@@ -58,6 +60,12 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   constexpr operator Value() const { return _value; }
+
+  /**
+   * Set of options that are very unlikely to be interesting.
+   * @return
+   */
+  static std::set<TraversalOption> getDiscouragedOptions() { return {}; }
 
   /**
    * Provides a way to iterate over the possible choices of TraversalOption.
@@ -83,6 +91,8 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::c04SoA, "c04SoA"},
         {TraversalOption::verletClusterCells, "verlet-cluster-cells"},
         {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
+        {TraversalOption::BalancedSliced, "balanced-sliced"},
+        {TraversalOption::BalancedSlicedVerlet, "balanced-sliced-verlet"},
         {TraversalOption::c04HCP, "c04HCP"},
     };
   };

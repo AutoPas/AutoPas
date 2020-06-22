@@ -226,8 +226,8 @@ class AutoTuner {
 template <class Particle>
 void AutoTuner<Particle>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
-  _containerSelector.selectContainer(conf.container,
-                                     ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize));
+  _containerSelector.selectContainer(
+      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
 }
 
 template <class Particle>
@@ -437,8 +437,8 @@ bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFu
     return false;
   }
 
-  _containerSelector.selectContainer(conf.container,
-                                     ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize));
+  _containerSelector.selectContainer(
+      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
   auto containerPtr = getContainer();

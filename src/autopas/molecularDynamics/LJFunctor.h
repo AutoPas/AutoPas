@@ -332,9 +332,11 @@ class LJFunctor
    */
   // clang-format on
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
-    // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
-    /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
-    utils::withStaticBool(newton3, [&](auto newton3) { SoAFunctorPairImpl<newton3>(soa1, soa2); });
+    if (newton3) {
+      SoAFunctorPairImpl<true>(soa1, soa2);
+    } else {
+      SoAFunctorPairImpl<false>(soa1, soa2);
+    }
   }
 
  private:
@@ -503,9 +505,9 @@ class LJFunctor
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {
     if (newton3) {
-      SoAFunctorImpl<true>(soa, indexFirst, neighborList);
+      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
     } else {
-      SoAFunctorImpl<false>(soa, indexFirst, neighborList);
+      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
     }
   }
 
@@ -645,10 +647,8 @@ class LJFunctor
     device_handle.template get<Particle::AttributeNames::forceZ>().copyHostToDevice(
         size, soa.template begin<Particle::AttributeNames::forceZ>());
 
-    if (calculateGlobals) {
-      device_handle.template get<Particle::AttributeNames::owned>().copyHostToDevice(
-          size, soa.template begin<Particle::AttributeNames::owned>());
-    }
+    device_handle.template get<Particle::AttributeNames::ownershipState>().copyHostToDevice(
+        size, soa.template begin<Particle::AttributeNames::ownershipState>());
 
 #else
     utils::ExceptionHandler::exception("LJFunctor::deviceSoALoader: AutoPas was compiled without CUDA support!");
@@ -821,8 +821,8 @@ class LJFunctor
 
  private:
   template <bool newton3>
-  void SoAFunctorImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                      const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+  void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
     if (soa.getNumParticles() == 0) return;
 
     const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();

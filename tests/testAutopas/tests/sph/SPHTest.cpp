@@ -135,22 +135,22 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoALoadExtract) {
   // load soa
   hydroForceFunctor.SoALoader(cell, soa, 0);
 
-  auto massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
-  auto densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
-  auto smthlngthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
-  auto soundSpeedptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
-  auto pressureptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
-  auto vsigmaxptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
-  auto engDotptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
-  auto xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
-  auto yptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
-  auto zptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
-  auto velXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velX>();
-  auto velYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velY>();
-  auto velZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
-  auto accXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accX>();
-  auto accYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accY>();
-  auto accZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+  auto *const massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
+  auto *const densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
+  auto *const smthlngthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
+  auto *const soundSpeedptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
+  auto *const pressureptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
+  auto *const vsigmaxptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
+  auto *const engDotptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
+  auto *const xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
+  auto *const yptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
+  auto *const zptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
+  auto *const velXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velX>();
+  auto *const velYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velY>();
+  auto *const velZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
+  auto *const accXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accX>();
+  auto *const accYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accY>();
+  auto *const accZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
 
   // check loading
   {
@@ -654,7 +654,7 @@ void densityCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
     double d2 = densityLinked[i];
     EXPECT_NEAR(d1, d2, std::fabs(d1 * relErrTolerance));
   }
-};
+}
 
 void hydroInit(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists) {
   for (auto itVerlet = verletLists.begin(); itVerlet.isValid(); ++itVerlet) {
@@ -663,7 +663,7 @@ void hydroInit(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists) {
     itVerlet->setDensity(density);
     itVerlet->setPressure(pressure);
   }
-};
+}
 
 void hydroCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
                 autopas::LinkedCells<autopas::FullParticleCell<autopas::sph::SPHParticle>> &linkedCells,
@@ -693,7 +693,7 @@ void hydroCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
     EXPECT_NEAR(accVerlet[i][1], accLinked[i][1], relErrTolerance * fabs(accLinked[i][1]));
     EXPECT_NEAR(accVerlet[i][2], accLinked[i][2], relErrTolerance * fabs(accLinked[i][2]));
   }
-};
+}
 
 template <typename FunctorType, typename InitType, typename CheckType>
 void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas::DataLayoutOption dataLayoutOption) {

@@ -1,4 +1,4 @@
-# MD-Flexible 
+# MD-Flexible
 
 This demo shows how to easily create and simulate molecular dynamic
 scenarios using AutoPas and flexibly configure all of it's options.
@@ -19,18 +19,16 @@ cmake ..
 make md-flexible
 ```
 
-## Usage 
+## Usage
 
-When running md-flexible without any arguments a default simulation with
-all AutoPas options active is run and it's configuration printed. From
-there you can restrict any AutoPas options or change the simulation.
+When starting md-flexible without any arguments a default simulation with
+most AutoPas options active is run and it's configuration printed. From
+there you can change any AutoPas options or change the simulation.
 
-For all available options see:
+For all available arguments and options see:
 ```bash
  examples/md-flexible/md-flexible --help
 ```
-
-Have a look at the `completion/` directory for shell auto completion scripts.
 
 ### Input
 
@@ -40,8 +38,22 @@ counterparts.
 
 The keywords for the YAML file are the same as for the command line
 input. However, since there are options that can only be defined
-through the YAML file there is also the file `input/ALLOptions.yaml`
+through the YAML file there is also the file [`input/AllOptions.yaml`](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible/input/AllOptions.yaml)
 to be used as a reference.
+
+Additionally, that options that require a list of choices also
+accept the keyword `all` to enable all, even discouraged choices.
+
+#### Object generators
+
+To quickly set up scenarios md-flexible provides a couple of object
+generators that create 3D shapes filled with particles. From the command line
+only one generator can be used at a time, however when using a YAML file one
+can use as an arbitrary amount of generators. In YAML files it is also
+possible to generate multiple objects from the same generator as one
+specifies the objects directly. For a list of all possible objects and their
+descriptions see [`src/Objects`](https://www5.in.tum.de/AutoPas/doc_doxygen_md-flexible/master/dir_8e5023335c6d80afeb9fe41ac1daf95f.html).
+For examples how to define and configure each object see [`input/AllOptions.yaml`](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible/input/AllOptions.yaml).
 
 ### Output
 

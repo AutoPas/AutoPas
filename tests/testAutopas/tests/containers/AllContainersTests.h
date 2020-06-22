@@ -32,7 +32,7 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
     double cellSizeFactor = 1;
 
     autopas::ContainerSelector<Particle> selector{boxMin, boxMax, cutoff};
-    autopas::ContainerSelectorInfo selectorInfo{cellSizeFactor, skin, 32};
+    autopas::ContainerSelectorInfo selectorInfo{cellSizeFactor, skin, 32, autopas::LoadEstimatorOption::none};
     selector.selectContainer(containerOptionToTest, selectorInfo);
     return selector.getCurrentContainer();
   }

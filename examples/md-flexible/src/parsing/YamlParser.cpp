@@ -47,6 +47,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   }
   if (node[config.functorOption.name]) {
     auto strArg = node[config.functorOption.name].as<std::string>();
+    transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     if (strArg.find("avx") != std::string::npos) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
     } else if (strArg.find("glob") != std::string::npos) {
@@ -80,6 +81,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.traversalOptions.value = autopas::TraversalOption::parseOptions(
         autopas::utils::ArrayUtils::to_string(node[config.traversalOptions.name], ", ", {"", ""}));
   }
+  if (node[config.loadEstimatorOptions.name]) {
+    config.loadEstimatorOptions.value = autopas::LoadEstimatorOption::parseOptions(
+        autopas::utils::ArrayUtils::to_string(node[config.loadEstimatorOptions.name], ", ", {"", ""}));
+  }
   if (node[config.tuningInterval.name]) {
     config.tuningInterval.value = node[config.tuningInterval.name].as<unsigned int>();
   }
@@ -102,6 +107,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
       throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one tuning strategy option!");
     }
     config.tuningStrategyOption.value = *parsedOptions.begin();
+  }
+  if (node[config.acquisitionFunctionOption.name]) {
+    auto parsedOptions =
+        autopas::AcquisitionFunctionOption::parseOptions(node[config.acquisitionFunctionOption.name].as<std::string>());
+    if (parsedOptions.size() != 1) {
+      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one acquisition function option!");
+    }
+    config.acquisitionFunctionOption.value = *parsedOptions.begin();
   }
   if (node[config.logLevel.name]) {
     auto strArg = node[config.logLevel.name].as<std::string>();

@@ -38,9 +38,15 @@ namespace autopas::internal {
  * @tparam Particle
  * @tparam clusterSize
  */
-template <class Particle, size_t clusterSize>
+template <class Particle>
 class ClusterTower : public ParticleCell<Particle> {
  public:
+  /**
+   * Constructor
+   * @param clusterSize of all clusters in this tower.
+   */
+  explicit ClusterTower(size_t clusterSize) : _clusterSize(clusterSize) {}
+
   /**
    * Adds a particle to the cluster tower. If generateClusters() has already been called on this ClusterTower, clear()
    * must be called first, or dummies are messed up and particles get lost!
@@ -73,8 +79,8 @@ class ClusterTower : public ParticleCell<Particle> {
     if (getNumActualParticles() > 0) {
       _particles.sortByDim(2);
 
-      auto sizeLastCluster = (_particles.numParticles() % clusterSize);
-      _numDummyParticles = sizeLastCluster != 0 ? clusterSize - sizeLastCluster : 0;
+      auto sizeLastCluster = (_particles.numParticles() % _clusterSize);
+      _numDummyParticles = sizeLastCluster != 0 ? _clusterSize - sizeLastCluster : 0;
 
       auto lastParticle = _particles[_particles.numParticles() - 1];
       lastParticle.markAsDeleted();
@@ -83,10 +89,10 @@ class ClusterTower : public ParticleCell<Particle> {
       }
 
       // Mark start of the different clusters by adding pointers to the particle storage `_particles`.
-      size_t numClusters = _particles.numParticles() / clusterSize;
+      size_t numClusters = _particles.numParticles() / _clusterSize;
       _clusters.reserve(numClusters);
       for (size_t index = 0; index < numClusters; index++) {
-        _clusters.emplace_back(&(_particles[clusterSize * index]));
+        _clusters.emplace_back(&(_particles[_clusterSize * index]), _clusterSize);
       }
     }
 
@@ -102,10 +108,10 @@ class ClusterTower : public ParticleCell<Particle> {
   void fillUpWithDummyParticles(double dummyStartX, double dummyDistZ) {
     auto &lastCluster = getCluster(getNumClusters() - 1);
     for (size_t index = 1; index <= _numDummyParticles; index++) {
-      lastCluster[clusterSize - index] = lastCluster[0];  // use first Particle in last cluster as dummy particle!
-      lastCluster[clusterSize - index].setOwnershipState(OwnershipState::dummy);
-      lastCluster[clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
-      lastCluster[clusterSize - index].setID(std::numeric_limits<size_t>::max());
+      lastCluster[_clusterSize - index] = lastCluster[0];  // use first Particle in last cluster as dummy particle!
+      lastCluster[_clusterSize - index].setOwnershipState(OwnershipState::dummy);
+      lastCluster[_clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
+      lastCluster[_clusterSize - index].setID(std::numeric_limits<size_t>::max());
     }
   }
 
@@ -116,9 +122,9 @@ class ClusterTower : public ParticleCell<Particle> {
   void setDummyParticlesToLastActualParticle() {
     if (_numDummyParticles > 0) {
       auto &lastCluster = getCluster(getNumClusters() - 1);
-      auto lastActualParticle = lastCluster[clusterSize - _numDummyParticles - 1];
+      auto lastActualParticle = lastCluster[_clusterSize - _numDummyParticles - 1];
       for (size_t index = 1; index <= _numDummyParticles; index++) {
-        lastCluster[clusterSize - index] = lastActualParticle;
+        lastCluster[_clusterSize - index] = lastActualParticle;
       }
     }
   }
@@ -133,7 +139,7 @@ class ClusterTower : public ParticleCell<Particle> {
     functor->SoALoader(_particles, _particles._particleSoABuffer, 0);
     for (size_t index = 0; index < getNumClusters(); index++) {
       auto &cluster = getCluster(index);
-      cluster.setSoAView({&(_particles._particleSoABuffer), index * clusterSize, (index + 1) * clusterSize});
+      cluster.setSoAView({&(_particles._particleSoABuffer), index * _clusterSize, (index + 1) * _clusterSize});
     }
   }
 
@@ -209,7 +215,7 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   [[nodiscard]] SingleCellIteratorWrapper<Particle, true> begin() override {
     return SingleCellIteratorWrapper<Particle, true>{
-        new SingleCellIterator<Particle, ClusterTower<Particle, clusterSize>, true>(this)};
+        new SingleCellIterator<Particle, ClusterTower<Particle>, true>(this)};
   }
 
   /**
@@ -218,7 +224,7 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   [[nodiscard]] SingleCellIteratorWrapper<Particle, false> begin() const override {
     return SingleCellIteratorWrapper<Particle, false>{
-        new SingleCellIterator<Particle, ClusterTower<Particle, clusterSize>, false>(this)};
+        new SingleCellIterator<Particle, ClusterTower<Particle>, false>(this)};
   }
 
   /**
@@ -284,9 +290,14 @@ class ClusterTower : public ParticleCell<Particle> {
 
  private:
   /**
+   * The number of particles in a full cluster.
+   */
+  size_t _clusterSize;
+
+  /**
    * The clusters that are contained in this tower.
    */
-  std::vector<Cluster<Particle, clusterSize>> _clusters;
+  std::vector<Cluster<Particle>> _clusters;
   /**
    * The particle cell to store the particles and SoA for this tower.
    */

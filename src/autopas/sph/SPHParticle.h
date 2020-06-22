@@ -404,7 +404,7 @@ class SPHParticle : public autopas::Particle {
    */
   using SoAArraysType =
       autopas::utils::SoAType<double, double, double, double, double, double, double, double, double, double, double,
-                              double, double, double, double, double, std::underlying_type_t<OwnershipState>>::Type;
+                              double, double, double, double, double, OwnershipState>::Type;
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
@@ -459,7 +459,7 @@ class SPHParticle : public autopas::Particle {
    */
   template <AttributeNames attribute>
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
-    if (attribute == AttributeNames::mass) {
+    if constexpr (attribute == AttributeNames::mass) {
       setMass(value);
     } else if constexpr (attribute == AttributeNames::posX) {
       _r[0] = value;

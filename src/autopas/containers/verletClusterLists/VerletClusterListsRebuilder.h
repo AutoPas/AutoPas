@@ -24,10 +24,10 @@ namespace internal {
 template <class Particle>
 class VerletClusterListsRebuilder {
  private:
-  static constexpr size_t clusterSize = VerletClusterLists<Particle>::clusterSize;
+  size_t _clusterSize;
 
   std::vector<Particle> &_particlesToAdd;
-  std::vector<ClusterTower<Particle, clusterSize>> &_towers;
+  std::vector<ClusterTower<Particle>> &_towers;
   double _towerSideLength;
   int _interactionLengthInTowers;
   double _towerSideLengthReciprocal;
@@ -46,11 +46,13 @@ class VerletClusterListsRebuilder {
    * @param clusterList The cluster list to rebuild the neighbor lists for.
    * @param towers The towers from the cluster list to rebuild.
    * @param particlesToAdd New particles to add.
+   * @param clusterSize Size of the clusters in particles.
    */
   VerletClusterListsRebuilder(const VerletClusterLists<Particle> &clusterList,
-                              std::vector<ClusterTower<Particle, clusterSize>> &towers,
-                              std::vector<Particle> &particlesToAdd)
-      : _particlesToAdd(particlesToAdd),
+                              std::vector<ClusterTower<Particle>> &towers, std::vector<Particle> &particlesToAdd,
+                              size_t clusterSize)
+      : _clusterSize(clusterSize),
+        _particlesToAdd(particlesToAdd),
         _towers(towers),
         _towerSideLength(clusterList.getTowerSideLength()),
         _interactionLengthInTowers(clusterList.getNumTowersPerInteractionLength()),
@@ -93,8 +95,12 @@ class VerletClusterListsRebuilder {
     _towersPerDim = calculateTowersPerDim(boxSizeWithHalo);
     size_t numTowers = _towersPerDim[0] * _towersPerDim[1];
 
-    // resize to number of towers
-    _towers.resize(numTowers);
+    // resize to number of towers. Cannot use resize since towers are not default constructable.
+    _towers.clear();
+    _towers.reserve(numTowers);
+    for (int i = 0; i < numTowers; ++i) {
+      _towers.emplace_back(ClusterTower<Particle>(_clusterSize));
+    }
 
     sortParticlesIntoTowers(invalidParticles);
 
@@ -166,7 +172,7 @@ class VerletClusterListsRebuilder {
       // estimate particle density
       double density = numParticles / volume;
 
-      return std::cbrt(clusterSize / density);
+      return std::cbrt(_clusterSize / density);
     } else {
       return std::max(boxSize[0], boxSize[1]);
     }
@@ -331,9 +337,9 @@ class VerletClusterListsRebuilder {
    * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
    * false)
    */
-  void calculateNeighborsForTowerPair(internal::ClusterTower<Particle, clusterSize> &tower,
-                                      internal::ClusterTower<Particle, clusterSize> &neighborTower,
-                                      double distBetweenTowersXYsqr, bool useNewton3) {
+  void calculateNeighborsForTowerPair(internal::ClusterTower<Particle> &tower,
+                                      internal::ClusterTower<Particle> &neighborTower, double distBetweenTowersXYsqr,
+                                      bool useNewton3) {
     const bool isSameTower = &tower == &neighborTower;
     for (size_t towerIndex = 0; towerIndex < tower.getNumClusters(); towerIndex++) {
       auto startIndexNeighbor = useNewton3 and isSameTower ? towerIndex + 1 : 0;
