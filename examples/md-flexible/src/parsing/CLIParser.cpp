@@ -31,14 +31,14 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   static const auto relevantOptions{std::make_tuple(
       config.newton3Options, config.checkpointfile, config.acquisitionFunctionOption, config.cellSizeFactors,
       config.boxLength, config.containerOptions, config.cutoff, config.dataLayoutOptions, config.deltaT,
-      config.dontCreateEndConfig, config.tuningMaxEvidence, config.functorOption, config.dontMeasureFlops,
-      config.generatorOption, config.iterations, config.tuningInterval, config.logLevel, config.logFileName,
-      config.distributionMean, config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal,
-      config.relativeOptimumRange, config.periodic, config.tuningPhases, config.verletClusterSize,
-      config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
-      config.tuningStrategyOption, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
-      config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
-      zshCompletionsOption, helpOption)};
+      config.dontCreateEndConfig, config.tuningMaxEvidence, config.extrapolationMethodOption,
+      config.evidenceFirstPrediction, config.functorOption, config.dontMeasureFlops, config.generatorOption,
+      config.iterations, config.tuningInterval, config.logLevel, config.logFileName, config.distributionMean,
+      config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal, config.relativeOptimumRange,
+      config.periodic, config.tuningPhases, config.verletClusterSize, config.verletSkinRadius, config.particleSpacing,
+      config.tuningSamples, config.traversalOptions, config.tuningStrategyOption, config.useThermostat,
+      config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy,
+      config.yamlFilename, config.distributionStdDev, zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -169,6 +169,30 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           }
         } catch (const exception &) {
           cerr << "Error parsing number of tuning max evidence: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.extrapolationMethodOption)::getoptChar: {
+        auto parsedOptions = autopas::ExtrapolationMethodOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one extrapolation method option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.extrapolationMethodOption.value = *parsedOptions.begin();
+        break;
+      }
+      case decltype(config.evidenceFirstPrediction)::getoptChar: {
+        try {
+          config.evidenceFirstPrediction.value = (unsigned int)stoul(strArg);
+          if (config.evidenceFirstPrediction.value < 2) {
+            cerr << "The number of evidence for the first prediction has to be at least two!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing max tuning phases without test: " << optarg << endl;
           displayHelp = true;
         }
         break;
