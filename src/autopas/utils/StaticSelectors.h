@@ -28,8 +28,9 @@ namespace autopas {
  * @param function The function body to be executed. Has to take exactly one argument being a pointer to the container.
  * E.g: [&](auto *container){container->doSth();}  // The * is optional here. The auto is necessary!
  */
+ // TODO remove ParticleCell template arg?
 template <typename Particle, typename ParticleCell, typename FunctionType>
-void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle, ParticleCell>> &container,
+void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle>> &container,
                              FunctionType &&function) {
   auto container_ptr = container.get();
   switch (container->getContainerType()) {

@@ -60,6 +60,10 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
     _dummyStarts = {0};
   }
 
+    [[nodiscard]] ParticleCellTypeEnum getParticleCellTypeEnum() const {
+        return FullParticleCellEnum;
+    };
+
   ContainerOption getContainerType() const override { return ContainerOption::verletClusterCells; }
 
   /**

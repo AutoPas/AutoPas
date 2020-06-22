@@ -56,6 +56,13 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
+    /**
+         *  get enum of the ParticleCell.
+        */
+    [[nodiscard]] ParticleCellTypeEnum getParticleCellTypeEnum() const {
+        return FullParticleCellEnum;
+    };
+
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */

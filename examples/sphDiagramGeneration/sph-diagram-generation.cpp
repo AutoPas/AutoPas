@@ -46,8 +46,8 @@ int main(int argc, char *argv[]) {
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
   double cutoff = .03;
 
-  autopas::sph::SPHCalcDensityFunctor<Particle, Cell> densfunc;
-  autopas::sph::SPHCalcHydroForceFunctor<Particle, Cell> hydrofunc;
+  autopas::sph::SPHCalcDensityFunctor<Particle> densfunc;
+  autopas::sph::SPHCalcHydroForceFunctor<Particle> hydrofunc;
 
   int numParticles;
   int numIterations;

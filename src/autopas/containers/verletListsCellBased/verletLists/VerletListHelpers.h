@@ -36,9 +36,7 @@ class VerletListHelpers {
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
-  class VerletListGeneratorFunctor : public Functor<Particle, VerletListParticleCellType, SoAArraysType> {
-    using ParticleCell_t = VerletListParticleCellType;
-
+  class VerletListGeneratorFunctor : public Functor<Particle, SoAArraysType> {
    public:
     /**
      * Constructor
@@ -46,7 +44,7 @@ class VerletListHelpers {
      * @param cutoffskin
      */
     VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffskin)
-        : Functor<Particle, VerletListParticleCellType, SoAArraysType>(cutoffskin),
+        : Functor<Particle, SoAArraysType>(cutoffskin),
           _verletListsAoS(verletListsAoS),
           _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
@@ -237,7 +235,7 @@ class VerletListHelpers {
    * @tparam ParticleCell
    */
   template <class ParticleCell>
-  class VerletListValidityCheckerFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
+  class VerletListValidityCheckerFunctor : public Functor<Particle, SoAArraysType> {
    public:
     /**
      * Constructor
@@ -245,7 +243,7 @@ class VerletListHelpers {
      * @param cutoff
      */
     VerletListValidityCheckerFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoff)
-        : Functor<Particle, VerletListParticleCellType, SoAArraysType>(cutoff),
+        : Functor<Particle, SoAArraysType>(cutoff),
           _verletListsAoS(verletListsAoS),
           _cutoffsquared(cutoff * cutoff),
           _valid(true) {}

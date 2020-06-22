@@ -369,8 +369,8 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const s
 void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, const std::array<double, 3> &globalBoxMin,
                                const std::array<double, 3> &globalBoxMax) {
   // declare the used functors
-  autopas::sph::SPHCalcDensityFunctor<Particle, Cell> densityFunctor;
-  autopas::sph::SPHCalcHydroForceFunctor<Particle, Cell> hydroForceFunctor;
+  autopas::sph::SPHCalcDensityFunctor<Particle> densityFunctor;
+  autopas::sph::SPHCalcHydroForceFunctor<Particle> hydroForceFunctor;
 
   // 1.first calculate density
   // 1.1 to calculate the density we need the halo particles

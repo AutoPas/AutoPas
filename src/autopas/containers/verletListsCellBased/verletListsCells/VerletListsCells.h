@@ -33,10 +33,10 @@ namespace autopas {
  */
 template <class Particle>
 class VerletListsCells
-    : public VerletListsLinkedBase<Particle, typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType> {
-  using verlet_internal = VerletListsCellsHelpers<Particle>;
-  using ParticleCell = FullParticleCell<Particle>;
-  using LinkedParticleCell = typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType;
+: public VerletListsLinkedBase<FullParticleCell<Particle>> {
+  using verlet_internal = VerletListsCellsHelpers<FullParticleCell<Particle>>;
+//  using ParticleCell = FullParticleCell<Particle>;
+  using LinkedParticleCell = FullParticleCell<Particle>;
 
  public:
   /**
@@ -51,7 +51,7 @@ class VerletListsCells
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                    const TraversalOption buildTraversal, const double skin = 0, const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle, LinkedParticleCell>(
+      : VerletListsLinkedBase<LinkedParticleCell>(
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _buildTraversal(buildTraversal) {}
 

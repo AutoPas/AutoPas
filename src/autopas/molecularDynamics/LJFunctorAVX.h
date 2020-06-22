@@ -35,11 +35,11 @@ namespace autopas {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, class ParticleCell, bool applyShift = false, bool useMixing = false,
+template <class Particle, bool applyShift = false, bool useMixing = false,
           FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
-                                    LJFunctorAVX<Particle, ParticleCell, applyShift, useMixing, useNewton3,
+class LJFunctorAVX : public Functor<Particle, typename Particle::SoAArraysType,
+                                    LJFunctorAVX<Particle, applyShift, useMixing, useNewton3,
                                                  calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -57,8 +57,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    */
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
-      : Functor<Particle, ParticleCell, SoAArraysType,
-                LJFunctorAVX<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals,
+      : Functor<Particle, SoAArraysType,
+                LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                              relevantForTuning>>(cutoff),
         _one{_mm256_set1_pd(1.)},
         _masks{

@@ -17,16 +17,16 @@ namespace sph {
  * @tparam Particle
  * @tparam ParticleCell
  */
-template <class Particle, class ParticleCell>
-class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SPHParticle>, SPHParticle::SoAArraysType,
-                                                SPHCalcHydroForceFunctor<Particle, ParticleCell>> {
+template <class Particle>
+class SPHCalcHydroForceFunctor : public Functor<SPHParticle, SPHParticle::SoAArraysType,
+                                                SPHCalcHydroForceFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;
 
   SPHCalcHydroForceFunctor()
       // the actual cutoff used is dynamic. 0 is used to pass the sanity check.
-      : autopas::Functor<Particle, ParticleCell, SoAArraysType, SPHCalcHydroForceFunctor>(0.){};
+      : autopas::Functor<Particle, SoAArraysType, SPHCalcHydroForceFunctor>(0.){};
 
   bool isRelevantForTuning() override { return true; }
 

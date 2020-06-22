@@ -55,7 +55,14 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
       : ParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
 
-  ContainerOption getContainerType() const override { return ContainerOption::referenceLinkedCells; }
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::referenceLinkedCells; }
+
+    /**
+         *  get enum of the ParticleCell.
+        */
+    [[nodiscard]] ParticleCellTypeEnum getParticleCellTypeEnum() const {
+        return ReferenceParticleCellEnum;
+    };
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
@@ -71,7 +78,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
-    pCopy.setOwned(false);
+    pCopy.setOwnershipState(OwnershipState::halo);
     _particleList.push_back(pCopy);
     updateDirtyParticleReferences();
   }
@@ -81,7 +88,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
-    pCopy.setOwned(false);
+    pCopy.setOwnershipState(OwnershipState::halo);
     auto cells = _cellBlock.getNearbyHaloCells(pCopy.getR(), this->getSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
@@ -133,7 +140,9 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
     traversal->endTraversal();
   }
 
-  AUTOPAS_WARN_UNUSED_RESULT
+
+
+
   std::vector<ParticleType> updateContainer() override {
     this->deleteHaloParticles();
     std::vector<ParticleType> invalidParticles;
@@ -185,7 +194,7 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
     return invalidParticles;
   }
 
-  TraversalSelectorInfo getTraversalSelectorInfo() const override {
+  [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getInteractionLength(),
                                  this->getCellBlock().getCellLength(), 0);
   }

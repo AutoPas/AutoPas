@@ -161,7 +161,7 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
       EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, not useNewton3)).Times(0);
       iterate(
           container,
-          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle>,
                                                                          autopas::DataLayoutOption::soa, useNewton3>(
               traversalOption, mockFunctor, traversalSelectorInfo),
           dataLayout, n3option, &mockFunctor);
@@ -176,7 +176,7 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
       EXPECT_CALL(mockFunctor, AoSFunctor(_, _, not useNewton3)).Times(0);
       iterate(
           container,
-          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle>,
                                                                          autopas::DataLayoutOption::aos, useNewton3>(
               traversalOption, mockFunctor, traversalSelectorInfo),
           dataLayout, n3option, &mockFunctor);
@@ -195,7 +195,7 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
 #endif
       iterate(
           container,
-          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
+          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle>,
                                                                          autopas::DataLayoutOption::cuda, useNewton3>(
               traversalOption, mockFunctor, traversalSelectorInfo),
           dataLayout, n3option, &mockFunctor);

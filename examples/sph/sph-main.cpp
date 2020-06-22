@@ -203,8 +203,8 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
 
 void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   // declare the used functors
-  autopas::sph::SPHCalcDensityFunctor<Particle, Cell> densityFunctor;
-  autopas::sph::SPHCalcHydroForceFunctor<Particle, Cell> hydroForceFunctor;
+  autopas::sph::SPHCalcDensityFunctor<Particle> densityFunctor;
+  autopas::sph::SPHCalcHydroForceFunctor<Particle> hydroForceFunctor;
 
   std::cout << "\nhaloupdate\n" << std::endl;
 

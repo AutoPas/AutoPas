@@ -71,7 +71,7 @@ class Dummy final {
  * @tparam Particle the type of Particle
  * @tparam ParticleCell_t the type of ParticleCell
  */
-template <class Particle, class ParticleCell_t, class SoAArraysType = typename Particle::SoAArraysType,
+template <class Particle, class SoAArraysType = typename Particle::SoAArraysType,
           typename Impl_t = internal::Dummy<Particle>>
 class Functor {
  public:
@@ -79,7 +79,7 @@ class Functor {
    * Constructor
    * @param cutoff
    */
-  Functor(double cutoff) : _cutoff(cutoff){};
+  explicit Functor(double cutoff) : _cutoff(cutoff){};
 
   virtual ~Functor() = default;
 

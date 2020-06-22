@@ -21,8 +21,8 @@ namespace autopas {
  * @tparam LinkedParticleCells ParticleCells used by the linked cells container
  * @tparam LinkedSoAArraysType SoAArraysType used by the linked cells container
  */
-template <class Particle, class LinkedParticleCell, class LinkedSoAArraysType = typename Particle::SoAArraysType>
-class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
+template <class LinkedParticleCell, class LinkedSoAArraysType = typename LinkedParticleCell::ParticleType::SoAArraysType>
+class VerletListsLinkedBase : public ParticleContainerInterface<typename LinkedParticleCell::ParticleType> {
 
  public:
   /**
@@ -44,6 +44,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
       AutoPasLog(debug, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
     }
   }
+
+  using Particle = typename LinkedParticleCell::ParticleType;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::addParticleImpl
@@ -97,6 +99,13 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     _neighborListIsValid = false;
     return _linkedCells.updateContainer();
   }
+
+    /**
+       *  get enum of the ParticleCell.
+      */
+    [[nodiscard]] ParticleCellTypeEnum getParticleCellTypeEnum() const {
+        return FullParticleCellEnum;
+    };
 
   /**
    * Searches the provided halo particle and updates the found particle.

@@ -18,14 +18,14 @@ namespace sph {
  * @tparam Particle
  * @tparam ParticleCell
  */
-template <class Particle, class ParticleCell>
-class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
-                                             SPHCalcDensityFunctor<Particle, ParticleCell>> {
+template <class Particle>
+class SPHCalcDensityFunctor : public Functor<Particle, typename Particle::SoAArraysType,
+                                             SPHCalcDensityFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;
 
-  SPHCalcDensityFunctor() : autopas::Functor<Particle, ParticleCell, SoAArraysType, SPHCalcDensityFunctor>(0.){};
+  SPHCalcDensityFunctor() : autopas::Functor<Particle, SoAArraysType, SPHCalcDensityFunctor>(0.){};
 
   bool isRelevantForTuning() override { return true; }
 

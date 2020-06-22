@@ -16,21 +16,20 @@ namespace autopas {
  * class of helpers for verlet lists
  * @tparam Particle
  */
-template <class Particle>
+template <class ParticleCell>
 class VerletListsCellsHelpers {
  public:
+    using Particle = typename ParticleCell::ParticleType;
   /// Verlet list storage
   using VerletList_storage_type = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
 
   /// using declaration for verlet-list particle cell type
-  using VerletListParticleCellType = FullParticleCell<Particle>;
+  using VerletListParticleCellType = ParticleCell;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
-  class VerletListGeneratorFunctor : public Functor<Particle, VerletListParticleCellType> {
-    using ParticleCell = VerletListParticleCellType;
-
+  class VerletListGeneratorFunctor : public Functor<Particle> {
    public:
     /**
      * Constructor
@@ -40,7 +39,7 @@ class VerletListsCellsHelpers {
      */
     VerletListGeneratorFunctor(VerletList_storage_type &verletLists,
                                std::unordered_map<Particle *, std::pair<size_t, size_t>> &cellMap, double cutoffskin)
-        : Functor<Particle, VerletListParticleCellType>(0.),
+        : Functor<Particle>(0.),
           _verletLists(verletLists),
           _cellMap(cellMap),
           _cutoffskinsquared(cutoffskin * cutoffskin) {}

@@ -291,7 +291,7 @@ void testSimulationLoop(testingTuple options) {
     autoPas.addParticle(particle1);
     autoPas.addParticle(particle2);
   }
-  autopas::LJFunctor<Molecule, FMCell, /* shifting */ true, /* mixing */ false, autopas::FunctorN3Modes::Both,
+  autopas::LJFunctor<Molecule, /* shifting */ true, /* mixing */ false, autopas::FunctorN3Modes::Both,
                      /* globals */ true>
       functor(cutoff);
   functor.setParticleProperties(24.0, 1);
@@ -372,7 +372,7 @@ void testHaloCalculation(testingTuple options) {
     }
   }
 
-  autopas::LJFunctor<Molecule, FMCell, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+  autopas::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ true>
       functor(cutoff);
   functor.setParticleProperties(24, 1);
@@ -480,9 +480,9 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor1(cutoff);
+  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor1(cutoff);
   functor1.setParticleProperties(24.0, 1);
-  autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor2(cutoff);
+  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor2(cutoff);
   functor2.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);

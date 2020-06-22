@@ -294,16 +294,16 @@ void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, Par
     }
     switch (this->_config->functorOption.value) {
       case MDFlexConfig::FunctorOption::lj12_6: {
-        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing>>(autopas);
+        this->calculateForces<autopas::LJFunctor<Particle, _shifting, _mixing>>(autopas);
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing,
+        this->calculateForces<autopas::LJFunctor<Particle, _shifting, _mixing,
                                                  autopas::FunctorN3Modes::Both, /* globals */ true>>(autopas);
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_AVX: {
-        this->calculateForces<autopas::LJFunctorAVX<Particle, ParticleCell, _shifting, _mixing>>(autopas);
+        this->calculateForces<autopas::LJFunctorAVX<Particle, _shifting, _mixing>>(autopas);
         break;
       }
     }
@@ -348,17 +348,17 @@ void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Partic
 
   switch (_config->functorOption.value) {
     case MDFlexConfig::FunctorOption ::lj12_6: {
-      flopsPerKernelCall = autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing>::getNumFlopsPerKernelCall();
+      flopsPerKernelCall = autopas::LJFunctor<Particle, _shifting, _mixing>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
-      flopsPerKernelCall = autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing, autopas::FunctorN3Modes::Both,
+      flopsPerKernelCall = autopas::LJFunctor<Particle, _shifting, _mixing, autopas::FunctorN3Modes::Both,
                                               /* globals */ true>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
       flopsPerKernelCall =
-          autopas::LJFunctorAVX<Particle, ParticleCell, _shifting, _mixing>::getNumFlopsPerKernelCall();
+          autopas::LJFunctorAVX<Particle, _shifting, _mixing>::getNumFlopsPerKernelCall();
       break;
     }
     default:
@@ -404,7 +404,7 @@ void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Partic
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (_config->dontMeasureFlops.value) {
-    autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> flopCounterFunctor(
+    autopas::FlopCounterFunctor<PrintableMolecule> flopCounterFunctor(
         autopas.getCutoff());
     autopas.iteratePairwise(&flopCounterFunctor);
 
@@ -413,8 +413,7 @@ void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Partic
     if (autopas.getContainerType() == autopas::ContainerOption::verletLists)
       flops +=
           flopCounterFunctor.getDistanceCalculations() *
-          autopas::FlopCounterFunctor<PrintableMolecule,
-                                      autopas::FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
+          autopas::FlopCounterFunctor<PrintableMolecule>::numFlopsPerDistanceCalculation *
           floor(iteration / _config->verletRebuildFrequency.value);
 
     cout << "GFLOPs       : " << flops * 1e-9 << endl;

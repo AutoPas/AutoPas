@@ -18,13 +18,13 @@
  * Empty Functor, this functor is empty and can be used for testing purposes.
  * It returns that it is applicable for everything.
  */
-template <class Particle, class ParticleCell_t, class SoAArraysType = typename Particle::SoAArraysType>
-class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
+template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
+class EmptyFunctor : public autopas::Functor<Particle> {
  public:
   /**
    * Default constructor.
    */
-  EmptyFunctor() : autopas::Functor<Particle, ParticleCell_t>(0.){};
+  EmptyFunctor() : autopas::Functor<Particle>(0.){};
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {}
 

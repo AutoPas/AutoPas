@@ -276,8 +276,8 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
           // loop in cluster
           for (size_t ownPid = 0; ownPid < clusterSize; ++ownPid) {
             for (size_t otherPid = 0; otherPid < clusterSize; ++otherPid) {
-              _functor->AoSFunctor((*cells)[i]._particles[clusterSize * clusterId + ownPid],
-                                   (*cells)[neighbor.first]._particles[clusterSize * neighbor.second + otherPid],
+              _functor->AoSFunctor((*cells)[i][clusterSize * clusterId + ownPid],
+                                   (*cells)[neighbor.first][clusterSize * neighbor.second + otherPid],
                                    useNewton3);
             }
           }
@@ -286,16 +286,16 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
         if (useNewton3) {
           for (size_t ownPid = 0; ownPid < clusterSize; ++ownPid) {
             for (size_t otherPid = ownPid + 1; otherPid < clusterSize; ++otherPid) {
-              _functor->AoSFunctor((*cells)[i]._particles[clusterSize * clusterId + ownPid],
-                                   (*cells)[i]._particles[clusterSize * clusterId + otherPid], useNewton3);
+              _functor->AoSFunctor((*cells)[i][clusterSize * clusterId + ownPid],
+                                   (*cells)[i][clusterSize * clusterId + otherPid], useNewton3);
             }
           }
         } else {
           for (size_t ownPid = 0; ownPid < clusterSize; ++ownPid) {
             for (size_t otherPid = 0; otherPid < clusterSize; ++otherPid) {
               if (ownPid != otherPid) {
-                _functor->AoSFunctor((*cells)[i]._particles[clusterSize * clusterId + ownPid],
-                                     (*cells)[i]._particles[clusterSize * clusterId + otherPid], useNewton3);
+                _functor->AoSFunctor((*cells)[i][clusterSize * clusterId + ownPid],
+                                     (*cells)[i][clusterSize * clusterId + otherPid], useNewton3);
               }
             }
           }

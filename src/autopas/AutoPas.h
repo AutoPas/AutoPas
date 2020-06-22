@@ -42,7 +42,7 @@ class AutoPas {
   /**
    * Particle Cell type to be accessible after initialization.
    */
-  using ParticleCell_t = ParticleCell;
+  //using ParticleCell_t = ParticleCell;
 
   /**
    * Define the iterator_t for simple use, also from the outside.
@@ -101,7 +101,7 @@ class AutoPas {
    *
    */
   void init() {
-    _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
+    _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
@@ -109,7 +109,7 @@ class AutoPas {
             _maxTuningPhasesWithoutTest, _acquisitionFunctionOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
-        std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
+        std::make_unique<autopas::LogicHandler<Particle>>(*(_autoTuner.get()), _verletRebuildFrequency);
   }
 
   /**
@@ -651,11 +651,11 @@ class AutoPas {
   /**
    * LogicHandler of autopas.
    */
-  std::unique_ptr<autopas::LogicHandler<Particle, ParticleCell>> _logicHandler;
+  std::unique_ptr<autopas::LogicHandler<Particle>> _logicHandler;
 
   /**
    * This is the AutoTuner that owns the container, ...
    */
-  std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
+  std::unique_ptr<autopas::AutoTuner<Particle>> _autoTuner;
 };  // class AutoPas
 }  // namespace autopas

@@ -42,6 +42,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
    */
   static constexpr size_t clusterSize = 4;
 
+    [[nodiscard]] ParticleCellTypeEnum getParticleCellTypeEnum() const {
+        return FullParticleCellEnum;
+    };
+
   /**
    * Defines a cluster range used in the static cluster-thread-partition.
    */
