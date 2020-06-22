@@ -115,7 +115,7 @@ pipeline{
                     }
                     post{
                         always{
-                            warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog-cuda.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
+                            recordIssues qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [gcc(pattern: 'build*/buildlog-cuda.txt')]
                         }
                     }
                 }
@@ -141,7 +141,7 @@ pipeline{
                     }
                     post{
                         always{
-                            warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog-cuda-clang.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
+                            recordIssues enabledForFailure: true, qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [gcc(pattern: 'build*/buildlog-cuda-clang.txt')]
                         }
                     }
                 }
@@ -302,7 +302,7 @@ pipeline{
             }
             post{
                 always{
-                    warnings canComputeNew: false, categoriesPattern: '', defaultEncoding: '', excludePattern: '', healthy: '', includePattern: '', messagesPattern: '', parserConfigurations: [[parserName: 'Clang (LLVM based)', pattern: 'build*/buildlog_clang.txt'], [parserName: 'GNU Make + GNU C Compiler (gcc)', pattern: 'build*/buildlog.txt'], [parserName: 'Intel C Compiler', pattern: 'build*/buildlog_intel.txt']], unHealthy: '', unstableTotalAll: '0', unstableTotalHigh: '0', unstableTotalLow: '0', unstableTotalNormal: '0'
+                    recordIssues qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [clang(pattern: 'build*/buildlog_clang.txt'), intel(pattern: 'build*/buildlog_intel.txt'), gcc(pattern: 'build*/buildlog.txt')]
                 }
             }
         }
