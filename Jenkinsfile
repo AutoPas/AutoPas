@@ -141,7 +141,7 @@ pipeline{
                     }
                     post{
                         always{
-                            recordIssues enabledForFailure: true, qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [clang(pattern: 'build*/buildlog-cuda-clang.txt')]
+                            recordIssues qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [clang(pattern: 'build*/buildlog-cuda-clang.txt')]
                         }
                     }
                 }
