@@ -116,8 +116,7 @@ class AutoPas {
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
             _maxTuningPhasesWithoutTest, _evidenceFirstPrediction, _acquisitionFunctionOption,
-            _extrapolationMethodOption, _mpiStrategyOption,
-            _autopasMPICommunicator)),
+            _extrapolationMethodOption, _mpiStrategyOption, _autopasMPICommunicator)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
         std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);

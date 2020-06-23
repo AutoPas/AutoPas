@@ -8,8 +8,8 @@
 
 #include "TuningStrategyInterface.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
-#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
+#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/WrapMPI.h"
 

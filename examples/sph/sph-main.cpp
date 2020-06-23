@@ -303,8 +303,8 @@ int main() {
   sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
-  //sphSystem.setTuningStrategyOption(autopas::TuningStrategyOption::activeHarmony);
-  //autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
+  // sphSystem.setTuningStrategyOption(autopas::TuningStrategyOption::activeHarmony);
+  // autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
 
   std::set<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
                                                        autopas::ContainerOption::verletLists,
