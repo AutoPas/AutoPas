@@ -47,7 +47,8 @@ void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<dou
   std::cout << "# of particles is... " << i << std::endl;
 
   // Set the end time
-  *end_time = .018;
+  /// @TODO revert this again before merge!
+  *end_time = 1.;
   // end_time for original example: (expects 50 timesteps)
   // *end_time = .12;
   // Fin.
@@ -302,6 +303,10 @@ int main() {
   sphSystem.setCutoff(cutoff);
   sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
+
+  /// @TODO revert this again before merge!
+  sphSystem.setTuningStrategyOption(autopas::TuningStrategyOption::activeHarmony);
+  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
 
   std::set<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
                                                        autopas::ContainerOption::verletLists,
