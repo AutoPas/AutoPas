@@ -9,6 +9,7 @@
 #include "TuningStrategyInterface.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/MPIStrategyOption.h"
+#include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/WrapMPI.h"
 
@@ -25,9 +26,11 @@ namespace autopas::TuningStrategyFactory {
  * @param maxEvidence
  * @param relativeOptimum
  * @param maxTuningPhasesWithoutTest
+ * @param evidenceFirstPrediction
  * @param acquisitionFunctionOption
  * @param mpiStrategyOption
  * @param comm Default value only used for tests
+ * @param extrapolationMethodOption
  * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
  */
 std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
@@ -36,6 +39,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
     std::set<autopas::DataLayoutOption> &allowedDataLayouts, std::set<autopas::Newton3Option> &allowedNewton3Options,
     unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
-    AcquisitionFunctionOption acquisitionFunctionOption, MPIStrategyOption mpiStrategyOption,
+    unsigned int evidenceFirstPrediction, AcquisitionFunctionOption acquisitionFunctionOption,
+    ExtrapolationMethodOption extrapolationMethodOption, MPIStrategyOption mpiStrategyOption,
     AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
 }  // namespace autopas::TuningStrategyFactory

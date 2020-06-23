@@ -218,6 +218,7 @@ void ActiveHarmony::fetchConfiguration() {
 void ActiveHarmony::invalidateConfiguration() {
   auto worstPerf = std::numeric_limits<double>::max();
   addEvidence(worstPerf, 0);
+  AutoPasLog(debug, "ActiveHarmony::invalidateConfiguration: {}", _currentConfig.toString());
 }
 
 bool ActiveHarmony::tune(bool currentInvalid) {
@@ -368,7 +369,7 @@ void ActiveHarmony::resetHarmony() {
     // use ActiveHarmony's implementation of the Nelder-Mead method
     ah_def_strategy(hdef, "nm.so");
     // set the size of the initial simplex (as portion of the total search space)
-    ah_def_cfg(hdef, "INIT_RADIUS", "0.5");
+    ah_def_cfg(hdef, "INIT_RADIUS", "0.7");
     // task initialization
     htask = ah_start(hdesc, hdef);
     ah_def_free(hdef);

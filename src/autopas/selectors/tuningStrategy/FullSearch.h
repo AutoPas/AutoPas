@@ -86,6 +86,7 @@ bool FullSearch::tune(bool) {
 void FullSearch::selectOptimalConfiguration() {
   if (_searchSpace.size() == 1) {
     _currentConfig = _searchSpace.begin();
+    AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
     return;
   }
 
