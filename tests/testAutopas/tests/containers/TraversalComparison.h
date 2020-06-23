@@ -27,10 +27,10 @@ enum DeletionPosition {
   beforeAndAfterLists = 3
 };
 
-using TestingTuple =
-    std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption, autopas::Newton3Option,
-               size_t /*numParticles*/, size_t /*numHaloParticles*/, std::array<double, 3> /*boxMaxVec*/,
-               double /*cellSizeFactor*/, bool /*doSlightShift*/, DeletionPosition /*particleDeletionPosition*/>;
+using TestingTuple = std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption,
+                                autopas::Newton3Option, size_t /*numParticles*/, size_t /*numHaloParticles*/,
+                                std::array<double, 3> /*boxMaxVec*/, double /*cellSizeFactor*/, bool /*doSlightShift*/,
+                                DeletionPosition /*particleDeletionPosition*/, bool /*globals*/>;
 /**
  * The tests in this class compare the calculated forces from all aos and soa traversals with a reference result.
  */
@@ -40,7 +40,8 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
                              size_t,                 // numHaloParticles
                              std::array<double, 3>,  // boxMax
                              bool,                   // doSlightShift
-                             DeletionPosition        // particleDeletionPosition
+                             DeletionPosition,       // particleDeletionPosition
+                             bool                    // globals
                              >;
 
   /**
@@ -59,6 +60,7 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   template <class ContainerPtrType>
   static void executeShift(ContainerPtrType containerPtr, double magnitude, size_t totalNumParticles);
 
+  template <bool globals>
   static std::tuple<std::vector<std::array<double, 3>>, Globals> calculateForces(
       autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
       autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, size_t numMolecules,

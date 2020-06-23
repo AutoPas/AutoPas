@@ -15,9 +15,11 @@
 #include "AutoPasTestBase.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class AoSvsCudaTest : public AutoPasTestBase {
+using TestingTuple = std::tuple<bool /*withDeletions*/>;
+
+class AoSvsCudaTest : public AutoPasTestBase, public ::testing::WithParamInterface<TestingTuple> {
  public:
-  void generateParticles(std::vector<Molecule> *particles);
+  void generateParticles(std::vector<Molecule> *particles, bool withDeletions);
 };
 
 #endif  // AUTOPAS_CUDA
