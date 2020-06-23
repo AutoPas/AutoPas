@@ -128,10 +128,11 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   ASSERT_TRUE(AoSParticlesEqual(cell1Cuda, cell1NoCuda)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2Cuda, cell2NoCuda)) << "Cells 2 not equal after copy initialization.";
 
-  ljFunctorNoCuda.SoALoader(cell1NoCuda, cell1NoCuda._particleSoABuffer, 0);
-  ljFunctorNoCuda.SoALoader(cell2NoCuda, cell2NoCuda._particleSoABuffer, 0);
-  ljFunctorCuda.SoALoader(cell1Cuda, cell1Cuda._particleSoABuffer, 0);
-  ljFunctorCuda.SoALoader(cell2Cuda, cell2Cuda._particleSoABuffer, 0);
+  constexpr size_t offset = 0;
+  ljFunctorNoCuda.SoALoader(cell1NoCuda, cell1NoCuda._particleSoABuffer, offset);
+  ljFunctorNoCuda.SoALoader(cell2NoCuda, cell2NoCuda._particleSoABuffer, offset);
+  ljFunctorCuda.SoALoader(cell1Cuda, cell1Cuda._particleSoABuffer, offset);
+  ljFunctorCuda.SoALoader(cell2Cuda, cell2Cuda._particleSoABuffer, offset);
 
   ljFunctorCuda.deviceSoALoader(cell1Cuda._particleSoABuffer, cell1Cuda._particleSoABufferDevice);
   ljFunctorCuda.deviceSoALoader(cell2Cuda._particleSoABuffer, cell2Cuda._particleSoABufferDevice);
