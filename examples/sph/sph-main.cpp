@@ -293,7 +293,7 @@ int main() {
   boxMax[1] = boxMax[2] = boxMax[0] / 8.0;
   double cutoff = 0.03;               // 0.012*2.5=0.03; where 2.5 = kernel support radius
   unsigned int rebuildFrequency = 6;  // has to be multiple of two, as there are two functor calls per iteration.
-  double skinToCutoffRatio = 0.1;
+  double skinToCutoffRatio = 0.15;
 
   AutoPasContainer sphSystem;
   sphSystem.setNumSamples(
