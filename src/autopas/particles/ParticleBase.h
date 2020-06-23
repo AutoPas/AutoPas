@@ -13,6 +13,7 @@
 
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/CudaSoAType.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
@@ -143,11 +144,13 @@ class ParticleBase {
     text << "Particle"
          << "\nID      : " << _id
          << "\nPosition: "
-         << _r[0] << " | " << _r[1] << " | " << _r[2]
+         << utils::ArrayUtils::to_string(_r)
          << "\nVelocity: "
-         << _v[0] << " | " << _v[1] << " | " << _v[2]
+         << utils::ArrayUtils::to_string(_v)
          << "\nForce   : "
-         << _f[0] << " | " << _f[1] << " | " << _f[2];
+         << utils::ArrayUtils::to_string(_f)
+         << "\nOwnershipState : "
+         << _ownershipState;
     // clang-format on
     return text.str();
   }
@@ -273,8 +276,10 @@ class ParticleBase {
   /**
    * The type for storage arrays for Cuda.
    */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<idType, floatType, floatType, floatType, floatType,
-                                                                    floatType, floatType, floatType>::Type;
+  using CudaDeviceArraysType =
+      typename autopas::utils::CudaSoAType<idType /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
+                                           floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
+                                           OwnershipState /*ownershipState*/>::Type;
 #else
   /**
    * The type for storage arrays for Cuda.

@@ -49,14 +49,16 @@ class MoleculeLJ : public Particle {
   using SoAArraysType =
       typename autopas::utils::SoAType<size_t /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
                                        floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, size_t /*typeid*/,
-                                       OwnershipState /*ownedState*/>::Type;
+                                       OwnershipState /*ownershipState*/>::Type;
 
 #if defined(AUTOPAS_CUDA)
   /**
    * The type for storage arrays for Cuda.
    */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<size_t, floatType, floatType, floatType, floatType,
-                                                                    floatType, floatType, size_t, floatType>::Type;
+  using CudaDeviceArraysType =
+      typename autopas::utils::CudaSoAType<size_t /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
+                                           floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, size_t /*typeid*/,
+                                           OwnershipState /*ownershipState*/>::Type;
 #endif
 
   /**
