@@ -40,7 +40,7 @@ class Timer {
 
   /**
    * Get total accumulated time.
-   * @return
+   * @return total time in nano seconds.
    */
   long getTotalTime() const { return _totalTime; }
 
