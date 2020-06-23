@@ -115,7 +115,7 @@ pipeline {
                     }
                     post {
                         always {
-                            recordIssues qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [gcc(pattern: 'build*/buildlog-cuda.txt')]
+                            recordIssues qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [gcc(id: 'cuda-gcc', pattern: 'build*/buildlog-cuda.txt')]
                         }
                     }
                 }
@@ -141,7 +141,7 @@ pipeline {
                     }
                     post {
                         always {
-                            recordIssues qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [clang(pattern: 'build*/buildlog-cuda-clang.txt')]
+                            recordIssues qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [clang(id: 'cuda-clang', pattern: 'build*/buildlog-cuda-clang.txt')]
                         }
                     }
                 }
