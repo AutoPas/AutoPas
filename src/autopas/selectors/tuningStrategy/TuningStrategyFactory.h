@@ -8,6 +8,7 @@
 
 #include "TuningStrategyInterface.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
+#include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 
 namespace autopas::TuningStrategyFactory {
@@ -23,7 +24,9 @@ namespace autopas::TuningStrategyFactory {
  * @param maxEvidence
  * @param relativeOptimum
  * @param maxTuningPhasesWithoutTest
+ * @param evidenceFirstPrediction
  * @param acquisitionFunctionOption
+ * @param extrapolationMethodOption
  * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
  */
 std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
@@ -32,5 +35,6 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     const std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
-    unsigned int maxTuningPhasesWithoutTest, AcquisitionFunctionOption acquisitionFunctionOption);
+    unsigned int maxTuningPhasesWithoutTest, unsigned int evidenceFirstPrediction,
+    AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption);
 }  // namespace autopas::TuningStrategyFactory
