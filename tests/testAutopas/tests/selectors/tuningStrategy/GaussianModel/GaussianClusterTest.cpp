@@ -10,7 +10,7 @@ using namespace autopas;
 
 TEST_F(GaussianClusterTest, wrongDimension) {
   Random rng(32);
-  GaussianCluster cluster({2, 2}, 2, GaussianCluster::DistanceFunction::wasserstein2, 0.001, rng);
+  GaussianCluster cluster({2, 2}, 2, GaussianCluster::WeightFunction::wasserstein2, 0.001, rng);
 
   Eigen::VectorXi fd = Eigen::VectorXi::Zero(2);
   Eigen::VectorXd f1 = Eigen::VectorXd::Ones(1);

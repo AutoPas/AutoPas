@@ -7,7 +7,7 @@ functor                          :  Lennard-Jones (12-6)
 cutoff                           :  2
 deltaT                           :  0
 cell-size                        :  [1.0,1.5,2.0]
-# 792 tuning iterations + 50 to observe choses configuration
+# 792 tuning iterations + 50 to observe chosen configuration
 iterations                       :  842
 Objects:                         
   CubeGrid:

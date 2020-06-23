@@ -41,7 +41,7 @@ class GaussianClusterTest : public AutoPasTestBase {
     constexpr size_t lhsNumSamples = 850;  // number of samples to find max of acquisition function
 
     autopas::GaussianCluster gc({static_cast<int>(functions.size())}, 2,
-                                autopas::GaussianCluster::DistanceFunction::evidenceMatchingPDF, 0.001, rng);
+                                autopas::GaussianCluster::WeightFunction::wasserstein2, 0.001, rng);
 
     size_t idEvidence = 0;
 

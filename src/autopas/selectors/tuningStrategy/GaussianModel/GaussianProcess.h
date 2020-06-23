@@ -202,7 +202,21 @@ class GaussianProcess {
    */
   [[nodiscard]] double predictOutputPDF(const Vector &input, double output) const {
     double stddev = std::sqrt(predictVar(input));
-    return utils::Math::normalPDF((predictMean(input) - output) / stddev) / stddev;
+    double mean = predictMean(input);
+    return utils::Math::normalPDF((mean - output) / stddev) / stddev;
+  }
+
+  /**
+   * Calculate the scaled probability density of provided output given provided input.
+   * The probability density is scaled such that the maximum is 1.
+   * @param input
+   * @param output
+   * @return
+   */
+  [[nodiscard]] double predictOutputScaledPDF(const Vector &input, double output) const {
+    double stddev = std::sqrt(predictVar(input));
+    double mean = predictMean(input);
+    return utils::Math::normalPDF((mean - output) / stddev) / utils::Math::normalScale;
   }
 
   /**
@@ -352,8 +366,16 @@ class GaussianProcess {
     for (auto &hyper : _hypers) {
       scoreSum += hyper.score;
     }
-    for (auto &hyper : _hypers) {
-      hyper.score /= scoreSum;
+    if (scoreSum > 0) {
+      for (auto &hyper : _hypers) {
+        hyper.score /= scoreSum;
+      }
+    } else {
+      // all scores are 0
+      double uniformProbability = 1 / _hypers.size();
+      for (auto &hyper : _hypers) {
+        hyper.score = uniformProbability;
+      }
     }
   }
 

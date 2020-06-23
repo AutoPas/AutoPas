@@ -83,7 +83,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _gaussianCluster(
             {static_cast<int>(allowedTraversalOptions.size()), static_cast<int>(allowedDataLayoutOptions.size()),
              static_cast<int>(allowedNewton3Options.size())},
-            continuousDims, GaussianCluster::DistanceFunction::evidenceMatchingPDF, sigma, _rng),
+            continuousDims, GaussianCluster::WeightFunction::wasserstein2, sigma, _rng),
         _neighbourFun([this](const Eigen::VectorXi &target) -> std::vector<Eigen::VectorXi> {
           return FeatureVector::neighboursManhattan1(target, _gaussianCluster.getDimensions());
         }),
@@ -218,7 +218,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
     _currentConfig = _encoder.convertFromCluster(_gaussianCluster.getEvidenceMax());
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
 
-    // print graph of distances
+    // print graph of weights
     size_t sampleSize = _cellSizeFactors->isFinite() ? _cellSizeFactors->size() : _predNumLHSamples;
     auto continuousSamples = FeatureVector::lhsSampleFeatureContinuous(sampleSize, _rng, *_cellSizeFactors);
     _gaussianCluster.logDebugGraph(_neighbourFun, continuousSamples);

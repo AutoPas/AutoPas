@@ -35,8 +35,8 @@ class GaussianCluster {
   // function that generate all neighbouring vectors of given vector
   using NeighbourFunction = std::function<std::vector<VectorDiscrete>(VectorDiscrete)>;
 
-  // for each vector store a vector of each neighborus and corresponding distance
-  using NeighboursDistances = std::vector<std::vector<std::pair<size_t, double>>>;
+  // for each vector store a vector of all neighbours and their corresponding weight
+  using NeighboursWeights = std::vector<std::vector<std::pair<size_t, double>>>;
 
   // std::string stream for nodes and edges
   using GraphStream = std::pair<std::stringstream, std::stringstream>;
@@ -58,25 +58,40 @@ class GaussianCluster {
   using VectorToStringFun = std::function<std::string(const VectorPairDiscreteContinuous &)>;
 
   /**
-   * Different distance functions between clusters
+   * Different weight functions between clusters
    */
-  enum DistanceFunction { evidenceMatchingPDF, wasserstein2 };
+  enum WeightFunction {
+    /**
+     * geometric mean of probability densitiy over all evidence in neighbouring cluster if provided to the target
+     * cluster
+     */
+    evidenceMatchingProbabilityGM,
+    /**
+     * geometric mean of scaled probability densitiy over all evidence in neighbouring cluster if provided to the target
+     * cluster Probability densities are scaled such that the maximum is 1.
+     */
+    evidenceMatchingScaledProbabilityGM,
+    /**
+     * Wasserstein-2 distance of normal distributions of cluster given a continuous cluster
+     */
+    wasserstein2
+  };
 
   /**
    * Constructor
    * @param dimRestriction restrict the i-th dimension to a integer between 0 and dimRestriction[i]-1
    * @param continuousDims additional unrestricted dimensions
-   * @param distanceFun function to calculate distance between clusters
+   * @param weightFun function to calculate weight between clusters
    * @param sigma fixed noise
    * @param rngRef reference to random number generator
    * @param vectorToString function to convert vectors to a readable string
    */
-  GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims, DistanceFunction distanceFun,
-                  double sigma, Random &rngRef, const VectorToStringFun &vectorToString = defaultVecToString)
+  GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims, WeightFunction weightFun, double sigma,
+                  Random &rngRef, const VectorToStringFun &vectorToString = defaultVecToString)
       : _dimRestriction(dimRestriction),
         _continuousDims(continuousDims),
         _clusters(),
-        _distanceFun(distanceFun),
+        _weightFun(weightFun),
         _evidenceMinValue(0),
         _evidenceMaxValue(0),
         _numEvidence(0),
@@ -166,10 +181,15 @@ class GaussianCluster {
     // combine score of each cluster
     for (size_t i = 0; i < hp_sample_size; ++i) {
       // set the score of a hyperparameter sample to the product of all scores
-      double combinedScore = 1.;
+      double combinedScore = 0.;
       for (auto &cluster : _clusters) {
-        combinedScore *= cluster.getHyperparameters()[i].score;
+        combinedScore += cluster.getHyperparameters()[i].score;
       }
+
+      if (std::isnan(combinedScore) or std::isinf(combinedScore)) {
+        utils::ExceptionHandler::exception("GaussianCluster: Score of hyperparameter is {}", combinedScore);
+      }
+
       for (auto &cluster : _clusters) {
         cluster.getHyperparameters()[i].score = combinedScore;
       }
@@ -220,13 +240,13 @@ class GaussianCluster {
 
     auto graphStream = logGraphInit();
 
-    auto neighbourDistances = initNeighbourDistances(neighbourFun);
+    auto neighbourWeights = initNeighbourWeights(neighbourFun);
 
     for (const auto &continuousSample : continuousSamples) {
       auto [means, vars, stddevs] = precalculateDistributions(continuousSample);
-      updateNeighbourDistances(neighbourDistances, means, vars, stddevs);
+      updateNeighbourWeights(neighbourWeights, means, vars, stddevs);
 
-      logGraphAdd(graphStream, continuousSample, means, vars, neighbourDistances);
+      logGraphAdd(graphStream, continuousSample, means, vars, neighbourWeights);
 
       // get acquisition considering neighbours
       for (size_t i = 0; i < _clusters.size(); ++i) {
@@ -235,8 +255,7 @@ class GaussianCluster {
         double weightSum = 1.;
 
         // sum over neighbours
-        for (const auto &[n, distance] : neighbourDistances[i]) {
-          double weight = vars[i] / (vars[i] + distance);
+        for (const auto &[n, weight] : neighbourWeights[i]) {
           mixMean += means[n] * weight;
           mixVar += vars[n] * weight * weight;
           weightSum += weight;
@@ -259,7 +278,7 @@ class GaussianCluster {
 
   /**
    * Generate all possible combinations of discrete tuples and continuous tuples in samples
-   * and calculate their distance to each other. Output graph in AutoPasLog Debug.
+   * and calculate their weight to each other. Output graph in AutoPasLog Debug.
    * @param neighbourFun function which generates neighbours of given discrete tuple
    * @param continuousSamples continuous tuples
    */
@@ -267,12 +286,12 @@ class GaussianCluster {
                      const std::vector<VectorContinuous> &continuousSamples) const {
     auto graphStream = logGraphInit();
 
-    auto neighbourDistances = initNeighbourDistances(neighbourFun);
+    auto neighbourWeights = initNeighbourWeights(neighbourFun);
     for (const auto &continuousSample : continuousSamples) {
       auto [means, vars, stddevs] = precalculateDistributions(continuousSample);
-      updateNeighbourDistances(neighbourDistances, means, vars, stddevs);
+      updateNeighbourWeights(neighbourWeights, means, vars, stddevs);
 
-      logGraphAdd(graphStream, continuousSample, means, vars, neighbourDistances);
+      logGraphAdd(graphStream, continuousSample, means, vars, neighbourWeights);
     }
 
     logGraphEnd(graphStream);
@@ -430,71 +449,87 @@ class GaussianCluster {
   }
 
   /**
-   * Initalize the neighbour-distance list for each cluster
+   * Initalize the neighbour-weight list for each cluster
    * @param neighbourFun function which generates neighbours of given discrete tuple
    * @return
    */
-  [[nodiscard]] NeighboursDistances initNeighbourDistances(const NeighbourFunction &neighbourFun) const {
-    std::vector<std::vector<std::pair<size_t, double>>> result;
+  [[nodiscard]] NeighboursWeights initNeighbourWeights(const NeighbourFunction &neighbourFun) const {
+    NeighboursWeights result;
     result.reserve(_clusters.size());
 
     // for each cluster create a neighbour list
     for (size_t i = 0; i < _clusters.size(); ++i) {
       auto neighbours = neighbourFun(_discreteVectorMap[i]);
 
-      // calculate initial distance for each neighbour
-      std::vector<std::pair<size_t, double>> neighbourDistances;
-      neighbourDistances.reserve(neighbours.size());
+      // calculate initial weight for each neighbour
+      std::vector<std::pair<size_t, double>> neighbourWeights;
+      neighbourWeights.reserve(neighbours.size());
       for (const auto &n : neighbours) {
         size_t n_index = getIndex(n);
         // ignore clusters without evidence
         if (_clusters[n_index].numEvidence() > 0) {
-          // calculate initial value for given distance function
-          double distance = 0.;
-          switch (_distanceFun) {
-            case evidenceMatchingPDF: {
+          // calculate initial value for given weight function
+          double weight = 0.;
+          switch (_weightFun) {
+            case evidenceMatchingProbabilityGM: {
               const auto &[inputs, outputs] = _clusters[n_index].getEvidence();
-              distance = 1.;
-              // for each evidence in neighbouring cluster sum probability density if provided to the target cluster
+              weight = 1.;
+              // product of probability densitiy over all evidence in neighbouring cluster if provided to the target
+              // cluster
               for (size_t e = 0; e < inputs.size(); ++e) {
-                distance /= _clusters[i].predictOutputPDF(inputs[e], outputs[e]);
+                weight *= _clusters[i].predictOutputPDF(inputs[e], outputs[e]);
               }
+              // geometric mean
+              weight = std::pow(weight, 1.0 / inputs.size());
+              break;
+            }
+            case evidenceMatchingScaledProbabilityGM: {
+              const auto &[inputs, outputs] = _clusters[n_index].getEvidence();
+              weight = 1.;
+              // product of probability densitiy over all evidence in neighbouring cluster if provided to the target
+              // cluster
+              for (size_t e = 0; e < inputs.size(); ++e) {
+                weight *= _clusters[i].predictOutputScaledPDF(inputs[e], outputs[e]);
+              }
+              // geometric mean
+              weight = std::pow(weight, 1.0 / inputs.size());
               break;
             }
             case wasserstein2:
               break;
           }
-          neighbourDistances.emplace_back(n_index, distance);
+          neighbourWeights.emplace_back(n_index, weight);
         }
       }
-      result.push_back(std::move(neighbourDistances));
+      result.push_back(std::move(neighbourWeights));
     }
 
     return result;
   }
 
   /**
-   * Update the neighbour-distance list for each cluster. This function is called for each continuous tuple.
+   * Update the neighbour-weight list for each cluster. This function is called for each continuous tuple.
    * Given mean, var and stddev should be evaluated for the current continuous tuple.
-   * @param neighbourDistances list to update
+   * @param neighbourWeights list to update
    * @param means mean for each cluster
    * @param vars variance for each cluster
    * @param stddev standard deviation for each cluster
    * @return
    */
-  void updateNeighbourDistances(NeighboursDistances &neighbourDistances, const std::vector<double> &means,
-                                const std::vector<double> &vars, const std::vector<double> &stddevs) const {
-    // for each cluster create a neighbour list
+  void updateNeighbourWeights(NeighboursWeights &neighbourWeights, const std::vector<double> &means,
+                              const std::vector<double> &vars, const std::vector<double> &stddevs) const {
+    // for each cluster update neighbour-weight list
     VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
     for (size_t i = 0; i < _clusters.size(); ++i) {
-      // calculate distance for each neighbour
-      for (auto &[n, distance] : neighbourDistances[i]) {
-        switch (_distanceFun) {
-          case evidenceMatchingPDF:
+      // for each neighbour update weight
+      for (auto &[n, weight] : neighbourWeights[i]) {
+        switch (_weightFun) {
+          case evidenceMatchingProbabilityGM:
+          case evidenceMatchingScaledProbabilityGM:
             // keep inital value
             break;
           case wasserstein2:
-            distance = std::pow(means[n] - means[i], 2) + std::pow(stddevs[n] - stddevs[i], 2);
+            weight = vars[i] / (vars[i] + std::pow(means[n] - means[i], 2) + std::pow(stddevs[n] - stddevs[i], 2));
             break;
         }
       }
@@ -505,7 +540,7 @@ class GaussianCluster {
    * Create and initialize streams for nodes and edges.
    * @return
    */
-  GraphStream logGraphInit() const {
+  [[nodiscard]] GraphStream logGraphInit() const {
     std::stringstream nodeStream;
     nodeStream << "GaussianCluster Graph: Nodes" << std::endl;
     nodeStream << "Label,prediction,numEvidence" << std::endl;
@@ -523,10 +558,10 @@ class GaussianCluster {
    * @param currentContinous continuous sample
    * @param means predicted mean for each cluster
    * @param vars predicted variance for each cluster
-   * @param neighbourDistances neighbours for each cluster
+   * @param neighbourWeights neighbours for each cluster
    */
   void logGraphAdd(GraphStream &graphStream, const VectorContinuous &currentContinous, std::vector<double> means,
-                   std::vector<double> vars, const NeighboursDistances &neighbourDistances) const {
+                   std::vector<double> vars, const NeighboursWeights &neighbourWeights) const {
     auto &[nodeStream, edgeStream] = graphStream;
 
     // log nodes
@@ -539,11 +574,12 @@ class GaussianCluster {
 
     // log edges
     for (size_t i = 0; i < _clusters.size(); ++i) {
-      for (const auto &[n, distance] : neighbourDistances[i]) {
-        double weight = vars[i] / (vars[i] + distance);
-        std::string source = _vecToStringFun(std::make_pair(_discreteVectorMap[i], currentContinous));
-        std::string target = _vecToStringFun(std::make_pair(_discreteVectorMap[n], currentContinous));
-        edgeStream << "\"" << source << "\",\"" << target << "\"," << weight << std::endl;
+      for (const auto &[n, weight] : neighbourWeights[i]) {
+        if (weight > 0) {
+          std::string source = _vecToStringFun(std::make_pair(_discreteVectorMap[i], currentContinous));
+          std::string target = _vecToStringFun(std::make_pair(_discreteVectorMap[n], currentContinous));
+          edgeStream << "\"" << source << "\",\"" << target << "\"," << weight << std::endl;
+        }
       }
     }
   }
@@ -603,9 +639,9 @@ class GaussianCluster {
   std::vector<VectorDiscrete> _discreteVectorMap;
 
   /**
-   * Function used to calculate the distance between two clusters.
+   * Function used to calculate the weight between two clusters.
    */
-  DistanceFunction _distanceFun;
+  WeightFunction _weightFun;
 
   /**
    * Current smallest evidence output.
