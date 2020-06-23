@@ -217,7 +217,7 @@ class Functor {
    * @param soa  Structure of arrays where the data is loaded.
    * @param device_handle soa in device memory where the data is copied to
    */
-  virtual void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
+  virtual void deviceSoALoader(SoA<SoAArraysType> &soa,
                                CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
     utils::ExceptionHandler::exception("Functor::CudaDeviceSoALoader: not yet implemented");
   }
@@ -300,7 +300,8 @@ class Functor {
   virtual CudaWrapperInterface<typename Particle::ParticleSoAFloatPrecision> *getCudaWrapper() { return nullptr; }
 
   /**
-   * Creates Cuda SoA object containing all the relevant pointers from the generic Cuda SoA
+   * Creates a Cuda SoA object containing all the relevant pointers from the generic Cuda SoA
+   * @param device_handle
    * @return unique pointer to the object
    */
   virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleSoAFloatPrecision>> createFunctorCudaSoA(

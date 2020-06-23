@@ -19,6 +19,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 #if defined(AUTOPAS_CUDA)
+#include "LJFunctorCudaConstants.cuh"
 #include "autopas/molecularDynamics/LJFunctorCuda.cuh"
 #include "autopas/molecularDynamics/LJFunctorCudaGlobals.cuh"
 #include "autopas/utils/CudaDeviceVector.h"
@@ -618,7 +619,8 @@ class LJFunctor
           device_handle.template get<Particle::AttributeNames::posZ>().get(),
           device_handle.template get<Particle::AttributeNames::forceX>().get(),
           device_handle.template get<Particle::AttributeNames::forceY>().get(),
-          device_handle.template get<Particle::AttributeNames::forceZ>().get());
+          device_handle.template get<Particle::AttributeNames::forceZ>().get(),
+          device_handle.template get<Particle::AttributeNames::ownershipState>().get());
     }
   }
 #endif

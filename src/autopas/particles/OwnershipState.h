@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <iostream>
+
 namespace autopas {
 /**
  * Enum that specifies the state of ownership.
@@ -23,5 +25,27 @@ enum class OwnershipState : int64_t {
   /// Halo state, a particle with this state is an actual particle, but not owned by the current AutoPas object!
   halo
 };
+
+/**
+ * Insertion operator for OwnershipState.
+ * This function enables passing ownershipState to an ostream via `<<`.
+ * @param os
+ * @param ownershipState
+ * @return os
+ */
+[[maybe_unused]] static std::ostream &operator<<(std::ostream &os, const OwnershipState &ownershipState) {
+  switch (ownershipState) {
+    case OwnershipState::dummy:
+      os << "dummy";
+      break;
+    case OwnershipState::owned:
+      os << "owned";
+      break;
+    case OwnershipState::halo:
+      os << "halo";
+      break;
+  }
+  return os;
+}
 
 }  // namespace autopas
