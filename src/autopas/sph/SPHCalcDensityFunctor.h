@@ -7,8 +7,8 @@
 #pragma once
 
 #include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/sph/SPHKernels.h"
-#include "autopas/sph/SPHParticle.h"
 
 namespace autopas {
 namespace sph {
@@ -88,8 +88,16 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
     double *const __restrict__ densityptr = soa.template begin<Particle::AttributeNames::density>();
     double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
     double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
+
+    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
     size_t numParticles = soa.getNumParticles();
     for (unsigned int i = 0; i < numParticles; ++i) {
+      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      if (ownedStatePtr[i] == OwnershipState::dummy) {
+        continue;
+      }
+
       double densacc = 0.;
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
@@ -105,12 +113,15 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        const double density = massptr[j] * SPHKernels::W(dr2, smthptr[i]);
+        // if second particle is a dummy, we skip the interaction.
+        const bool mask = ownedStatePtr[j] != OwnershipState::dummy;
+
+        const double density = mask ? massptr[j] * SPHKernels::W(dr2, smthptr[i]) : 0.;
         densacc += density;
 
         // Newton 3:
         // W is symmetric in dr, so no -dr needed, i.e. we can reuse dr
-        const double density2 = massptr[i] * SPHKernels::W(dr2, smthptr[j]);
+        const double density2 = mask ? massptr[i] * SPHKernels::W(dr2, smthptr[j]) : 0.;
         densityptr[j] += density2;
       }
 
@@ -140,8 +151,16 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
     double *const __restrict__ smthptr2 = soa2.template begin<Particle::AttributeNames::smth>();
     double *const __restrict__ massptr2 = soa2.template begin<Particle::AttributeNames::mass>();
 
+    const auto *const __restrict__ ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict__ ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+
     size_t numParticlesi = soa1.getNumParticles();
     for (unsigned int i = 0; i < numParticlesi; ++i) {
+      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      if (ownedStatePtr1[i] == OwnershipState::dummy) {
+        continue;
+      }
+
       double densacc = 0.;
       size_t numParticlesj = soa2.getNumParticles();
 // icpc vectorizes this.
@@ -158,12 +177,15 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        const double density = massptr2[j] * SPHKernels::W(dr2, smthptr1[i]);
+        // if second particle is a dummy, we skip the interaction.
+        const bool mask = ownedStatePtr2[j] != OwnershipState::dummy;
+
+        const double density = mask ? massptr2[j] * SPHKernels::W(dr2, smthptr1[i]) : 0.;
         densacc += density;
         if (newton3) {
           // Newton 3:
           // W is symmetric in dr, so no -dr needed, i.e. we can reuse dr
-          const double density2 = massptr1[i] * SPHKernels::W(dr2, smthptr2[j]);
+          const double density2 = mask ? massptr1[i] * SPHKernels::W(dr2, smthptr2[j]) : 0.;
           densityptr2[j] += density2;
         }
       }
@@ -182,6 +204,13 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
                         bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
+    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+    if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+      return;
+    }
+
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
     double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
@@ -191,7 +220,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
     double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
 
     double densacc = 0;
-    auto &currentList = neighborList;
+    const auto &currentList = neighborList;
     size_t listSize = currentList.size();
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
@@ -207,12 +236,15 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
       const double dr2 = drx2 + dry2 + drz2;
 
-      const double density = massptr[currentList[j]] * SPHKernels::W(dr2, smthptr[indexFirst]);
+      // if second particle is a dummy, we skip the interaction.
+      const bool mask = ownedStatePtr[currentList[j]] != OwnershipState::dummy;
+
+      const double density = mask ? massptr[currentList[j]] * SPHKernels::W(dr2, smthptr[indexFirst]) : 0.;
       densacc += density;
       if (newton3) {
         // Newton 3:
         // W is symmetric in dr, so no -dr needed, i.e. we can reuse dr
-        const double density2 = massptr[indexFirst] * SPHKernels::W(dr2, smthptr[currentList[j]]);
+        const double density2 = mask ? massptr[indexFirst] * SPHKernels::W(dr2, smthptr[currentList[j]]) : 0.;
         densityptr[currentList[j]] += density2;
       }
     }
@@ -223,25 +255,26 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static std::array<typename SPHParticle::AttributeNames, 6> getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 6>{
-        Particle::AttributeNames::mass, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::smth, Particle::AttributeNames::density};
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 7>{
+        Particle::AttributeNames::mass,          Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,          Particle::AttributeNames::smth, Particle::AttributeNames::density,
+        Particle::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static std::array<typename SPHParticle::AttributeNames, 5> getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 5>{
+  constexpr static auto getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 6>{
         Particle::AttributeNames::mass, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::smth};
+        Particle::AttributeNames::posZ, Particle::AttributeNames::smth, Particle::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static std::array<typename SPHParticle::AttributeNames, 1> getComputedAttr() {
+  constexpr static auto getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 1>{Particle::AttributeNames::density};
   }
 };
