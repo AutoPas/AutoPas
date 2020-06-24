@@ -68,7 +68,12 @@ std::string MDFlexConfig::to_string() const {
      << endl;
   os << setw(valueOffset) << left << cellSizeFactors.name << ":  " << *cellSizeFactors.value << endl;
   os << setw(valueOffset) << left << deltaT.name << ":  " << deltaT.value << endl;
-  os << setw(valueOffset) << left << iterations.name << ":  " << iterations.value << endl;
+  // simulation length is either dictated by tuning phases or iterations
+  if (tuningPhases.value > 0) {
+    os << setw(valueOffset) << left << tuningPhases.name << ":  " << tuningPhases.value << endl;
+  } else {
+    os << setw(valueOffset) << left << iterations.name << ":  " << iterations.value << endl;
+  }
   os << setw(valueOffset) << left << boolalpha << periodic.name << ":  " << periodic.value << endl;
 
   os << setw(valueOffset) << left << "Objects:" << endl;
