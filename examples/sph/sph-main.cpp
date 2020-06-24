@@ -19,7 +19,7 @@ using AutoPasContainer = autopas::AutoPas<Particle, Cell>;
 void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
   // Place SPH particles
   std::cout << "setup... started" << std::endl;
-  const double dx = 1.0 / 28.0;
+  const double dx = 1.0 / 128.0;
   unsigned int i = 0;
   for (double x = 0; x < bBoxMax[0] * 0.5; x += dx) {  // NOLINT
     for (double y = 0; y < bBoxMax[1]; y += dx) {      // NOLINT
@@ -303,11 +303,8 @@ int main() {
   sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
-  // In case you want to use another tuning strategy, you can do that using:
-  // sphSystem.setTuningStrategyOption(autopas::TuningStrategyOption::activeHarmony);
-  
-  // Debug output of AutoPas can be enabled using:
-  // autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
+  //sphSystem.setTuningStrategyOption(autopas::TuningStrategyOption::activeHarmony);
+  //autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
 
   std::set<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
                                                        autopas::ContainerOption::verletLists,
@@ -341,7 +338,7 @@ int main() {
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
   autopas::utils::Timer perlooptimer;
-  for (double time = 0.; step < 1000; time += dt, ++step) {
+  for (double time = 0.; time < t_end; time += dt, ++step) {
     perlooptimer.start();
     std::cout << "\n-------------------------\ntime step " << step << "(t = " << time << ")..." << std::endl;
     // 1.1 Leap frog: Initial Kick & Full Drift
