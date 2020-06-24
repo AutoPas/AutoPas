@@ -305,6 +305,7 @@ int main() {
 
   // In case you want to use another tuning strategy, you can do that using:
   // sphSystem.setTuningStrategyOption(autopas::TuningStrategyOption::activeHarmony);
+
   // Debug output of AutoPas can be enabled using:
   // autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
 
