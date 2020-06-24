@@ -812,7 +812,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
 
   static_assert(static_cast<unsigned char>(OwnershipState::owned) == 1,
                 "OwnershipState::owned has to have the value 1.");
-  static inline const __m256i _ownedStateOwnedMask{_mm256_set1_epi64x(1)};
+  static inline const __m256d _ownedStateOwnedMask{_mm256_castsi256_pd(_mm256_set1_epi64x(1))};
 
   const __m256d _cutoffsquare{};
   __m256d _shift6 = _mm256_setzero_pd();
