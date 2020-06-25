@@ -129,7 +129,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   }
   if (node[config.logLevel.name]) {
     auto strArg = node[config.logLevel.name].as<std::string>();
-    switch (strArg[0]) {
+    switch (std::tolower(strArg[0])) {
       case 't': {
         config.logLevel.value = autopas::Logger::LogLevel::trace;
         break;
