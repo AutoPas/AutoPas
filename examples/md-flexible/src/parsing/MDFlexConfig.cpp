@@ -115,6 +115,8 @@ std::string MDFlexConfig::to_string() const {
   if (not checkpointfile.value.empty())
     os << setw(valueOffset) << left << checkpointfile.name << ":  " << checkpointfile.value << endl;
 
+  os << setw(valueOffset) << logLevel.name << ":  " << (logLevel.value) << endl;
+
   os << setw(valueOffset) << dontMeasureFlops.name << ":  " << (not dontMeasureFlops.value) << endl;
   os << setw(valueOffset) << dontCreateEndConfig.name << ":  " << (not dontCreateEndConfig.value) << endl;
   return os.str();
