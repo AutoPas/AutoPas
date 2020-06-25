@@ -85,28 +85,6 @@ add_test(
     COMMAND measurePerf.sh md-flexible -silent
     CONFIGURATIONS checkExamples
 )
-
-add_test(
-    NAME md-flex-VerletClusterCells-4
-    COMMAND
-        md-flexible
-        --container VerletClusterCells
-        --verlet-cluster-size 4
-        --no-end-config
-        --no-flops
-    CONFIGURATIONS checkExamples
-)
-
-add_test(
-    NAME md-flex-VerletClusterCells-32
-    COMMAND
-        md-flexible
-        --container VerletClusterCells
-        --verlet-cluster-size 32
-        --no-end-config
-        --no-flops
-    CONFIGURATIONS checkExamples
-)
 # cmake-format: on
 
 # add the executable to checkExamples as dependency
