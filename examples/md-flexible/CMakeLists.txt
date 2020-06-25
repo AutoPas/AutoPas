@@ -33,6 +33,9 @@ add_subdirectory(tests)
 
 # add check for current target
 # cmake-format: off
+
+# randomly generated imbalanced scenario tested with LC only
+# also tests the flop functor
 add_test(
     NAME md-flexible.test-static
     COMMAND
@@ -45,38 +48,37 @@ add_test(
         --functor lj
         --iterations 10
         --particle-generator gauss
-        --particles-per-dimension 10
-        --particle-spacing 0.4
+        --particles-total 10
         --traversal c08,sliced
         --verlet-rebuild-frequency 5
         --verlet-skin-radius 0
         --periodic false
         --deltaT 0.
+        --no-end-config
     CONFIGURATIONS checkExamples
 )
 
+#stable, periodic particle grid tested with all configurations
 add_test(
         NAME md-flexible.test-sim
         COMMAND
         md-flexible
-        --container linked
-        --cutoff 1.
-        --distribution-mean 5.0
-        --distribution-stddeviation 2.0
-        --data-layout soa
+        --container all
+        --traversal all
+        --cutoff 1.5
         --functor lj
-        --iterations 10
-        --particle-generator gauss
+        --tuning-phases 1
+        --particle-generator grid
         --particles-per-dimension 10
-        --particle-spacing 0.4
-        --traversal c08,sliced
+        --particle-spacing 1.1225
         --verlet-rebuild-frequency 4
-        --verlet-skin-radius 0.5
+        --verlet-skin-radius 0.2
         --periodic true
-        --deltaT 0.000000005
+        --deltaT 0.005
+        --no-end-config
+        --no-flops
         CONFIGURATIONS checkExamples
 )
-# cmake-format: on
 
 add_test(
     NAME md-flexMeasurePerf
@@ -88,10 +90,10 @@ add_test(
     NAME md-flex-VerletClusterCells-4
     COMMAND
         md-flexible
-        --container
-        VerletClusterCells
-        --verlet-cluster-size
-        4
+        --container VerletClusterCells
+        --verlet-cluster-size 4
+        --no-end-config
+        --no-flops
     CONFIGURATIONS checkExamples
 )
 
@@ -99,13 +101,13 @@ add_test(
     NAME md-flex-VerletClusterCells-32
     COMMAND
         md-flexible
-        --container
-        VerletClusterCells
-        --verlet-cluster-size
-        32
+        --container VerletClusterCells
+        --verlet-cluster-size 32
+        --no-end-config
         --no-flops
     CONFIGURATIONS checkExamples
 )
+# cmake-format: on
 
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples md-flexible)
