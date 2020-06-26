@@ -230,7 +230,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
   if (currentInvalid) {
     if (ah_converged(htask)) {
       AutoPasLog(debug, "Active Harmony converged to invalid configuration; resetting active-harmony server.");
-      resetHarmony();
+      reset(0);
     } else {
       invalidateConfiguration();
     }
