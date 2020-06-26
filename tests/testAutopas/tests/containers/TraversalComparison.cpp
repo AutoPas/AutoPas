@@ -203,7 +203,7 @@ auto TraversalComparison::getTestParams() {
       for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
         for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
           for (auto numParticles : {100ul, 2000ul}) {
-            for (auto boxMax : std::vector<std::array<double, 3>>{{{3., 3., 3.}, {10., 10., 10.}}}) {
+            for (auto boxMax : std::vector<std::array<double, 3>>{{3., 3., 3.}, {10., 10., 10.}}) {
               for (double cellSizeFactor : {0.5, 1., 2.}) {
                 for (auto numHalo : {0ul, 200ul}) {
                   for (bool slightMove : {true, false}) {
