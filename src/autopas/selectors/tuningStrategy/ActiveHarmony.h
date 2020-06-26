@@ -214,7 +214,7 @@ void ActiveHarmony::fetchConfiguration() {
 }
 
 void ActiveHarmony::invalidateConfiguration() {
-  auto worstPerf = std::numeric_limits<double>::max();
+  auto worstPerf = std::numeric_limits<long>::max();
   addEvidence(worstPerf, 0);
   AutoPasLog(debug, "ActiveHarmony::invalidateConfiguration: {}", _currentConfig.toString());
 }
@@ -230,7 +230,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
   if (currentInvalid) {
     if (ah_converged(htask)) {
       AutoPasLog(debug, "Active Harmony converged to invalid configuration; resetting active-harmony server.");
-      reset(0);
+      resetHarmony();
     } else {
       invalidateConfiguration();
     }
