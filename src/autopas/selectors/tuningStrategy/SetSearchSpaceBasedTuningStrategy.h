@@ -114,7 +114,7 @@ void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
                                                    ContainerOption::varVerletListsAsBuild};
     std::set<double> relevantCellSizeFactos;
     // decide if the cell size factor options should be used or not
-    if(cellsBasedContainers.find(containerOption) != cellsBasedContainers.end()) {
+    if (cellsBasedContainers.find(containerOption) != cellsBasedContainers.end()) {
       relevantCellSizeFactos = allowedCellSizeFactors;
     } else {
       relevantCellSizeFactos = {1};
