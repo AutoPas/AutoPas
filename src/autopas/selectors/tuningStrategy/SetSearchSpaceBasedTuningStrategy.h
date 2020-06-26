@@ -108,7 +108,18 @@ void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
                           allContainerTraversals.begin(), allContainerTraversals.end(),
                           std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
 
-    for (const auto &cellSizeFactor : allowedCellSizeFactors)
+    // set of all containers for which a cell size factor makes a difference
+    std::set<ContainerOption> cellsBasedContainers{ContainerOption::linkedCells, ContainerOption::verletLists,
+                                                   ContainerOption::verletListsCells,
+                                                   ContainerOption::varVerletListsAsBuild};
+    std::set<double> relevantCellSizeFactos;
+    // decide if the cell size factor options should be used or not
+    if(cellsBasedContainers.find(containerOption) != cellsBasedContainers.end()) {
+      relevantCellSizeFactos = allowedCellSizeFactors;
+    } else {
+      relevantCellSizeFactos = {1};
+    }
+    for (const auto &cellSizeFactor : relevantCellSizeFactos)
       for (const auto &traversalOption : allowedAndApplicable) {
         // if load estimators are not applicable LoadEstimatorOption::none is returned.
         const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
