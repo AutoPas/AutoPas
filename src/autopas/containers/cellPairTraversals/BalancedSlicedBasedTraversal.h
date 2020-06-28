@@ -90,17 +90,20 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
 
     // using greedy algorithm to assign slice thicknesses. May lead to less slices being used.
     unsigned int totalThickness = 0;
-    /* minimum load for the next slice. Ideally exactly this load is reached. If this is not possible
-     * the remaining load is again divided upon the remaining slices.
-     */
-    auto min = fullLoad / numSlices;
+    // avg load per slice
+    auto avg = fullLoad / numSlices;
+    auto lastLoad = 0;
     for (auto s = 0; s < numSlices; s++) {
       unsigned int thickness;
       if (s == numSlices - 1) {
         thickness = maxDimensionLength - totalThickness;
       } else {
         thickness = minSliceThickness;
-        while (totalThickness + thickness + 1 < maxDimensionLength && loads[totalThickness + thickness - 1] < min) {
+        while (totalThickness + thickness + 1 < maxDimensionLength &&
+               loads[totalThickness + thickness - 1] - lastLoad < avg) {
+          auto load1 = loads[totalThickness + thickness - 1] - lastLoad;
+          auto load2 = loads[totalThickness + thickness] - lastLoad;
+          if (std::labs(avg - load1) < std::labs(avg - load2)) break;
           thickness++;
         }
       }
@@ -115,14 +118,15 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
         totalThickness += thickness;
         this->_sliceThickness.push_back(thickness);
         if (s != numSlices - 1) {
-          // add avg of remaining load over remaining threads to min
-          min = loads[totalThickness - 1] + (fullLoad - loads[totalThickness - 1]) / (numSlices - s - 1);
+          // avg of remaining load over remaining threads
+          avg = (fullLoad - loads[totalThickness - 1]) / (numSlices - s - 1);
+          lastLoad = loads[totalThickness - 1];
         }
       }
     }
     std::string thicknessStr;
     std::string loadStr;
-    auto lastLoad = 0;
+    lastLoad = 0;
     totalThickness = 0;
     for (auto t : this->_sliceThickness) {
       thicknessStr += std::to_string(t) + ", ";
