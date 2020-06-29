@@ -36,8 +36,8 @@ namespace autopas {
 #define AUTOPAS_MPI_BYTE MPI_BYTE
 /** Wrapper for MPI_CXX_BOOL */
 #define AUTOPAS_MPI_CXX_BOOL MPI_CXX_BOOL
-/** Wrapper for MPI_DOUBLE */
-#define AUTOPAS_MPI_DOUBLE MPI_DOUBLE
+/** Wrapper for MPI_CHAR */
+#define AUTOPAS_MPI_CHAR MPI_CHAR
 /** Wrapper for MPI_INT */
 #define AUTOPAS_MPI_INT MPI_INT
 /** Wrapper for MPI_UNSIGNED LONG */
@@ -85,6 +85,7 @@ enum AutoPas_MPI_Comm {
 enum AutoPas_MPI_Datatype {
   AUTOPAS_MPI_BYTE = 1,
   AUTOPAS_MPI_CXX_BOOL = sizeof(bool),
+  AUTOPAS_MPI_CHAR = sizeof(char),
   AUTOPAS_MPI_INT = sizeof(int),
   AUTOPAS_MPI_UNSIGNED_LONG = sizeof(unsigned long),
 };
