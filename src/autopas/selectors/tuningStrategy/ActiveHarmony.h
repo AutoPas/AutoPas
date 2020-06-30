@@ -214,7 +214,7 @@ void ActiveHarmony::fetchConfiguration() {
 }
 
 void ActiveHarmony::invalidateConfiguration() {
-  auto worstPerf = std::numeric_limits<double>::max();
+  auto worstPerf = std::numeric_limits<long>::max();
   addEvidence(worstPerf, 0);
   AutoPasLog(debug, "ActiveHarmony::invalidateConfiguration: {}", _currentConfig.toString());
 }

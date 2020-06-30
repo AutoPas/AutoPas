@@ -292,12 +292,6 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    */
   std::vector<ParticleCell> &getCells() { return this->_cells; }
 
-  /**
-   * @copydoc getCells()
-   * @note const version
-   */
-  const std::vector<ParticleCell> &getCells() const { return this->_cells; }
-
  protected:
   /**
    * object to manage the block of cells.
