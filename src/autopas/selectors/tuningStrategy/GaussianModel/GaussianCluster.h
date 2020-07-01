@@ -540,8 +540,8 @@ class GaussianCluster {
       result << "," << discreteVec[d];
     }
 
-    for (auto continuousVal : continuousVec) {
-      result << "," << continuousVal;
+    for (size_t c = 0; c < continuousVec.size(); ++c) {
+      result << "," << continuousVec[c];
     }
 
     result << ")";
