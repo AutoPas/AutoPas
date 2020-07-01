@@ -536,11 +536,11 @@ class GaussianCluster {
     const auto &[discreteVec, continuousVec] = vec;
 
     result << "(" << discreteVec[0];
-    for (size_t d = 1; d < discreteVec.size(); ++d) {
+    for (long d = 1; d < discreteVec.size(); ++d) {
       result << "," << discreteVec[d];
     }
 
-    for (size_t c = 0; c < continuousVec.size(); ++c) {
+    for (long c = 0; c < continuousVec.size(); ++c) {
       result << "," << continuousVec[c];
     }
 
