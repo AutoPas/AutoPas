@@ -9,11 +9,11 @@
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "testingHelpers/commonTypedefs.h"
 
-template <class Particle, size_t clusterSize>
-using ClusterTower = autopas::internal::ClusterTower<Particle, clusterSize>;
+template <class Particle>
+using ClusterTower = autopas::internal::ClusterTower<Particle>;
 
 TEST_F(VerletClusterTowerTest, testAddParticle) {
-  ClusterTower<Particle, 4> tower;
+  ClusterTower<Particle> tower(4);
   Particle p1;
   Particle p2;
 
@@ -23,11 +23,10 @@ TEST_F(VerletClusterTowerTest, testAddParticle) {
   EXPECT_EQ(tower.getNumActualParticles(), 2);
 }
 
-template <size_t clusterSize>
-static void testClusterGenerationAndDummies() {
+static void testClusterGenerationAndDummies(size_t clusterSize) {
   // Test for different number of particles
   for (size_t numParticles : {29, 64, 1, 2, 4, 0}) {
-    ClusterTower<Particle, clusterSize> tower;
+    ClusterTower<Particle> tower(clusterSize);
 
     for (size_t i = 0; i < numParticles; i++) {
       tower.addParticle(Particle{{0.0, 0.0, (double)i}, {0, 0, 0}, i});
@@ -69,13 +68,13 @@ static void testClusterGenerationAndDummies() {
 
 TEST_F(VerletClusterTowerTest, testClusterGenerationAndDummies) {
   // Test with different cluster sizes
-  testClusterGenerationAndDummies<1>();
-  testClusterGenerationAndDummies<2>();
-  testClusterGenerationAndDummies<4>();
+  testClusterGenerationAndDummies(1);
+  testClusterGenerationAndDummies(2);
+  testClusterGenerationAndDummies(4);
 }
 
 TEST_F(VerletClusterTowerTest, testCollectAllActualParticles) {
-  ClusterTower<Particle, 4> tower;
+  ClusterTower<Particle> tower(4);
   constexpr size_t numParticles = 21;
 
   for (size_t i = 0; i < numParticles; i++) {
@@ -94,7 +93,7 @@ TEST_F(VerletClusterTowerTest, testCollectAllActualParticles) {
 }
 
 TEST_F(VerletClusterTowerTest, testIterator) {
-  ClusterTower<Particle, 4> tower;
+  ClusterTower<Particle> tower(4);
   constexpr size_t numParticles = 21;
 
   for (size_t i = 0; i < numParticles; i++) {

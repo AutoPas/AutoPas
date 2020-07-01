@@ -18,7 +18,6 @@ namespace internal {
  * A cell functor. This functor is build from the normal Functor of the template
  * type ParticleFunctor. It is an internal object to handle interactions between
  * two cells of particles.
- * @todo: currently always used newton3!
  * @tparam Particle
  * @tparam ParticleCell
  * @tparam ParticleFunctor the functor which

@@ -162,8 +162,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
         // if empty
         if (not this->getCells()[cellId].isNotEmpty()) continue;
 
-        std::array<double, 3> cellLowerCorner = {}, cellUpperCorner = {};
-        this->getCellBlock().getCellBoundingBox(cellId, cellLowerCorner, cellUpperCorner);
+        auto [cellLowerCorner, cellUpperCorner] = this->getCellBlock().getCellBoundingBox(cellId);
 
         for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
           // if not in cell
@@ -287,12 +286,6 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    * @return the data
    */
   std::vector<ParticleCell> &getCells() { return this->_cells; }
-
-  /**
-   * @copydoc getCells()
-   * @note const version
-   */
-  const std::vector<ParticleCell> &getCells() const { return this->_cells; }
 
  protected:
   /**

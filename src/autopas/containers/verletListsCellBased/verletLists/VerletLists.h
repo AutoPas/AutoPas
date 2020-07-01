@@ -67,7 +67,10 @@ class VerletLists
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
 
-  ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
+  /**
+   * @copydoc ParticleContainerInterface::getContainerType()
+   */
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.

@@ -370,7 +370,8 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   if (_samples.size() < _maxSamples) {
     return stillTuning;
   }
-
+  utils::Timer tuningTimer;
+  tuningTimer.start();
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
     _tuningStrategy->reset(_iteration);
@@ -405,6 +406,8 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
     // samples are no longer needed. Delete them here so willRebuild() works as expected.
     _samples.clear();
   }
+  tuningTimer.stop();
+  AutoPasLog(debug, "Tuning took {} ns.", tuningTimer.getTotalTime());
 
   selectCurrentContainer();
   return stillTuning;
