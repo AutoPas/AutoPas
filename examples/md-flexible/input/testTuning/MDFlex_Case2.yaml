@@ -1,5 +1,6 @@
 selector-strategy                :  Fastest-Absolute-Value
 tuning-strategy                  :  full-Search
+tuning-acquisition-function      :  expected-improvement
 tuning-interval                  :  1000
 tuning-samples                   :  3
 tuning-max-evidence              :  50

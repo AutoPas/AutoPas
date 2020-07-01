@@ -78,7 +78,7 @@ def testScenario(yamlFile):
 
     # build and execute command for simulation
     # append tuningArg list (if nothing is set this is empty)
-    command=[simulation, "--log-level", "debug" , "--no-end-config" , "--yaml-filename" , yamlFile] + tuningArg
+    command=[simulation, "--log-level", "trace" , "--no-end-config" , "--yaml-filename" , yamlFile] + tuningArg
     print(" ".join(command))
     outputFile=os.path.join(outputDir, scenarioName + '.out')
     with open(outputFile, 'w+') as outputLocation:

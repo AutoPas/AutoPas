@@ -80,10 +80,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _currentConfig(),
         _invalidConfigs(),
         _rng(seed),
-        _gaussianCluster(
-            {static_cast<int>(allowedTraversalOptions.size()), static_cast<int>(allowedDataLayoutOptions.size()),
-             static_cast<int>(allowedNewton3Options.size())},
-            continuousDims, GaussianCluster::WeightFunction::wasserstein2, sigma, _rng),
+        _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::wasserstein2, sigma, _rng),
         _neighbourFun([this](const Eigen::VectorXi &target) -> std::vector<Eigen::VectorXi> {
           return FeatureVector::neighboursManhattan1(target, _gaussianCluster.getDimensions());
         }),
@@ -119,8 +116,11 @@ class BayesianClusterSearch : public TuningStrategyInterface {
     }
 
     _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
+    _gaussianCluster.setDimensions({static_cast<int>(_containerTraversalEstimatorOptions.size()),
+                                    static_cast<int>(_dataLayoutOptions.size()),
+                                    static_cast<int>(_newton3Options.size())});
     _gaussianCluster.setVectorToStringFun(
-        [this](const GaussianCluster::VectorPairDiscreteContinuous &vec) -> std::string {
+        [this](const GaussianModelTypes::VectorPairDiscreteContinuous &vec) -> std::string {
           return _encoder.convertFromCluster(vec).toString();
         });
 
@@ -175,7 +175,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * Currently sampled vectors and corresponding acquisition values.
    */
-  std::vector<GaussianCluster::VectorPairDiscreteContinuous> _currentAcquisitions;
+  std::vector<GaussianModelTypes::VectorPairDiscreteContinuous> _currentAcquisitions;
   /**
    * Configurations marked invalid.
    */
@@ -218,10 +218,6 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
     _currentConfig = _encoder.convertFromCluster(_gaussianCluster.getEvidenceMax());
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
 
-    // print graph of weights
-    size_t sampleSize = _cellSizeFactors->isFinite() ? _cellSizeFactors->size() : _predNumLHSamples;
-    auto continuousSamples = FeatureVector::lhsSampleFeatureContinuous(sampleSize, _rng, *_cellSizeFactors);
-    _gaussianCluster.logDebugGraph(_neighbourFun, continuousSamples);
     return false;
   }
 
@@ -284,7 +280,9 @@ void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
                         _newton3Options.end());
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
 
-  _gaussianCluster.setDimension(discreteNewtonDim, _newton3Options.size());
+  _gaussianCluster.setDimensions({static_cast<int>(_containerTraversalEstimatorOptions.size()),
+                                  static_cast<int>(_dataLayoutOptions.size()),
+                                  static_cast<int>(_newton3Options.size())});
   _currentAcquisitions.clear();
 
   if (this->searchSpaceIsEmpty()) {

@@ -168,6 +168,18 @@ class GaussianProcess {
   }
 
   /**
+   * Get the variance if evidence are ignored.
+   * @return
+   */
+  [[nodiscard]] double getDefaultVar() const {
+    double result = 0.;
+    for (const auto &hyper : _hypers) {
+      result += hyper.score * hyper.theta;
+    }
+    return result;
+  }
+
+  /**
    * The variance of the predicted f(x) from predictMean().
    * @param input x
    * @return variance
@@ -181,9 +193,7 @@ class GaussianProcess {
     double result = 0.;
     if (_inputs.empty()) {
       // no evidence
-      for (const auto &hyper : _hypers) {
-        result += hyper.score * hyper.theta;
-      }
+      return getDefaultVar();
     } else {
       for (const auto &hyper : _hypers) {
         auto kVec = kernelVector(input, hyper.theta, hyper.dimScales);

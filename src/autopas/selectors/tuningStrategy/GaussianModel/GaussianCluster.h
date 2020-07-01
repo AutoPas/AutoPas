@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 #include <utility>
 
+#include "GaussianClusterLogger.h"
 #include "GaussianProcess.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -26,37 +27,12 @@ namespace autopas {
  * Some sample input-output pairs (x,f(x)) should be provided as evidence.
  */
 class GaussianCluster {
-  using VectorDiscrete = Eigen::VectorXi;
-  using VectorContinuous = Eigen::VectorXd;
-
-  // store pairs of vectors and corresponding acquisition
-  using VectorAcquisition = std::pair<std::pair<VectorDiscrete, VectorContinuous>, double>;
-
-  // function that generate all neighbouring vectors of given vector
-  using NeighbourFunction = std::function<std::vector<VectorDiscrete>(VectorDiscrete)>;
-
-  // for each vector store a vector of all neighbours and their corresponding weight
-  using NeighboursWeights = std::vector<std::vector<std::pair<size_t, double>>>;
-
-  // std::string stream for nodes and edges
-  using GraphStream = std::pair<std::stringstream, std::stringstream>;
-
   // number of samples to find optimal hyperparameters
   static constexpr size_t hp_sample_size = 500;
   // number of hyperparameters
   static constexpr size_t hp_size = 25;
 
  public:
-  /**
-   * Vector described by a discrete and a continuous part
-   */
-  using VectorPairDiscreteContinuous = std::pair<VectorDiscrete, VectorContinuous>;
-
-  /**
-   * function to convert a vector to a string
-   */
-  using VectorToStringFun = std::function<std::string(const VectorPairDiscreteContinuous &)>;
-
   /**
    * Different weight functions between clusters
    */
@@ -87,7 +63,7 @@ class GaussianCluster {
    * @param vectorToString function to convert vectors to a readable string
    */
   GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims, WeightFunction weightFun, double sigma,
-                  Random &rngRef, const VectorToStringFun &vectorToString = defaultVecToString)
+                  Random &rngRef, const GaussianModelTypes::VectorToStringFun &vectorToString = defaultVecToString)
       : _dimRestriction(dimRestriction),
         _continuousDims(continuousDims),
         _clusters(),
@@ -108,12 +84,12 @@ class GaussianCluster {
   [[nodiscard]] const std::vector<int> &getDimensions() const { return _dimRestriction; }
 
   /**
-   * Change the number of cluster in a dimension
-   * @param dim the dimension to change
-   * @param newValue new number of clusters
+   * Change the number of cluster in all dimension.
+   * This will discard all evidence.
+   * @param newValue new number of clusters in each dimension
    */
-  void setDimension(size_t dim, int newValue) {
-    _dimRestriction[dim] = newValue;
+  void setDimensions(const std::vector<int> &newValue) {
+    _dimRestriction = newValue;
     initClusters();
   }
 
@@ -148,7 +124,8 @@ class GaussianCluster {
    * @param inputContinuous y
    * @param output f((x,y))
    */
-  void addEvidence(const VectorDiscrete &inputDiscrete, const VectorContinuous &inputContinuous, double output) {
+  void addEvidence(const GaussianModelTypes::VectorDiscrete &inputDiscrete,
+                   const GaussianModelTypes::VectorContinuous &inputContinuous, double output) {
     size_t clusterIdx = getIndex(inputDiscrete);
     if (static_cast<size_t>(inputContinuous.size()) != _continuousDims) {
       utils::ExceptionHandler::exception(
@@ -207,7 +184,7 @@ class GaussianCluster {
    * @param input (x,y)
    * @param output f((x,y))
    */
-  inline void addEvidence(const VectorPairDiscreteContinuous &input, double output) {
+  inline void addEvidence(const GaussianModelTypes::VectorPairDiscreteContinuous &input, double output) {
     addEvidence(input.first, input.second, output);
   }
 
@@ -215,7 +192,7 @@ class GaussianCluster {
    * Get the evidence with the highest output value
    * @return input of max
    */
-  [[nodiscard]] VectorPairDiscreteContinuous getEvidenceMax() const {
+  [[nodiscard]] GaussianModelTypes::VectorPairDiscreteContinuous getEvidenceMax() const {
     if (_numEvidence == 0) {
       utils::ExceptionHandler::exception("GaussianCluster has no evidence");
     }
@@ -231,14 +208,14 @@ class GaussianCluster {
    * @param continuousSamples continuous tuples
    * @return all discrete-continuous tuples paired with their corresponding acquisition
    */
-  [[nodiscard]] std::vector<VectorAcquisition> sampleAcquisition(
-      AcquisitionFunctionOption af, const std::function<std::vector<VectorDiscrete>(VectorDiscrete)> &neighbourFun,
-      const std::vector<VectorContinuous> &continuousSamples) const {
-    std::vector<VectorAcquisition> acquisitions;
+  [[nodiscard]] std::vector<GaussianModelTypes::VectorAcquisition> sampleAcquisition(
+      AcquisitionFunctionOption af, const GaussianModelTypes::NeighbourFunction &neighbourFun,
+      const std::vector<GaussianModelTypes::VectorContinuous> &continuousSamples) const {
+    std::vector<GaussianModelTypes::VectorAcquisition> acquisitions;
     // pair up all discrete with all continuous samples
     acquisitions.reserve(_clusters.size() * continuousSamples.size());
 
-    auto graphStream = logGraphInit();
+    GaussianClusterLogger graphLogger(_vecToStringFun);
 
     auto neighbourWeights = initNeighbourWeights(neighbourFun);
 
@@ -246,10 +223,11 @@ class GaussianCluster {
       auto [means, vars, stddevs] = precalculateDistributions(continuousSample);
       updateNeighbourWeights(neighbourWeights, means, vars, stddevs);
 
-      logGraphAdd(graphStream, continuousSample, means, vars, neighbourWeights);
+      graphLogger.add(_clusters, _discreteVectorMap, continuousSample, means, vars, neighbourWeights);
 
       // get acquisition considering neighbours
       for (size_t i = 0; i < _clusters.size(); ++i) {
+        // target cluster gets weight 1.
         double mixMean = means[i];
         double mixVar = vars[i];
         double weightSum = 1.;
@@ -271,36 +249,42 @@ class GaussianCluster {
       }
     }
 
-    logGraphEnd(graphStream);
+    graphLogger.end();
 
     return acquisitions;
   }
 
   /**
    * Generate all possible combinations of discrete tuples and continuous tuples in samples
-   * and calculate their weight to each other. Output graph in AutoPasLog Debug.
+   * and calculate their weight to each other. Output graph in AutoPasLog Trace.
    * @param neighbourFun function which generates neighbours of given discrete tuple
    * @param continuousSamples continuous tuples
    */
-  void logDebugGraph(const std::function<std::vector<VectorDiscrete>(const VectorDiscrete &)> &neighbourFun,
-                     const std::vector<VectorContinuous> &continuousSamples) const {
-    auto graphStream = logGraphInit();
+  void logDebugGraph(
+      const std::function<std::vector<GaussianModelTypes::VectorDiscrete>(const GaussianModelTypes::VectorDiscrete &)>
+          &neighbourFun,
+      const std::vector<GaussianModelTypes::VectorContinuous> &continuousSamples) const {
+    if (autopas::Logger::get()->level() > autopas::Logger::LogLevel::trace) {
+      return;
+    }
+
+    GaussianClusterLogger graphLogger(_vecToStringFun);
 
     auto neighbourWeights = initNeighbourWeights(neighbourFun);
     for (const auto &continuousSample : continuousSamples) {
       auto [means, vars, stddevs] = precalculateDistributions(continuousSample);
       updateNeighbourWeights(neighbourWeights, means, vars, stddevs);
 
-      logGraphAdd(graphStream, continuousSample, means, vars, neighbourWeights);
+      graphLogger.add(_clusters, _discreteVectorMap, continuousSample, means, vars, neighbourWeights);
     }
 
-    logGraphEnd(graphStream);
+    graphLogger.end();
   }
   /**
    * Change the used function to convert from vector to string.
    * @param fun new converter
    */
-  void setVectorToStringFun(const VectorToStringFun &fun) { _vecToStringFun = fun; }
+  void setVectorToStringFun(const GaussianModelTypes::VectorToStringFun &fun) { _vecToStringFun = fun; }
 
   /**
    * Generate all possible combinations of discrete tuples and continuous tuples in samples and
@@ -310,19 +294,20 @@ class GaussianCluster {
    * @param continuousSamples continuous tuples
    * @return pair of vector and corresponding maximum acquistion
    */
-  [[nodiscard]] VectorAcquisition sampleAcquisitionMax(
-      AcquisitionFunctionOption af, const std::function<std::vector<VectorDiscrete>(VectorDiscrete)> &neighbourFun,
-      const std::vector<VectorContinuous> &continuousSamples) const {
+  [[nodiscard]] GaussianModelTypes::VectorAcquisition sampleAcquisitionMax(
+      AcquisitionFunctionOption af, const GaussianModelTypes::NeighbourFunction &neighbourFun,
+      const std::vector<GaussianModelTypes::VectorContinuous> &continuousSamples) const {
     // generate all combinations and acquisitions
     auto acquisitions = sampleAcquisition(af, neighbourFun, continuousSamples);
 
     // return maximum
-    return *std::max_element(acquisitions.begin(), acquisitions.end(),
-                             [](const VectorAcquisition &va1, const VectorAcquisition &va2) {
-                               auto acquisition1 = va1.second;
-                               auto acquisition2 = va2.second;
-                               return acquisition1 < acquisition2;
-                             });
+    return *std::max_element(
+        acquisitions.begin(), acquisitions.end(),
+        [](const GaussianModelTypes::VectorAcquisition &va1, const GaussianModelTypes::VectorAcquisition &va2) {
+          auto acquisition1 = va1.second;
+          auto acquisition2 = va2.second;
+          return acquisition1 < acquisition2;
+        });
   }
 
   /**
@@ -333,21 +318,22 @@ class GaussianCluster {
    * @param continuousSamples continuous tuples
    * @return all discrete-continuous tuples ordered by their corresponding acquisition
    */
-  [[nodiscard]] std::vector<VectorPairDiscreteContinuous> sampleOrderedByAcquisition(
-      AcquisitionFunctionOption af, const std::function<std::vector<VectorDiscrete>(VectorDiscrete)> &neighbourFun,
-      const std::vector<VectorContinuous> &continuousSamples) const {
+  [[nodiscard]] std::vector<GaussianModelTypes::VectorPairDiscreteContinuous> sampleOrderedByAcquisition(
+      AcquisitionFunctionOption af, const GaussianModelTypes::NeighbourFunction &neighbourFun,
+      const std::vector<GaussianModelTypes::VectorContinuous> &continuousSamples) const {
     // generate all combinations and acquisitions
     auto acquisitions = sampleAcquisition(af, neighbourFun, continuousSamples);
 
     // order by acquisition
-    std::sort(acquisitions.begin(), acquisitions.end(), [](const VectorAcquisition &va1, const VectorAcquisition &va2) {
-      auto acquisition1 = va1.second;
-      auto acquisition2 = va2.second;
-      return acquisition1 < acquisition2;
-    });
+    std::sort(acquisitions.begin(), acquisitions.end(),
+              [](const GaussianModelTypes::VectorAcquisition &va1, const GaussianModelTypes::VectorAcquisition &va2) {
+                auto acquisition1 = va1.second;
+                auto acquisition2 = va2.second;
+                return acquisition1 < acquisition2;
+              });
 
     // project to vectors, removing acquisitions
-    std::vector<VectorPairDiscreteContinuous> orderedVectors;
+    std::vector<GaussianModelTypes::VectorPairDiscreteContinuous> orderedVectors;
     orderedVectors.reserve(acquisitions.size());
     for (const auto &[vec, acq] : acquisitions) {
       orderedVectors.push_back(vec);
@@ -375,7 +361,7 @@ class GaussianCluster {
     _clusters.reserve(numClusters);
     _discreteVectorMap.reserve(numClusters);
 
-    VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
+    GaussianModelTypes::VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
     for (size_t i = 0; i < numClusters; ++i, discreteIncrement(currentDiscrete)) {
       _clusters.emplace_back(_continuousDims, _sigma, _rng);
       _discreteVectorMap.emplace_back(currentDiscrete);
@@ -387,7 +373,7 @@ class GaussianCluster {
    * @param x the discrete tuple
    * @return
    */
-  [[nodiscard]] size_t getIndex(const VectorDiscrete &x) const {
+  [[nodiscard]] size_t getIndex(const GaussianModelTypes::VectorDiscrete &x) const {
     if (static_cast<size_t>(x.size()) != _dimRestriction.size()) {
       utils::ExceptionHandler::exception(
           "GaussianCluster: size of discrete input {} does not match specified dimensions {}", x.size(),
@@ -415,7 +401,7 @@ class GaussianCluster {
    * If this entry overflows also the next entry is incremented and so on.
    * @param x discrete tuple
    */
-  void discreteIncrement(VectorDiscrete &x) const {
+  void discreteIncrement(GaussianModelTypes::VectorDiscrete &x) const {
     for (Eigen::Index i = 0; i < x.size(); ++i) {
       if (++x[i] < _dimRestriction[i]) {
         break;
@@ -430,7 +416,7 @@ class GaussianCluster {
    * @return Vectors means, vars, stddevs containing corresponding values for each cluster
    */
   [[nodiscard]] std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> precalculateDistributions(
-      const VectorContinuous &continuousTuple) const {
+      const GaussianModelTypes::VectorContinuous &continuousTuple) const {
     std::vector<double> means;
     std::vector<double> vars;
     std::vector<double> stddevs;
@@ -453,8 +439,9 @@ class GaussianCluster {
    * @param neighbourFun function which generates neighbours of given discrete tuple
    * @return
    */
-  [[nodiscard]] NeighboursWeights initNeighbourWeights(const NeighbourFunction &neighbourFun) const {
-    NeighboursWeights result;
+  [[nodiscard]] GaussianModelTypes::NeighboursWeights initNeighbourWeights(
+      const GaussianModelTypes::NeighbourFunction &neighbourFun) const {
+    GaussianModelTypes::NeighboursWeights result;
     result.reserve(_clusters.size());
 
     // for each cluster create a neighbour list
@@ -516,10 +503,10 @@ class GaussianCluster {
    * @param stddev standard deviation for each cluster
    * @return
    */
-  void updateNeighbourWeights(NeighboursWeights &neighbourWeights, const std::vector<double> &means,
+  void updateNeighbourWeights(GaussianModelTypes::NeighboursWeights &neighbourWeights, const std::vector<double> &means,
                               const std::vector<double> &vars, const std::vector<double> &stddevs) const {
     // for each cluster update neighbour-weight list
-    VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
+    GaussianModelTypes::VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
     for (size_t i = 0; i < _clusters.size(); ++i) {
       // for each neighbour update weight
       for (auto &[n, weight] : neighbourWeights[i]) {
@@ -537,71 +524,11 @@ class GaussianCluster {
   }
 
   /**
-   * Create and initialize streams for nodes and edges.
-   * @return
-   */
-  [[nodiscard]] GraphStream logGraphInit() const {
-    std::stringstream nodeStream;
-    nodeStream << "GaussianCluster Graph: Nodes" << std::endl;
-    nodeStream << "Label,prediction,numEvidence" << std::endl;
-
-    std::stringstream edgeStream;
-    edgeStream << "GaussianCluster Graph: Edges" << std::endl;
-    edgeStream << "Source,Target,Weight" << std::endl;
-
-    return std::make_pair(std::move(nodeStream), std::move(edgeStream));
-  }
-
-  /**
-   * Add nodes and edges for given continous sample.
-   * @param graphStream stream generated by logGraphInit()
-   * @param currentContinous continuous sample
-   * @param means predicted mean for each cluster
-   * @param vars predicted variance for each cluster
-   * @param neighbourWeights neighbours for each cluster
-   */
-  void logGraphAdd(GraphStream &graphStream, const VectorContinuous &currentContinous, std::vector<double> means,
-                   std::vector<double> vars, const NeighboursWeights &neighbourWeights) const {
-    auto &[nodeStream, edgeStream] = graphStream;
-
-    // log nodes
-    for (size_t i = 0; i < _clusters.size(); ++i) {
-      std::string label = _vecToStringFun(std::make_pair(_discreteVectorMap[i], currentContinous));
-      double prediction = means[i];
-      size_t numEvidence = _clusters[i].numEvidence();
-      nodeStream << "\"" << label << "\"," << prediction << "," << numEvidence << std::endl;
-    }
-
-    // log edges
-    for (size_t i = 0; i < _clusters.size(); ++i) {
-      for (const auto &[n, weight] : neighbourWeights[i]) {
-        if (weight > 0) {
-          std::string source = _vecToStringFun(std::make_pair(_discreteVectorMap[i], currentContinous));
-          std::string target = _vecToStringFun(std::make_pair(_discreteVectorMap[n], currentContinous));
-          edgeStream << "\"" << source << "\",\"" << target << "\"," << weight << std::endl;
-        }
-      }
-    }
-  }
-
-  /**
-   * Output graph stream in AutoPasLog debug.
-   * @param graphStream stream generated by logGraphInit()
-   */
-  void logGraphEnd(GraphStream &graphStream) const {
-    const auto &[nodeStream, edgeStream] = graphStream;
-
-    AutoPasLog(debug, nodeStream.str());
-    AutoPasLog(debug, edgeStream.str());
-    AutoPasLog(debug, "GaussianCluster Graph: End");
-  }
-
-  /**
    * Default function used to convert vectors to readable strings.
    * @param vec
    * @return string with format (a,b,...,n) beginning with discrete values.
    */
-  static std::string defaultVecToString(const VectorPairDiscreteContinuous &vec) {
+  static std::string defaultVecToString(const GaussianModelTypes::VectorPairDiscreteContinuous &vec) {
     std::stringstream result;
     const auto &[discreteVec, continuousVec] = vec;
 
@@ -636,7 +563,7 @@ class GaussianCluster {
   /**
    * Vector to easiliy map from index to DiscreteVector
    */
-  std::vector<VectorDiscrete> _discreteVectorMap;
+  std::vector<GaussianModelTypes::VectorDiscrete> _discreteVectorMap;
 
   /**
    * Function used to calculate the weight between two clusters.
@@ -654,7 +581,7 @@ class GaussianCluster {
   /**
    * Current greatest evidence input
    */
-  VectorPairDiscreteContinuous _evidenceMaxVector;
+  GaussianModelTypes::VectorPairDiscreteContinuous _evidenceMaxVector;
   /**
    * Current number of evidence.
    */
@@ -670,6 +597,6 @@ class GaussianCluster {
   /**
    * Function to convert vectors to strings.
    */
-  VectorToStringFun _vecToStringFun;
+  GaussianModelTypes::VectorToStringFun _vecToStringFun;
 };
 }  // namespace autopas
