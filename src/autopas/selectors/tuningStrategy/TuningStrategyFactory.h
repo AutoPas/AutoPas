@@ -24,6 +24,8 @@ namespace autopas::TuningStrategyFactory {
  * @param maxEvidence
  * @param relativeOptimum
  * @param maxTuningPhasesWithoutTest
+ * @param relativeRangeForBlacklist
+ * @param useBlacklist
  * @param evidenceFirstPrediction
  * @param acquisitionFunctionOption
  * @param extrapolationMethodOption
@@ -35,6 +37,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     const std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
-    unsigned int maxTuningPhasesWithoutTest, unsigned int evidenceFirstPrediction,
-    AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption);
+    unsigned int maxTuningPhasesWithoutTest, unsigned int relativeRangeForBlacklist, bool useBlacklist,
+    unsigned int evidenceFirstPrediction, AcquisitionFunctionOption acquisitionFunctionOption,
+    ExtrapolationMethodOption extrapolationMethodOption);
 }  // namespace autopas::TuningStrategyFactory

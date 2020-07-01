@@ -247,7 +247,9 @@ class MDFlexConfig {
    */
   MDFlexOption<autopas::ExtrapolationMethodOption, __LINE__> extrapolationMethodOption{
       autopas::ExtrapolationMethodOption::linePrediction, "extrapolation-method", true,
-      "For predictive based tuning strategies: The extrapolation method that calculates the prediction."};
+      "For predictive based tuning strategies: The extrapolation method that calculates the prediction. Possible "
+      "Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * vtkFileName
    */

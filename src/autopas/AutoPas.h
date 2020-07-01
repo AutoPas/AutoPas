@@ -108,8 +108,8 @@ class AutoPas {
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
-            _maxTuningPhasesWithoutTest, _evidenceFirstPrediction, _acquisitionFunctionOption,
-            _extrapolationMethodOption)),
+            _maxTuningPhasesWithoutTest, _relativeRangeForBlacklist, _useBlacklist, _evidenceFirstPrediction,
+            _acquisitionFunctionOption, _extrapolationMethodOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
         std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
@@ -449,6 +449,32 @@ class AutoPas {
   }
 
   /**
+   * Get the range of the configurations that are not going to be blacklisted.
+   * @return
+   */
+  [[nodiscard]] unsigned int getRelativeRangeForBlacklist() const { return _relativeRangeForBlacklist; }
+
+  /**
+   * Set the range of the configurations that are not going to be blacklisted.
+   * @param relativeRangeForBlacklist
+   */
+  void setRelativeRangeForBlacklist(bool relativeRangeForBlacklist) {
+    AutoPas::_relativeRangeForBlacklist = relativeRangeForBlacklist;
+  }
+
+  /**
+   * Get variable that indicates if the blacklist should be used.
+   * @return
+   */
+  [[nodiscard]] bool getUseBlacklist() const { return _useBlacklist; }
+
+  /**
+   * Set variable that indicates if the blacklist should be used.
+   * @param useBlacklist
+   */
+  void setUseBlacklist(bool useBlacklist) { AutoPas::_useBlacklist = useBlacklist; }
+
+  /**
    * Get the number of tests that need to have happened for a configuration until the first predictions are going to be
    * calculated.
    * @return
@@ -646,6 +672,14 @@ class AutoPas {
    * Specifies how many tuning phases a configuration can not be tested in PredicitveTuning.
    */
   unsigned int _maxTuningPhasesWithoutTest{5};
+  /**
+   * Factor of the range of the configurations that are not going to be blacklisted.
+   */
+  unsigned int _relativeRangeForBlacklist{10};
+  /**
+   * Indicates if the blacklist should be used.
+   */
+  bool _useBlacklist{true};
   /**
    * Specifies how many tests that need to have happened for a configuration until the first prediction is calculated in
    * PredictiveTuning.

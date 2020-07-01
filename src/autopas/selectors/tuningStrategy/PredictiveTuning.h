@@ -46,13 +46,16 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
                    const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                    const std::set<Newton3Option> &allowedNewton3Options, double relativeOptimum,
-                   unsigned int maxTuningIterationsWithoutTest, unsigned int testsUntilFirstPrediction,
+                   unsigned int maxTuningIterationsWithoutTest, unsigned int relativeRangeForBlacklist,
+                   bool useBlacklist, unsigned int testsUntilFirstPrediction,
                    ExtrapolationMethodOption extrapolationMethodOption)
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                           allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options),
         _currentConfig(_searchSpace.begin()),
         _relativeOptimumRange(relativeOptimum),
         _maxTuningIterationsWithoutTest(maxTuningIterationsWithoutTest),
+        _relativeRangeForBlacklist(relativeRangeForBlacklist),
+        _useBlacklist(useBlacklist),
         _extrapolationMethod(extrapolationMethodOption) {
     setTestsUntilFirstPrediction(testsUntilFirstPrediction);
 
@@ -73,6 +76,8 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
         _currentConfig(_searchSpace.begin()),
         _relativeOptimumRange(1.2),
         _maxTuningIterationsWithoutTest(5),
+        _relativeRangeForBlacklist(10),
+        _useBlacklist(false),
         _extrapolationMethod(ExtrapolationMethodOption::linePrediction),
         _evidenceFirstPrediction(2) {}
 
@@ -138,6 +143,10 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    */
   inline void reselectOptimalSearchSpace();
   /**
+   * Selects configurations that go on the testing black list..
+   */
+  inline void selectBlackList();
+  /**
    * Creates output of the configuration and the prediction.
    */
   inline void predictionOutput(Configuration configuration);
@@ -176,6 +185,14 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    */
   std::set<Configuration> _validSearchSpace;
   /**
+   * Contains the configurations that should never be tested again.
+   */
+  std::set<Configuration> _blackListSearchSpace;
+  /**
+   * Contains the configurations that habe not been tested yet.
+   */
+  std::set<Configuration> _notTestedYet;
+  /**
    * Stores the the last tuning phase a configuration got tested.
    * @param Configuration
    * @param last tuning phase
@@ -205,6 +222,14 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * After not being tested this number of tuningPhases a configuration is being emplaced in _optimalSearchSpace.
    */
   const unsigned int _maxTuningIterationsWithoutTest;
+  /**
+   * Factor of the range of the configurations that are not going to be blacklisted.
+   */
+  const unsigned int _relativeRangeForBlacklist{10};
+  /**
+   * Indicates if the blacklist should be used.
+   */
+  const bool _useBlacklist;
   /**
    * Stores the extrapolation method that is going to be used for the traversal time predictions.
    */
@@ -615,7 +640,21 @@ void PredictiveTuning::selectOptimalConfiguration() {
         "PredicitveTuning: Optimal configuration not found in list of configurations!");
   }
 
+  if (_useBlacklist) selectBlackList();
+
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
+}
+
+void PredictiveTuning::selectBlackList() {
+  auto optimumTime = _traversalTimesStorage[getCurrentConfiguration()].back().second;
+
+  for (const auto &configuration : _notTestedYet) {
+    if (_lastTest[configuration] == _tuningIterationsCounter) {
+      if ((_traversalTimesStorage[configuration].back().second / optimumTime) > _relativeRangeForBlacklist) {
+        _blackListSearchSpace.emplace(configuration);
+      }
+    }
+  }
 }
 
 void PredictiveTuning::removeN3Option(Newton3Option badNewton3Option) {
