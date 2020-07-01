@@ -15,7 +15,13 @@
  */
 namespace autopas::GaussianModelTypes {
 
+/**
+ * Type of a discrete tuple
+ */
 using VectorDiscrete = Eigen::VectorXi;
+/**
+ * Type of a continuous tuple
+ */
 using VectorContinuous = Eigen::VectorXd;
 
 /**

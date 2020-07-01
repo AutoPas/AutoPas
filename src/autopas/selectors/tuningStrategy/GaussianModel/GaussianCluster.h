@@ -180,7 +180,7 @@ class GaussianCluster {
 
   /**
    * Provide a input-output pair as evidence.
-   * Each evidence improve the quality of future predictions.
+   * Each evidence improves the quality of future predictions.
    * @param input (x,y)
    * @param output f((x,y))
    */
@@ -202,7 +202,7 @@ class GaussianCluster {
 
   /**
    * Generate all possible combinations of discrete tuples and continuous tuples in samples
-   * and calculate their corresponding aquisition.
+   * and calculate their corresponding acquisition.
    * @param af function to optimize
    * @param neighbourFun function which generates neighbours of given discrete tuple
    * @param continuousSamples continuous tuples
@@ -343,6 +343,9 @@ class GaussianCluster {
   }
 
  private:
+  /**
+   * Create a GaussianProcess for each cluster and precalculate DiscreteVector for each cluster index.
+   */
   void initClusters() {
     size_t numClusters = 1;
     for (auto restriction : _dimRestriction) {
@@ -369,7 +372,7 @@ class GaussianCluster {
   }
 
   /**
-   * Get the cluster index of a discrete tuple
+   * Get the cluster index of a discrete tuple.
    * @param x the discrete tuple
    * @return
    */
@@ -411,7 +414,7 @@ class GaussianCluster {
   }
 
   /**
-   * Calculate mean, variance and stddev for all clusters for given continous tuple
+   * Calculate mean, variance and stddev for all clusters for given continous tuple.
    * @param continuousTuple
    * @return Vectors means, vars, stddevs containing corresponding values for each cluster
    */
@@ -435,7 +438,7 @@ class GaussianCluster {
   }
 
   /**
-   * Initalize the neighbour-weight list for each cluster
+   * Initalize the neighbour-weight list for each cluster.
    * @param neighbourFun function which generates neighbours of given discrete tuple
    * @return
    */
