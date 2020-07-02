@@ -42,6 +42,8 @@ std::string MDFlexConfig::to_string() const {
     os << setw(valueOffset) << left << relativeOptimumRange.name << ":  " << relativeOptimumRange.value << endl;
     os << setw(valueOffset) << left << maxTuningPhasesWithoutTest.name << ":  " << maxTuningPhasesWithoutTest.value
        << endl;
+    os << setw(valueOffset) << left << relativeRangeForBlacklist.name << ":  " << relativeRangeForBlacklist.value
+       << endl;
     os << setw(valueOffset) << left << evidenceFirstPrediction.name << ":  " << evidenceFirstPrediction.value << endl;
     os << setw(valueOffset) << left << extrapolationMethodOption.name << ":  " << extrapolationMethodOption.value
        << endl;

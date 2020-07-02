@@ -231,9 +231,17 @@ class MDFlexConfig {
    * maxTuningPhasesWithoutTest
    */
   MDFlexOption<unsigned int, __LINE__> maxTuningPhasesWithoutTest{
-      5, "max-tuning-phases-without-test", true,
+      10, "max-tuning-phases-without-test", true,
       "For predictive based tuning strategies: Maximal number of "
       "tuning phases a configurations can be excluded from testing."};
+  /**
+   * relativeRangeforBlacklist
+   */
+  MDFlexOption<unsigned int, __LINE__> relativeRangeForBlacklist{
+      0, "relative-range-for-blacklist", true,
+      "For predictive based tuning strategies: Relative range to the optimum in which the first evidence of a "
+      "configuration needs to be ot not get put on the blacklist. If the blacklist should not be used give 0 as an "
+      "argument"};
   /**
    * evidenceFirstPrediction
    */
@@ -246,7 +254,7 @@ class MDFlexConfig {
    * extrapolationMethodOption
    */
   MDFlexOption<autopas::ExtrapolationMethodOption, __LINE__> extrapolationMethodOption{
-      autopas::ExtrapolationMethodOption::linePrediction, "extrapolation-method", true,
+      autopas::ExtrapolationMethodOption::linearRegression, "extrapolation-method", true,
       "For predictive based tuning strategies: The extrapolation method that calculates the prediction. Possible "
       "Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), " ", {"(", ")"})};

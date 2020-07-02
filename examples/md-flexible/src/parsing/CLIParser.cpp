@@ -35,10 +35,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.evidenceFirstPrediction, config.functorOption, config.dontMeasureFlops, config.generatorOption,
       config.iterations, config.tuningInterval, config.logLevel, config.logFileName, config.distributionMean,
       config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal, config.relativeOptimumRange,
-      config.periodic, config.tuningPhases, config.verletClusterSize, config.verletSkinRadius, config.particleSpacing,
-      config.tuningSamples, config.traversalOptions, config.tuningStrategyOption, config.useThermostat,
-      config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy,
-      config.yamlFilename, config.distributionStdDev, zshCompletionsOption, helpOption)};
+      config.relativeRangeForBlacklist, config.periodic, config.tuningPhases, config.verletClusterSize,
+      config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
+      config.tuningStrategyOption, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
+      config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
+      zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -358,6 +359,19 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           }
         } catch (const exception &) {
           cerr << "Error parsing relative optimum range: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.relativeRangeForBlacklist)::getoptChar: {
+        try {
+          config.relativeRangeForBlacklist.value = (unsigned int)stoul(strArg);
+          if (config.relativeRangeForBlacklist.value < 1 && config.relativeRangeForBlacklist.value != 0) {
+            cerr << "Relative range for blacklist range has to be greater or equal one or has to be zero!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing relative range for blacklist: " << optarg << endl;
           displayHelp = true;
         }
         break;

@@ -100,6 +100,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.maxTuningPhasesWithoutTest.name]) {
     config.maxTuningPhasesWithoutTest.value = node[config.maxTuningPhasesWithoutTest.name].as<unsigned int>();
   }
+  if (node[config.relativeRangeForBlacklist.name]) {
+    config.relativeRangeForBlacklist.value = node[config.relativeRangeForBlacklist.name].as<unsigned int>();
+  }
   if (node[config.evidenceFirstPrediction.name]) {
     config.evidenceFirstPrediction.value = node[config.evidenceFirstPrediction.name].as<unsigned int>();
   }
