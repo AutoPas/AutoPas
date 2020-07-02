@@ -37,6 +37,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * @param allowedCellSizeFactors
    * @param relativeOptimum
    * @param maxTuningIterationsWithoutTest
+   * @param relativeRangeForBlacklist
    * @param testsUntilFirstPrediction
    * @param extrapolationMethodOption
    */
@@ -47,15 +48,13 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                    const std::set<Newton3Option> &allowedNewton3Options, double relativeOptimum,
                    unsigned int maxTuningIterationsWithoutTest, unsigned int relativeRangeForBlacklist,
-                   bool useBlacklist, unsigned int testsUntilFirstPrediction,
-                   ExtrapolationMethodOption extrapolationMethodOption)
+                   unsigned int testsUntilFirstPrediction, ExtrapolationMethodOption extrapolationMethodOption)
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                           allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options),
         _currentConfig(_searchSpace.begin()),
         _relativeOptimumRange(relativeOptimum),
         _maxTuningIterationsWithoutTest(maxTuningIterationsWithoutTest),
         _relativeRangeForBlacklist(relativeRangeForBlacklist),
-        _useBlacklist(useBlacklist),
         _extrapolationMethod(extrapolationMethodOption) {
     setTestsUntilFirstPrediction(testsUntilFirstPrediction);
 
@@ -77,7 +76,6 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
         _relativeOptimumRange(1.2),
         _maxTuningIterationsWithoutTest(5),
         _relativeRangeForBlacklist(10),
-        _useBlacklist(false),
         _extrapolationMethod(ExtrapolationMethodOption::linePrediction),
         _evidenceFirstPrediction(2) {}
 
@@ -187,9 +185,9 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   /**
    * Contains the configurations that should never be tested again.
    */
-  std::set<Configuration> _blackListSearchSpace;
+  std::set<Configuration> _blacklistSearchSpace;
   /**
-   * Contains the configurations that habe not been tested yet.
+   * Contains the configurations that have not been tested yet.
    */
   std::set<Configuration> _notTestedYet;
   /**
@@ -227,10 +225,6 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    */
   const unsigned int _relativeRangeForBlacklist{10};
   /**
-   * Indicates if the blacklist should be used.
-   */
-  const bool _useBlacklist;
-  /**
    * Stores the extrapolation method that is going to be used for the traversal time predictions.
    */
   const ExtrapolationMethodOption _extrapolationMethod;
@@ -256,7 +250,13 @@ void PredictiveTuning::setTestsUntilFirstPrediction(unsigned int testsUntilFirst
 
 void PredictiveTuning::selectOptimalSearchSpace() {
   if (_searchSpace.size() == 1 or _tuningIterationsCounter < _evidenceFirstPrediction + 1) {
-    _currentConfig = _searchSpace.begin();
+    if (_relativeRangeForBlacklist != 0 && _iterationBeginTuningPhase != 1) {
+      for (const auto &configuration : _searchSpace) {
+        if (_blacklistSearchSpace.count(configuration) == 0) _optimalSearchSpace.emplace(configuration);
+      }
+    } else {
+      _currentConfig = _searchSpace.begin();
+    }
     return;
   }
 
@@ -271,10 +271,12 @@ void PredictiveTuning::selectOptimalSearchSpace() {
   for (const auto &configuration : _searchSpace) {
     // Adds configurations that have not been tested for _maxTuningIterationsWithoutTest or are within the
     // _relativeOptimumRange
-    if ((float)_configurationPredictions[configuration] / optimum->second <= _relativeOptimumRange) {
-      _optimalSearchSpace.emplace(configuration);
-    } else if (_tuningIterationsCounter - _lastTest[configuration] > _maxTuningIterationsWithoutTest) {
-      _tooLongNotTestedSearchSpace.emplace(configuration);
+    if (_blacklistSearchSpace.count(configuration) == 0) {
+      if ((float)_configurationPredictions[configuration] / optimum->second <= _relativeOptimumRange) {
+        _optimalSearchSpace.emplace(configuration);
+      } else if (_tuningIterationsCounter - _lastTest[configuration] > _maxTuningIterationsWithoutTest) {
+        _tooLongNotTestedSearchSpace.emplace(configuration);
+      }
     }
   }
 
@@ -640,7 +642,7 @@ void PredictiveTuning::selectOptimalConfiguration() {
         "PredicitveTuning: Optimal configuration not found in list of configurations!");
   }
 
-  if (_useBlacklist) selectBlackList();
+  if (_relativeRangeForBlacklist != 0) selectBlackList();
 
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
 }
@@ -651,7 +653,8 @@ void PredictiveTuning::selectBlackList() {
   for (const auto &configuration : _notTestedYet) {
     if (_lastTest[configuration] == _tuningIterationsCounter) {
       if ((_traversalTimesStorage[configuration].back().second / optimumTime) > _relativeRangeForBlacklist) {
-        _blackListSearchSpace.emplace(configuration);
+        _blacklistSearchSpace.emplace(configuration);
+        _notTestedYet.erase(configuration);
       }
     }
   }
