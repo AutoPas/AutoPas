@@ -32,7 +32,7 @@ class VerletClustersStaticTraversal : public TraversalInterface, public VerletCl
   explicit VerletClustersStaticTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
       : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor, clusterSize) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::verletClustersStatic; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c01_balanced; }
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 

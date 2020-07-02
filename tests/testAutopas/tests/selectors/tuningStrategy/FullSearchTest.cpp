@@ -19,31 +19,31 @@ TEST_F(FullSearchTest, testSearchSpaceEmpty) {
 TEST_F(FullSearchTest, testTune) {
   autopas::FullSearch fullSearch(
       {autopas::ContainerOption::linkedCells}, {1.},
-      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
 
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                                    autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(10, 0);
 
   fullSearch.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                                    autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(1, 0);
 
   fullSearch.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c01,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                                    autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(20, 0);
 
   fullSearch.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::sliced,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                                    autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());

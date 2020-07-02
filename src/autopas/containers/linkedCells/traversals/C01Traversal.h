@@ -128,7 +128,7 @@ class C01Traversal
   }
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
-    return (combineSoA) ? TraversalOption::c01CombinedSoA : TraversalOption::c01;
+    return (combineSoA) ? TraversalOption::lc_c01_combined_SoA : TraversalOption::lc_c01;
   }
 
  private:

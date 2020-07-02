@@ -34,7 +34,7 @@ class VerletClustersTraversal : public TraversalInterface,
   explicit VerletClustersTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
       : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor, clusterSize) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::verletClusters; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_cluster_iteration; }
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 

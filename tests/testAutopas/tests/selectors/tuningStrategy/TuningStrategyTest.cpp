@@ -27,7 +27,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceOneOption) {
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
       tuningStrategy, {autopas::ContainerOption::directSum}, oneInterval,
-      {autopas::TraversalOption::directSumTraversal}, {autopas::LoadEstimatorOption::none},
+      {autopas::TraversalOption::ds_sequential}, {autopas::LoadEstimatorOption::none},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::enabled}, 42, 1.2, 5, 3,
       autopas::AcquisitionFunctionOption::expectedImprovement, autopas::ExtrapolationMethodOption::linePrediction);
 
@@ -40,7 +40,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceMoreOptions) {
   auto tuningStrategy = GetParam();
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
-      tuningStrategy, {autopas::ContainerOption::linkedCells}, oneInterval, {autopas::TraversalOption::c08},
+      tuningStrategy, {autopas::ContainerOption::linkedCells}, oneInterval, {autopas::TraversalOption::lc_c08},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa},
       {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, 1, 1.2, 5, 3,
       autopas::AcquisitionFunctionOption::expectedImprovement, autopas::ExtrapolationMethodOption::linePrediction);
@@ -59,7 +59,7 @@ TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveAll) {
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
       tuningStrategy, {autopas::ContainerOption::linkedCells}, oneInterval,
-      {autopas::TraversalOption::c08, autopas::TraversalOption::sliced}, {autopas::LoadEstimatorOption::none},
+      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced}, {autopas::LoadEstimatorOption::none},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos}, {autopas::Newton3Option::enabled}, 1, 1.2, 5, 3,
       autopas::AcquisitionFunctionOption::expectedImprovement, autopas::ExtrapolationMethodOption::linePrediction);
 
@@ -76,7 +76,7 @@ TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveSome) {
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
       tuningStrategy, {autopas::ContainerOption::linkedCells}, oneInterval,
-      {autopas::TraversalOption::c08, autopas::TraversalOption::sliced}, {autopas::LoadEstimatorOption::none},
+      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced}, {autopas::LoadEstimatorOption::none},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
       {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, 1, 1.2, 5, 3,
       autopas::AcquisitionFunctionOption::expectedImprovement, autopas::ExtrapolationMethodOption::linePrediction);

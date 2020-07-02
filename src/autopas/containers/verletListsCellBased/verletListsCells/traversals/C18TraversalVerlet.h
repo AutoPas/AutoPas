@@ -13,7 +13,7 @@
 namespace autopas {
 
 /**
- * This class provides the c18 traversal.
+ * This class provides the lc_c18 traversal.
  *
  * The traversal uses the c18 base step performed on every single cell. Since
  * these steps overlap a domain coloring with eighteen colors is applied.
@@ -28,7 +28,7 @@ class C18TraversalVerlet : public C18BasedTraversal<ParticleCell, PairwiseFuncto
                            public VerletListsCellsTraversal<typename ParticleCell::ParticleType> {
  public:
   /**
-   * Constructor of the c18 traversal.
+   * Constructor of the lc_c18 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param interactionLength cutoff + skin
@@ -43,7 +43,7 @@ class C18TraversalVerlet : public C18BasedTraversal<ParticleCell, PairwiseFuncto
 
   void traverseParticlePairs() override;
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c18Verlet; };
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlc_c18; };
 
   [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 

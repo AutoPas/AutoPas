@@ -12,8 +12,8 @@
 #include "testingHelpers/NumThreadGuard.h"
 
 VerletListsCellsTraversalTest::VerletListsCellsTraversalTest()
-    : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff()),
-      _verletListsCells_cs2(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::c18, 0.1 * getCutoff(),
+    : _verletListsCells(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::lc_c18, 0.1 * getCutoff()),
+      _verletListsCells_cs2(getBoxMin(), getBoxMax(), getCutoff(), autopas::TraversalOption::lc_c18, 0.1 * getCutoff(),
                             2.0) {}
 
 std::vector<unsigned long> getKernelCallsAllTraversals(autopas::VerletListsCells<Molecule> &verletListsCells,

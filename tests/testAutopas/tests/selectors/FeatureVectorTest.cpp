@@ -52,13 +52,13 @@ TEST_F(FeatureVectorTest, lhsSampleContinuous) {
 }
 
 TEST_F(FeatureVectorTest, distanceTest) {
-  autopas::FeatureVector f1(ContainerOption::linkedCells, 1., TraversalOption::c01, LoadEstimatorOption::none,
+  autopas::FeatureVector f1(ContainerOption::linkedCells, 1., TraversalOption::lc_c01, LoadEstimatorOption::none,
                             DataLayoutOption::aos, Newton3Option::enabled);
-  autopas::FeatureVector f2(ContainerOption::linkedCells, 1., TraversalOption::c08, LoadEstimatorOption::none,
+  autopas::FeatureVector f2(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
                             DataLayoutOption::aos, Newton3Option::enabled);
-  autopas::FeatureVector f3(ContainerOption::linkedCells, 1., TraversalOption::c08, LoadEstimatorOption::none,
+  autopas::FeatureVector f3(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
                             DataLayoutOption::soa, Newton3Option::enabled);
-  autopas::FeatureVector f4(ContainerOption::linkedCells, 1., TraversalOption::c08, LoadEstimatorOption::none,
+  autopas::FeatureVector f4(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
                             DataLayoutOption::soa, Newton3Option::disabled);
 
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f1 - f1).squaredNorm(), 0);

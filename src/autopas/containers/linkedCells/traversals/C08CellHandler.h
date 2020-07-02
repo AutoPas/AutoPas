@@ -29,7 +29,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 class C08CellHandler {
  public:
   /**
-   * Constructor of the c08 traversal.
+   * Constructor of the C08CellHandler.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cellsPerDimension The number of cells per dimension.
    * @param interactionLength Interaction length (cutoff + skin).

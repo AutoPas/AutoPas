@@ -14,7 +14,7 @@
 namespace autopas {
 
 /**
- * This class provides the c08 traversal.
+ * This class provides the lc_c08 traversal.
  *
  * The traversal uses the c08 base step performed on every single cell.
  * \image html C08.png "C08 base step in 2D. (dark blue cell = base cell)"
@@ -31,7 +31,7 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
                      public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
-   * Constructor of the c08 traversal.
+   * Constructor of the lc_c08 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
@@ -46,7 +46,7 @@ class C08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
 
   void traverseParticlePairs() override;
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c08; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08; }
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 

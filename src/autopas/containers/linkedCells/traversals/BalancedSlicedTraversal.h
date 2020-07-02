@@ -58,7 +58,7 @@ class BalancedSlicedTraversal
 
   bool getUseNewton3() const override { return useNewton3; }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::BalancedSliced; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_balanced; }
 
  private:
   C08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;

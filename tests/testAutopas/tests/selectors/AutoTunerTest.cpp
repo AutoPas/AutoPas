@@ -39,15 +39,15 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // number of configs manually counted:
   //
   // Direct Sum:            directSum traversal         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  // LinkedCells:           c08 traversal               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        sliced                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  // LinkedCells:           lc_c08 traversal               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        lc_sliced                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        balanced-sliced             (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
-  //                        c18                         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        c01                         (AoS <=> SoA, noNewton3)                             = 2
+  //                        lc_c18                         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        lc_c01                         (AoS <=> SoA, noNewton3)                             = 2
   //                        c01-combined-SoA            (SoA, noNewton3)                                     = 1
-  //                        c04                         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        c04SoA                      (SoA, newton3 <=> noNewton3)                         = 2
-  //                        c04HCP                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        lc_c04                         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        lc_c04_combined_SoA                      (SoA, newton3 <=> noNewton3)                         = 2
+  //                        lc_c04_HCP                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   // VerletLists:           verlet-lists                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   // VerletListsCells:      verlet-sliced               (AoS, newton3 <=> noNewton3)                         = 2
   //                        balanced-verlet-sliced      (AoS, newton3 <=> noNewton3, 3 heuristics)           = 6
@@ -62,7 +62,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                                                                                                          66
   // Additional with cuda
   // Direct Sum:            directSum traversal         (Cuda, newton3 <=> noNewton3)                        = 2
-  // LinkedCells:           c01Cuda traversal           (Cuda, newton3 <=> noNewton3)                        = 2
+  // LinkedCells:           lc_c01_cuda traversal           (Cuda, newton3 <=> noNewton3)                        = 2
   // VerletClusterCells:    verlet-cluster-cells traversal (Cuda, newton3 <=> noNewton3)                     = 2
   //                                                                                                    --------
   //                                                                                                          72
@@ -116,11 +116,11 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
 
   double cellSizeFactor = 1.;
   std::set<autopas::Configuration> configs;
-  configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::directSumTraversal,
+  configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-  configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::directSumTraversal,
+  configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
-  configs.emplace(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
+  configs.emplace(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
@@ -168,11 +168,11 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
 
   double cellSizeFactor = 1.;
   std::set<autopas::Configuration> configs;
-  configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::directSumTraversal,
+  configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
-  configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::directSumTraversal,
+  configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-  configs.emplace(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
+  configs.emplace(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
@@ -210,9 +210,9 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
 
   double cellSizeFactor = 1.;
   std::set<autopas::Configuration> configs;
-  configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::directSumTraversal,
+  configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-  configs.emplace(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
+  configs.emplace(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
@@ -279,7 +279,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
  * Generates exactly one valid configuration.
  */
 TEST_F(AutoTunerTest, testOneConfig) {
-  autopas::Configuration conf(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
+  autopas::Configuration conf(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                               autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                               autopas::Newton3Option::enabled);
 
@@ -314,10 +314,10 @@ TEST_F(AutoTunerTest, testOneConfig) {
  */
 TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   double cellSizeFactor = 1.;
-  autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
+  autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                                 autopas::Newton3Option::enabled);
-  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
+  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                                   autopas::Newton3Option::disabled);
 
@@ -348,10 +348,10 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
  */
 TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   double cellSizeFactor = 1.;
-  autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
+  autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                                 autopas::Newton3Option::enabled);
-  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::c08,
+  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                                   autopas::Newton3Option::enabled);
 

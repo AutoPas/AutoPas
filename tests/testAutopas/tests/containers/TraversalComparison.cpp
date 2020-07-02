@@ -124,7 +124,7 @@ void TraversalComparison::generateReference(mykey_t key) {
   auto [numParticles, numHaloParticles, boxMax, doSlightShift] = key;
   // Calculate reference forces
   auto [calculatedForces, calculatedGlobals] = calculateForces(
-      autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08, autopas::DataLayoutOption::aos,
+      autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
       autopas::Newton3Option::enabled, numParticles, numHaloParticles, boxMax, 1., doSlightShift);
   _forcesReference[key] = calculatedForces;
   _globalValuesReference[key] = calculatedGlobals;
@@ -208,7 +208,7 @@ auto TraversalComparison::getTestParams() {
                 for (auto numHalo : {0ul, 200ul}) {
                   for (bool slightMove : {true, false}) {
                     if (dataLayoutOption == autopas::DataLayoutOption::Value::cuda and
-                        traversalOption == autopas::TraversalOption::Value::c01Cuda and (boxMax[0] < 5.) and
+                        traversalOption == autopas::TraversalOption::Value::lc_c01_cuda and (boxMax[0] < 5.) and
                         (numParticles > 500)) {
                       // LJFunctor for cuda doesn't support this, yet: see https://github.com/AutoPas/AutoPas/issues/419
                       /// @todo reenable

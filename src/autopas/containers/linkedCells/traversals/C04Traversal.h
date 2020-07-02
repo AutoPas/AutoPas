@@ -50,7 +50,7 @@ class C04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dat
 
   void traverseParticlePairs() override;
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c04; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04; }
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 

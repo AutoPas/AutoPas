@@ -54,7 +54,7 @@ class SlicedTraversalVerlet : public SlicedBasedTraversal<ParticleCell, Pairwise
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::slicedVerlet; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlc_sliced; }
 
   [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 

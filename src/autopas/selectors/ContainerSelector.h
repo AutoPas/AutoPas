@@ -104,7 +104,7 @@ ContainerSelector<Particle, ParticleCell>::generateContainer(ContainerOption con
       break;
     }
     case ContainerOption::verletListsCells: {
-      container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::c08,
+      container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::lc_c08,
                                                                containerInfo.verletSkin, containerInfo.cellSizeFactor,
                                                                containerInfo.loadEstimator);
       break;

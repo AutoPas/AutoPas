@@ -21,13 +21,13 @@ class ContainerOption : public Option<ContainerOption> {
    * Possible choices for the particle container type.
    */
   enum Value {
-    directSum = 0,
-    linkedCells = 1,
-    verletLists = 2,
-    verletListsCells = 3,
-    verletClusterLists = 4,
-    varVerletListsAsBuild = 5,
-    verletClusterCells = 6,
+    directSum,
+    linkedCells,
+    verletLists,
+    verletListsCells,
+    verletClusterLists,
+    varVerletListsAsBuild,
+    verletClusterCells,
   };
 
   /**

@@ -83,7 +83,7 @@ class VarVerletTraversalAsBuild : public VarVerletTraversalInterface<VerletNeigh
     return dataLayout == DataLayoutOption::soa || dataLayout == DataLayoutOption::aos;
   }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::varVerletTraversalAsBuild; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vvl_as_built; }
 
  private:
   /**

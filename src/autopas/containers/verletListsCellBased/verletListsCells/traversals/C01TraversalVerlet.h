@@ -43,7 +43,7 @@ class C01TraversalVerlet : public C01BasedTraversal<ParticleCell, PairwiseFuncto
 
   void traverseParticlePairs() override;
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c01Verlet; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlc_c01; }
 
   [[nodiscard]] bool isApplicable() const override { return (not useNewton3) && (dataLayout == DataLayoutOption::aos); }
 

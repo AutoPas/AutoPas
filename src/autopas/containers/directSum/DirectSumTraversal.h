@@ -40,7 +40,7 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
         _dataLayoutConverter(pairwiseFunctor) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::directSumTraversal; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ds_sequential; }
 
   bool isApplicable() const override {
     int nDevices = 0;

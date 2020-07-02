@@ -110,10 +110,10 @@ static std::set<autopas::LoadEstimatorOption> allCompatibleLoadEstimators(autopa
  */
 static bool usesLoadEstimator(autopas::TraversalOption traversal) {
   switch (traversal) {
-    case TraversalOption::BalancedSliced: {
+    case TraversalOption::lc_sliced_balanced: {
       return true;
     }
-    case TraversalOption::BalancedSlicedVerlet: {
+    case TraversalOption::vlc_sliced_balanced: {
       return true;
     }
     default: {

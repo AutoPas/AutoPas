@@ -59,7 +59,7 @@ class C01CudaTraversal : public CellPairTraversal<ParticleCell>, public LinkedCe
 
   void endTraversal() override {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c01Cuda; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c01_cuda; }
 
   /**
    * Cuda traversal is only usable if using a GPU.

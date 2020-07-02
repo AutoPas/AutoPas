@@ -51,12 +51,13 @@ INSTANTIATE_TEST_SUITE_P(
                 auto container = containerSelector.getCurrentContainer();
 
                 for (auto traversalOption : container->getAllTraversals()) {
-                  if (traversalOption == autopas::TraversalOption::c01 ||
+                  if (traversalOption == autopas::TraversalOption::lc_c01 ||
                       traversalOption ==
-                          autopas::TraversalOption::c01CombinedSoA /*and autopas::autopas_get_max_threads() > 1*/) {
+                          autopas::TraversalOption::
+                                             lc_c01_combined_SoA /*and autopas::autopas_get_max_threads() > 1*/) {
                     continue;
                   }
-                  if (traversalOption == autopas::TraversalOption::c01Cuda) {
+                  if (traversalOption == autopas::TraversalOption::lc_c01_cuda) {
                     // Traversal provides no AoS and SoA Traversal
                     continue;
                   }
@@ -76,7 +77,7 @@ INSTANTIATE_TEST_SUITE_P(
 void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
-  if (traversalOption == autopas::TraversalOption::c04SoA and not(dataLayout == autopas::DataLayoutOption::soa)) {
+  if (traversalOption == autopas::TraversalOption::lc_c04_combined_SoA and not(dataLayout == autopas::DataLayoutOption::soa)) {
     return;
   }
 

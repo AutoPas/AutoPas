@@ -15,13 +15,13 @@
  *      - C08 that is not optimal but it getting less expensive.
  *      - Sliced is optimal in the beginning but is getting more expensive.
  *      - C01 is constant an not in the optimum range.
- * In the third iteration c08 should be predicted to be the optimum.
+ * In the third iteration lc_c08 should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
   unsigned int iteration = 0;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
-      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
       relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
@@ -77,13 +77,13 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
  *      - C08 that is not optimal but it getting less expensive.
  *      - Sliced is optimal in the beginning but is getting more expensive.
  *      - C01 is constant an not in the optimum range.
- * In the third iteration c08 should be predicted to be the optimum.
+ * In the third iteration lc_c08 should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testLinearRegression) {
   unsigned int iteration = 1;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
-      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
       relativeOptimumRange, maxTuningIterationsWithoutTest, 2, autopas::ExtrapolationMethodOption::linearRegression);
 
@@ -139,13 +139,13 @@ TEST_F(PredictiveTuningTest, testLinearRegression) {
  *      - C08 that is not optimal but it getting less expensive.
  *      - Sliced is optimal in the beginning but is getting more expensive.
  *      - C01 is constant an not in the optimum range.
- * In the third iteration c08 should be predicted to be the optimum.
+ * In the third iteration lc_c08 should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testLagrange) {
   unsigned int iteration = 1;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
-      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
       relativeOptimumRange, maxTuningIterationsWithoutTest, 3, autopas::ExtrapolationMethodOption::lagrange);
 
@@ -221,13 +221,13 @@ TEST_F(PredictiveTuningTest, testLagrange) {
  *      - C08 that is not optimal but it getting less expensive.
  *      - Sliced is optimal in the beginning but is getting more expensive.
  *      - C01 is constant an not in the optimum range.
- * In the third iteration c08 should be predicted to be the optimum.
+ * In the third iteration lc_c08 should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testNewton) {
   unsigned int iteration = 1;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
-      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
       relativeOptimumRange, maxTuningIterationsWithoutTest, 3, autopas::ExtrapolationMethodOption::newton);
 
@@ -302,7 +302,7 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
   unsigned int iteration = 0;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
-      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
       relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
@@ -331,14 +331,14 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
  *      - C08 is constant near the optimum (11).
  *      - Sliced is constant the optimum (10).
  *      - C01 is constant an not in the optimum range (20).
- * In the third iteration c08 and sliced should be in _optimalSearchSpace and after the tuning phase sliced should be
+ * In the third iteration lc_c08 and sliced should be in _optimalSearchSpace and after the tuning phase sliced should be
  * the optimal configuration.
  */
 TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
   unsigned int iteration = 0;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
-      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
       relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
@@ -404,12 +404,12 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
  *      - C08 is constant out of the optimum range (20).
  *      - Sliced is constant the optimum (10).
  * In iteration three to six only sliced should be in _optimalSearchSpace.
- * In the seventh iteration c08 and sliced should be in _optimalSearchSpace.
+ * In the seventh iteration lc_c08 and sliced should be in _optimalSearchSpace.
  */
 TEST_F(PredictiveTuningTest, testTooLongNotTested) {
   unsigned int iteration = 0;
   autopas::PredictiveTuning predictiveTuning(
-      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
+      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
       relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
@@ -483,7 +483,7 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
   unsigned int iteration = 0;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
-      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
       relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
@@ -555,7 +555,7 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
   unsigned int iteration = 0;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
-      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
       relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 

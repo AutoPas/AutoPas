@@ -13,7 +13,7 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
   size_t maxEvidence = 4;
   autopas::BayesianSearch bayesSearch(
       {autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1}),
-      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
       maxEvidence);
 
@@ -32,14 +32,14 @@ TEST_F(BayesianSearchTest, testFindBest) {
   size_t maxEvidence = 7;
   unsigned long seed = 21;
   autopas::BayesianSearch bayesSearch({autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1, 2}),
-                                      {autopas::TraversalOption::c08, autopas::TraversalOption::c01},
+                                      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01},
                                       {autopas::LoadEstimatorOption::none},
                                       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
                                       {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, maxEvidence,
                                       autopas::AcquisitionFunctionOption::upperConfidenceBound, 50, seed);
 
   // configuration to find
-  autopas::FeatureVector best(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::c08,
+  autopas::FeatureVector best(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                               autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                               autopas::Newton3Option::enabled);
 

@@ -62,7 +62,7 @@ class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, Pai
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::verletClustersColoring; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c06; }
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 

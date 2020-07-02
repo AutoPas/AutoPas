@@ -4,7 +4,7 @@ verlet-skin-radius               :  0.2
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
-traversal                        :  [c08, sliced, c18, c01, directSum, verlet-sliced, verlet-c18, verlet-c01, cuda-c01, verlet-lists, c01-combined-SoA, verlet-clusters, c04, var-verlet-lists-as-build, verlet-clusters-coloring, c04SoA, verlet-cluster-cells]
+traversal                        :  [lc_c08, lc_sliced, lc_c18, lc_c01, ds_sequential, vlc_sliced, verlet-c18, verlet-lc_c01, cuda-lc_c01, vl_list_iteration, lc_c01-combined-SoA, verlet-clusters, lc_c04, vvl_as_built, verlet-clusters-coloring, lc_c04_combined_SoA, verlet-cluster-cells]
 tuning-strategy                  :  full-Search
 tuning-interval                  :  100
 tuning-samples                   :  3

@@ -17,7 +17,7 @@
 namespace autopas {
 
 /**
- * This class provides the c18 traversal.
+ * This class provides the lc_c18 traversal.
  *
  * The traversal uses the c18 base step performed on every single cell.
  * \image html C18.png "C18 base step in 2D. (dark blue cell = base cell)"
@@ -34,7 +34,7 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, dat
                      public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
-   * Constructor of the c18 traversal.
+   * Constructor of the lc_c18 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
@@ -63,7 +63,7 @@ class C18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, dat
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::c18; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c18; }
 
   /**
    * C18 traversal is always usable.
