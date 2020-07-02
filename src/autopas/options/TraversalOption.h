@@ -79,11 +79,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getDiscouragedOptions() {
-    return {
-        ds_sequential,
-        vcc_cluster_iteration,
-        vcl_cluster_iteration
-    };
+    return {Value::ds_sequential, Value::vcl_cluster_iteration};
   }
 
   /**
