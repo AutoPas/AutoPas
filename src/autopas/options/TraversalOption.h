@@ -37,7 +37,7 @@ class TraversalOption : public Option<TraversalOption> {
     lc_c18,
 
     // VerletClusterCells Traversals:
-    vcc_cluster_iteration,
+    vcc_cluster_iteration_cuda,
 
     // VerletClusterLists Traversals:
     vcl_cluster_iteration,
@@ -104,7 +104,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_c18, "lc_c18"},
 
         // VerletClusterCells Traversals:
-        {TraversalOption::vcc_cluster_iteration, "vcc_cluster_iteration"},
+        {TraversalOption::vcc_cluster_iteration_cuda, "vcc_cluster_iteration_cuda"},
 
         // VerletClusterLists Traversals:
         {TraversalOption::vcl_cluster_iteration, "vcl_cluster_iteration"},

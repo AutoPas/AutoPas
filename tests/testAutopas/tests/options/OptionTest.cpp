@@ -24,29 +24,7 @@
  */
 
 TEST(OptionTest, parseTraversalOptionsTest) {
-  std::map<autopas::TraversalOption, std::string> mapEnumString = {
-      {autopas::TraversalOption::lc_c01, "lc_c01"},
-      {autopas::TraversalOption::vlc_c01, "verlec01"},
-      {autopas::TraversalOption::lc_c01_combined_SoA, "c01-combined"},
-      {autopas::TraversalOption::lc_c01_cuda, "cudac01"},
-      {autopas::TraversalOption::lc_c04, "lc_c04"},
-      {autopas::TraversalOption::lc_c04_combined_SoA, "c04-soa"},
-      {autopas::TraversalOption::lc_c08, "lc_c08"},
-      {autopas::TraversalOption::lc_c18, "lc_c18"},
-      {autopas::TraversalOption::vlc_c18, "verletc18"},
-      {autopas::TraversalOption::ds_sequential, "direct"},
-      {autopas::TraversalOption::lc_sliced, "slicedv01"},
-      {autopas::TraversalOption::vlc_sliced, "verlet-sliced"},
-      {autopas::TraversalOption::vvl_as_built, "var-verlet-lists-as-build"},
-      {autopas::TraversalOption::vcc_cluster_iteration, "verlet-cluster-cells"},
-      {autopas::TraversalOption::vcl_cluster_iteration, "verlet-clusters"},
-      {autopas::TraversalOption::vcl_c06, "verlet-clusters-coloring"},
-      {autopas::TraversalOption::vl_list_iteration, "verletlists"},
-      {autopas::TraversalOption::vcl_c01_balanced, "verlet-cluste-static"},
-      {autopas::TraversalOption::lc_sliced_balanced, "balancedsliced"},
-      {autopas::TraversalOption::vlc_sliced_balanced, "balancedsliced-verlet"},
-      {autopas::TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
-  };
+  std::map<autopas::TraversalOption, std::string> mapEnumString = autopas::TraversalOption::getOptionNames();
 
   EXPECT_EQ(mapEnumString.size(), autopas::TraversalOption::getOptionNames().size());
 

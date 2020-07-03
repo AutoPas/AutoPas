@@ -61,6 +61,7 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
       autoPasRef = autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedTraversals(autopas::TraversalOption::getAllOptions());
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
 
   defaultInit(autoPas);

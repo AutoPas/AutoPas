@@ -161,7 +161,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       return std::make_unique<VerletClustersTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor, info.clusterSize);
     }
-    case TraversalOption::vcc_cluster_iteration: {
+    case TraversalOption::vcc_cluster_iteration_cuda: {
       return std::make_unique<VerletClusterCellsTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor, info.clusterSize);
     }

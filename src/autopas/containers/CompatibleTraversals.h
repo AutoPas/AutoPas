@@ -75,7 +75,7 @@ static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
  * @return Set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVCCCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::vcc_cluster_iteration};
+  static const std::set<TraversalOption> s{TraversalOption::vcc_cluster_iteration_cuda};
   return s;
 }
 

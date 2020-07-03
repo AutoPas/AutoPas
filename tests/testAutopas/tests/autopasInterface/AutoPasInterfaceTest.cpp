@@ -539,7 +539,16 @@ using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
 
+static auto getTestableContainerOptions() {
+#ifdef AUTOPAS_CUDA
+  return autopas::ContainerOption::getAllOptions();
+#else
+  auto containerOptions = autopas::ContainerOption::getAllOptions();
+  containerOptions.erase(containerOptions.find(autopas::ContainerOption::verletClusterCells));
+  return containerOptions;
+#endif
+}
+
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface2ContainersTest,
-                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()),
-                                 ValuesIn(autopas::ContainerOption::getAllOptions())),
+                         Combine(ValuesIn(getTestableContainerOptions()), ValuesIn(getTestableContainerOptions())),
                          AutoPasInterface2ContainersTest::PrintToStringParamName());
