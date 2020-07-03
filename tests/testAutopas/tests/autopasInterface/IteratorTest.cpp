@@ -61,7 +61,7 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
       autoPasRef = autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
-  autoPas.setAllowedTraversals(autopas::TraversalOption::getAllOptions());
+  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
 
   defaultInit(autoPas);
@@ -219,6 +219,7 @@ void testRangeBasedIterator(autopas::ContainerOption containerOption, double cel
       autoPasRef = autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
 
   defaultInit(autoPas);
@@ -317,6 +318,7 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
       autoPasRef = apContainer;
 
   apContainer.setAllowedContainers({containerOption});
+  apContainer.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
   apContainer.setCellSizeFactor(cellSizeFactor);
 
   apContainer.setBoxMin(min);
@@ -467,6 +469,7 @@ void testRegionIteratorDeletion(autopas::ContainerOption containerOption, double
       autoPasRef = autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
 
   defaultInit(autoPas);
@@ -537,7 +540,17 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
+static inline auto getTestableContainerOptions() {
+#ifdef AUTOPAS_CUDA
+  return autopas::ContainerOption::getAllOptions();
+#else
+  auto containerOptions = autopas::ContainerOption::getAllOptions();
+  containerOptions.erase(containerOptions.find(autopas::ContainerOption::verletClusterCells));
+  return containerOptions;
+#endif
+}
+
 INSTANTIATE_TEST_SUITE_P(Generated, IteratorTest,
-                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()), Values(0.5, 1., 1.5),
+                         Combine(ValuesIn(getTestableContainerOptions()), Values(0.5, 1., 1.5),
                                  Values(true, false), Values(true, false)),
                          IteratorTest::PrintToStringParamName());

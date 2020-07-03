@@ -29,7 +29,7 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
 }
 
 TEST_F(BayesianClusterSearchTest, testFindBest) {
-  size_t maxEvidence = 7;
+  size_t maxEvidence = 10;
   unsigned long seed = 21;
   autopas::BayesianClusterSearch bayesClusterSearch(
       {autopas::ContainerOption::linkedCells}, autopas::NumberInterval<double>(1, 2),

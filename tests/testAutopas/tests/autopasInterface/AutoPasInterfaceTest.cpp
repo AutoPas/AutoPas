@@ -539,7 +539,7 @@ using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
 
-static auto getTestableContainerOptions() {
+static inline auto getTestableContainerOptions() {
 #ifdef AUTOPAS_CUDA
   return autopas::ContainerOption::getAllOptions();
 #else

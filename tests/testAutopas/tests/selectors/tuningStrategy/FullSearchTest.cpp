@@ -22,28 +22,28 @@ TEST_F(FullSearchTest, testTune) {
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
 
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                                    autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(10, 0);
 
   fullSearch.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                                    autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(1, 0);
 
   fullSearch.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                                    autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(20, 0);
 
   fullSearch.tune();
-  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
+  EXPECT_EQ(autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                                    autopas::Newton3Option::disabled),
             fullSearch.getCurrentConfiguration());
