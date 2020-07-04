@@ -185,33 +185,41 @@ class VerletLists
       _aos2soaMap[&(*iter)] = i;
     }
     size_t accumulatedListSize = 0;
-    for (auto &aosList : _aosNeighborLists) {
-      accumulatedListSize += aosList.second.size();
-      size_t i_id = _aos2soaMap[aosList.first];
+    for (auto &[particlePtr, neighborPtrVector] : _aosNeighborLists) {
+      accumulatedListSize += neighborPtrVector.size();
+      size_t i_id = _aos2soaMap[particlePtr];
       // each soa neighbor list should be of the same size as for aos
-      _soaNeighborLists[i_id].resize(aosList.second.size());
+      _soaNeighborLists[i_id].resize(neighborPtrVector.size());
       size_t j = 0;
-      for (auto neighbor : aosList.second) {
-        _soaNeighborLists[i_id][j] = _aos2soaMap.at(neighbor);
+      for (auto &neighborPtr : neighborPtrVector) {
+        _soaNeighborLists[i_id][j] = _aos2soaMap[neighborPtr];
         j++;
       }
     }
-    AutoPasLog(debug,
-               "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
-               "size is {}",
-               static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());
+
+    if(autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+      AutoPasLog(debug,
+                 "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
+                 "size is {}",
+                 static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());
+    }
     _soaListIsValid = true;
   }
 
  private:
-  /// verlet lists.
+  /**
+   * Neighbor Lists: Map of particle pointers to vector of particle pointers.
+   */
   typename verlet_internal::AoS_verletlist_storage_type _aosNeighborLists;
 
   /// map converting from the aos type index (Particle *) to the soa type index
   /// (continuous, size_t)
   std::unordered_map<Particle *, size_t> _aos2soaMap;
 
-  /// verlet list for SoA:
+  /**
+   * verlet list for SoA:
+   * For every Particle, stores a vector of particle pointers
+   */
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> _soaNeighborLists;
 
   // specifies if the SoA neighbor list is currently valid
