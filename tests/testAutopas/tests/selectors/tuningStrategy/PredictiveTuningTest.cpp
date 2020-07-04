@@ -15,7 +15,7 @@
  *      - C08 that is not optimal but it getting less expensive.
  *      - Sliced is optimal in the beginning but is getting more expensive.
  *      - C01 is constant an not in the optimum range.
- * In the third iteration c08 should be predicted to be the optimum.
+ * In the third tuning phase c08 should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
   unsigned int iteration = 0;
@@ -72,6 +72,15 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
   EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
 }
 
+/*
+ * Tests if the right configuration get blacklisted and only the the non blacklisted configuration get tuned.
+ * Three different configurations:
+ *      - C08 should be blacklisted
+ *      - Sliced is the optimal configuration
+ *      - C01 should be blacklisted
+ * In the second tuning phase only sliced should be tuned
+ * In the third tuning phase sliced should be predicted to be the optimum.
+ */
 TEST_F(PredictiveTuningTest, testSelectPossibleConfigurationsWtihBlacklist) {
   unsigned int iteration = 0;
   autopas::PredictiveTuning predictiveTuning(
@@ -102,10 +111,6 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurationsWtihBlacklist) {
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
 
-  //EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
-  //predictiveTuning.addEvidence(2, iteration);
-  //++iteration;
-
   predictiveTuning.tune();
   EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(1, iteration);
@@ -127,7 +132,7 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurationsWtihBlacklist) {
  *      - C08 that is not optimal but it getting less expensive.
  *      - Sliced is optimal in the beginning but is getting more expensive.
  *      - C01 is constant an not in the optimum range.
- * In the third iteration c08 should be predicted to be the optimum.
+ * In the third tuning phase c08 should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testLinearRegression) {
   unsigned int iteration = 1;
@@ -190,7 +195,7 @@ TEST_F(PredictiveTuningTest, testLinearRegression) {
  *      - C08 that is not optimal but it getting less expensive.
  *      - Sliced is optimal in the beginning but is getting more expensive.
  *      - C01 is constant an not in the optimum range.
- * In the third iteration c08 should be predicted to be the optimum.
+ * In the third tuning phase c08 should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testLagrange) {
   unsigned int iteration = 1;
@@ -273,7 +278,7 @@ TEST_F(PredictiveTuningTest, testLagrange) {
  *      - C08 that is not optimal but it getting less expensive.
  *      - Sliced is optimal in the beginning but is getting more expensive.
  *      - C01 is constant an not in the optimum range.
- * In the third iteration c08 should be predicted to be the optimum.
+ * In the third tuning phase c08 should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testNewton) {
   unsigned int iteration = 1;
@@ -350,7 +355,7 @@ TEST_F(PredictiveTuningTest, testNewton) {
   EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
 }
 
-// Tests the first tuning iteration. There is no prediction and the whole searchSpace should be tested.
+// Tests the first tuning phase. There is no prediction and the whole searchSpace should be tested.
 TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
   unsigned int iteration = 0;
   autopas::PredictiveTuning predictiveTuning(
@@ -385,7 +390,7 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
  *      - C08 is constant near the optimum (11).
  *      - Sliced is constant the optimum (10).
  *      - C01 is constant an not in the optimum range (20).
- * In the third iteration c08 and sliced should be in _optimalSearchSpace and after the tuning phase sliced should be
+ * In the third tuning phase c08 and sliced should be in _optimalSearchSpace and after the tuning phase sliced should be
  * the optimal configuration.
  */
 TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
@@ -458,8 +463,8 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
  * tuning. Two different configurations:
  *      - C08 is constant out of the optimum range (20).
  *      - Sliced is constant the optimum (10).
- * In iteration three to six only sliced should be in _optimalSearchSpace.
- * In the seventh iteration c08 and sliced should be in _optimalSearchSpace.
+ * In tuning phase three to six only sliced should be in _optimalSearchSpace.
+ * In the seventh tuning phase c08 and sliced should be in _optimalSearchSpace.
  */
 TEST_F(PredictiveTuningTest, testTooLongNotTested) {
   unsigned int iteration = 0;
@@ -533,7 +538,8 @@ TEST_F(PredictiveTuningTest, testTooLongNotTested) {
  *      - C08 is constant out of the optimum range (15).
  *      - Sliced is constant the optimum (10) and invalid in the third iteration.
  *      - C01 is constant out of the optimum range (20).
- * In the third iteration reselectOptimalSearchSpace should be called and C08 should be selected after the tuning phase.
+ * In the third tuning phase reselectOptimalSearchSpace should be called and C08 should be selected after the tuning
+ * phase.
  */
 TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
   unsigned int iteration = 0;
@@ -605,7 +611,7 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
  *      - C08 is constant out of the optimum range (15) and invalid in the third iteration.
  *      - Sliced is constant the optimum (10) and invalid in the third iteration.
  *      - C01 is constant out of the optimum range (20).
- * In the third iteration reselectOptimalSearchSpace should be called twice and C01 should be selected after the
+ * In the third tuning phase reselectOptimalSearchSpace should be called twice and C01 should be selected after the
  * tuning phase.
  */
 TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {

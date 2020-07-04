@@ -35,7 +35,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.evidenceFirstPrediction, config.functorOption, config.dontMeasureFlops, config.generatorOption,
       config.iterations, config.tuningInterval, config.logLevel, config.logFileName, config.distributionMean,
       config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal, config.relativeOptimumRange,
-      config.relativeRangeForBlacklist, config.periodic, config.tuningPhases, config.verletClusterSize,
+      config.relativeRangeBlacklist, config.periodic, config.tuningPhases, config.verletClusterSize,
       config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
       config.tuningStrategyOption, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
       config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
@@ -363,10 +363,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.relativeRangeForBlacklist)::getoptChar: {
+      case decltype(config.relativeRangeBlacklist)::getoptChar: {
         try {
-          config.relativeRangeForBlacklist.value = (unsigned int)stoul(strArg);
-          if (config.relativeRangeForBlacklist.value < 1 && config.relativeRangeForBlacklist.value != 0) {
+          config.relativeRangeBlacklist.value = (unsigned int)stoul(strArg);
+          if (config.relativeRangeBlacklist.value < 1 && config.relativeRangeBlacklist.value != 0) {
             cerr << "Relative range for blacklist range has to be greater or equal one or has to be zero!" << endl;
             displayHelp = true;
           }
