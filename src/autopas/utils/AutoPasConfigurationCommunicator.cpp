@@ -54,6 +54,7 @@ size_t getSearchSpaceSize(std::set<ContainerOption> &containerOptions, NumberSet
  * @param containerOptions inout
  * @param cellSizeFactors inout
  * @param traversalOptions inout
+ * @param loadEstimatorOptions inout
  * @param dataLayoutOptions inout
  * @param newton3Options inout
  */

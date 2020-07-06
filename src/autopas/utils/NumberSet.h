@@ -31,9 +31,9 @@ class NumberSet {
 
   /**
    * A unified setter for all derived classes
-   * @return
+   * @param numbers
    */
-  virtual void resetValues(std::set<Number> &) = 0;
+  virtual void resetValues(std::set<Number> &numbers) = 0;
 
   /**
    * Get a string representation of the set

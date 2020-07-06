@@ -43,6 +43,7 @@ inline std::byte castToByte(TOption option) {
  * @param containerOptions
  * @param cellSizeFactors The size of cellSizeFactors will only be taken into account if the NumberSet is finite
  * @param traversalOptions
+ * @param loadEstimatorOptions
  * @param dataLayoutOptions
  * @param newton3Options
  * @return
@@ -59,9 +60,11 @@ size_t getSearchSpaceSize(std::set<ContainerOption> &containerOptions, NumberSet
  * @param containerOptions
  * @param cellSizeFactors
  * @param traversalOptions
+ * @param loadEstimatorOptions
  * @param dataLayoutOptions
  * @param newton3Options
- * @param comm
+ * @param rank
+ * @param commSize
  */
 void distributeConfigurations(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
                               std::set<TraversalOption> &traversalOptions,

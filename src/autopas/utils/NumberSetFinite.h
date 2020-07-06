@@ -40,7 +40,6 @@ class NumberSetFinite : public NumberSet<Number> {
   /**
    * Setter for NumberSetFinite
    * @param numbers The set of numbers the new NumberSetFinite represents
-   * @return
    */
   inline void resetValues(std::set<Number> &numbers) override { _set = numbers; }
 

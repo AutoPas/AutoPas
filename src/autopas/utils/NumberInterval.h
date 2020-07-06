@@ -44,7 +44,6 @@ class NumberInterval : public NumberSet<Number> {
    * Setter for NumberInterval
    * @param numbers One or two values, like the available constructors for NumberInterval.
    * If two are provided the smaller one is assumed to be the min value.
-   * @return
    */
   inline void resetValues(std::set<Number> &numbers) override {
     if (numbers.size() == 1) {
