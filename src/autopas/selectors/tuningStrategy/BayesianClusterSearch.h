@@ -238,7 +238,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
     AutoPasLog(debug, "Tuning could not generate a valid configuration.");
   }
 
-  utils::ExceptionHandler::exception("BayesianSearch: Failed to sample an valid FeatureVector");
+  utils::ExceptionHandler::exception("BayesianClusterSearch: Failed to sample an valid FeatureVector");
   _currentConfig = FeatureVector();
   return false;
 }

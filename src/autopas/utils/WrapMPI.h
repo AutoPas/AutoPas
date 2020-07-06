@@ -286,6 +286,13 @@ inline int AutoPas_MPI_Iallreduce(const void *sendbuf, void *recvbuf, int count,
                                   AutoPas_MPI_Op op, AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request);
 
 /**
+ * Wrapper for MPI_Barrier
+ * @param comm communicator (handle)
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Barrier(AutoPas_MPI_Comm comm);
+
+/**
  * Wrapper for MPI_Ibarrier
  * @param comm: communicator (handle)
  * @param request: outputs communication request (handle)
@@ -366,6 +373,10 @@ inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, 
 inline int AutoPas_MPI_Iallreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
                                   AutoPas_MPI_Op op, AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
   return MPI_Iallreduce(sendbuf, recvbuf, count, datatype, op, comm, request);
+}
+
+inline int AutoPas_MPI_Barrier(AutoPas_MPI_Comm comm) {
+  return MPI_Barrier(comm);
 }
 
 inline int AutoPas_MPI_Ibarrier(AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
@@ -474,6 +485,10 @@ inline int AutoPas_MPI_Iallreduce(const void *sendbuf, void *recvbuf, int count,
                                   AutoPas_MPI_Op op, AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
   *request = _AUTOPAS_MPI_COMPLETED_REQUEST;
   return AutoPas_MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
+}
+
+inline int AutoPas_MPI_Barrier(AutoPas_MPI_Comm comm) {
+  return AUTOPAS_MPI_SUCCESS;
 }
 
 inline int AutoPas_MPI_Ibarrier(AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {

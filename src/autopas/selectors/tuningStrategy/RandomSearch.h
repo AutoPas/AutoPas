@@ -128,6 +128,7 @@ void RandomSearch::selectOptimalConfiguration() {
     _currentConfig.loadEstimator = *applicableLoadEstimators.begin();
     _currentConfig.dataLayout = *_dataLayoutOptions.begin();
     _currentConfig.newton3 = *_newton3Options.begin();
+    AutoPasLog(debug, "Selected optimal configuration {}", _currentConfig.toString());
     return;
   }
 
@@ -144,9 +145,6 @@ void RandomSearch::selectOptimalConfiguration() {
                                   });
 
   _currentConfig = optimum->first;
-
-  // measurements are not needed anymore
-  // _traversalTimes.clear();
 
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
 }

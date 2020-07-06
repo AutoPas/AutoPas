@@ -26,13 +26,6 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     ExtrapolationMethodOption extrapolationMethodOption, MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
   switch (static_cast<autopas::MPIStrategyOption>(mpiStrategyOption)) {
     case MPIStrategyOption::noMPI: {
-      // This block could be used to automatically delete invalid combinations of options independently of
-      // tuning strategy. This would replace the first part of the constructor of:
-      // ActiveHarmony, BayesianClusterSearch, BayesianSearch
-      /*utils::AutoPasConfigurationCommunicator::distributeConfigurations(
-          allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-          allowedNewton3Options, 0, 1);
-      */
       break;
     }
 
@@ -89,9 +82,16 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     case TuningStrategyOption::activeHarmony: {
+      // If a AH-server is provided, but MPI is disallowed, we have to ignore the server
+      if (getenv("HARMONY_HOST") != nullptr && mpiStrategyOption == MPIStrategyOption::noMPI) {
+        unsetenv("HARMONY_HOST");
+        AutoPasLog(warn, "HARMONY_HOST is set to a value, but the MPI strategy option is set to noMPI. "
+                         "HARMONY_HOST will be unset to enforce a local tuning session");
+      }
       tuningStrategy =
           std::make_unique<ActiveHarmony>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
-                                          allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options);
+                                          allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
+                                          mpiStrategyOption, comm);
       break;
     }
 
@@ -118,7 +118,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     case MPIStrategyOption::divideAndConquer: {
       if (tuningStrategyOption == TuningStrategyOption::activeHarmony) {
         if (getenv("HARMONY_HOST") != nullptr) {
-          // A server has been specified, so no to handle communication via MPI as well.
+          // A server has been specified, so no need to handle communication via MPI as well.
           return tuningStrategy;
         }
       }
