@@ -6,12 +6,12 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
 #include <unistd.h>
 
 #include <chrono>
+#include <string>
 #include <thread>
+#include <vector>
 
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
@@ -408,9 +408,9 @@ bool ActiveHarmony::searchSpaceIsTrivial() const {
 }
 
 bool ActiveHarmony::searchSpaceIsEmpty() const {
-    return _allowedContainerOptions.empty() or
-           (_allowedCellSizeFactors->isFinite() and _allowedCellSizeFactors->size() == 0) or
-           _allowedTraversalOptions.empty() or _allowedDataLayoutOptions.empty() or _allowedNewton3Options.empty();
+  return _allowedContainerOptions.empty() or
+         (_allowedCellSizeFactors->isFinite() and _allowedCellSizeFactors->size() == 0) or
+         _allowedTraversalOptions.empty() or _allowedDataLayoutOptions.empty() or _allowedNewton3Options.empty();
 }
 
 void ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
@@ -460,7 +460,6 @@ void ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
     snprintf(numbuf, sizeof(numbuf), "%d", commSize);
     ah_def_cfg(hdef, "CLIENT_COUNT", numbuf);
   }
-
 }
 
 }  // namespace autopas

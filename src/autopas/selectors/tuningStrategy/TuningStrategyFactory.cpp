@@ -85,13 +85,13 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       // If a AH-server is provided, but MPI is disallowed, we have to ignore the server
       if (getenv("HARMONY_HOST") != nullptr && mpiStrategyOption == MPIStrategyOption::noMPI) {
         unsetenv("HARMONY_HOST");
-        AutoPasLog(warn, "HARMONY_HOST is set to a value, but the MPI strategy option is set to noMPI. "
-                         "HARMONY_HOST will be unset to enforce a local tuning session");
+        AutoPasLog(warn,
+                   "HARMONY_HOST is set to a value, but the MPI strategy option is set to noMPI. "
+                   "HARMONY_HOST will be unset to enforce a local tuning session");
       }
-      tuningStrategy =
-          std::make_unique<ActiveHarmony>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
-                                          allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
-                                          mpiStrategyOption, comm);
+      tuningStrategy = std::make_unique<ActiveHarmony>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
+                                                       allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
+                                                       mpiStrategyOption, comm);
       break;
     }
 
