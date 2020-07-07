@@ -13,6 +13,10 @@ if (AUTOPAS_ENABLE_CUDA)
     )
 endif ()
 
+if (NOT AUTOPAS_MPI)
+    return()
+endif()
+
 find_package(MPI)
 
 if (NOT ${MPI_CXX_FOUND})

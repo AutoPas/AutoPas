@@ -41,10 +41,6 @@ double infiniteCellSizeFactorSetup(MPIParallelizedStrategy &mpiParallelizedStrat
   return smallestLocalCellSizeFactor;
 }
 
-/**
- * As it currently stands, these tests cannot work with AUTOPAS_MPI=OFF
- */
-
 TEST_F(MPIParallelizedStrategyTest, testTuneFullSearch) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
