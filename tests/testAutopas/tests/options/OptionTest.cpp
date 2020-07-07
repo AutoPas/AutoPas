@@ -104,7 +104,6 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
       {autopas::TuningStrategyOption::bayesianSearch, "bayesian"},
       {autopas::TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster"},
       {autopas::TuningStrategyOption::fullSearch, "full"},
-      {autopas::TuningStrategyOption::fullSearchMPI, "fullMPI"},
       {autopas::TuningStrategyOption::randomSearch, "random"},
       {autopas::TuningStrategyOption::activeHarmony, "harmony"},
       {autopas::TuningStrategyOption::predictiveTuning, "predictive"},

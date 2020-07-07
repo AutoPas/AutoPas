@@ -102,6 +102,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     newContainerOptions.emplace(*iteratorHandler.getContainerIterator());
     newCellSizeFactors.emplace(*iteratorHandler.getCellSizeFactorIterator());
     newTraversalOptions.emplace(*iteratorHandler.getTraversalIterator());
+    newLoadEstimatorOptions.emplace(*iteratorHandler.getLoadEstimatorIterator());
     newDataLayoutOptions.emplace(*iteratorHandler.getDataLayoutIterator());
     newNewton3Options.emplace(*iteratorHandler.getNewton3Iterator());
 
@@ -112,7 +113,6 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
 
   containerOptions = newContainerOptions;
   if (not cellSizeFactors.isFinite()) {
-    // newCellSizeFactors == {-1}
     double min = cellSizeFactors.getMin();
     double max = cellSizeFactors.getMax();
     double delta = (max - min) / infiniteCellSizeFactorsBlockSize;
@@ -123,6 +123,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     cellSizeFactors.resetValues(newCellSizeFactors);
   }
   traversalOptions = newTraversalOptions;
+  loadEstimatorOptions = newLoadEstimatorOptions;
   dataLayoutOptions = newDataLayoutOptions;
   newton3Options = newNewton3Options;
 }
