@@ -15,8 +15,8 @@
 #if defined(AUTOPAS_MPI)
 #include <mpi.h>
 #else
-#include <cstring>
 #include <cstdio>
+#include <cstring>
 #include <map>
 #include <set>
 #endif
