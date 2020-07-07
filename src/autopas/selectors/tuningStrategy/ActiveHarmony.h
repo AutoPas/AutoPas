@@ -173,7 +173,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   template <class OptionClass>
   inline OptionClass fetchTuningParameter(const char *name, const std::set<OptionClass> options);
 
-  void setupTuningParameters(int commSize, hdef_t *hdef);
+  inline void setupTuningParameters(int commSize, hdef_t *hdef);
 
   static constexpr int cellSizeSamples = 100;
 

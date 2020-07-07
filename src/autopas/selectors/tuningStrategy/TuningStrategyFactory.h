@@ -40,6 +40,6 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     std::set<autopas::DataLayoutOption> &allowedDataLayouts, std::set<autopas::Newton3Option> &allowedNewton3Options,
     unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
     unsigned int evidenceFirstPrediction, AcquisitionFunctionOption acquisitionFunctionOption,
-    ExtrapolationMethodOption extrapolationMethodOption, MPIStrategyOption mpiStrategyOption,
+    ExtrapolationMethodOption extrapolationMethodOption, MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI,
     AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
 }  // namespace autopas::TuningStrategyFactory
