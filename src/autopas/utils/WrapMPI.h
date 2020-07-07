@@ -411,7 +411,7 @@ int AutoPas_MPI_Error_string(int errorcode, char *string, int *resultlen) {
       {AUTOPAS_MPI_ERR_REQUEST, "MPI_ERR_REQUEST: invalid Request"},
       {AUTOPAS_MPI_ERR_TYPE, "MPI_ERR_TYPE: invalid datatype"},
   };
-  strncpy(string, errorStrings.at(errorcode), AUTOPAS_MPI_MAX_ERROR_STRING);
+  snprintf(string, AUTOPAS_MPI_MAX_ERROR_STRING, "%s", errorStrings.at(errorcode));
   *resultlen = strnlen(string, AUTOPAS_MPI_MAX_ERROR_STRING);
   return AUTOPAS_MPI_SUCCESS;
 }
