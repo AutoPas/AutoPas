@@ -352,7 +352,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.relativeOptimumRange)::getoptChar: {
         try {
-          config.relativeOptimumRange.value = (double)stoul(strArg);
+          config.relativeOptimumRange.value = stod(strArg);
           if (config.relativeOptimumRange.value < 1) {
             cerr << "Relative optimum range has to be greater or equal one!" << endl;
             displayHelp = true;

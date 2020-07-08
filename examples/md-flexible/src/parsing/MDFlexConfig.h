@@ -231,7 +231,7 @@ class MDFlexConfig {
    * maxTuningPhasesWithoutTest
    */
   MDFlexOption<unsigned int, __LINE__> maxTuningPhasesWithoutTest{
-      10, "max-tuning-phases-without-test", true,
+      5, "max-tuning-phases-without-test", true,
       "For predictive based tuning strategies: Maximal number of "
       "tuning phases a configurations can be excluded from testing."};
   /**
@@ -240,8 +240,8 @@ class MDFlexConfig {
   MDFlexOption<unsigned int, __LINE__> relativeRangeBlacklist{
       0, "relative-range-blacklist", true,
       "For predictive based tuning strategies: Relative range to the optimum in which the first evidence of a "
-      "configuration needs to be ot not get put on the blacklist. If the blacklist should not be used give 0 as an "
-      "argument"};
+      "configuration needs to be in the relative range to the omtimum to not get put on the blacklist. If the "
+      "blacklist should not be used give 0 as an argument"};
   /**
    * evidenceFirstPrediction
    */
