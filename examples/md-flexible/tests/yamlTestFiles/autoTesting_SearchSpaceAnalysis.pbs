@@ -1,0 +1,30 @@
+#!/usr/bin/bash
+
+#PBS -N search_space_analysis_tests
+#PBS -o search_space_analysis_tests_results.txt
+#PBS -e search_space_analysis_tests_errors.txt
+#PBS -q search_space_analysis_tests_queue
+#PBS -l select=1:ncpus=12:mpiprocs=12:ompthreads=64:mem=16384mb
+
+# load modules?
+# mpirun ?
+
+# git clone?
+
+SCRIPTLOCATION="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+CMAKE-BUILD=""
+cmake-build-mdflex=""
+cmake-build-yamlfiledir=""
+
+yamlfiles=(a b c)
+
+cmake --build $CMAKE-BUILD --target md-flexible -- -j 24
+
+foreach yamlfile "${yamlfiles[@]}"
+  #run the md-flexible yaml-file
+  ${cmake-build-mdflex} --yaml-filename $yamlfile --no-end-config
+
+  #copy output?
+end
+
+#examples/md-flexible/md-flexible --yaml-filename ../examples/md-flexible/tests/yamlTestFiles/StandardCubeTest.yaml --vtk-write-frequency 5 --vtk-filename sli_blk_gt1spacing_0velocity
