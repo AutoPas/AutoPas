@@ -12,7 +12,7 @@
 class ThermostatTest : public AutoPasTestBase,
                        public ::testing::WithParamInterface<std::tuple<double, double, double>> {
  public:
-  using AutoPasType = autopas::AutoPas<Molecule, autopas::FullParticleCell<Molecule>>;
+  using AutoPasType = autopas::AutoPas<Molecule>;
 
   ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>(1.)) {
     _particlePropertiesLibrary.addType(0, 1., 1., 1.);

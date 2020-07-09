@@ -79,7 +79,7 @@ std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule> &le
  * @param autoPas
  * @return vector of particles that are already shifted for the next process.
  */
-auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule, FMCell> &autoPas) {
+auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule> &autoPas) {
   std::vector<Molecule> haloParticles;
 
   for (short x : {-1, 0, 1}) {
@@ -127,7 +127,7 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule, FMCell> &autoPas) {
   return haloParticles;
 }
 
-size_t addEnteringParticles(autopas::AutoPas<Molecule, FMCell> &autoPas, std::vector<Molecule> enteringParticles) {
+size_t addEnteringParticles(autopas::AutoPas<Molecule> &autoPas, std::vector<Molecule> enteringParticles) {
   size_t numAdded = 0;
   for (auto &p : enteringParticles) {
     if (autopas::utils::inBox(p.getR(), autoPas.getBoxMin(), autoPas.getBoxMax())) {
@@ -138,14 +138,14 @@ size_t addEnteringParticles(autopas::AutoPas<Molecule, FMCell> &autoPas, std::ve
   return numAdded;
 }
 
-void addHaloParticles(autopas::AutoPas<Molecule, FMCell> &autoPas, std::vector<Molecule> haloParticles) {
+void addHaloParticles(autopas::AutoPas<Molecule> &autoPas, std::vector<Molecule> haloParticles) {
   for (auto &p : haloParticles) {
     autoPas.addOrUpdateHaloParticle(p);
   }
 }
 
 template <typename Functor>
-void doSimulationLoop(autopas::AutoPas<Molecule, FMCell> &autoPas, Functor *functor) {
+void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas, Functor *functor) {
   // 1. update Container; return value is vector of invalid == leaving particles!
   auto [invalidParticles, updated] = autoPas.updateContainer();
 
@@ -171,7 +171,7 @@ void doSimulationLoop(autopas::AutoPas<Molecule, FMCell> &autoPas, Functor *func
 }
 
 template <typename Functor>
-void doSimulationLoop(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::AutoPas<Molecule, FMCell> &autoPas2,
+void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecule> &autoPas2,
                       Functor *functor1, Functor *functor2) {
   // 1. update Container; return value is vector of invalid = leaving particles!
   auto [invalidParticles1, updated1] = autoPas1.updateContainer();
@@ -212,7 +212,7 @@ void doSimulationLoop(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::Aut
 }
 
 template <typename Functor>
-void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas, Functor *functor, unsigned long numParticlesExpected) {
+void doAssertions(autopas::AutoPas<Molecule> &autoPas, Functor *functor, unsigned long numParticlesExpected) {
   std::vector<Molecule> molecules(numParticlesExpected);
   size_t numParticles = 0;
   for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
@@ -232,7 +232,7 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas, Functor *functor,
 }
 
 template <typename Functor>
-void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::AutoPas<Molecule, FMCell> &autoPas2,
+void doAssertions(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecule> &autoPas2,
                   Functor *functor1, Functor *functor2) {
   std::array<Molecule, 2> molecules{};
   size_t numParticles = 0;
@@ -255,7 +255,7 @@ void doAssertions(autopas::AutoPas<Molecule, FMCell> &autoPas1, autopas::AutoPas
   EXPECT_DOUBLE_EQ(functor1->getVirial() + functor2->getVirial(), 195072.) << "wrong virial calculated";
 }
 
-void setFromOptions(const testingTuple &options, autopas::AutoPas<Molecule, FMCell> &autoPas) {
+void setFromOptions(const testingTuple &options, autopas::AutoPas<Molecule> &autoPas) {
   auto containerOption = std::get<0>(std::get<0>(options));
   auto traversalOption = std::get<1>(std::get<0>(options));
   auto loadEstimatorOption = std::get<2>(std::get<0>(options));
@@ -273,7 +273,7 @@ void setFromOptions(const testingTuple &options, autopas::AutoPas<Molecule, FMCe
 
 void testSimulationLoop(testingTuple options) {
   // create AutoPas object
-  autopas::AutoPas<Molecule, FMCell> autoPas;
+  autopas::AutoPas<Molecule> autoPas;
 
   setFromOptions(options, autoPas);
 
@@ -339,7 +339,7 @@ void testSimulationLoop(testingTuple options) {
  */
 void testHaloCalculation(testingTuple options) {
   // create AutoPas object
-  autopas::AutoPas<Molecule, FMCell> autoPas;
+  autopas::AutoPas<Molecule> autoPas;
 
   setFromOptions(options, autoPas);
 
@@ -459,9 +459,9 @@ INSTANTIATE_TEST_SUITE_P(
 void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::ContainerOption containerOption2,
                         size_t autoPasDirection) {
   // create AutoPas object
-  autopas::AutoPas<Molecule, FMCell> autoPas1;
+  autopas::AutoPas<Molecule> autoPas1;
   autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption1});
-  autopas::AutoPas<Molecule, FMCell> autoPas2;
+  autopas::AutoPas<Molecule> autoPas2;
   autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption2});
 
   defaultInit(autoPas1, autoPas2, autoPasDirection);

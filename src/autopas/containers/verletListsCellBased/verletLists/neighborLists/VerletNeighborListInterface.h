@@ -19,7 +19,7 @@ namespace autopas {
  * Interface for neighbor lists used by VarVerletLists.
  * @tparam Particle The particle type this neighbor list uses.
  */
-template <class Particle>
+template <class Particle, class ParticleCell>
 class VerletNeighborListInterface {
  public:
   /**
@@ -38,8 +38,8 @@ class VerletNeighborListInterface {
    * @param linkedCells The linked cells to use for building the neighbor list.
    * @param useNewton3 If true, use newton 3 for the neighbor list.
    */
-  virtual void buildNeighborList(LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                             typename VerletListHelpers<Particle>::SoAArraysType> &linkedCells,
+  virtual void buildNeighborList(LinkedCells<typename VerletListHelpers<Particle, ParticleCell>::VerletListParticleCellType,
+                                             typename VerletListHelpers<Particle, ParticleCell>::SoAArraysType> &linkedCells,
                                  bool useNewton3) = 0;
 
   /**

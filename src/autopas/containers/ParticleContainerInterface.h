@@ -20,8 +20,6 @@
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
-    enum ParticleCellTypeEnum { FullParticleCellEnum, ReferenceParticleCellEnum };
-
 /**
  * The ParticleContainerInterface class provides a basic interface for all Containers within AutoPas.
  * It defines method interfaces for addition and deletion of particles, accessing general container
@@ -37,6 +35,12 @@ class ParticleContainerInterface {
    */
   using ParticleType = Particle;
 
+    /**
+    *  Type of the ParticleCell.
+    */
+
+    virtual ParticleCellTypeEnum getParticleCellTypeEnum();
+
   /**
    * Type of the ParticleCell.
    */
@@ -44,6 +48,7 @@ class ParticleContainerInterface {
    * Default constructor
    */
   ParticleContainerInterface() = default;
+
 
   /**
    * Destructor of ParticleContainerInterface.
@@ -70,11 +75,6 @@ class ParticleContainerInterface {
    * @return Enum representing the container.
    */
   [[nodiscard]] virtual ContainerOption getContainerType() const = 0;
-
-    /**
-     *  get enum of the ParticleCell.
-    */
-    virtual ParticleCellTypeEnum getParticleCellTypeEnum() const = 0;
 
   /**
    * Adds a particle to the container.

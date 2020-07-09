@@ -103,8 +103,8 @@ ContainerSelector<Particle>::generateContainer(ContainerOption containerChoice,
           break;
       }
     case ContainerOption::verletLists: {
-      container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                          VerletLists<Particle>::BuildVerletListType::VerletSoA,
+      container = std::make_unique<VerletLists<Particle, FullParticleCell<Particle>>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                          VerletLists<Particle, FullParticleCell<Particle>>::BuildVerletListType::VerletSoA,
                                                           containerInfo.cellSizeFactor);
       break;
     }
@@ -125,7 +125,7 @@ ContainerSelector<Particle>::generateContainer(ContainerOption containerChoice,
       break;
     }
     case ContainerOption::varVerletListsAsBuild: {
-      container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
+      container = std::make_unique<VarVerletLists<Particle, FullParticleCell<Particle>, VerletNeighborListAsBuild<Particle, FullParticleCell<Particle>>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }

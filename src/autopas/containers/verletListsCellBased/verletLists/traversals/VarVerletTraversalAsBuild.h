@@ -24,20 +24,20 @@ namespace autopas {
  */
 template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3>
-class VarVerletTraversalAsBuild : public VarVerletTraversalInterface<VerletNeighborListAsBuild<Particle>>,
+class VarVerletTraversalAsBuild : public VarVerletTraversalInterface<VerletNeighborListAsBuild<Particle, ParticleCell>>,
                                   public TraversalInterface {
  private:
   /**
    * Internal iterate method for AoS.
    * @param neighborList The neighbor list to iterate over.
    */
-  void iterateAoS(VerletNeighborListAsBuild<Particle> &neighborList);
+  void iterateAoS(VerletNeighborListAsBuild<Particle, ParticleCell> &neighborList);
 
   /**
    * Internal iterate method for SoA.
    * @param neighborList The neighbor list to iterate over.
    */
-  void iterateSoA(VerletNeighborListAsBuild<Particle> &neighborList);
+  void iterateSoA(VerletNeighborListAsBuild<Particle, ParticleCell> &neighborList);
 
  public:
   /**
@@ -99,7 +99,7 @@ class VarVerletTraversalAsBuild : public VarVerletTraversalInterface<VerletNeigh
 template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3>
 void VarVerletTraversalAsBuild<ParticleCell, Particle, PairwiseFunctor, dataLayout, useNewton3>::iterateAoS(
-    VerletNeighborListAsBuild<Particle> &neighborList) {
+    VerletNeighborListAsBuild<Particle, ParticleCell> &neighborList) {
   const auto &list = neighborList.getInternalNeighborList();
 
 #if defined(AUTOPAS_OPENMP)
@@ -126,7 +126,7 @@ void VarVerletTraversalAsBuild<ParticleCell, Particle, PairwiseFunctor, dataLayo
 template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3>
 void VarVerletTraversalAsBuild<ParticleCell, Particle, PairwiseFunctor, dataLayout, useNewton3>::iterateSoA(
-    VerletNeighborListAsBuild<Particle> &neighborList) {
+    VerletNeighborListAsBuild<Particle, ParticleCell> &neighborList) {
   const auto &soaNeighborList = neighborList.getInternalSoANeighborList();
 
 #if defined(AUTOPAS_OPENMP)

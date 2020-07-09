@@ -32,18 +32,13 @@ static unsigned int _instanceCounter = 0;
  * @tparam Particle Class for particles
  * @tparam ParticleCell Class for the particle cells
  */
-template <class Particle, class ParticleCell>
+template <class Particle>
 class AutoPas {
  public:
   /**
    * Particle type to be accessible after initialization.
    */
   using Particle_t = Particle;
-
-  /**
-   * Particle Cell type to be accessible after initialization.
-   */
-  //using ParticleCell_t = ParticleCell;
 
   /**
    * Define the iterator_t for simple use, also from the outside.
@@ -182,7 +177,7 @@ class AutoPas {
    */
   template <class Functor>
   bool iteratePairwise(Functor *f) {
-    static_assert(not std::is_same<Functor, autopas::Functor<Particle, ParticleCell>>::value,
+    static_assert(not std::is_same<Functor, autopas::Functor<Particle>>::value,
                   "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
                   "derived type instead, e.g. by using a dynamic_cast.");
     if (f->getCutoff() > this->getCutoff()) {

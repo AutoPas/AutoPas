@@ -10,7 +10,7 @@
 #include "autopasTools/generators/GridGenerator.h"
 #include "src/TimeDiscretization.h"
 
-void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<Molecule, FMCell> &autopas) {
+void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<Molecule> &autopas) {
   autopas.setBoxMin({0., 0., 0.});
   autopas.setBoxMax({5., 5., 5.});
   autopas.init();
@@ -21,7 +21,7 @@ void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<Molecule,
 }
 
 TEST_F(TimeDiscretizationTest, calcVelocities) {
-  auto autoPas = autopas::AutoPas<Molecule, FMCell>();
+  auto autoPas = autopas::AutoPas<Molecule>();
   fillWithParticlesAndInit(autoPas);
 
   TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1);
@@ -48,8 +48,8 @@ TEST_F(TimeDiscretizationTest, calcVelocities) {
 }
 
 TEST_F(TimeDiscretizationTest, calcPositions) {
-  auto autoPas = autopas::AutoPas<Molecule, FMCell>();
-  auto autoPasRef = autopas::AutoPas<Molecule, FMCell>();
+  auto autoPas = autopas::AutoPas<Molecule>();
+  auto autoPasRef = autopas::AutoPas<Molecule>();
   fillWithParticlesAndInit(autoPas);
   fillWithParticlesAndInit(autoPasRef);
 

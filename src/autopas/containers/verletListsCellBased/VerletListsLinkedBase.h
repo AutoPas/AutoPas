@@ -47,6 +47,14 @@ class VerletListsLinkedBase : public ParticleContainerInterface<typename LinkedP
 
   using Particle = typename LinkedParticleCell::ParticleType;
 
+    /**
+       * Destructor of ParticleContainer.
+       */
+    ParticleCellTypeEnum getParticleCellTypeEnum() override  {
+        LinkedParticleCell someCell = LinkedParticleCell();
+        return someCell.getParticleCellTypeAsEnum();
+    };
+
   /**
    * @copydoc autopas::ParticleContainerInterface::addParticleImpl
    * @note This function invalidates the neighbor lists.
@@ -100,12 +108,6 @@ class VerletListsLinkedBase : public ParticleContainerInterface<typename LinkedP
     return _linkedCells.updateContainer();
   }
 
-    /**
-       *  get enum of the ParticleCell.
-      */
-    [[nodiscard]] ParticleCellTypeEnum getParticleCellTypeEnum() const {
-        return FullParticleCellEnum;
-    };
 
   /**
    * Searches the provided halo particle and updates the found particle.

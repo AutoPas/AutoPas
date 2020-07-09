@@ -52,10 +52,6 @@ class DirectSum : public ParticleContainer<ParticleCell> {
     this->_cells.resize(2);
   }
 
-    [[nodiscard]] ParticleCellTypeEnum getParticleCellTypeEnum() const {
-        return FullParticleCellEnum;
-    };
-
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::directSum; }
 
   /**

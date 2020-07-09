@@ -18,18 +18,18 @@ namespace autopas {
  * during the build with C08 from LinkedCells.
  * @tparam Particle The particle type the class uses.
  */
-template <class Particle>
-class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, ColorChangeObserver {
+template <class Particle, class ParticleCell>
+class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle, ParticleCell>, ColorChangeObserver {
   /**
    * Adds the generator functor for validation checks as friend so it can call checkPair().
    *  @param true mark that it is for validation checks.
    */
-  friend class internal::AsBuildPairGeneratorFunctor<Particle, true>;
+  friend class internal::AsBuildPairGeneratorFunctor<Particle, ParticleCell, true>;
   /**
    * Adds the generator functor for adding pairs as friend so it can call addPair().
    *  @param false test mark that it is for adding pairs.
    */
-  friend class internal::AsBuildPairGeneratorFunctor<Particle, false>;
+  friend class internal::AsBuildPairGeneratorFunctor<Particle, ParticleCell, false>;
 
  private:
   /**
@@ -40,11 +40,11 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    */
   template <bool useNewton3, bool callCheckInstead = false>
   void startFunctor(double cutoff) {
-    internal::AsBuildPairGeneratorFunctor<Particle, callCheckInstead> functor(*this, cutoff);
+    internal::AsBuildPairGeneratorFunctor<Particle, ParticleCell, callCheckInstead> functor(*this, cutoff);
     // Use SoA traversal for generation and AoS traversal for validation check.
     constexpr auto dataLayout = callCheckInstead ? DataLayoutOption::aos : DataLayoutOption::soa;
-    auto traversal = C08TraversalColorChangeNotify<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                                   internal::AsBuildPairGeneratorFunctor<Particle, callCheckInstead>,
+    auto traversal = C08TraversalColorChangeNotify<typename VerletListHelpers<Particle, ParticleCell>::VerletListParticleCellType,
+                                                   internal::AsBuildPairGeneratorFunctor<Particle, ParticleCell, callCheckInstead>,
                                                    dataLayout, useNewton3>(
         _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &functor,
         _baseLinkedCells->getInteractionLength(), _baseLinkedCells->getCellBlock().getCellLength(), this);
@@ -86,8 +86,8 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    * It executes C08 on the passed LinkedCells container and saves the resulting pairs in the neighbor list, remembering
    * the thread and current color for each pair.
    */
-  void buildNeighborList(LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                     typename VerletListHelpers<Particle>::SoAArraysType> &linkedCells,
+  void buildNeighborList(LinkedCells<typename VerletListHelpers<Particle, ParticleCell>::VerletListParticleCellType,
+                                     typename VerletListHelpers<Particle,ParticleCell>::SoAArraysType> &linkedCells,
                          bool useNewton3) override {
     _soaListIsValid = false;
     _baseLinkedCells = &linkedCells;
@@ -296,8 +296,8 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * The LinkedCells object this neighbor list should use to build.
    */
-  LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-              typename VerletListHelpers<Particle>::SoAArraysType> *_baseLinkedCells;
+  LinkedCells<typename VerletListHelpers<Particle, ParticleCell>::VerletListParticleCellType,
+              typename VerletListHelpers<Particle, ParticleCell>::SoAArraysType> *_baseLinkedCells;
 
   /**
    * The internal SoA neighbor list. For format, see getInternalSoANeighborList().
@@ -328,7 +328,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   std::atomic<bool> _allPairsPresent;
 };
 
-template <class Particle>
-int VerletNeighborListAsBuild<Particle>::_currentColor = 0;
+template <class Particle, class ParticleCell>
+int VerletNeighborListAsBuild<Particle, ParticleCell>::_currentColor = 0;
 
 }  // namespace autopas

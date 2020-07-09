@@ -30,14 +30,13 @@ namespace autopas {
  * @todo deleting particles should also invalidate the verlet lists - should be
  * implemented somehow
  */
-template <class Particle>
+template <class Particle, class ParticleCell>
 class VerletLists
-    : public VerletListsLinkedBase<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                   typename VerletListHelpers<Particle>::SoAArraysType> {
-  using verlet_internal = VerletListHelpers<Particle>;
-  using ParticleCell = FullParticleCell<Particle>;
-  using SoAArraysType = typename VerletListHelpers<Particle>::SoAArraysType;
-  using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
+    : public VerletListsLinkedBase<typename VerletListHelpers<Particle, ParticleCell>::VerletListParticleCellType,
+                                   typename VerletListHelpers<Particle, ParticleCell>::SoAArraysType> {
+  using verlet_internal = VerletListHelpers<Particle, ParticleCell>;
+  using SoAArraysType = typename VerletListHelpers<Particle, ParticleCell>::SoAArraysType;
+  using LinkedParticleCell = typename VerletListHelpers<Particle, ParticleCell>::VerletListParticleCellType;
 
  public:
   /**

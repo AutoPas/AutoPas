@@ -53,11 +53,11 @@ void checkRegionIteratorForAllParticles(AutoPasT &autoPas, autopas::IteratorBeha
 template <bool testConstIterators>
 void testAdditionAndIteration(autopas::ContainerOption containerOption, double cellSizeOption, bool priorForceCalc) {
   // create AutoPas object
-  autopas::AutoPas<Molecule, FMCell> autoPas;
+  autopas::AutoPas<Molecule> autoPas;
 
   // Reference to the AutoPas object to be able to check const iterators.
-  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule, FMCell> &,
-                     autopas::AutoPas<Molecule, FMCell> &>
+  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule> &,
+                     autopas::AutoPas<Molecule> &>
       autoPasRef = autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
@@ -99,7 +99,7 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
   }
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule, FMCell> eFunctor;
+    EmptyFunctor<Molecule> eFunctor;
     autoPas.iteratePairwise(&eFunctor);
   }
   {
@@ -211,10 +211,10 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
 template <bool testConstIterators>
 void testRangeBasedIterator(autopas::ContainerOption containerOption, double cellSizeOption, bool priorForceCalc) {
   // create AutoPas object
-  autopas::AutoPas<Molecule, FMCell> autoPas;
+  autopas::AutoPas<Molecule> autoPas;
   // Reference to the AutoPas object to be able to check const iterators.
-  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule, FMCell> &,
-                     autopas::AutoPas<Molecule, FMCell> &>
+  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule> &,
+                     autopas::AutoPas<Molecule> &>
       autoPasRef = autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
@@ -256,7 +256,7 @@ void testRangeBasedIterator(autopas::ContainerOption containerOption, double cel
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule, FMCell> eFunctor;
+    EmptyFunctor<Molecule> eFunctor;
     autoPas.iteratePairwise(&eFunctor);
   }
 
@@ -308,11 +308,11 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
   std::array<double, 3> highCorner = {3, 3, 3};
 
   int clusterSize = 64;
-  autopas::AutoPas<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> apContainer;
+  autopas::AutoPas<TouchableParticle> apContainer;
   // Reference to the AutoPas object to be able to check const iterators.
   std::conditional_t<testConstIterators,
-                     const autopas::AutoPas<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> &,
-                     autopas::AutoPas<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> &>
+                     const autopas::AutoPas<TouchableParticle> &,
+                     autopas::AutoPas<TouchableParticle> &>
       autoPasRef = apContainer;
 
   apContainer.setAllowedContainers({containerOption});
@@ -459,10 +459,10 @@ TEST_P(IteratorTest, testOpenMPRegionIteratorsHaloOnly) {
 template <bool testConstIterators>
 void testRegionIteratorDeletion(autopas::ContainerOption containerOption, double cellSizeFactor, bool priorForceCalc) {
   // create AutoPas object
-  autopas::AutoPas<Molecule, FMCell> autoPas;
+  autopas::AutoPas<Molecule> autoPas;
   // Reference to the AutoPas object to be able to check const iterators.
-  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule, FMCell> &,
-                     autopas::AutoPas<Molecule, FMCell> &>
+  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule> &,
+                     autopas::AutoPas<Molecule> &>
       autoPasRef = autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
@@ -486,7 +486,7 @@ void testRegionIteratorDeletion(autopas::ContainerOption containerOption, double
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule, FMCell> eFunctor;
+    EmptyFunctor<Molecule> eFunctor;
     autoPas.iteratePairwise(&eFunctor);
   }
 

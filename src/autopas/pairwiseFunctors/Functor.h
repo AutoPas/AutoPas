@@ -9,7 +9,6 @@
 
 #include <type_traits>
 
-#include "autopas/cells/ParticleCell.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/CudaSoA.h"
@@ -31,7 +30,7 @@ enum class FunctorN3Modes {
   Both,
 };
 
-template <class Particle>
+template <class Particle, class ParticleCell>
 class VerletListHelpers;
 
 namespace internal {
@@ -71,11 +70,16 @@ class Dummy final {
  * @tparam Particle the type of Particle
  * @tparam ParticleCell_t the type of ParticleCell
  */
-template <class Particle, class SoAArraysType = typename Particle::SoAArraysType,
-          typename Impl_t = internal::Dummy<Particle>>
+template <class Particle, class SoAArraysTypeTemplate = typename Particle::SoAArraysType,
+          typename Impl_tTemplate = internal::Dummy<Particle>>
 class Functor {
+    // TODO remove virtual if not needed
+    // TODO add template to function (ParticleCellTemplate)
  public:
-  /**
+
+    using SoAArraysType = SoAArraysTypeTemplate;
+    using Impl_t = Impl_tTemplate;
+    /**
    * Constructor
    * @param cutoff
    */
@@ -217,7 +221,7 @@ class Functor {
    * @param soa  Structure of arrays where the data is loaded.
    * @param device_handle soa in device memory where the data is copied to
    */
-  virtual void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
+  virtual void deviceSoALoader(SoA<SoAArraysType> &soa,
                                CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
     utils::ExceptionHandler::exception("Functor::CudaDeviceSoALoader: not yet implemented");
   }
@@ -228,34 +232,38 @@ class Functor {
    * @param soa  Structure of arrays where the data copied to.
    * @param device_handle soa in device memory where the data is loaded from
    */
-  virtual void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
+  virtual void deviceSoAExtractor(SoA<SoAArraysType> &soa,
                                   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
     utils::ExceptionHandler::exception("Functor::CudaDeviceSoAExtractor: not yet implemented");
   }
 
-  /**
-   * @brief Copies the AoS data of the given cell in the given soa.
-   *
-   * @param cell Cell from where the data is loaded.
-   * @param soa  Structure of arrays where the data is copied to.
-   * @param offset Offset within the SoA. The data of the cell should be added
-   * to the SoA with the specified offset.
-   */
-  virtual void SoALoader(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) {
-    SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Impl_t::getNeededAttr().size()>{});
-  }
+    /**
+* @brief Copies the AoS data of the given cell in the given soa.
+*
+* @param cell Cell from where the data is loaded.
+* @param soa  Structure of arrays where the data is copied to.
+* @param offset Offset within the SoA. The data of the cell should be added
+* to the SoA with the specified offset.
+*/
 
-  /**
-   * @brief Copies the data stored in the soa back into the cell.
-   *
-   * @param cell Cell where the data should be stored.
-   * @param soa  Structure of arrays from where the data is loaded.
-   * @param offset Offset within the SoA. The data of the soa should be
-   * extracted starting at offset.
-   */
-  virtual void SoAExtractor(ParticleCell<Particle> &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset) {
-    SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Impl_t::getComputedAttr().size()>{});
-  }
+    template <class ParticleCell>
+    void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
+        SoALoaderImpl(cell, soa, offset, std::make_index_sequence <Impl_t::getNeededAttr().size() > {});
+    }
+
+    /**
+     * @brief Copies the data stored in the soa back into the cell.
+     *
+     * @param cell Cell where the data should be stored.
+     * @param soa  Structure of arrays from where the data is loaded.
+     * @param offset Offset within the SoA. The data of the soa should be
+     * extracted starting at offset.
+     */
+    template<typename ParticleCell>
+    void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
+        SoAExtractorImpl(cell, soa, offset,
+                         std::make_index_sequence<Impl_t::getComputedAttr().size()>{});
+    }
 
   /**
    * Specifies whether the functor is capable of Newton3-like functors.
@@ -316,15 +324,18 @@ class Functor {
   double getCutoff() const { return _cutoff; }
 
  private:
-  /**
-   * Implements loading of SoA buffers.
-   * @tparam cell_t Cell type.
-   * @tparam I Attribute.
-   * @param cell Cell from where the data is loaded.
-   * @param soa  Structure of arrays where the data is copied to.
-   * @param offset Offset within the SoA. The data of the cell should be added
-   * to the SoA with the specified offset.
-   */
+
+            /**
+             * Implements loading of SoA buffers.
+             * @tparam cell_t Cell type.
+             * @tparam I Attribute.
+             * @param cell Cell from where the data is loaded.
+             * @param soa  Structure of arrays where the data is copied to.
+             * @param offset Offset within the SoA. The data of the cell should be added
+             * to the SoA with the specified offset.
+             */
+
+
   template <typename cell_t, std::size_t... I>
   void SoALoaderImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
     soa.resizeArrays(offset + cell.numParticles());

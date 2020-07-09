@@ -41,4 +41,4 @@ using FMCell = autopas::FullParticleCell<Molecule>;
 /**
  * Short for Mock Functor
  */
-using MFunctor = MockFunctor<autopas::Particle>;
+using MFunctor = MockFunctor<autopas::Particle, FPCell>;
