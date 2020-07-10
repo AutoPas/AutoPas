@@ -475,7 +475,7 @@ inline int AutoPas_MPI_Ibcast(void *buffer, int count, AutoPas_MPI_Datatype data
 
 inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
                                  AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
-  memcpy(recvbuf, sendbuf, datatype * count);
+  memcpy(recvbuf, sendbuf, datatype * static_cast<size_t>(count));
   return AUTOPAS_MPI_SUCCESS;
 }
 
