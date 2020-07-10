@@ -30,6 +30,10 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     case MPIStrategyOption::divideAndConquer: {
+      if (tuningStrategyOption == TuningStrategyOption::activeHarmony && getenv("HARMONY_HOST") != nullptr) {
+        // rank 0 will solely set up the entire search, so we cannot divide the search space
+        break;
+      }
       int rank, commSize;
       AutoPas_MPI_Comm_rank(comm, &rank);
       AutoPas_MPI_Comm_size(comm, &commSize);

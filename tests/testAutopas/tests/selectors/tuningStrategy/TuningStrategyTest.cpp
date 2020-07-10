@@ -30,7 +30,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceEmpty) {
 TEST_P(TuningStrategyTest, testSearchSpaceOneOption) {
   auto tuningStrategy = GetParam();
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
-  auto oneContainer = std::set<autopas::ContainerOption>({autopas::ContainerOption::linkedCells});
+  auto oneContainer = std::set<autopas::ContainerOption>({autopas::ContainerOption::directSum});
   auto oneTraversal = std::set<autopas::TraversalOption>({autopas::TraversalOption::directSumTraversal});
   auto oneLoadEstimator = std::set<autopas::LoadEstimatorOption>({autopas::LoadEstimatorOption::none});
   auto oneDataLayout = std::set<autopas::DataLayoutOption>({autopas::DataLayoutOption::soa});
