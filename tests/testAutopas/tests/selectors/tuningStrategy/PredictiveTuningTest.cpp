@@ -7,7 +7,6 @@
 #include "PredictiveTuningTest.h"
 
 #include <gmock/gmock-matchers.h>
-#include <gmock/gmock-more-matchers.h>
 
 /*
  * Tests the prediction and the selection of the right optimum.
@@ -19,6 +18,9 @@
  */
 TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
   unsigned int iteration = 0;
+  std::vector<autopas::Configuration> testedConfigs;
+  autopas::Configuration optimalConfiguration;
+  autopas::Configuration optimalPrediction;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -26,49 +28,55 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
       relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
-
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalPrediction = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(4, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(1, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
+  testedConfigs.clear();
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(3, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(2, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the second tuning phase.
   predictiveTuning.reset(iteration);
 
   // This tests the actual prediction.
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalPrediction, predictiveTuning.getCurrentConfiguration());
 }
 
 /*
@@ -81,6 +89,9 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
  */
 TEST_F(PredictiveTuningTest, testLinearRegression) {
   unsigned int iteration = 1;
+  std::vector<autopas::Configuration> testedConfigs;
+  autopas::Configuration optimalConfiguration;
+  autopas::Configuration optimalPrediction;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -89,48 +100,55 @@ TEST_F(PredictiveTuningTest, testLinearRegression) {
 
   predictiveTuning.reset(iteration);
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalPrediction = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(375, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(300, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(2000, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
+  testedConfigs.clear();
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(350, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(325, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(2000, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the second tuning phase.
   predictiveTuning.reset(iteration);
 
   // This tests the actual prediction.
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalPrediction, predictiveTuning.getCurrentConfiguration());
 }
 
 /*
@@ -143,6 +161,9 @@ TEST_F(PredictiveTuningTest, testLinearRegression) {
  */
 TEST_F(PredictiveTuningTest, testLagrange) {
   unsigned int iteration = 1;
+  std::vector<autopas::Configuration> testedConfigs;
+  autopas::Configuration optimalConfiguration;
+  autopas::Configuration optimalPrediction;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -151,68 +172,78 @@ TEST_F(PredictiveTuningTest, testLagrange) {
 
   predictiveTuning.reset(iteration);
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalPrediction = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(6, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(1, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
+  testedConfigs.clear();
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(5, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(2, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the second tuning phase.
   predictiveTuning.reset(iteration);
+  testedConfigs.clear();
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(4, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(3, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the third tuning phase.
   predictiveTuning.reset(iteration);
 
   // This tests the actual prediction.
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalPrediction, predictiveTuning.getCurrentConfiguration());
 }
 
 /*
@@ -225,6 +256,9 @@ TEST_F(PredictiveTuningTest, testLagrange) {
  */
 TEST_F(PredictiveTuningTest, testNewton) {
   unsigned int iteration = 1;
+  std::vector<autopas::Configuration> testedConfigs;
+  autopas::Configuration optimalConfiguration;
+  autopas::Configuration optimalPrediction;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -233,73 +267,85 @@ TEST_F(PredictiveTuningTest, testNewton) {
 
   predictiveTuning.reset(iteration);
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalPrediction = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(60, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(200, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
+  testedConfigs.clear();
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(50, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(200, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the second tuning phase.
   predictiveTuning.reset(iteration);
+  testedConfigs.clear();
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(40, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(30, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(200, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the third tuning phase.
   predictiveTuning.reset(iteration);
 
   // This tests the actual prediction.
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalPrediction, predictiveTuning.getCurrentConfiguration());
 }
 
 // Tests the first tuning iteration. There is no prediction and the whole searchSpace should be tested.
 TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
   unsigned int iteration = 0;
+  std::vector<autopas::Configuration> testedConfigs;
+  autopas::Configuration optimalConfiguration;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -308,21 +354,24 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
 
   predictiveTuning.reset(iteration);
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(1, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 }
 
 /*
@@ -336,6 +385,9 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
  */
 TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
   unsigned int iteration = 0;
+  std::vector<autopas::Configuration> testedConfigs;
+  autopas::Configuration optimalConfiguration;
+  autopas::Configuration nearOptimalConfiguration;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -344,58 +396,65 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
 
   predictiveTuning.reset(iteration);
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  nearOptimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(11, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
+  testedConfigs.clear();
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(11, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the second tuning phase.
   predictiveTuning.reset(iteration);
 
   // This test if a configuration near the optimum gets selected into _optimalSearchSpace.
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(nearOptimalConfiguration, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(11, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(10, iteration);
 
   // This tests that the right optimum configuration gets selected at the end of a tuning phase.
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 }
 
 /*
@@ -408,67 +467,77 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
  */
 TEST_F(PredictiveTuningTest, testTooLongNotTested) {
   unsigned int iteration = 0;
-  autopas::PredictiveTuning predictiveTuning(
-      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced},
-      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
-      relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
+  std::vector<autopas::Configuration> configurationsToCompare{configurationLC_C08, configurationLC_Sliced};
+  std::vector<autopas::Configuration> testedConfigs;
+  autopas::Configuration optimalConfiguration;
+  autopas::Configuration badConfiguration;
+  autopas::PredictiveTuning predictiveTuning({autopas::ContainerOption::linkedCells}, {1.},
+                                             {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced},
+                                             {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa},
+                                             {autopas::Newton3Option::disabled}, relativeOptimumRange,
+                                             maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  badConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
+  EXPECT_THAT(configurationsToCompare, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(badConfiguration, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // Iterating through the maxNumberOfIterationsWithoutTest iterations where C08 should not be tested.
   for (int i = 0; i < maxTuningIterationsWithoutTest; i++) {
     // End of the (i + 2)-th tuning phase.
     predictiveTuning.reset(iteration);
 
-    EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+    EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
     predictiveTuning.addEvidence(10, iteration);
     ++iteration;
 
     predictiveTuning.tune();
-    EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+    EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
   }
 
   // End of the (maxTuningIterationsWithoutTest + 2)-th tuning phase.
   predictiveTuning.reset(iteration);
 
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
   // Tests that a configuration gets selected into _tooLongNotTested.
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(badConfiguration, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 }
 
 /*
@@ -481,6 +550,9 @@ TEST_F(PredictiveTuningTest, testTooLongNotTested) {
  */
 TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
   unsigned int iteration = 0;
+  std::vector<autopas::Configuration> testedConfigs;
+  autopas::Configuration optimalConfiguration;     // later the invalid configuration
+  autopas::Configuration newOptimalConfiguration;  // when the other one is invalid
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -489,57 +561,64 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
 
   predictiveTuning.reset(iteration);
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  newOptimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(15, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
+  testedConfigs.clear();
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(15, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the second tuning phase.
   predictiveTuning.reset(iteration);
 
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
   ++iteration;
 
   predictiveTuning.tune(true);
 
   // Tests if a new _optimalSearchSpace gets selected if the first one is invalid.
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(newOptimalConfiguration, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(15, iteration);
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(newOptimalConfiguration, predictiveTuning.getCurrentConfiguration());
 }
 
 /*
@@ -553,6 +632,9 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
  */
 TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
   unsigned int iteration = 0;
+  std::vector<autopas::Configuration> testedConfigs;
+  autopas::Configuration optimalConfiguration;     // later the invalid configuration
+  autopas::Configuration newOptimalConfiguration;  // when the other ones are invalid
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -561,61 +643,68 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
 
   predictiveTuning.reset(iteration);
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(15, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+  newOptimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
+  testedConfigs.clear();
 
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(15, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
+  EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
   predictiveTuning.tune();
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // End of the second tuning phase.
   predictiveTuning.reset(iteration);
 
-  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
   ++iteration;
 
   predictiveTuning.tune(true);
 
   // Tests if a new _optimalSearchSpace gets selected if the first one is invalid.
-  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  // EXPECT_EQ(, predictiveTuning.getCurrentConfiguration());
   ++iteration;
 
   predictiveTuning.tune(true);
 
   // Tests if a new _optimalSearchSpace gets selected if the second one is invalid.
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(newOptimalConfiguration, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
 
   predictiveTuning.tune();
-  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(newOptimalConfiguration, predictiveTuning.getCurrentConfiguration());
 }
