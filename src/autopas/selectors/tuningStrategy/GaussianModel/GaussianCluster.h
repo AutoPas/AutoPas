@@ -528,6 +528,7 @@ class GaussianCluster {
 
   /**
    * Default function used to convert vectors to readable strings.
+   * @note begin() and end() currently not available for Eigen::Vector, so AutoPas ArrayUtils cannot be used.
    * @param vec
    * @return string with format (a,b,...,n) beginning with discrete values.
    */
