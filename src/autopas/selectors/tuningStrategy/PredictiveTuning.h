@@ -47,7 +47,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
                    const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                    const std::set<Newton3Option> &allowedNewton3Options, double relativeOptimum,
-                   unsigned int maxTuningIterationsWithoutTest, unsigned int relativeRangeForBlacklist,
+                   unsigned int maxTuningIterationsWithoutTest, double relativeRangeForBlacklist,
                    unsigned int testsUntilFirstPrediction, ExtrapolationMethodOption extrapolationMethodOption)
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                           allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options),
@@ -83,7 +83,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
 
   inline void addEvidence(long time, size_t iteration) override {
     _traversalTimesStorage[*_currentConfig].emplace_back(iteration, time);
-    _lastTest[*_currentConfig] = _tuningIterationsCounter;
+    _lastTest[*_currentConfig] = _tuningPhaseCounter;
   }
 
   inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
@@ -143,9 +143,9 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    */
   inline void reselectOptimalSearchSpace();
   /**
-   * Selects configurations that go on the testing black list..
+   * Selects configurations that go on the testing black list.
    */
-  inline void selectBlackList();
+  inline void fillBlackList();
   /**
    * Creates output of the configuration and the prediction.
    */
@@ -204,7 +204,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * the first tuning phase it would use every configuration, if it was tested or not, because the _lastTest would
    * return zero in both cases.
    */
-  unsigned int _tuningIterationsCounter{1};
+  unsigned int _tuningPhaseCounter{1};
   /**
    * Stores the iteration at the beginning of a tuning phase.
    * Mainly used for the traversal time storage.
@@ -225,7 +225,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   /**
    * Factor of the range of the configurations that are not going to be blacklisted.
    */
-  const unsigned int _relativeRangeForBlacklist{10};
+  const double _relativeRangeForBlacklist{10};
   /**
    * Stores the extrapolation method that is going to be used for the traversal time predictions.
    */
@@ -251,11 +251,12 @@ void PredictiveTuning::setTestsUntilFirstPrediction(unsigned int testsUntilFirst
 }
 
 void PredictiveTuning::selectOptimalSearchSpace() {
-  if (_searchSpace.size() == 1 or _tuningIterationsCounter < _evidenceFirstPrediction + 1) {
+  // Special case: Search space is trivial or more evidence is needed.
+  if (_searchSpace.size() == 1 or _tuningPhaseCounter < _evidenceFirstPrediction + 1) {
     if (_relativeRangeForBlacklist != 0 and _iterationBeginTuningPhase != 1) {
-      for (const auto &configuration : _searchSpace) {
-        if (_blacklistSearchSpace.count(configuration) == 0) _optimalSearchSpace.emplace(configuration);
-      }
+      std::set_difference(_searchSpace.begin(), _searchSpace.end(), _blacklistSearchSpace.begin(),
+                          _blacklistSearchSpace.end(), std::inserter(_optimalSearchSpace, _optimalSearchSpace.begin()));
+
       // sanity check
       if (_optimalSearchSpace.empty()) {
         autopas::utils::ExceptionHandler::exception("PredictiveTuning: No possible configuration prediction found!");
@@ -280,9 +281,9 @@ void PredictiveTuning::selectOptimalSearchSpace() {
     // Adds configurations that have not been tested for _maxTuningIterationsWithoutTest or are within the
     // _relativeOptimumRange
     if (_blacklistSearchSpace.count(configuration) == 0) {
-      if ((float)_configurationPredictions[configuration] / optimum->second <= _relativeOptimumRange) {
+      if ((double)_configurationPredictions[configuration] / optimum->second <= _relativeOptimumRange) {
         _optimalSearchSpace.emplace(configuration);
-      } else if (_tuningIterationsCounter - _lastTest[configuration] > _maxTuningIterationsWithoutTest) {
+      } else if (_tuningPhaseCounter - _lastTest[configuration] > _maxTuningIterationsWithoutTest) {
         _tooLongNotTestedSearchSpace.emplace(configuration);
       }
     }
@@ -324,7 +325,7 @@ void PredictiveTuning::linePrediction() {
     }
     // if configuration was not tested in last tuning phase reuse prediction function.
     // checks is _configurationPredictionFunction has a linear function saved and only then it can reuse it
-    if (_lastTest[configuration] != (_tuningIterationsCounter - 1) and
+    if (_lastTest[configuration] != (_tuningPhaseCounter - 1) and
         _configurationPredictionFunction[configuration].size() == 2) {
       const auto delta = _iterationBeginTuningPhase - _traversalTimesStorage[configuration].back().first;
 
@@ -362,7 +363,7 @@ void PredictiveTuning::linearRegression() {
     }
     // if configuration was not tested in last tuning phase reuse prediction function.
     // checks is _configurationPredictionFunction has a linear function saved and only then it can reuse it
-    if ((_lastTest[configuration] != (_tuningIterationsCounter - 1)) and
+    if ((_lastTest[configuration] != (_tuningPhaseCounter - 1)) and
         _configurationPredictionFunction[configuration].size() == 2) {
       // if configuration was not tested in last tuning phase reuse prediction function.
       // gradient * iteration + y-intercept
@@ -459,7 +460,7 @@ void PredictiveTuning::newtonPolynomial() {
       continue;
     }
     // if configuration was not tested in last tuning phase reuse prediction function.
-    if ((_lastTest[configuration] != (_tuningIterationsCounter - 1)) and
+    if ((_lastTest[configuration] != (_tuningPhaseCounter - 1)) and
         _configurationPredictionFunction[configuration].size() == _evidenceFirstPrediction) {
       auto lengthTTS = _traversalTimesStorage[configuration].size() - 1;
       long prediction = 0;
@@ -592,7 +593,7 @@ bool PredictiveTuning::tune(bool valid) {
     if (_validConfigurationFound) {
       if (_tooLongNotTestedSearchSpace.empty()) {
         selectOptimalConfiguration();
-        _tuningIterationsCounter++;
+        _tuningPhaseCounter++;
         return false;
       } else {
         _currentConfig = _tooLongNotTestedSearchSpace.begin();
@@ -603,7 +604,7 @@ bool PredictiveTuning::tune(bool valid) {
     }
   } else if (_currentConfig == _tooLongNotTestedSearchSpace.end()) {
     selectOptimalConfiguration();
-    _tuningIterationsCounter++;
+    _tuningPhaseCounter++;
     return false;
   }
 
@@ -627,18 +628,18 @@ void PredictiveTuning::selectOptimalConfiguration() {
   // In the first couple iterations tune iterates through _searchSpace until predictions are made
   if (_optimalSearchSpace.empty()) {
     for (const auto &configuration : _searchSpace) {
-      if (_lastTest[configuration] == _tuningIterationsCounter) {
+      if (_lastTest[configuration] == _tuningPhaseCounter) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
   } else {
     for (const auto &configuration : _optimalSearchSpace) {
-      if (_lastTest[configuration] == _tuningIterationsCounter) {
+      if (_lastTest[configuration] == _tuningPhaseCounter) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
     for (const auto &configuration : _tooLongNotTestedSearchSpace) {
-      if (_lastTest[configuration] == _tuningIterationsCounter) {
+      if (_lastTest[configuration] == _tuningPhaseCounter) {
         traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
       }
     }
@@ -662,21 +663,20 @@ void PredictiveTuning::selectOptimalConfiguration() {
         "PredicitveTuning: Optimal configuration not found in list of configurations!");
   }
 
-  if (_relativeRangeForBlacklist != 0 and not _notTestedYet.empty()) selectBlackList();
+  if (_relativeRangeForBlacklist != 0 and not _notTestedYet.empty()) fillBlackList();
 
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
 }
 
-void PredictiveTuning::selectBlackList() {
-  auto optimumTime = _traversalTimesStorage[getCurrentConfiguration()].back().second;
-  std::set<Configuration> oldNotTestedYet = _notTestedYet;
+void PredictiveTuning::fillBlackList() {
+  auto optimumTime = static_cast<double>(_traversalTimesStorage[getCurrentConfiguration()].back().second);
 
-  for (const auto &configuration : oldNotTestedYet) {
-    if (_lastTest[configuration] == _tuningIterationsCounter) {
-      if (_traversalTimesStorage[configuration].back().second / optimumTime > _relativeRangeForBlacklist) {
-        _blacklistSearchSpace.emplace(configuration);
+  for (auto configurationIter = _notTestedYet.begin(); configurationIter != _notTestedYet.end(); configurationIter++) {
+    if (_lastTest[*configurationIter] == _tuningPhaseCounter) {
+      if (_traversalTimesStorage[*configurationIter].back().second / optimumTime > _relativeRangeForBlacklist) {
+        _blacklistSearchSpace.emplace(*configurationIter);
       }
-      _notTestedYet.erase(configuration);
+      configurationIter = _notTestedYet.erase(configurationIter);
     }
   }
 }

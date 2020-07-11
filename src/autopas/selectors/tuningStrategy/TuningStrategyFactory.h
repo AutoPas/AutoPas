@@ -36,7 +36,6 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     const std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
-    unsigned int maxTuningPhasesWithoutTest, unsigned int relativeRangeForBlacklist,
-    unsigned int evidenceFirstPrediction, AcquisitionFunctionOption acquisitionFunctionOption,
-    ExtrapolationMethodOption extrapolationMethodOption);
+    unsigned int maxTuningPhasesWithoutTest, double relativeRangeForBlacklist, unsigned int evidenceFirstPrediction,
+    AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption);
 }  // namespace autopas::TuningStrategyFactory

@@ -452,13 +452,13 @@ class AutoPas {
    * Get the range of the configurations that are not going to be blacklisted.
    * @return
    */
-  [[nodiscard]] unsigned int getRelativeRangeForBlacklist() const { return _relativeRangeForBlacklist; }
+  [[nodiscard]] double getRelativeRangeForBlacklist() const { return _relativeRangeForBlacklist; }
 
   /**
    * Set the range of the configurations that are not going to be blacklisted.
    * @param relativeRangeForBlacklist
    */
-  void setRelativeRangeForBlacklist(bool relativeRangeForBlacklist) {
+  void setRelativeRangeForBlacklist(double relativeRangeForBlacklist) {
     AutoPas::_relativeRangeForBlacklist = relativeRangeForBlacklist;
   }
 
@@ -663,7 +663,7 @@ class AutoPas {
   /**
    * Factor of the range of the configurations that are not going to be blacklisted.
    */
-  unsigned int _relativeRangeForBlacklist{0};
+  double _relativeRangeForBlacklist{0};
   /**
    * Specifies how many tests that need to have happened for a configuration until the first prediction is calculated in
    * PredictiveTuning.

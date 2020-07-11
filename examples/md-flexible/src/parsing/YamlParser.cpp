@@ -101,7 +101,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.maxTuningPhasesWithoutTest.value = node[config.maxTuningPhasesWithoutTest.name].as<unsigned int>();
   }
   if (node[config.relativeRangeBlacklist.name]) {
-    config.relativeRangeBlacklist.value = node[config.relativeRangeBlacklist.name].as<unsigned int>();
+    config.relativeRangeBlacklist.value = node[config.relativeRangeBlacklist.name].as<double>();
   }
   if (node[config.evidenceFirstPrediction.name]) {
     config.evidenceFirstPrediction.value = node[config.evidenceFirstPrediction.name].as<unsigned int>();
@@ -110,7 +110,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto parsedOptions =
         autopas::ExtrapolationMethodOption::parseOptions(node[config.extrapolationMethodOption.name].as<std::string>());
     if (parsedOptions.size() != 1) {
-      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one extrapolation method option!");
+      throw std::runtime_error(
+          "YamlParser::parseYamlFile: Pass exactly one extrapolation method option!\n \"Possible values: \" +\n"
+          "          autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), \" \", "
+          "{\"(\", \")\"})");
     }
     config.extrapolationMethodOption.value = *parsedOptions.begin();
   }
