@@ -408,10 +408,11 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
  */
 TEST_F(PredictiveTuningTest, testTooLongNotTested) {
   unsigned int iteration = 0;
-  autopas::PredictiveTuning predictiveTuning(
-      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced},
-      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
-      relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
+  autopas::PredictiveTuning predictiveTuning({autopas::ContainerOption::linkedCells}, {1.},
+                                             {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced},
+                                             {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa},
+                                             {autopas::Newton3Option::disabled}, relativeOptimumRange,
+                                             maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 

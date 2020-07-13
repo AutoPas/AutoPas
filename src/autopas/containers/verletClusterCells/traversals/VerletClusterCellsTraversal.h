@@ -43,7 +43,9 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
   VerletClusterCellsTraversal(PairwiseFunctor *pairwiseFunctor, const unsigned int clusterSize)
       : CellPairTraversal<ParticleCell>({1, 1, 1}), _functor(pairwiseFunctor), _clusterSize(clusterSize) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcc_cluster_iteration_cuda; }
+  [[nodiscard]] TraversalOption getTraversalType() const override {
+    return TraversalOption::vcc_cluster_iteration_cuda;
+  }
 
   [[nodiscard]] bool isApplicable() const override {
     if (dataLayout == DataLayoutOption::cuda) {

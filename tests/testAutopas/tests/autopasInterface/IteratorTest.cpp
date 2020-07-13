@@ -551,6 +551,6 @@ static inline auto getTestableContainerOptions() {
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, IteratorTest,
-                         Combine(ValuesIn(getTestableContainerOptions()), Values(0.5, 1., 1.5),
-                                 Values(true, false), Values(true, false)),
+                         Combine(ValuesIn(getTestableContainerOptions()), Values(0.5, 1., 1.5), Values(true, false),
+                                 Values(true, false)),
                          IteratorTest::PrintToStringParamName());

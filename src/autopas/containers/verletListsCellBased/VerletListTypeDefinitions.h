@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "autopas/utils/SoAType.h"
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/utils/SoAType.h"
 
 namespace autopas {
 /**

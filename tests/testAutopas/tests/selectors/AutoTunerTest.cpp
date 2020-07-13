@@ -316,9 +316,9 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                                 autopas::Newton3Option::enabled);
-  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-                                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                  autopas::Newton3Option::disabled);
+  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor,
+                                  autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
+                                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto configsList = {confNoN3, confN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
@@ -350,9 +350,9 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                                 autopas::Newton3Option::enabled);
-  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-                                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                                  autopas::Newton3Option::enabled);
+  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor,
+                                  autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
+                                  autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled);
 
   auto configsList = {confN3, confNoN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);

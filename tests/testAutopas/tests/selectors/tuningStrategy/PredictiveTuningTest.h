@@ -21,8 +21,8 @@ class PredictiveTuningTest : public AutoPasTestBase {
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
   const autopas::Configuration configurationSliced = autopas::Configuration(
-      autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced, autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
+      autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
+      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
 
   static constexpr double relativeOptimumRange{1.2};
   static constexpr unsigned int maxTuningIterationsWithoutTest{5};

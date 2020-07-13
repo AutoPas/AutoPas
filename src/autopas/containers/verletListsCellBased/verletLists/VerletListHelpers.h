@@ -8,8 +8,8 @@
 
 #include <atomic>
 
-#include "autopas/containers/verletListsCellBased/VerletListTypeDefinitions.h"
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/verletListsCellBased/VerletListTypeDefinitions.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
