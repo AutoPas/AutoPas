@@ -8,6 +8,7 @@
 
 #include <atomic>
 
+#include "autopas/containers/verletListsCellBased/VerletListTypeDefinitions.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"
@@ -25,13 +26,13 @@ class VerletListHelpers {
   using AoS_verletlist_storage_type = std::unordered_map<Particle *, std::vector<Particle *>>;
 
   /// using declaration for soa's of verlet list's linked cells (only id and position needs to be stored)
-  using SoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
+  using SoAArraysType = typename VerletListTypeDefinitions<Particle>::SoAArraysType;
 
   /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
   enum AttributeNames : int { ptr, posX, posY, posZ };
 
   /// using declaration for verlet-list particle cell type
-  using VerletListParticleCellType = FullParticleCell<Particle, SoAArraysType>;
+  using VerletListParticleCellType = typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.

@@ -7,7 +7,7 @@
 #pragma once
 
 #include "autopas/containers/verletListsCellBased/VarVerletLists/traversals/VarVerletTraversalInterface.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
+#include "autopas/containers/verletListsCellBased/VerletListTypeDefinitions.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 
 namespace autopas {
@@ -20,10 +20,10 @@ namespace autopas {
  */
 template <class Particle, class NeighborList>
 class VarVerletLists
-    : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                   typename VerletListHelpers<Particle>::SoAArraysType> {
-  using SoAArraysType = typename VerletListHelpers<Particle>::SoAArraysType;
-  using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
+    : public VerletListsLinkedBase<Particle, typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType,
+                                   typename VerletListTypeDefinitions<Particle>::SoAArraysType> {
+  using SoAArraysType = typename VerletListTypeDefinitions<Particle>::SoAArraysType;
+  using LinkedParticleCell = typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType;
 
  public:
   /**
