@@ -8,7 +8,7 @@
 
 #include "AsBuildPairGeneratorFunctor.h"
 #include "C08TraversalColorChangeNotify.h"
-#include "autopas/containers/verletListsCellBased/verletLists/neighborLists/VerletNeighborListInterface.h"
+#include "autopas/containers/verletListsCellBased/VarVerletLists/neighborLists/VerletNeighborListInterface.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {

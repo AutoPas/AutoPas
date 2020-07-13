@@ -28,8 +28,7 @@ namespace autopas {
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @note This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
- * @todo deleting particles should also invalidate the verlet lists - should be
- * implemented somehow
+ * @todo deleting particles should also invalidate the verlet lists - should be implemented somehow
  */
 template <class Particle>
 class VerletLists

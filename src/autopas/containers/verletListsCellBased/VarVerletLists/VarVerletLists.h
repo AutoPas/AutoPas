@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include "VerletLists.h"
-#include "traversals/VarVerletTraversalInterface.h"
+#include "autopas/containers/verletListsCellBased/VarVerletLists/traversals/VarVerletTraversalInterface.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
+#include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 
 namespace autopas {
 

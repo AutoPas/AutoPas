@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "autopas/containers/verletListsCellBased/verletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VarVerletTraversalInterface.h"
+#include "VarVerletTraversalInterface.h"
+#include "autopas/containers/verletListsCellBased/VarVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/WrapOpenMP.h"
 

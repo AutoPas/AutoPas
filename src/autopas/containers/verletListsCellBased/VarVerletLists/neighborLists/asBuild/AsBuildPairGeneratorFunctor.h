@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
+#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {

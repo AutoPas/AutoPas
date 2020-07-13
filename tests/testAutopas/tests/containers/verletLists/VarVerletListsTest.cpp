@@ -8,10 +8,9 @@
 
 #include "VarVerletListsTest.h"
 
-#include "autopas/containers/verletListsCellBased/verletLists/VarVerletLists.h"
-#include "autopas/containers/verletListsCellBased/verletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VarVerletTraversalAsBuild.h"
+#include "autopas/containers/verletListsCellBased/VarVerletLists/VarVerletLists.h"
+#include "autopas/containers/verletListsCellBased/VarVerletLists/traversals/VarVerletTraversalAsBuild.h"
+#include "autopas/containers/verletListsCellBased/VarVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
 #include "autopas/options/DataLayoutOption.h"
 
 using ::testing::_;
