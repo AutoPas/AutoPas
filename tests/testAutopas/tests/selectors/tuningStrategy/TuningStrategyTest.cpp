@@ -26,10 +26,10 @@ TEST_P(TuningStrategyTest, testSearchSpaceOneOption) {
   auto tuningStrategy = GetParam();
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
-      tuningStrategy, {autopas::ContainerOption::directSum}, oneInterval,
-      {autopas::TraversalOption::ds_sequential}, {autopas::LoadEstimatorOption::none},
-      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::enabled}, 42, 1.2, 5, 3,
-      autopas::AcquisitionFunctionOption::expectedImprovement, autopas::ExtrapolationMethodOption::linePrediction);
+      tuningStrategy, {autopas::ContainerOption::directSum}, oneInterval, {autopas::TraversalOption::ds_sequential},
+      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::enabled}, 42,
+      1.2, 5, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
+      autopas::ExtrapolationMethodOption::linePrediction);
 
   EXPECT_FALSE(search->searchSpaceIsEmpty());
   EXPECT_TRUE(search->searchSpaceIsTrivial());

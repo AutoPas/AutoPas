@@ -9,10 +9,10 @@
 #include "VerletListHelpers.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
+#include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/TraversalVerlet.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VerletTraversalInterface.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
@@ -28,8 +28,7 @@ namespace autopas {
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @note This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
- * @todo deleting particles should also invalidate the verlet lists - should be
- * implemented somehow
+ * @todo deleting particles should also invalidate the verlet lists - should be implemented somehow
  */
 template <class Particle>
 class VerletLists
@@ -74,7 +73,7 @@ class VerletLists
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *verletTraversalInterface = dynamic_cast<VerletTraversalInterface<LinkedParticleCell> *>(traversal);
+    auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<LinkedParticleCell> *>(traversal);
     if (verletTraversalInterface) {
       verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
                                                          _soaNeighborLists);
@@ -124,8 +123,8 @@ class VerletLists
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS: {
         utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::aos, theBool>(
+          auto traversal = LCC08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+                                          DataLayoutOption::aos, theBool>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
               this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&traversal);
@@ -134,8 +133,8 @@ class VerletLists
       }
       case BuildVerletListType::VerletSoA: {
         utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::soa, theBool>(
+          auto traversal = LCC08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
+                                          DataLayoutOption::soa, theBool>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
               this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&traversal);

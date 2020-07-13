@@ -20,6 +20,7 @@ class PredictiveTuningTest : public AutoPasTestBase {
   const autopas::Configuration configurationLC_C08 = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
+
   const autopas::Configuration configurationLC_Sliced = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);

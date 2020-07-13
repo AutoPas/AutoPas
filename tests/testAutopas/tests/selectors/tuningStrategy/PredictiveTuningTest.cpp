@@ -467,10 +467,13 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
  */
 TEST_F(PredictiveTuningTest, testTooLongNotTested) {
   unsigned int iteration = 0;
+
   std::vector<autopas::Configuration> configurationsToCompare{configurationLC_C08, configurationLC_Sliced};
   std::vector<autopas::Configuration> testedConfigs;
   autopas::Configuration optimalConfiguration;
   autopas::Configuration badConfiguration;
+
+  
   autopas::PredictiveTuning predictiveTuning({autopas::ContainerOption::linkedCells}, {1.},
                                              {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced},
                                              {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa},

@@ -15,7 +15,7 @@
 #include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
-#include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -94,7 +94,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
           "VerletClusterLists::iteratePairwise(): Trying to do a pairwise iteration, even though verlet lists are not "
           "valid.");
     }
-    auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
+    auto *traversalInterface = dynamic_cast<VCLTraversalInterface<Particle> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setClusterLists(*this);
       traversalInterface->setTowers(_towers);
@@ -324,7 +324,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     }
     _builder->rebuildNeighborListsAndFillClusters(traversal->getUseNewton3());
 
-    auto *clusterTraversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
+    auto *clusterTraversalInterface = dynamic_cast<VCLTraversalInterface<Particle> *>(traversal);
     if (clusterTraversalInterface) {
       if (clusterTraversalInterface->needsStaticClusterThreadPartition()) {
         calculateClusterThreadPartition();
