@@ -74,7 +74,7 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
   /**
    * @copydoc TraversalInterface::traverseParticlePairs()
 //   * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
-   */<<
+   */
   void traverseParticlePairs() override;
 
  private:

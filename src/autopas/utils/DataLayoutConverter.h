@@ -38,11 +38,11 @@ class DataLayoutConverter {
         return;
       }
       case DataLayoutOption::soa: {
-        _functor->template SoALoader<ParticleCell>(cell, cell._particleSoABuffer, 0);
+        _functor->SoALoader(cell, cell._particleSoABuffer, 0);
         return;
       }
       case DataLayoutOption::cuda: {
-        _functor->template SoALoader<ParticleCell>(cell, cell._particleSoABuffer, 0);
+        _functor->SoALoader(cell, cell._particleSoABuffer, 0);
         _functor->deviceSoALoader(cell._particleSoABuffer, cell._particleSoABufferDevice);
         return;
       }
