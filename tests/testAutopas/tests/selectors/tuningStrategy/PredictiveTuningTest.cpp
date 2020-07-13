@@ -19,8 +19,6 @@
 TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
   unsigned int iteration = 0;
   std::vector<autopas::Configuration> testedConfigs;
-  autopas::Configuration optimalConfiguration;
-  autopas::Configuration optimalPrediction;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -29,13 +27,13 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
 
   predictiveTuning.reset(iteration);
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalPrediction = predictiveTuning.getCurrentConfiguration();
+  auto optimalPrediction = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(4, iteration);
   ++iteration;
 
   predictiveTuning.tune();
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(1, iteration);
   ++iteration;
 
@@ -90,8 +88,6 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
 TEST_F(PredictiveTuningTest, testLinearRegression) {
   unsigned int iteration = 1;
   std::vector<autopas::Configuration> testedConfigs;
-  autopas::Configuration optimalConfiguration;
-  autopas::Configuration optimalPrediction;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -101,13 +97,13 @@ TEST_F(PredictiveTuningTest, testLinearRegression) {
   predictiveTuning.reset(iteration);
 
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalPrediction = predictiveTuning.getCurrentConfiguration();
+  auto optimalPrediction = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(375, iteration);
   ++iteration;
 
   predictiveTuning.tune();
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(300, iteration);
   ++iteration;
 
@@ -162,8 +158,6 @@ TEST_F(PredictiveTuningTest, testLinearRegression) {
 TEST_F(PredictiveTuningTest, testLagrange) {
   unsigned int iteration = 1;
   std::vector<autopas::Configuration> testedConfigs;
-  autopas::Configuration optimalConfiguration;
-  autopas::Configuration optimalPrediction;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -173,13 +167,13 @@ TEST_F(PredictiveTuningTest, testLagrange) {
   predictiveTuning.reset(iteration);
 
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalPrediction = predictiveTuning.getCurrentConfiguration();
+  auto optimalPrediction = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(6, iteration);
   ++iteration;
 
   predictiveTuning.tune();
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(1, iteration);
   ++iteration;
 
@@ -257,8 +251,6 @@ TEST_F(PredictiveTuningTest, testLagrange) {
 TEST_F(PredictiveTuningTest, testNewton) {
   unsigned int iteration = 1;
   std::vector<autopas::Configuration> testedConfigs;
-  autopas::Configuration optimalConfiguration;
-  autopas::Configuration optimalPrediction;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -268,13 +260,13 @@ TEST_F(PredictiveTuningTest, testNewton) {
   predictiveTuning.reset(iteration);
 
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalPrediction = predictiveTuning.getCurrentConfiguration();
+  auto optimalPrediction = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(60, iteration);
   ++iteration;
 
   predictiveTuning.tune();
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
@@ -345,7 +337,6 @@ TEST_F(PredictiveTuningTest, testNewton) {
 TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
   unsigned int iteration = 0;
   std::vector<autopas::Configuration> testedConfigs;
-  autopas::Configuration optimalConfiguration;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -360,7 +351,7 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
 
   predictiveTuning.tune();
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(1, iteration);
   ++iteration;
 
@@ -386,8 +377,6 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
 TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
   unsigned int iteration = 0;
   std::vector<autopas::Configuration> testedConfigs;
-  autopas::Configuration optimalConfiguration;
-  autopas::Configuration nearOptimalConfiguration;
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -397,13 +386,13 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
   predictiveTuning.reset(iteration);
 
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  nearOptimalConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto nearOptimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(11, iteration);
   ++iteration;
 
   predictiveTuning.tune();
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
@@ -467,13 +456,8 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
  */
 TEST_F(PredictiveTuningTest, testTooLongNotTested) {
   unsigned int iteration = 0;
-
   std::vector<autopas::Configuration> configurationsToCompare{configurationLC_C08, configurationLC_Sliced};
   std::vector<autopas::Configuration> testedConfigs;
-  autopas::Configuration optimalConfiguration;
-  autopas::Configuration badConfiguration;
-
-  
   autopas::PredictiveTuning predictiveTuning({autopas::ContainerOption::linkedCells}, {1.},
                                              {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced},
                                              {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa},
@@ -483,13 +467,13 @@ TEST_F(PredictiveTuningTest, testTooLongNotTested) {
   predictiveTuning.reset(iteration);
 
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  badConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto badConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
   predictiveTuning.tune();
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
@@ -554,8 +538,6 @@ TEST_F(PredictiveTuningTest, testTooLongNotTested) {
 TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
   unsigned int iteration = 0;
   std::vector<autopas::Configuration> testedConfigs;
-  autopas::Configuration optimalConfiguration;     // later the invalid configuration
-  autopas::Configuration newOptimalConfiguration;  // when the other one is invalid
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -565,13 +547,13 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
   predictiveTuning.reset(iteration);
 
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  newOptimalConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto newOptimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(15, iteration);
   ++iteration;
 
   predictiveTuning.tune();
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
@@ -636,8 +618,6 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
 TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
   unsigned int iteration = 0;
   std::vector<autopas::Configuration> testedConfigs;
-  autopas::Configuration optimalConfiguration;     // later the invalid configuration
-  autopas::Configuration newOptimalConfiguration;  // when the other ones are invalid
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
@@ -652,13 +632,13 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
 
   predictiveTuning.tune();
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  optimalConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto optimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
 
   predictiveTuning.tune();
   testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  newOptimalConfiguration = predictiveTuning.getCurrentConfiguration();
+  auto newOptimalConfiguration = predictiveTuning.getCurrentConfiguration();
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
 
