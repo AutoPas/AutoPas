@@ -24,13 +24,13 @@ template <class Particle>
 class VLCTraversalInterface {
  public:
   /// Verlet list storage
-  using verlet_storage_type = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
+  using VerletStorageType = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
 
   /**
    * Sets the verlet list for the traversal to iterate over.
    * @param verlet The verlet list to iterate over.
    */
-  virtual void setVerletList(verlet_storage_type &verlet) { _verletList = &verlet; }
+  virtual void setVerletList(VerletStorageType &verlet) { _verletList = &verlet; }
 
  protected:
   /**
@@ -42,7 +42,7 @@ class VLCTraversalInterface {
    * @param pairwiseFunctor
    */
   template <class PairwiseFunctor, bool useNewton3>
-  void iterateVerletListsCell(verlet_storage_type &verlet, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
+  void iterateVerletListsCell(VerletStorageType &verlet, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
     for (auto &list : verlet[cellIndex]) {
       Particle &i = *list.first;
       for (auto j_ptr : list.second) {
@@ -52,11 +52,10 @@ class VLCTraversalInterface {
     }
   }
 
- protected:
   /**
    * The verlet list to iterate over.
    */
-  verlet_storage_type *_verletList;
+  VerletStorageType *_verletList;
 };
 
 }  // namespace autopas
