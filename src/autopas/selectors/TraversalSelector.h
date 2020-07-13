@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "autopas/containers/TraversalInterface.h"
-#include "autopas/containers/directSum/DirectSumTraversal.h"
+#include "autopas/containers/directSum/traversals/DirectSumTraversal.h"
 #include "autopas/containers/linkedCells/traversals/BalancedSlicedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01CudaTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C01Traversal.h"
