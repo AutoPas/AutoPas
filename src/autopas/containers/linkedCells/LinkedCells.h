@@ -12,7 +12,7 @@
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
-#include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
+#include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -128,7 +128,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());

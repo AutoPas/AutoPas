@@ -72,7 +72,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // TOTAL:                                                                                                   68
   //
   // CUDA:
-  // C01CudaTraversal for enabled N3, see #420                                                                -1
+  // LCC01CudaTraversal for enabled N3, see #420                                                                -1
   //                                                                                                    --------
   // TOTAL:                                                                                                   67
 

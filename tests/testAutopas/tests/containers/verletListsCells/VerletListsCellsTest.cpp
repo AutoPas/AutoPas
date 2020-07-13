@@ -6,7 +6,7 @@
 #include "VerletListsCellsTest.h"
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/C18TraversalVerlet.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -26,7 +26,7 @@ void applyFunctor(MockFunctor<Particle, FPCell> &functor, const double cellSizef
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::C18TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(
+  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(
       verletLists.getCellsPerDimension(), &functor, verletLists.getInteractionLength(), verletLists.getCellLength());
 
   verletLists.rebuildNeighborLists(&traversal);

@@ -13,11 +13,11 @@
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/containers/linkedCells/traversals/C01Traversal.h"
-#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
-#include "autopas/containers/linkedCells/traversals/C18Traversal.h"
+#include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
+#include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
+#include "autopas/containers/linkedCells/traversals/LCC18Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -98,7 +98,7 @@ class VerletListsCells
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto vTraversal = dynamic_cast<autopas::VerletListsCellsTraversal<Particle> *>(traversal);
+    auto vTraversal = dynamic_cast<autopas::VLCTraversalInterface<Particle> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
@@ -152,7 +152,7 @@ class VerletListsCells
         //    switch (_buildTraversal) {
       case TraversalOption::lc_c08: {
         autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-          auto buildTraversal = C08Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
+          auto buildTraversal = LCC08Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
               this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&buildTraversal);
@@ -161,7 +161,7 @@ class VerletListsCells
       }
       case TraversalOption::lc_c18: {
         autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-          auto buildTraversal = C18Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
+          auto buildTraversal = LCC18Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
               this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&buildTraversal);
@@ -172,7 +172,7 @@ class VerletListsCells
         if (useNewton3) {
           utils::ExceptionHandler::exception("VerletListsCells::updateVerletLists(): lc_c01 does not support newton3");
         } else {
-          auto buildTraversal = C01Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, false>(
+          auto buildTraversal = LCC01Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, false>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
               this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&buildTraversal);

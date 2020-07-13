@@ -18,7 +18,7 @@
 #include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/verletClusterCells/VerletClusterCellsParticleIterator.h"
-#include "autopas/containers/verletClusterCells/traversals/VerletClusterCellsTraversalInterface.h"
+#include "autopas/containers/verletClusterCells/traversals/VCCTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -71,8 +71,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    * @param traversal to be used used
    */
   void iteratePairwise(TraversalInterface *traversal) override {
-    auto *traversalInterface =
-        dynamic_cast<VerletClusterCellsTraversalInterface<FullParticleCell<Particle>> *>(traversal);
+    auto *traversalInterface = dynamic_cast<VCCTraversalInterface<FullParticleCell<Particle>> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<FullParticleCell<Particle>> *>(traversal);
 
     if ((!traversalInterface) or (!cellPairTraversal)) {
@@ -144,8 +143,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    * @param traversal The used traversal.
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    auto *traversalInterface =
-        dynamic_cast<VerletClusterCellsTraversalInterface<FullParticleCell<Particle>> *>(traversal);
+    auto *traversalInterface = dynamic_cast<VCCTraversalInterface<FullParticleCell<Particle>> *>(traversal);
     if (!traversalInterface) {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletClusterCells::iteratePairwise");

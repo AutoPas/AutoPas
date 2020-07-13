@@ -304,7 +304,7 @@ class VerletClusterListsRebuilder {
    * Decides if for a given tower and a neighbor tower, clusters of the tower should contain clusters of the neighbor
    * tower as neighbors if newton 3 is enabled.
    *
-   * Works in a way to help the VerletClustersColoringTraversal have no data races.
+   * Works in a way to help the VCLColoringTraversal have no data races.
    *
    * @param towerIndexX The x-coordinate of the given tower.
    * @param towerIndexY The y-coordinate of the given tower.

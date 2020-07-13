@@ -10,7 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/containers/verletClusterLists/traversals/VerletClustersColoringTraversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLColoringTraversal.h"
 #include "autopas/particles/Particle.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/RandomGenerator.h"
@@ -98,13 +98,13 @@ class CollectParticlesPerThreadFunctor
 int CollectParticlesPerThreadFunctor::_currentColor = 0;
 
 class ColoringTraversalWithColorChangeNotify
-    : public autopas::VerletClustersColoringTraversal<FPCell, CollectParticlesPerThreadFunctor,
-                                                      autopas::DataLayoutOption::aos, true> {
+    : public autopas::VCLColoringTraversal<FPCell, CollectParticlesPerThreadFunctor, autopas::DataLayoutOption::aos,
+                                           true> {
  public:
   ColoringTraversalWithColorChangeNotify(CollectParticlesPerThreadFunctor *functor, size_t clusterSize,
                                          std::function<void(int)> whenColorChanges)
-      : autopas::VerletClustersColoringTraversal<FPCell, CollectParticlesPerThreadFunctor,
-                                                 autopas::DataLayoutOption::aos, true>(functor, clusterSize) {
+      : autopas::VCLColoringTraversal<FPCell, CollectParticlesPerThreadFunctor, autopas::DataLayoutOption::aos, true>(
+            functor, clusterSize) {
     _whenColorChanges = std::move(whenColorChanges);
   }
 

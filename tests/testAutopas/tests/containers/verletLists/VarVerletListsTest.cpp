@@ -8,9 +8,9 @@
 
 #include "VarVerletListsTest.h"
 
-#include "autopas/containers/verletListsCellBased/VarVerletLists/VarVerletLists.h"
-#include "autopas/containers/verletListsCellBased/VarVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
-#include "autopas/containers/verletListsCellBased/VarVerletLists/traversals/VarVerletTraversalAsBuild.h"
+#include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
+#include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
+#include "autopas/containers/verletListsCellBased/varVerletLists/traversals/VVLAsBuildTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 
 using ::testing::_;
@@ -85,7 +85,7 @@ TEST_F(VarVerletListsTest, testVerletListBuild) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
-  autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
+  autopas::VVLAsBuildTraversal<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
@@ -112,7 +112,7 @@ TEST_F(VarVerletListsTest, testVerletList) {
   using ::testing::_;  // anything is ok
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
-  autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
+  autopas::VVLAsBuildTraversal<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&mockFunctor);
   verletLists.rebuildNeighborLists(&dummyTraversal);
   verletLists.iteratePairwise(&dummyTraversal);
@@ -138,7 +138,7 @@ TEST_F(VarVerletListsTest, testVerletListInSkin) {
   using ::testing::_;  // anything is ok
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
-  autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
+  autopas::VVLAsBuildTraversal<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&mockFunctor);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
@@ -164,7 +164,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildTwice) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
-  autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
+  autopas::VVLAsBuildTraversal<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
@@ -196,7 +196,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildFarAway) {
 
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
-  autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
+  autopas::VVLAsBuildTraversal<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
   verletLists.rebuildNeighborLists(&dummyTraversal);
   verletLists.iteratePairwise(&dummyTraversal);
@@ -221,7 +221,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildHalo) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
-  autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
+  autopas::VVLAsBuildTraversal<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
