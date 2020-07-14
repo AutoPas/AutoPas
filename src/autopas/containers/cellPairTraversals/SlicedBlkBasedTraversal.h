@@ -169,8 +169,8 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
   std::vector<AutoPasLock> locks;
 
   /**
-   * The normal number of cells by dimension for each CellBlock.
-   * Does not apply to CellBlocks at the end of a dimensional border unless dimension sizes are a natural cubic root.
+   * The normal number of cells by dimension for each Block.
+   * Does not apply to Blocks at the end of a dimensional border unless dimension sizes are a natural cubic root.
    */
   std::array<unsigned long, 3> _numCellsInCellBlock;
 
@@ -178,6 +178,18 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
    * Data Layout Converter to be used with this traversal.
    */
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
+
+  /**
+   * A vector holding the two opposing corners of each block as array of coordinates in an array.
+   */
+  std::vector<std::array<std::array<unsigned long, 3>, 2>> blocks;
+
+  /**
+   * A vector holding all subblocks.
+   * Each vector entry x corresponds to block at blocks[x]. Each entry holds an array of 27 sub blocks.
+   * Each sub block has a starting corner and an opposing corner. They can be the same if sub block size is 1x1x1.
+   */
+  std::vector<std::array<std::array<std::array<unsigned long, 2>, 3>, 27>> _allSubBlocks;
 
   /**
    * A map converting consecutive ints to the subBlock Order ints e.g. 000, 111, 201, ...
@@ -282,8 +294,12 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::init(
     const std::array<unsigned long, 3> &dims) {
-  using array3D = std::array<unsigned long, 3>;
+
   AutoPasLog(debug, "Init");
+  using array3D = std::array<unsigned long, 3>;
+  using subBlock = std::array<std::array<unsigned long, 2>, 3>;
+  using subBlocksSingleCellblock = std::array<subBlock, 27>;
+  using subBlocksAllCellblocks = std::vector<subBlocksSingleCellblock>;
 
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
@@ -377,30 +393,14 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
   _cellBlockTraverseOrderByLocks[5] = {0, 0, 1};
   _cellBlockTraverseOrderByLocks[6] = {1, 0, 1};
   _cellBlockTraverseOrderByLocks[7] = {1, 1, 1};
-}
-
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-template <typename LoopBody>
-void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::slicedBlkTraversal(
-    LoopBody &&loopBody) {
-  using array3D = std::array<unsigned long, 3>;
-  using subBlock = std::array<std::array<unsigned long, 2>, 3>;
-  using subBlocksSingleCellblock = std::array<subBlock, 27>;
-  using subBlocksAllCellblocks = std::vector<subBlocksSingleCellblock>;
-  // fill a vector with the starting coordinates lower left front corner {0,0,0} for each different cellblock
-  // and the upper right back corner {2,2,2}. So we can build a spanning vector for the cuboid.
-  // We know each of those starting coordinates form a cubic mesh. -> Simple iteration is enough
-  // Please consider that the Spanning Vector does not has to have the same direction as the c08 cell handling direction
-  // TODO: Take ^^ into account and remove the second condition in the for loops around loopbody
-  std::vector<std::array<array3D, 2>> _cellBlocks;  //+spanning vector of the cube as 2nd array
 
   AutoPasLog(debug, "_cellBlockDimensions: " + std::to_string(_cellBlockDimensions[0].size()) + " " +
-                        std::to_string(_cellBlockDimensions[1].size()) + " " +
-                        std::to_string(_cellBlockDimensions[2].size()) + " ");
-  _cellBlocks.resize(_cellBlockDimensions[0].size() * _cellBlockDimensions[1].size() * _cellBlockDimensions[2].size());
+                    std::to_string(_cellBlockDimensions[1].size()) + " " +
+                    std::to_string(_cellBlockDimensions[2].size()) + " ");
+  blocks.resize(_cellBlockDimensions[0].size() * _cellBlockDimensions[1].size() * _cellBlockDimensions[2].size());
   AutoPasLog(debug, "CellBlocks Array Size reserved: " +
-                        std::to_string(_cellBlockDimensions[0].size() * _cellBlockDimensions[1].size() *
-                                       _cellBlockDimensions[2].size()));
+                    std::to_string(_cellBlockDimensions[0].size() * _cellBlockDimensions[1].size() *
+                                   _cellBlockDimensions[2].size()));
 
   unsigned long accumulator_firstDim = 0;
   unsigned long accumulator_secondDim = 0;
@@ -410,6 +410,12 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
   unsigned long x = 0;
   unsigned long y = 0;
   unsigned long z = 0;
+
+  // fill a vector with the starting coordinates lower left front corner {0,0,0} for each different cellblock
+  // and the upper right back corner {2,2,2}. So we can build a spanning vector for the block.
+  // We know each of those starting coordinates form a cubic mesh. -> Simple iteration is enough
+  // Please consider that the Spanning Vector does not has to have the same direction as the c08 cell handling direction
+  // TODO: Take ^^ into account and remove the second condition in the for loops around loopbody
 
   // Iterate over the created cellBlockDimensions
   // TODO: Make this into regular for loop and precalc cellBlockIterator size to allow parallelization
@@ -440,19 +446,19 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
         if (accumulator_thirdDim + kt > _dims[2] - _overlapAxis[2]) {
           kt -= _overlapAxis[2];
         }
-        _cellBlocks[cellBlockIterator][0][0] = (unsigned long)accumulator_firstDim;
-        _cellBlocks[cellBlockIterator][0][1] = (unsigned long)accumulator_secondDim;
-        _cellBlocks[cellBlockIterator][0][2] = (unsigned long)accumulator_thirdDim;
-        _cellBlocks[cellBlockIterator][1][0] = (unsigned long)accumulator_firstDim + it;
-        _cellBlocks[cellBlockIterator][1][1] = (unsigned long)accumulator_secondDim + jt;
-        _cellBlocks[cellBlockIterator][1][2] = (unsigned long)accumulator_thirdDim + kt;
+        blocks[cellBlockIterator][0][0] = (unsigned long)accumulator_firstDim;
+        blocks[cellBlockIterator][0][1] = (unsigned long)accumulator_secondDim;
+        blocks[cellBlockIterator][0][2] = (unsigned long)accumulator_thirdDim;
+        blocks[cellBlockIterator][1][0] = (unsigned long)accumulator_firstDim + it;
+        blocks[cellBlockIterator][1][1] = (unsigned long)accumulator_secondDim + jt;
+        blocks[cellBlockIterator][1][2] = (unsigned long)accumulator_thirdDim + kt;
 
-        AutoPasLog(debug, "Cellblock " + std::to_string(cellBlockIterator) + " START: " + std::to_string(_cellBlocks[cellBlockIterator][0][0]) + " " +
-                              std::to_string(_cellBlocks[cellBlockIterator][0][1]) + " " +
-                              std::to_string(_cellBlocks[cellBlockIterator][0][2]) +
-                              "| END: " + std::to_string(_cellBlocks[cellBlockIterator][1][0]) + " " +
-                              std::to_string(_cellBlocks[cellBlockIterator][1][1]) + " " +
-                              std::to_string(_cellBlocks[cellBlockIterator][1][2]) + " ");
+        AutoPasLog(debug, "Cellblock " + std::to_string(cellBlockIterator) + " START: " + std::to_string(blocks[cellBlockIterator][0][0]) + " " +
+                          std::to_string(blocks[cellBlockIterator][0][1]) + " " +
+                          std::to_string(blocks[cellBlockIterator][0][2]) +
+                          "| END: " + std::to_string(blocks[cellBlockIterator][1][0]) + " " +
+                          std::to_string(blocks[cellBlockIterator][1][1]) + " " +
+                          std::to_string(blocks[cellBlockIterator][1][2]) + " ");
 
         accumulator_thirdDim += kt;
         cellBlockOrder = {x,y,z};
@@ -467,9 +473,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
     accumulator_firstDim += it;
   }
   AutoPasLog(debug, "Finished Accumulators: " + std::to_string(accumulator_firstDim) + " " +
-                        std::to_string(accumulator_secondDim) + " " + std::to_string(accumulator_thirdDim) + " ");
-
-  auto _threads = _cellBlocks.size();
+                    std::to_string(accumulator_secondDim) + " " + std::to_string(accumulator_thirdDim) + " ");
 
   /**
    * Splitting each cellblock = slice into its subdomains = subBlocks
@@ -486,15 +490,15 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
    *  000................001................002
    *
    * Above model shows the numbering of each sub_block, be aware that they can be different in cellsizes.
-   * And the _cellBlocks bordering the end of a dimension, will have different sizes for subBlocks bordering a
+   * And the blocks bordering the end of a dimension, will have different sizes for subBlocks bordering a
    * dimension end. Only, but very often, if the simulation-dimension will not be perfectly splittable into the
    * thread-amount of equally sized cubes.
    *
    * Iteration of Subblocks always is in the Order: 000 - 100 - 200 - 010 - 110 - 210 - 020 - 120 - 220 - 001 - ...
    */
 
-  subBlocksAllCellblocks _allSubBlocks;
-  _allSubBlocks.resize(_cellBlocks.size());
+  _allSubBlocks.resize(blocks.size());
+  auto _threads = blocks.size();
 
 #ifdef AUTOPAS_OPENMP
   // although every thread gets exactly one iteration (=cellblock) this is faster than a normal parallel region
@@ -502,7 +506,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 #endif
 
   for (unsigned long n = 0; n < _threads; ++n) {
-    auto &cellblock = _cellBlocks[n];
+    auto &block = blocks[n];
 
     // subBlocks accessing: [0-27][0-2][0-1] -->
     //  [subBlockNumber][dimension][0: coordinates of starting cell of subblock, 1: 000 to 222 subblock description]
@@ -517,30 +521,30 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
         for (unsigned long k = 0; k < 3; ++k) {
           subBlock currentSubBlock;
           if (k == 0) {
-            currentSubBlock[0][0] = cellblock[0][0];
+            currentSubBlock[0][0] = block[0][0];
           } else if (k == 1) {
-            currentSubBlock[0][0] = cellblock[0][0] + this->_overlapAxis[0];
+            currentSubBlock[0][0] = block[0][0] + this->_overlapAxis[0];
           } else if (k == 2) {
-            currentSubBlock[0][0] = cellblock[1][0] - this->_overlapAxis[0] + 1;
+            currentSubBlock[0][0] = block[1][0] - this->_overlapAxis[0] + 1;
           }
           currentSubBlock[0][1] = k;
 
           // second longest dimension
           if (j == 0) {
-            currentSubBlock[1][0] = cellblock[0][1];
+            currentSubBlock[1][0] = block[0][1];
           } else if (j == 1) {
-            currentSubBlock[1][0] = cellblock[0][1] + this->_overlapAxis[1];
+            currentSubBlock[1][0] = block[0][1] + this->_overlapAxis[1];
           } else if (j == 2) {
-            currentSubBlock[1][0] = cellblock[1][1] - this->_overlapAxis[1] + 1;
+            currentSubBlock[1][0] = block[1][1] - this->_overlapAxis[1] + 1;
           }
           currentSubBlock[1][1] = j;
 
           if (i == 0) {
-            currentSubBlock[2][0] = cellblock[0][2];
+            currentSubBlock[2][0] = block[0][2];
           } else if (i == 1) {
-            currentSubBlock[2][0] = cellblock[0][2] + this->_overlapAxis[2];
+            currentSubBlock[2][0] = block[0][2] + this->_overlapAxis[2];
           } else if (i == 2) {
-            currentSubBlock[2][0] = cellblock[1][2] - this->_overlapAxis[2] + 1;
+            currentSubBlock[2][0] = block[1][2] - this->_overlapAxis[2] + 1;
           }
           currentSubBlock[2][1] = i;
           _subBlocksSingleCellBlock[subBlockNumber] = currentSubBlock;
@@ -571,38 +575,50 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
      * 022 -> 122 -> 222
      */
   }
+}
+
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <typename LoopBody>
+void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::slicedBlkTraversal(
+    LoopBody &&loopBody) {
+  using array3D = std::array<unsigned long, 3>;
+  using subBlock = std::array<std::array<unsigned long, 2>, 3>;
+  using subBlocksSingleCellblock = std::array<subBlock, 27>;
+  using subBlocksAllCellblocks = std::vector<subBlocksSingleCellblock>;
+
+  auto _threads = blocks.size();
 
   for (unsigned long m = 0; m < _threads; ++m) {
-    auto &cellblock = _cellBlocks[m];
+    auto &block = blocks[m];
 
-    AutoPasLog(debug, "SubBlock iteration for cellblock " + std::to_string(m) + " started");
+    AutoPasLog(debug, "SubBlock iteration for block " + std::to_string(m) + " started");
 
     // Calculate my_locks
     unsigned long my_locks[3] = {};
     unsigned long nb_locks[3] = {};
 
-    for (unsigned long n = 0ul; n < 3ul; ++n) {                    // if the cellblock exists, their own locks do too
+    for (unsigned long n = 0ul; n < 3ul; ++n) {                    // if the block exists, their own locks do too
       my_locks[n] = m + n;
     }
 
     array3D cellBlockRelativeCoordinates = _indexToCellBlock[m];
-    for (unsigned long n2 = 0ul; n2 < 3ul; ++n2) {
-      cellBlockRelativeCoordinates[n2]++;
+    for (unsigned long axis = 0ul; axis < 3ul; ++axis) {
+      cellBlockRelativeCoordinates[axis]++;
       AutoPasLog(debug, "_cellBlocksToIndex.count(cellBlockRelativeCoordinates): " + std::to_string(_cellBlocksToIndex.count(cellBlockRelativeCoordinates)));
       if (_cellBlocksToIndex[cellBlockRelativeCoordinates]) {             // check if the key exists
-        nb_locks[n2] = _cellBlocksToIndex[cellBlockRelativeCoordinates] + n2;
+        nb_locks[axis] = _cellBlocksToIndex[cellBlockRelativeCoordinates] + axis;
       } else {
-        nb_locks[n2] = 0ul - 1ul;
+        nb_locks[axis] = 0ul - 1ul;
       }
 
-      cellBlockRelativeCoordinates[n2]--;
+      cellBlockRelativeCoordinates[axis]--;
     }
 
     // Iterate over 111 --> no locks needed
     subBlock middleSubBlock = _allSubBlocks[m][13];
     array3D _middlesubBlockEnd;
     for (unsigned long i = 0; i < 3; ++i) {
-      _middlesubBlockEnd[i] = middleSubBlock[i][0] + cellblock[1][i] - cellblock[0][i] - 2 * _overlapAxis[i];
+      _middlesubBlockEnd[i] = middleSubBlock[i][0] + block[1][i] - block[0][i] - 2 * _overlapAxis[i];
     }
 
     for (unsigned long j = middleSubBlock[0][0]; j <= _middlesubBlockEnd[0] and j < _dims[0] - _overlapAxis[0]; ++j) {
@@ -656,7 +672,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
               // cellBlockEnd - cellBlockStart
               //      - 000 Length - 002 Length = 2*overLap[i] -1 to stay in the subBlock and compensate for overlap > 1
               _subBlockEndIteration[i] =
-                  currentSubBlock[i][0] + cellblock[1][i] - cellblock[0][i] - 2 * _overlapAxis[i];
+                  currentSubBlock[i][0] + block[1][i] - block[0][i] - 2 * _overlapAxis[i];
             }
           }
 
