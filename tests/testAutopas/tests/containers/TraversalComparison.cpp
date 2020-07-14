@@ -182,10 +182,10 @@ static auto toString = [](const auto &info) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
         cellSizeFactor, doSlightShift] = info.param;
   std::stringstream resStream;
-  resStream << containerOption.to_string() << traversalOption.to_string() << dataLayoutOption.to_string()
-            << (newton3Option == autopas::Newton3Option::enabled ? "N3" : "noN3") << "_NP" << numParticles << "_NH"
-            << numHaloParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << "_CSF_" << cellSizeFactor
-            << "_" << (doSlightShift ? "shift" : "noshift");
+  resStream << containerOption.to_string() << "_" << traversalOption.to_string() << "_" << dataLayoutOption.to_string()
+            << "_" << (newton3Option == autopas::Newton3Option::enabled ? "N3" : "noN3") << "_NP" << numParticles
+            << "_NH" << numHaloParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << "_CSF_"
+            << cellSizeFactor << "_" << (doSlightShift ? "withShift" : "noshift");
   std::string res = resStream.str();
   std::replace(res.begin(), res.end(), '-', '_');
   std::replace(res.begin(), res.end(), '.', '_');
