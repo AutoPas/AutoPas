@@ -54,7 +54,7 @@ class PredictiveTuningTest : public AutoPasTestBase {
     return returnConfigs;
   }
 
-  autopas::PredictiveTuning getPredictiveTuning(unsigned int testsUntilFirstPrediction,
+  static autopas::PredictiveTuning getPredictiveTuning(unsigned int testsUntilFirstPrediction,
                                                 autopas::ExtrapolationMethodOption extrapolationMethodOption,
                                                 const std::set<autopas::TraversalOption> &allowedTraversalOptions = {
                                                     autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01,
@@ -74,6 +74,7 @@ class PredictiveTuningTest : public AutoPasTestBase {
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
 
+  ///@todo c++20: this can be made constexpr, as std::vector will get to be constexpr.
   inline static std::vector<autopas::Configuration> allConfigs{configurationLC_C01, configurationLC_C08,
                                                                configurationLC_Sliced};
 
