@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <gmock/gmock-matchers.h>
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
@@ -18,13 +19,42 @@ class PredictiveTuningTest : public AutoPasTestBase {
    * Tunes for a few iterations (length of times vector) and checks whether all possible configurations were tuned.
    * @param predictiveTuning The PredictiveTuning strategy.
    * @param evidences Array of times to add to the evidences.
-   * @param returnConfigIndex Configuration with this index in the times vector is returned.
+   * @param returnConfigIndices The configurations with these indices are returned.
    * @param iteration The current number of iterations, will be increased accordingly.
-   * @return The configuration with index returnConfigIndex.
+   * @return Array of the configurations with indices returnConfigIndices.
    */
-  autopas::Configuration tuneForSomeIterationsAndCheckAllTuned(autopas::PredictiveTuning &predictiveTuning,
-                                                               const std::array<double, 3> &evidences,
-                                                               size_t returnConfigIndex, size_t &iteration);
+  template <size_t N, size_t M>
+  auto tuneForSomeIterationsAndCheckAllTuned(
+      autopas::PredictiveTuning &predictiveTuning, const std::array<long, M> &evidences,
+      std::array<size_t, N> returnConfigIndices, size_t &iteration) -> std::array<autopas::Configuration, N> {
+    std::vector<autopas::Configuration> testedConfigs;
+    std::array<autopas::Configuration, N> returnConfigs{};
+    autopas::Configuration optimalConfiguration;
+    auto minTime = std::numeric_limits<size_t>::max();
+    for (size_t index = 0ul; index < evidences.size(); ++index) {
+      testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
+      for (size_t retConfIndInd = 0ul; retConfIndInd < returnConfigIndices.size(); ++retConfIndInd) {
+        if (returnConfigIndices[retConfIndInd] == index) {
+          returnConfigs[retConfIndInd] = predictiveTuning.getCurrentConfiguration();
+        }
+      }
+      if (evidences[index] < minTime) {
+        optimalConfiguration = predictiveTuning.getCurrentConfiguration();
+        minTime = evidences[index];
+      }
+      predictiveTuning.addEvidence(evidences[index], iteration);
+      ++iteration;
+      predictiveTuning.tune();
+    }
+    EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+
+    EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
+
+    return returnConfigs;
+  }
+
+  autopas::PredictiveTuning getPredictiveTuning(unsigned int testsUntilFirstPrediction,
+                                                autopas::ExtrapolationMethodOption extrapolationMethodOption);
 
   void testGeneric(autopas::ExtrapolationMethodOption extrapolationMethodOption,
                    const std::vector<std::array<long, 3>> &evidences, size_t optimalPredictionIndex);
