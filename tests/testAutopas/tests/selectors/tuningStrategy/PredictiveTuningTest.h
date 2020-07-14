@@ -54,11 +54,10 @@ class PredictiveTuningTest : public AutoPasTestBase {
     return returnConfigs;
   }
 
-  static autopas::PredictiveTuning getPredictiveTuning(unsigned int testsUntilFirstPrediction,
-                                                autopas::ExtrapolationMethodOption extrapolationMethodOption,
-                                                const std::set<autopas::TraversalOption> &allowedTraversalOptions = {
-                                                    autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01,
-                                                    autopas::TraversalOption::lc_sliced});
+  static autopas::PredictiveTuning getPredictiveTuning(
+      unsigned int testsUntilFirstPrediction, autopas::ExtrapolationMethodOption extrapolationMethodOption,
+      const std::set<autopas::TraversalOption> &allowedTraversalOptions = {
+          autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced});
 
   void testGeneric(autopas::ExtrapolationMethodOption extrapolationMethodOption,
                    const std::vector<std::array<long, 3>> &evidences, size_t optimalPredictionIndex);
