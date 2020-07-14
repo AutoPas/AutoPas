@@ -45,7 +45,7 @@ class Newton3OnOffTest
   void iterate(Container container, Traversal traversal, autopas::DataLayoutOption dataLayout,
                autopas::Newton3Option newton3, ParticleFunctor *f);
 
-  MockFunctor<Particle, FPCell> mockFunctor;
+  MockFunctor<Particle> mockFunctor;
 
   /**
    * Determines how often the functor is called for single cells and pairs of cells und run additional checks.

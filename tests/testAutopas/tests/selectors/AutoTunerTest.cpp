@@ -129,7 +129,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
-  MockFunctor<Particle, FPCell> functor;
+  MockFunctor<Particle> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -181,7 +181,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
-  MockFunctor<Particle, FPCell> functor;
+  MockFunctor<Particle> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
@@ -221,7 +221,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
-  MockFunctor<Particle, FPCell> functor;
+  MockFunctor<Particle> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));

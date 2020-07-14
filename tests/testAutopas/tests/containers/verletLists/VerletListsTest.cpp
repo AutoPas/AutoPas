@@ -33,7 +33,7 @@ TEST_P(VerletListsTest, testVerletListBuildAndIterate) {
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(1);
 
   autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(&emptyFunctor);
@@ -66,7 +66,7 @@ TEST_P(VerletListsTest, testVerletListInSkin) {
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  MockFunctor<Particle, FPCell> mockFunctor;
+  MockFunctor<Particle> mockFunctor;
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
   autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(&mockFunctor);
@@ -99,7 +99,7 @@ TEST_P(VerletListsTest, testVerletListBuildTwice) {
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
   autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(&emptyFunctor);
@@ -138,7 +138,7 @@ TEST_P(VerletListsTest, testVerletListBuildFarAway) {
   Particle p3(r3, {0., 0., 0.}, 2);
   verletLists.addParticle(p3);
 
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
   autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(&emptyFunctor);
@@ -171,7 +171,7 @@ TEST_P(VerletListsTest, testVerletListBuildHalo) {
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
   autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(&emptyFunctor);
@@ -265,7 +265,7 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
   Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
   verletLists.addHaloParticle(p);
 
-  MockFunctor<Particle, FPCell> mockFunctor;
+  MockFunctor<Particle> mockFunctor;
 
   autopas::TraversalVerlet<FPCell, MFunctor, autopas::DataLayoutOption::soa, false> verletTraversal(&mockFunctor);
   const size_t dimWithHalo = 10 / ((cutoff + skin) * cellSizeFactor) + 2ul;

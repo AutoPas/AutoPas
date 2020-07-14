@@ -7,16 +7,17 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include <testingHelpers/commonTypedefs.h>
+#include <testingHelpers/NonConstructibleParticle.h>
 
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
+
 #if defined(AUTOPAS_CUDA)
 #include "autopas/utils/CudaSoA.h"
 #endif
 
-template <class Particle, class ParticleCell>
+template <class Particle>
 class MockFunctor : public autopas::Functor<Particle> {
  public:
   MockFunctor() : autopas::Functor<Particle>(0.){};
@@ -74,7 +75,10 @@ class MockFunctor : public autopas::Functor<Particle> {
     // TODO copy und paste ugly solution
   // virtual void SoAExtractor(ParticleCell &cell, autopas::SoA &soa, size_t offset) {}
   MOCK_METHOD(void, SoAExtractor,
-              (ParticleCell & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
+              ((autopas::FullParticleCell<autopas::ParticleBase<double, unsigned long>>) & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
+               size_t offset));
+  MOCK_METHOD(void, SoAExtractor,
+              (autopas::FullParticleCell<NonConstructibleParticle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
                size_t offset));
 
 //  MOCK_METHOD(void, SoAExtractorVerlet,

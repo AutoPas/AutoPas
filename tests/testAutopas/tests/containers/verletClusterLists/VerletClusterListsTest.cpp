@@ -38,7 +38,7 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, _)).Times(AtLeast(1));
   autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
       &emptyFunctor, clusterSize);
@@ -58,7 +58,7 @@ TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
   autopasTools::generators::RandomGenerator::fillWithParticles(
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
       &emptyFunctor, clusterSize);
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -79,7 +79,7 @@ TEST_F(VerletClusterListsTest, testIterator) {
   autopasTools::generators::RandomGenerator::fillWithParticles(
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   autopas::VerletClustersTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
       &emptyFunctor, clusterSize);
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -203,7 +203,7 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
   autopasTools::generators::RandomGenerator::fillWithParticles(
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
-  MockFunctor<Particle, FPCell> functor;
+  MockFunctor<Particle> functor;
   autopas::VerletClustersColoringTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> traversalNoN3(
       &functor, clusterSize);
   verletLists.rebuildNeighborLists(&traversalNoN3);

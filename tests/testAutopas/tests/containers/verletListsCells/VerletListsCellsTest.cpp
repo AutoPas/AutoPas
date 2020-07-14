@@ -11,7 +11,7 @@
 using ::testing::_;
 using ::testing::AtLeast;
 
-void applyFunctor(MockFunctor<Particle, FPCell> &functor, const double cellSizefactor) {
+void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
@@ -45,12 +45,12 @@ void applyFunctor(MockFunctor<Particle, FPCell> &functor, const double cellSizef
 }
 
 TEST_F(VerletListsCellsTest, testVerletListBuild) {
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(1);
 
   applyFunctor(emptyFunctor, 1.0);
 
-  MockFunctor<Particle, FPCell> emptyFunctor_cs2;
+  MockFunctor<Particle> emptyFunctor_cs2;
   EXPECT_CALL(emptyFunctor_cs2, AoSFunctor(_, _, true)).Times(1);
 
   applyFunctor(emptyFunctor_cs2, 2.0);

@@ -25,7 +25,7 @@ namespace autopas {
  * It defines method interfaces for addition and deletion of particles, accessing general container
  * properties and creating iterators.
  *
- * @tparam ParticleCell Class for particle cells.
+ * @tparam Particle Class for particle.
  */
 template <class Particle>
 class ParticleContainerInterface {
