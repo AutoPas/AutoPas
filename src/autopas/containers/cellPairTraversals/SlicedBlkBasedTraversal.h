@@ -384,15 +384,13 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
       {002, 18}, {102, 19}, {202, 20}, {012, 21}, {112, 22}, {212, 23}, {022, 24}, {122, 25}, {222, 26}};
 
   // INIT locking steps, minimizing lock changes per step to max. 1 change
-  _cellBlockTraverseOrderByLocks[0] = {0, 0, 0};
-  _cellBlockTraverseOrderByLocks[1] = {1, 0, 0};
-  _cellBlockTraverseOrderByLocks[2] = {1, 1, 0};
-  _cellBlockTraverseOrderByLocks[3] = {0, 1, 0};
-
-  _cellBlockTraverseOrderByLocks[4] = {0, 1, 1};
-  _cellBlockTraverseOrderByLocks[5] = {0, 0, 1};
-  _cellBlockTraverseOrderByLocks[6] = {1, 0, 1};
-  _cellBlockTraverseOrderByLocks[7] = {1, 1, 1};
+  for (int m = 0; m < 2; ++m) {
+    for (int i = 0; i < 2; ++i) {
+      for (int j = 0; j < 2; ++j) {
+        _cellBlockTraverseOrderByLocks[(m-1+i*2+j*4)+1] = {m,i,j};
+      }
+    }
+  }
 
   AutoPasLog(debug, "_cellBlockDimensions: " + std::to_string(_cellBlockDimensions[0].size()) + " " +
                     std::to_string(_cellBlockDimensions[1].size()) + " " +
