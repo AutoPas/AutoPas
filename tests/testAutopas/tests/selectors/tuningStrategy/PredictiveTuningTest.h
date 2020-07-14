@@ -24,9 +24,10 @@ class PredictiveTuningTest : public AutoPasTestBase {
    * @return Array of the configurations with indices returnConfigIndices.
    */
   template <size_t N, size_t M>
-  auto tuneForSomeIterationsAndCheckAllTuned(autopas::PredictiveTuning &predictiveTuning,
-                                             const std::array<long, M> &evidences,
-                                             std::array<size_t, N> returnConfigIndices, size_t &iteration) {
+  auto tuneForSomeIterationsAndCheckAllTuned(
+      autopas::PredictiveTuning &predictiveTuning, const std::array<long, M> &evidences,
+      std::array<size_t, N> returnConfigIndices, size_t &iteration,
+      const std::vector<autopas::Configuration> &allConfigurations = allConfigs) {
     std::vector<autopas::Configuration> testedConfigs;
     std::array<autopas::Configuration, N> returnConfigs{};
     autopas::Configuration optimalConfiguration;
@@ -46,7 +47,7 @@ class PredictiveTuningTest : public AutoPasTestBase {
       ++iteration;
       predictiveTuning.tune();
     }
-    EXPECT_THAT(allConfigs, testing::UnorderedElementsAreArray(testedConfigs));
+    EXPECT_THAT(allConfigurations, testing::UnorderedElementsAreArray(testedConfigs));
 
     EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
@@ -62,18 +63,19 @@ class PredictiveTuningTest : public AutoPasTestBase {
   void testGeneric(autopas::ExtrapolationMethodOption extrapolationMethodOption,
                    const std::vector<std::array<long, 3>> &evidences, size_t optimalPredictionIndex);
 
-  const autopas::Configuration configurationLC_C01 = autopas::Configuration(
+  static constexpr autopas::Configuration configurationLC_C01 = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
-  const autopas::Configuration configurationLC_C08 = autopas::Configuration(
+  static constexpr autopas::Configuration configurationLC_C08 = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
 
-  const autopas::Configuration configurationLC_Sliced = autopas::Configuration(
+  static constexpr autopas::Configuration configurationLC_Sliced = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
 
-  std::vector<autopas::Configuration> allConfigs{configurationLC_C01, configurationLC_C08, configurationLC_Sliced};
+  inline static std::vector<autopas::Configuration> allConfigs{configurationLC_C01, configurationLC_C08,
+                                                               configurationLC_Sliced};
 
   static constexpr double relativeOptimumRange{1.2};
   static constexpr unsigned int maxTuningIterationsWithoutTest{5};

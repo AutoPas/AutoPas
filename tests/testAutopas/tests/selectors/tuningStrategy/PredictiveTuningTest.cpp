@@ -6,8 +6,6 @@
 
 #include "PredictiveTuningTest.h"
 
-#include <gmock/gmock-matchers.h>
-
 autopas::PredictiveTuning PredictiveTuningTest::getPredictiveTuning(
     unsigned int testsUntilFirstPrediction, autopas::ExtrapolationMethodOption extrapolationMethodOption,
     const std::set<autopas::TraversalOption> &allowedTraversalOptions) {
@@ -150,8 +148,8 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
 
   predictiveTuning.reset(iteration);
 
-  auto [badConfiguration, optimalConfiguration] =
-      tuneForSomeIterationsAndCheckAllTuned<2, 2>(predictiveTuning, {20, 10}, {0, 1}, iteration);
+  auto [badConfiguration, optimalConfiguration] = tuneForSomeIterationsAndCheckAllTuned<2, 2>(
+      predictiveTuning, {20, 10}, {0, 1}, iteration, configurationsToCompare);
 
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
