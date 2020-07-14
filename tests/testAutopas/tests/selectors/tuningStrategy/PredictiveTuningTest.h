@@ -26,8 +26,7 @@ class PredictiveTuningTest : public AutoPasTestBase {
   template <size_t N, size_t M>
   auto tuneForSomeIterationsAndCheckAllTuned(autopas::PredictiveTuning &predictiveTuning,
                                              const std::array<long, M> &evidences,
-                                             std::array<size_t, N> returnConfigIndices, size_t &iteration)
-      -> std::array<autopas::Configuration, N> {
+                                             std::array<size_t, N> returnConfigIndices, size_t &iteration) {
     std::vector<autopas::Configuration> testedConfigs;
     std::array<autopas::Configuration, N> returnConfigs{};
     autopas::Configuration optimalConfiguration;
