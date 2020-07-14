@@ -13,7 +13,7 @@
  * Three different configurations:
  *      - C08 that is not optimal but it getting less expensive.
  *      - Sliced is optimal in the beginning but is getting more expensive.
- *      - C01 is constant an not in the optimum range.
+ *      - C01 is constant and not in the optimum range.
  * In the third iteration lc_c08 should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
@@ -82,7 +82,7 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
  * Three different configurations:
  *      - C08 that is not optimal but it getting less expensive.
  *      - Sliced is optimal in the beginning but is getting more expensive.
- *      - C01 is constant an not in the optimum range.
+ *      - C01 is constant and not in the optimum range.
  * In the third iteration lc_c08 should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testLinearRegression) {
@@ -152,7 +152,7 @@ TEST_F(PredictiveTuningTest, testLinearRegression) {
  * Three different configurations:
  *      - C08 that is not optimal but it getting less expensive.
  *      - Sliced is optimal in the beginning but is getting more expensive.
- *      - C01 is constant an not in the optimum range.
+ *      - C01 is constant and not in the optimum range.
  * In the third iteration lc_c08 should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testLagrange) {
@@ -245,7 +245,7 @@ TEST_F(PredictiveTuningTest, testLagrange) {
  * Three different configurations:
  *      - C08 that is not optimal but it getting less expensive.
  *      - Sliced is optimal in the beginning but is getting more expensive.
- *      - C01 is constant an not in the optimum range.
+ *      - C01 is constant and not in the optimum range.
  * In the third iteration lc_c08 should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testNewton) {
@@ -370,7 +370,7 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
  * Three different configurations:
  *      - C08 is constant near the optimum (11).
  *      - Sliced is constant the optimum (10).
- *      - C01 is constant an not in the optimum range (20).
+ *      - C01 is constant and not in the optimum range (20).
  * In the third iteration lc_c08 and sliced should be in _optimalSearchSpace and after the tuning phase sliced should be
  * the optimal configuration.
  */
