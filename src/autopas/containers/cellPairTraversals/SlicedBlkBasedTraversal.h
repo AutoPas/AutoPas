@@ -621,10 +621,9 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
       _middlesubBlockEnd[i] = middleSubBlock[i][0] + block[1][i] - block[0][i] - 2 * _overlapAxis[i];
     }
 
-    for (unsigned long j = middleSubBlock[0][0]; j <= _middlesubBlockEnd[0] and j < _dims[0] - _overlapAxis[0]; ++j) {
-      for (unsigned long k = middleSubBlock[1][0]; k <= _middlesubBlockEnd[1] and k < _dims[1] - _overlapAxis[1]; ++k) {
-        for (unsigned long l = middleSubBlock[2][0]; l <= _middlesubBlockEnd[2] and l < _dims[2] - _overlapAxis[2];
-             ++l) {
+    for (unsigned long j = middleSubBlock[0][0]; j <= _middlesubBlockEnd[0]; ++j) {
+      for (unsigned long k = middleSubBlock[1][0]; k <= _middlesubBlockEnd[1]; ++k) {
+        for (unsigned long l = middleSubBlock[2][0]; l <= _middlesubBlockEnd[2]; ++l) {
           loopBody(j,k,l);
         }
       }
