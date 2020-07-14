@@ -12,7 +12,7 @@
 namespace autopas {
 
 /**
- * @copydoc C08Traversal
+ * @copydoc LCC08Traversal
  *
  * It furthermore notifies an observer when color changes during the traversal happen.
  */
