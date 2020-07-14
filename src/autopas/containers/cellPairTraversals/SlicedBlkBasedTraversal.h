@@ -283,32 +283,23 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::init(
     const std::array<unsigned long, 3> &dims) {
   using array3D = std::array<unsigned long, 3>;
-  AutoPasLog(debug, "Init?");
+  AutoPasLog(debug, "Init");
 
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
   }
   AutoPasLog(debug, "_cellLength: " + debugHelperFunctionIntArrayToString(_cellLength));
 
-  // order dimensions by descending length
-  auto minMaxElem = std::minmax_element(this->_cellsPerDimension.begin(), this->_cellsPerDimension.end());
-  _dimsPerLength[0] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.second);
-  _dimsPerLength[2] = (int)std::distance(this->_cellsPerDimension.begin(), minMaxElem.first);
-  _dimsPerLength[1] = 3 - (_dimsPerLength[0] + _dimsPerLength[2]);
-
   // order overlapAxis by descending length of dimensions
-  _overlapAxis[0] = _overlap[_dimsPerLength[0]];
-  _overlapAxis[1] = _overlap[_dimsPerLength[1]];
-  _overlapAxis[2] = _overlap[_dimsPerLength[2]];
-
+  for (int i = 0; i < 3; ++i) {
+    _overlapAxis[i] = _overlap[i];
+  }
   AutoPasLog(debug, "_overlapAxis: " + debugHelperFunctionIntArrayToString(_overlapAxis));
 
   // init dimensions by descending length of dimensions
-  _dims[0] = dims[_dimsPerLength[0]];
-  _dims[1] = dims[_dimsPerLength[1]];
-  _dims[2] = dims[_dimsPerLength[2]];
-
-  AutoPasLog(debug, "_dimsPerLength: " + debugHelperFunctionIntArrayToString(_dimsPerLength));
+  for (int l = 0; l < 3; ++l) {
+    _dims[l] = dims[l]
+  }
   AutoPasLog(debug, "_dims: " + debugHelperFunctionIntArrayToString(_dims));
 
   // we need to calculate the size of the standard cube only once by one axis
@@ -318,11 +309,10 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
 
   // calculate cubic root of the number of slices to find the amount each dimension needs to be split into
   auto numSlicesCqrt = std::cbrt(numSlices);
-
   numSlicesCqrt = floor(numSlicesCqrt);
-  _numCellsInCellBlock[0] = numSlicesCqrt;
-  _numCellsInCellBlock[1] = numSlicesCqrt;
-  _numCellsInCellBlock[2] = numSlicesCqrt;
+  for (int n = 0; n < 3; ++n) {
+    _numCellsInCellBlock[n] = numSlicesCqrt;
+  }
   AutoPasLog(debug, "_numCellsInCellBlock: " + debugHelperFunctionIntArrayToString(_numCellsInCellBlock));
 
   // clear _cellBlockDimensions for each dimension
@@ -331,19 +321,19 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
   _cellBlockDimensions[2].clear();
 
   // Insert the number of cells per dimensional slice by cellblock.
-  // E.g. each cellblock is 3 cells long (in the longest dimension)
-  //      then _cellBlockDimensions[0] would be [3,3,3,...] afterwards.
+  // E.g. each cellblock has length 3 in x axis direction
+  //      then _cellBlockDimensions[0] = [3,3,3,...] afterwards.
   for (int j = 0; j < 3; ++j) {
     _cellBlockDimensions[j].resize(_numCellsInCellBlock[j]);
     std::fill(_cellBlockDimensions[j].begin(), _cellBlockDimensions[j].end(),
-              static_cast<unsigned long>(this->_cellsPerDimension[_dimsPerLength[j]] / _numCellsInCellBlock[j]));
+              static_cast<unsigned long>(this->_cellsPerDimension[j] / _numCellsInCellBlock[j]));
   }
 
   // Calculate the rest of the cells per dimension, which where cutoff by possible floor of division of dimension.
   // Accounts for possible floor of the numSlicesCqrt
   array3D rest;
   for (int k = 0; k < 3; ++k) {
-    rest[k] = this->_cellsPerDimension[_dimsPerLength[k]] - _cellBlockDimensions[k].size() * numSlicesCqrt;
+    rest[k] = this->_cellsPerDimension[k] - (_cellBlockDimensions[k].size() * numSlicesCqrt);
     // Expand the cellBlocks bordering a dimensional end with rest, by the rest.
     if (rest[k] != 0) {
       _cellBlockDimensions[k].back() + rest[k];
@@ -448,7 +438,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
         // We need to subtract the overlap from the border because of the C08CellHandling
         // if acumulator + iterator would be bigger than overlap => wrong cellBlockBuild && isApplicable => false
         if (accumulator_thirdDim + jt > _dims[2] - _overlapAxis[2]) {
-          kt -= _overlapAxis[_dimsPerLength[2]];
+          kt -= _overlapAxis[2];
         }
         _cellBlocks[cellBlockIterator][0][0] = (unsigned long)accumulator_firstDim;
         _cellBlocks[cellBlockIterator][0][1] = (unsigned long)accumulator_secondDim;
@@ -620,11 +610,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
       for (unsigned long k = middleSubBlock[1][0]; k <= _middlesubBlockEnd[1] and k < _dims[1] - _overlapAxis[1]; ++k) {
         for (unsigned long l = middleSubBlock[2][0]; l <= _middlesubBlockEnd[2] and l < _dims[2] - _overlapAxis[2];
              ++l) {
-          array3D idArray = {};
-          idArray[_dimsPerLength[0]] = j;
-          idArray[_dimsPerLength[1]] = k;
-          idArray[_dimsPerLength[2]] = l;
-          loopBody(idArray[0], idArray[1], idArray[2]);
+          loopBody(j, k, l);
         }
       }
     }
@@ -682,11 +668,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
                  k <= _subBlockEndIteration[1] and k < _dims[1] - _overlapAxis[1]; ++k) {
               for (unsigned long l = currentSubBlock[2][0];
                    l <= _subBlockEndIteration[2] and l < _dims[2] - _overlapAxis[2]; ++l) {
-                array3D idArray = {};
-                idArray[_dimsPerLength[0]] = j;
-                idArray[_dimsPerLength[1]] = k;
-                idArray[_dimsPerLength[2]] = l;
-                loopBody(idArray[0], idArray[1], idArray[2]);
+                loopBody(j, k, l);
               }
             }
           }
