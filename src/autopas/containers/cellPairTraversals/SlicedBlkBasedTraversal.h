@@ -329,14 +329,6 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
               static_cast<unsigned long>(this->_cellsPerDimension[j] / _numCellsInCellBlock[j]));
   }
 
-//  for (int m = 0; m < 3; ++m) {
-//    _cellBlockDimensions[m].resize(_numCellsInCellBlock[m]);
-//    unsigned long thisAxisLength = 0ul;
-//    for (int i = 0; i < _cellBlockDimensions[m].size(); ++i) {
-//
-//    }
-//  }
-
   // Calculate the rest of the cells per dimension, which where cutoff by possible floor of division of dimension.
   // Accounts for possible floor of the numSlicesCqrt
   array3D rest;
@@ -349,10 +341,7 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
     // TODO: If rest[k] + _cellBlockDimensions[k].back - overlapAxis[k] < 3
     // then add rest[k] + cBD[k].back to _cellBlockDimensions[k].secondToLast and delete back element
     // right now it would not be applicable (the comparison towards the .back of the vector in applicable function)
-    AutoPasLog(debug, "_cellsPerDimension[" + std::to_string(k) + "]: " + std::to_string(this->_cellsPerDimension[k]));
-    AutoPasLog(debug, "rest[" + std::to_string(k) + "]: " + std::to_string(rest[k]));
   }
-  AutoPasLog(debug, "numSlicesCqrt: " + std::to_string(numSlicesCqrt));
   AutoPasLog(debug, "_cellBlockDimensions: " + debugHelperFunctionIntArrayToString(_cellBlockDimensions));
 
   // Each cellblock should be at least 3x3x3 cells big,
