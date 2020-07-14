@@ -9,12 +9,12 @@
 #include <gmock/gmock-matchers.h>
 
 autopas::PredictiveTuning PredictiveTuningTest::getPredictiveTuning(
-    unsigned int testsUntilFirstPrediction, autopas::ExtrapolationMethodOption extrapolationMethodOption) {
+    unsigned int testsUntilFirstPrediction, autopas::ExtrapolationMethodOption extrapolationMethodOption,
+    const std::set<autopas::TraversalOption> &allowedTraversalOptions) {
   return autopas::PredictiveTuning(
-      {autopas::ContainerOption::linkedCells}, {1.},
-      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
-      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
-      relativeOptimumRange, maxTuningIterationsWithoutTest, testsUntilFirstPrediction, extrapolationMethodOption);
+      {autopas::ContainerOption::linkedCells}, {1.}, allowedTraversalOptions, {autopas::LoadEstimatorOption::none},
+      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, relativeOptimumRange,
+      maxTuningIterationsWithoutTest, testsUntilFirstPrediction, extrapolationMethodOption);
 }
 
 void PredictiveTuningTest::testGeneric(autopas::ExtrapolationMethodOption extrapolationMethodOption,
@@ -144,31 +144,14 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTuningThreeIterations) {
 TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
   size_t iteration = 0;
   std::vector<autopas::Configuration> configurationsToCompare{configurationLC_C08, configurationLC_Sliced};
-  std::vector<autopas::Configuration> testedConfigs;
-  autopas::PredictiveTuning predictiveTuning(
-      {autopas::ContainerOption::linkedCells}, {1.},
-      {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced}, {autopas::LoadEstimatorOption::none},
-      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, relativeOptimumRange,
-      maxTuningIterationsWithoutTest, evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction);
+  auto predictiveTuning =
+      getPredictiveTuning(evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction,
+                          {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced});
 
   predictiveTuning.reset(iteration);
 
-  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  auto badConfiguration = predictiveTuning.getCurrentConfiguration();
-  predictiveTuning.addEvidence(20, iteration);
-  ++iteration;
-
-  predictiveTuning.tune();
-  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  auto optimalConfiguration = predictiveTuning.getCurrentConfiguration();
-  predictiveTuning.addEvidence(10, iteration);
-  ++iteration;
-
-  EXPECT_THAT(configurationsToCompare, testing::UnorderedElementsAreArray(testedConfigs));
-
-  predictiveTuning.tune();
-  testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
+  auto [badConfiguration, optimalConfiguration] =
+      tuneForSomeIterationsAndCheckAllTuned<2, 2>(predictiveTuning, {20, 10}, {0, 1}, iteration);
 
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
@@ -176,13 +159,13 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
   EXPECT_EQ(badConfiguration, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(20, iteration);
   ++iteration;
-
   predictiveTuning.tune();
+
   EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
   predictiveTuning.addEvidence(10, iteration);
   ++iteration;
-
   predictiveTuning.tune();
+
   EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // Iterating through the maxNumberOfIterationsWithoutTest iterations where C08 should not be tested.
