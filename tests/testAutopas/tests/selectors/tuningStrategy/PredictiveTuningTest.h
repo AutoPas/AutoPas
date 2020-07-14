@@ -14,15 +14,18 @@
 
 class PredictiveTuningTest : public AutoPasTestBase {
  protected:
-  const autopas::Configuration configurationC01 = autopas::Configuration(
+  const autopas::Configuration configurationLC_C01 = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
-  const autopas::Configuration configurationC08 = autopas::Configuration(
+  const autopas::Configuration configurationLC_C08 = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
-  const autopas::Configuration configurationSliced = autopas::Configuration(
+
+  const autopas::Configuration configurationLC_Sliced = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
+
+  std::vector<autopas::Configuration> allConfigs{configurationLC_C01, configurationLC_C08, configurationLC_Sliced};
 
   static constexpr double relativeOptimumRange{1.2};
   static constexpr unsigned int maxTuningIterationsWithoutTest{5};
