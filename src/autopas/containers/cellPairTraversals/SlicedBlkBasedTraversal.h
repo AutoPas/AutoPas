@@ -547,13 +547,15 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
           currentSubBlock[2][1] = i;
           _subBlocksSingleCellBlock[subBlockNumber] = currentSubBlock;
 
-//          AutoPasLog(debug, "SB:" + std::to_string(subBlockNumber) +
-//                                " | Dim0: " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][0][0]) +
-//                                " Dim1: " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][1][0]) +
-//                                " Dim2: " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][2][0]) +
-//                                " | Order: " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][0][1]) +
-//                                std::to_string(_subBlocksSingleCellBlock[subBlockNumber][1][1]) +
-//                                std::to_string(_subBlocksSingleCellBlock[subBlockNumber][2][1]));
+          if (n == 0) {
+            AutoPasLog(debug, "SB:" + std::to_string(subBlockNumber) +
+                              " | Dim0: " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][0][0]) +
+                              " Dim1: " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][1][0]) +
+                              " Dim2: " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][2][0]) +
+                              " | Order: " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][0][1]) +
+                              std::to_string(_subBlocksSingleCellBlock[subBlockNumber][1][1]) +
+                              std::to_string(_subBlocksSingleCellBlock[subBlockNumber][2][1]));
+          }
           // one block finished building
           subBlockNumber++;
         }
