@@ -298,7 +298,7 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
 
   // init dimensions by descending length of dimensions
   for (int l = 0; l < 3; ++l) {
-    _dims[l] = dims[l]
+    _dims[l] = dims[l];
   }
   AutoPasLog(debug, "_dims: " + debugHelperFunctionIntArrayToString(_dims));
 
@@ -329,6 +329,14 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
               static_cast<unsigned long>(this->_cellsPerDimension[j] / _numCellsInCellBlock[j]));
   }
 
+//  for (int m = 0; m < 3; ++m) {
+//    _cellBlockDimensions[m].resize(_numCellsInCellBlock[m]);
+//    unsigned long thisAxisLength = 0ul;
+//    for (int i = 0; i < _cellBlockDimensions[m].size(); ++i) {
+//
+//    }
+//  }
+
   // Calculate the rest of the cells per dimension, which where cutoff by possible floor of division of dimension.
   // Accounts for possible floor of the numSlicesCqrt
   array3D rest;
@@ -341,7 +349,10 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
     // TODO: If rest[k] + _cellBlockDimensions[k].back - overlapAxis[k] < 3
     // then add rest[k] + cBD[k].back to _cellBlockDimensions[k].secondToLast and delete back element
     // right now it would not be applicable (the comparison towards the .back of the vector in applicable function)
+    AutoPasLog(debug, "_cellsPerDimension[" + std::to_string(k) + "]: " + std::to_string(this->_cellsPerDimension[k]));
+    AutoPasLog(debug, "rest[" + std::to_string(k) + "]: " + std::to_string(rest[k]));
   }
+  AutoPasLog(debug, "numSlicesCqrt: " + std::to_string(numSlicesCqrt));
   AutoPasLog(debug, "_cellBlockDimensions: " + debugHelperFunctionIntArrayToString(_cellBlockDimensions));
 
   // Each cellblock should be at least 3x3x3 cells big,
@@ -403,8 +414,8 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
                                        _cellBlockDimensions[2].size()));
 
   unsigned long accumulator_firstDim = 0;
-  unsigned long accumulator_secondDim;
-  unsigned long accumulator_thirdDim;
+  unsigned long accumulator_secondDim = 0;
+  unsigned long accumulator_thirdDim = 0;
   unsigned long cellBlockIterator = 0;
   std::array<unsigned long, 3> cellBlockOrder = {0,0,0};
   unsigned long x = 0;
@@ -437,7 +448,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
         // if we are in the last element in cellBlockDimensions we are at the End of the Dimension
         // We need to subtract the overlap from the border because of the C08CellHandling
         // if acumulator + iterator would be bigger than overlap => wrong cellBlockBuild && isApplicable => false
-        if (accumulator_thirdDim + jt > _dims[2] - _overlapAxis[2]) {
+        if (accumulator_thirdDim + kt > _dims[2] - _overlapAxis[2]) {
           kt -= _overlapAxis[2];
         }
         _cellBlocks[cellBlockIterator][0][0] = (unsigned long)accumulator_firstDim;
@@ -516,7 +527,6 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
       for (unsigned long j = 0; j < 3; ++j) {
         for (unsigned long k = 0; k < 3; ++k) {
           subBlock currentSubBlock;
-          // iterate over k first -> use for longest dimension
           if (k == 0) {
             currentSubBlock[0][0] = cellblock[0][0];
           } else if (k == 1) {
@@ -610,7 +620,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
       for (unsigned long k = middleSubBlock[1][0]; k <= _middlesubBlockEnd[1] and k < _dims[1] - _overlapAxis[1]; ++k) {
         for (unsigned long l = middleSubBlock[2][0]; l <= _middlesubBlockEnd[2] and l < _dims[2] - _overlapAxis[2];
              ++l) {
-          loopBody(j, k, l);
+          loopBody(j,k,l);
         }
       }
     }
@@ -668,7 +678,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
                  k <= _subBlockEndIteration[1] and k < _dims[1] - _overlapAxis[1]; ++k) {
               for (unsigned long l = currentSubBlock[2][0];
                    l <= _subBlockEndIteration[2] and l < _dims[2] - _overlapAxis[2]; ++l) {
-                loopBody(j, k, l);
+                loopBody(j,k,l);
               }
             }
           }
