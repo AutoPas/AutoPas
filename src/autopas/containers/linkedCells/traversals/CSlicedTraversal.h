@@ -22,7 +22,7 @@ namespace autopas {
  * This class provides the colored sliced traversal.
  *
  * The traversal finds the longest dimension of the simulation domain and cuts
- * the domain in one slice (block) per thread along this dimension. Unlike the regular
+ * the domain into as many slices as possible along this dimension. Unlike the regular
  * sliced traversal, this version uses a 2-coloring to prevent race conditions, instead of
  * locking the starting layers.
  *

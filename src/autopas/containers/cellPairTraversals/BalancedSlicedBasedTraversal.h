@@ -45,14 +45,12 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
   }
 
   /**
-   * @copydoc SlicedBasedTraversal::initTraversal()
    * Calculates slice thickness according to estimates loads
+   * @param minSliceThickness
    */
-  void initTraversal() override {
-    this->loadDataLayout();
-    // make sure locks and thicknesses are empty
+  void initSliceThickness(unsigned long minSliceThickness) override {
+    // make thicknesses are empty
     this->_sliceThickness.clear();
-    this->_locks.clear();
 
     // estimate loads along longest axis
     auto maxDimension = this->_dimsPerLength[0];
@@ -86,8 +84,6 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
 
     auto numSlices = (size_t)autopas_get_max_threads();
     AutoPasLog(debug, "{} threads available.", numSlices);
-    auto minSliceThickness = this->_overlapLongestAxis + 1;
-
     // using greedy algorithm to assign slice thicknesses. May lead to less slices being used.
     unsigned int totalThickness = 0;
     /* minimum load for the next slice. Ideally exactly this load is reached. If this is not possible
@@ -136,8 +132,6 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
 
     // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
     this->_sliceThickness.back() -= this->_overlapLongestAxis;
-
-    this->_locks.resize((numSlices - 1) * this->_overlapLongestAxis);
   }
 };
 
