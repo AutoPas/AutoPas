@@ -191,6 +191,45 @@ class FeatureVectorEncoder {
                          _newton3Options[vecDiscrete[2]]);
   }
 
+  /**
+   * Convert Feature vector to cluster representation for GaussianCluster.
+   * Discrete values are encoded using their index in given std::vector.
+   * Additionaly append current iteration to the continuous tuple.
+   * @param vec vector to encode
+   * @param iteration current iteration
+   * @return cluster encoded vector
+   */
+  [[nodiscard]] std::pair<Eigen::VectorXi, Eigen::VectorXd> convertToClusterWithIteration(const FeatureVector &vec,
+                                                                                          size_t iteration) const {
+    int containerTraversalEstimatorIndex = static_cast<int>(
+        std::distance(_containerTraversalEstimatorOptions.begin(),
+                      std::find(_containerTraversalEstimatorOptions.begin(), _containerTraversalEstimatorOptions.end(),
+                                std::make_tuple(vec.container, vec.traversal, vec.loadEstimator))));
+    int dataLayoutIndex = static_cast<int>(std::distance(
+        _dataLayoutOptions.begin(), std::find(_dataLayoutOptions.begin(), _dataLayoutOptions.end(), vec.dataLayout)));
+    int newton3Index = static_cast<int>(
+        std::distance(_newton3Options.begin(), std::find(_newton3Options.begin(), _newton3Options.end(), vec.newton3)));
+
+    Eigen::Vector3i vecDiscrete({containerTraversalEstimatorIndex, dataLayoutIndex, newton3Index});
+    Eigen::VectorXd vecContinuous(FeatureVector::featureSpaceContinuousDims + 1);
+    vecContinuous << vec.cellSizeFactor, iteration;
+    return std::make_pair(vecDiscrete, vecContinuous);
+  }
+
+  /**
+   * Inverse of convertToClusterWithIteration. Convert cluster representation with iteration back
+   * to Feature vector while ignoring the iteration.
+   * @param vec cluster encoded vector
+   * @return decoded vector
+   */
+  FeatureVector convertFromClusterWithIteration(const std::pair<Eigen::VectorXi, Eigen::VectorXd> &vec) {
+    const auto &[vecDiscrete, vecContinuous] = vec;
+    auto [container, traversal, estimator] = _containerTraversalEstimatorOptions[vecDiscrete[0]];
+
+    return FeatureVector(container, vecContinuous[0], traversal, estimator, _dataLayoutOptions[vecDiscrete[1]],
+                         _newton3Options[vecDiscrete[2]]);
+  }
+
  private:
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
   std::vector<DataLayoutOption> _dataLayoutOptions;

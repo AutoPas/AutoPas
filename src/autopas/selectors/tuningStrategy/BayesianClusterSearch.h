@@ -11,6 +11,7 @@
 #include <set>
 #include <unordered_set>
 
+#include "FullSearch.h"
 #include "GaussianModel/GaussianCluster.h"
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
@@ -42,12 +43,19 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   constexpr static size_t discreteNewtonDim = 2;
   /**
    * Dimensions of the continuous tuples.
+   * FeatureVector continuous dimensions + 1 (time)
    */
-  constexpr static size_t continuousDims = 1;
+  constexpr static size_t continuousDims = FeatureVector::featureSpaceContinuousDims + 1;
   /**
    * Fixed noise
    */
   constexpr static double sigma = 0.01;
+
+  /**
+   * Number of cellSizeFactors sampled if the allowed set is continuous.
+   * These samples are only used for FullSearch.
+   */
+  constexpr static size_t cellSizeFactorSampleSize = 5;
 
  public:
   /**
@@ -86,7 +94,12 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         }),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
-        _predNumLHSamples(predNumLHSamples) {
+        _predNumLHSamples(predNumLHSamples),
+        _firstTuningPhase(true),
+        _currentIteration(0),
+        _currentNumEvidence(0),
+        _fullSearch(allowedContainerOptions, convertCellSizeFactor(allowedCellSizeFactors), allowedTraversalOptions,
+                    allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options) {
     if (predNumLHSamples <= 0) {
       utils::ExceptionHandler::exception(
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
@@ -121,29 +134,54 @@ class BayesianClusterSearch : public TuningStrategyInterface {
                                     static_cast<int>(_newton3Options.size())});
     _gaussianCluster.setVectorToStringFun(
         [this](const GaussianModelTypes::VectorPairDiscreteContinuous &vec) -> std::string {
-          return _encoder.convertFromCluster(vec).toString();
+          return _encoder.convertFromClusterWithIteration(vec).toString();
         });
-
-    tune();
   }
 
-  inline const Configuration &getCurrentConfiguration() const override { return _currentConfig; }
+  inline const Configuration &getCurrentConfiguration() const override {
+    if (_firstTuningPhase) {
+      return _fullSearch.getCurrentConfiguration();
+    }
+
+    return _currentConfig;
+  }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time, size_t) override {
+  inline void addEvidence(long time, size_t iteration) override {
+    const auto &currentConfig = getCurrentConfiguration();
+
+    if (_firstTuningPhase) {
+      _fullSearch.addEvidence(time, iteration);
+    }
+
+    // store if first or better evidence
+    if (_currentNumEvidence == 0 or time < _currentOptimalTime) {
+      _currentOptimalTime = time;
+      _currentOptimalConfig = currentConfig;
+    }
+
     // encoded vector
-    auto vec = _encoder.convertToCluster(_currentConfig);
+    auto vec = _encoder.convertToClusterWithIteration(currentConfig, iteration);
     // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
     // represent a maximization problem
     _gaussianCluster.addEvidence(vec, -time * secondsPerMicroseconds);
+
+    _currentIteration = iteration;
+    ++_currentNumEvidence;
     _currentAcquisitions.clear();
   }
 
-  inline void reset(size_t) override {
-    _gaussianCluster.clear();
+  inline void reset(size_t iteration) override {
+    _currentIteration = iteration;
+    _currentNumEvidence = 0;
     _currentAcquisitions.clear();
-    tune();
+
+    if (_firstTuningPhase) {
+      _fullSearch.reset(iteration);
+    } else {
+      tune();
+    }
   }
 
   inline bool tune(bool currentInvalid = false) override;
@@ -163,6 +201,24 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * @param af acquisition function
    */
   inline void sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
+
+  /**
+   * FullSearch cannot handle continuous sets of cellSizeFactors.
+   * So we convert NumberSet to a finite std::set by sampling if it is continuous.
+   * @param cellSizeFactors
+   * @return
+   */
+  static std::set<double> convertCellSizeFactor(const NumberSet<double> &cellSizeFactors) {
+    if (cellSizeFactors.isFinite()) {
+      return cellSizeFactors.getAll();
+    }
+
+    // seed of random number generator irrelevant as it only affects the ordering.
+    Random rng(0);
+    auto samples = cellSizeFactors.uniformSample(cellSizeFactorSampleSize, rng);
+
+    return std::set(samples.begin(), samples.end());
+  }
 
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
@@ -199,11 +255,43 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Number of latin-hypercube-samples used to find a evidence with high predicted acquisition.
    */
   const size_t _predNumLHSamples;
+
+  bool _firstTuningPhase;
+  /**
+   * Iteration of last added evidence or reset.
+   */
+  size_t _currentIteration;
+  /**
+   * Number of evidence provided in current tuning phase.
+   */
+  size_t _currentNumEvidence;
+  /**
+   * Lowest time of evidence in current tuning phase.
+   */
+  long _currentOptimalTime;
+  /**
+   * Configuration with lowest time in current tuning phase.
+   */
+  Configuration _currentOptimalConfig;
+
+  /**
+   * FullSearch used in the first tuning phase.
+   */
+  FullSearch _fullSearch;
 };
 
 bool BayesianClusterSearch::tune(bool currentInvalid) {
   if (currentInvalid) {
-    _invalidConfigs.insert(_currentConfig);
+    _invalidConfigs.insert(getCurrentConfiguration());
+  }
+
+  // in the first tuning phase do a full search
+  if (_firstTuningPhase) {
+    bool tuning = _fullSearch.tune(currentInvalid);
+    if (not tuning) {
+      _firstTuningPhase = false;
+    }
+    return tuning;
   }
 
   if (searchSpaceIsEmpty()) {
@@ -213,9 +301,9 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
   }
 
   // no more tunings steps
-  if (_gaussianCluster.numEvidence() >= _maxEvidence) {
-    // select best config
-    _currentConfig = _encoder.convertFromCluster(_gaussianCluster.getEvidenceMax());
+  if (_currentNumEvidence >= _maxEvidence) {
+    // select best config of current tuning phase
+    _currentConfig = _currentOptimalConfig;
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
 
     return false;
@@ -229,7 +317,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
 
     // test best vectors until empty
     while (not _currentAcquisitions.empty()) {
-      auto best = _encoder.convertFromCluster(_currentAcquisitions.back());
+      auto best = _encoder.convertFromClusterWithIteration(_currentAcquisitions.back());
 
       if (_invalidConfigs.find(best) == _invalidConfigs.end()) {
         // valid config found!
@@ -252,7 +340,8 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
 
 void BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOption af) {
   // create n lhs samples
-  auto continuousSamples = FeatureVector::lhsSampleFeatureContinuous(n, _rng, *_cellSizeFactors);
+  auto continuousSamples =
+      FeatureVector::lhsSampleFeatureContinuousWithIteration(n, _rng, *_cellSizeFactors, _currentIteration);
 
   // calculate all acquisitions
   _currentAcquisitions = _gaussianCluster.sampleOrderedByAcquisition(af, _neighbourFun, continuousSamples);
@@ -276,6 +365,8 @@ bool BayesianClusterSearch::searchSpaceIsEmpty() const {
 }
 
 void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
+  _fullSearch.removeN3Option(badNewton3Option);
+
   _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option),
                         _newton3Options.end());
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
@@ -290,5 +381,4 @@ void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
         "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
   }
 }
-
 }  // namespace autopas
