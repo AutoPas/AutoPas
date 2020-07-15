@@ -74,12 +74,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   explicit PredictiveTuning(std::set<Configuration> allowedConfigurations)
       : SetSearchSpaceBasedTuningStrategy(std::move(allowedConfigurations)),
         _currentConfig(_searchSpace.begin()),
-        _notTestedYet(_searchSpace),
-        _relativeOptimumRange(1.2),
-        _maxTuningIterationsWithoutTest(5),
-        _relativeRangeForBlacklist(10),
-        _extrapolationMethod(ExtrapolationMethodOption::linePrediction),
-        _evidenceFirstPrediction(2) {}
+        _notTestedYet(_searchSpace) {}
 
   inline void addEvidence(long time, size_t iteration) override {
     _traversalTimesStorage[*_currentConfig].emplace_back(iteration, time);

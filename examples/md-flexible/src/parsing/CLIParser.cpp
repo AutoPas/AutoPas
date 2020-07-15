@@ -365,7 +365,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.relativeRangeBlacklist)::getoptChar: {
         try {
-          config.relativeRangeBlacklist.value = (double)stod(strArg);
+          config.relativeRangeBlacklist.value = stod(strArg);
           if (config.relativeRangeBlacklist.value < 1 && config.relativeRangeBlacklist.value != 0) {
             cerr << "Relative range for blacklist range has to be greater or equal one or has to be zero!" << endl;
             displayHelp = true;

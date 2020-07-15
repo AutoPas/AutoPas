@@ -27,7 +27,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto parsedOptions =
         autopas::SelectorStrategyOption::parseOptions(node[config.selectorStrategy.name].as<std::string>());
     if (parsedOptions.size() != 1) {
-      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one selector strategy option!");
+      throw std::runtime_error(
+          "YamlParser::parseYamlFile: Pass exactly one selector strategy option! Possible values:\n" +
+          autopas::utils::ArrayUtils::to_string(autopas::SelectorStrategyOption::getAllOptions(), "", {"(", ")"}));
     }
     config.selectorStrategy.value = *parsedOptions.begin();
   }
@@ -111,9 +113,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         autopas::ExtrapolationMethodOption::parseOptions(node[config.extrapolationMethodOption.name].as<std::string>());
     if (parsedOptions.size() != 1) {
       throw std::runtime_error(
-          "YamlParser::parseYamlFile: Pass exactly one extrapolation method option!\n \"Possible values: \" +\n"
-          "          autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), \" \", "
-          "{\"(\", \")\"})");
+          "YamlParser::parseYamlFile: Pass exactly one extrapolation method option! Possible values:\n" +
+          autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), "", {"(", ")"}));
     }
     config.extrapolationMethodOption.value = *parsedOptions.begin();
   }
@@ -121,7 +122,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto parsedOptions =
         autopas::TuningStrategyOption::parseOptions(node[config.tuningStrategyOption.name].as<std::string>());
     if (parsedOptions.size() != 1) {
-      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one tuning strategy option!");
+      throw std::runtime_error(
+          "YamlParser::parseYamlFile: Pass exactly one tuning strategy option! Possible values:\n" +
+          autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions(), "", {"(", ")"}));
     }
     config.tuningStrategyOption.value = *parsedOptions.begin();
   }
@@ -129,7 +132,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto parsedOptions =
         autopas::AcquisitionFunctionOption::parseOptions(node[config.acquisitionFunctionOption.name].as<std::string>());
     if (parsedOptions.size() != 1) {
-      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one acquisition function option!");
+      throw std::runtime_error(
+          "YamlParser::parseYamlFile: Pass exactly one acquisition function option! Possible values:\n" +
+          autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), "", {"(", ")"}));
     }
     config.acquisitionFunctionOption.value = *parsedOptions.begin();
   }
