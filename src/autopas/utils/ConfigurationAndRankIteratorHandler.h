@@ -35,8 +35,7 @@ class ConfigurationAndRankIteratorHandler {
                                       std::set<LoadEstimatorOption> &loadEstimatorOptions,
                                       std::set<DataLayoutOption> &dataLayoutOptions,
                                       std::set<Newton3Option> &newton3Options, const int numConfigs, const int commSize)
-      : _containerOptions(containerOptions),
-        _cellSizeFactors(cellSizeFactors),
+      : _cellSizeFactors(cellSizeFactors),
         _allowedTraversalOptions(traversalOptions),
         _allowedLoadEstimatorOptions(loadEstimatorOptions),
         _dataLayoutOptions(dataLayoutOptions),
@@ -159,7 +158,6 @@ class ConfigurationAndRankIteratorHandler {
    */
   inline void advanceConfigIterators();
 
-  const std::set<ContainerOption> &_containerOptions;
   const std::set<double> &_cellSizeFactors;
   const std::set<TraversalOption> &_allowedTraversalOptions;
   const std::set<LoadEstimatorOption> &_allowedLoadEstimatorOptions;
