@@ -103,7 +103,7 @@ class Simulation {
   [[nodiscard]] const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
 
   /**
-    * Calculate the homogeneity of the scenario by using the standard deviation
+    * Calculate the homogeneity of the scenario by using the standard deviation.
     * @param autopas
     * @return double
     */
