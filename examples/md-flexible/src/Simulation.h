@@ -545,9 +545,9 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
   for(int i = 0; i < numberOfCells[0]; ++i){
     for(int j = 0; j < numberOfCells[1]; ++j){
       for(int k = 0; k < numberOfCells[2]; ++k){
-        double x = double (i*cellSize);
-        double y = double (j*cellSize);
-        double z = double (k*cellSize);
+        double x = i*cellSize;
+        double y = j*cellSize;
+        double z = k*cellSize;
         lowCorner = {x, y, z};
         highCorner = {x + cellSize, y + cellSize, z + cellSize};
         int counter = 0;
