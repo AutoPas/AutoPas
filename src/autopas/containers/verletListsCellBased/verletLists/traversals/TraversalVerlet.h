@@ -104,20 +104,21 @@ class TraversalVerlet
       }
 
       case DataLayoutOption::soa: {
+#define AUTOPAS_OPENMP
 #if defined(AUTOPAS_OPENMP)
         if (not useNewton3) {
           /// @todo find a sensible chunk size
           const size_t chunkSize = std::max(soaNeighborLists.size() / (omp_get_max_threads() * 10), 1ul);
 #pragma omp parallel for schedule(dynamic, chunkSize)
-          for (size_t i = 0; i < soaNeighborLists.size(); i++) {
-            _functor->SoAFunctorVerlet(_soa, i, soaNeighborLists[i], useNewton3);
+          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+            _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], useNewton3);
           }
         } else
 #endif
         {
           // iterate over SoA
-          for (size_t i = 0; i < soaNeighborLists.size(); i++) {
-            _functor->SoAFunctorVerlet(_soa, i, soaNeighborLists[i], useNewton3);
+          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+            _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], useNewton3);
           }
         }
         return;
@@ -135,7 +136,7 @@ class TraversalVerlet
   PairwiseFunctor *_functor;
 
   /**
-   *global SoA of verlet lists
+   * SoA buffer of verlet lists.
    */
   SoA<typename Particle::SoAArraysType> _soa;
 };
