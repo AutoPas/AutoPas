@@ -170,29 +170,29 @@ class VerletLists
   }
 
   /**
-   * Converts the verlet list stored for AoS usage into one for SoA usage
+   * Fills SoA neighbor list with particle indices.
    */
   void generateSoAListFromAoSVerletLists() {
     // resize the list to the size of the aos neighborlist
     _soaNeighborLists.resize(_aosNeighborLists.size());
     // clear the aos 2 soa map
-    _aos2soaMap.clear();
+    _particlePtr2indexMap.clear();
 
-    _aos2soaMap.reserve(_aosNeighborLists.size());
+    _particlePtr2indexMap.reserve(_aosNeighborLists.size());
     size_t i = 0;
     for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
       // set the map
-      _aos2soaMap[&(*iter)] = i;
+      _particlePtr2indexMap[&(*iter)] = i;
     }
     size_t accumulatedListSize = 0;
     for (auto &[particlePtr, neighborPtrVector] : _aosNeighborLists) {
       accumulatedListSize += neighborPtrVector.size();
-      size_t i_id = _aos2soaMap[particlePtr];
+      size_t i_id = _particlePtr2indexMap[particlePtr];
       // each soa neighbor list should be of the same size as for aos
       _soaNeighborLists[i_id].resize(neighborPtrVector.size());
       size_t j = 0;
       for (auto &neighborPtr : neighborPtrVector) {
-        _soaNeighborLists[i_id][j] = _aos2soaMap[neighborPtr];
+        _soaNeighborLists[i_id][j] = _particlePtr2indexMap[neighborPtr];
         j++;
       }
     }
@@ -212,20 +212,25 @@ class VerletLists
    */
   typename verlet_internal::AoS_verletlist_storage_type _aosNeighborLists;
 
-  /// map converting from the aos type index (Particle *) to the soa type index
-  /// (continuous, size_t)
-  std::unordered_map<Particle *, size_t> _aos2soaMap;
+  /**
+   * Mapping of every particle, represented by its pointer, to an index.
+   */
+  std::unordered_map<Particle *, size_t> _particlePtr2indexMap;
 
   /**
    * verlet list for SoA:
-   * For every Particle, stores a vector of particle pointers
+   * For every Particle, identified via the _particlePtr2indexMap, a vector of its neighbor indices is stored.
    */
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> _soaNeighborLists;
 
-  // specifies if the SoA neighbor list is currently valid
+  /**
+   * Shows if the SoA neighbor list is currently valid.
+   */
   bool _soaListIsValid;
 
-  /// specifies how the verlet lists are build
+  /**
+   * Specifies for what data layout the verlet lists are build.
+   */
   BuildVerletListType _buildVerletListType;
 };
 
