@@ -528,7 +528,7 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
   std::array<double, 3> startCorner = autopas.getBoxMin();
   std::array<double, 3> endCorner = autopas.getBoxMax();
   std::array<int, 3> numberOfCells = {};
-  int cellSize = 3;
+  double cellSize = 3;
 
   for(int i = 0; i < 3; ++i){
     numberOfCells[i] = ceil((endCorner[i] - startCorner[i]) / cellSize);
