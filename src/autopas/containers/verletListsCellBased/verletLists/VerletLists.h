@@ -197,7 +197,7 @@ class VerletLists
       }
     }
 
-    if(autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       AutoPasLog(debug,
                  "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
                  "size is {}",

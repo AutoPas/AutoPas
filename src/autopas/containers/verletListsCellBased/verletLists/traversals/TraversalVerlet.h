@@ -79,24 +79,24 @@ class TraversalVerlet
           size_t buckets = aosNeighborLists.bucket_count();
           /// @todo find a sensible chunk size
 #pragma omp parallel for schedule(dynamic)
-          for (size_t b = 0; b < buckets; b++) {
-            auto endIter = aosNeighborLists.end(b);
-            for (auto it = aosNeighborLists.begin(b); it != endIter; ++it) {
-              Particle &i = *(it->first);
-              for (auto j_ptr : it->second) {
-                Particle &j = *j_ptr;
-                _functor->AoSFunctor(i, j, false);
+          for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
+            auto endIter = aosNeighborLists.end(bucketId);
+            for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
+              Particle &particle = *(bucketIter->first);
+              for (auto neighborPtr : bucketIter->second) {
+                Particle &neighbor = *neighborPtr;
+                _functor->AoSFunctor(particle, neighbor, false);
               }
             }
           }
         } else
 #endif
         {
-          for (auto &list : aosNeighborLists) {
-            Particle &i = *list.first;
-            for (auto j_ptr : list.second) {
-              Particle &j = *j_ptr;
-              _functor->AoSFunctor(i, j, useNewton3);
+          for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
+            Particle &particle = *particlePtr;
+            for (auto neighborPtr : neighborPtrList) {
+              Particle &neighbor = *neighborPtr;
+              _functor->AoSFunctor(particle, neighbor, useNewton3);
             }
           }
         }
