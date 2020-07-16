@@ -550,7 +550,7 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
         double y = double (j*cellSize);
         double z = double (k*cellSize);
         lowCorner = {x, y, z};
-        highCorner = {x + cellSizeDouble, y + cellSizeDouble, z + cellSizeDouble};
+        highCorner = {x + cellSize, y + cellSize, z + cellSize};
         int counter = 0;
         for (auto iter = autopas.getRegionIterator(lowCorner, highCorner); iter.isValid(); ++iter) {
           counter++;
