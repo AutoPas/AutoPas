@@ -554,7 +554,7 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
         for (auto iter = autopas.getRegionIterator(lowCorner, highCorner); iter.isValid(); ++iter) {
           counter++;
         }
-        double size = pow(cellSizeDouble, 3);
+        double size = cellSize*cellSize*cellSize;
         particlesPerCell.push_back(counter);
         densityPerCell.push_back(counter / size);
       }
