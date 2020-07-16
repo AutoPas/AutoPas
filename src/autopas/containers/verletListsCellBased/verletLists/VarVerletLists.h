@@ -13,7 +13,6 @@ namespace autopas {
 
 /**
  * Variable Verlet Lists container with different neighbor lists.
-
  * @tparam Particle The particle type this container contains.
  * @tparam NeighborList The Neighbor List this Verlet Container uses.
  */
