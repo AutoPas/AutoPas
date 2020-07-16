@@ -52,7 +52,7 @@ INSTANTIATE_TEST_SUITE_P(
             auto container = containerSelector.getCurrentContainer();
 
             for (auto traversalOption : container->getAllTraversals()) {
-              if (traversalOption == autopas::TraversalOption::lc_c01 ||
+              if (traversalOption == autopas::TraversalOption::lc_c01 or
                   traversalOption ==
                       autopas::TraversalOption::lc_c01_combined_SoA /*and autopas::autopas_get_max_threads() > 1*/) {
                 continue;
