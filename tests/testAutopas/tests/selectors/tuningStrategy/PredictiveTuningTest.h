@@ -18,32 +18,23 @@ class PredictiveTuningTest : public AutoPasTestBase {
   /**
    * Tunes for a few iterations (length of times vector) and checks whether all possible configurations were tuned.
    * @param predictiveTuning The PredictiveTuning strategy.
-   * @param evidences Array of times to add to the evidences.
-   * @param returnConfigIndices The configurations with these indices are returned.
+   * @param evidenceList Array of times to add to the evidenceList.
    * @param iteration The current number of iterations, will be increased accordingly.
-   * @return Array of the configurations with indices returnConfigIndices.
+   * @return Vector of the tested configurations.
    */
-  template <size_t N, size_t M>
-  auto tuneForSomeIterationsAndCheckAllTuned(
-      autopas::PredictiveTuning &predictiveTuning, const std::array<long, M> &evidences,
-      std::array<size_t, N> returnConfigIndices, size_t &iteration,
+  static auto tuneForSomeIterationsAndCheckAllTuned(
+      autopas::PredictiveTuning &predictiveTuning, const std::vector<long> &evidenceList, size_t &iteration,
       const std::vector<autopas::Configuration> &allConfigurations = allConfigs) {
-    std::vector<autopas::Configuration> testedConfigs;
-    std::array<autopas::Configuration, N> returnConfigs{};
+    std::vector<autopas::Configuration> testedConfigs(evidenceList.size());
     autopas::Configuration optimalConfiguration;
     auto minTime = std::numeric_limits<size_t>::max();
-    for (size_t index = 0ul; index < evidences.size(); ++index) {
-      testedConfigs.emplace_back(predictiveTuning.getCurrentConfiguration());
-      for (size_t retConfIndInd = 0ul; retConfIndInd < returnConfigIndices.size(); ++retConfIndInd) {
-        if (returnConfigIndices[retConfIndInd] == index) {
-          returnConfigs[retConfIndInd] = predictiveTuning.getCurrentConfiguration();
-        }
-      }
-      if (evidences[index] < minTime) {
+    for (size_t index = 0ul; index < evidenceList.size(); ++index) {
+      testedConfigs[index] = predictiveTuning.getCurrentConfiguration();
+      if (evidenceList[index] < minTime) {
         optimalConfiguration = predictiveTuning.getCurrentConfiguration();
-        minTime = evidences[index];
+        minTime = evidenceList[index];
       }
-      predictiveTuning.addEvidence(evidences[index], iteration);
+      predictiveTuning.addEvidence(evidenceList[index], iteration);
       ++iteration;
       predictiveTuning.tune();
     }
@@ -51,7 +42,7 @@ class PredictiveTuningTest : public AutoPasTestBase {
 
     EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
-    return returnConfigs;
+    return testedConfigs;
   }
 
   static autopas::PredictiveTuning getPredictiveTuning(
@@ -60,7 +51,7 @@ class PredictiveTuningTest : public AutoPasTestBase {
           autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced});
 
   void testGeneric(autopas::ExtrapolationMethodOption extrapolationMethodOption,
-                   const std::vector<std::array<long, 3>> &evidences, size_t optimalPredictionIndex);
+                   const std::vector<std::vector<long>> &evidenceVectors, size_t optimalPredictionIndex);
 
   static constexpr autopas::Configuration configurationLC_C01 = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,

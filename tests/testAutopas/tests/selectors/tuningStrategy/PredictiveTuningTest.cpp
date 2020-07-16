@@ -16,23 +16,23 @@ autopas::PredictiveTuning PredictiveTuningTest::getPredictiveTuning(
 }
 
 void PredictiveTuningTest::testGeneric(autopas::ExtrapolationMethodOption extrapolationMethodOption,
-                                       const std::vector<std::array<long, 3>> &evidences,
+                                       const std::vector<std::vector<long>> &evidenceVectors,
                                        size_t optimalPredictionIndex) {
   size_t iteration = 0;
 
-  auto predictiveTuning = getPredictiveTuning(evidences.size(), extrapolationMethodOption);
+  auto predictiveTuning = getPredictiveTuning(evidenceVectors.size(), extrapolationMethodOption);
 
   // First reset tuning.
   predictiveTuning.reset(iteration);
 
   autopas::Configuration optimalPrediction;
 
-  for (size_t index = 0; index < evidences.size(); ++index) {
+  for (size_t index = 0; index < evidenceVectors.size(); ++index) {
     if (index == 0) {
-      optimalPrediction = tuneForSomeIterationsAndCheckAllTuned<1>(predictiveTuning, evidences[index],
-                                                                   {optimalPredictionIndex}, iteration)[0];
+      optimalPrediction = tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, evidenceVectors[index],
+                                                                iteration)[optimalPredictionIndex];
     } else {
-      tuneForSomeIterationsAndCheckAllTuned<0>(predictiveTuning, evidences[index], {}, iteration)[0];
+      tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, evidenceVectors[index], iteration);
     }
     // End of the first tuning phase.
     predictiveTuning.reset(iteration);
@@ -106,12 +106,14 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTuningThreeIterations) {
 
   predictiveTuning.reset(iteration);
 
-  auto [nearOptimalConfiguration, optimalConfiguration] =
-      tuneForSomeIterationsAndCheckAllTuned<2, 3>(predictiveTuning, {11, 10, 20}, {0, 1}, iteration);
+  auto testedConfigs = tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, {11, 10, 20}, iteration);
+  auto nearOptimalConfiguration = testedConfigs[0];
+  auto optimalConfiguration = testedConfigs[1];
+
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
 
-  tuneForSomeIterationsAndCheckAllTuned<0, 3>(predictiveTuning, {11, 10, 20}, {}, iteration);
+  tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, {11, 10, 20}, iteration);
 
   // End of the second tuning phase.
   predictiveTuning.reset(iteration);
@@ -148,8 +150,10 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
 
   predictiveTuning.reset(iteration);
 
-  auto [badConfiguration, optimalConfiguration] = tuneForSomeIterationsAndCheckAllTuned<2, 2>(
-      predictiveTuning, {20, 10}, {0, 1}, iteration, configurationsToCompare);
+  auto testedConfigs =
+      tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, {20, 10}, iteration, configurationsToCompare);
+  auto badConfiguration = testedConfigs[0];
+  auto optimalConfiguration = testedConfigs[1];
 
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
@@ -211,12 +215,16 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
 
   predictiveTuning.reset(iteration);
 
-  auto [secondBestConfiguration, bestConfiguration, thirdBestConfiguration] =
-      tuneForSomeIterationsAndCheckAllTuned<3, 3>(predictiveTuning, {15, 10, 20}, {0, 1, 2}, iteration);
+  auto testedConfigs = tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, {15, 10, 20}, iteration);
+
+  auto secondBestConfiguration = testedConfigs[0];
+  auto bestConfiguration = testedConfigs[1];
+  auto thirdBestConfiguration = testedConfigs[2];
+
   // End of the first tuning phase.
   predictiveTuning.reset(iteration);
 
-  tuneForSomeIterationsAndCheckAllTuned<0, 3>(predictiveTuning, {15, 10, 20}, {}, iteration);
+  tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, {15, 10, 20}, iteration);
   // End of the second tuning phase.
   predictiveTuning.reset(iteration);
 
