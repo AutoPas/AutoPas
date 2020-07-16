@@ -11,7 +11,7 @@
 
 namespace autopas {
 /**
- * class of helpers for verlet lists
+ * Class of helpers for verlet lists. This is a class and not a namespace to allow templating.
  * @tparam Particle
  */
 template <class Particle>
