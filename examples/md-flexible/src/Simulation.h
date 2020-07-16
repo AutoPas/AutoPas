@@ -102,6 +102,13 @@ class Simulation {
    */
   [[nodiscard]] const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
 
+  /**
+    * Calculate the homogeneity of the scenario by using the standard deviation
+    * @param autopas
+    * @return double
+    */
+  double getHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas);
+
  private:
   using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
   constexpr static bool _shifting = true;
@@ -267,6 +274,8 @@ void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Partic
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, ParticleCell> &autopas) {
+
+  double homogeneity = Simulation::getHomogeneity(autopas);
   _timers.simulate.start();
 
   // main simulation loop
@@ -511,4 +520,56 @@ void Simulation<Particle, ParticleCell>::writeVTKFile(unsigned int iteration,
   vtkFile.close();
 
   _timers.vtk.stop();
+}
+
+template <class Particle, class ParticleCell>
+double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas) {
+
+  std::array<double, 3> startCorner = autopas.getBoxMin();
+  std::array<double, 3> endCorner = autopas.getBoxMax();
+  std::array<int, 3> numberOfCells = {};
+  int cellSize = 3;
+
+  for(int i = 0; i < 3; ++i){
+    numberOfCells[i] = ceil((endCorner[i] - startCorner[i]) / cellSize);
+  }
+
+  int totalNumberOfCells = numberOfCells[0] * numberOfCells[1] * numberOfCells[2];
+
+  std::vector<int> particlesPerCell = {};
+  std::vector<double> densityPerCell = {};
+
+  std::array<double, 3> lowCorner = {};
+  std::array<double, 3> highCorner = {};
+
+  for(int i = 0; i < numberOfCells[0]; ++i){
+    for(int j = 0; j < numberOfCells[1]; ++j){
+      for(int k = 0; k < numberOfCells[2]; ++k){
+        double cellSizeDouble = double (cellSize);
+        double x = double (i*cellSize);
+        double y = double (j*cellSize);
+        double z = double (k*cellSize);
+        lowCorner = {x, y, z};
+        highCorner = {x + cellSizeDouble, y + cellSizeDouble, z + cellSizeDouble};
+        int counter = 0;
+        for (auto iter = autopas.getRegionIterator(lowCorner, highCorner); iter.isValid(); ++iter) {
+          counter++;
+        }
+        double size = pow(cellSizeDouble, 3);
+        particlesPerCell.push_back(counter);
+        densityPerCell.push_back(counter / size);
+      }
+    }
+  }
+
+  double mean = autopas.getNumberOfParticles() / (endCorner[0] * endCorner[1] * endCorner[2]);
+  double variance = 0.0;
+
+  for(int r = 0; r < densityPerCell.size(); ++r){
+    variance += (pow((densityPerCell.at(r) - mean), 2.0) / densityPerCell.size());
+  }
+
+  double sd = sqrt(variance);
+  return sd;
+
 }
