@@ -17,18 +17,26 @@ assert sys.version_info >= (3, 8)
 nameOfScenario = None
 setNameOfScenario = False
 
+hardwareIdentifierString = 'hardware='
+hardware = 'undefined'
+lengthOfArguments = 1
+
 # help message
 for arg in sys.argv[1:]:
     if "--help" in arg:
         print(
-            "Usage: ./plotTuning.py parameter=[number, size, density] [path/To//Output/*.out ...]. Meaning number = number of particles, size = boxSize and density = particle density")
+            "Usage: ./outToCsvForPandas.py [hardware={name of hardware}] [path/To//Output/*.out ...]."
+            "hardware: hardware the scenario was tested on")
         print("Please use at least python 3.8.")
         exit(0)
+    elif hardwareIdentifierString in arg:
+        hardware = arg.split('=', 1)[1]
+        lengthOfArguments = 2
 
 # take all input files as source for a plot
-if len(sys.argv) > 1:
+if len(sys.argv) > lengthOfArguments:
     if os.path.isdir(arg):
-        datadirs = sys.argv[1:]
+        datadirs = sys.argv[lengthOfArguments:]
         datadirs = list(datadirs)
         datadirs.sort(reverse=True)
         datafiles = os.listdir(datadirs[0])
@@ -36,9 +44,9 @@ if len(sys.argv) > 1:
         datafiles = map(lambda s: datadirs[0] + '/' + s, datafiles)
         datafiles = list(datafiles)
         nameOfDirs = datadirs[0].split('/')
-        nameOfScenario = nameOfDirs[len(nameOfDirs)-2]
+        nameOfScenario = nameOfDirs[len(nameOfDirs) - 2]
     else:
-        datafiles = sys.argv[1:]
+        datafiles = sys.argv[lengthOfArguments:]
         setNameOfScenario = True
 
 # -------------------------------------------- Functions --------------------------------------------
@@ -86,7 +94,7 @@ for datafile in datafiles:
 
     if setNameOfScenario:
         datafileNames = datafile.split('/')
-        nameOfScenario = datafileNames[len(datafileNames)-1]
+        nameOfScenario = datafileNames[len(datafileNames) - 1]
 
     with open(datafile) as f:
         currentDensity = 0.0
@@ -149,7 +157,7 @@ for datafile in datafiles:
                 y = boxSizeListMax[1] - boxSizeListMin[1]
                 z = boxSizeListMax[2] - boxSizeListMin[2]
                 rowList.append([traversal, container, newton3, dataLayout, cellSizeFactor, loadEstimator, form,
-                                nameOfScenario, x, y, z, numberOfParticles, time])
+                                nameOfScenario, hardware, x, y, z, numberOfParticles, time])
 
 # ---------------------------------------------- Write CSV ---------------------------------------------
 
@@ -157,5 +165,5 @@ with open('mydata.csv', 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(
         ["Traversal", "Container", "Newton3", "Data Layout", "Cellsize Factor", "Load Estimator",
-         "Form", "Name of Scenario", "x", "y", "z", "Number of Particles", "Iteration Time"])
+         "Form", "Name of Scenario", "Hardware", "x", "y", "z", "Number of Particles", "Iteration Time"])
     writer.writerows(rowList)
