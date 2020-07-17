@@ -12,6 +12,11 @@ assert sys.version_info >= (3, 8)
 
 # ---------------------------------------------- Input ----------------------------------------------
 
+# Will be the name of the directory where the input files are stored
+# if only one file is used, the filename will be the scenario name
+nameOfScenario = None
+setNameOfScenario = False
+
 # help message
 for arg in sys.argv[1:]:
     if "--help" in arg:
@@ -22,19 +27,19 @@ for arg in sys.argv[1:]:
 
 # take all input files as source for a plot
 if len(sys.argv) > 1:
-    if ".out" in arg:
-        datafiles = sys.argv[1:]
-    else:
+    if os.path.isdir(arg):
         datadirs = sys.argv[1:]
         datadirs = list(datadirs)
         datadirs.sort(reverse=True)
         datafiles = os.listdir(datadirs[0])
         datafiles = filter(lambda s: s.endswith('.out'), datafiles)
-        datafiles = map(lambda s: datadirs[0] + "/" + s, datafiles)
+        datafiles = map(lambda s: datadirs[0] + '/' + s, datafiles)
         datafiles = list(datafiles)
-
-
-#    TODO: if nothing is given search for the latest test dir
+        nameOfDirs = datadirs[0].split('/')
+        nameOfScenario = nameOfDirs[len(nameOfDirs)-2]
+    else:
+        datafiles = sys.argv[1:]
+        setNameOfScenario = True
 
 # -------------------------------------------- Functions --------------------------------------------
 
@@ -78,6 +83,10 @@ for datafile in datafiles:
     regexCubeGrid = '.*CubeGrid:*'
     regexSphere = '.*Sphere:*'
     regexCubeGauss = '.*CubeGauss:*'
+
+    if setNameOfScenario:
+        datafileNames = datafile.split('/')
+        nameOfScenario = datafileNames[len(datafileNames)-1]
 
     with open(datafile) as f:
         currentDensity = 0.0
@@ -139,8 +148,8 @@ for datafile in datafiles:
                 x = boxSizeListMax[0] - boxSizeListMin[0]
                 y = boxSizeListMax[1] - boxSizeListMin[1]
                 z = boxSizeListMax[2] - boxSizeListMin[2]
-                rowList.append([traversal, container, newton3, dataLayout, cellSizeFactor, loadEstimator, form, x, y, z,
-                                numberOfParticles, time])
+                rowList.append([traversal, container, newton3, dataLayout, cellSizeFactor, loadEstimator, form,
+                                nameOfScenario, x, y, z, numberOfParticles, time])
 
 # ---------------------------------------------- Write CSV ---------------------------------------------
 
@@ -148,5 +157,5 @@ with open('mydata.csv', 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(
         ["Traversal", "Container", "Newton3", "Data Layout", "Cellsize Factor", "Load Estimator",
-         "Form", "x", "y", "z", "Number of Particles", "Iteration Time"]) # TODO: "Name of Scenario",
+         "Form", "Name of Scenario", "x", "y", "z", "Number of Particles", "Iteration Time"])
     writer.writerows(rowList)
