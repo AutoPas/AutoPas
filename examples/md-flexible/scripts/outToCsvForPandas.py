@@ -39,7 +39,6 @@ if len(sys.argv) > 1:
 # -------------------------------------------- Functions --------------------------------------------
 
 def parseConfigToDict(confStr):
-    print(confStr)
     return {key.strip(): val.strip() for key, val in [pair.split(":") for pair in confStr[1:-1].split(',')]}
 
 
@@ -81,7 +80,6 @@ for datafile in datafiles:
     regexCubeGauss = '.*CubeGauss:*'
 
     with open(datafile) as f:
-        print(datafile)
         currentDensity = 0.0
         foundTraversal = False
         traversal = "noTraversal"
@@ -120,13 +118,13 @@ for datafile in datafiles:
                     arrayOfCurrentLine = currentLine[0].split(',')
                     boxSizeListMin = list(map(float, arrayOfCurrentLine))
                 elif (match := re.search(regexCubeUniform, line)) is not None:
-                    appendForm(form, 'CubeUniform')
+                    form = appendForm(form, 'CubeUniform')
                 elif (match := re.search(regexCubeGrid, line)) is not None:
-                    appendForm(form, 'CubeGrid')
+                    form = appendForm(form, 'CubeGrid')
                 elif (match := re.search(regexSphere, line)) is not None:
-                    appendForm(form, 'Sphere')
+                    form = appendForm(form, 'Sphere')
                 elif (match := re.search(regexCubeGauss, line)) is not None:
-                    appendForm(form, 'CubeGauss')
+                    form = appendForm(form, 'CubeGauss')
             # parse Iterations
             elif (match := re.search(regexConf, line)) is not None:
                 thisConfig = parseConfigToDict(match.group(1))
