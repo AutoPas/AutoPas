@@ -267,7 +267,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
     for (int j = 0; j < 3; ++j) {
       str += std::to_string(j) + ": ";
       for (auto i : _cellBlockDimensions[j]) {
-        str += std::to_string(i) + "| ";
+        str += std::to_string(i) + " ";
       }
     }
     return str;
@@ -440,6 +440,18 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
 //    }
 //  }
 
+
+  /**
+   * CELLBLOCK GENERATION:
+   *
+   *  We fill a vector with the starting coordinates lower left front corner {0,0,0} for each different cellblock
+   *  and the upper right back corner {2,2,2}. So we can build a spanning vector for the block.
+   *  We know each of those starting coordinates form a cubic mesh. -> Simple iteration is enough
+   *  Please consider that the Spanning Vector MUST have the same direction as the c08 cell handling direction
+   *  TODO: Take ^^ into account and remove the second condition in the for loops around loopbody
+   */
+
+
   AutoPasLog(debug, "_cellBlockDimensions Size: " + std::to_string(_cellBlockDimensions[0].size()) + " " +
                     std::to_string(_cellBlockDimensions[1].size()) + " " +
                     std::to_string(_cellBlockDimensions[2].size()) + " ");
@@ -450,11 +462,7 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
 
 
 
-  // fill a vector with the starting coordinates lower left front corner {0,0,0} for each different cellblock
-  // and the upper right back corner {2,2,2}. So we can build a spanning vector for the block.
-  // We know each of those starting coordinates form a cubic mesh. -> Simple iteration is enough
-  // Please consider that the Spanning Vector MUST have the same direction as the c08 cell handling direction
-  // TODO: Take ^^ into account and remove the second condition in the for loops around loopbody
+
 
   unsigned long acc_x = 0ul;
   unsigned long acc_y = 0ul;
@@ -475,7 +483,8 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
       acc_z = 0;
       for (unsigned long zit = 0; zit < _cellBlockDimensions[2].size(); ++zit) {
         // for parallelization we calculate the cellBlockIterator from the block coordinates
-        cellBlockIterator = zit + yit * _cellBlockDimensions[2].size() + xit * _cellBlockDimensions[1].size();
+        // cellBlockIterator = utils::ThreeDimensionalMapping::threeToOneD(xit, yit, zit, max_cellblocks);
+        cellBlockIterator = (zit * _cellBlockDimensions[1].size() + yit) * _cellBlockDimensions[0].size() + xit;
 
         x = acc_x + xit;
         y = acc_y + yit;
@@ -485,23 +494,9 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
         blocks[cellBlockIterator][0][1] = y;
         blocks[cellBlockIterator][0][2] = z;
 
-        if (x + _cellBlockDimensions[0][xit] < _dims[0] - _overlapAxis[0]) {
-          blocks[cellBlockIterator][1][0] = x + _cellBlockDimensions[0][xit];
-        } else {
-          blocks[cellBlockIterator][1][0] = x + _cellBlockDimensions[0][xit] - _overlapAxis[0];
-        }
-
-        if (y + _cellBlockDimensions[1][yit] < _dims[1] - _overlapAxis[1]) {
-          blocks[cellBlockIterator][1][1] = y + _cellBlockDimensions[1][yit];
-        } else {
-          blocks[cellBlockIterator][1][1] = y + _cellBlockDimensions[1][yit] - _overlapAxis[1];
-        }
-
-        if (z + _cellBlockDimensions[2][zit] < _dims[2] - _overlapAxis[2]) {
-          blocks[cellBlockIterator][1][2] = z + _cellBlockDimensions[2][zit];
-        } else {
-          blocks[cellBlockIterator][1][2] = z + _cellBlockDimensions[2][zit] - _overlapAxis[2];
-        }
+        blocks[cellBlockIterator][1][0] = x + _cellBlockDimensions[0][xit];
+        blocks[cellBlockIterator][1][1] = y + _cellBlockDimensions[1][yit];
+        blocks[cellBlockIterator][1][2] = z + _cellBlockDimensions[2][zit];
 
         cellBlockOrder = {xit,yit,zit};
         _cellBlocksToIndex[cellBlockOrder] = cellBlockIterator;
