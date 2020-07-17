@@ -2,7 +2,6 @@
 
 import os
 import sys
-import plotly.graph_objects as go
 import re
 import numpy
 import csv
@@ -40,7 +39,6 @@ if len(sys.argv) > 1:
 # -------------------------------------------- Functions --------------------------------------------
 
 def parseConfigToDict(confStr):
-    print("confStr")
     print(confStr)
     return {key.strip(): val.strip() for key, val in [pair.split(":") for pair in confStr[1:-1].split(',')]}
 
@@ -68,7 +66,7 @@ for datafile in datafiles:
     thisConfig = None
     finishedHeader = False
 
-    regexSelectedConf = '.* Selected Configuration +({.*})'
+    regexConf = '.*Iterating with configuration: +({.*})'
     regexCellSizeFactor = '.* CellSizeFactor +({.*})'
     regexIterTook = '.* IteratePairwise took +([0-9]+) .*'
     regexNumOfParticles = '.*particles-per-dimension*'
@@ -82,68 +80,69 @@ for datafile in datafiles:
     regexSphere = '.*Sphere:*'
     regexCubeGauss = '.*CubeGauss:*'
 
-with open(datafile) as f:
-    currentDensity = 0.0
-    foundTraversal = False
-    traversal = "noTraversal"
-    boxSizeListMin = []
-    boxSizeListMax = []
-    numberOfParticles = 0
-    form = None
-    container = None
-    traversal = None
-    cellSizeFactor = None
-    loadEstimator = None
-    dataLayout = None
-    newton3 = None
+    with open(datafile) as f:
+        print(datafile)
+        currentDensity = 0.0
+        foundTraversal = False
+        traversal = "noTraversal"
+        boxSizeListMin = []
+        boxSizeListMax = []
+        numberOfParticles = 0
+        form = None
+        container = None
+        traversal = None
+        cellSizeFactor = None
+        loadEstimator = None
+        dataLayout = None
+        newton3 = None
 
-    counter = 0
-    for line in f.readlines():
-        if not finishedHeader:
-            # parse header
-            if (match := re.search(regexSimulationStarted, line)) is not None:
-                finishedHeader = True
-            elif (match := re.search(regexNumOfParticles, line)) is not None:
-                currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
-                arrayOfCurrentLine = currentLine[0].split(',')  # split content inside brackets and show as array
-                numberOfParticles = numpy.prod(
-                    list(map(int, arrayOfCurrentLine)))  # calculate overall number of particles
-            elif (match := re.search(regexNumOfParticlesAbsolute, line)) is not None:
-                currentLine = line.split(':', 1)[1]
-                currentLine.strip()
-                numberOfParticles = currentLine
-            elif (match := re.search(regexBoxMax, line)) is not None:
-                currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
-                arrayOfCurrentLine = currentLine[0].split(',')
-                boxSizeListMax = list(map(float, arrayOfCurrentLine))
-            elif (match := re.search(regexBoxMin, line)) is not None:
-                currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
-                arrayOfCurrentLine = currentLine[0].split(',')
-                boxSizeListMin = list(map(float, arrayOfCurrentLine))
-            elif (match := re.search(regexCubeUniform, line)) is not None:
-                appendForm(form, 'CubeUniform')
-            elif (match := re.search(regexCubeGrid, line)) is not None:
-                appendForm(form, 'CubeGrid')
-            elif (match := re.search(regexSphere, line)) is not None:
-                appendForm(form, 'Sphere')
-            elif (match := re.search(regexCubeGauss, line)) is not None:
-                appendForm(form, 'CubeGauss')
-        # parse Iterations
-        elif (match := re.search(regexSelectedConf, line)) is not None:
-            thisConfig = parseConfigToDict(match.group(1))
-            container = thisConfig.get("Container")
-            traversal = thisConfig.get("Traversal")
-            cellSizeFactor = thisConfig.get("CellSizeFactor")
-            loadEstimator = thisConfig.get("Load Estimator")
-            dataLayout = thisConfig.get("Data Layout")
-            newton3 = thisConfig.get("Newton 3")
-        elif (match := re.search(regexIterTook, line)) is not None:
-            time = int(match.group(1))
-            x = boxSizeListMax[0] - boxSizeListMin[0]
-            y = boxSizeListMax[1] - boxSizeListMin[1]
-            z = boxSizeListMax[2] - boxSizeListMin[2]
-            rowList.append([traversal, container, newton3, dataLayout, cellSizeFactor, loadEstimator, form, x, y, z,
-                            numberOfParticles, time])
+        counter = 0
+        for line in f.readlines():
+            if not finishedHeader:
+                # parse header
+                if (match := re.search(regexSimulationStarted, line)) is not None:
+                    finishedHeader = True
+                elif (match := re.search(regexNumOfParticles, line)) is not None:
+                    currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
+                    arrayOfCurrentLine = currentLine[0].split(',')  # split content inside brackets and show as array
+                    numberOfParticles = numpy.prod(
+                        list(map(int, arrayOfCurrentLine)))  # calculate overall number of particles
+                elif (match := re.search(regexNumOfParticlesAbsolute, line)) is not None:
+                    currentLine = line.split(':', 1)[1]
+                    currentLine.strip()
+                    numberOfParticles = currentLine
+                elif (match := re.search(regexBoxMax, line)) is not None:
+                    currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
+                    arrayOfCurrentLine = currentLine[0].split(',')
+                    boxSizeListMax = list(map(float, arrayOfCurrentLine))
+                elif (match := re.search(regexBoxMin, line)) is not None:
+                    currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
+                    arrayOfCurrentLine = currentLine[0].split(',')
+                    boxSizeListMin = list(map(float, arrayOfCurrentLine))
+                elif (match := re.search(regexCubeUniform, line)) is not None:
+                    appendForm(form, 'CubeUniform')
+                elif (match := re.search(regexCubeGrid, line)) is not None:
+                    appendForm(form, 'CubeGrid')
+                elif (match := re.search(regexSphere, line)) is not None:
+                    appendForm(form, 'Sphere')
+                elif (match := re.search(regexCubeGauss, line)) is not None:
+                    appendForm(form, 'CubeGauss')
+            # parse Iterations
+            elif (match := re.search(regexConf, line)) is not None:
+                thisConfig = parseConfigToDict(match.group(1))
+                container = thisConfig.get("Container")
+                traversal = thisConfig.get("Traversal")
+                cellSizeFactor = thisConfig.get("CellSizeFactor")
+                loadEstimator = thisConfig.get("Load Estimator")
+                dataLayout = thisConfig.get("Data Layout")
+                newton3 = thisConfig.get("Newton 3")
+            elif (match := re.search(regexIterTook, line)) is not None:
+                time = int(match.group(1))
+                x = boxSizeListMax[0] - boxSizeListMin[0]
+                y = boxSizeListMax[1] - boxSizeListMin[1]
+                z = boxSizeListMax[2] - boxSizeListMin[2]
+                rowList.append([traversal, container, newton3, dataLayout, cellSizeFactor, loadEstimator, form, x, y, z,
+                                numberOfParticles, time])
 
 # ---------------------------------------------- Write CSV ---------------------------------------------
 
