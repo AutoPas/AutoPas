@@ -524,10 +524,10 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
   _allSubBlocks.resize(blocks.size());
   auto _threads = blocks.size();
 
-#ifdef AUTOPAS_OPENMP
-  // although every thread gets exactly one iteration (=cellblock) this is faster than a normal parallel region
-#pragma omp parallel for schedule(static, 1) num_threads(_threads)
-#endif
+//#ifdef AUTOPAS_OPENMP
+//  // although every thread gets exactly one iteration (=cellblock) this is faster than a normal parallel region
+//#pragma omp parallel for schedule(static, 1) num_threads(_threads)
+//#endif
 
   for (unsigned long n = 0; n < _threads; ++n) {
     auto &block = blocks[n];
@@ -611,6 +611,11 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
   using subBlocksAllCellblocks = std::vector<subBlocksSingleCellblock>;
 
   auto _threads = blocks.size();
+
+#ifdef AUTOPAS_OPENMP
+// although every thread gets exactly one iteration (=cellblock) this is faster than a normal parallel region
+#pragma omp parallel for schedule(static, 1) num_threads(_threads)
+#endif
 
   for (unsigned long m = 0; m < _threads; ++m) {
     auto &block = blocks[m];
