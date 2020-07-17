@@ -196,17 +196,23 @@ class VerletListsCells
   const std::array<double, 3> &getCellLength() const { return this->_linkedCells.getCellBlock().getCellLength(); }
 
  private:
-  /// verlet lists for each particle for each cell
+  /**
+   * Verlet lists for each particle for each cell.
+   */
   typename verlet_internal::VerletList_storage_type _neighborLists;
 
-  /// mapping each particle to its corresponding cell and position in this cell
+  /**
+   * Mapping of each particle to its corresponding cell and id in this cell.
+   */
   std::unordered_map<Particle *, std::pair<size_t, size_t>> _cellMap;
 
-  // the traversal used to build the verletlists
+  /**
+   * The traversal used to build the verletlists.
+   */
   TraversalOption _buildTraversal;
 
   /**
-   * load estimation algorithm for balanced traversals.
+   * Load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
 };
