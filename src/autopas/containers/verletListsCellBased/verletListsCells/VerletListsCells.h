@@ -106,8 +106,9 @@ class VerletListsCells
     if (vTraversal) {
       vTraversal->setVerletList(_neighborLists);
     } else {
-      autopas::utils::ExceptionHandler::exception("wrong type of traversal in VerletListCells.h. TraversalID: {}",
-                                                  traversal->getTraversalType());
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
+          traversal->getTraversalType());
     }
 
     traversal->initTraversal();
