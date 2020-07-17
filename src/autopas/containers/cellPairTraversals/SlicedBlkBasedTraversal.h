@@ -356,20 +356,40 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
               static_cast<unsigned long>(this->_cellsPerDimension[j] / _numCellsInCellBlock[j]));
   }
 
-  // Calculate the rest of the cells per dimension, which where cutoff by possible floor of division of dimension.
-  // Accounts for possible floor of the numSlicesCqrt
+  /**
+   * Calculate the rest of the cells per dimension, which where cutoff by possible floor of division of dimension.
+   * Accounts for possible floor of the numSlicesCqrt, by expanding the cellBlocks bordering a dimensional end.
+   *
+   * Procedure:
+   *    -> calculate the rest of each dimension
+   *    -> if allCells = false => rest -= overlap[dimension]
+   *    -> if rest > 0 => add rest to last slice
+   *    -> if rest < 0 => check if rest + last slice > 3
+   *       true => add rest to last slice
+   *       false => add rest + last slice to secondlast slice and remove last slice
+   */
   array3D rest;
   for (int k = 0; k < 3; ++k) {
     rest[k] = this->_cellsPerDimension[k] - (_cellBlockDimensions[k].size() * numSlicesCqrt);
-    // Expand the cellBlocks bordering a dimensional end with rest, by the rest.
-    if (rest[k] != 0) {
+    AutoPasLog(debug, "rest[" + std::to_string(k) + "]: " + std::to_string(rest[k]));
+    if (!allCells) {
+      rest[k] -= _overlapAxis[k];
+    }
+
+    if (rest[k] > 0ul || allCells) {
       _cellBlockDimensions[k].back() + rest[k];
     }
-    // TODO: If rest[k] + _cellBlockDimensions[k].back - overlapAxis[k] < 3
-    // then add rest[k] + cBD[k].back to _cellBlockDimensions[k].secondToLast and delete back element
-    // right now it would not be applicable (the comparison towards the .back of the vector in applicable function)
+    if (rest[k] < 0ul) {
+      if (_cellBlockDimensions[k].back() + rest[k] > 3ul) {
+        _cellBlockDimensions[k].back() + rest[k];
+      } else {
+        _cellBlockDimensions[k].end()[-2] += _cellBlockDimensions[k].back() + rest[k];
+        _cellBlockDimensions[k].pop_back();
+      }
+    }
   }
   AutoPasLog(debug, "_cellBlockDimensions: " + debugHelperFunctionIntArrayToString(_cellBlockDimensions));
+
 
   // Each cellblock should be at least 3x3x3 cells big,
   //   checking the first and last element of each dimension is enough.
