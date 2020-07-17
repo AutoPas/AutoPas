@@ -390,7 +390,6 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
   }
   AutoPasLog(debug, "_cellBlockDimensions: " + debugHelperFunctionIntArrayToString(_cellBlockDimensions));
 
-
   // Each cellblock should be at least 3x3x3 cells big,
   //   checking the first and last element of each dimension is enough.
   for (auto &cellBlockDimension : _cellBlockDimensions) {
@@ -543,6 +542,9 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
 
   _allSubBlocks.resize(blocks.size());
   auto _threads = blocks.size();
+  if (_threads != numSlices) {
+    AutoPasLog(debug, "Sliced Bulk traversal only using {} threads because the number of cells is too small.", _threads);
+  }
 
 //#ifdef AUTOPAS_OPENMP
 //  // although every thread gets exactly one iteration (=cellblock) this is faster than a normal parallel region
