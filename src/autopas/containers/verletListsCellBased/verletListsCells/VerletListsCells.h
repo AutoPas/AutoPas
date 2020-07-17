@@ -136,12 +136,12 @@ class VerletListsCells
     size_t cellsSize = cells.size();
     _neighborLists.resize(cellsSize);
     for (size_t cellIndex = 0; cellIndex < cellsSize; ++cellIndex) {
-      size_t i = 0;
-      for (auto iter = cells[cellIndex].begin(); iter.isValid(); ++iter, ++i) {
+      _neighborLists[cellIndex].reserve(cells[cellIndex].numParticles());
+      size_t particleIndexWithinCell = 0;
+      for (auto iter = cells[cellIndex].begin(); iter.isValid(); ++iter, ++particleIndexWithinCell) {
         Particle *particle = &*iter;
-        _neighborLists[cellIndex].push_back(
-            std::pair<Particle *, std::vector<Particle *>>(particle, std::vector<Particle *>()));
-        _cellMap[particle] = std::pair<size_t, size_t>(cellIndex, i);
+        _neighborLists[cellIndex].emplace_back(particle, std::vector<Particle *>());
+        _cellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
       }
     }
 
