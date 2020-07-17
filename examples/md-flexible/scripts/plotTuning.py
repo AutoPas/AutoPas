@@ -20,16 +20,16 @@ for arg in sys.argv[1:]:
 
 # take all input files as source for a plot
 if len(sys.argv) > 1:
-    if ".out" in arg:
-        datafiles=sys.argv[1:]
+    if os.path.isdir(arg):
+        datadirs = sys.argv[1:]
+        datadirs = list(datadirs)
+        datadirs.sort(reverse=True)
+        datafiles = os.listdir(datadirs[0])
+        datafiles = filter(lambda s: s.endswith('.out'), datafiles)
+        datafiles = map(lambda s: datadirs[0] + '/' + s, datafiles)
+        datafiles = list(datafiles)
     else:
-        datadirs=sys.argv[1:]
-        datadirs=list(datadirs)
-        datadirs.sort(reverse = True)
-        datafiles=os.listdir(datadirs[0])
-        datafiles=filter(lambda s : s.endswith('.out'), datafiles)
-        datafiles=map(lambda s : datadirs[0] + "/" + s, datafiles)
-        datafiles=list(datafiles)
+        datafiles = sys.argv[1:]
 else:
     # if nothing is given search for the latest test dir
     datadirs=os.listdir("./")
