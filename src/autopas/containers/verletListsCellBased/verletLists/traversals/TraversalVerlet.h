@@ -104,7 +104,6 @@ class TraversalVerlet
       }
 
       case DataLayoutOption::soa: {
-#define AUTOPAS_OPENMP
 #if defined(AUTOPAS_OPENMP)
         if (not useNewton3) {
           /// @todo find a sensible chunk size
