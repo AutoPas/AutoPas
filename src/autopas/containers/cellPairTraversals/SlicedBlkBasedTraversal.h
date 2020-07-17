@@ -267,7 +267,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
     for (int j = 0; j < 3; ++j) {
       str += std::to_string(j) + ": ";
       for (auto i : _cellBlockDimensions[j]) {
-        str += std::to_string(i) + " ";
+        str += std::to_string(i) + "| ";
       }
     }
     return str;
@@ -336,6 +336,7 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
 
   // calculate cubic root of the number of slices to find the amount each dimension needs to be split into
   auto numSlicesCqrt = std::cbrt(numSlices);
+  AutoPasLog(debug, "numSlicesCqrt Start: " + std::to_string(numSlicesCqrt));
   numSlicesCqrt = floor(numSlicesCqrt);
   for (int n = 0; n < 3; ++n) {
     _numCellsInCellBlock[n] = numSlicesCqrt;
@@ -356,12 +357,13 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
               static_cast<unsigned long>(this->_cellsPerDimension[j] / _numCellsInCellBlock[j]));
   }
 
+  AutoPasLog(debug, "_cellBlockDimensions before Rest calculation: " + debugHelperFunctionIntArrayToString(_cellBlockDimensions));
   /**
    * Calculate the rest of the cells per dimension, which where cutoff by possible floor of division of dimension.
    * Accounts for possible floor of the numSlicesCqrt, by expanding the cellBlocks bordering a dimensional end.
    *
    * Procedure:
-   *    -> calculate the rest of each dimension
+   *    -> calculate the rest of each dimension  AutoPasLog(debug, "_cellBlockDimensions: " + debugHelperFunctionIntArrayToString(_cellBlockDimensions));
    *    -> if allCells = false => rest -= overlap[dimension]
    *    -> if rest > 0 => add rest to last slice
    *    -> if rest < 0 => check if rest + last slice > 3
@@ -370,14 +372,18 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
    */
   array3D rest;
   for (int k = 0; k < 3; ++k) {
-    rest[k] = this->_cellsPerDimension[k] - (_cellBlockDimensions[k].size() * numSlicesCqrt);
-    AutoPasLog(debug, "rest[" + std::to_string(k) + "]: " + std::to_string(rest[k]));
+    AutoPasLog(debug, "cellsPerDimension[" + std::to_string(k) + "]" + std::to_string(this->_cellsPerDimension[k]) +
+                          " | _cellBlockDimensions[" + std::to_string(k) + "].size: " + std::to_string(_cellBlockDimensions[k].size()) +
+                          " | numSlicesCqrt: " + std::to_string(numSlicesCqrt));
+    // All entries in cellBlockDimensions are the same until the rest calculation is finished!
+    rest[k] = this->_cellsPerDimension[k] - (_cellBlockDimensions[k].size() * _cellBlockDimensions[k][0]);
     if (!allCells) {
+      // this produces an underflow on unsigned long, but is no problem because we guarantee to overflow on addition
       rest[k] -= _overlapAxis[k];
     }
 
     if (rest[k] > 0ul || allCells) {
-      _cellBlockDimensions[k].back() + rest[k];
+      _cellBlockDimensions[k].back() += rest[k];
     }
     if (rest[k] < 0ul) {
       if (_cellBlockDimensions[k].back() + rest[k] > 3ul) {
@@ -387,8 +393,9 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
         _cellBlockDimensions[k].pop_back();
       }
     }
+    AutoPasLog(debug, "end rest[" + std::to_string(k) + "]: " + std::to_string(rest[k]));
   }
-  AutoPasLog(debug, "_cellBlockDimensions: " + debugHelperFunctionIntArrayToString(_cellBlockDimensions));
+  AutoPasLog(debug, "_cellBlockDimensions after rest calculation: " + debugHelperFunctionIntArrayToString(_cellBlockDimensions));
 
   // Each cellblock should be at least 3x3x3 cells big,
   //   checking the first and last element of each dimension is enough.
@@ -407,6 +414,7 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
 
   // We need only a maximum of 3 locks per cellblocks at worst case at the same time.
   locks.resize(_cellBlockDimensions[0].size() * _cellBlockDimensions[1].size() * _cellBlockDimensions[2].size() * 3);
+  AutoPasLog(debug, "locks.size(): " + std::to_string(locks.size()));
 
   _subBlockBlockCoordinatesToSubBlockIndex = {
       {000, 0},  {100, 1},  {200, 2},  {010, 3},  {110, 4},  {210, 5},  {020, 6},  {120, 7},  {220, 8},
