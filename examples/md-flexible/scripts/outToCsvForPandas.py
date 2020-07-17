@@ -161,7 +161,7 @@ for datafile in datafiles:
 
 # ---------------------------------------------- Write CSV ---------------------------------------------
 
-with open('mydata.csv', 'w', newline='') as file:
+with open('dataForPlotting.csv', 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(
         ["Traversal", "Container", "Newton3", "Data Layout", "Cellsize Factor", "Load Estimator",
