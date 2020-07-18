@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/selectors/TraversalSelector.h>
+
 #include "VerletListsCellsHelpers.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
@@ -148,43 +150,18 @@ class VerletListsCells
     typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap,
                                                            this->getCutoff() + this->getSkin());
 
-    // clang compiler bug requires static cast
-    switch (static_cast<TraversalOption>(_buildTraversal)) {
-        //    switch (_buildTraversal) {
-      case TraversalOption::c08: {
-        autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-          auto buildTraversal = C08Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.iteratePairwise(&buildTraversal);
-        });
-        break;
-      }
-      case TraversalOption::c18: {
-        autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-          auto buildTraversal = C18Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, n3>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.iteratePairwise(&buildTraversal);
-        });
-        break;
-      }
-      case TraversalOption::c01: {
-        if (useNewton3) {
-          utils::ExceptionHandler::exception("VerletListsCells::updateVerletLists(): c01 does not support newton3");
-        } else {
-          auto buildTraversal = C01Traversal<LinkedParticleCell, decltype(f), DataLayoutOption::aos, false>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.iteratePairwise(&buildTraversal);
-        }
-        break;
-      }
-      default:
-        utils::ExceptionHandler::exception("VerletListsCells::updateVerletLists(): unsupported Traversal: {}",
-                                           _buildTraversal);
-        break;
-    }
+    // generate the build traversal with the traversal selector and apply the build functor with it
+    TraversalSelector<LinkedParticleCell> traversalSelector;
+    // argument cluster size does not matter here
+    TraversalSelectorInfo traversalSelectorInfo(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
+                                                this->getInteractionLength(),
+                                                this->_linkedCells.getCellBlock().getCellLength(), 0);
+    autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
+      auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::aos, n3>(
+          _buildTraversal, f, traversalSelectorInfo);
+      this->_linkedCells.iteratePairwise(buildTraversal.get());
+    });
+
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
   }
