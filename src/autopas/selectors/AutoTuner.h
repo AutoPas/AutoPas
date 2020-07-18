@@ -342,22 +342,29 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
         _tuningStrategy->getCurrentConfiguration().toString(), typeid(*f).name());
   }
 
-  autopas::utils::Timer timer;
-  timer.start();
+  autopas::utils::Timer timerTotal;
+  autopas::utils::Timer timerRebuild;
+  timerTotal.start();
 
   f->initTraversal();
   if (doListRebuild) {
+    timerRebuild.start();
     containerPtr->rebuildNeighborLists(traversal.get());
+    timerRebuild.stop();
   }
   containerPtr->iteratePairwise(traversal.get());
   f->endTraversal(useNewton3);
 
-  auto runtime = timer.stop();
-  AutoPasLog(debug, "IteratePairwise took {} nanoseconds", runtime);
+  if (doListRebuild) {
+    AutoPasLog(debug, "rebuildNeighborLists took {} nanoseconds", timerRebuild.getTotalTime());
+  }
+
+  auto runtimeTotal = timerTotal.stop();
+  AutoPasLog(debug, "IteratePairwise took {} nanoseconds", runtimeTotal);
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
-    addTimeMeasurement(*f, runtime);
+    addTimeMeasurement(*f, runtimeTotal);
   }
 }
 
