@@ -15,40 +15,48 @@
 namespace autopas {
 
 /**
- * class of helpers for verlet lists
+ * Class of helpers for the VerletLists class.
  * @tparam Particle
  */
 template <class Particle>
 class VerletListHelpers {
  public:
-  /// AOS verlet list storage
-  using AoS_verletlist_storage_type = std::unordered_map<Particle *, std::vector<Particle *>>;
+  /**
+   * Neighbor list AoS style.
+   */
+  using NeighborListAoSType = std::unordered_map<Particle *, std::vector<Particle *>>;
 
-  /// using declaration for soa's of verlet list's linked cells (only id and position needs to be stored)
-  using SoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
+  /**
+   * Reduced SoA Type for verlet list's linked cells only storing Particle* and position.
+   */
+  using PositionSoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
 
-  /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
+  /**
+   * Attributes for SoAs of verlet list's linked cells (only id and position needs to be stored)
+   */
   enum AttributeNames : int { ptr, posX, posY, posZ };
 
-  /// using declaration for verlet-list particle cell type
-  using VerletListParticleCellType = FullParticleCell<Particle, SoAArraysType>;
+  /**
+   * Type of the particle cell.
+   */
+  using VerletListParticleCellType = FullParticleCell<Particle, PositionSoAArraysType>;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
-  class VerletListGeneratorFunctor : public Functor<Particle, VerletListParticleCellType, SoAArraysType> {
+  class VerletListGeneratorFunctor : public Functor<Particle, VerletListParticleCellType, PositionSoAArraysType> {
     using ParticleCell_t = VerletListParticleCellType;
 
    public:
     /**
      * Constructor
      * @param verletListsAoS
-     * @param cutoffskin
+     * @param interactionLength
      */
-    VerletListGeneratorFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoffskin)
-        : Functor<Particle, VerletListParticleCellType, SoAArraysType>(cutoffskin),
+    VerletListGeneratorFunctor(NeighborListAoSType &verletListsAoS, double interactionLength)
+        : Functor<Particle, VerletListParticleCellType, PositionSoAArraysType>(interactionLength),
           _verletListsAoS(verletListsAoS),
-          _cutoffskinsquared(cutoffskin * cutoffskin) {}
+          _interactionLengthSquared(interactionLength * interactionLength) {}
 
     bool isRelevantForTuning() override { return false; }
 
@@ -72,7 +80,7 @@ class VerletListHelpers {
       auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
 
       double distsquare = utils::ArrayMath::dot(dist, dist);
-      if (distsquare < _cutoffskinsquared) {
+      if (distsquare < _interactionLengthSquared) {
         // this is thread safe, only if particle i is accessed by only one
         // thread at a time. which is ensured, as particle i resides in a
         // specific cell and each cell is only accessed by one thread at a time
@@ -89,7 +97,7 @@ class VerletListHelpers {
      * @param soa the soa
      * @param newton3 whether to use newton 3
      */
-    void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool /*cellWiseOwnedstate*/) override {
+    void SoAFunctorSingle(SoAView<PositionSoAArraysType> soa, bool newton3, bool /*cellWiseOwnedstate*/) override {
       if (soa.getNumParticles() == 0) return;
 
       auto **const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
@@ -112,7 +120,7 @@ class VerletListHelpers {
 
           const double dr2 = drx2 + dry2 + drz2;
 
-          if (dr2 < _cutoffskinsquared) {
+          if (dr2 < _interactionLengthSquared) {
             currentList.push_back(ptrptr[j]);
             if (not newton3) {
               // we need this here, as SoAFunctorSingle will only be called once for both newton3=true and false.
@@ -130,7 +138,7 @@ class VerletListHelpers {
      * @note newton3 is ignored here, as for newton3=false SoAFunctorPair(soa2, soa1) will also be called.
      * @note cellWiseOwnedState is ignored.
      */
-    void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/,
+    void SoAFunctorPair(SoAView<PositionSoAArraysType> soa1, SoAView<PositionSoAArraysType> soa2, bool /*newton3*/,
                         bool /*cellWiseOwnedState*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
@@ -161,7 +169,7 @@ class VerletListHelpers {
 
           const double dr2 = drx2 + dry2 + drz2;
 
-          if (dr2 < _cutoffskinsquared) {
+          if (dr2 < _interactionLengthSquared) {
             currentList.push_back(ptr2ptr[j]);
           }
         }
@@ -175,7 +183,7 @@ class VerletListHelpers {
      * @param soa
      * @param offset
      */
-    void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
+    void SoALoader(ParticleCell<Particle> &cell, SoA<PositionSoAArraysType> &soa, size_t offset = 0) override {
       if (offset > 0) {
         utils::ExceptionHandler::exception("VerletListGeneratorFunctor: requires offset > 0");
       }
@@ -215,8 +223,8 @@ class VerletListHelpers {
     }
 
    private:
-    AoS_verletlist_storage_type &_verletListsAoS;
-    double _cutoffskinsquared;
+    NeighborListAoSType &_verletListsAoS;
+    double _interactionLengthSquared;
   };
 
   /**
@@ -229,15 +237,15 @@ class VerletListHelpers {
    * @tparam ParticleCell
    */
   template <class ParticleCell>
-  class VerletListValidityCheckerFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
+  class VerletListValidityCheckerFunctor : public Functor<Particle, ParticleCell, PositionSoAArraysType> {
    public:
     /**
      * Constructor
      * @param verletListsAoS
      * @param cutoff
      */
-    VerletListValidityCheckerFunctor(AoS_verletlist_storage_type &verletListsAoS, double cutoff)
-        : Functor<Particle, VerletListParticleCellType, SoAArraysType>(cutoff),
+    VerletListValidityCheckerFunctor(NeighborListAoSType &verletListsAoS, double cutoff)
+        : Functor<Particle, VerletListParticleCellType, PositionSoAArraysType>(cutoff),
           _verletListsAoS(verletListsAoS),
           _cutoffsquared(cutoff * cutoff),
           _valid(true) {}
@@ -281,7 +289,7 @@ class VerletListHelpers {
     bool neighborlistsAreValid() { return _valid; }
 
    private:
-    AoS_verletlist_storage_type &_verletListsAoS;
+    NeighborListAoSType &_verletListsAoS;
     double _cutoffsquared;
 
     // needs to be thread safe

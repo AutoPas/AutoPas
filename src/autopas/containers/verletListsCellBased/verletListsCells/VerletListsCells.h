@@ -39,10 +39,10 @@ namespace autopas {
  */
 template <class Particle>
 class VerletListsCells
-    : public VerletListsLinkedBase<Particle, typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType> {
+    : public VerletListsLinkedBase<Particle, typename VerletListsCellsHelpers<Particle>::VLCCellType> {
   using verlet_internal = VerletListsCellsHelpers<Particle>;
   using ParticleCell = FullParticleCell<Particle>;
-  using LinkedParticleCell = typename VerletListsCellsHelpers<Particle>::VerletListParticleCellType;
+  using LinkedParticleCell = typename VerletListsCellsHelpers<Particle>::VLCCellType;
 
  public:
   /**
@@ -124,7 +124,7 @@ class VerletListsCells
    * @return the neighbor list of the particle
    */
   const std::vector<Particle *> &getVerletList(const Particle *particle) const {
-    const auto indices = _cellMap.at(const_cast<Particle *>(particle));
+    const auto indices = _particleToCellMap.at(const_cast<Particle *>(particle));
     return _neighborLists.at(indices.first).at(indices.second).second;
   }
 
@@ -143,11 +143,11 @@ class VerletListsCells
       for (auto iter = cells[cellIndex].begin(); iter.isValid(); ++iter, ++particleIndexWithinCell) {
         Particle *particle = &*iter;
         _neighborLists[cellIndex].emplace_back(particle, std::vector<Particle *>());
-        _cellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
+        _particleToCellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
       }
     }
 
-    typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _cellMap,
+    typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _particleToCellMap,
                                                            this->getCutoff() + this->getSkin());
 
     // generate the build traversal with the traversal selector and apply the build functor with it
@@ -170,18 +170,20 @@ class VerletListsCells
    * Return the cell length of the underlying linked cells structure, normally needed only for unit tests.
    * @return
    */
-  const std::array<double, 3> &getCellLength() const { return this->_linkedCells.getCellBlock().getCellLength(); }
+  [[nodiscard]] const std::array<double, 3> &getCellLength() const {
+    return this->_linkedCells.getCellBlock().getCellLength();
+  }
 
  private:
   /**
    * Verlet lists for each particle for each cell.
    */
-  typename verlet_internal::VerletList_storage_type _neighborLists;
+  typename verlet_internal::NeighborListsType _neighborLists;
 
   /**
-   * Mapping of each particle to its corresponding cell and id in this cell.
+   * Mapping of each particle to its corresponding cell and id within this cell.
    */
-  std::unordered_map<Particle *, std::pair<size_t, size_t>> _cellMap;
+  std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap;
 
   /**
    * The traversal used to build the verletlists.

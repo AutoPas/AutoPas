@@ -19,8 +19,8 @@ namespace autopas {
 template <class Particle, class NeighborList>
 class VarVerletLists
     : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                   typename VerletListHelpers<Particle>::SoAArraysType> {
-  using SoAArraysType = typename VerletListHelpers<Particle>::SoAArraysType;
+                                   typename VerletListHelpers<Particle>::PositionSoAArraysType> {
+  using SoAArraysType = typename VerletListHelpers<Particle>::PositionSoAArraysType;
   using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:

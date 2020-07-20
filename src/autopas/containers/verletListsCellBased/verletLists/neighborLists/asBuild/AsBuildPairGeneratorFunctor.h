@@ -26,7 +26,7 @@ namespace internal {
 template <class Particle, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
     : public autopas::Functor<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                              typename VerletListHelpers<Particle>::SoAArraysType> {
+                              typename VerletListHelpers<Particle>::PositionSoAArraysType> {
   /// using declaration for soa's of verlet list's linked cells (only id and position needs to be stored)
   using SoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
 
@@ -48,7 +48,7 @@ class AsBuildPairGeneratorFunctor
    */
   AsBuildPairGeneratorFunctor(VerletNeighborListAsBuild<Particle> &neighborList, double cutoffskin)
       : autopas::Functor<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                         typename VerletListHelpers<Particle>::SoAArraysType>(cutoffskin),
+                         typename VerletListHelpers<Particle>::PositionSoAArraysType>(cutoffskin),
         _list(neighborList),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
 

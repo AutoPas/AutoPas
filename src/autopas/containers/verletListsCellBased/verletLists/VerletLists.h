@@ -34,10 +34,10 @@ namespace autopas {
 template <class Particle>
 class VerletLists
     : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                   typename VerletListHelpers<Particle>::SoAArraysType> {
+                                   typename VerletListHelpers<Particle>::PositionSoAArraysType> {
   using verlet_internal = VerletListHelpers<Particle>;
   using ParticleCell = FullParticleCell<Particle>;
-  using SoAArraysType = typename VerletListHelpers<Particle>::SoAArraysType;
+  using SoAArraysType = typename VerletListHelpers<Particle>::PositionSoAArraysType;
   using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:
@@ -92,7 +92,7 @@ class VerletLists
    * get the actual neighbour list
    * @return the neighbour list
    */
-  typename verlet_internal::AoS_verletlist_storage_type &getVerletListsAoS() { return _aosNeighborLists; }
+  typename verlet_internal::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
@@ -117,7 +117,7 @@ class VerletLists
    * @param useNewton3
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
-    updateIdMapAoS();
+    generateAoSNeighborLists();
     typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, this->getCutoff() + this->getSkin());
 
     /// @todo autotune traversal
@@ -152,21 +152,21 @@ class VerletLists
   }
 
   /**
-   * update the AoS id maps.
-   * The Id Map is used to map the id of a particle to the actual particle
-   * @return
+   * Clears and then generates the AoS neighbor lists.
+   * The Id Map is used to map the id of a particle to the actual particle.
+   * @return Number of particles in the container
    */
-  size_t updateIdMapAoS() {
-    size_t i = 0;
+  size_t generateAoSNeighborLists() {
+    size_t numParticles = 0;
     _aosNeighborLists.clear();
     // DON'T simply parallelize this loop!!! this needs modifications if you
     // want to parallelize it!
-    for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
+    for (auto iter = this->begin(); iter.isValid(); ++iter, ++numParticles) {
       // create the verlet list entries for all particles
       _aosNeighborLists[&(*iter)];
     }
 
-    return i;
+    return numParticles;
   }
 
   /**
@@ -210,10 +210,11 @@ class VerletLists
   /**
    * Neighbor Lists: Map of particle pointers to vector of particle pointers.
    */
-  typename verlet_internal::AoS_verletlist_storage_type _aosNeighborLists;
+  typename verlet_internal::NeighborListAoSType _aosNeighborLists;
 
   /**
    * Mapping of every particle, represented by its pointer, to an index.
+   * The index indexes all particles in the container.
    */
   std::unordered_map<Particle *, size_t> _particlePtr2indexMap;
 

@@ -39,7 +39,7 @@ class VerletNeighborListInterface {
    * @param useNewton3 If true, use newton 3 for the neighbor list.
    */
   virtual void buildNeighborList(LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                             typename VerletListHelpers<Particle>::SoAArraysType> &linkedCells,
+                                             typename VerletListHelpers<Particle>::PositionSoAArraysType> &linkedCells,
                                  bool useNewton3) = 0;
 
   /**
