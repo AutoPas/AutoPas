@@ -700,6 +700,26 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
     // lock corresponding locks
     for (int traversalOrder = 0; traversalOrder < 8; ++traversalOrder) {  // Iterate over traverse array
 
+      for (int i = 0; i < 3; ++i) {                                     // Iterate over locks
+        if (_cellBlockTraverseOrderByLocks[traversalOrder][i] == 0) {   // my lock or neigbour lock?
+          if (traversalOrder == 0 || _cellBlockTraverseOrderByLocks[traversalOrder-1][i] == 1) {
+            if (my_locks[i] != 0 - 1) {                                   // no need to lock at borders
+              locks[my_locks[i]].lock();                                // lock necessary my locks
+            }
+          }
+
+        } else {                          // == _cellBlockTraverseOrderByLocks[traversalOrder][i] == 1
+          if (traversalOrder == 0 || _cellBlockTraverseOrderByLocks[traversalOrder-1][i] == 0) {
+            if (nb_locks[i] != 0 - 1) {     // no need to lock at borders
+              locks[nb_locks[i]].lock();  // lock necessary nb locks
+            }
+          }
+
+        }
+      }
+
+
+
       for (int i = 0; i < 3; ++i) {                                       // Iterate over locks
         if (_cellBlockTraverseOrderByLocks[traversalOrder][i] == 0) {     // my lock or neigbour lock?
           if (my_locks[i] != 0 - 1) {                                     // no need to lock at borders
@@ -756,13 +776,20 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
       // Unlock corresponding locks
       for (int i = 0; i < 3; ++i) {                                     // Iterate over locks
         if (_cellBlockTraverseOrderByLocks[traversalOrder][i] == 0) {   // my lock or neigbour lock?
-          if (my_locks[i] != 0 - 1) {                                   // no need to unlock at borders
-            locks[my_locks[i]].unlock();                                              // lock necessary my locks
+          if (traversalOrder == _cellBlockTraverseOrderByLocks.size()
+              || _cellBlockTraverseOrderByLocks[traversalOrder+1][i] == 1) {
+            if (my_locks[i] != 0 - 1) {                                   // no need to unlock at borders
+              locks[my_locks[i]].unlock();                                // lock necessary my locks
+            }
           }
+
         } else {                          // == _cellBlockTraverseOrderByLocks[traversalOrder][i] == 1
-          if (nb_locks[i] != 0 - 1) {     // no need to unlock at borders
-            locks[nb_locks[i]].unlock();  // lock necessary nb locks
+          if (traversalOrder == _cellBlockTraverseOrderByLocks.size() || _cellBlockTraverseOrderByLocks[traversalOrder+1][i] == 0) {
+            if (nb_locks[i] != 0 - 1) {     // no need to unlock at borders
+              locks[nb_locks[i]].unlock();  // lock necessary nb locks
+            }
           }
+
         }
       }
     }
