@@ -39,10 +39,10 @@ INSTANTIATE_TEST_SUITE_P(
           for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
             // skip containers that do not work with both newton modes
             // @TODO: let verlet lists support Newton 3
-            if (containerOption == autopas::ContainerOption::verletLists ||
-                containerOption == autopas::ContainerOption::verletListsCells ||
-                containerOption == autopas::ContainerOption::verletClusterLists ||
-                containerOption == autopas::ContainerOption::varVerletListsAsBuild ||
+            if (containerOption == autopas::ContainerOption::verletLists or
+                containerOption == autopas::ContainerOption::verletListsCells or
+                containerOption == autopas::ContainerOption::verletClusterLists or
+                containerOption == autopas::ContainerOption::varVerletListsAsBuild or
                 containerOption == autopas::ContainerOption::verletClusterCells) {
               continue;
             }
