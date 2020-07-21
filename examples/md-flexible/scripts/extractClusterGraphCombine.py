@@ -272,6 +272,10 @@ for i,(nodeStart, edgeStart, graphEnd) in enumerate(graphPos):
                 else:
                     values[column] = value
 
+            # let src the node with the lower index
+            if (target < src):
+                src, target = target, src
+
             # create new edge if not already exists
             if not (src,target) in edges:
                 edges[src,target] = GraphEdge(src, target)

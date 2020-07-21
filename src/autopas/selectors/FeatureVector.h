@@ -166,17 +166,17 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Create n latin-hypercube-samples from given featureSpace only considering continuous values and append the current
-   * iteration to the vector.
+   * Create n latin-hypercube-samples from given featureSpace only considering continuous values and append a value
+   * representing the current iteration.
    * @param n number of samples
    * @param rng
    * @param cellSizeFactors
-   * @param iteration current iteration
+   * @param iteration current iteration which may be scaled by some factor
    * @return vector of sample featureVectors
    */
   static std::vector<Eigen::VectorXd> lhsSampleFeatureContinuousWithIteration(size_t n, Random &rng,
                                                                               const NumberSet<double> &cellSizeFactors,
-                                                                              size_t iteration) {
+                                                                              double iteration) {
     // create n samples from each set
     auto csf = cellSizeFactors.uniformSample(n, rng);
 

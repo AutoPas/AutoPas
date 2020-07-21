@@ -45,7 +45,7 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
  * Find best configuration if configuration are similar through tuning phases.
  */
 TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
-  constexpr size_t maxEvidence = 3;
+  constexpr size_t maxEvidence = 10;
   constexpr unsigned long seed = 21;
   // we use a dummy time function which increases linearly with the squared distance to the chosen optimal solution
   constexpr double timePerDistanceSquared = 654321;
@@ -78,7 +78,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
   } while (bayesClusterSearch.tune());
 
   // artificial time skip
-  iteration += 100;
+  iteration += 50;
   bayesClusterSearch.reset(iteration);
 
   // second tuning phase
@@ -98,7 +98,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
  * Find best configuration if optimal configuration changes over time.
  */
 TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
-  const size_t maxEvidence = 7;
+  const size_t maxEvidence = 15;
   const unsigned long seed = 21;
   // we use a dummy time function which increases linearly with the squared distance to the chosen optimal solution
   constexpr double timePerDistanceSquared = 654321;
@@ -142,7 +142,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
   } while (bayesClusterSearch.tune());
 
   // artificial time skip
-  iteration += 100;
+  iteration += 50;
   bayesClusterSearch.reset(iteration);
 
   // second tuning phase
@@ -162,7 +162,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
  * Find best configuration if optimal configuration changes drastically over time.
  */
 TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
-  const size_t maxEvidence = 16;
+  const size_t maxEvidence = 20;
   const unsigned long seed = 21;
   // we use a dummy time function which increases linearly with the squared distance to the chosen optimal solution
   constexpr double timePerDistanceSquared = 654321;
@@ -206,7 +206,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
   } while (bayesClusterSearch.tune());
 
   // artificial time skip
-  iteration += 100;
+  iteration += 50;
   bayesClusterSearch.reset(iteration);
 
   // second tuning phase
@@ -219,5 +219,5 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
   autopas::FeatureVector prediction(bayesClusterSearch.getCurrentConfiguration());
   long predictionTime = dummyTimeFun2(prediction);
   long bestTime = dummyTimeFun2(best2);
-  EXPECT_NEAR(predictionTime, bestTime, timePerDistanceSquared * 0.8);
+  EXPECT_NEAR(predictionTime, bestTime, timePerDistanceSquared * 0.25);
 }

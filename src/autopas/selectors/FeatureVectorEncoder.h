@@ -196,11 +196,11 @@ class FeatureVectorEncoder {
    * Discrete values are encoded using their index in given std::vector.
    * Additionaly append current iteration to the continuous tuple.
    * @param vec vector to encode
-   * @param iteration current iteration
+   * @param iteration current iteration which may be scaled by some factor
    * @return cluster encoded vector
    */
   [[nodiscard]] std::pair<Eigen::VectorXi, Eigen::VectorXd> convertToClusterWithIteration(const FeatureVector &vec,
-                                                                                          size_t iteration) const {
+                                                                                          double iteration) const {
     int containerTraversalEstimatorIndex = static_cast<int>(
         std::distance(_containerTraversalEstimatorOptions.begin(),
                       std::find(_containerTraversalEstimatorOptions.begin(), _containerTraversalEstimatorOptions.end(),

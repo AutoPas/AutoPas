@@ -252,6 +252,10 @@ for nodeStart, edgeStart, graphEnd in graphPos:
                 else:
                     values[column] = value
 
+            # let src the node with the lower index
+            if (target < src):
+                src, target = target, src
+
             edges[src,target] = GraphEdge(src, target, values)
 
     graphs.append(Graph(nodes,edges))

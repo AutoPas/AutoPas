@@ -73,6 +73,11 @@ class NumberInterval : public NumberSet<Number> {
     std::vector<Number> result;
     if (n == 0) {
       return result;
+    } else if (n == 1) {
+      // if only one sample choose middle
+      result.reserve(1);
+      result.push_back((_max + _min) / 2);
+      return result;
     }
 
     result.reserve(n);

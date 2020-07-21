@@ -52,10 +52,14 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   constexpr static double sigma = 0.01;
 
   /**
-   * Number of cellSizeFactors sampled if the allowed set is continuous.
-   * These samples are only used for FullSearch.
+   * Iterations get scaled down by a multiple of max evidence to ensure not all kernels become 0.
    */
-  constexpr static size_t cellSizeFactorSampleSize = 5;
+  constexpr static double iterationScalePerMaxEvidence = 5.;
+
+  /**
+   * Number of cellSizeFactors sampled for FullSearch.
+   */
+  constexpr static size_t cellSizeFactorSampleSize = 1;
 
  public:
   /**
@@ -97,9 +101,11 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _predNumLHSamples(predNumLHSamples),
         _firstTuningPhase(true),
         _currentIteration(0),
+        _iterationScale(1. / (maxEvidence * iterationScalePerMaxEvidence)),
         _currentNumEvidence(0),
-        _fullSearch(allowedContainerOptions, convertCellSizeFactor(allowedCellSizeFactors), allowedTraversalOptions,
-                    allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options) {
+        _fullSearch(allowedContainerOptions, convertCellSizeFactor(allowedCellSizeFactors, seed),
+                    allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
+                    allowedNewton3Options) {
     if (predNumLHSamples <= 0) {
       utils::ExceptionHandler::exception(
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
@@ -136,21 +142,15 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         [this](const GaussianModelTypes::VectorPairDiscreteContinuous &vec) -> std::string {
           return _encoder.convertFromClusterWithIteration(vec).toString();
         });
+
+    _currentConfig = _fullSearch.getCurrentConfiguration();
   }
 
-  inline const Configuration &getCurrentConfiguration() const override {
-    if (_firstTuningPhase) {
-      return _fullSearch.getCurrentConfiguration();
-    }
-
-    return _currentConfig;
-  }
+  inline const Configuration &getCurrentConfiguration() const override { return _currentConfig; }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
   inline void addEvidence(long time, size_t iteration) override {
-    const auto &currentConfig = getCurrentConfiguration();
-
     if (_firstTuningPhase) {
       _fullSearch.addEvidence(time, iteration);
     }
@@ -158,11 +158,11 @@ class BayesianClusterSearch : public TuningStrategyInterface {
     // store if first or better evidence
     if (_currentNumEvidence == 0 or time < _currentOptimalTime) {
       _currentOptimalTime = time;
-      _currentOptimalConfig = currentConfig;
+      _currentOptimalConfig = _currentConfig;
     }
 
     // encoded vector
-    auto vec = _encoder.convertToClusterWithIteration(currentConfig, iteration);
+    auto vec = _encoder.convertToClusterWithIteration(_currentConfig, iteration * _iterationScale);
     // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
     // represent a maximization problem
     _gaussianCluster.addEvidence(vec, -time * secondsPerMicroseconds);
@@ -204,17 +204,18 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
   /**
    * FullSearch cannot handle continuous sets of cellSizeFactors.
-   * So we convert NumberSet to a finite std::set by sampling if it is continuous.
+   * So we convert NumberSet to a finite std::set by sampling some values from the set.
    * @param cellSizeFactors
+   * @param seed seed used to randomly sample from the set
    * @return
    */
-  static std::set<double> convertCellSizeFactor(const NumberSet<double> &cellSizeFactors) {
+  static std::set<double> convertCellSizeFactor(const NumberSet<double> &cellSizeFactors, unsigned long seed) {
+    size_t numSamples = cellSizeFactorSampleSize;
     if (cellSizeFactors.isFinite()) {
-      return cellSizeFactors.getAll();
+      numSamples = std::min(numSamples, cellSizeFactors.size());
     }
 
-    // seed of random number generator irrelevant as it only affects the ordering.
-    Random rng(0);
+    Random rng(seed);
     auto samples = cellSizeFactors.uniformSample(cellSizeFactorSampleSize, rng);
 
     return std::set(samples.begin(), samples.end());
@@ -262,6 +263,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   size_t _currentIteration;
   /**
+   * We scale current iteration down such that kernels do not become 0.
+   */
+  const double _iterationScale;
+  /**
    * Number of evidence provided in current tuning phase.
    */
   size_t _currentNumEvidence;
@@ -282,12 +287,13 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
 bool BayesianClusterSearch::tune(bool currentInvalid) {
   if (currentInvalid) {
-    _invalidConfigs.insert(getCurrentConfiguration());
+    _invalidConfigs.insert(_currentConfig);
   }
 
   // in the first tuning phase do a full search
   if (_firstTuningPhase) {
     bool tuning = _fullSearch.tune(currentInvalid);
+    _currentConfig = _fullSearch.getCurrentConfiguration();
     if (not tuning) {
       _firstTuningPhase = false;
     }
@@ -340,8 +346,8 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
 
 void BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOption af) {
   // create n lhs samples
-  auto continuousSamples =
-      FeatureVector::lhsSampleFeatureContinuousWithIteration(n, _rng, *_cellSizeFactors, _currentIteration);
+  auto continuousSamples = FeatureVector::lhsSampleFeatureContinuousWithIteration(n, _rng, *_cellSizeFactors,
+                                                                                  _currentIteration * _iterationScale);
 
   // calculate all acquisitions
   _currentAcquisitions = _gaussianCluster.sampleOrderedByAcquisition(af, _neighbourFun, continuousSamples);
