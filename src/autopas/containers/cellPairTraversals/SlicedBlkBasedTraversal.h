@@ -671,17 +671,16 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 
     array3D cellBlockRelativeCoordinates = _indexToCellBlock[m];
     for (unsigned long axis = 0ul; axis < 3ul; ++axis) {
-      cellBlockRelativeCoordinates[axis]++;   //todo: this might cause overflow
-      AutoPasLog(debug, "_cellBlocksToIndex.count(cellBlockRelativeCoordinates): " + std::to_string(_cellBlocksToIndex.count(cellBlockRelativeCoordinates)));
-      if (_cellBlocksToIndex[cellBlockRelativeCoordinates]) {             // check if the key exists
+      cellBlockRelativeCoordinates[axis]++;
+      if (_cellBlocksToIndex.count(cellBlockRelativeCoordinates)) {                       // check if the key exists
         nb_locks[axis] = _cellBlocksToIndex[cellBlockRelativeCoordinates] + axis;
+        AutoPasLog(debug, "_cellBlocksToIndex.count(cellBlockRelativeCoordinates): " + std::to_string(_cellBlocksToIndex[cellBlockRelativeCoordinates]));
       } else {
         nb_locks[axis] = 0ul - 1ul;
       }
-
       cellBlockRelativeCoordinates[axis]--;
     }
-    AutoPasLog(debug, "after lock border check");
+    AutoPasLog(debug, "after lock border check for BLOCK: " + std::to_string(m));
 
     // Iterate over 111 --> no locks needed
     subBlock middleSubBlock = _allSubBlocks[m][13];
@@ -689,7 +688,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
     for (unsigned long i = 0; i < 3; ++i) {
       _middlesubBlockEnd[i] = middleSubBlock[i][0] + block[1][i] - block[0][i] - 2 * _overlapAxis[i];
     }
-    AutoPasLog(debug, "after middle Sub block creation");
+    AutoPasLog(debug, "after middle Sub block creation for BLOCK: " + std::to_string(m));
 
     for (unsigned long j = middleSubBlock[0][0]; j <= _middlesubBlockEnd[0]; ++j) {
       for (unsigned long k = middleSubBlock[1][0]; k <= _middlesubBlockEnd[1]; ++k) {
@@ -698,11 +697,11 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
         }
       }
     }
-    AutoPasLog(debug, "after middle sub Block iteration");
+    AutoPasLog(debug, "after middle sub Block iteration for BLOCK: " + std::to_string(m));
 
     // lock corresponding locks
     for (int traversalOrder = 0; traversalOrder < 8; ++traversalOrder) {  // Iterate over traverse array
-      AutoPasLog(debug, "Starting TraversalOrder iteration");
+      AutoPasLog(debug, "Starting TraversalOrder iteration for BLOCK: " + std::to_string(m));
 
       for (int i = 0; i < 3; ++i) {                                     // Iterate over locks
         if (_cellBlockTraverseOrderByLocks[traversalOrder][i] == 0) {   // my lock or neigbour lock?
@@ -727,7 +726,8 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
       // call subBlockLoop for subBlock
       subBlock currentSubBlock;
       auto &order = _cellBlockTraverseOrderByLocks[traversalOrder];
-      // AutoPasLog(debug, "Order: " + std::to_string(order[0]) + std::to_string(order[1]) + std::to_string(order[2]));
+      AutoPasLog(debug, "BLOCK:" + std::to_string(m) + " ORDER: " + std::to_string(order[0]) + std::to_string(order[1]) + std::to_string(order[2]));
+
       for (auto &lockedSubBlocks : locksToSubBlocks(order[0], order[1], order[2])) {
         currentSubBlock = currentSubBlocksInThisCellBlock[_subBlockBlockCoordinatesToSubBlockIndex[lockedSubBlocks]];
         // build the opposite corner from the subBlock to allow iteration through the cells
@@ -788,6 +788,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 
     AutoPasLog(debug, "CELLBLOCK: " + std::to_string(m) + " finished!");
   }
+  AutoPasLog(debug, "Traversal finished!");
 }
 
 }  // namespace autopas
