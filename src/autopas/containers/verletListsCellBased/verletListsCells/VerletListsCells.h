@@ -61,7 +61,7 @@ class VerletListsCells
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : VerletListsLinkedBase<Particle, LinkedParticleCell>(
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
-        _buildTraversal(buildTraversal),
+        _buildTraversalOption(buildTraversal),
         _loadEstimator(loadEstimator) {}
 
   /**
@@ -158,7 +158,7 @@ class VerletListsCells
                                                 this->_linkedCells.getCellBlock().getCellLength(), 0);
     autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
       auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::aos, n3>(
-          _buildTraversal, f, traversalSelectorInfo);
+          _buildTraversalOption, f, traversalSelectorInfo);
       this->_linkedCells.iteratePairwise(buildTraversal.get());
     });
 
@@ -188,7 +188,7 @@ class VerletListsCells
   /**
    * The traversal used to build the verletlists.
    */
-  TraversalOption _buildTraversal;
+  TraversalOption _buildTraversalOption;
 
   /**
    * Load estimation algorithm for balanced traversals.
