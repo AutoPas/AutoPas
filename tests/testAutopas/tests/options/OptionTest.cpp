@@ -22,11 +22,20 @@
  * The parseXXXOptionsTests define a mapping of enums to strings. It is then tested if parseOptions
  * can correctly parse them individually or all at once.
  */
-
 TEST(OptionTest, parseTraversalOptionsTest) {
+  // collect all option names
   std::map<autopas::TraversalOption, std::string> mapEnumString = autopas::TraversalOption::getOptionNames();
 
-  EXPECT_EQ(mapEnumString.size(), autopas::TraversalOption::getOptionNames().size());
+  // alter all strings
+  std::transform(mapEnumString.begin(), mapEnumString.end(), std::inserter(mapEnumString, mapEnumString.end()),
+                 [](auto &pair) {
+                   auto &[option, str] = pair;
+                   // to lower
+                   std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+                   // remove all underscores
+                   str.erase(std::remove(str.begin(), str.end(), '_'), str.end());
+                   return std::make_pair(option, str);
+                 });
 
   testParseOptionsIndividually(mapEnumString);
   testParseOptionsCombined(mapEnumString);
