@@ -267,7 +267,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
     for (int j = 0; j < 3; ++j) {
       str += std::to_string(j) + ": ";
       for (auto i : _cellBlockDimensions[j]) {
-        str += std::to_string(i) + " ";
+        str += std::to_string(i) + "| ";
       }
     }
     return str;
@@ -494,9 +494,23 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
         blocks[cellBlockIterator][0][1] = y;
         blocks[cellBlockIterator][0][2] = z;
 
-        blocks[cellBlockIterator][1][0] = x + _cellBlockDimensions[0][xit];
-        blocks[cellBlockIterator][1][1] = y + _cellBlockDimensions[1][yit];
-        blocks[cellBlockIterator][1][2] = z + _cellBlockDimensions[2][zit];
+        if (x + _cellBlockDimensions[0][xit] < _dims[0] - _overlapAxis[0]) {
+          blocks[cellBlockIterator][1][0] = x + _cellBlockDimensions[0][xit];
+        } else {
+          blocks[cellBlockIterator][1][0] = x + _cellBlockDimensions[0][xit] - _overlapAxis[0];
+        }
+
+        if (y + _cellBlockDimensions[1][yit] < _dims[1] - _overlapAxis[1]) {
+          blocks[cellBlockIterator][1][1] = y + _cellBlockDimensions[1][yit];
+        } else {
+          blocks[cellBlockIterator][1][1] = y + _cellBlockDimensions[1][yit] - _overlapAxis[1];
+        }
+
+        if (z + _cellBlockDimensions[2][zit] < _dims[2] - _overlapAxis[2]) {
+          blocks[cellBlockIterator][1][2] = z + _cellBlockDimensions[2][zit];
+        } else {
+          blocks[cellBlockIterator][1][2] = z + _cellBlockDimensions[2][zit] - _overlapAxis[2];
+        }
 
         cellBlockOrder = {xit,yit,zit};
         _cellBlocksToIndex[cellBlockOrder] = cellBlockIterator;
@@ -598,10 +612,10 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
           currentSubBlock[2][1] = i;
           _subBlocksSingleCellBlock[subBlockNumber] = currentSubBlock;
 
-            AutoPasLog(debug, "SB:" + std::to_string(subBlockNumber) +
-                              " | Dim0: " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][0][0]) +
-                              " Dim1: " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][1][0]) +
-                              " Dim2: " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][2][0]) +
+            AutoPasLog(debug, std::to_string(n) + "-sub:" + std::to_string(subBlockNumber) +
+                              "| " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][0][0]) +
+                              " " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][1][0]) +
+                              " " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][2][0]) +
                               " | Order: " + std::to_string(_subBlocksSingleCellBlock[subBlockNumber][0][1]) +
                               std::to_string(_subBlocksSingleCellBlock[subBlockNumber][1][1]) +
                               std::to_string(_subBlocksSingleCellBlock[subBlockNumber][2][1]));
