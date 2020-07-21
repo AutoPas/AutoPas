@@ -1,5 +1,5 @@
 /**
- * @file VCLTraversal.h
+ * @file VCLClusterIterationTraversal.h
  * @author humig
  * @date 20.06.19
  */
@@ -21,16 +21,17 @@ namespace autopas {
  * @tparam useNewton3 If newton 3 should be used. Currently, only false is supported.
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCLTraversal : public TraversalInterface, public VCLTraversalInterface<typename ParticleCell::ParticleType> {
+class VCLClusterIterationTraversal : public TraversalInterface,
+                                     public VCLTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
   /**
-   * Constructor of the VCLTraversal.
+   * Constructor of the VCLClusterIterationTraversal.
    * @param pairwiseFunctor The functor to use for the traversal.
    * @param clusterSize Number of particles per cluster.
    */
-  explicit VCLTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
+  explicit VCLClusterIterationTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
       : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor, clusterSize) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_cluster_iteration; }

@@ -1,5 +1,5 @@
 /**
- * @file LCC04SoATraversal.h
+ * @file LCC04CombinedSoATraversal.h
  * @author C. Menges
  * @date 02.06.2019
  */
@@ -25,8 +25,8 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class LCC04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, 2>,
-                          public LCTraversalInterface<ParticleCell> {
+class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, 2>,
+                                  public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c04 traversal.
@@ -36,8 +36,8 @@ class LCC04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
    */
-  explicit LCC04SoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                             const double interactionLength, const std::array<double, 3> &cellLength)
+  explicit LCC04CombinedSoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                                     const double interactionLength, const std::array<double, 3> &cellLength)
       : C04BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, 2>(dims, pairwiseFunctor,
                                                                                     interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
@@ -67,7 +67,7 @@ class LCC04SoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC04SoATraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+inline void LCC04CombinedSoATraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   _cellHandler.resizeBuffers();
   auto &cells = *(this->_cells);
   this->c04Traversal(

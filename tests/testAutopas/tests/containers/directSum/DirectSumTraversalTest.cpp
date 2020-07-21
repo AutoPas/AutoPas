@@ -6,7 +6,7 @@
 
 #include "DirectSumTraversalTest.h"
 
-#include "autopas/containers/directSum/traversals/DirectSumTraversal.h"
+#include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
 using ::testing::_;
@@ -39,7 +39,7 @@ void DirectSumTraversalTest::testTraversal(bool useSoA) {
   }
 
   if (useSoA) {
-    autopas::DirectSumTraversal<FPCell, MFunctor, autopas::DataLayoutOption::soa, true> traversal(
+    autopas::DSSequentialTraversal<FPCell, MFunctor, autopas::DataLayoutOption::soa, true> traversal(
         &functor, std::numeric_limits<double>::max());
     // domain SoA with itself
     EXPECT_CALL(functor, SoAFunctorSingle(_, true, true)).Times(1);
@@ -49,7 +49,7 @@ void DirectSumTraversalTest::testTraversal(bool useSoA) {
     traversal.setCellsToTraverse(cells);
     traversal.traverseParticlePairs();
   } else {
-    autopas::DirectSumTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(
+    autopas::DSSequentialTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversal(
         &functor, std::numeric_limits<double>::max());
     // interactions in main cell + interactions with halo.
     size_t expectedFunctorCalls = numParticles * (numParticles - 1) / 2 + numParticles * numHaloParticles;

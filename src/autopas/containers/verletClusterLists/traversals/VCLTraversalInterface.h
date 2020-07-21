@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "autopas/containers/verletClusterLists/ClusterTower.h"
+
 namespace autopas {
 
 template <class Particle>

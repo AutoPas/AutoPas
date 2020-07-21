@@ -1,5 +1,5 @@
 /**
- * @file DirectSumTraversal.h
+ * @file DSSequentialTraversal.h
  * @author F. Gratl
  * @date 11/23/18
  */
@@ -28,14 +28,14 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public DirectSumTraversalInterface<ParticleCell> {
+class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DirectSumTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor for the DirectSum traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the directsum traversal, please don't use the interaction length here.)
    */
-  explicit DirectSumTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff)
+  explicit DSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
         _dataLayoutConverter(pairwiseFunctor) {}
@@ -92,7 +92,7 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void DirectSumTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+void DSSequentialTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
   // Assume cell[0] is the main domain and cell[1] is the halo
   _cellFunctor.processCell(cells[0]);

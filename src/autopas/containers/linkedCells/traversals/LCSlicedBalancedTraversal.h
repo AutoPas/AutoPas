@@ -1,5 +1,5 @@
 /**
- * @file LCBalancedSlicedTraversal.h
+ * @file LCSlicedBalancedTraversal.h
  *
  * @date 27 Apr 2020
  * @author fischerv
@@ -34,7 +34,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class LCBalancedSlicedTraversal
+class LCSlicedBalancedTraversal
     : public BalancedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
       public LCTraversalInterface<ParticleCell> {
  public:
@@ -46,7 +46,7 @@ class LCBalancedSlicedTraversal
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit LCBalancedSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit LCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                      const double interactionLength, const std::array<double, 3> &cellLength)
       : BalancedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
             dims, pairwiseFunctor, interactionLength, cellLength),
@@ -65,7 +65,7 @@ class LCBalancedSlicedTraversal
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCBalancedSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+inline void LCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

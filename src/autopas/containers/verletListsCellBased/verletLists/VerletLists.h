@@ -11,7 +11,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIteration.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"

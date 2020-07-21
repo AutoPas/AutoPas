@@ -1,5 +1,5 @@
 /**
- * @file VCLColoringTraversal.h
+ * @file VCLC06Traversal.h
  * @author humig
  * @date 27.06.19
  */
@@ -26,8 +26,8 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCLColoringTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                             public VCLTraversalInterface<typename ParticleCell::ParticleType> {
+class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+                        public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
 
@@ -53,11 +53,11 @@ class VCLColoringTraversal : public CBasedTraversal<ParticleCell, PairwiseFuncto
 
  public:
   /**
-   * Constructor of the VCLTraversal.
+   * Constructor of the VCLClusterIterationTraversal.
    * @param pairwiseFunctor The functor to use for the traversal.
    * @param clusterSize Number of particles per cluster.
    */
-  explicit VCLColoringTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
+  explicit VCLC06Traversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
       : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>({0, 0, 0}, pairwiseFunctor, 0, {}),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize) {}
@@ -110,7 +110,7 @@ class VCLColoringTraversal : public CBasedTraversal<ParticleCell, PairwiseFuncto
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void VCLColoringTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processColorCell(
+void VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processColorCell(
     unsigned long xColorCell, unsigned long yColorCell, unsigned long zColorCell, int towersPerColoringCell) {
   // We are only doing a 2D coloring.
   if (zColorCell != 0) {

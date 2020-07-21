@@ -1,5 +1,5 @@
 /**
- * @file VCLStaticTraversal.h
+ * @file VCLC01BalancedTraversal.h
  * @author humig
  * @date 12.08.19
  */
@@ -22,14 +22,14 @@ namespace autopas {
  * @tparam useNewton3 If newton 3 should be used. Only false is supported.
  */
 template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCLStaticTraversal : public TraversalInterface, public VCLTraversalInterface<Particle> {
+class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalInterface<Particle> {
  public:
   /**
-   * Constructor of the VCLStaticTraversal.
+   * Constructor of the VCLC01BalancedTraversal.
    * @param pairwiseFunctor The functor to use for the traversal.
    * @param clusterSize Number of particles per cluster.
    */
-  explicit VCLStaticTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
+  explicit VCLC01BalancedTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
       : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor, clusterSize) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c01_balanced; }
@@ -85,7 +85,7 @@ class VCLStaticTraversal : public TraversalInterface, public VCLTraversalInterfa
       }
       if (clusterCount != clusterRange.numClusters) {
         autopas::utils::ExceptionHandler::exception(
-            "VCLStaticTraversal::traverseParticlePairs(): Not all or too many clusters traversed, probably "
+            "VCLC01BalancedTraversal::traverseParticlePairs(): Not all or too many clusters traversed, probably "
             "the clusterThreadPartitions are wrong! TraversedClusters={}, ClustersInRange={}",
             clusterCount, clusterRange.numClusters);
       }

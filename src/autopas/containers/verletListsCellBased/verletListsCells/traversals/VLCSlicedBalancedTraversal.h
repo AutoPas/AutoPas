@@ -1,5 +1,5 @@
 /**
- * @file VLCBalancedSlicedTraversal.h
+ * @file VLCSlicedBalancedTraversal.h
  *
  * @date 02 May 2020
  * @author fischerv
@@ -32,7 +32,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VLCBalancedSlicedTraversal
+class VLCSlicedBalancedTraversal
     : public BalancedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
       public VLCTraversalInterface<typename ParticleCell::ParticleType> {
  public:
@@ -44,7 +44,7 @@ class VLCBalancedSlicedTraversal
    * @param cellLength length of the underlying cells
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit VLCBalancedSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit VLCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                       double interactionLength, const std::array<double, 3> &cellLength)
       : BalancedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
             dims, pairwiseFunctor, interactionLength, cellLength),
@@ -65,7 +65,7 @@ class VLCBalancedSlicedTraversal
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void VLCBalancedSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+inline void VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   this->template slicedTraversal</*allCells*/ true>([&](unsigned long x, unsigned long y, unsigned long z) {
     auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template iterateVerletListsCell<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
