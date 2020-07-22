@@ -113,6 +113,7 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
 
       } else {
         totalThickness += thickness;
+        /// @TODO reserve to numSlices before push_back
         this->_sliceThickness.push_back(thickness);
         if (s != numSlices - 1) {
           // add avg of remaining load over remaining threads to min
@@ -120,19 +121,24 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
         }
       }
     }
-    std::string thicknessStr;
-    std::string loadStr;
-    auto lastLoad = 0;
-    totalThickness = 0;
-    for (auto t : this->_sliceThickness) {
-      thicknessStr += std::to_string(t) + ", ";
-      totalThickness += t;
-      loadStr += std::to_string(loads[totalThickness - 1] - lastLoad) + ", ";
-      lastLoad = loads[totalThickness - 1];
-    }
 
-    AutoPasLog(debug, "Slice Thicknesses: [{}]", thicknessStr);
-    AutoPasLog(debug, "Slice loads: [{}]", loadStr);
+    // some analysis output that is only relevant when logger is set to debug
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+      std::string thicknessStr;
+      std::string loadStr;
+      auto lastLoad = 0;
+      totalThickness = 0;
+      for (auto t : this->_sliceThickness) {
+        thicknessStr += std::to_string(t) + ", ";
+        totalThickness += t;
+        loadStr += std::to_string(loads[totalThickness - 1] - lastLoad) + ", ";
+        lastLoad = loads[totalThickness - 1];
+      }
+
+      /// @TODO: use autopas::utils::ArrayUtils::to_string()
+      AutoPasLog(debug, "Slice Thicknesses: [{}]", thicknessStr);
+      AutoPasLog(debug, "Slice loads: [{}]", loadStr);
+    }
 
     // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
     this->_sliceThickness.back() -= this->_overlapLongestAxis;
