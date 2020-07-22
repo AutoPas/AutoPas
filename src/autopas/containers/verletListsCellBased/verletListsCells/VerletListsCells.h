@@ -143,6 +143,9 @@ class VerletListsCells
       for (auto iter = cells[cellIndex].begin(); iter.isValid(); ++iter, ++particleIndexWithinCell) {
         Particle *particle = &*iter;
         _neighborLists[cellIndex].emplace_back(particle, std::vector<Particle *>());
+        // reserve space for 5 times as many particles in the list as are in the particles' cell
+        // 5 is an empirically determined magic number
+        _neighborLists[cellIndex].back().second.reserve(cells[cellIndex].numParticles() * 5);
         _particleToCellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
       }
     }
