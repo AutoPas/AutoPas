@@ -7,7 +7,7 @@
 #include "VerletListsTest.h"
 
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIteration.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 
 using ::testing::_;
@@ -36,7 +36,8 @@ TEST_P(VerletListsTest, testVerletListBuildAndIterate) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(1);
 
-  autopas::VLListIteration<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(&emptyFunctor);
+  autopas::VLListIterationTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(
+      &emptyFunctor);
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
 
@@ -69,7 +70,8 @@ TEST_P(VerletListsTest, testVerletListInSkin) {
   MockFunctor<Particle, FPCell> mockFunctor;
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
-  autopas::VLListIteration<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(&mockFunctor);
+  autopas::VLListIterationTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(
+      &mockFunctor);
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
 
@@ -102,7 +104,8 @@ TEST_P(VerletListsTest, testVerletListBuildTwice) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
-  autopas::VLListIteration<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(&emptyFunctor);
+  autopas::VLListIterationTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(
+      &emptyFunctor);
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -141,7 +144,8 @@ TEST_P(VerletListsTest, testVerletListBuildFarAway) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
-  autopas::VLListIteration<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(&emptyFunctor);
+  autopas::VLListIterationTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(
+      &emptyFunctor);
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
 
@@ -174,7 +178,8 @@ TEST_P(VerletListsTest, testVerletListBuildHalo) {
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
-  autopas::VLListIteration<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(&emptyFunctor);
+  autopas::VLListIterationTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> verletTraversal(
+      &emptyFunctor);
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -267,7 +272,8 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
 
   MockFunctor<Particle, FPCell> mockFunctor;
 
-  autopas::VLListIteration<FPCell, MFunctor, autopas::DataLayoutOption::soa, false> verletTraversal(&mockFunctor);
+  autopas::VLListIterationTraversal<FPCell, MFunctor, autopas::DataLayoutOption::soa, false> verletTraversal(
+      &mockFunctor);
   const size_t dimWithHalo = 10 / ((cutoff + skin) * cellSizeFactor) + 2ul;
   const size_t numCells = dimWithHalo * dimWithHalo * dimWithHalo;
   EXPECT_CALL(mockFunctor, SoALoaderVerlet(_, _, _)).Times(numCells);
@@ -292,7 +298,7 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
   verletLists.addHaloParticle(p);
   autopas::LJFunctor<Molecule, FMCell> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
-  autopas::VLListIteration<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, false>
+  autopas::VLListIterationTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, false>
       verletTraversal(&ljFunctor);
 
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -317,9 +323,9 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
                                                                verletLists2.getBoxMax(), 100);
   autopas::LJFunctor<Molecule, FMCell> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
-  autopas::VLListIteration<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>
+  autopas::VLListIterationTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::aos, false>
       verletTraversal1(&ljFunctor);
-  autopas::VLListIteration<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, false>
+  autopas::VLListIterationTraversal<FMCell, autopas::LJFunctor<Molecule, FMCell>, autopas::DataLayoutOption::soa, false>
       soaTraversal(&ljFunctor);
   verletLists1.rebuildNeighborLists(&verletTraversal1);
   verletLists2.rebuildNeighborLists(&soaTraversal);

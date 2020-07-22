@@ -1,5 +1,5 @@
 /**
- * @file DirectSumTraversalTest.h
+ * @file DSSequentialTraversalTest.h
  * @author F. Gratl
  * @date 11/23/18
  */
@@ -9,7 +9,7 @@
 #include "AutoPasTestBase.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class DirectSumTraversalTest : public AutoPasTestBase {
+class DSSequentialTraversalTest : public AutoPasTestBase {
  public:
   void testTraversal(bool useSoA);
 };

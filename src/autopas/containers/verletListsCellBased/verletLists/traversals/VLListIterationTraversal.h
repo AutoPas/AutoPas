@@ -1,5 +1,5 @@
 /**
- * @file VLListIteration.h
+ * @file VLListIterationTraversal.h
  *
  * @date 7.4.2019
  * @author jspahl
@@ -23,7 +23,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VLListIteration
+class VLListIterationTraversal
     : public TraversalInterface,
       public VLTraversalInterface<
           typename VerletListHelpers<typename ParticleCell::ParticleType>::VerletListParticleCellType> {
@@ -35,7 +35,7 @@ class VLListIteration
    * Constructor for Verlet Traversal
    * @param pairwiseFunctor Functor to be used with this Traversal
    */
-  explicit VLListIteration(PairwiseFunctor *pairwiseFunctor) : _functor(pairwiseFunctor) {}
+  explicit VLListIterationTraversal(PairwiseFunctor *pairwiseFunctor) : _functor(pairwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }
 

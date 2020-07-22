@@ -1,10 +1,10 @@
 /**
- * @file DirectSumTraversalTest.cpp
+ * @file DSSequentialTraversalTest.cpp
  * @author F. Gratl
  * @date 11/23/18
  */
 
-#include "DirectSumTraversalTest.h"
+#include "DSSequentialTraversalTest.h"
 
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
 #include "autopasTools/generators/RandomGenerator.h"
@@ -12,11 +12,11 @@
 using ::testing::_;
 using ::testing::AtLeast;
 
-TEST_F(DirectSumTraversalTest, testTraversalAoS) { testTraversal(false); }
+TEST_F(DSSequentialTraversalTest, testTraversalAoS) { testTraversal(false); }
 
-TEST_F(DirectSumTraversalTest, testTraversalSoA) { testTraversal(true); }
+TEST_F(DSSequentialTraversalTest, testTraversalSoA) { testTraversal(true); }
 
-void DirectSumTraversalTest::testTraversal(bool useSoA) {
+void DSSequentialTraversalTest::testTraversal(bool useSoA) {
   size_t numParticles = 20;
   size_t numHaloParticles = 10;
 
@@ -60,7 +60,7 @@ void DirectSumTraversalTest::testTraversal(bool useSoA) {
 }
 
 #if defined(AUTOPAS_CUDA)
-TEST_F(DirectSumTraversalTest, testTraversalCuda) {
+TEST_F(DSSequentialTraversalTest, testTraversalCuda) {
   size_t numParticles = 20;
   size_t numHaloParticles = 10;
 

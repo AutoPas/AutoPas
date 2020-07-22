@@ -27,7 +27,7 @@
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/traversals/VVLAsBuildTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIteration.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC01Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedBalancedTraversal.h"
@@ -155,7 +155,8 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::vl_list_iteration: {
-      return std::make_unique<VLListIteration<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(&pairwiseFunctor);
+      return std::make_unique<VLListIterationTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          &pairwiseFunctor);
     }
     case TraversalOption::vcl_cluster_iteration: {
       return std::make_unique<VCLClusterIterationTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
