@@ -132,7 +132,7 @@ class VerletListsCells
     bool useNewton3 = traversal->getUseNewton3();
     this->_verletBuiltNewton3 = useNewton3;
 
-    // create a Verlet Lists for each cell
+    // initialize a Verlet Lists for each cell
     _neighborLists.clear();
     auto &cells = this->_linkedCells.getCells();
     size_t cellsSize = cells.size();
@@ -152,7 +152,7 @@ class VerletListsCells
 
     // generate the build traversal with the traversal selector and apply the build functor with it
     TraversalSelector<LinkedParticleCell> traversalSelector;
-    // argument cluster size does not matter here
+    // argument "cluster size" does not matter here
     TraversalSelectorInfo traversalSelectorInfo(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 this->getInteractionLength(),
                                                 this->_linkedCells.getCellBlock().getCellLength(), 0);
