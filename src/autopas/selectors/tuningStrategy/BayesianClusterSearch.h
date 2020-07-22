@@ -215,10 +215,14 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       numSamples = std::min(numSamples, cellSizeFactors.size());
     }
 
-    Random rng(seed);
-    auto samples = cellSizeFactors.uniformSample(cellSizeFactorSampleSize, rng);
+    if (numSamples == 0) {
+      return std::set<double>();
+    }
 
-    return std::set(samples.begin(), samples.end());
+    Random rng(seed);
+    auto samples = cellSizeFactors.uniformSample(numSamples, rng);
+
+    return std::set<double>(samples.begin(), samples.end());
   }
 
   std::set<ContainerOption> _containerOptionsSet;
@@ -277,7 +281,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * Configuration with lowest time in current tuning phase.
    */
-  Configuration _currentOptimalConfig;
+  FeatureVector _currentOptimalConfig;
 
   /**
    * FullSearch used in the first tuning phase.

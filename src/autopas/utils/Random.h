@@ -11,6 +11,8 @@
 #include <random>
 #include <set>
 
+#include "autopas/utils/ExceptionHandler.h"
+
 namespace autopas {
 
 /**
@@ -48,6 +50,10 @@ class Random : public std::mt19937 {
    */
   template <class Iter>
   std::vector<typename std::iterator_traits<Iter>::value_type> uniformSample(Iter poolBegin, Iter poolEnd, size_t n) {
+    if (poolBegin == poolEnd) {
+      autopas::utils::ExceptionHandler::exception("Random.uniformSample: Cannot sample from empty set.");
+    }
+
     std::vector<typename std::iterator_traits<Iter>::value_type> result;
     result.reserve(n);
 
