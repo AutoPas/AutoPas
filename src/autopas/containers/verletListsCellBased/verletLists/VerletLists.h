@@ -35,7 +35,6 @@ template <class Particle>
 class VerletLists
     : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
                                    typename VerletListHelpers<Particle>::PositionSoAArraysType> {
-  using verlet_internal = VerletListHelpers<Particle>;
   using ParticleCell = FullParticleCell<Particle>;
   using SoAArraysType = typename VerletListHelpers<Particle>::PositionSoAArraysType;
   using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
@@ -92,7 +91,7 @@ class VerletLists
    * get the actual neighbour list
    * @return the neighbour list
    */
-  typename verlet_internal::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
+  typename VerletListHelpers<Particle>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
@@ -118,26 +117,29 @@ class VerletLists
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
-    typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, this->getCutoff() + this->getSkin());
+    typename VerletListHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborLists,
+                                                                       this->getCutoff() + this->getSkin());
 
     /// @todo autotune traversal
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS: {
         utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::aos, theBool>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength());
+          auto traversal =
+              C08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
+                           DataLayoutOption::aos, theBool>(
+                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+                  this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&traversal);
         });
         break;
       }
       case BuildVerletListType::VerletSoA: {
         utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::soa, theBool>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength());
+          auto traversal =
+              C08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
+                           DataLayoutOption::soa, theBool>(
+                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+                  this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&traversal);
         });
         break;
@@ -210,7 +212,7 @@ class VerletLists
   /**
    * Neighbor Lists: Map of particle pointers to vector of particle pointers.
    */
-  typename verlet_internal::NeighborListAoSType _aosNeighborLists;
+  typename VerletListHelpers<Particle>::NeighborListAoSType _aosNeighborLists;
 
   /**
    * Mapping of every particle, represented by its pointer, to an index.
