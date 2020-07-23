@@ -113,7 +113,7 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
 
       } else {
         totalThickness += thickness;
-        /// @TODO reserve to numSlices before push_back
+        /// @todo reserve to numSlices before push_back
         this->_sliceThickness.push_back(thickness);
         if (s != numSlices - 1) {
           // add avg of remaining load over remaining threads to min
@@ -135,7 +135,7 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
         lastLoad = loads[totalThickness - 1];
       }
 
-      /// @TODO: use autopas::utils::ArrayUtils::to_string()
+      /// @todo: use autopas::utils::ArrayUtils::to_string()
       AutoPasLog(debug, "Slice Thicknesses: [{}]", thicknessStr);
       AutoPasLog(debug, "Slice loads: [{}]", loadStr);
     }
