@@ -36,9 +36,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.iterations, config.tuningInterval, config.logLevel, config.logFileName, config.distributionMean,
       config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal, config.relativeOptimumRange,
       config.periodic, config.tuningPhases, config.verletClusterSize, config.verletSkinRadius, config.particleSpacing,
-      config.tuningSamples, config.traversalOptions, config.tuningStrategyOption, config.useThermostat,
-      config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy,
-      config.yamlFilename, config.distributionStdDev, zshCompletionsOption, helpOption)};
+      config.tuningSamples, config.traversalOptions, config.tuningStrategyOption, config.mpiStrategyOption,
+      config.useThermostat, config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency,
+      config.selectorStrategy, config.yamlFilename, config.distributionStdDev, zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -445,6 +445,17 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         config.tuningStrategyOption.value = *parsedOptions.begin();
+        break;
+      }
+      case decltype(config.mpiStrategyOption)::getoptChar: {
+        auto parsedOptions = autopas::MPIStrategyOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one mpi strategy option. AutoPas cannot switch between several." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.mpiStrategyOption.value = *parsedOptions.begin();
         break;
       }
       case decltype(config.useThermostat)::getoptChar: {
