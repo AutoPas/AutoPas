@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include <autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h>
-
 #include <array>
 #include <utility>
 #include <vector>
+
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 
 namespace autopas {
 

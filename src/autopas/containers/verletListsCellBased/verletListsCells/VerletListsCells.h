@@ -6,9 +6,7 @@
 
 #pragma once
 
-#include <autopas/selectors/TraversalSelector.h>
-
-#include "VerletListsCellsHelpers.h"
+#include "autopas/containers//verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/ParticleContainer.h"
@@ -23,6 +21,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
 
