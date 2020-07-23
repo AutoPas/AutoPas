@@ -18,6 +18,9 @@ namespace autopas {
  * The traversal uses the c18 base step performed on every single cell. Since
  * these steps overlap a domain coloring with eighteen colors is applied.
  *
+ * For each cell all neighbor lists are processed, so depending on whether lists
+ * were built with newton3 the base step is c01 or c18
+ *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam dataLayout

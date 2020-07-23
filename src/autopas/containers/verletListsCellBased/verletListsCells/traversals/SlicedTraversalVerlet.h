@@ -25,6 +25,9 @@ namespace autopas {
  * on the boundary wall to the previous slice with one lock. This lock is lifted
  * as soon the boundary wall is fully processed.
  *
+ * For each cell all neighbor lists are processed, so depending on whether lists
+ * were built with newton3 the base step is c01 or c18
+ *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam useSoA
