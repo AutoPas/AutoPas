@@ -3,8 +3,9 @@ iterations: 5
 container: [linkedcell]
 data-layout: [aos]
 newton3: [enabled]
-traversal: [sli_blk]
+traversal: [sli-blk]
 log-level: debug
+deltaT: 0
 Objects:
   CubeGrid:
     0:
@@ -12,7 +13,7 @@ Objects:
       particle-epsilon: 1.
       particle-sigma: 1.
       particle-mass: 1.
-      particles-per-dimension: [50,25,12]
+      particles-per-dimension: [8,8,8]
       particle-spacing: 0.9
-      velocity: [0.3,0.3,0.3]
+      velocity: [0,0,0]
       bottomLeftCorner: [5.,5.,5.]
