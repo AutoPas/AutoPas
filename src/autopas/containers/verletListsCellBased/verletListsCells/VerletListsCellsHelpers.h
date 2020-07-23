@@ -10,6 +10,7 @@
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
+
 namespace autopas {
 
 /**

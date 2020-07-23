@@ -40,7 +40,6 @@ namespace autopas {
 template <class Particle>
 class VerletListsCells
     : public VerletListsLinkedBase<Particle, typename VerletListsCellsHelpers<Particle>::VLCCellType> {
-  using verlet_internal = VerletListsCellsHelpers<Particle>;
   using ParticleCell = FullParticleCell<Particle>;
   using LinkedParticleCell = typename VerletListsCellsHelpers<Particle>::VLCCellType;
 
@@ -85,7 +84,8 @@ class VerletListsCells
       case LoadEstimatorOption::neighborListLength: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
-          return loadEstimators::neighborListLength(_neighborLists, cellsPerDimension, lowerCorner, upperCorner);
+          return loadEstimators::neighborListLength<Particle>(_neighborLists, cellsPerDimension, lowerCorner,
+                                                              upperCorner);
         };
       }
 
@@ -150,8 +150,8 @@ class VerletListsCells
       }
     }
 
-    typename verlet_internal::VerletListGeneratorFunctor f(_neighborLists, _particleToCellMap,
-                                                           this->getCutoff() + this->getSkin());
+    typename VerletListsCellsHelpers<Particle>::VerletListGeneratorFunctor f(_neighborLists, _particleToCellMap,
+                                                                             this->getCutoff() + this->getSkin());
 
     // generate the build traversal with the traversal selector and apply the build functor with it
     TraversalSelector<LinkedParticleCell> traversalSelector;
@@ -181,7 +181,7 @@ class VerletListsCells
   /**
    * Verlet lists for each particle for each cell.
    */
-  typename verlet_internal::NeighborListsType _neighborLists;
+  typename VerletListsCellsHelpers<Particle>::NeighborListsType _neighborLists;
 
   /**
    * Mapping of each particle to its corresponding cell and id within this cell.
