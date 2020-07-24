@@ -55,11 +55,11 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * This type represents the neighbor list that each thread has for each color.
    */
-  using ThreadNeighborList = std::unordered_map<Particle *, std::vector<Particle *>>;
+  using AoSThreadNeighborList = std::unordered_map<Particle *, std::vector<Particle *>>;
   /**
    * This type represents the thread lists for all colors.
    */
-  using ColorNeighborList = std::vector<ThreadNeighborList>;
+  using AoSColorNeighborList = std::vector<AoSThreadNeighborList>;
 
   /**
    * This type represents the SoA neighbor list that each thread has for each color.
@@ -73,7 +73,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * Constructor for the VerletNeighborListAsBuild. Does only default initialization.
    */
-  VerletNeighborListAsBuild() : _neighborList{}, _soaListIsValid(false) {}
+  VerletNeighborListAsBuild() : _aosNeighborList{}, _soaListIsValid(false) {}
 
   /**
    * @copydoc VerletNeighborListInterface::getContainerType()
@@ -94,7 +94,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
 
     unsigned int maxNumThreads = autopas_get_max_threads();
     for (int c = 0; c < 8; c++) {
-      std::vector<ThreadNeighborList> &colorList = _neighborList[c];
+      std::vector<AoSThreadNeighborList> &colorList = _aosNeighborList[c];
       colorList.resize(maxNumThreads);
       for (unsigned int i = 0; i < maxNumThreads; i++) {
         colorList[i].clear();
@@ -128,24 +128,36 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * Returns the internal AoS neighbor list. Should be used by traversals.
    *
-   * The internal neighbor list is a vector of the neighbor lists of each color. Each of those neighbor lists is a
-   * vector that contains one neighbor list for each thread. Each of those neighbor lists is a map from each particle to
-   * a vector containing its neighbors.
+   * The internal neighbor list structure is an array of vectors for each color. Each of those vectors contains a
+   * neighbor list for each thread. Each of those neighbor lists is a map from particle pointers to a vector containing
+   * its neighbor pointers.
+   *
+   * Or in short:
+   * _aosNeighborList
+   * = std::array<AoSColorNeighborList, _numColors>
+   * = std::array<std::vector<AoSThreadNeighborList>>, _numColors>
+   * = std::array<std::vector<std::unordered_map<Particle *, std::vector<Particle *>>>, _numColors>
    *
    * @return the internal AoS neighbor list.
    */
-  const auto &getInternalNeighborList() { return _neighborList; }
+  const auto &getAoSNeighborList() { return _aosNeighborList; }
 
   /**
    * Returns the internal SoA neighbor list. Should be used by traversals.
    *
-   * The internal SoA neighbor list is a vector of the SoA neighbor lists of each color. Each of those SoA neighbor
-   * lists is a vector that contains one SoA neighbor list for each thread. Each of those SoA neighbor lists is a vector
-   * of pairs. Each pair contains an index in the SoA and a vector of the indices of all its neighbors in the SoA.
+   * The internal SoA neighbor list structure is an array of vectors for each color. Each of those vectors
+   * contains one SoA neighbor list per thread. Each of those SoA neighbor lists is a vector of pairs mimicing a map.
+   * Each pair contains an index in the SoA and a vector of the indices of all its neighbors in the SoA.
+   *
+   * Or in short:
+   * _soaNeighborList
+   * = std::array<SoAColorNeighborList, _numColors>
+   * = std::array<std::vector<SoAThreadNeighborList>, _numColors>
+   * = std::array<std::vector<std::pair<size_t, std::vector<size_t, autopas::AlignedAllocator<size_t>>>>, _numColors>
    *
    * @return the internal SoA neighbor list.
    */
-  const auto &getInternalSoANeighborList() { return _soaNeighborList; }
+  const auto &getSoANeighborList() { return _soaNeighborList; }
 
   /**
    * @copydoc ColorChangeObserver::receiveColorChange()
@@ -153,7 +165,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   void receiveColorChange(unsigned long newColor) override { _currentColor = newColor; }
 
   /**
-   * @see getInternalSoANeighborList()
+   * @see getSoANeighborList()
    */
   void generateSoAFromAoS() override {
     // Generate a map from pointer to particle index in the SoA. This works, because during loadSoA"()" the particles
@@ -165,9 +177,8 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
       _aos2soaMap[&(*iter)] = i;
     }
 
-    constexpr int numColors = 8;
-    for (int color = 0; color < numColors; color++) {
-      unsigned int numThreads = _neighborList[color].size();
+    for (int color = 0; color < _numColors; color++) {
+      unsigned int numThreads = _aosNeighborList[color].size();
       _soaNeighborList[color].resize(numThreads);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel num_threads(numThreads)
@@ -178,7 +189,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
       for (unsigned int thread = 0; thread < numThreads; thread++) {
         auto &currentThreadList = _soaNeighborList[color][thread];
         currentThreadList.clear();
-        for (const auto &pair : _neighborList[color][thread]) {
+        for (const auto &pair : _aosNeighborList[color][thread]) {
           size_t indexFirst = _aos2soaMap[pair.first];
           std::vector<size_t, AlignedAllocator<size_t>> neighbors;
           neighbors.reserve(pair.second.size());
@@ -235,7 +246,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    */
   long getNumberOfNeighborPairs() const override {
     long numPairs = 0;
-    for (const auto &colorList : _neighborList) {
+    for (const auto &colorList : _aosNeighborList) {
       for (const auto &threadList : colorList) {
         numPairs += threadList.size();
       }
@@ -249,7 +260,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    */
   void addPair(Particle *first, Particle *second) {
     int currentThreadIndex = autopas_get_thread_num();
-    _neighborList[_currentColor][currentThreadIndex][first].push_back(second);
+    _aosNeighborList[_currentColor][currentThreadIndex][first].push_back(second);
   }
 
   /**
@@ -259,11 +270,11 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     int currentThreadIndex = autopas_get_thread_num();
 
     // Check all neighbor lists for the pair, but the one that the pair would be in if it was not moved first.
-    auto &oldThreadNeighborList = _neighborList[_currentColor][currentThreadIndex];
+    auto &oldThreadNeighborList = _aosNeighborList[_currentColor][currentThreadIndex];
     if (isPairInList(oldThreadNeighborList, first, second)) {
       for (int color = 0; color < 8; color++) {
-        for (unsigned int thread = 0; thread < _neighborList[color].size(); thread++) {
-          if (not isPairInList(_neighborList[_currentColor][currentThreadIndex], first, second)) {
+        for (unsigned int thread = 0; thread < _aosNeighborList[color].size(); thread++) {
+          if (not isPairInList(_aosNeighborList[_currentColor][currentThreadIndex], first, second)) {
             // this is thread safe, as _allPairsPresent is atomic
             _allPairsPresent = false;
             return;
@@ -280,7 +291,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    * Helper method for checkPair()
    * @return True, if the pair is present, false otherwise.
    */
-  bool isPairInList(ThreadNeighborList &currentNeighborList, Particle *first, Particle *second) {
+  bool isPairInList(AoSThreadNeighborList &currentNeighborList, Particle *first, Particle *second) {
     auto iteratorFound = std::find(currentNeighborList[first].begin(), currentNeighborList[first].end(), second);
 
     return iteratorFound != currentNeighborList[first].end();
@@ -288,9 +299,14 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
 
  private:
   /**
-   * The internal AoS neighbor list. For format, see getInternalNeighborList().
+   * Number of colors used for the domain coloring during parallelization.
    */
-  std::array<ColorNeighborList, 8> _neighborList;
+  constexpr static size_t _numColors = 8;
+
+  /**
+   * The internal AoS neighbor list. For format, see getAoSNeighborList().
+   */
+  std::array<AoSColorNeighborList, _numColors> _aosNeighborList;
 
   /**
    * The LinkedCells object this neighbor list should use to build.
@@ -299,9 +315,9 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
               typename VerletListHelpers<Particle>::PositionSoAArraysType> *_baseLinkedCells;
 
   /**
-   * The internal SoA neighbor list. For format, see getInternalSoANeighborList().
+   * The internal SoA neighbor list. For format, see getSoANeighborList().
    */
-  std::array<SoAColorNeighborList, 8> _soaNeighborList;
+  std::array<SoAColorNeighborList, _numColors> _soaNeighborList;
 
   /**
    * The SoA used.
