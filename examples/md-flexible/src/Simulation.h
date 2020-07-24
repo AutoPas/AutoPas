@@ -541,9 +541,11 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
     cellsPerDimension[i] = ceil(domainSizePerDimension[i] / cellLength);
   }
 
-  std::vector<int> particlesPerCell(numberOfCells);
-  std::vector<double> densityPerCell(numberOfCells);
-  int index = 0;
+  std::vector<int> particlesPerCell = {};
+  std::vector<double> densityPerCell = {};
+  particlesPerCell.reserve(numberOfCells);
+  densityPerCell.reserve(numberOfCells);
+  int pIndex = 0;
 
   std::array<double, 3> lowCorner = {};
   std::array<double, 3> highCorner = {};
@@ -565,14 +567,14 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
           counter++;
         }
         double size = (end_x - x) * (end_y - y) * (end_z - z);
-        particlesPerCell[index] = counter;
-        densityPerCell[index] = (counter / size);
-        ++index;
+        particlesPerCell.push_back(counter);
+        densityPerCell.push_back(counter / size);
+        ++pIndex;
       }
     }
   }
 
-  double mean = autopas.getNumberOfParticles() / (endCorner[0] * endCorner[1] * endCorner[2]);
+  double mean = numberOfParticles / (endCorner[0] * endCorner[1] * endCorner[2]);
   double variance = 0.0;
 
   for(int r = 0; r < densityPerCell.size(); ++r){
