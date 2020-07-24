@@ -170,13 +170,7 @@ class AutoTuner {
    * Get the currently selected configuration.
    * @return
    */
-  autopas::Configuration getCurrentConfig() const;
-
-  /**
-   * Get the set of all allowed configurations.
-   * @return
-   */
-  const std::set<Configuration> &getAllowedConfigurations() const;
+  [[nodiscard]] autopas::Configuration getCurrentConfig() const;
 
  private:
   /**
