@@ -66,7 +66,7 @@ class VarVerletLists
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
-    _neighborList.buildNeighborList(this->_linkedCells, traversal->getUseNewton3());
+    _neighborList.buildAoSNeighborList(this->_linkedCells, traversal->getUseNewton3());
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
 

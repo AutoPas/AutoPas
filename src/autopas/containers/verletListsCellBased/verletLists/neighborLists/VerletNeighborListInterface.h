@@ -38,9 +38,10 @@ class VerletNeighborListInterface {
    * @param linkedCells The linked cells to use for building the neighbor list.
    * @param useNewton3 If true, use newton 3 for the neighbor list.
    */
-  virtual void buildNeighborList(LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                             typename VerletListHelpers<Particle>::PositionSoAArraysType> &linkedCells,
-                                 bool useNewton3) = 0;
+  virtual void buildAoSNeighborList(
+      LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
+                  typename VerletListHelpers<Particle>::PositionSoAArraysType> &linkedCells,
+      bool useNewton3) = 0;
 
   /**
    * Checks if the neighbor list contains all pairs that is should.
@@ -53,7 +54,7 @@ class VerletNeighborListInterface {
   virtual bool checkNeighborListValidity(bool useNewton3, double cutoff) = 0;
 
   /**
-   * Generates the SoA from the AoS. @see buildNeighborList()
+   * Generates the SoA from the AoS. @see buildAoSNeighborList()
    */
   virtual void generateSoAFromAoS() = 0;
 
