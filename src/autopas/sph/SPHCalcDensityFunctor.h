@@ -10,8 +10,7 @@
 #include "autopas/sph/SPHKernels.h"
 #include "autopas/sph/SPHParticle.h"
 
-namespace autopas {
-namespace sph {
+namespace autopas::sph {
 /**
  * Class that defines the density functor.
  * It is used to calculate the density based on the given SPH kernel.
@@ -33,7 +32,8 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
   bool allowsNonNewton3() override { return true; }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+  [[nodiscard]] bool isAppropriateClusterSize(unsigned int clusterSize,
+                                              DataLayoutOption::Value dataLayout) const override {
     return dataLayout == DataLayoutOption::aos;  // This functor does only support clusters via aos.
   }
 
@@ -243,5 +243,4 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
     return std::array<typename Particle::AttributeNames, 1>{Particle::AttributeNames::density};
   }
 };
-}  // namespace sph
-}  // namespace autopas
+}  // namespace autopas::sph

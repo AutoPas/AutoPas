@@ -9,8 +9,7 @@
 #include "autopas/sph/SPHKernels.h"
 #include "autopas/sph/SPHParticle.h"
 
-namespace autopas {
-namespace sph {
+namespace autopas::sph {
 /**
  * Class that defines the hydrodynamic force functor.
  * It is used to calculate the force based on the given SPH kernels.
@@ -34,7 +33,8 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
 
   bool allowsNonNewton3() override { return true; }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+  [[nodiscard]] bool isAppropriateClusterSize(unsigned int clusterSize,
+                                              DataLayoutOption::Value dataLayout) const override {
     return dataLayout == DataLayoutOption::aos;  // This functor does only support clusters via aos.
   }
 
@@ -523,5 +523,4 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   }
 };
 
-}  // namespace sph
-}  // namespace autopas
+}  // namespace autopas::sph
