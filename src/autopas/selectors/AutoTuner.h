@@ -320,7 +320,8 @@ template <class Particle, class ParticleCell>
 template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
 void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild) {
   auto containerPtr = getContainer();
-  AutoPasLog(debug, "Iterating with configuration: {}", _tuningStrategy->getCurrentConfiguration().toString());
+  AutoPasLog(debug, "Iterating with configuration: {} tuning: {}",
+             _tuningStrategy->getCurrentConfiguration().toString(), inTuningPhase ? "true" : "false");
 
   auto traversal = TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, dataLayout, useNewton3>(
       _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
