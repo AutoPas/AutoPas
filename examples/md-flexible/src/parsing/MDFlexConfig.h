@@ -235,10 +235,10 @@ class MDFlexConfig {
       "For predictive based tuning strategies: Maximal number of "
       "tuning phases a configurations can be excluded from testing."};
   /**
-   * relativeRangeBlacklist
+   * relativeBlacklistRange
    */
-  MDFlexOption<double, __LINE__> relativeRangeBlacklist{
-      0, "relative-range-blacklist", true,
+  MDFlexOption<double, __LINE__> relativeBlacklistRange{
+      0, "relative-blacklist-range", true,
       "For predictive based tuning strategies: When the first evidence of a configuration is further away from the "
       "optimum than this relative range, the configuration is ignored for the rest of the simulation. Set to zero to "
       "disable blacklisting."};
