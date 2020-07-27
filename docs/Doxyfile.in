@@ -12,7 +12,8 @@ FILE_PATTERNS          = *.h \
                          *.cpp \
                          *.cu \
                          *.md
-#The next line should be included, but produces too much warnings, so we don't include it yet.
+# The next line should be included, but produces too much warnings, so we don't include it yet.
+# This would enable documentation of the CUDA code.
 #EXTENSION_MAPPING      = h=c++ cpp=c++ cuh=c++ cu=c++
 RECURSIVE              = YES
 USE_MDFILE_AS_MAINPAGE = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@
