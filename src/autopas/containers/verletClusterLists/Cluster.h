@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <iterator>
 #include <vector>
 
 #include "autopas/utils/SoAView.h"
@@ -51,27 +53,24 @@ class Cluster {
 
   /**
    * Get Minimum and Maximum of the particles in z-direction.
-   * @return Pair of minimum and maximum in z-direction.
+   * @note This assumes that the particles are sorted along the z-direction!
+   * @return Tuple of minimum and maximum in z-direction and bool indicating whether this cluster contains at least one
+   * proper particle.
    */
-  std::pair<double, double> getZMinMax() const {
-    // this assumes that the particles are sorted along the z-direction!
-    double min = std::numeric_limits<double>::max();
-    for (size_t i = 0; i < _clusterSize; ++i) {
-      auto &p = operator[](i);
-      if (not p.isDummy()) {
-        min = p.getR()[2];
-        break;
-      }
-    }
-    double max = std::numeric_limits<double>::min();
-    for (long i = _clusterSize - 1; i >= 0; --i) {
-      auto &p = operator[](i);
-      if (not p.isDummy()) {
-        max = p.getR()[2];
-        break;
-      }
-    }
-    return {min, max};
+  std::tuple<double, double, bool> getZMinMax() const {
+    // Find first particle which is not a dummy and get its z-value.
+    auto *begin = &operator[](0);
+    auto *end = &operator[](_clusterSize);
+    auto pfirst = std::find_if(begin, end, [](const auto &particle) { return not particle.isDummy(); });
+    double min = pfirst != end ? pfirst->getR()[2] : std::numeric_limits<double>::max();
+
+    // Find last particle which is not a dummy and get its z-value.
+    auto rbegin = std::make_reverse_iterator(end);
+    auto rend = std::make_reverse_iterator(begin);
+    auto plast = std::find_if(rbegin, rend, [](const auto &particle) { return not particle.isDummy(); });
+    double max = plast != rend ? pfirst->getR()[2] : std::numeric_limits<double>::min();
+
+    return {min, max, pfirst != end};
   }
 
   /**

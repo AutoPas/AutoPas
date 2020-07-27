@@ -345,20 +345,24 @@ class VerletClusterListsRebuilder {
       auto startIndexNeighbor = useNewton3 and isSameTower ? towerIndex + 1 : 0;
       auto &towerCluster = tower.getCluster(towerIndex);
 
-      auto [towerClusterBoxBottom, towerClusterBoxTop] = towerCluster.getZMinMax();
+      auto [towerClusterBoxBottom, towerClusterBoxTop, towerRealCluster] = towerCluster.getZMinMax();
 
-      for (size_t neighborIndex = startIndexNeighbor; neighborIndex < neighborTower.getNumClusters(); neighborIndex++) {
-        const bool isSameCluster = towerIndex == neighborIndex;
-        if (not useNewton3 and isSameTower and isSameCluster) {
-          continue;
-        }
-        auto &neighborCluster = neighborTower.getCluster(neighborIndex);
-        auto [neighborClusterBoxBottom, neighborClusterBoxTop] = neighborCluster.getZMinMax();
-
-        double distZ =
-            bboxDistance(towerClusterBoxBottom, towerClusterBoxTop, neighborClusterBoxBottom, neighborClusterBoxTop);
-        if (distBetweenTowersXYsqr + distZ * distZ <= _interactionLengthSqr) {
-          towerCluster.addNeighbor(neighborCluster);
+      if (towerRealCluster) {
+        for (size_t neighborIndex = startIndexNeighbor; neighborIndex < neighborTower.getNumClusters();
+             neighborIndex++) {
+          const bool isSameCluster = towerIndex == neighborIndex;
+          if (not useNewton3 and isSameTower and isSameCluster) {
+            continue;
+          }
+          auto &neighborCluster = neighborTower.getCluster(neighborIndex);
+          auto [neighborClusterBoxBottom, neighborClusterBoxTop, neighborRealCluster] = neighborCluster.getZMinMax();
+          if (neighborRealCluster) {
+            double distZ = bboxDistance(towerClusterBoxBottom, towerClusterBoxTop, neighborClusterBoxBottom,
+                                        neighborClusterBoxTop);
+            if (distBetweenTowersXYsqr + distZ * distZ <= _interactionLengthSqr) {
+              towerCluster.addNeighbor(neighborCluster);
+            }
+          }
         }
       }
     }
