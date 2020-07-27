@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
-#include "autopas/containers/cellPairTraversals/SlicedBasedTraversal.h"
+#include "autopas/containers/cellPairTraversals/LockedSlicedBasedTraversal.h"
 #include "autopas/utils/Timer.h"
 
 namespace autopas {
@@ -29,8 +29,9 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                                     public BalancedTraversal {
+class BalancedSlicedBasedTraversal
+    : public LockedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+      public BalancedTraversal {
  public:
   /**
    * Constructor of the balanced sliced traversal.
@@ -38,10 +39,10 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
    */
   explicit BalancedSlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                         const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                    interactionLength, cellLength) {
+      : LockedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
+            dims, pairwiseFunctor, interactionLength, cellLength) {
     // As we create exactly one slice per thread, dynamic scheduling makes little sense.
-    this->dynamic = false;
+    this->_dynamic = false;
   }
 
   /**

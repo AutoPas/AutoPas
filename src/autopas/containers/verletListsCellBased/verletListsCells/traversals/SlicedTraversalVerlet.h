@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-#include "autopas/containers/cellPairTraversals/SlicedBasedTraversal.h"
+#include "autopas/containers/cellPairTraversals/LockedSlicedBasedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -17,7 +17,7 @@
 namespace autopas {
 
 /**
- * This class provides the sliced traversal.
+ * This class provides the (locked) sliced traversal.
  *
  * The traversal finds the longest dimension of the simulation domain and cuts
  * the domain into multiple slices along this dimension. Slices are
@@ -31,7 +31,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class SlicedTraversalVerlet : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+class SlicedTraversalVerlet : public LockedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                               public VerletListsCellsTraversal<typename ParticleCell::ParticleType> {
  public:
   /**
@@ -44,8 +44,8 @@ class SlicedTraversalVerlet : public SlicedBasedTraversal<ParticleCell, Pairwise
    */
   explicit SlicedTraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                  double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                    interactionLength, cellLength),
+      : LockedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _functor(pairwiseFunctor) {}
 
   void traverseParticlePairs() override;
