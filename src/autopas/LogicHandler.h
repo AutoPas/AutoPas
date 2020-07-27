@@ -131,7 +131,6 @@ class LogicHandler {
    * @param iter
    */
   void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) {
-    _containerIsValid = false;
     if ((*iter).isOwned()) {
       _numParticlesOwned.fetch_sub(1, std::memory_order_relaxed);
     } else {
