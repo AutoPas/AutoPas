@@ -145,7 +145,7 @@ class VerletClusterListsRebuilder {
 
   /**
    * Takes all particles from all towers and returns them. Towers are cleared afterwards.
-   * @return All particles in the container.
+   * @return All particles in the container sorted in 2D as they were in the towers.
    */
   std::vector<std::vector<Particle>> collectAllParticlesFromTowers() {
     std::vector<std::vector<Particle>> invalidParticles;
