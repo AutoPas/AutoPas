@@ -15,6 +15,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
@@ -233,6 +234,20 @@ class MDFlexConfig {
       5, "max-tuning-phases-without-test", true,
       "For predictive based tuning strategies: Maximal number of "
       "tuning phases a configurations can be excluded from testing."};
+  /**
+   * evidenceFirstPrediction
+   */
+  MDFlexOption<unsigned int, __LINE__> evidenceFirstPrediction{
+      3, "evidence-for-prediction", true,
+      "For predictive based tuning strategies: The number of evidence for a configuration that needs to be gathered "
+      "before the first prediction is made. This number also determines how much evidence is used for the calculation "
+      "of the prediction and for a polynomial extrapolation method, this is also the degree of the polynomial."};
+  /**
+   * extrapolationMethodOption
+   */
+  MDFlexOption<autopas::ExtrapolationMethodOption, __LINE__> extrapolationMethodOption{
+      autopas::ExtrapolationMethodOption::linePrediction, "extrapolation-method", true,
+      "For predictive based tuning strategies: The extrapolation method that calculates the prediction."};
   /**
    * vtkFileName
    */

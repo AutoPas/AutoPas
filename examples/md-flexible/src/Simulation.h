@@ -186,6 +186,8 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   autopas.setCutoff(_config->cutoff.value);
   autopas.setRelativeOptimumRange(_config->relativeOptimumRange.value);
   autopas.setMaxTuningPhasesWithoutTest(_config->maxTuningPhasesWithoutTest.value);
+  autopas.setEvidenceFirstPrediction(_config->evidenceFirstPrediction.value);
+  autopas.setExtrapolationMethodOption(_config->extrapolationMethodOption.value);
   autopas.setNumSamples(_config->tuningSamples.value);
   autopas.setMaxEvidence(_config->tuningMaxEvidence.value);
   autopas.setSelectorStrategy(_config->selectorStrategy.value);
@@ -243,10 +245,6 @@ void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Partic
 
   FunctorType functor{autopas.getCutoff(), *_particlePropertiesLibrary};
   bool tuningIteration = autopas.iteratePairwise(&functor);
-  // only generate this output if the logger is set to debug
-  if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-    std::cout << "Tuning: " << std::boolalpha << tuningIteration << std::endl;
-  }
 
   auto timeIteration = _timers.forceUpdateTotal.stop();
   if (tuningIteration) {

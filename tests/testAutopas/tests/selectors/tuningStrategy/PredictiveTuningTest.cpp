@@ -9,57 +9,6 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
-TEST_F(PredictiveTuningTest, testSearchSpaceEmpty) {
-  autopas::PredictiveTuning predictiveTuning({});
-  EXPECT_TRUE(predictiveTuning.searchSpaceIsEmpty());
-  EXPECT_FALSE(predictiveTuning.searchSpaceIsTrivial());
-  EXPECT_THAT(predictiveTuning.getAllowedContainerOptions(), ::testing::IsEmpty());
-}
-
-TEST_F(PredictiveTuningTest, testSearchSpaceOneOption) {
-  autopas::PredictiveTuning predictiveTuning({autopas::Configuration(
-      autopas::ContainerOption::directSum, 1., autopas::TraversalOption::directSumTraversal,
-      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled)});
-  EXPECT_FALSE(predictiveTuning.searchSpaceIsEmpty());
-  EXPECT_TRUE(predictiveTuning.searchSpaceIsTrivial());
-  EXPECT_THAT(predictiveTuning.getAllowedContainerOptions(),
-              ::testing::ElementsAre(autopas::ContainerOption::directSum));
-}
-
-TEST_F(PredictiveTuningTest, testSearchSpaceMoreOptions) {
-  autopas::PredictiveTuning predictiveTuning({autopas::ContainerOption::linkedCells}, {1.},
-                                             {autopas::TraversalOption::c08}, {autopas::LoadEstimatorOption::none},
-                                             {autopas::DataLayoutOption::soa},
-                                             {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled},
-                                             relativeOptimumRange, maxTuningIterationsWithoutTest);
-  EXPECT_FALSE(predictiveTuning.searchSpaceIsEmpty());
-  EXPECT_FALSE(predictiveTuning.searchSpaceIsTrivial());
-  EXPECT_THAT(predictiveTuning.getAllowedContainerOptions(),
-              ::testing::ElementsAre(autopas::ContainerOption::linkedCells));
-}
-
-TEST_F(PredictiveTuningTest, testRemoveN3OptionRemoveAll) {
-  autopas::PredictiveTuning predictiveTuning(
-      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
-      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-      {autopas::Newton3Option::enabled}, relativeOptimumRange, maxTuningIterationsWithoutTest);
-
-  EXPECT_THROW(predictiveTuning.removeN3Option(autopas::Newton3Option::enabled),
-               autopas::utils::ExceptionHandler::AutoPasException);
-}
-
-TEST_F(PredictiveTuningTest, testRemoveN3OptionRemoveSome) {
-  autopas::PredictiveTuning predictiveTuning(
-      {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
-      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-      {autopas::Newton3Option::enabled, autopas::Newton3Option::disabled}, relativeOptimumRange,
-      maxTuningIterationsWithoutTest);
-
-  EXPECT_NO_THROW(predictiveTuning.removeN3Option(autopas::Newton3Option::enabled));
-  EXPECT_FALSE(predictiveTuning.searchSpaceIsEmpty());
-  EXPECT_FALSE(predictiveTuning.searchSpaceIsTrivial());
-}
-
 /*
  * Tests the prediction and the selection of the right optimum.
  * Three different configurations:
@@ -74,7 +23,7 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
-      relativeOptimumRange, maxTuningIterationsWithoutTest);
+      relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 
@@ -122,6 +71,232 @@ TEST_F(PredictiveTuningTest, testSelectPossibleConfigurations) {
   EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
 }
 
+/*
+ * Tests the prediction and the selection of the right optimum with the linear regression method.
+ * Three different configurations:
+ *      - C08 that is not optimal but it getting less expensive.
+ *      - Sliced is optimal in the beginning but is getting more expensive.
+ *      - C01 is constant an not in the optimum range.
+ * In the third iteration c08 should be predicted to be the optimum.
+ */
+TEST_F(PredictiveTuningTest, testLinearRegression) {
+  unsigned int iteration = 1;
+  autopas::PredictiveTuning predictiveTuning(
+      {autopas::ContainerOption::linkedCells}, {1.},
+      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
+      relativeOptimumRange, maxTuningIterationsWithoutTest, 2, autopas::ExtrapolationMethodOption::linearRegression);
+
+  predictiveTuning.reset(iteration);
+
+  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(375, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(300, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(2000, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+
+  // End of the first tuning phase.
+  predictiveTuning.reset(iteration);
+
+  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(350, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(325, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(2000, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+
+  // End of the second tuning phase.
+  predictiveTuning.reset(iteration);
+
+  // This tests the actual prediction.
+  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+}
+
+/*
+ * Tests the prediction and the selection of the right optimum with the lagrange interpolation method.
+ * Three different configurations:
+ *      - C08 that is not optimal but it getting less expensive.
+ *      - Sliced is optimal in the beginning but is getting more expensive.
+ *      - C01 is constant an not in the optimum range.
+ * In the third iteration c08 should be predicted to be the optimum.
+ */
+TEST_F(PredictiveTuningTest, testLagrange) {
+  unsigned int iteration = 1;
+  autopas::PredictiveTuning predictiveTuning(
+      {autopas::ContainerOption::linkedCells}, {1.},
+      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
+      relativeOptimumRange, maxTuningIterationsWithoutTest, 3, autopas::ExtrapolationMethodOption::lagrange);
+
+  predictiveTuning.reset(iteration);
+
+  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(6, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(1, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(20, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+
+  // End of the first tuning phase.
+  predictiveTuning.reset(iteration);
+
+  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(5, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(2, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(20, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+
+  // End of the second tuning phase.
+  predictiveTuning.reset(iteration);
+
+  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(4, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(3, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(20, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+
+  // End of the third tuning phase.
+  predictiveTuning.reset(iteration);
+
+  // This tests the actual prediction.
+  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+}
+
+/*
+ * Tests the prediction and the selection of the right optimum with the newton interpolation method.
+ * Three different configurations:
+ *      - C08 that is not optimal but it getting less expensive.
+ *      - Sliced is optimal in the beginning but is getting more expensive.
+ *      - C01 is constant an not in the optimum range.
+ * In the third iteration c08 should be predicted to be the optimum.
+ */
+TEST_F(PredictiveTuningTest, testNewton) {
+  unsigned int iteration = 1;
+  autopas::PredictiveTuning predictiveTuning(
+      {autopas::ContainerOption::linkedCells}, {1.},
+      {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
+      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
+      relativeOptimumRange, maxTuningIterationsWithoutTest, 3, autopas::ExtrapolationMethodOption::newton);
+
+  predictiveTuning.reset(iteration);
+
+  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(60, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(10, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(200, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+
+  // End of the first tuning phase.
+  predictiveTuning.reset(iteration);
+
+  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(50, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(20, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(200, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+
+  // End of the second tuning phase.
+  predictiveTuning.reset(iteration);
+
+  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(40, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(30, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationC01, predictiveTuning.getCurrentConfiguration());
+  predictiveTuning.addEvidence(200, iteration);
+  ++iteration;
+
+  predictiveTuning.tune();
+  EXPECT_EQ(configurationSliced, predictiveTuning.getCurrentConfiguration());
+
+  // End of the third tuning phase.
+  predictiveTuning.reset(iteration);
+
+  // This tests the actual prediction.
+  EXPECT_EQ(configurationC08, predictiveTuning.getCurrentConfiguration());
+}
+
 // Tests the first tuning iteration. There is no prediction and the whole searchSpace should be tested.
 TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
   unsigned int iteration = 0;
@@ -129,7 +304,7 @@ TEST_F(PredictiveTuningTest, testTuneFirstIteration) {
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
-      relativeOptimumRange, maxTuningIterationsWithoutTest);
+      relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 
@@ -165,7 +340,7 @@ TEST_F(PredictiveTuningTest, testTuningThreeIterations) {
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
-      relativeOptimumRange, maxTuningIterationsWithoutTest);
+      relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 
@@ -236,7 +411,7 @@ TEST_F(PredictiveTuningTest, testTooLongNotTested) {
   autopas::PredictiveTuning predictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.}, {autopas::TraversalOption::c08, autopas::TraversalOption::sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
-      relativeOptimumRange, maxTuningIterationsWithoutTest);
+      relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 
@@ -310,7 +485,7 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceOnce) {
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
-      relativeOptimumRange, maxTuningIterationsWithoutTest);
+      relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 
@@ -382,7 +557,7 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::c08, autopas::TraversalOption::c01, autopas::TraversalOption::sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
-      relativeOptimumRange, maxTuningIterationsWithoutTest);
+      relativeOptimumRange, maxTuningIterationsWithoutTest, evidenceFirstPrediction, linePrediction);
 
   predictiveTuning.reset(iteration);
 

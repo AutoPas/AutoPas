@@ -211,11 +211,10 @@ class LogicHandler {
     // check boxSize at least cutoff + skin
     for (unsigned int dim = 0; dim < 3; ++dim) {
       if (container->getBoxMax()[dim] - container->getBoxMin()[dim] < container->getCutoff() + container->getSkin()) {
-        AutoPasLog(error, "Box (boxMin[{}]={} and boxMax[{}]={}) is too small.", dim, container->getBoxMin()[dim], dim,
-                   container->getBoxMax()[dim]);
-        AutoPasLog(error, "Has to be at least cutoff({}) + skin({}) = {}.", container->getCutoff(),
-                   container->getSkin(), container->getCutoff() + container->getSkin());
-        autopas::utils::ExceptionHandler::exception("Box too small.");
+        autopas::utils::ExceptionHandler::exception(
+            "Box (boxMin[{}]={} and boxMax[{}]={}) is too small.\nHas to be at least cutoff({}) + skin({}) = {}.", dim,
+            container->getBoxMin()[dim], dim, container->getBoxMax()[dim], container->getCutoff(), container->getSkin(),
+            container->getCutoff() + container->getSkin());
       }
     }
   }
