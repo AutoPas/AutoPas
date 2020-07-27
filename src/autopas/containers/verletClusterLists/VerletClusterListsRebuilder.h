@@ -81,10 +81,9 @@ class VerletClusterListsRebuilder {
     invalidParticles.push_back(std::move(_particlesToAdd));
     _particlesToAdd.clear();
 
-    size_t numParticles = 0;
-    for (auto &vector : invalidParticles) {
-      numParticles += vector.size();
-    }
+    // count particles by accumulating tower sizes
+    size_t numParticles = std::accumulate(std::begin(invalidParticles), std::end(invalidParticles), 0,
+                                          [](auto acc, auto &v) { return acc + v.size(); });
 
     auto boxSizeWithHalo = utils::ArrayMath::sub(_haloBoxMax, _haloBoxMin);
 
@@ -104,10 +103,9 @@ class VerletClusterListsRebuilder {
 
     sortParticlesIntoTowers(invalidParticles);
 
-    size_t numClusters = 0;
-    for (auto &tower : _towers) {
-      numClusters += tower.generateClusters();
-    }
+    // generate clusters and count them
+    size_t numClusters = std::accumulate(std::begin(_towers), std::end(_towers), 0,
+                                         [](auto acc, auto &tower) { return acc + tower.generateClusters(); });
 
     return std::make_tuple(_towerSideLength, _interactionLengthInTowers, _towersPerDim, numClusters);
   }
