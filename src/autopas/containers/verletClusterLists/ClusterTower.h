@@ -10,6 +10,7 @@
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/verletClusterLists/Cluster.h"
 #include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas::internal {
 
@@ -83,7 +84,7 @@ class ClusterTower : public ParticleCell<Particle> {
       _numDummyParticles = sizeLastCluster != 0 ? _clusterSize - sizeLastCluster : 0;
 
       auto lastParticle = _particles[_particles.numParticles() - 1];
-      lastParticle.markAsDeleted();
+      markParticleAsDeleted(lastParticle);
       for (size_t i = 0; i < _numDummyParticles; i++) {
         _particles.addParticle(lastParticle);
       }

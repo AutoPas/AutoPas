@@ -17,6 +17,7 @@
 #include "autopas/utils/CudaSoAType.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -181,14 +182,6 @@ class ParticleBase {
   void setOwnershipState(OwnershipState ownershipState) { _ownershipState = ownershipState; }
 
   /**
-   * Marks a particle as deleted.
-   */
-  void markAsDeleted() {
-    // Set ownership as dummy.
-    _ownershipState = OwnershipState::dummy;
-  }
-
-  /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
   enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
@@ -284,6 +277,24 @@ class ParticleBase {
    */
   using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
 #endif
+
+ private:
+  /**
+   * Marks a particle as deleted.
+   * @note: This function should not be used from outside of AutoPas. Instead, use AutoPas::deleteParticle(iterator).
+   * @note: From within autopas, you might want to use internal::markParticleAsDeleted(Particle &particle)
+   */
+  void markAsDeleted() {
+    // Set ownership as dummy.
+    setOwnershipState(OwnershipState::dummy);
+  }
+
+  /**
+   * Function to access hidden particle.markAsDeleted() to mark it as internal.
+   * @tparam ParticleIterator
+   */
+  template <class T>
+  friend void internal::markParticleAsDeleted(T &);
 
  protected:
   /**

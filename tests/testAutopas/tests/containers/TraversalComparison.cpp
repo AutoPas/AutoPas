@@ -73,7 +73,7 @@ void markSomeParticlesAsDeleted(ContainerT &container, size_t numTotalParticles,
   });
   for (auto &mol : *container) {
     if (doDelete[mol.getID()]) {
-      mol.markAsDeleted();
+      autopas::internal::markParticleAsDeleted(mol);
     }
   }
 }

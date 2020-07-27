@@ -74,7 +74,7 @@ void markSomeParticlesAsDeleted(CellT &cell, unsigned long seed) {
   std::uniform_real_distribution<double> uniform0_100(0.0, 100.0);
   for (auto &mol : cell) {
     if (uniform0_100(generator) < deletionPercentage) {
-      mol.markAsDeleted();
+      autopas::internal::markParticleAsDeleted(mol);
     }
   }
 }

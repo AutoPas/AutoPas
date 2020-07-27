@@ -34,7 +34,7 @@ void AoSvsCudaTest::generateParticles(std::vector<Molecule> *particles, bool wit
       particles->at(i * PARTICLES_PER_DIM + j).setF({0, 0, 0});
       particles->at(i * PARTICLES_PER_DIM + j).setV({0, 0, 0});
       if (withDeletions and uniform0_100(generator) < deletionPercentage) {
-        particles->at(i * PARTICLES_PER_DIM + j).markAsDeleted();
+        autopas::internal::markParticleAsDeleted(particles->at(i * PARTICLES_PER_DIM + j));
       }
     }
   }

@@ -95,10 +95,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
 
   if (doDeleteSomeParticles) {
     for (auto &particle : cell1AVX) {
-      if (particle.getID() == 3) particle.markAsDeleted();
+      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
     }
     for (auto &particle : cell2AVX) {
-      if (particle.getID() == 4) particle.markAsDeleted();
+      if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
     }
   }
 
@@ -164,7 +164,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
 
   if (doDeleteSomeParticles) {
     for (auto &particle : cellAVX) {
-      if (particle.getID() == 3) particle.markAsDeleted();
+      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
     }
   }
 
