@@ -68,7 +68,7 @@ class Cluster {
     auto rbegin = std::make_reverse_iterator(end);
     auto rend = std::make_reverse_iterator(begin);
     auto plast = std::find_if(rbegin, rend, [](const auto &particle) { return not particle.isDummy(); });
-    double max = plast != rend ? pfirst->getR()[2] : std::numeric_limits<double>::min();
+    double max = plast != rend ? plast->getR()[2] : std::numeric_limits<double>::min();
 
     return {min, max, pfirst != end};
   }
