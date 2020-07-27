@@ -147,11 +147,6 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   std::vector<unsigned long> _sliceThickness;
 
-  /**
-   * whether to use static or dynamic scheduling.
-   */
-  bool _dynamic = true;
-
  private:
   /**
    * Interaction length (cutoff + skin).
