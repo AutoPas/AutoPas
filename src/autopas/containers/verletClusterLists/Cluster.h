@@ -57,7 +57,7 @@ class Cluster {
    * @return Tuple of minimum and maximum in z-direction and bool indicating whether this cluster contains at least one
    * proper particle.
    */
-  std::tuple<double, double, bool> getZMinMax() const {
+  [[nodiscard]] std::tuple<double, double, bool> getZMinMax() const {
     // Find first particle which is not a dummy and get its z-value.
     auto *begin = &operator[](0);
     auto *end = &operator[](_clusterSize);
