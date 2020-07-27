@@ -145,6 +145,11 @@ class Simulation {
   constexpr static auto _floatStringPrecision = 3;
 
   /**
+   * Homogeneity of the scenario, calculated by the standard deviation of the density.
+   */
+   double homogeneity = 0;
+
+  /**
    * Convert a time and a name to a properly formatted string.
    * @param name incl. offset.
    * @param timeNS in nanoseconds.
@@ -271,7 +276,7 @@ void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Partic
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, ParticleCell> &autopas) {
 
-  double homogeneity = Simulation::getHomogeneity(autopas);
+  this->homogeneity = Simulation::getHomogeneity(autopas);
   _timers.simulate.start();
 
   // main simulation loop
@@ -412,6 +417,7 @@ void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Partic
   cout << "Tuning iterations: " << numTuningIterations << " / " << iteration << " = "
        << ((double)numTuningIterations / iteration * 100) << "%" << endl;
   cout << "MFUPs/sec    : " << mfups << endl;
+  cout << "Homogeneity    : " << homogeneity << endl;
 
   if (_config->dontMeasureFlops.value) {
     autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> flopCounterFunctor(
@@ -527,7 +533,8 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
   std::array<double, 3> startCorner = autopas.getBoxMin();
   std::array<double, 3> endCorner = autopas.getBoxMax();
   std::array<double, 3> domainSizePerDimension = {};
-  std::array<int, 3> cellsPerDimension = {};
+  std::array<double, 3> outerCellSizePerDimension = {};
+  std::array<long, 3> cellsPerDimension = {};
 
   for(int i = 0; i < 3; ++i){
     domainSizePerDimension[i] = endCorner[i] - startCorner[i];
@@ -538,43 +545,34 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
   double cellLength = cbrt(cellVolume);
 
   for(int i = 0; i < 3; ++i){
+    outerCellSizePerDimension[i] = domainSizePerDimension[i] - (floor(domainSizePerDimension[i] / cellLength) * cellLength);
     cellsPerDimension[i] = ceil(domainSizePerDimension[i] / cellLength);
   }
 
-  std::vector<int> particlesPerCell = {};
-  std::vector<double> densityPerCell = {};
-  particlesPerCell.reserve(numberOfCells);
-  densityPerCell.reserve(numberOfCells);
-  int pIndex = 0;
+  numberOfCells = cellsPerDimension[0]*cellsPerDimension[1]*cellsPerDimension[2];
 
-  std::array<double, 3> lowCorner = {};
-  std::array<double, 3> highCorner = {};
+  std::vector<int> allCells(numberOfCells, 0);
+  std::vector<double> allVolumes(numberOfCells, 0);
+  std::vector<double> densityPerCell(numberOfCells, 0.0);
 
-  for(int i = 0; i < cellsPerDimension[0]; ++i){
-    for(int j = 0; j < cellsPerDimension[1]; ++j){
-      for(int k = 0; k < cellsPerDimension[2]; ++k){
-        double x = i*cellLength;
-        double y = j*cellLength;
-        double z = k*cellLength;
-        lowCorner = {x, y, z};
-        double end_x = (x + cellLength) < endCorner[0] ? (x + cellLength) : endCorner[0];
-        double end_y = (y + cellLength) < endCorner[1] ? (y + cellLength) : endCorner[1];
-        double end_z = (z + cellLength) < endCorner[2] ? (z + cellLength) : endCorner[2];
-        highCorner = {end_x, end_y, end_z};
-
-        int counter = 0;
-        for (auto iter = autopas.getRegionIterator(lowCorner, highCorner); iter.isValid(); ++iter) {
-          counter++;
-        }
-        double size = (end_x - x) * (end_y - y) * (end_z - z);
-        particlesPerCell.push_back(counter);
-        densityPerCell.push_back(counter / size);
-        ++pIndex;
-      }
+  for(auto iter = autopas.begin(); iter.isValid(); ++iter){
+    std::array<double ,3> region = iter->getR();
+    std::array<long,3> index = {};
+    for(int i = 0; i < region.size(); i++){
+      index[i] = region[i] / cellLength;
     }
+    const unsigned long cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
+    allCells[cellIndex] += 1;
+    allVolumes[cellIndex] = (index[0] == cellsPerDimension[0]-1) ? outerCellSizePerDimension[0] : cellLength;
+    allVolumes[cellIndex] *= (index[1] == cellsPerDimension[1]-1) ? outerCellSizePerDimension[1] : cellLength;
+    allVolumes[cellIndex] *= (index[2] == cellsPerDimension[2]-1) ? outerCellSizePerDimension[2] : cellLength;
   }
 
-  double mean = numberOfParticles / (endCorner[0] * endCorner[1] * endCorner[2]);
+  for(int i = 0; i < allCells.size(); i++){
+    densityPerCell[i] = allCells[i] / allVolumes[i];
+  }
+
+  double mean = numberOfParticles / volume;
   double variance = 0.0;
 
   for(int r = 0; r < densityPerCell.size(); ++r){
