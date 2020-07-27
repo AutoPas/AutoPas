@@ -569,7 +569,7 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
   }
 
   for(int i = 0; i < allCells.size(); i++){
-    densityPerCell[i] = allCells[i] / allVolumes[i];
+    densityPerCell[i] = (allCells[i] == 0) ? 0 : (allCells[i] / allVolumes[i]); //make sure there is no division of zero
   }
 
   double mean = numberOfParticles / volume;
