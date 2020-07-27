@@ -81,7 +81,6 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
                                                 _cellBlockDimensions[0].back() >= _overlapAxis[0] * 3 and
                                                 _cellBlockDimensions[1].back() >= _overlapAxis[1] * 3 and
                                                 _cellBlockDimensions[2].back() >= _overlapAxis[2] * 3;
-    // @todo: if allcells == false -> _cellBlockDimensions[x].back >= _overlapAxis[x] * 4
     return not(dataLayout == DataLayoutOption::cuda) and atLeast27CellsForEachCellBlock;
   }
 
@@ -405,6 +404,13 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
 
   }
 
+  /**
+   * Calculates a unique id of the sub-block for locking
+   *
+   * @param blockNumber The number of the block, which the sub-block is part of
+   * @param order The order of the sub-block, which to lock.
+   * @return The number for locking.
+   */
   unsigned long uniqueLockCalculation(unsigned long blockNumber, std::array<unsigned long, 3> order) {
     return 27 * blockNumber + (order[2] * 3 + order[1]) * 3 + order[0];
   }
@@ -439,13 +445,13 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
 
   // we need to calculate the size of the standard cube only once by one axis
   // if we want different shapes of boxes or rectangles, we need to adapt the 2D or 3D vectors
-  auto numSlices = (size_t)autopas_get_max_threads();
+  auto max_threads = (size_t)autopas_get_max_threads();
   _numCellsInCellBlock = {0, 0, 0};
 
   // calculate cubic root of the number of slices to find the amount each dimension needs to be split into
-  auto numSlicesCqrt = std::cbrt(numSlices);
+  auto numSlicesCqrt = std::cbrt(max_threads);
   AutoPasLog(debug, "numSlicesCqrt Start: " + std::to_string(numSlicesCqrt));
-  numSlicesCqrt = floor(numSlicesCqrt);
+  numSlicesCqrt = std::floor(numSlicesCqrt);
   for (int n = 0; n < 3; ++n) {
     _numCellsInCellBlock[n] = numSlicesCqrt;
   }
@@ -456,66 +462,109 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
   _cellBlockDimensions[1].clear();
   _cellBlockDimensions[2].clear();
 
-  // Insert the number of cells per dimensional slice by cellblock.
-  // E.g. each cellblock has length 3 in x axis direction
-  //      then _cellBlockDimensions[0] = [3,3,3,...] afterwards.
-  for (int j = 0; j < 3; ++j) {
-    _cellBlockDimensions[j].resize(_numCellsInCellBlock[j]);
-    std::fill(_cellBlockDimensions[j].begin(), _cellBlockDimensions[j].end(),
-              static_cast<unsigned long>(this->_cellsPerDimension[j] / _numCellsInCellBlock[j]));
+  unsigned long min_slice_length[3] = {0,0,0};
+  unsigned long slice_length[3] = {0,0,0};
+  for (int axis = 0; axis < 3; ++axis) {
+    min_slice_length[axis] = _overlapAxis[axis]*2 + 1;
   }
 
-  AutoPasLog(debug, "_cellBlockDimensions before Rest calculation: " +
-                        debugHelperFunctionIntArrayToString(_cellBlockDimensions));
-  /**
-   * Calculate the rest of the cells per dimension, which where cutoff by possible floor of division of dimension.
-   * Accounts for possible floor of the numSlicesCqrt, by expanding the cellBlocks bordering a dimensional end.
-   *
-   * Procedure:
-   *    -> calculate the rest of each dimension  AutoPasLog(debug, "_cellBlockDimensions: " +
-   * debugHelperFunctionIntArrayToString(_cellBlockDimensions));
-   *    -> if allCells = false => rest -= overlap[dimension]
-   *    -> if rest > 0 => add rest to last slice
-   *    -> if rest < 0 => check if rest + last slice > 3
-   *       true => add rest to last slice
-   *       false => add rest + last slice to secondlast slice and remove last slice
-   */
-  array3D rest;
-  for (int k = 0; k < 3; ++k) {
-    AutoPasLog(debug, "cellsPerDimension[" + std::to_string(k) + "]" + std::to_string(this->_cellsPerDimension[k]) +
-                          " | _cellBlockDimensions[" + std::to_string(k) +
-                          "].size: " + std::to_string(_cellBlockDimensions[k].size()) +
-                          " | numSlicesCqrt: " + std::to_string(numSlicesCqrt));
-    // All entries in cellBlockDimensions are the same until the rest calculation is finished!
-    rest[k] = this->_cellsPerDimension[k] - (_cellBlockDimensions[k].size() * _cellBlockDimensions[k][0]);
-    if (!allCells) {
-      // this produces an underflow on unsigned long, but is no problem because we guarantee to overflow on addition
-      rest[k] -= _overlapAxis[k];
+  auto no_possible_slices = _numCellsInCellBlock;
+  auto no_slices = _numCellsInCellBlock;
+  for (int axis = 0; axis < 3; ++axis) {
+    no_possible_slices[axis] = std::floor(this->_cellsPerDimension[axis] / min_slice_length[axis]);
+  }
+
+  for (int axis = 0; axis < 3; ++axis) {
+    if (_numCellsInCellBlock[axis] > no_possible_slices[axis]) {
+      no_slices[axis] = no_possible_slices[axis];
+      slice_length[axis] = std::floor(this->_cellsPerDimension[axis] / no_slices[axis]);
+    } else if (_numCellsInCellBlock[axis] < no_possible_slices[axis]) {
+      // no_slices[axis] = _numCellsInCellBlock[axis];            // is done on initialization
+      slice_length[axis] = std::floor(this->_cellsPerDimension[axis] / no_slices[axis]);
+    }
+  }
+
+  unsigned long current_slice_length[3] = {0,0,0};
+
+  for (int axis = 0; axis < 3; ++axis) {
+    _cellBlockDimensions[axis].resize(no_slices[axis]);
+    for (int i = 0; i < no_slices[axis]; ++i) {
+      _cellBlockDimensions[axis][i] = slice_length[axis];
+      current_slice_length[axis] += slice_length[axis];
+    }
+    // rest calculation
+    if (current_slice_length[axis] < this->_cellsPerDimension[axis]) {
+      _cellBlockDimensions[axis].back() += (this->_cellsPerDimension[axis] - current_slice_length[axis]);
+    } else if (current_slice_length[axis] > this->_cellsPerDimension[axis]) {
+      AutoPasLog(error, "Negative overlap or other errors might have occured.");
+    }
+    if (allCells) {
+      // because of how we handle overlap
+      _cellBlockDimensions[axis].back() += _overlapAxis[axis];
     }
 
-    if (rest[k] > 0ul || allCells) {
-      _cellBlockDimensions[k].back() += rest[k];
-    }
-    if (rest[k] < 0ul) {
-      if (_cellBlockDimensions[k].back() + rest[k] > 3ul) {
-        _cellBlockDimensions[k].back() + rest[k];
-      } else {
-        _cellBlockDimensions[k].end()[-2] += _cellBlockDimensions[k].back() + rest[k];
-        _cellBlockDimensions[k].pop_back();
-      }
-    }
-    AutoPasLog(debug, "end rest[" + std::to_string(k) + "]: " + std::to_string(rest[k]));
   }
+
+//  // Insert the number of cells per dimensional slice by cellblock.
+//  // E.g. each cellblock has length 3 in x axis direction
+//  //      then _cellBlockDimensions[0] = [3,3,3,...] afterwards.
+//  for (int j = 0; j < 3; ++j) {
+//    _cellBlockDimensions[j].resize(_numCellsInCellBlock[j]);
+//    std::fill(_cellBlockDimensions[j].begin(), _cellBlockDimensions[j].end(),
+//              static_cast<unsigned long>(this->_cellsPerDimension[j] / _numCellsInCellBlock[j]));
+//  }
+//
+//  AutoPasLog(debug, "_cellBlockDimensions before Rest calculation: " +
+//                        debugHelperFunctionIntArrayToString(_cellBlockDimensions));
+//  /**
+//   * Calculate the rest of the cells per dimension, which where cutoff by possible floor of division of dimension.
+//   * Accounts for possible floor of the numSlicesCqrt, by expanding the cellBlocks bordering a dimensional end.
+//   *
+//   * Procedure:
+//   *    -> calculate the rest of each dimension  AutoPasLog(debug, "_cellBlockDimensions: " +
+//   * debugHelperFunctionIntArrayToString(_cellBlockDimensions));
+//   *    -> if allCells = false => rest -= overlap[dimension]
+//   *    -> if rest > 0 => add rest to last slice
+//   *    -> if rest < 0 => check if rest + last slice > 3
+//   *       true => add rest to last slice
+//   *       false => add rest + last slice to secondlast slice and remove last slice
+//   */
+//  array3D rest;
+//  for (int k = 0; k < 3; ++k) {
+//    AutoPasLog(debug, "cellsPerDimension[" + std::to_string(k) + "]" + std::to_string(this->_cellsPerDimension[k]) +
+//                          " | _cellBlockDimensions[" + std::to_string(k) +
+//                          "].size: " + std::to_string(_cellBlockDimensions[k].size()) +
+//                          " | numSlicesCqrt: " + std::to_string(numSlicesCqrt));
+//    // All entries in cellBlockDimensions are the same until the rest calculation is finished!
+//    rest[k] = this->_cellsPerDimension[k] - (_cellBlockDimensions[k].size() * _cellBlockDimensions[k][0]);
+//    if (!allCells) {
+//      // this produces an underflow on unsigned long, but is no problem because we guarantee to overflow on addition
+//      rest[k] -= _overlapAxis[k];
+//    }
+//
+//    if (rest[k] > 0ul) {
+//      _cellBlockDimensions[k].back() += rest[k];
+//    }
+//    if (rest[k] < 0ul) {
+//      if (_cellBlockDimensions[k].back() + rest[k] > 3ul) {
+//        _cellBlockDimensions[k].back() + rest[k];
+//      } else {
+//        _cellBlockDimensions[k].end()[-2] += _cellBlockDimensions[k].back() + rest[k];
+//        _cellBlockDimensions[k].pop_back();
+//      }
+//    }
+//    AutoPasLog(debug, "end rest[" + std::to_string(k) + "]: " + std::to_string(rest[k]));
+//  }
   AutoPasLog(debug, "_cellBlockDimensions after rest calculation: " +
                         debugHelperFunctionIntArrayToString(_cellBlockDimensions));
 
-  // Each cellblock should be at least 3x3x3 cells big,
+  // Each block should be at least overlap[axis]*2+1 in each dimension long
   //   checking the first and last element of each dimension is enough.
-  for (auto &cellBlockDimension : _cellBlockDimensions) {
-    if (cellBlockDimension.front() < (unsigned long)3) {
+  for (int axis = 0; axis < 3; ++axis) {
+    if (_cellBlockDimensions[axis].front() < (_overlapAxis[axis]*2+1)) {
       return;
     }
-    if (cellBlockDimension.back() < (unsigned long)3) {
+    if (_cellBlockDimensions[axis].back() < (_overlapAxis[axis]*2+1)) {
       return;
     }
   }
@@ -659,7 +708,7 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
 
   _allSubBlocks.resize(blocks.size());
   auto _threads = blocks.size();
-  if (_threads != numSlices) {
+  if (_threads != max_threads) {
     AutoPasLog(debug, "Sliced Bulk traversal only using {} threads because the number of cells is too small.",
                _threads);
   }
