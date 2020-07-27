@@ -136,7 +136,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, FullParticleCell<Parti
     const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     for (unsigned int indexFirst = 0; indexFirst < soa.getNumParticles(); ++indexFirst) {
-      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      // checks whether particle i is owned.
       if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
         continue;
       }
@@ -272,7 +272,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, FullParticleCell<Parti
     const auto *const __restrict__ ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
 
     for (unsigned int indexFirst = 0; indexFirst < soa1.getNumParticles(); ++indexFirst) {
-      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      // checks whether particle i is owned.
       if (ownedStatePtr1[indexFirst] == OwnershipState::dummy) {
         continue;
       }
@@ -376,7 +376,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, FullParticleCell<Parti
 
     const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
-    // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+    // checks whether particle i is owned.
     if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
       return;
     }

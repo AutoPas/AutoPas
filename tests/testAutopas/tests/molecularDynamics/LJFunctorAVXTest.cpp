@@ -57,11 +57,6 @@ bool LJFunctorAVXTest::particleEqual(Particle &p1, Particle &p2) {
 
   double tolerance = 1e-8;
 
-  /*
-std::cout << "comparing:" << std::endl
-            << "P1: " << p1.toString() << std::endl
-            << "P2: " << p2.toString() << std::endl;
-*/
   EXPECT_NEAR(p1.getR()[0], p2.getR()[0], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[1], p2.getR()[1], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[2], p2.getR()[2], tolerance) << "for particle pair " << p1.getID();

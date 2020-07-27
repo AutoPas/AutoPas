@@ -186,9 +186,6 @@ class ParticleBase {
   void markAsDeleted() {
     // Set ownership as dummy.
     _ownershipState = OwnershipState::dummy;
-    // Also mark position as very big, this prevents misuse in the force calculation.
-    //_r = {std::numeric_limits<floatType>::max(), std::numeric_limits<floatType>::max(),
-    //      std::numeric_limits<floatType>::max()};
   }
 
   /**

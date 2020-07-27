@@ -93,7 +93,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
     size_t numParticles = soa.getNumParticles();
     for (unsigned int i = 0; i < numParticles; ++i) {
-      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      // checks whether particle i is owned.
       if (ownedStatePtr[i] == OwnershipState::dummy) {
         continue;
       }
@@ -156,7 +156,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
     size_t numParticlesi = soa1.getNumParticles();
     for (unsigned int i = 0; i < numParticlesi; ++i) {
-      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      // checks whether particle i is in the domain box, unused if calculateGlobals is false!
       if (ownedStatePtr1[i] == OwnershipState::dummy) {
         continue;
       }
@@ -206,7 +206,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, ParticleCell, typename Pa
 
     const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
-    // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+    // checks whether particle i is owned.
     if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
       return;
     }

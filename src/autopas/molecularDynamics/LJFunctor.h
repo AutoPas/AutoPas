@@ -269,9 +269,9 @@ class LJFunctor
 
         const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-        // ownedStateI is already checked.
-        const bool mask =
-            dr2 <= cutoffsquare and /*ownedStateI != OwnershipState::dummy and */ ownedStateJ != OwnershipState::dummy;
+        // Mask away if distance is too large or any particle is a dummy.
+        // Particle ownedStateI was already checked previously.
+        const bool mask = dr2 <= cutoffsquare and ownedStateJ != OwnershipState::dummy;
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmasquare * invdr2;
@@ -299,7 +299,7 @@ class LJFunctor
           const SoAFloatPrecision virialz = drz * fz;
           const SoAFloatPrecision upot = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
 
-          // In this functor, all pairs are only traversed once (newton3-scheme!).
+          // In this function, all pairs are only traversed once (newton3-scheme!).
           // In this case, the calculations are later divided by two!
           SoAFloatPrecision energyFactor =
               (ownedStateI == OwnershipState::owned ? 1. : 0.) + (ownedStateJ == OwnershipState::owned ? 1. : 0.);
@@ -317,8 +317,8 @@ class LJFunctor
     if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
       double factor = 1.;
-      // we assume newton3 to be enabled in this functor call, thus we multiply by two if the value of newton3 is false,
-      // since for newton3 disabled we divide by two later on.
+      // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
+      // false, since for newton3 disabled we divide by two later on.
       factor *= newton3 ? .5 : 1.;
       _aosThreadData[threadnum].upotSum += upotSum * factor;
       _aosThreadData[threadnum].virialSum[0] += virialSumX * factor;
@@ -327,11 +327,9 @@ class LJFunctor
     }
   }
 
-  // clang-format off
   /**
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
-  // clang-format on
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
@@ -434,9 +432,9 @@ class LJFunctor
 
         const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-        // ownedStateI is already checked.
-        const bool mask =
-            dr2 <= cutoffsquare and /*ownedStateI != OwnershipState::dummy and */ ownedStateJ != OwnershipState::dummy;
+        // Mask away if distance is too large or any particle is a dummy.
+        // Particle ownedStateI was already checked previously.
+        const bool mask = dr2 <= cutoffsquare and ownedStateJ != OwnershipState::dummy;
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmasquare * invdr2;
@@ -855,7 +853,7 @@ class LJFunctor
     const size_t neighborListSize = neighborList.size();
     const size_t *const __restrict__ neighborListPtr = neighborList.data();
 
-    // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+    // checks whether particle i is owned.
     const auto ownedStateI = ownedStatePtr[indexFirst];
     if (ownedStateI == OwnershipState::dummy) {
       return;
@@ -939,9 +937,9 @@ class LJFunctor
 
           const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-          // ownedStateI is already checked.
-          const bool mask = dr2 <= cutoffsquare and
-                            /*ownedStateI != OwnershipState::dummy and */ ownedStateJ != OwnershipState::dummy;
+          // Mask away if distance is too large or any particle is a dummy.
+          // Particle ownedStateI was already checked previously.
+          const bool mask = dr2 <= cutoffsquare and ownedStateJ != OwnershipState::dummy;
 
           const SoAFloatPrecision invdr2 = 1. / dr2;
           const SoAFloatPrecision lj2 = sigmasquare * invdr2;
