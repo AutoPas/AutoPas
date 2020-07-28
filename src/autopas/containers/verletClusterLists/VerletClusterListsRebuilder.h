@@ -306,6 +306,8 @@ class VerletClusterListsRebuilder {
 
   /**
    * Decides if a given neighbor is a forward neighbor to a given tower.
+   * A forward neighbor is either in a interaction cell with a higher index
+   * or in the same interaction cell with a higher tower index.
    *
    * Helps the VerletClustersColoringTraversal to have no data races.
    *
@@ -423,11 +425,11 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Returns the 1D index for the given 2D-coordinates of a tower.
+   * Returns the 1D index for the given 2D tower index.
    *
-   * @param x The x-coordinate of the tower.
-   * @param y The y-coordinate of the tower.
-   * @return the 1D index for the given 2D-coordinates of a tower.
+   * @param x The x-index of the tower.
+   * @param y The y-index of the tower.
+   * @return 1D index for _towers vector.
    */
   size_t towerIndex2DTo1D(const size_t x, const size_t y) {
     // It is necessary to use the static method in VerletClusterLists here instead of the member method, because
@@ -436,10 +438,10 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Returns the tower for the given 2D-coordinates of a tower.
-   * @param x The x-coordinate of the tower.
-   * @param y The y-coordinate of the tower.
-   * @return The tower for the given 2D-coordinates of a tower.
+   * Returns the tower for the given 2D tower index.
+   * @param x The x-index of the tower.
+   * @param y The y-index of the tower.
+   * @return Tower reference.
    */
   auto &getTowerAtCoordinates(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
 };
