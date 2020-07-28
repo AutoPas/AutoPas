@@ -196,7 +196,7 @@ class VerletClusterListsRebuilder {
    * @note This Function takes a 2D vector because it expects the layout from the old clusters.
    * The information however, is not utilized hence when in doubt all particles can go in one vector.
    *
-   * @param particles The particles to sort in the towers.
+   * @param particles2D The particles to sort in the towers.
    */
   void sortParticlesIntoTowers(const std::vector<std::vector<Particle>> &particles2D) {
     const auto numVectors = particles2D.size();
