@@ -9,6 +9,8 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/verletClusterLists/Cluster.h"
+#include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas::internal {
 
@@ -81,11 +83,13 @@ class ClusterTower : public ParticleCell<Particle> {
       auto sizeLastCluster = (_particles.numParticles() % _clusterSize);
       _numDummyParticles = sizeLastCluster != 0 ? _clusterSize - sizeLastCluster : 0;
 
-      const auto lastParticle = _particles[_particles.numParticles() - 1];
+      auto lastParticle = _particles[_particles.numParticles() - 1];
+      markParticleAsDeleted(lastParticle);
       for (size_t i = 0; i < _numDummyParticles; i++) {
         _particles.addParticle(lastParticle);
       }
 
+      // Mark start of the different clusters by adding pointers to the particle storage `_particles`.
       size_t numClusters = _particles.numParticles() / _clusterSize;
       _clusters.reserve(numClusters);
       for (size_t index = 0; index < numClusters; index++) {
@@ -106,6 +110,7 @@ class ClusterTower : public ParticleCell<Particle> {
     auto &lastCluster = getCluster(getNumClusters() - 1);
     for (size_t index = 1; index <= _numDummyParticles; index++) {
       lastCluster[_clusterSize - index] = lastCluster[0];  // use first Particle in last cluster as dummy particle!
+      lastCluster[_clusterSize - index].setOwnershipState(OwnershipState::dummy);
       lastCluster[_clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
       lastCluster[_clusterSize - index].setID(std::numeric_limits<size_t>::max());
     }
@@ -132,7 +137,7 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   template <class Functor>
   void loadSoA(Functor *functor) {
-    functor->SoALoader(_particles, _particles._particleSoABuffer);
+    functor->SoALoader(_particles, _particles._particleSoABuffer, 0);
     for (size_t index = 0; index < getNumClusters(); index++) {
       auto &cluster = getCluster(index);
       cluster.setSoAView({&(_particles._particleSoABuffer), index * _clusterSize, (index + 1) * _clusterSize});
@@ -146,7 +151,7 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   template <class Functor>
   void extractSoA(Functor *functor) {
-    functor->SoAExtractor(_particles, _particles._particleSoABuffer);
+    functor->SoAExtractor(_particles, _particles._particleSoABuffer, 0);
   }
 
   /**
@@ -243,6 +248,11 @@ class ClusterTower : public ParticleCell<Particle> {
 
   [[nodiscard]] bool isNotEmpty() const override { return getNumActualParticles() > 0; }
 
+  void deleteDummyParticles() override {
+    _particles.deleteDummyParticles();
+    _numDummyParticles = 0;
+  }
+
   void deleteByIndex(size_t index) override {
     /// @note The implementation of this function prevents a regionIterator to make sorted assumptions of particles
     /// inside a cell! supporting this would mean that the deleted particle should be swapped to the end of the valid
@@ -275,7 +285,7 @@ class ClusterTower : public ParticleCell<Particle> {
    * Set the ParticleDeletionObserver, which is called, when a particle is deleted.
    * @param observer
    */
-  void setParticleDeletionObserser(internal::ParticleDeletedObserver *observer) {
+  void setParticleDeletionObserver(internal::ParticleDeletedObserver *observer) {
     _particleDeletionObserver = observer;
   };
 

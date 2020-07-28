@@ -66,6 +66,19 @@ bool LJFunctorCudaTest::particleEqual(Particle &p1, Particle &p2) {
   // clang-format on
 }
 
+template <typename CellT>
+void markSomeParticlesAsDeleted(CellT &cell, unsigned long seed) {
+  // Here, we delete about deletionPercentage % of all particles.
+  double deletionPercentage = 30;
+  std::mt19937 generator(seed);
+  std::uniform_real_distribution<double> uniform0_100(0.0, 100.0);
+  for (auto &mol : cell) {
+    if (uniform0_100(generator) < deletionPercentage) {
+      autopas::internal::markParticleAsDeleted(mol);
+    }
+  }
+}
+
 bool LJFunctorCudaTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
   EXPECT_GT(cell1.numParticles(), 0);
   EXPECT_EQ(cell1.numParticles(), cell2.numParticles());
@@ -78,8 +91,9 @@ bool LJFunctorCudaTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
   return ret;
 }
 
-template <typename ParticleType, bool useNewton3, bool calculateGlobals>
-void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2) {
+template <typename ParticleType, bool calculateGlobals>
+void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles, size_t numParticles2, bool useNewton3,
+                                                             bool withDeletions) {
   FMCell cell1Cuda;
   FMCell cell2Cuda;
 
@@ -89,6 +103,10 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   autopasTools::generators::RandomGenerator::fillWithParticles(
       cell2Cuda, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles2);
 
+  if (withDeletions) {
+    markSomeParticlesAsDeleted(cell1Cuda, 19);
+    markSomeParticlesAsDeleted(cell2Cuda, 99);
+  }
   // copy cells
   FMCell cell1NoCuda(cell1Cuda);
   FMCell cell2NoCuda(cell2Cuda);
@@ -110,16 +128,17 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   ASSERT_TRUE(AoSParticlesEqual(cell1Cuda, cell1NoCuda)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2Cuda, cell2NoCuda)) << "Cells 2 not equal after copy initialization.";
 
-  ljFunctorNoCuda.SoALoader(cell1NoCuda, cell1NoCuda._particleSoABuffer);
-  ljFunctorNoCuda.SoALoader(cell2NoCuda, cell2NoCuda._particleSoABuffer);
-  ljFunctorCuda.SoALoader(cell1Cuda, cell1Cuda._particleSoABuffer);
-  ljFunctorCuda.SoALoader(cell2Cuda, cell2Cuda._particleSoABuffer);
+  constexpr size_t offset = 0;
+  ljFunctorNoCuda.SoALoader(cell1NoCuda, cell1NoCuda._particleSoABuffer, offset);
+  ljFunctorNoCuda.SoALoader(cell2NoCuda, cell2NoCuda._particleSoABuffer, offset);
+  ljFunctorCuda.SoALoader(cell1Cuda, cell1Cuda._particleSoABuffer, offset);
+  ljFunctorCuda.SoALoader(cell2Cuda, cell2Cuda._particleSoABuffer, offset);
 
   ljFunctorCuda.deviceSoALoader(cell1Cuda._particleSoABuffer, cell1Cuda._particleSoABufferDevice);
   ljFunctorCuda.deviceSoALoader(cell2Cuda._particleSoABuffer, cell2Cuda._particleSoABufferDevice);
 
   // Functor calls
-  ljFunctorNoCuda.SoAFunctorPair(cell1NoCuda._particleSoABuffer, cell2NoCuda._particleSoABuffer, useNewton3, true);
+  ljFunctorNoCuda.SoAFunctorPair(cell1NoCuda._particleSoABuffer, cell2NoCuda._particleSoABuffer, useNewton3);
   ljFunctorCuda.CudaFunctor(cell1Cuda._particleSoABufferDevice, cell2Cuda._particleSoABufferDevice, useNewton3);
 
   ljFunctorCuda.deviceSoAExtractor(cell1Cuda._particleSoABuffer, cell1Cuda._particleSoABufferDevice);
@@ -130,10 +149,10 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   ASSERT_TRUE(SoAParticlesEqual<Molecule>(cell2Cuda._particleSoABuffer, cell2NoCuda._particleSoABuffer))
       << "Cells 2 not equal after applying functor and extracting to SoA.";
 
-  ljFunctorCuda.SoAExtractor(cell1Cuda, cell1Cuda._particleSoABuffer);
-  ljFunctorCuda.SoAExtractor(cell2Cuda, cell2Cuda._particleSoABuffer);
-  ljFunctorCuda.SoAExtractor(cell1NoCuda, cell1NoCuda._particleSoABuffer);
-  ljFunctorCuda.SoAExtractor(cell2NoCuda, cell2NoCuda._particleSoABuffer);
+  ljFunctorCuda.SoAExtractor(cell1Cuda, cell1Cuda._particleSoABuffer, 0);
+  ljFunctorCuda.SoAExtractor(cell2Cuda, cell2Cuda._particleSoABuffer, 0);
+  ljFunctorCuda.SoAExtractor(cell1NoCuda, cell1NoCuda._particleSoABuffer, 0);
+  ljFunctorCuda.SoAExtractor(cell2NoCuda, cell2NoCuda._particleSoABuffer, 0);
 
   ljFunctorNoCuda.endTraversal(useNewton3);
   ljFunctorCuda.endTraversal(useNewton3);
@@ -147,13 +166,17 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
   }
 }
 
-template <typename ParticleType, bool useNewton3, bool calculateGlobals>
-void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles) {
+template <typename ParticleType, bool calculateGlobals>
+void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles, bool useNewton3, bool withDeletions) {
   FMCell cellCuda;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(cellCuda, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
+
+  if (withDeletions) {
+    markSomeParticlesAsDeleted(cellCuda, 42);
+  }
 
   // copy cells
   FMCell cellNoCuda(cellCuda);
@@ -174,12 +197,12 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
 
   ASSERT_TRUE(AoSParticlesEqual(cellCuda, cellNoCuda)) << "Cells not equal after copy initialization.";
 
-  ljFunctorNoCuda.SoALoader(cellNoCuda, cellNoCuda._particleSoABuffer);
-  ljFunctorCuda.SoALoader(cellCuda, cellCuda._particleSoABuffer);
+  ljFunctorNoCuda.SoALoader(cellNoCuda, cellNoCuda._particleSoABuffer, 0);
+  ljFunctorCuda.SoALoader(cellCuda, cellCuda._particleSoABuffer, 0);
   ljFunctorCuda.deviceSoALoader(cellCuda._particleSoABuffer, cellCuda._particleSoABufferDevice);
 
   // functor calls
-  ljFunctorNoCuda.SoAFunctorSingle(cellNoCuda._particleSoABuffer, useNewton3, true);
+  ljFunctorNoCuda.SoAFunctorSingle(cellNoCuda._particleSoABuffer, useNewton3);
   ljFunctorCuda.CudaFunctor(cellCuda._particleSoABufferDevice, useNewton3);
 
   ljFunctorCuda.deviceSoAExtractor(cellCuda._particleSoABuffer, cellCuda._particleSoABufferDevice);
@@ -187,8 +210,8 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
   ASSERT_TRUE(SoAParticlesEqual<Molecule>(cellCuda._particleSoABuffer, cellNoCuda._particleSoABuffer))
       << "Cells not equal after applying functor and extracting to SoA.";
 
-  ljFunctorCuda.SoAExtractor(cellCuda, cellCuda._particleSoABuffer);
-  ljFunctorCuda.SoAExtractor(cellNoCuda, cellNoCuda._particleSoABuffer);
+  ljFunctorCuda.SoAExtractor(cellCuda, cellCuda._particleSoABuffer, 0);
+  ljFunctorCuda.SoAExtractor(cellNoCuda, cellNoCuda._particleSoABuffer, 0);
 
   ljFunctorNoCuda.endTraversal(useNewton3);
   ljFunctorCuda.endTraversal(useNewton3);
@@ -207,36 +230,27 @@ TEST_P(LJFunctorCudaTest, testLJFunctorVSLJFunctorCuda) {
   auto options = GetParam();
   auto newton3 = std::get<0>(options);
   auto calculateGlobals = std::get<1>(options);
-  auto numParticlesFirstCell = std::get<2>(options);
-  auto numParticlesSecondCell = std::get<3>(options);
+  auto withDeletions = std::get<2>(options);
+  auto numParticlesFirstCell = std::get<3>(options);
+  auto numParticlesSecondCell = std::get<4>(options);
 
   // using nested withStaticBool is not possible because of bug in gcc < 9 (and the intel compiler)
   /// @todo c++20: gcc < 9 can probably be dropped, replace with nested lambdas.
-  if (newton3) {
-    autopas::utils::withStaticBool(calculateGlobals, [&](auto calculateGlobalsC) {
-      if (numParticlesSecondCell == 0) {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, true /*newton3*/, calculateGlobalsC>(numParticlesFirstCell);
-      } else {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, true /*newton3*/, calculateGlobalsC>(numParticlesFirstCell,
-                                                                                            numParticlesSecondCell);
-      }
-    });
-  } else {
-    autopas::utils::withStaticBool(calculateGlobals, [&](auto calculateGlobalsC) {
-      if (numParticlesSecondCell == 0) {
-        testLJFunctorVSLJFunctorCudaOneCell<Particle, false /*newton3*/, calculateGlobalsC>(numParticlesFirstCell);
-      } else {
-        testLJFunctorVSLJFunctorCudaTwoCells<Particle, false /*newton3*/, calculateGlobalsC>(numParticlesFirstCell,
-                                                                                             numParticlesSecondCell);
-      }
-    });
-  }
+  autopas::utils::withStaticBool(calculateGlobals, [&](auto calculateGlobalsC) {
+    if (numParticlesSecondCell == 0) {
+      testLJFunctorVSLJFunctorCudaOneCell<Particle, calculateGlobalsC>(numParticlesFirstCell, newton3, withDeletions);
+    } else {
+      testLJFunctorVSLJFunctorCudaTwoCells<Particle, calculateGlobalsC>(numParticlesFirstCell, numParticlesSecondCell,
+                                                                        newton3, withDeletions);
+    }
+  });
 }
 
 static auto toString = [](const auto &info) {
-  auto [newton3, calculateGlobals, numParticlesFirstCell, numParticlesSecondCell] = info.param;
+  auto [newton3, calculateGlobals, withDeletions, numParticlesFirstCell, numParticlesSecondCell] = info.param;
   std::stringstream resStream;
-  resStream << (newton3 ? "N3" : "noN3") << (calculateGlobals ? "globals" : "noGlobals") << numParticlesFirstCell << "x"
+  resStream << (newton3 ? "N3" : "noN3") << "_" << (calculateGlobals ? "globals" : "noGlobals") << "_"
+            << (withDeletions ? "withDeletions" : "noDeletions") << "_" << numParticlesFirstCell << "x"
             << numParticlesSecondCell;
   std::string res = resStream.str();
   std::replace(res.begin(), res.end(), '-', '_');
@@ -246,7 +260,8 @@ static auto toString = [](const auto &info) {
 
 INSTANTIATE_TEST_SUITE_P(
     Generated, LJFunctorCudaTest,
-    ::testing::Combine(::testing::Bool(), ::testing::Bool(),
+    ::testing::Combine(::testing::Bool() /*newton3*/, ::testing::Bool() /*calculateGlobals*/,
+                       ::testing::Bool() /*withDeletions*/,
                        ::testing::ValuesIn({1, 2, 4, 16, 31, 32, 33, 55, 64, 65}) /* numParticlesFirstCell */,
                        ::testing::ValuesIn({0, 1, 4, 16, 31, 32, 33, 55, 64, 65}) /* numParticlesSecondCell */),
     toString);
