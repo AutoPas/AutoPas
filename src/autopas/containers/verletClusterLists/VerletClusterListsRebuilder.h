@@ -277,8 +277,9 @@ class VerletClusterListsRebuilder {
 
         double distBetweenTowersX = std::max(0, std::abs(towerIndexX - neighborIndexX) - 1) * _towerSideLength;
 
-        // calculate distance in xy-plane and skip if already longer than interactionLength
+        // calculate distance in xy-plane
         auto distBetweenTowersXYsqr = distBetweenTowersX * distBetweenTowersX + distBetweenTowersY * distBetweenTowersY;
+        // skip if already longer than interactionLength
         if (distBetweenTowersXYsqr <= _interactionLengthSqr) {
           auto &neighborTower = getTower(neighborIndexX, neighborIndexY);
 
@@ -305,7 +306,7 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Decides if a given neighbor is a forward neighbor to a given tower.
+   * Decides if a given neighbor tower is a forward neighbor to a given tower.
    * A forward neighbor is either in a interaction cell with a higher index
    * or in the same interaction cell with a higher tower index.
    *
@@ -379,6 +380,7 @@ class VerletClusterListsRebuilder {
 
   /**
    * Calculates the distance of two bounding boxes in one dimension. Assumes disjoint bounding boxes.
+   *
    * @param min1 minimum coordinate of first bbox in tested dimension
    * @param max1 maximum coordinate of first bbox in tested dimension
    * @param min2 minimum coordinate of second bbox in tested dimension
@@ -396,12 +398,11 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Returns the tower that should contain a particle at the given location.
+   * Returns the tower the given 3D coordinates are in.
+   * If the location is outside of the domain, the tower nearest tower is returned.
    *
-   * If the location is outside of the domain, the tower that is nearest is returned.
-   *
-   * @param location The location to get the responsible tower for.
-   * @return The tower that should contain a particle at the given location.
+   * @param location The 3D coordinates.
+   * @return Tower reference.
    */
   auto &getTower(std::array<double, 3> location) {
     std::array<size_t, 2> towerIndex{};
