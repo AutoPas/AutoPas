@@ -182,26 +182,30 @@ class VerletClusterListsRebuilder {
    */
   [[nodiscard]] std::array<size_t, 2> calculateTowersPerDim(std::array<double, 3> boxSize) const {
     std::array<size_t, 2> towersPerDim{};
-    for (int d = 0; d < 2; d++) {
-      towersPerDim[d] = static_cast<size_t>(std::ceil(boxSize[d] * _towerSideLengthReciprocal));
+    for (int dimension = 0; dimension < 2; dimension++) {
+      towersPerDim[dimension] = static_cast<size_t>(std::ceil(boxSize[dimension] * _towerSideLengthReciprocal));
       // at least one cell
-      towersPerDim[d] = std::max(towersPerDim[d], 1ul);
+      towersPerDim[dimension] = std::max(towersPerDim[dimension], 1ul);
     }
     return towersPerDim;
   }
 
   /**
    * Sorts all passed particles in the appropriate clusters.
-   * @param particles The particles to sort in the clusters.
+   *
+   * @note This Function takes a 2D vector because it expects the layout from the old clusters.
+   * The information however, is not utilized hence when in doubt all particles can go in one vector.
+   *
+   * @param particles The particles to sort in the towers.
    */
-  void sortParticlesIntoTowers(const std::vector<std::vector<Particle>> &particles) {
-    const auto numVectors = particles.size();
+  void sortParticlesIntoTowers(const std::vector<std::vector<Particle>> &particles2D) {
+    const auto numVectors = particles2D.size();
 #if defined(AUTOPAS_OPENMP)
     /// @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t index = 0; index < numVectors; index++) {
-      const std::vector<Particle> &vector = particles[index];
+      const std::vector<Particle> &vector = particles2D[index];
       for (const auto &particle : vector) {
         if (utils::inBox(particle.getR(), _haloBoxMin, _haloBoxMax)) {
           auto &tower = getTowerForParticleLocation(particle.getR());
@@ -243,28 +247,31 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Calculates the neighbors for all clusters of the given tower that are in the given neighbor towers.
-   * @param towerIndexX The x-coordinate of the given tower.
-   * @param towerIndexY the y-coordinate of the given tower.
-   * @param minX The minimum x-coordinate of the given neighbor towers.
-   * @param maxX The maximum x-coordinate of the given neighbor towers.
-   * @param minY The minimum y-coordinate of the given neighbor towers.
-   * @param maxY The maximum y-coordinate of the given neighbor towers.
-   * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
-   * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
-   * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
-   * false)
+   * For all clusters in a tower, given by it's x/y indices, find all neighbors in towers that are given by an area
+   * (min/max x/y neighbor indices).
+   *
+   * With the useNewton3 parameter, the lists can be either built containing all, or only the forward neighbors.
+   * If an cluster A interacts with cluster B, then this interaction will either show up only once in the
+   * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both
+   * (for newton3 == false)
+   *
+   * @param towerIndexX The x index of the given tower.
+   * @param towerIndexY The y index of the given tower.
+   * @param minNeighborIndexX The minimum neighbor tower index in x direction.
+   * @param maxNeighborIndexX The maximum neighbor tower index in x direction.
+   * @param minNeighborIndexY The minimum neighbor tower index in y direction.
+   * @param maxNeighborIndexY The maximum neighbor tower index in y direction.
+   * @param useNewton3 Specifies, whether neighbor lists should contain only forward neighbors.
    */
-  void calculateNeighborsForTowerInRange(const int towerIndexX, const int towerIndexY, const int minX, const int maxX,
-                                         const int minY, const int maxY, const bool useNewton3) {
+  void calculateNeighborsForTowerInRange(const int towerIndexX, const int towerIndexY, const int minNeighborIndexX, const int maxNeighborIndexX,
+                                         const int minNeighborIndexY, const int maxNeighborIndexY, const bool useNewton3) {
     auto &tower = getTowerAtCoordinates(towerIndexX, towerIndexY);
     // for all neighbor towers
-    for (int neighborIndexY = minY; neighborIndexY <= maxY; neighborIndexY++) {
+    for (int neighborIndexY = minNeighborIndexY; neighborIndexY <= maxNeighborIndexY; neighborIndexY++) {
       double distBetweenTowersY = std::max(0, std::abs(towerIndexY - neighborIndexY) - 1) * _towerSideLength;
 
-      for (int neighborIndexX = minX; neighborIndexX <= maxX; neighborIndexX++) {
-        if (useNewton3 and not shouldTowerContainOtherAsNeighborWithNewton3(towerIndexX, towerIndexY, neighborIndexX,
-                                                                            neighborIndexY)) {
+      for (int neighborIndexX = minNeighborIndexX; neighborIndexX <= maxNeighborIndexX; neighborIndexX++) {
+        if (useNewton3 and not isForwardNeighbor(towerIndexX, towerIndexY, neighborIndexX, neighborIndexY)) {
           continue;
         }
 
@@ -284,8 +291,8 @@ class VerletClusterListsRebuilder {
   /**
    * Returns the index of a imagined interaction cell with side length equal the interaction length that contains the
    * given tower.
-   * @param towerIndexX The x-coordinate of the given tower.
-   * @param towerIndexY The y-coordinate of the given tower.
+   * @param towerIndexX The x index of the given tower.
+   * @param towerIndexY The y index of the given tower.
    * @return The index of the interaction cell containing the given tower.
    */
   int get1DInteractionCellIndexForTower(const int towerIndexX, const int towerIndexY) {
