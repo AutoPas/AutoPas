@@ -305,28 +305,31 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Decides if for a given tower and a neighbor tower, clusters of the tower should contain clusters of the neighbor
-   * tower as neighbors if newton 3 is enabled.
+   * Decides if a given neighbor is a forward neighbor to a given tower.
    *
-   * Works in a way to help the VerletClustersColoringTraversal have no data races.
+   * Helps the VerletClustersColoringTraversal to have no data races.
    *
-   * @param towerIndexX The x-coordinate of the given tower.
-   * @param towerIndexY The y-coordinate of the given tower.
-   * @param neighborIndexX The x-coordinate of the given neighbor tower.
-   * @param neighborIndexY The y-coordinate of the given neighbor tower.
+   * @param towerIndexX The x-index of the given tower.
+   * @param towerIndexY The y-index of the given tower.
+   * @param neighborIndexX The x-index of the given neighbor tower.
+   * @param neighborIndexY The y-index of the given neighbor tower.
    * @return True, if clusters of the given tower should contain clusters of the given neighbor tower as neighbors with
    * newton 3 enabled.
    */
-  bool shouldTowerContainOtherAsNeighborWithNewton3(const int towerIndexX, const int towerIndexY,
-                                                    const int neighborIndexX, const int neighborIndexY) {
+  bool isForwardNeighbor(const int towerIndexX, const int towerIndexY, const int neighborIndexX, const int neighborIndexY) {
     auto interactionCellTowerIndex1D = get1DInteractionCellIndexForTower(towerIndexX, towerIndexY);
     auto interactionCellNeighborIndex1D = get1DInteractionCellIndexForTower(neighborIndexX, neighborIndexY);
+
+    if (interactionCellNeighborIndex1D > interactionCellTowerIndex1D) {
+      return true;
+    } else if (interactionCellNeighborIndex1D < interactionCellTowerIndex1D) {
+      return false;
+    } // else if (interactionCellNeighborIndex1D == interactionCellTowerIndex1D) ...
 
     auto towerIndex1D = towerIndex2DTo1D(towerIndexX, towerIndexY);
     auto neighborIndex1D = towerIndex2DTo1D(neighborIndexX, neighborIndexY);
 
-    return interactionCellNeighborIndex1D > interactionCellTowerIndex1D or
-           (interactionCellNeighborIndex1D == interactionCellTowerIndex1D and neighborIndex1D >= towerIndex1D);
+    return neighborIndex1D >= towerIndex1D;
   }
 
   /**
