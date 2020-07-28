@@ -214,7 +214,7 @@ class VerletListHelpers {
      * @param cell
      * @param soa
      */
-    void SoAExtractor(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t /*offset*/) override {}
+    void SoAExtractor(ParticleCell<Particle> &cell, SoA<PositionSoAArraysType> &soa, size_t /*offset*/) override {}
 
     /**
      * @copydoc Functor::getNeededAttr()
