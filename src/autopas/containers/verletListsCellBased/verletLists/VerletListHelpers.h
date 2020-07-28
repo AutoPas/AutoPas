@@ -140,7 +140,8 @@ class VerletListHelpers {
      * @param soa2 soa of second cell
      * @note newton3 is ignored here, as for newton3=false SoAFunctorPair(soa2, soa1) will also be called.
      */
-    void SoAFunctorPair(SoAView<PositionSoAArraysType> soa1, SoAView<PositionSoAArraysType> soa2, bool /*newton3*/) override {
+    void SoAFunctorPair(SoAView<PositionSoAArraysType> soa1, SoAView<PositionSoAArraysType> soa2,
+                        bool /*newton3*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
       auto **const __restrict__ ptr1ptr = soa1.template begin<AttributeNames::ptr>();
