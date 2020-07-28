@@ -70,6 +70,9 @@ class VerletListsCellsHelpers {
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+      if (i.isDummy() or j.isDummy()) {
+        return;
+      }
       auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
       double distsquare = utils::ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffskinsquared) {

@@ -26,7 +26,6 @@ namespace autopas {
  * It is optimized for a constant, i.e. particle independent, cutoff radius of
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
- * @note This class does NOT work with RMM cells and is not intended to!
  * @tparam Particle
  * @todo deleting particles should also invalidate the verlet lists - should be
  * implemented somehow
@@ -161,9 +160,9 @@ class VerletLists
   size_t generateAoSNeighborLists() {
     size_t numParticles = 0;
     _aosNeighborLists.clear();
-    // DON'T simply parallelize this loop!!! this needs modifications if you
-    // want to parallelize it!
-    for (auto iter = this->begin(); iter.isValid(); ++iter, ++numParticles) {
+    // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
+    // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
+    for (auto iter = this->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++numParticles) {
       // create the verlet list entries for all particles
       _aosNeighborLists[&(*iter)];
     }
@@ -181,10 +180,13 @@ class VerletLists
     _particlePtr2indexMap.clear();
 
     _particlePtr2indexMap.reserve(_aosNeighborLists.size());
-    size_t i = 0;
-    for (auto iter = this->begin(); iter.isValid(); ++iter, ++i) {
+    size_t index = 0;
+
+    // Here we have to iterate over all particles, as particles might be later on marked for deletion, and we cannot
+    // differentiate them from particles already marked for deletion.
+    for (auto iter = this->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++index) {
       // set the map
-      _particlePtr2indexMap[&(*iter)] = i;
+      _particlePtr2indexMap[&(*iter)] = index;
     }
     size_t accumulatedListSize = 0;
     for (auto &[particlePtr, neighborPtrVector] : _aosNeighborLists) {
