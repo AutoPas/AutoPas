@@ -208,7 +208,7 @@ class VerletClusterListsRebuilder {
       const std::vector<Particle> &vector = particles2D[index];
       for (const auto &particle : vector) {
         if (utils::inBox(particle.getR(), _haloBoxMin, _haloBoxMax)) {
-          auto &tower = getTowerForParticleLocation(particle.getR());
+          auto &tower = getTower(particle.getR());
           tower.addParticle(particle);
         } else {
           AutoPasLog(trace, "Not adding particle to VerletClusterLists container, because it is far outside:\n{}",
@@ -265,7 +265,7 @@ class VerletClusterListsRebuilder {
    */
   void calculateNeighborsForTowerInRange(const int towerIndexX, const int towerIndexY, const int minNeighborIndexX, const int maxNeighborIndexX,
                                          const int minNeighborIndexY, const int maxNeighborIndexY, const bool useNewton3) {
-    auto &tower = getTowerAtCoordinates(towerIndexX, towerIndexY);
+    auto &tower = getTower(towerIndexX, towerIndexY);
     // for all neighbor towers
     for (int neighborIndexY = minNeighborIndexY; neighborIndexY <= maxNeighborIndexY; neighborIndexY++) {
       double distBetweenTowersY = std::max(0, std::abs(towerIndexY - neighborIndexY) - 1) * _towerSideLength;
@@ -280,7 +280,7 @@ class VerletClusterListsRebuilder {
         // calculate distance in xy-plane and skip if already longer than interactionLength
         auto distBetweenTowersXYsqr = distBetweenTowersX * distBetweenTowersX + distBetweenTowersY * distBetweenTowersY;
         if (distBetweenTowersXYsqr <= _interactionLengthSqr) {
-          auto &neighborTower = getTowerAtCoordinates(neighborIndexX, neighborIndexY);
+          auto &neighborTower = getTower(neighborIndexX, neighborIndexY);
 
           calculateNeighborsForTowerPair(tower, neighborTower, distBetweenTowersXYsqr, useNewton3);
         }
@@ -403,7 +403,7 @@ class VerletClusterListsRebuilder {
    * @param location The location to get the responsible tower for.
    * @return The tower that should contain a particle at the given location.
    */
-  auto &getTowerForParticleLocation(std::array<double, 3> location) {
+  auto &getTower(std::array<double, 3> location) {
     std::array<size_t, 2> towerIndex{};
 
     for (int dim = 0; dim < 2; dim++) {
@@ -421,7 +421,7 @@ class VerletClusterListsRebuilder {
       }
     }
 
-    return getTowerAtCoordinates(towerIndex[0], towerIndex[1]);
+    return getTower(towerIndex[0], towerIndex[1]);
   }
 
   /**
@@ -443,7 +443,7 @@ class VerletClusterListsRebuilder {
    * @param y The y-index of the tower.
    * @return Tower reference.
    */
-  auto &getTowerAtCoordinates(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
+  auto &getTower(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
 };
 
 }  //  namespace internal
