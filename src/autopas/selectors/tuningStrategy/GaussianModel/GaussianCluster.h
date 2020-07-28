@@ -222,30 +222,26 @@ class GaussianCluster {
     for (const auto &continuousSample : continuousSamples) {
       auto [means, vars, stddevs] = precalculateDistributions(continuousSample);
       updateNeighbourWeights(neighbourWeights, means, vars, stddevs);
+      auto currentAcquisisitions = precalculateAcquisitions(af, means, vars);
 
       graphLogger.add(_clusters, _discreteVectorMap, continuousSample, means, vars, neighbourWeights);
 
       // get acquisition considering neighbours
       for (size_t i = 0; i < _clusters.size(); ++i) {
         // target cluster gets weight 1.
-        double mixMean = means[i];
-        double mixVar = vars[i];
+        double mixAcquisition = currentAcquisisitions[i];
         double weightSum = 1.;
 
-        // sum over neighbours
-        for (const auto &[n, weight] : neighbourWeights[i]) {
-          mixMean += means[n] * weight;
-          mixVar += vars[n] * weight * weight;
+        // weighted sum over neighbours
+        for (const auto &[n, _, weight] : neighbourWeights[i]) {
+          mixAcquisition += currentAcquisisitions[n] * weight;
           weightSum += weight;
         }
 
         // normalize
-        mixMean /= weightSum;
-        mixVar /= weightSum * weightSum;
+        mixAcquisition /= weightSum;
 
-        // calc acquisition
-        double currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMaxValue);
-        acquisitions.emplace_back(std::make_pair(_discreteVectorMap[i], continuousSample), currentValue);
+        acquisitions.emplace_back(std::make_pair(_discreteVectorMap[i], continuousSample), mixAcquisition);
       }
     }
 
@@ -260,10 +256,8 @@ class GaussianCluster {
    * @param neighbourFun function which generates neighbours of given discrete tuple
    * @param continuousSamples continuous tuples
    */
-  void logDebugGraph(
-      const std::function<std::vector<GaussianModelTypes::VectorDiscrete>(const GaussianModelTypes::VectorDiscrete &)>
-          &neighbourFun,
-      const std::vector<GaussianModelTypes::VectorContinuous> &continuousSamples) const {
+  void logDebugGraph(const GaussianModelTypes::NeighbourFunction neighbourFun,
+                     const std::vector<GaussianModelTypes::VectorContinuous> &continuousSamples) const {
     if (autopas::Logger::get()->level() > autopas::Logger::LogLevel::trace) {
       return;
     }
@@ -290,7 +284,7 @@ class GaussianCluster {
    * Generate all possible combinations of discrete tuples and continuous tuples in samples and
    * returns the vector with maximum acquisition.
    * @param af function to optimize
-   * @param neighbourFun function which generates neighbours of given discrete tuple
+   * @param neighbourFun function which generates neighbours with prior weight of given discrete tuple
    * @param continuousSamples continuous tuples
    * @return pair of vector and corresponding maximum acquistion
    */
@@ -314,7 +308,7 @@ class GaussianCluster {
    * Generate all possible combinations of discrete tuples and continuous tuples in samples and
    * order them by their acquisition.
    * @param af function to optimize
-   * @param neighbourFun function which generates neighbours of given discrete tuple
+   * @param neighbourFun function which generates neighbours with prior weight of given discrete tuple
    * @param continuousSamples continuous tuples
    * @return all discrete-continuous tuples ordered by their corresponding acquisition
    */
@@ -438,8 +432,28 @@ class GaussianCluster {
   }
 
   /**
+   * Calculate acquisition for all clusters.
+   * @param af acquisition function
+   * @param means mean for each cluster
+   * @param vars variance for each cluster
+   * @return
+   */
+  [[nodiscard]] std::vector<double> precalculateAcquisitions(AcquisitionFunctionOption af,
+                                                             const std::vector<double> &means,
+                                                             const std::vector<double> &vars) const {
+    std::vector<double> result;
+    result.reserve(_clusters.size());
+
+    for (size_t i = 0; i < _clusters.size(); ++i) {
+      result.push_back(AcquisitionFunction::calcAcquisition(af, means[i], vars[i], _evidenceMaxValue));
+    }
+
+    return result;
+  }
+
+  /**
    * Initalize the neighbour-weight list for each cluster.
-   * @param neighbourFun function which generates neighbours of given discrete tuple
+   * @param neighbourFun function which generates neighbours with prior weight of given discrete tuple
    * @return
    */
   [[nodiscard]] GaussianModelTypes::NeighboursWeights initNeighbourWeights(
@@ -452,9 +466,9 @@ class GaussianCluster {
       auto neighbours = neighbourFun(_discreteVectorMap[i]);
 
       // calculate initial weight for each neighbour
-      std::vector<std::pair<size_t, double>> neighbourWeights;
+      std::vector<std::tuple<size_t, double, double>> neighbourWeights;
       neighbourWeights.reserve(neighbours.size());
-      for (const auto &n : neighbours) {
+      for (const auto &[n, priorWeight] : neighbours) {
         size_t n_index = getIndex(n);
         // ignore clusters without evidence
         if (_clusters[n_index].numEvidence() > 0) {
@@ -488,7 +502,7 @@ class GaussianCluster {
             case wasserstein2:
               break;
           }
-          neighbourWeights.emplace_back(n_index, weight);
+          neighbourWeights.emplace_back(n_index, priorWeight, priorWeight * weight);
         }
       }
       result.push_back(std::move(neighbourWeights));
@@ -512,7 +526,7 @@ class GaussianCluster {
     GaussianModelTypes::VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
     for (size_t i = 0; i < _clusters.size(); ++i) {
       // for each neighbour update weight
-      for (auto &[n, weight] : neighbourWeights[i]) {
+      for (auto &[n, priorWeight, weight] : neighbourWeights[i]) {
         switch (_weightFun) {
           case evidenceMatchingProbabilityGM:
           case evidenceMatchingScaledProbabilityGM:
@@ -520,6 +534,7 @@ class GaussianCluster {
             break;
           case wasserstein2:
             weight = vars[i] / (vars[i] + std::pow(means[n] - means[i], 2) + std::pow(stddevs[n] - stddevs[i], 2));
+            weight *= priorWeight;
             break;
         }
       }

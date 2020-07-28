@@ -77,38 +77,6 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Get cluster-encoded neighbours of given target.
-   * Neighbours are all configurations which differ in at most one configuration from target
-   * @param target
-   * @param dimRestrictions restriction on each dimension
-   * @return all neighbours
-   */
-  static std::vector<Eigen::VectorXi> neighboursManhattan1(const Eigen::VectorXi &target,
-                                                           const std::vector<int> &dimRestrictions) {
-    std::vector<Eigen::VectorXi> result;
-    // neighbours should contain #(possible values for each dimension) - #dimensions (initial vector is skipped once per
-    // dimension)
-    result.reserve(std::accumulate(dimRestrictions.begin(), dimRestrictions.end(), -dimRestrictions.size()));
-
-    // for each dimension
-    for (int i = 0; i < target.size(); ++i) {
-      // initial value
-      auto init = target[i];
-
-      // for each possible value of that dimension
-      for (int x = 0; x < dimRestrictions[i]; ++x) {
-        // skip initial value
-        if (x != init) {
-          auto neighbour = target;
-          neighbour[i] = x;
-          result.push_back(std::move(neighbour));
-        }
-      }
-    }
-    return result;
-  }
-
-  /**
    * Create n latin-hypercube-samples from given featureSpace.
    * @param n number of samples
    * @param rng
@@ -166,12 +134,12 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Create n latin-hypercube-samples from given featureSpace only considering continuous values and append a value
-   * representing the current iteration.
+   * From a given continuous featureSpace, create n pairs of latin-hypercube-samples and a value representing the
+   * current iteration.
    * @param n number of samples
    * @param rng
    * @param cellSizeFactors
-   * @param iteration current iteration which may be scaled by some factor
+   * @param iteration Current iteration which may be scaled by some factor.
    * @return vector of sample featureVectors
    */
   static std::vector<Eigen::VectorXd> lhsSampleFeatureContinuousWithIteration(size_t n, Random &rng,

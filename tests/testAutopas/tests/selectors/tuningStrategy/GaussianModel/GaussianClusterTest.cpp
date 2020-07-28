@@ -31,7 +31,7 @@ TEST_F(GaussianClusterTest, maxNoNeighbours) {
   auto functor2 = [](double i1, double i2) { return -std::pow(i1 + 0, 2) - std::pow(i2 - 1, 2) - 2; };
   auto functor3 = [](double i1, double i2) { return -std::pow(i1 + 1, 2) - std::pow(i2 - 1, 2); };
 
-  auto neighboursFun = [](const Eigen::VectorXi &) -> std::vector<Eigen::VectorXi> { return {}; };
+  auto neighboursFun = [](const Eigen::VectorXi &) -> std::vector<std::pair<Eigen::VectorXi, double>> { return {}; };
 
   std::pair domain{NumberInterval<double>(-2, 2), NumberInterval<double>(-2, 2)};
   constexpr double maxError = 1.;
@@ -56,11 +56,12 @@ TEST_F(GaussianClusterTest, maxAllNeighbours) {
   }
 
   // return all but target as neighbours
-  auto neighboursFun = [&allDiscrete](const Eigen::VectorXi &target) -> std::vector<Eigen::VectorXi> {
-    std::vector<Eigen::VectorXi> result;
+  auto neighboursFun =
+      [&allDiscrete](const Eigen::VectorXi &target) -> std::vector<std::pair<Eigen::VectorXi, double>> {
+    std::vector<std::pair<Eigen::VectorXi, double>> result;
     for (const auto &vec : allDiscrete) {
       if (vec != target) {
-        result.emplace_back(vec);
+        result.emplace_back(std::make_pair(vec, 1.));
       }
     }
     return result;
@@ -79,7 +80,7 @@ TEST_F(GaussianClusterTest, maxAllNeighbours) {
 
 void GaussianClusterTest::printMaps(int xChunks, int yChunks, const autopas::NumberSet<double> &domainX,
                                     const autopas::NumberSet<double> &domainY, const autopas::GaussianCluster &gc,
-                                    std::function<std::vector<Eigen::VectorXi>(const Eigen::VectorXi &)> neighboursFun,
+                                    GaussianModelTypes::NeighbourFunction neighboursFun,
                                     autopas::AcquisitionFunctionOption af) {
   // get distance between chunks
   double xSpace = (domainX.getMax() - domainX.getMin()) / (xChunks - 1);

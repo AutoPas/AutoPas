@@ -57,6 +57,13 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   constexpr static double iterationScalePerMaxEvidence = 5.;
 
   /**
+   * Distance between evidence is expected not to exceed a upper threshold.
+   * We chose the threshold 7 because: exp(-r) < 0.1% for r > 7 but this
+   * can be increased if necessary.
+   */
+  constexpr static double suggestedMaxDistance = 7.;
+
+  /**
    * Number of cellSizeFactors sampled for FullSearch.
    */
   constexpr static size_t cellSizeFactorSampleSize = 1;
@@ -93,8 +100,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _invalidConfigs(),
         _rng(seed),
         _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::wasserstein2, sigma, _rng),
-        _neighbourFun([this](const Eigen::VectorXi &target) -> std::vector<Eigen::VectorXi> {
-          return FeatureVector::neighboursManhattan1(target, _gaussianCluster.getDimensions());
+        _neighbourFun([this](const Eigen::VectorXi &target) -> std::vector<std::pair<Eigen::VectorXi, double>> {
+          return _encoder.clusterNeighboursManhattan1Container(target);
         }),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
@@ -103,7 +110,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _currentIteration(0),
         _iterationScale(1. / (maxEvidence * iterationScalePerMaxEvidence)),
         _currentNumEvidence(0),
-        _fullSearch(allowedContainerOptions, convertCellSizeFactor(allowedCellSizeFactors, seed),
+        _fullSearch(allowedContainerOptions, allowedCellSizeFactors.uniformSampleSet(cellSizeFactorSampleSize, _rng),
                     allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
                     allowedNewton3Options) {
     if (predNumLHSamples <= 0) {
@@ -173,6 +180,11 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   }
 
   inline void reset(size_t iteration) override {
+    size_t iterationSinceLastEvidence = iteration - _currentIteration;
+    if (iterationSinceLastEvidence * _iterationScale > suggestedMaxDistance) {
+      AutoPasLog(warn, "BayesianClusterSearch: Time since the last evidence may be too long.");
+    }
+
     _currentIteration = iteration;
     _currentNumEvidence = 0;
     _currentAcquisitions.clear();
@@ -202,29 +214,6 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   inline void sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
 
-  /**
-   * FullSearch cannot handle continuous sets of cellSizeFactors.
-   * So we convert NumberSet to a finite std::set by sampling some values from the set.
-   * @param cellSizeFactors
-   * @param seed seed used to randomly sample from the set
-   * @return
-   */
-  static std::set<double> convertCellSizeFactor(const NumberSet<double> &cellSizeFactors, unsigned long seed) {
-    size_t numSamples = cellSizeFactorSampleSize;
-    if (cellSizeFactors.isFinite()) {
-      numSamples = std::min(numSamples, cellSizeFactors.size());
-    }
-
-    if (numSamples == 0) {
-      return std::set<double>();
-    }
-
-    Random rng(seed);
-    auto samples = cellSizeFactors.uniformSample(numSamples, rng);
-
-    return std::set<double>(samples.begin(), samples.end());
-  }
-
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
   std::vector<DataLayoutOption> _dataLayoutOptions;
@@ -248,9 +237,9 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   GaussianCluster _gaussianCluster;
   /**
-   * Function to generate neighbours of given vector
+   * Function to generate neighbours with weight of given vector.
    */
-  std::function<std::vector<Eigen::VectorXi>(const Eigen::VectorXi &)> _neighbourFun;
+  GaussianModelTypes::NeighbourFunction _neighbourFun;
   const size_t _maxEvidence;
   /**
    * Acquisition function used to predict informational gain.

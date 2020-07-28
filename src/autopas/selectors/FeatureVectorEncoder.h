@@ -18,6 +18,27 @@ namespace autopas {
  * Encoder to convert FeatureVector from and to Eigen::Vector.
  */
 class FeatureVectorEncoder {
+  /**
+   * Number of discrete values in a cluster encoded vector
+   */
+  static constexpr size_t clusterDiscreteSize = 3;
+  /**
+   * Index containing information about ContainerTraversalEstimator in continuous part of a cluster encoded vector
+   */
+  static constexpr size_t containerTraversalEstimatorClusterIndex = 0;
+  /**
+   * Index containing information about DataLayout in continuous part of a cluster encoded vector
+   */
+  static constexpr size_t dataLayoutClusterIndex = 1;
+  /**
+   * Index containing information about Newton3 in continuous part of a cluster encoded vector
+   */
+  static constexpr size_t newtonClusterIndex = 2;
+  /**
+   * Index containing information about CellSizeFactor in discrete part of a cluster encoded vector
+   */
+  static constexpr size_t cellSizeFactorClusterIndex = 0.;
+
  public:
   /**
    * Default Constructor
@@ -51,6 +72,12 @@ class FeatureVectorEncoder {
 
     _oneHotDims = FeatureVector::featureSpaceContinuousDims + _containerTraversalEstimatorOptions.size() +
                   _dataLayoutOptions.size() + _newton3Options.size();
+
+    _dimRestrictions.clear();
+    _dimRestrictions.reserve(clusterDiscreteSize);
+    _dimRestrictions.push_back(_containerTraversalEstimatorOptions.size());
+    _dimRestrictions.push_back(_dataLayoutOptions.size());
+    _dimRestrictions.push_back(_newton3Options.size());
   }
 
   /**
@@ -185,10 +212,12 @@ class FeatureVectorEncoder {
    */
   FeatureVector convertFromCluster(const std::pair<Eigen::VectorXi, Eigen::VectorXd> &vec) {
     const auto &[vecDiscrete, vecContinuous] = vec;
-    auto [container, traversal, estimator] = _containerTraversalEstimatorOptions[vecDiscrete[0]];
+    auto [container, traversal, estimator] =
+        _containerTraversalEstimatorOptions[vecDiscrete[containerTraversalEstimatorClusterIndex]];
 
-    return FeatureVector(container, vecContinuous[0], traversal, estimator, _dataLayoutOptions[vecDiscrete[1]],
-                         _newton3Options[vecDiscrete[2]]);
+    return FeatureVector(container, vecContinuous[cellSizeFactorClusterIndex], traversal, estimator,
+                         _dataLayoutOptions[vecDiscrete[dataLayoutClusterIndex]],
+                         _newton3Options[vecDiscrete[newtonClusterIndex]]);
   }
 
   /**
@@ -224,10 +253,86 @@ class FeatureVectorEncoder {
    */
   FeatureVector convertFromClusterWithIteration(const std::pair<Eigen::VectorXi, Eigen::VectorXd> &vec) {
     const auto &[vecDiscrete, vecContinuous] = vec;
-    auto [container, traversal, estimator] = _containerTraversalEstimatorOptions[vecDiscrete[0]];
+    auto [container, traversal, estimator] =
+        _containerTraversalEstimatorOptions[vecDiscrete[containerTraversalEstimatorClusterIndex]];
 
-    return FeatureVector(container, vecContinuous[0], traversal, estimator, _dataLayoutOptions[vecDiscrete[1]],
-                         _newton3Options[vecDiscrete[2]]);
+    return FeatureVector(container, vecContinuous[cellSizeFactorClusterIndex], traversal, estimator,
+                         _dataLayoutOptions[vecDiscrete[dataLayoutClusterIndex]],
+                         _newton3Options[vecDiscrete[newtonClusterIndex]]);
+  }
+
+  /**
+   * Get cluster-encoded neighbours of given target with fixed weight.
+   * Neighbours are all configurations which differ in at most one configuration from target.
+   * @param target
+   * @return
+   */
+  std::vector<std::pair<Eigen::VectorXi, double>> clusterNeighboursManhattan1(const Eigen::VectorXi &target) {
+    std::vector<std::pair<Eigen::VectorXi, double>> result;
+    // neighbours should contain #(possible values for each dimension) - #dimensions (initial vector is skipped once per
+    // dimension)
+    result.reserve(std::accumulate(_dimRestrictions.begin(), _dimRestrictions.end(), -_dimRestrictions.size()));
+
+    // for each dimension
+    for (int i = 0; i < target.size(); ++i) {
+      // initial value
+      auto init = target[i];
+
+      // for each possible value of that dimension
+      for (int x = 0; x < _dimRestrictions[i]; ++x) {
+        // skip initial value
+        if (x != init) {
+          auto neighbour = target;
+          neighbour[i] = x;
+          result.push_back(std::make_pair(std::move(neighbour), 1.));
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Get cluster-encoded neighbours of given target.
+   * Neighbours are all configurations which differ in at most one configuration from target.
+   * The weight is lowered if ContainerTraversalEstimator dimension is changed but the container stays the same.
+   * @param target
+   * @return
+   */
+  std::vector<std::pair<Eigen::VectorXi, double>> clusterNeighboursManhattan1Container(const Eigen::VectorXi &target) {
+    std::vector<std::pair<Eigen::VectorXi, double>> result;
+    // neighbours should contain #(possible values for each dimension) - #dimensions (initial vector is skipped once per
+    // dimension)
+    result.reserve(std::accumulate(_dimRestrictions.begin(), _dimRestrictions.end(), -_dimRestrictions.size()));
+
+    auto targetContainer =
+        std::get<0>(_containerTraversalEstimatorOptions[target[containerTraversalEstimatorClusterIndex]]);
+
+    // for each dimension
+    for (int i = 0; i < target.size(); ++i) {
+      // initial value
+      auto init = target[i];
+
+      // for each possible value of that dimension
+      for (int x = 0; x < _dimRestrictions[i]; ++x) {
+        // skip initial value
+        if (x != init) {
+          auto neighbour = target;
+          neighbour[i] = x;
+          double weight = 1.;
+          // check if containerTraversalEstimator changed but not container
+          if (i == containerTraversalEstimatorClusterIndex) {
+            auto xContainer = std::get<0>(_containerTraversalEstimatorOptions[x]);
+            if (targetContainer == xContainer) {
+              // assign lower weight
+              weight = 0.5;
+            }
+          }
+
+          result.push_back(std::make_pair(std::move(neighbour), weight));
+        }
+      }
+    }
+    return result;
   }
 
  private:
@@ -236,7 +341,12 @@ class FeatureVectorEncoder {
   std::vector<Newton3Option> _newton3Options;
 
   /**
-   * Dimensions of a one-hot-encoded vector
+   * Restriction of a cluster-encoded vector in each dimension.
+   */
+  std::vector<size_t> _dimRestrictions;
+
+  /**
+   * Dimensions of a one-hot-encoded vector.
    */
   size_t _oneHotDims{0};
 };

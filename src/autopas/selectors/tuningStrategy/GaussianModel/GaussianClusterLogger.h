@@ -69,7 +69,7 @@ class GaussianClusterLogger {
 
     // log edges
     for (size_t i = 0; i < clusters.size(); ++i) {
-      for (const auto &[n, weight] : neighbourWeights[i]) {
+      for (const auto &[n, _, weight] : neighbourWeights[i]) {
         if (weight > 0) {
           std::string source = _vecToStringFun(std::make_pair(discreteVectorMap[i], currentContinous));
           std::string target = _vecToStringFun(std::make_pair(discreteVectorMap[n], currentContinous));
