@@ -256,6 +256,7 @@ class VerletClusterListsRebuilder {
    * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both
    * (for newton3 == false)
    *
+   * @tparam FunType type of function
    * @param towerIndexX The x index of the given tower.
    * @param towerIndexY The y index of the given tower.
    * @param minNeighborIndexX The minimum neighbor tower index in x direction.
@@ -263,6 +264,7 @@ class VerletClusterListsRebuilder {
    * @param minNeighborIndexY The minimum neighbor tower index in y direction.
    * @param maxNeighborIndexY The maximum neighbor tower index in y direction.
    * @param useNewton3 Specifies, whether neighbor lists should contain only forward neighbors.
+   * @param function Function to apply on every neighbor tower. Typically this is calculateNeighborsBetweenTowers().
    */
   template <class FunType>
   void iterateNeighborTowers(const int towerIndexX, const int towerIndexY, const int minNeighborIndexX,
