@@ -242,7 +242,7 @@ class VerletClusterListsRebuilder {
         const int maxY = std::min(towerIndexY + _interactionLengthInTowers, maxTowerIndexY);
 
         iterateNeighborTowers(towerIndexX, towerIndexY, minX, maxX, minY, maxY, useNewton3,
-                              &VerletClusterListsRebuilder<Particle>::calculateNeighborsForTowerPair);
+                              &VerletClusterListsRebuilder<Particle>::calculateNeighborsBetweenTowers);
       }
     }
   }
@@ -343,38 +343,38 @@ class VerletClusterListsRebuilder {
    * Calculates for all clusters in the given tower:
    *    - all neighbor clusters within the interaction length that are contained in the given neighbor tower.
    *
-   * @param tower The given tower.
-   * @param neighborTower The given neighbor tower.
+   * @param towerA The given tower.
+   * @param towerB The given neighbor tower.
    * @param distBetweenTowersXYsqr The distance in the xy-plane between the towers.
    * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
    * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
    * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
    * false)
    */
-  void calculateNeighborsForTowerPair(internal::ClusterTower<Particle> &tower,
-                                      internal::ClusterTower<Particle> &neighborTower, double distBetweenTowersXYsqr,
-                                      bool useNewton3) {
-    const bool isSameTower = &tower == &neighborTower;
-    for (size_t towerIndex = 0; towerIndex < tower.getNumClusters(); towerIndex++) {
-      auto startIndexNeighbor = useNewton3 and isSameTower ? towerIndex + 1 : 0;
-      auto &towerCluster = tower.getCluster(towerIndex);
+  void calculateNeighborsBetweenTowers(internal::ClusterTower<Particle> &towerA,
+                                       internal::ClusterTower<Particle> &towerB, double distBetweenTowersXYsqr,
+                                       bool useNewton3) {
+    const bool isSameTower = &towerA == &towerB;
+    for (size_t clusterIndexInTowerA = 0; clusterIndexInTowerA < towerA.getNumClusters(); clusterIndexInTowerA++) {
+      // if we are within one tower depending on newton3 only look at forward neighbors
+      auto startClusterIndexInTowerB = isSameTower and useNewton3 ? clusterIndexInTowerA + 1 : 0;
+      auto &clusterA = towerA.getCluster(clusterIndexInTowerA);
+      auto [clusterABoxBottom, clusterABoxTop, clusterAContainsParticles] = clusterA.getZMinMax();
 
-      auto [towerClusterBoxBottom, towerClusterBoxTop, towerRealCluster] = towerCluster.getZMinMax();
-
-      if (towerRealCluster) {
-        for (size_t neighborIndex = startIndexNeighbor; neighborIndex < neighborTower.getNumClusters();
-             neighborIndex++) {
-          const bool isSameCluster = towerIndex == neighborIndex;
-          if (not useNewton3 and isSameTower and isSameCluster) {
+      if (clusterAContainsParticles) {
+        for (size_t clusterIndexInTowerB = startClusterIndexInTowerB; clusterIndexInTowerB < towerB.getNumClusters();
+             clusterIndexInTowerB++) {
+          // a cluster can not be a neighbor to itself
+          // when newton3 is true this is not possible since the choice of the start index
+          if (not useNewton3 and isSameTower and clusterIndexInTowerA == clusterIndexInTowerB) {
             continue;
           }
-          auto &neighborCluster = neighborTower.getCluster(neighborIndex);
-          auto [neighborClusterBoxBottom, neighborClusterBoxTop, neighborRealCluster] = neighborCluster.getZMinMax();
-          if (neighborRealCluster) {
-            double distZ = bboxDistance(towerClusterBoxBottom, towerClusterBoxTop, neighborClusterBoxBottom,
-                                        neighborClusterBoxTop);
+          auto &clusterB = towerB.getCluster(clusterIndexInTowerB);
+          auto [clusterBBoxBottom, clusterBBoxTop, clusterBcontainsParticles] = clusterB.getZMinMax();
+          if (clusterBcontainsParticles) {
+            double distZ = bboxDistance(clusterABoxBottom, clusterABoxTop, clusterBBoxBottom, clusterBBoxTop);
             if (distBetweenTowersXYsqr + distZ * distZ <= _interactionLengthSqr) {
-              towerCluster.addNeighbor(neighborCluster);
+              clusterA.addNeighbor(clusterB);
             }
           }
         }
