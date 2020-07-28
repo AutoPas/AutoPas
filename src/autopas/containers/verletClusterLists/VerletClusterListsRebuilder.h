@@ -241,7 +241,8 @@ class VerletClusterListsRebuilder {
         const int maxX = std::min(towerIndexX + _interactionLengthInTowers, maxTowerIndexX);
         const int maxY = std::min(towerIndexY + _interactionLengthInTowers, maxTowerIndexY);
 
-        calculateNeighborsForTowerInRange(towerIndexX, towerIndexY, minX, maxX, minY, maxY, useNewton3);
+        iterateNeighborTowers(towerIndexX, towerIndexY, minX, maxX, minY, maxY, useNewton3,
+                              &VerletClusterListsRebuilder<Particle>::calculateNeighborsForTowerPair);
       }
     }
   }
@@ -263,8 +264,10 @@ class VerletClusterListsRebuilder {
    * @param maxNeighborIndexY The maximum neighbor tower index in y direction.
    * @param useNewton3 Specifies, whether neighbor lists should contain only forward neighbors.
    */
-  void calculateNeighborsForTowerInRange(const int towerIndexX, const int towerIndexY, const int minNeighborIndexX, const int maxNeighborIndexX,
-                                         const int minNeighborIndexY, const int maxNeighborIndexY, const bool useNewton3) {
+  template <class FunType>
+  void iterateNeighborTowers(const int towerIndexX, const int towerIndexY, const int minNeighborIndexX,
+                             const int maxNeighborIndexX, const int minNeighborIndexY, const int maxNeighborIndexY,
+                             const bool useNewton3, FunType function) {
     auto &tower = getTower(towerIndexX, towerIndexY);
     // for all neighbor towers
     for (int neighborIndexY = minNeighborIndexY; neighborIndexY <= maxNeighborIndexY; neighborIndexY++) {
@@ -283,7 +286,7 @@ class VerletClusterListsRebuilder {
         if (distBetweenTowersXYsqr <= _interactionLengthSqr) {
           auto &neighborTower = getTower(neighborIndexX, neighborIndexY);
 
-          calculateNeighborsForTowerPair(tower, neighborTower, distBetweenTowersXYsqr, useNewton3);
+          (this->*function)(tower, neighborTower, distBetweenTowersXYsqr, useNewton3);
         }
       }
     }
@@ -319,7 +322,8 @@ class VerletClusterListsRebuilder {
    * @return True, if clusters of the given tower should contain clusters of the given neighbor tower as neighbors with
    * newton 3 enabled.
    */
-  bool isForwardNeighbor(const int towerIndexX, const int towerIndexY, const int neighborIndexX, const int neighborIndexY) {
+  bool isForwardNeighbor(const int towerIndexX, const int towerIndexY, const int neighborIndexX,
+                         const int neighborIndexY) {
     auto interactionCellTowerIndex1D = get1DInteractionCellIndexForTower(towerIndexX, towerIndexY);
     auto interactionCellNeighborIndex1D = get1DInteractionCellIndexForTower(neighborIndexX, neighborIndexY);
 
@@ -327,7 +331,7 @@ class VerletClusterListsRebuilder {
       return true;
     } else if (interactionCellNeighborIndex1D < interactionCellTowerIndex1D) {
       return false;
-    } // else if (interactionCellNeighborIndex1D == interactionCellTowerIndex1D) ...
+    }  // else if (interactionCellNeighborIndex1D == interactionCellTowerIndex1D) ...
 
     auto towerIndex1D = towerIndex2DTo1D(towerIndexX, towerIndexY);
     auto neighborIndex1D = towerIndex2DTo1D(neighborIndexX, neighborIndexY);
