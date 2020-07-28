@@ -150,10 +150,9 @@ class VerletClusterListsRebuilder {
   std::vector<std::vector<Particle>> collectAllParticlesFromTowers() {
     std::vector<std::vector<Particle>> invalidParticles;
     invalidParticles.resize(_towers.size());
-    for (size_t index = 0; index < _towers.size(); index++) {
-      auto &tower = _towers[index];
-      invalidParticles[index] = tower.collectAllActualParticles();
-      tower.clear();
+    for (size_t towerIndex = 0; towerIndex < _towers.size(); towerIndex++) {
+      invalidParticles[towerIndex] = _towers[towerIndex].collectAllActualParticles();
+      _towers[towerIndex].clear();
     }
     return invalidParticles;
   }
