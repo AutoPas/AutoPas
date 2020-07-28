@@ -63,8 +63,6 @@ inline void SlicedBlkTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNew
   this->slicedBlkTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     _cellHandler.processBaseCell(cells, id);
-//#pragma omp critical
-//    std::cout << id << "\n";
   });
 }
 
