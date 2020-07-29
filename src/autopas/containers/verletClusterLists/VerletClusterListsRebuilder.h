@@ -367,7 +367,7 @@ class VerletClusterListsRebuilder {
         for (size_t clusterIndexInTowerB = startClusterIndexInTowerB; clusterIndexInTowerB < towerB.getNumClusters();
              clusterIndexInTowerB++) {
           // a cluster can not be a neighbor to itself
-          // when newton3 is true this is not possible since the choice of the start index
+          // If newton3 is true this is not possible because of the choice of the start index.
           if (not useNewton3 and isSameTower and clusterIndexInTowerA == clusterIndexInTowerB) {
             continue;
           }
