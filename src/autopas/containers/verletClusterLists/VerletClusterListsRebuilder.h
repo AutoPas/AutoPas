@@ -104,8 +104,10 @@ class VerletClusterListsRebuilder {
     sortParticlesIntoTowers(invalidParticles);
 
     // generate clusters and count them
-    size_t numClusters = std::accumulate(std::begin(_towers), std::end(_towers), 0,
-                                         [](auto acc, auto &tower) { return acc + tower.generateClusters(); });
+    size_t numClusters = 0;
+    for (auto &tower : _towers) {
+      numClusters += tower.generateClusters();
+    }
 
     return std::make_tuple(_towerSideLength, _interactionLengthInTowers, _towersPerDim, numClusters);
   }
