@@ -321,8 +321,7 @@ class VerletClusterListsRebuilder {
    * @param towerIndexY The y-index of the given tower.
    * @param neighborIndexX The x-index of the given neighbor tower.
    * @param neighborIndexY The y-index of the given neighbor tower.
-   * @return True, if clusters of the given tower should contain clusters of the given neighbor tower as neighbors with
-   * newton 3 enabled.
+   * @return True, if neighbor is a forward neighbor of tower.
    */
   bool isForwardNeighbor(const int towerIndexX, const int towerIndexY, const int neighborIndexX,
                          const int neighborIndexY) {
