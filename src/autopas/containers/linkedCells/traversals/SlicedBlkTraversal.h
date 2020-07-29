@@ -43,7 +43,7 @@ class SlicedBlkTraversal : public SlicedBlkBasedTraversal<ParticleCell, Pairwise
                               const double interactionLength, const std::array<double, 3> &cellLength)
       : SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                        interactionLength, cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlapAxis) {}
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 
   void traverseParticlePairs() override;
 

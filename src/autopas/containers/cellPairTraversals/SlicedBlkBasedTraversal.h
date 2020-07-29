@@ -58,12 +58,13 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
   explicit SlicedBlkBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                    const double interactionLength, const std::array<double, 3> &cellLength)
       : CellPairTraversal<ParticleCell>(dims),
-        _overlapAxis(),
+        _overlap{},
         _dimsPerLength{},
         _interactionLength(interactionLength),
         _cellLength(cellLength),
         _cellBlockDimensions{},
         locks(),
+        _overlapAxis({0,0,0}),
         _dataLayoutConverter(pairwiseFunctor) {
     init(dims);
   }
@@ -130,9 +131,16 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
    *
    * @param dims The dimensions of the simulation domain in cells.
    */
-  template <bool allCells = false>
   void init(const std::array<unsigned long, 3> &dims);
 
+  /**
+   * allCells Defines whether or not to iterate over all cells with the loop body given as argument. By default
+   * (allCells=false) it will not iterate over all cells and instead skip the last few cells, because they will be
+   * covered by the base step. If you plan to use the default base step of the traversal on this function, use
+   * allCells=false, if you plan to just iterate over all cells, e.g., to iterate over verlet lists saved within the
+   * cells, use allCells=true. For the sliced step if allCells is false, the last layer will not be iterated over,
+   * but its corresponding sub-blocks will be locked.
+   */
   bool allCells = false;
 
   /**
@@ -142,6 +150,11 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   template <typename LoopBody>
   inline void slicedBlkTraversal(LoopBody &&loopBody);
+
+  /**
+   * Overlap of interacting cells. Array allows asymmetric cell sizes.
+   */
+  std::array<unsigned long, 3> _overlap;
 
  private:
   /**
@@ -557,6 +570,7 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
   using subBlocksSingleCellblock = std::array<subBlock, 27>;
   using subBlocksAllCellblocks = std::vector<subBlocksSingleCellblock>;
 
+  _overlapAxis = _overlap;
   for (unsigned int d = 0; d < 3; d++) {
     _overlapAxis[d] = std::ceil(_interactionLength / _cellLength[d]);
   }
