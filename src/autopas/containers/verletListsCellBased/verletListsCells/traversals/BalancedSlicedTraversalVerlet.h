@@ -52,13 +52,13 @@ class BalancedSlicedTraversalVerlet
 
   void traverseParticlePairs() override;
 
-  DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
-  bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::BalancedSlicedVerlet; }
 
-  bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
+  [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 
  private:
   PairwiseFunctor *_functor;

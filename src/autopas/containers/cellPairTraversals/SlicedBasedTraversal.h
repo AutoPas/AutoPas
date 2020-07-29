@@ -58,7 +58,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * Checks if the traversal is applicable to the current state of the domain.
    * @return true iff the traversal can be applied.
    */
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     auto minSliceThickness = _overlapLongestAxis + 1;
     auto maxNumSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
     return not(dataLayout == DataLayoutOption::cuda) and maxNumSlices > 0;
