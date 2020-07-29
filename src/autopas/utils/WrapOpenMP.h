@@ -80,6 +80,11 @@ class AutoPasLock {
   void lock() { omp_set_lock(&_lock); }
 
   /**
+   * Acquire the lock, if possible.
+   */
+  bool testlock() { return omp_test_lock(&_lock); }
+
+  /**
    * Release the lock.
    */
   void unlock() { omp_unset_lock(&_lock); }
@@ -158,6 +163,20 @@ class AutoPasLock {
       utils::ExceptionHandler::exception("Tried to acquire a locked lock.");
     }
     _locked = true;
+  }
+
+  /**
+   * Aquire the lock, but do not suspend task.
+   * ATTENTION: OpenMP Doc states:
+   * The behavior is unspecified if a simple lock accessed by omp_test_lock is in the locked state and is owned by the task that contains the call.
+   */
+  bool testlock() {
+    if (_locked) {
+      return false;
+    } else {
+      _locked = true;
+      return true;
+    }
   }
 
   /**

@@ -312,15 +312,46 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
     return str;
   }
 
-  void locking2x2x2sub_blocks(unsigned long blockNumber, std::array<unsigned long, 3> order) {
+  bool locking2x2x2sub_blocks(unsigned long blockNumber, std::array<unsigned long, 3> order) {
+    // IF LOCK POSSIBLE, LOCK & SET MASTER LOCK & return true
+    // IF IMPOSSIBLE UNLOCK locked Locks & SET MASTER LOCK & return false
+    bool LocksThatCanBeSet[8] = {false,false,false,false, false,false,false,false};
+    int no_locksSet = 0;
+    _masterlock.lock();
+    AutoPasLog(debug, "LOCKING: " + std::to_string(blockNumber) + " MASTER");
+
     for (unsigned long x = 0; x < 2; ++x) {
       for (unsigned long y = 0; y < 2; ++y) {
         for (unsigned long z = 0; z < 2; ++z) {
-          AutoPasLog(debug, "LOCKING " + std::to_string(blockNumber) + " Lock : " + std::to_string(uniqueLockCalculation(blockNumber, {x+order[0],y+order[1],z+order[2]})) + " id: " + debugHelperFunctionIntArrayToString2({x+order[0],y+order[1],z+order[2]}));
-          locks[uniqueLockCalculation(blockNumber, {x+order[0],y+order[1],z+order[2]})].lock();
+          LocksThatCanBeSet[no_locksSet] = locks[uniqueLockCalculation(blockNumber, {x+order[0],y+order[1],z+order[2]})].testlock();
+          AutoPasLog(debug, "TRYING LOCKING " + std::to_string(blockNumber) + " Lock : " + std::to_string(uniqueLockCalculation(blockNumber, {x+order[0],y+order[1],z+order[2]})) + " id: " + debugHelperFunctionIntArrayToString2({x+order[0],y+order[1],z+order[2]}));
+          no_locksSet++;
         }
       }
     }
+
+    if (LocksThatCanBeSet[0] && LocksThatCanBeSet[1] && LocksThatCanBeSet[2] && LocksThatCanBeSet[3] && LocksThatCanBeSet[4] && LocksThatCanBeSet[5] && LocksThatCanBeSet[6] && LocksThatCanBeSet[7]) {
+      AutoPasLog(debug, "UNLOCKING: " + std::to_string(blockNumber) + " MASTER");
+      _masterlock.unlock();
+      return true;
+    } else {
+      no_locksSet = 0;
+      for (unsigned long x = 0; x < 2; ++x) {
+        for (unsigned long y = 0; y < 2; ++y) {
+          for (unsigned long z = 0; z < 2; ++z) {
+            if (LocksThatCanBeSet[no_locksSet]) {
+              AutoPasLog(debug, "UNLOCKING " + std::to_string(blockNumber) + " Lock : " + std::to_string(uniqueLockCalculation(blockNumber, {x+order[0],y+order[1],z+order[2]})) + " id: " + debugHelperFunctionIntArrayToString2({x+order[0],y+order[1],z+order[2]}));
+              locks[uniqueLockCalculation(blockNumber, {x + order[0], y + order[1], z + order[2]})].unlock();
+            }
+            no_locksSet++;
+          }
+        }
+      }
+      AutoPasLog(debug, "UNLOCKING: " + std::to_string(blockNumber) + " MASTER");
+      _masterlock.unlock();
+      return false;
+    }
+
   }
 
   void unlocking2x2x2sub_blocks(unsigned long blockNumber, std::array<unsigned long, 3> order) {
@@ -361,7 +392,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param orderCurrent The current order of the current sub-block.
    * @param orderNext The order of the next sub-block to iterate over.
   */
-  void locking2x2x2sub_blocksNext(unsigned long blockNumber, std::array<unsigned long, 3> orderCurrent, std::array<unsigned long, 3> orderNext) {
+  bool locking2x2x2sub_blocksNext(unsigned long blockNumber, std::array<unsigned long, 3> orderCurrent, std::array<unsigned long, 3> orderNext) {
     for (int axis = 0; axis < 3; ++axis) {
       if (orderCurrent[axis] != orderNext[axis]) { // MUST ONLY BE TRUE ONCE IN FOR LOOP
         // we need the difference between orderCurrent and orderNext
@@ -386,20 +417,56 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
             }
           }
         }
+
+        // OPEN MP CHECK IF LOCK IS POSSIBLE
+        bool LocksThatCanBeSet[4] = {false,false,false,false};
+        int no_locksSet = 0;
+        _masterlock.lock();
+
         for (int i = 0; i < 2; ++i) {
           for (int j = 0; j < 2; ++j) {
             if (axis == 0) {
-              AutoPasLog(debug, "LOCKING: " + std::to_string(blockNumber) + " Lock : " + std::to_string(uniqueLockCalculation(blockNumber, {orderNext[0]+diffOrderNext,i+orderNext[1],j+orderNext[2]})) + " id: " + debugHelperFunctionIntArrayToString2({orderNext[0]+diffOrderNext,i+orderNext[1],j+orderNext[2]}));
-              locks[uniqueLockCalculation(blockNumber, {orderNext[0]+diffOrderNext,i+orderNext[1],j+orderNext[2]})].lock();
+              AutoPasLog(debug, "TRYING LOCKING: " + std::to_string(blockNumber) + " Lock : " + std::to_string(uniqueLockCalculation(blockNumber, {orderNext[0]+diffOrderNext,i+orderNext[1],j+orderNext[2]})) + " id: " + debugHelperFunctionIntArrayToString2({orderNext[0]+diffOrderNext,i+orderNext[1],j+orderNext[2]}));
+              LocksThatCanBeSet[no_locksSet] = locks[uniqueLockCalculation(blockNumber, {orderNext[0]+diffOrderNext,i+orderNext[1],j+orderNext[2]})].testlock();
             } else if (axis == 1) {
-              AutoPasLog(debug, "LOCKING: " + std::to_string(blockNumber) + " Lock : " + std::to_string(uniqueLockCalculation(blockNumber, {j+orderNext[0],orderNext[1]+diffOrderNext,i+orderNext[2]})) + " id: " + debugHelperFunctionIntArrayToString2({j+orderNext[0],orderNext[1]+diffOrderNext,i+orderNext[2]}));
-              locks[uniqueLockCalculation(blockNumber, {j+orderNext[0],orderNext[1]+diffOrderNext,i+orderNext[2]})].lock();
+              AutoPasLog(debug, "TRYING LOCKING: " + std::to_string(blockNumber) + " Lock : " + std::to_string(uniqueLockCalculation(blockNumber, {j+orderNext[0],orderNext[1]+diffOrderNext,i+orderNext[2]})) + " id: " + debugHelperFunctionIntArrayToString2({j+orderNext[0],orderNext[1]+diffOrderNext,i+orderNext[2]}));
+              LocksThatCanBeSet[no_locksSet] = locks[uniqueLockCalculation(blockNumber, {j+orderNext[0],orderNext[1]+diffOrderNext,i+orderNext[2]})].testlock();
             } else if (axis == 2) {
-              AutoPasLog(debug, "LOCKING: " + std::to_string(blockNumber) + " Lock : " + std::to_string(uniqueLockCalculation(blockNumber, {i+orderNext[0],j+orderNext[1],orderNext[2]+diffOrderNext})) + " id: " + debugHelperFunctionIntArrayToString2({i+orderNext[0],j+orderNext[1],orderNext[2]+diffOrderNext}));
-              locks[uniqueLockCalculation(blockNumber, {i+orderNext[0],j+orderNext[1],orderNext[2]+diffOrderNext})].lock();
+              AutoPasLog(debug, "TRYING LOCKING: " + std::to_string(blockNumber) + " Lock : " + std::to_string(uniqueLockCalculation(blockNumber, {i+orderNext[0],j+orderNext[1],orderNext[2]+diffOrderNext})) + " id: " + debugHelperFunctionIntArrayToString2({i+orderNext[0],j+orderNext[1],orderNext[2]+diffOrderNext}));
+              LocksThatCanBeSet[no_locksSet] = locks[uniqueLockCalculation(blockNumber, {i+orderNext[0],j+orderNext[1],orderNext[2]+diffOrderNext})].testlock();
             }
+            no_locksSet++;
           }
         }
+
+        // IF LOCK POSSIBLE, LOCK & SET MASTER LOCK & return true
+        // IF IMPOSSIBLE UNLOCK locked Locks & SET MASTER LOCK & return false
+        if (LocksThatCanBeSet[0] && LocksThatCanBeSet[1] && LocksThatCanBeSet[2] && LocksThatCanBeSet[3]) {
+          AutoPasLog(debug, "UNLOCKING: " + std::to_string(blockNumber) + " MASTER");
+          _masterlock.unlock();
+          return true;
+        } else {
+          no_locksSet = 0;
+          for (int i = 0; i < 2; ++i) {
+            for (int j = 0; j < 2; ++j) {
+              if (axis == 0 && LocksThatCanBeSet[no_locksSet]) {
+                AutoPasLog(debug, "UNLOCKING: " + std::to_string(blockNumber) + " Lock : " + std::to_string(uniqueLockCalculation(blockNumber, {orderNext[0]+diffOrderNext,i+orderNext[1],j+orderNext[2]})) + " id: " + debugHelperFunctionIntArrayToString2({orderNext[0]+diffOrderNext,i+orderNext[1],j+orderNext[2]}));
+                locks[uniqueLockCalculation(blockNumber, {orderNext[0]+diffOrderNext,i+orderNext[1],j+orderNext[2]})].unlock();
+              } else if (axis == 1 && LocksThatCanBeSet[no_locksSet]) {
+                AutoPasLog(debug, "UNLOCKING: " + std::to_string(blockNumber) + " Lock : " + std::to_string(uniqueLockCalculation(blockNumber, {j+orderNext[0],orderNext[1]+diffOrderNext,i+orderNext[2]})) + " id: " + debugHelperFunctionIntArrayToString2({j+orderNext[0],orderNext[1]+diffOrderNext,i+orderNext[2]}));
+                locks[uniqueLockCalculation(blockNumber, {j+orderNext[0],orderNext[1]+diffOrderNext,i+orderNext[2]})].unlock();
+              } else if (axis == 2 && LocksThatCanBeSet[no_locksSet]) {
+                AutoPasLog(debug, "UNLOCKING: " + std::to_string(blockNumber) + " Lock : " + std::to_string(uniqueLockCalculation(blockNumber, {i+orderNext[0],j+orderNext[1],orderNext[2]+diffOrderNext})) + " id: " + debugHelperFunctionIntArrayToString2({i+orderNext[0],j+orderNext[1],orderNext[2]+diffOrderNext}));
+                locks[uniqueLockCalculation(blockNumber, {i+orderNext[0],j+orderNext[1],orderNext[2]+diffOrderNext})].unlock();
+              }
+              no_locksSet++;
+            }
+          }
+          AutoPasLog(debug, "UNLOCKING: " + std::to_string(blockNumber) + " MASTER");
+          _masterlock.unlock();
+          return false;
+        }
+
       }
     }
 
@@ -551,7 +618,7 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
   _cellBlockTraverseOrderByLocks[6] = {1, 0, 1};
   _cellBlockTraverseOrderByLocks[7] = {1, 1, 1};
 
-  // We need 8 = 1 locks per blocks
+  // We need 8 = locks per block + 1 for all sub-blocks bordering the end of the simulation domain
   locks.resize((_cellBlockDimensions[0].size()*2+1) * (_cellBlockDimensions[1].size()*2+1) * (_cellBlockDimensions[2].size()*2+1));
   // locks.resize(_cellBlockTraverseOrderByLocks.size() * _cellBlockDimensions[0].size() * _cellBlockDimensions[1].size() * _cellBlockDimensions[2].size());
 
@@ -782,45 +849,57 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 //                            "BLOCK " + std::to_string(m) +
 //                            " Lock : " + std::to_string(my_locks[_subBlockBlockCoordinatesToSubBlockIndex[id]]) + "  id: " + std::to_string(id));
 
-    // lock the first sub-blocks == all sub-blocks without a 2 in name
-    locking2x2x2sub_blocks(m, {0,0,0});
-    // auto thread_traversalOrder = _cellBlockTraverseOrderByLocks;
+    // lock the first sub-blocks == all sub-blocks without a 2 in name IF POSSIBLE
+    // THIS IS NOT AN ENDLESS LOOP UNLESS the traversalOrder WILL always result in deadlock (which would be even worse)
+    // todo: maybe make an indicator if a broken traversalOrder was used e.g. >10.000 Iterations per thread or tell scheduler to give thread less priority after x iterations of this
+    while (!locking2x2x2sub_blocks(m, {0,0,0})) {}
+
+    std::queue<int> traversalOrderQueue[8];
+    for (int n = 0; n < 8; ++n) {
+      traversalOrderQueue->push(n);
+    }
 
     // Iterate over own sub-blocks (excluding all with 2)
-    for (int traversalOrder = 0; traversalOrder < 8; ++traversalOrder) {
-      auto &order = _cellBlockTraverseOrderByLocks[traversalOrder];
-      int subBlockId = lockToSubBlocks(order[0], order[1], order[2]);
-      subBlock currentSubBlock = currentSubBlocksInThisCellBlock[_subBlockBlockCoordinatesToSubBlockIndex[subBlockId]];
+//    for (int traversalOrder = 0; traversalOrder < 8; ++traversalOrder) {
+      while (!traversalOrderQueue->empty()) {
+        int traversalOrder = traversalOrderQueue->front();
+        traversalOrderQueue->pop();
+        auto &order = _cellBlockTraverseOrderByLocks[traversalOrder];
+        int subBlockId = lockToSubBlocks(order[0], order[1], order[2]);
+        subBlock currentSubBlock = currentSubBlocksInThisCellBlock[_subBlockBlockCoordinatesToSubBlockIndex[subBlockId]];
 
-      // create the last point of sub-block for spanning vector
-      array3D _subBlockEndIteration;
-      for (unsigned long i = 0; i < 3; ++i) {
-        if (currentSubBlock[i][1] == 0) {
-          _subBlockEndIteration[i] = currentSubBlock[i][0] + _overlapAxis[i] - 1;
-        } else if (currentSubBlock[i][1] == 1) {
-          // e.g. subBlockEnd 001 = subBlockStart from 001 + cellBlockLength = _cellBlockDimensions[i][m] =
-          // cellBlockEnd - cellBlockStart
-          //      - 000 Length - 002 Length = 2*overLap[i] -1 to stay in the subBlock and compensate for overlap > 1
-          _subBlockEndIteration[i] = block[1][i];
-        }
-      }  // No iteration over sub-blocks including a 2, therefore no need for their End. We only need their beginning.
-      // AutoPasLog(debug, "FINE HERE");
-      // loop over the cells in the subBlock
-      for (unsigned long j = currentSubBlock[0][0]; j <= _subBlockEndIteration[0] and j < _dims[0] - _overlapAxis[0];++j) {
-        for (unsigned long k = currentSubBlock[1][0]; k <= _subBlockEndIteration[1] and k < _dims[1] - _overlapAxis[1];++k) {
-          for (unsigned long l = currentSubBlock[2][0]; l <= _subBlockEndIteration[2] and l < _dims[2] - _overlapAxis[2]; ++l) {
-            loopBody(j, k, l);
+        // create the last point of sub-block for spanning vector
+        array3D _subBlockEndIteration;
+        for (unsigned long i = 0; i < 3; ++i) {
+          if (currentSubBlock[i][1] == 0) {
+            _subBlockEndIteration[i] = currentSubBlock[i][0] + _overlapAxis[i] - 1;
+          } else if (currentSubBlock[i][1] == 1) {
+            // e.g. subBlockEnd 001 = subBlockStart from 001 + cellBlockLength = _cellBlockDimensions[i][m] =
+            // cellBlockEnd - cellBlockStart
+            //      - 000 Length - 002 Length = 2*overLap[i] -1 to stay in the subBlock and compensate for overlap > 1
+            _subBlockEndIteration[i] = block[1][i];
+          }
+        }  // No iteration over sub-blocks including a 2, therefore no need for their End. We only need their beginning.
+        // AutoPasLog(debug, "FINE HERE");
+        // loop over the cells in the subBlock
+        for (unsigned long j = currentSubBlock[0][0]; j <= _subBlockEndIteration[0] and j < _dims[0] - _overlapAxis[0];++j) {
+          for (unsigned long k = currentSubBlock[1][0]; k <= _subBlockEndIteration[1] and k < _dims[1] - _overlapAxis[1];++k) {
+            for (unsigned long l = currentSubBlock[2][0]; l <= _subBlockEndIteration[2] and l < _dims[2] - _overlapAxis[2]; ++l) {
+              loopBody(j, k, l);
+            }
           }
         }
-      }
 
-      if (traversalOrder < 7) {
-        // get order of next sub-block
-        AutoPasLog(debug, "Starting 2x2x2 loop calc for traversal Order: " + std::to_string(traversalOrder));
-        std::array<unsigned long, 3> next_subBlock_order = _cellBlockTraverseOrderByLocks[traversalOrder + 1];
-        std::array<unsigned long, 3> currentOrder = {currentSubBlock[0][1], currentSubBlock[1][1], currentSubBlock[2][1]};
-        locking2x2x2sub_blocksNext(m, currentOrder, next_subBlock_order);
-      }
+        if (traversalOrder < 7) {
+          // get order of next sub-block
+          AutoPasLog(debug, "Starting 2x2x2 loop calc for traversal Order: " + std::to_string(traversalOrder));
+          std::array<unsigned long, 3> next_subBlock_order = _cellBlockTraverseOrderByLocks[traversalOrder + 1];
+          std::array<unsigned long, 3> currentOrder = {currentSubBlock[0][1], currentSubBlock[1][1], currentSubBlock[2][1]};
+          if (!locking2x2x2sub_blocksNext(m, currentOrder, next_subBlock_order)) {
+            // locks were not set -> pushback traversalOrder
+            traversalOrderQueue->push(traversalOrder);
+          }
+        }
 
     }
 
