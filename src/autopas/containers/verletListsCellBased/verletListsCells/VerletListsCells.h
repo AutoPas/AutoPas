@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers//verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/ParticleContainer.h"
@@ -131,7 +131,7 @@ class VerletListsCells
     bool useNewton3 = traversal->getUseNewton3();
     this->_verletBuiltNewton3 = useNewton3;
 
-    // initialize a Verlet Lists for each cell
+    // Initialize a neighbor list for each cell.
     _neighborLists.clear();
     auto &cells = this->_linkedCells.getCells();
     size_t cellsSize = cells.size();
@@ -142,8 +142,8 @@ class VerletListsCells
       for (auto iter = cells[cellIndex].begin(); iter.isValid(); ++iter, ++particleIndexWithinCell) {
         Particle *particle = &*iter;
         _neighborLists[cellIndex].emplace_back(particle, std::vector<Particle *>());
-        // reserve space for 5 times as many particles in the list as are in the particles' cell
-        // 5 is an empirically determined magic number
+        // In a cell with N particles, reserve space for 5N neighbors.
+        // 5 is an empirically determined magic number that provides good speed.
         _neighborLists[cellIndex].back().second.reserve(cells[cellIndex].numParticles() * 5);
         _particleToCellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
       }
@@ -152,9 +152,9 @@ class VerletListsCells
     typename VerletListsCellsHelpers<Particle>::VerletListGeneratorFunctor f(_neighborLists, _particleToCellMap,
                                                                              this->getCutoff() + this->getSkin());
 
-    // generate the build traversal with the traversal selector and apply the build functor with it
+    // Generate the build traversal with the traversal selector and apply the build functor with it.
     TraversalSelector<LinkedParticleCell> traversalSelector;
-    // argument "cluster size" does not matter here
+    // Argument "cluster size" does not matter here.
     TraversalSelectorInfo traversalSelectorInfo(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 this->getInteractionLength(),
                                                 this->_linkedCells.getCellBlock().getCellLength(), 0);
