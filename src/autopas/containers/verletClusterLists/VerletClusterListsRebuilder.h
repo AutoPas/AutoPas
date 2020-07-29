@@ -356,7 +356,7 @@ class VerletClusterListsRebuilder {
   void calculateNeighborsBetweenTowers(internal::ClusterTower<Particle> &towerA,
                                        internal::ClusterTower<Particle> &towerB, double distBetweenTowersXYsqr,
                                        bool useNewton3) {
-    const bool isSameTower = &towerA == &towerB;
+    const bool isSameTower = (&towerA == &towerB);
     for (size_t clusterIndexInTowerA = 0; clusterIndexInTowerA < towerA.getNumClusters(); clusterIndexInTowerA++) {
       // if we are within one tower depending on newton3 only look at forward neighbors
       auto startClusterIndexInTowerB = isSameTower and useNewton3 ? clusterIndexInTowerA + 1 : 0;
@@ -366,7 +366,7 @@ class VerletClusterListsRebuilder {
       if (clusterAContainsParticles) {
         for (size_t clusterIndexInTowerB = startClusterIndexInTowerB; clusterIndexInTowerB < towerB.getNumClusters();
              clusterIndexInTowerB++) {
-          // a cluster can not be a neighbor to itself
+          // a cluster cannot be a neighbor to itself
           // If newton3 is true this is not possible because of the choice of the start index.
           if (not useNewton3 and isSameTower and clusterIndexInTowerA == clusterIndexInTowerB) {
             continue;
