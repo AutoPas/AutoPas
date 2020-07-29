@@ -201,12 +201,10 @@ class VerletLists
       }
     }
 
-    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      AutoPasLog(debug,
-                 "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
-                 "size is {}",
-                 static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());
-    }
+    AutoPasLog(debug,
+               "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
+               "size is {}",
+               static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());
     _soaListIsValid = true;
   }
 
