@@ -292,9 +292,8 @@ class FeatureVectorEncoder {
   }
 
   /**
-   * Get cluster-encoded neighbours of given target.
-   * Neighbours are all configurations which differ in at most one configuration from target.
-   * The weight is lowered if ContainerTraversalEstimator dimension is changed but the container stays the same.
+   * Get cluster-encoded neighbours of given target. Neighbours are all configurations which differ
+   * in at most one configuration from target. The weight is lowered if container is changed.
    * @param target
    * @return
    */
@@ -319,10 +318,10 @@ class FeatureVectorEncoder {
           auto neighbour = target;
           neighbour[i] = x;
           double weight = 1.;
-          // check if containerTraversalEstimator changed but not container
+          // check if container changed
           if (i == containerTraversalEstimatorClusterIndex) {
             auto xContainer = std::get<0>(_containerTraversalEstimatorOptions[x]);
-            if (targetContainer == xContainer) {
+            if (targetContainer != xContainer) {
               // assign lower weight
               weight = 0.5;
             }
@@ -343,7 +342,7 @@ class FeatureVectorEncoder {
   /**
    * Restriction of a cluster-encoded vector in each dimension.
    */
-  std::vector<size_t> _dimRestrictions;
+  std::vector<int> _dimRestrictions;
 
   /**
    * Dimensions of a one-hot-encoded vector.

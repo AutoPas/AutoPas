@@ -99,7 +99,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _currentConfig(),
         _invalidConfigs(),
         _rng(seed),
-        _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::wasserstein2, sigma, _rng),
+        _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::evidenceMatchingScaledProbabilityGM,
+                         sigma, _rng),
         _neighbourFun([this](const Eigen::VectorXi &target) -> std::vector<std::pair<Eigen::VectorXi, double>> {
           return _encoder.clusterNeighboursManhattan1Container(target);
         }),
