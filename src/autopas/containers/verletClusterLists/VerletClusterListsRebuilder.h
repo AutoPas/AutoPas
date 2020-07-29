@@ -242,7 +242,9 @@ class VerletClusterListsRebuilder {
         const int maxY = std::min(towerIndexY + _interactionLengthInTowers, maxTowerIndexY);
 
         iterateNeighborTowers(towerIndexX, towerIndexY, minX, maxX, minY, maxY, useNewton3,
-                              &VerletClusterListsRebuilder<Particle>::calculateNeighborsBetweenTowers);
+                              [this](auto &towerA, auto &towerB, double distBetweenTowersXYsqr, bool useNewton3) {
+                                calculateNeighborsBetweenTowers(towerA, towerB, distBetweenTowersXYsqr, useNewton3);
+                              });
       }
     }
   }
@@ -288,7 +290,7 @@ class VerletClusterListsRebuilder {
         if (distBetweenTowersXYsqr <= _interactionLengthSqr) {
           auto &neighborTower = getTower(neighborIndexX, neighborIndexY);
 
-          (this->*function)(tower, neighborTower, distBetweenTowersXYsqr, useNewton3);
+          function(tower, neighborTower, distBetweenTowersXYsqr, useNewton3);
         }
       }
     }
