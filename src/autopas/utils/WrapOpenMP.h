@@ -168,7 +168,8 @@ class AutoPasLock {
   /**
    * Aquire the lock, but do not suspend task.
    * ATTENTION: OpenMP Doc states:
-   * The behavior is unspecified if a simple lock accessed by omp_test_lock is in the locked state and is owned by the task that contains the call.
+   * The behavior is unspecified if a simple lock accessed by omp_test_lock is in the locked state and is owned by the
+   * task that contains the call.
    */
   bool testlock() {
     if (_locked) {
