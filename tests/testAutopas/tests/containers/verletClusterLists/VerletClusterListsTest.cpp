@@ -95,8 +95,8 @@ TEST_F(VerletClusterListsTest, testIterator) {
 
 auto calculateValidPairs(const std::vector<autopas::Particle *> &particles, double cutoffSqr) {
   std::vector<std::pair<autopas::Particle *, autopas::Particle *>> particlePairs;
-  for (auto particlePtr : particles) {
-    for (auto neighborPtr : particles) {
+  for (auto *particlePtr : particles) {
+    for (auto *neighborPtr : particles) {
       if (particlePtr != neighborPtr) {
         auto dist = autopas::utils::ArrayMath::sub(particlePtr->getR(), neighborPtr->getR());
         if (autopas::utils::ArrayMath::dot(dist, dist) <= cutoffSqr) {
