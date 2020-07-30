@@ -35,11 +35,10 @@ class ParticleContainerInterface {
    */
   using ParticleType = Particle;
 
-    /**
-    *  Type of the ParticleCell.
-    */
-
-    virtual ParticleCellTypeEnum getParticleCellTypeEnum();
+  /**
+   *  Type of the ParticleCell.
+   */
+  virtual ParticleCellTypeEnum getParticleCellTypeEnum() = 0;
 
   /**
    * Type of the ParticleCell.
@@ -48,7 +47,6 @@ class ParticleContainerInterface {
    * Default constructor
    */
   ParticleContainerInterface() = default;
-
 
   /**
    * Destructor of ParticleContainerInterface.
