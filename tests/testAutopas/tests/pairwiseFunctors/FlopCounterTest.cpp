@@ -30,7 +30,7 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
     autoPas.addParticle(m);
   }
 
-  autopas::FlopCounterFunctor<Particle, FPCell> flopCounterFunctor(autoPas.getCutoff());
+  autopas::FlopCounterFunctor<Particle> flopCounterFunctor(autoPas.getCutoff());
 
   autoPas.iteratePairwise(&flopCounterFunctor);
 
@@ -65,7 +65,7 @@ TEST_F(FlopCounterTest, testFlopCounterAoSOpenMP) {
 
   double cutoff = 1.;
 
-  autopas::FlopCounterFunctor<Particle, FPCell> functor(cutoff);
+  autopas::FlopCounterFunctor<Particle> functor(cutoff);
 
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
@@ -105,7 +105,7 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
 
   double cutoff = 1.;
 
-  autopas::FlopCounterFunctor<Particle, FPCell> functor(cutoff);
+  autopas::FlopCounterFunctor<Particle> functor(cutoff);
 
   autopas::FullParticleCell<Particle> cell1;
   cell1.addParticle(p1);
