@@ -18,7 +18,7 @@ namespace autopas {
  * class of helpers for verlet lists
  * @tparam Particle
  */
-template <class Particle, class ParticleCell>
+template <class Particle>
 class VerletListHelpers {
  public:
   /// AOS verlet list storage
@@ -236,7 +236,7 @@ class VerletListHelpers {
    * @todo: SoA?
    * @tparam ParticleCell
    */
-  class VerletListValidityCheckerFunctor : public Functor<Particle, ParticleCell, SoAArraysType> {
+  class VerletListValidityCheckerFunctor : public Functor<Particle, SoAArraysType> {
    public:
     /**
      * Constructor

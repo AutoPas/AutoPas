@@ -30,7 +30,7 @@ enum class FunctorN3Modes {
   Both,
 };
 
-template <class Particle, class ParticleCell>
+template <class Particle>
 class VerletListHelpers;
 
 namespace internal {

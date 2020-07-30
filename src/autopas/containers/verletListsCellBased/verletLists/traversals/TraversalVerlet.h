@@ -26,9 +26,9 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 class TraversalVerlet
     : public TraversalInterface,
       public VerletTraversalInterface<
-          typename VerletListHelpers<typename ParticleCell::ParticleType, ParticleCell>::VerletListParticleCellType> {
+          typename VerletListHelpers<typename ParticleCell::ParticleType>::VerletListParticleCellType> {
   using Particle = typename ParticleCell::ParticleType;
-  using LinkedParticleCell = typename VerletListHelpers<Particle, ParticleCell>::VerletListParticleCellType;
+  using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:
   /**

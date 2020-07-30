@@ -560,7 +560,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyAssign
 
 TEST_F(RegionParticleIteratorTest, testVerletRegionParticleIteratorSparseDomain) {
   // box goes from {0,0,0} to {5,5,5} + one halo layer
-  VerletLists<TouchableParticle> vlContainer(_boxMin, _boxMax, _cutoff, _cutoff / 3);
+  VerletLists<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> vlContainer(_boxMin, _boxMax, _cutoff, _cutoff / 3);
 
   size_t idShouldTouch = 0;
   TouchableParticle p({0, 0, 0}, idShouldTouch);

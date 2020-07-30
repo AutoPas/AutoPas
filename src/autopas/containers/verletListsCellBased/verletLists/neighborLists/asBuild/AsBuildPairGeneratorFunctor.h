@@ -10,7 +10,7 @@
 
 namespace autopas {
 
-template <class Particle, class ParticleCell>
+template <class Particle>
 class VerletNeighborListAsBuild;
 
 namespace internal {
@@ -23,9 +23,9 @@ namespace internal {
  * @tparam callCheckInstead If false, generate a neighbor list. If true, check the current for validity. Checking
  * validity only works with the AoSFunctor().
  */
-template <class Particle, class ParticleCell, bool callCheckInstead = false>
+template <class Particle, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
-    : public autopas::Functor<Particle, typename VerletListHelpers<Particle, ParticleCell>::SoAArraysType> {
+    : public autopas::Functor<Particle, typename VerletListHelpers<Particle>::SoAArraysType> {
   /// using declaration for soa's of verlet list's linked cells (only id and position needs to be stored)
   using SoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
 
@@ -45,8 +45,8 @@ class AsBuildPairGeneratorFunctor
    * @param neighborList The neighbor list to fill.
    * @param cutoffskin The cutoff skin to use.
    */
-  AsBuildPairGeneratorFunctor(VerletNeighborListAsBuild<Particle, ParticleCell> &neighborList, double cutoffskin)
-      : autopas::Functor<Particle, typename VerletListHelpers<Particle, ParticleCell>::SoAArraysType>(cutoffskin),
+  AsBuildPairGeneratorFunctor(VerletNeighborListAsBuild<Particle> &neighborList, double cutoffskin)
+      : autopas::Functor<Particle, typename VerletListHelpers<Particle>::SoAArraysType>(cutoffskin),
         _list(neighborList),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
@@ -186,7 +186,7 @@ class AsBuildPairGeneratorFunctor
   /**
    * The neighbor list to fill.
    */
-  VerletNeighborListAsBuild<Particle, ParticleCell> &_list;
+  VerletNeighborListAsBuild<Particle> &_list;
   /**
    * The squared cutoff skin to determine if a pair should be added to the list.
    */

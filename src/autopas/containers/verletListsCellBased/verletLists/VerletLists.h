@@ -30,13 +30,13 @@ namespace autopas {
  * @todo deleting particles should also invalidate the verlet lists - should be
  * implemented somehow
  */
-template <class Particle, class ParticleCell>
+template <class Particle>
 class VerletLists
-    : public VerletListsLinkedBase<typename VerletListHelpers<Particle, ParticleCell>::VerletListParticleCellType,
-                                   typename VerletListHelpers<Particle, ParticleCell>::SoAArraysType> {
-  using verlet_internal = VerletListHelpers<Particle, ParticleCell>;
-  using SoAArraysType = typename VerletListHelpers<Particle, ParticleCell>::SoAArraysType;
-  using LinkedParticleCell = typename VerletListHelpers<Particle, ParticleCell>::VerletListParticleCellType;
+    : public VerletListsLinkedBase<Particle,
+                                   typename Particle::SoAArraysType> {
+  using verlet_internal = VerletListHelpers<Particle>;
+  using SoAArraysType = typename Particle::SoAArraysType;
+  using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:
   /**
@@ -60,7 +60,7 @@ class VerletLists
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<LinkedParticleCell, SoAArraysType>(
+      : VerletListsLinkedBase<Particle, SoAArraysType>(
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
@@ -223,3 +223,6 @@ class VerletLists
 };
 
 }  // namespace autopas
+
+//autopas::VerletListsLinkedBase<autopas::sph::SPHParticle, std::tuple<std::vector<autopas::sph::SPHParticle*, autopas::AlignedAllocator<autopas::sph::SPHParticle*, 64> >, std::vector<double, autopas::AlignedAllocator<double, 64> >, std::vector<double, autopas::AlignedAllocator<double, 64> >, std::vector<double, autopas::AlignedAllocator<double, 64> > > >
+//autopas::VerletLists<autopas::sph::SPHParticle>

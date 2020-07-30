@@ -37,7 +37,7 @@ namespace autopas {
  */
 template <class Particle>
 class VerletListsCells
-: public VerletListsLinkedBase<FullParticleCell<Particle>> {
+: public VerletListsLinkedBase<Particle> {
   using verlet_internal = VerletListsCellsHelpers<FullParticleCell<Particle>>;
 //  using ParticleCell = FullParticleCell<Particle>;
   using LinkedParticleCell = FullParticleCell<Particle>;
@@ -57,7 +57,7 @@ class VerletListsCells
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                    const TraversalOption buildTraversal, const double skin = 0, const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : VerletListsLinkedBase<LinkedParticleCell>(
+      : VerletListsLinkedBase<Particle>(
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _buildTraversal(buildTraversal),
         _loadEstimator(loadEstimator) {}

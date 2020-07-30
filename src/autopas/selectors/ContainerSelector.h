@@ -89,22 +89,23 @@ ContainerSelector<Particle>::generateContainer(ContainerOption containerChoice,
   std::unique_ptr<autopas::ParticleContainerInterface<Particle>> container;
   switch (containerChoice) {
     case ContainerOption::directSum: {
-      container = std::make_unique<DirectSum<FullParticleCell<Particle>>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+      container = std::make_unique<DirectSum<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
+
     case ContainerOption::linkedCells: {
-      container = std::make_unique<LinkedCells<FullParticleCell<Particle>>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+      container = std::make_unique<LinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                       containerInfo.cellSizeFactor, containerInfo.loadEstimator);
       break;
     }
       case ContainerOption::referenceLinkedCells: {
-          container = std::make_unique<ReferenceLinkedCells<ReferenceParticleCell<Particle>>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+          container = std::make_unique<ReferenceLinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                                   containerInfo.cellSizeFactor);
           break;
       }
     case ContainerOption::verletLists: {
-      container = std::make_unique<VerletLists<Particle, FullParticleCell<Particle>>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                          VerletLists<Particle, FullParticleCell<Particle>>::BuildVerletListType::VerletSoA,
+      container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                          VerletLists<Particle>::BuildVerletListType::VerletSoA,
                                                           containerInfo.cellSizeFactor);
       break;
     }
@@ -125,7 +126,7 @@ ContainerSelector<Particle>::generateContainer(ContainerOption containerChoice,
       break;
     }
     case ContainerOption::varVerletListsAsBuild: {
-      container = std::make_unique<VarVerletLists<Particle, FullParticleCell<Particle>, VerletNeighborListAsBuild<Particle, FullParticleCell<Particle>>>>(
+      container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }

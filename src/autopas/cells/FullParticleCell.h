@@ -35,7 +35,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    * Constructs a new FullParticleCell with the given cell side length.
    * @param cellLength cell side length
    */
-  FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
+  explicit FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
 
   /**
    * @copydoc ParticleCell::addParticle()

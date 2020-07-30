@@ -21,13 +21,13 @@ namespace autopas {
  * @tparam LinkedParticleCells ParticleCells used by the linked cells container
  * @tparam LinkedSoAArraysType SoAArraysType used by the linked cells container
  */
-template <class LinkedParticleCell, class LinkedSoAArraysType = typename LinkedParticleCell::ParticleType::SoAArraysType>
-class VerletListsLinkedBase : public ParticleContainerInterface<typename LinkedParticleCell::ParticleType> {
+template <class Particle, class LinkedSoAArraysType = typename Particle::SoAArraysType>
+class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
 
  public:
   /**
    * Constructor of the VerletListsLinkedBase class.
-   * The neighbor lists are build using a search radius of cutoff + skin.
+   * The neighbor lists are build using a search radius of cutoff + skin.LinkedParticleCell::ParticleType
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
@@ -45,13 +45,11 @@ class VerletListsLinkedBase : public ParticleContainerInterface<typename LinkedP
     }
   }
 
-  using Particle = typename LinkedParticleCell::ParticleType;
-
     /**
        * Destructor of ParticleContainer.
        */
     ParticleCellTypeEnum getParticleCellTypeEnum() override  {
-        LinkedParticleCell someCell = LinkedParticleCell();
+        FullParticleCell<Particle> someCell;
         return someCell.getParticleCellTypeAsEnum();
     };
 
@@ -231,7 +229,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<typename LinkedP
 
  protected:
   /// internal linked cells storage, handles Particle storage and used to build verlet lists
-  LinkedCells<LinkedParticleCell, LinkedSoAArraysType> _linkedCells;
+  LinkedCells<Particle, LinkedSoAArraysType> _linkedCells;
 
   /// specifies if the neighbor list is currently valid
   bool _neighborListIsValid{false};

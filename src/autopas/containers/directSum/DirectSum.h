@@ -22,6 +22,7 @@
 #include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/cells/FullParticleCell.h"
 
 namespace autopas {
 
@@ -32,13 +33,14 @@ namespace autopas {
  * Use this class only if you have a very small amount of particles at hand.
  * @tparam ParticleCell type of the cell that stores the particle
  */
-template <class ParticleCell>
-class DirectSum : public ParticleContainer<ParticleCell> {
+template <class Particle>
+class DirectSum : public ParticleContainer<FullParticleCell<Particle>> {
  public:
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename ParticleContainer<ParticleCell>::ParticleType;
+  using ParticleType = Particle;
+  using ParticleCell = FullParticleCell<Particle>;
 
   /**
    * Constructor of the DirectSum class
