@@ -19,7 +19,8 @@ namespace autopas {
  * @tparam Particle The particle type the class uses.
  */
 template <class Particle>
-class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle, FullParticleCell<Particle>>, ColorChangeObserver {
+class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle, FullParticleCell<Particle>>,
+                                  ColorChangeObserver {
   /**
    * Adds the generator functor for validation checks as friend so it can call checkPair().
    *  @param true mark that it is for validation checks.
@@ -86,8 +87,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle, F
    * It executes C08 on the passed LinkedCells container and saves the resulting pairs in the neighbor list, remembering
    * the thread and current color for each pair.
    */
-  void buildNeighborList(LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                     typename VerletListHelpers<Particle>::SoAArraysType> &linkedCells,
+  void buildNeighborList(LinkedCells<Particle, typename VerletListHelpers<Particle>::SoAArraysType> &linkedCells,
                          bool useNewton3) override {
     _soaListIsValid = false;
     _baseLinkedCells = &linkedCells;
@@ -296,8 +296,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle, F
   /**
    * The LinkedCells object this neighbor list should use to build.
    */
-  LinkedCells<typename VerletListHelpers<Particle>::VerletListParticleCellType,
-              typename VerletListHelpers<Particle>::SoAArraysType> *_baseLinkedCells;
+  LinkedCells<Particle, typename VerletListHelpers<Particle>::SoAArraysType> *_baseLinkedCells;
 
   /**
    * The internal SoA neighbor list. For format, see getInternalSoANeighborList().

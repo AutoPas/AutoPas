@@ -19,8 +19,7 @@ namespace autopas {
  */
 template <class Particle, class NeighborList>
 class VarVerletLists
-    : public VerletListsLinkedBase<Particle, typename Particle::SoAArraysType> {
-  using SoAArraysType = typename Particle::SoAArraysType;
+    : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::SoAArraysType> {
   using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:
@@ -35,7 +34,7 @@ class VarVerletLists
    */
   VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                  const double skin, const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle, SoAArraysType>(
+      : VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::SoAArraysType>(
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
         _neighborList{} {}
 

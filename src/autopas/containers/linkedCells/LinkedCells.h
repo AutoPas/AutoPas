@@ -37,13 +37,13 @@ namespace autopas {
  * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
 template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
-class LinkedCells : public ParticleContainer<FullParticleCell<Particle>, SoAArraysType> {
+class LinkedCells : public ParticleContainer<FullParticleCell<Particle, SoAArraysType>, SoAArraysType> {
  public:
   /**
    *  Type of the Particle.
    */
   using ParticleType = Particle;
-  using ParticleCell = FullParticleCell<Particle>;
+  using ParticleCell = FullParticleCell<Particle, SoAArraysType>;
 
   /**
    * Constructor of the LinkedCells class
