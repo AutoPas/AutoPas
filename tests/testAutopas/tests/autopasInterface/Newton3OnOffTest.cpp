@@ -76,7 +76,7 @@ INSTANTIATE_TEST_SUITE_P(
 void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
-  if (traversalOption == autopas::TraversalOption::c04SoA and not(dataLayout == autopas::DataLayoutOption::soa)) {
+  if (traversalOption == autopas::TraversalOption::c04SoA and dataLayout != autopas::DataLayoutOption::soa) {
     return;
   }
 
@@ -98,11 +98,10 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   if (dataLayout == autopas::DataLayoutOption::soa or dataLayout == autopas::DataLayoutOption::cuda) {
     // loader and extractor will be called, we don't care how often.
-    autopas::FullParticleCell<Particle> dummy;
-    /*EXPECT_CALL(mockFunctor, SoALoader(dummy, _, _))
+    EXPECT_CALL(mockFunctor, SoALoaderFPC(_, _, _))
         .Times(testing::AtLeast(1))
         .WillRepeatedly(testing::WithArgs<0, 1>(
-            testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));*/
+            testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
     //EXPECT_CALL(mockFunctor, SoAExtractor(dummy, _, _)).Times(testing::AtLeast(1));
   }
 #if defined(AUTOPAS_CUDA)
