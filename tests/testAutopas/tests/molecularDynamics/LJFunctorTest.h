@@ -46,9 +46,9 @@ class LJFunctorTest : public AutoPasTestBase {
 
 // typedefs to hide clutter
 template <bool shift, bool mixing, bool globals>
-using LJFunMol = autopas::LJFunctor<Molecule, FMCell, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
+using LJFunMol = autopas::LJFunctor<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
 template <bool shift, bool mixing, bool globals>
-using LJFunAVXMol = autopas::LJFunctorAVX<Molecule, FMCell, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
+using LJFunAVXMol = autopas::LJFunctorAVX<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
 
 // struct aliasing for readable names
 struct LJFunShiftMixNoGlob : public LJFunMol<true, true, false> {
