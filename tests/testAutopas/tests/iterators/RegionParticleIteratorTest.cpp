@@ -315,7 +315,7 @@ TEST_F(RegionParticleIteratorTest, testLinkedCellsRegionParticleIteratorSparseDo
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorSparseDomain) {
   // box goes from {0,0,0} to {5,5,5} + one halo layer
-  DirectSum<FullParticleCell<TouchableParticle>> dsContainer(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<TouchableParticle> dsContainer(_boxMin, _boxMax, _cutoff, 0.);
 
   size_t idShouldTouch = 0;
   TouchableParticle p({0, 0, 0}, idShouldTouch);
@@ -365,7 +365,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorSparseDoma
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIterator) {
-  DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<TouchableParticle> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
   autopasTools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
@@ -393,7 +393,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIterator) {
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorOwned) {
-  DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<TouchableParticle> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
   autopasTools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
@@ -425,7 +425,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorOw
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorHalo) {
-  DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<TouchableParticle> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
   autopasTools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
@@ -460,7 +460,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorBehaviorHa
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorEmpty) {
-  DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<TouchableParticle> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add no particles
 
@@ -489,7 +489,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorEmpty) {
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyConstructor) {
-  DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<TouchableParticle> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
   autopasTools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
@@ -518,7 +518,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyConstr
 }
 
 TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyAssignment) {
-  DirectSum<FullParticleCell<TouchableParticle>> container(_boxMin, _boxMax, _cutoff, 0.);
+  DirectSum<TouchableParticle> container(_boxMin, _boxMax, _cutoff, 0.);
 
   // add a number of particles
   autopasTools::generators::RandomGenerator::fillWithParticles(container, TouchableParticle({0., 0., 0.}, 0),
@@ -560,7 +560,7 @@ TEST_F(RegionParticleIteratorTest, testDirectSumRegionParticleIteratorCopyAssign
 
 TEST_F(RegionParticleIteratorTest, testVerletRegionParticleIteratorSparseDomain) {
   // box goes from {0,0,0} to {5,5,5} + one halo layer
-  VerletLists<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> vlContainer(_boxMin, _boxMax, _cutoff, _cutoff / 3);
+  VerletLists<TouchableParticle> vlContainer(_boxMin, _boxMax, _cutoff, _cutoff / 3);
 
   size_t idShouldTouch = 0;
   TouchableParticle p({0, 0, 0}, idShouldTouch);
