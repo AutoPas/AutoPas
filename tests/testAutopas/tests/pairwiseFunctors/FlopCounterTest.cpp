@@ -14,7 +14,7 @@
  * @param dataLayoutOption
  */
 void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
-  autopas::AutoPas<Particle, FPCell> autoPas;
+  autopas::AutoPas<Particle> autoPas;
 
   autoPas.setBoxMin({0, 0, 0});
   autoPas.setBoxMax({3, 3, 3});
