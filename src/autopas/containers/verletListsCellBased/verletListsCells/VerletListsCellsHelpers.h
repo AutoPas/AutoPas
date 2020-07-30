@@ -10,6 +10,7 @@
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
+
 namespace autopas {
 
 /**
@@ -19,30 +20,35 @@ namespace autopas {
 template <class Particle>
 class VerletListsCellsHelpers {
  public:
-  /// Verlet list storage
-  using VerletList_storage_type = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
+  /**
+   * Cell wise verlet lists: For every cell, a vector of pairs. Each pair maps a particle to a vector of its neighbors.
+   */
+  using NeighborListsType = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
 
-  /// using declaration for verlet-list particle cell type
-  using VerletListParticleCellType = FullParticleCell<Particle>;
+  /**
+   * Type of the particle cell.
+   */
+  using VLCCellType = FullParticleCell<Particle>;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
-  class VerletListGeneratorFunctor : public Functor<Particle, VerletListParticleCellType> {
-    using ParticleCell = VerletListParticleCellType;
+  class VerletListGeneratorFunctor : public Functor<Particle, VLCCellType> {
+    using ParticleCell = VLCCellType;
 
    public:
     /**
      * Constructor
-     * @param verletLists a verletlist for each cell
-     * @param cellMap used to get the verletlist of a particle
+     * @param neighborLists a verletlist for each cell
+     * @param particleToCellMap used to get the verletlist of a particle
      * @param cutoffskin cutoff + skin
      */
-    VerletListGeneratorFunctor(VerletList_storage_type &verletLists,
-                               std::unordered_map<Particle *, std::pair<size_t, size_t>> &cellMap, double cutoffskin)
-        : Functor<Particle, VerletListParticleCellType>(0.),
-          _verletLists(verletLists),
-          _cellMap(cellMap),
+    VerletListGeneratorFunctor(NeighborListsType &neighborLists,
+                               std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
+                               double cutoffskin)
+        : Functor<Particle, VLCCellType>(0.),
+          _neighborLists(neighborLists),
+          _particleToCellMap(particleToCellMap),
           _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
     bool isRelevantForTuning() override { return false; }
@@ -76,14 +82,17 @@ class VerletListsCellsHelpers {
         // (ensured by traversals)
         // also the list is not allowed to be resized!
 
-        auto indices = _cellMap[&i];
-        _verletLists[indices.first][indices.second].second.push_back(&j);
+        auto &[cellIndex, particleIndex] = _particleToCellMap[&i];
+        _neighborLists[cellIndex][particleIndex].second.push_back(&j);
       }
     }
 
    private:
-    VerletList_storage_type &_verletLists;
-    std::unordered_map<Particle *, std::pair<size_t, size_t>> &_cellMap;
+    /**
+     * For every cell, a vector of pairs. Each pair maps a particle to a vector of its neighbors.
+     */
+    NeighborListsType &_neighborLists;
+    std::unordered_map<Particle *, std::pair<size_t, size_t>> &_particleToCellMap;
     double _cutoffskinsquared;
   };
 

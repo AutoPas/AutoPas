@@ -81,10 +81,9 @@ class VerletClusterListsRebuilder {
     invalidParticles.push_back(std::move(_particlesToAdd));
     _particlesToAdd.clear();
 
-    size_t numParticles = 0;
-    for (auto &vector : invalidParticles) {
-      numParticles += vector.size();
-    }
+    // count particles by accumulating tower sizes
+    size_t numParticles = std::accumulate(std::begin(invalidParticles), std::end(invalidParticles), 0,
+                                          [](auto acc, auto &v) { return acc + v.size(); });
 
     auto boxSizeWithHalo = utils::ArrayMath::sub(_haloBoxMax, _haloBoxMin);
 
@@ -104,6 +103,7 @@ class VerletClusterListsRebuilder {
 
     sortParticlesIntoTowers(invalidParticles);
 
+    // generate clusters and count them
     size_t numClusters = 0;
     for (auto &tower : _towers) {
       numClusters += tower.generateClusters();
@@ -147,15 +147,14 @@ class VerletClusterListsRebuilder {
 
   /**
    * Takes all particles from all towers and returns them. Towers are cleared afterwards.
-   * @return All particles in the container.
+   * @return All particles in the container sorted in 2D as they were in the towers.
    */
   std::vector<std::vector<Particle>> collectAllParticlesFromTowers() {
     std::vector<std::vector<Particle>> invalidParticles;
     invalidParticles.resize(_towers.size());
-    for (size_t index = 0; index < _towers.size(); index++) {
-      auto &tower = _towers[index];
-      invalidParticles[index] = tower.collectAllActualParticles();
-      tower.clear();
+    for (size_t towerIndex = 0; towerIndex < _towers.size(); towerIndex++) {
+      invalidParticles[towerIndex] = _towers[towerIndex].collectAllActualParticles();
+      _towers[towerIndex].clear();
     }
     return invalidParticles;
   }
@@ -185,29 +184,33 @@ class VerletClusterListsRebuilder {
    */
   [[nodiscard]] std::array<size_t, 2> calculateTowersPerDim(std::array<double, 3> boxSize) const {
     std::array<size_t, 2> towersPerDim{};
-    for (int d = 0; d < 2; d++) {
-      towersPerDim[d] = static_cast<size_t>(std::ceil(boxSize[d] * _towerSideLengthReciprocal));
+    for (int dimension = 0; dimension < 2; dimension++) {
+      towersPerDim[dimension] = static_cast<size_t>(std::ceil(boxSize[dimension] * _towerSideLengthReciprocal));
       // at least one cell
-      towersPerDim[d] = std::max(towersPerDim[d], 1ul);
+      towersPerDim[dimension] = std::max(towersPerDim[dimension], 1ul);
     }
     return towersPerDim;
   }
 
   /**
    * Sorts all passed particles in the appropriate clusters.
-   * @param particles The particles to sort in the clusters.
+   *
+   * @note This Function takes a 2D vector because it expects the layout from the old clusters.
+   * The information however, is not utilized hence when in doubt all particles can go in one vector.
+   *
+   * @param particles2D The particles to sort in the towers.
    */
-  void sortParticlesIntoTowers(const std::vector<std::vector<Particle>> &particles) {
-    const auto numVectors = particles.size();
+  void sortParticlesIntoTowers(const std::vector<std::vector<Particle>> &particles2D) {
+    const auto numVectors = particles2D.size();
 #if defined(AUTOPAS_OPENMP)
     /// @todo: find sensible chunksize
 #pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t index = 0; index < numVectors; index++) {
-      const std::vector<Particle> &vector = particles[index];
+      const std::vector<Particle> &vector = particles2D[index];
       for (const auto &particle : vector) {
         if (utils::inBox(particle.getR(), _haloBoxMin, _haloBoxMax)) {
-          auto &tower = getTowerForParticleLocation(particle.getR());
+          auto &tower = getTower(particle.getR());
           tower.addParticle(particle);
         } else {
           AutoPasLog(trace, "Not adding particle to VerletClusterLists container, because it is far outside:\n{}",
@@ -240,45 +243,56 @@ class VerletClusterListsRebuilder {
         const int maxX = std::min(towerIndexX + _interactionLengthInTowers, maxTowerIndexX);
         const int maxY = std::min(towerIndexY + _interactionLengthInTowers, maxTowerIndexY);
 
-        calculateNeighborsForTowerInRange(towerIndexX, towerIndexY, minX, maxX, minY, maxY, useNewton3);
+        iterateNeighborTowers(towerIndexX, towerIndexY, minX, maxX, minY, maxY, useNewton3,
+                              [this](auto &towerA, auto &towerB, double distBetweenTowersXYsqr, bool useNewton3) {
+                                calculateNeighborsBetweenTowers(towerA, towerB, distBetweenTowersXYsqr, useNewton3);
+                              });
       }
     }
   }
 
   /**
-   * Calculates the neighbors for all clusters of the given tower that are in the given neighbor towers.
-   * @param towerIndexX The x-coordinate of the given tower.
-   * @param towerIndexY the y-coordinate of the given tower.
-   * @param minX The minimum x-coordinate of the given neighbor towers.
-   * @param maxX The maximum x-coordinate of the given neighbor towers.
-   * @param minY The minimum y-coordinate of the given neighbor towers.
-   * @param maxY The maximum y-coordinate of the given neighbor towers.
-   * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
-   * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
-   * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
-   * false)
+   * For all clusters in a tower, given by it's x/y indices, find all neighbors in towers that are given by an area
+   * (min/max x/y neighbor indices).
+   *
+   * With the useNewton3 parameter, the lists can be either built containing all, or only the forward neighbors.
+   * If an cluster A interacts with cluster B, then this interaction will either show up only once in the
+   * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both
+   * (for newton3 == false)
+   *
+   * @tparam FunType type of function
+   * @param towerIndexX The x index of the given tower.
+   * @param towerIndexY The y index of the given tower.
+   * @param minNeighborIndexX The minimum neighbor tower index in x direction.
+   * @param maxNeighborIndexX The maximum neighbor tower index in x direction.
+   * @param minNeighborIndexY The minimum neighbor tower index in y direction.
+   * @param maxNeighborIndexY The maximum neighbor tower index in y direction.
+   * @param useNewton3 Specifies, whether neighbor lists should contain only forward neighbors.
+   * @param function Function to apply on every neighbor tower. Typically this is calculateNeighborsBetweenTowers().
    */
-  void calculateNeighborsForTowerInRange(const int towerIndexX, const int towerIndexY, const int minX, const int maxX,
-                                         const int minY, const int maxY, const bool useNewton3) {
-    auto &tower = getTowerAtCoordinates(towerIndexX, towerIndexY);
+  template <class FunType>
+  void iterateNeighborTowers(const int towerIndexX, const int towerIndexY, const int minNeighborIndexX,
+                             const int maxNeighborIndexX, const int minNeighborIndexY, const int maxNeighborIndexY,
+                             const bool useNewton3, FunType function) {
+    auto &tower = getTower(towerIndexX, towerIndexY);
     // for all neighbor towers
-    for (int neighborIndexY = minY; neighborIndexY <= maxY; neighborIndexY++) {
+    for (int neighborIndexY = minNeighborIndexY; neighborIndexY <= maxNeighborIndexY; neighborIndexY++) {
       double distBetweenTowersY = std::max(0, std::abs(towerIndexY - neighborIndexY) - 1) * _towerSideLength;
 
-      for (int neighborIndexX = minX; neighborIndexX <= maxX; neighborIndexX++) {
-        if (useNewton3 and not shouldTowerContainOtherAsNeighborWithNewton3(towerIndexX, towerIndexY, neighborIndexX,
-                                                                            neighborIndexY)) {
+      for (int neighborIndexX = minNeighborIndexX; neighborIndexX <= maxNeighborIndexX; neighborIndexX++) {
+        if (useNewton3 and not isForwardNeighbor(towerIndexX, towerIndexY, neighborIndexX, neighborIndexY)) {
           continue;
         }
 
         double distBetweenTowersX = std::max(0, std::abs(towerIndexX - neighborIndexX) - 1) * _towerSideLength;
 
-        // calculate distance in xy-plane and skip if already longer than interactionLength
+        // calculate distance in xy-plane
         auto distBetweenTowersXYsqr = distBetweenTowersX * distBetweenTowersX + distBetweenTowersY * distBetweenTowersY;
+        // skip if already longer than interactionLength
         if (distBetweenTowersXYsqr <= _interactionLengthSqr) {
-          auto &neighborTower = getTowerAtCoordinates(neighborIndexX, neighborIndexY);
+          auto &neighborTower = getTower(neighborIndexX, neighborIndexY);
 
-          calculateNeighborsForTowerPair(tower, neighborTower, distBetweenTowersXYsqr, useNewton3);
+          function(tower, neighborTower, distBetweenTowersXYsqr, useNewton3);
         }
       }
     }
@@ -287,8 +301,8 @@ class VerletClusterListsRebuilder {
   /**
    * Returns the index of a imagined interaction cell with side length equal the interaction length that contains the
    * given tower.
-   * @param towerIndexX The x-coordinate of the given tower.
-   * @param towerIndexY The y-coordinate of the given tower.
+   * @param towerIndexX The x index of the given tower.
+   * @param towerIndexY The y index of the given tower.
    * @return The index of the interaction cell containing the given tower.
    */
   int get1DInteractionCellIndexForTower(const int towerIndexX, const int towerIndexY) {
@@ -301,66 +315,71 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Decides if for a given tower and a neighbor tower, clusters of the tower should contain clusters of the neighbor
-   * tower as neighbors if newton 3 is enabled.
+   * Decides if a given neighbor tower is a forward neighbor to a given tower.
+   * A forward neighbor is either in a interaction cell with a higher index
+   * or in the same interaction cell with a higher tower index.
    *
-   * Works in a way to help the VerletClustersColoringTraversal have no data races.
+   * Helps the VerletClustersColoringTraversal to have no data races.
    *
-   * @param towerIndexX The x-coordinate of the given tower.
-   * @param towerIndexY The y-coordinate of the given tower.
-   * @param neighborIndexX The x-coordinate of the given neighbor tower.
-   * @param neighborIndexY The y-coordinate of the given neighbor tower.
-   * @return True, if clusters of the given tower should contain clusters of the given neighbor tower as neighbors with
-   * newton 3 enabled.
+   * @param towerIndexX The x-index of the given tower.
+   * @param towerIndexY The y-index of the given tower.
+   * @param neighborIndexX The x-index of the given neighbor tower.
+   * @param neighborIndexY The y-index of the given neighbor tower.
+   * @return True, if neighbor is a forward neighbor of tower.
    */
-  bool shouldTowerContainOtherAsNeighborWithNewton3(const int towerIndexX, const int towerIndexY,
-                                                    const int neighborIndexX, const int neighborIndexY) {
+  bool isForwardNeighbor(const int towerIndexX, const int towerIndexY, const int neighborIndexX,
+                         const int neighborIndexY) {
     auto interactionCellTowerIndex1D = get1DInteractionCellIndexForTower(towerIndexX, towerIndexY);
     auto interactionCellNeighborIndex1D = get1DInteractionCellIndexForTower(neighborIndexX, neighborIndexY);
+
+    if (interactionCellNeighborIndex1D > interactionCellTowerIndex1D) {
+      return true;
+    } else if (interactionCellNeighborIndex1D < interactionCellTowerIndex1D) {
+      return false;
+    }  // else if (interactionCellNeighborIndex1D == interactionCellTowerIndex1D) ...
 
     auto towerIndex1D = towerIndex2DTo1D(towerIndexX, towerIndexY);
     auto neighborIndex1D = towerIndex2DTo1D(neighborIndexX, neighborIndexY);
 
-    return interactionCellNeighborIndex1D > interactionCellTowerIndex1D or
-           (interactionCellNeighborIndex1D == interactionCellTowerIndex1D and neighborIndex1D >= towerIndex1D);
+    return neighborIndex1D >= towerIndex1D;
   }
 
   /**
    * Calculates for all clusters in the given tower:
    *    - all neighbor clusters within the interaction length that are contained in the given neighbor tower.
    *
-   * @param tower The given tower.
-   * @param neighborTower The given neighbor tower.
+   * @param towerA The given tower.
+   * @param towerB The given neighbor tower.
    * @param distBetweenTowersXYsqr The distance in the xy-plane between the towers.
    * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
    * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
    * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
    * false)
    */
-  void calculateNeighborsForTowerPair(internal::ClusterTower<Particle> &tower,
-                                      internal::ClusterTower<Particle> &neighborTower, double distBetweenTowersXYsqr,
-                                      bool useNewton3) {
-    const bool isSameTower = &tower == &neighborTower;
-    for (size_t towerIndex = 0; towerIndex < tower.getNumClusters(); towerIndex++) {
-      auto startIndexNeighbor = useNewton3 and isSameTower ? towerIndex + 1 : 0;
-      auto &towerCluster = tower.getCluster(towerIndex);
+  void calculateNeighborsBetweenTowers(internal::ClusterTower<Particle> &towerA,
+                                       internal::ClusterTower<Particle> &towerB, double distBetweenTowersXYsqr,
+                                       bool useNewton3) {
+    const bool isSameTower = (&towerA == &towerB);
+    for (size_t clusterIndexInTowerA = 0; clusterIndexInTowerA < towerA.getNumClusters(); clusterIndexInTowerA++) {
+      // if we are within one tower depending on newton3 only look at forward neighbors
+      auto startClusterIndexInTowerB = isSameTower and useNewton3 ? clusterIndexInTowerA + 1 : 0;
+      auto &clusterA = towerA.getCluster(clusterIndexInTowerA);
+      auto [clusterABoxBottom, clusterABoxTop, clusterAContainsParticles] = clusterA.getZMinMax();
 
-      auto [towerClusterBoxBottom, towerClusterBoxTop, towerRealCluster] = towerCluster.getZMinMax();
-
-      if (towerRealCluster) {
-        for (size_t neighborIndex = startIndexNeighbor; neighborIndex < neighborTower.getNumClusters();
-             neighborIndex++) {
-          const bool isSameCluster = towerIndex == neighborIndex;
-          if (not useNewton3 and isSameTower and isSameCluster) {
+      if (clusterAContainsParticles) {
+        for (size_t clusterIndexInTowerB = startClusterIndexInTowerB; clusterIndexInTowerB < towerB.getNumClusters();
+             clusterIndexInTowerB++) {
+          // a cluster cannot be a neighbor to itself
+          // If newton3 is true this is not possible because of the choice of the start index.
+          if (not useNewton3 and isSameTower and clusterIndexInTowerA == clusterIndexInTowerB) {
             continue;
           }
-          auto &neighborCluster = neighborTower.getCluster(neighborIndex);
-          auto [neighborClusterBoxBottom, neighborClusterBoxTop, neighborRealCluster] = neighborCluster.getZMinMax();
-          if (neighborRealCluster) {
-            double distZ = bboxDistance(towerClusterBoxBottom, towerClusterBoxTop, neighborClusterBoxBottom,
-                                        neighborClusterBoxTop);
+          auto &clusterB = towerB.getCluster(clusterIndexInTowerB);
+          auto [clusterBBoxBottom, clusterBBoxTop, clusterBcontainsParticles] = clusterB.getZMinMax();
+          if (clusterBcontainsParticles) {
+            double distZ = bboxDistance(clusterABoxBottom, clusterABoxTop, clusterBBoxBottom, clusterBBoxTop);
             if (distBetweenTowersXYsqr + distZ * distZ <= _interactionLengthSqr) {
-              towerCluster.addNeighbor(neighborCluster);
+              clusterA.addNeighbor(clusterB);
             }
           }
         }
@@ -370,6 +389,7 @@ class VerletClusterListsRebuilder {
 
   /**
    * Calculates the distance of two bounding boxes in one dimension. Assumes disjoint bounding boxes.
+   *
    * @param min1 minimum coordinate of first bbox in tested dimension
    * @param max1 maximum coordinate of first bbox in tested dimension
    * @param min2 minimum coordinate of second bbox in tested dimension
@@ -387,14 +407,13 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Returns the tower that should contain a particle at the given location.
+   * Returns the tower the given 3D coordinates are in.
+   * If the location is outside of the domain, the tower nearest tower is returned.
    *
-   * If the location is outside of the domain, the tower that is nearest is returned.
-   *
-   * @param location The location to get the responsible tower for.
-   * @return The tower that should contain a particle at the given location.
+   * @param location The 3D coordinates.
+   * @return Tower reference.
    */
-  auto &getTowerForParticleLocation(std::array<double, 3> location) {
+  auto &getTower(std::array<double, 3> location) {
     std::array<size_t, 2> towerIndex{};
 
     for (int dim = 0; dim < 2; dim++) {
@@ -412,15 +431,15 @@ class VerletClusterListsRebuilder {
       }
     }
 
-    return getTowerAtCoordinates(towerIndex[0], towerIndex[1]);
+    return getTower(towerIndex[0], towerIndex[1]);
   }
 
   /**
-   * Returns the 1D index for the given 2D-coordinates of a tower.
+   * Returns the 1D index for the given 2D tower index.
    *
-   * @param x The x-coordinate of the tower.
-   * @param y The y-coordinate of the tower.
-   * @return the 1D index for the given 2D-coordinates of a tower.
+   * @param x The x-index of the tower.
+   * @param y The y-index of the tower.
+   * @return 1D index for _towers vector.
    */
   size_t towerIndex2DTo1D(const size_t x, const size_t y) {
     // It is necessary to use the static method in VerletClusterLists here instead of the member method, because
@@ -429,12 +448,12 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Returns the tower for the given 2D-coordinates of a tower.
-   * @param x The x-coordinate of the tower.
-   * @param y The y-coordinate of the tower.
-   * @return The tower for the given 2D-coordinates of a tower.
+   * Returns the tower for the given 2D tower index.
+   * @param x The x-index of the tower.
+   * @param y The y-index of the tower.
+   * @return Tower reference.
    */
-  auto &getTowerAtCoordinates(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
+  auto &getTower(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
 };
 
 }  //  namespace internal
