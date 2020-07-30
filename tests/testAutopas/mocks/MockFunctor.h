@@ -9,6 +9,7 @@
 #include <gmock/gmock.h>
 #include <testingHelpers/NonConstructibleParticle.h>
 
+#include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 
