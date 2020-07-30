@@ -102,7 +102,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
         .Times(testing::AtLeast(1))
         .WillRepeatedly(testing::WithArgs<0, 1>(
             testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
-    //EXPECT_CALL(mockFunctor, SoAExtractor(dummy, _, _)).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, SoAExtractor(dummy, _, _)).Times(testing::AtLeast(1));
   }
 #if defined(AUTOPAS_CUDA)
   if (dataLayout == autopas::DataLayoutOption::cuda) {
