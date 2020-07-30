@@ -26,7 +26,7 @@ TEST_F(VarVerletListsTest, VerletListConstructor) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::FullParticleCell<Particle>, autopas::VerletNeighborListAsBuild<Particle, autopas::FullParticleCell<Particle>>> verletLists(min, max, cutoff, skin);
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
 }
 
 TEST_F(VarVerletListsTest, testAddParticleNumParticle) {
@@ -34,7 +34,7 @@ TEST_F(VarVerletListsTest, testAddParticleNumParticle) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::FullParticleCell<Particle>, autopas::VerletNeighborListAsBuild<Particle, autopas::FullParticleCell<Particle>>> verletLists(min, max, cutoff, skin);
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
   EXPECT_EQ(verletLists.getNumParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
@@ -53,7 +53,7 @@ TEST_F(VarVerletListsTest, testDeleteAllParticles) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::FullParticleCell<Particle>, autopas::VerletNeighborListAsBuild<Particle, autopas::FullParticleCell<Particle>>> verletLists(min, max, cutoff, skin);
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
   EXPECT_EQ(verletLists.getNumParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
@@ -74,7 +74,7 @@ TEST_F(VarVerletListsTest, testVerletListBuild) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::FullParticleCell<Particle>, autopas::VerletNeighborListAsBuild<Particle, autopas::FullParticleCell<Particle>>> verletLists(min, max, cutoff, skin);
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -86,7 +86,7 @@ TEST_F(VarVerletListsTest, testVerletListBuild) {
   MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
-  autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
+  autopas::VarVerletTraversalAsBuild<autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
@@ -100,7 +100,7 @@ TEST_F(VarVerletListsTest, testVerletList) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::FullParticleCell<Particle>, autopas::VerletNeighborListAsBuild<Particle, autopas::FullParticleCell<Particle>>> verletLists(min, max, cutoff, skin);
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -113,7 +113,7 @@ TEST_F(VarVerletListsTest, testVerletList) {
   using ::testing::_;  // anything is ok
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
-  autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
+  autopas::VarVerletTraversalAsBuild<autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&mockFunctor);
   verletLists.rebuildNeighborLists(&dummyTraversal);
   verletLists.iteratePairwise(&dummyTraversal);
@@ -126,7 +126,7 @@ TEST_F(VarVerletListsTest, testVerletListInSkin) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::FullParticleCell<Particle>, autopas::VerletNeighborListAsBuild<Particle, autopas::FullParticleCell<Particle>>> verletLists(min, max, cutoff, skin);
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
 
   std::array<double, 3> r = {1.4, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -139,7 +139,7 @@ TEST_F(VarVerletListsTest, testVerletListInSkin) {
   using ::testing::_;  // anything is ok
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
-  autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
+  autopas::VarVerletTraversalAsBuild<autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&mockFunctor);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
@@ -153,7 +153,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildTwice) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::FullParticleCell<Particle>, autopas::VerletNeighborListAsBuild<Particle, autopas::FullParticleCell<Particle>>> verletLists(min, max, cutoff, skin);
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -165,7 +165,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildTwice) {
   MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
-  autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
+  autopas::VarVerletTraversalAsBuild<autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
@@ -181,7 +181,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildFarAway) {
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::FullParticleCell<Particle>, autopas::VerletNeighborListAsBuild<Particle, autopas::FullParticleCell<Particle>>> verletLists(min, max, cutoff, skin);
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -197,7 +197,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildFarAway) {
 
   MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
-  autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
+  autopas::VarVerletTraversalAsBuild<autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
   verletLists.rebuildNeighborLists(&dummyTraversal);
   verletLists.iteratePairwise(&dummyTraversal);
@@ -210,7 +210,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildHalo) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::FullParticleCell<Particle>, autopas::VerletNeighborListAsBuild<Particle, autopas::FullParticleCell<Particle>>> verletLists(min, max, cutoff, skin);
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
 
   std::array<double, 3> r = {0.9, 0.9, 0.9};
   Particle p(r, {0., 0., 0.}, 0);
@@ -222,7 +222,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildHalo) {
   MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
-  autopas::VarVerletTraversalAsBuild<FPCell, autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
+  autopas::VarVerletTraversalAsBuild<autopas::Particle, MFunctor, autopas::DataLayoutOption::aos, true>
       dummyTraversal(&emptyFunctor);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
@@ -247,7 +247,7 @@ bool moveUpdateAndExpectEqual(Container &container, Particle &particle, std::arr
 }
 
 TEST_F(VarVerletListsTest, testUpdateHaloParticle) {
-  autopas::VarVerletLists<Particle, autopas::FullParticleCell<Particle>, autopas::VerletNeighborListAsBuild<Particle, autopas::FullParticleCell<Particle>>> verletLists(
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
       {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 1);
 
   Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
