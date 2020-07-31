@@ -1,13 +1,14 @@
 /**
- * @file LJFunctorCuda.cu
+ * @file LJFunctorCudaGlobals.cu
  *
  * @date 26.4.2019
  * @author jspahl
  */
 #include <iostream>
 
+#include "LJFunctorCudaConstants.cuh"
 #include "LJFunctorCudaGlobals.cuh"
-#include "autopas/molecularDynamics/LJFunctorCuda.cuh"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/CudaExceptionHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "math_constants.h"
@@ -50,10 +51,12 @@ namespace autopas {
   CREATESWITCHCASE(672, gridSize, sharedMemSize, function, params)   \
   CREATESWITCHCASE(704, gridSize, sharedMemSize, function, params)   \
   CREATESWITCHCASE(736, gridSize, sharedMemSize, function, params)   \
-  CREATESWITCHCASE(768, gridSize, sharedMemSize, function, params)   \
-  CREATESWITCHCASE(800, gridSize, sharedMemSize, function, params)   \
-  CREATESWITCHCASE(832, gridSize, sharedMemSize, function, params)   \
-  CREATESWITCHCASE(864, gridSize, sharedMemSize, function, params)
+  CREATESWITCHCASE(768, gridSize, sharedMemSize, function, params)
+
+// the following cases are no longer viable since changing to OwnershipState, as they require too much shared memory.
+// CREATESWITCHCASE(800, gridSize, sharedMemSize, function, params)
+// CREATESWITCHCASE(832, gridSize, sharedMemSize, function, params)
+// CREATESWITCHCASE(864, gridSize, sharedMemSize, function, params)
 
 /**
  * global constant with float precision
@@ -250,7 +253,8 @@ __device__ inline typename vec3<floatType>::Type bodyBodyFN3(
  */
 template <typename floatType, int block_size>
 __global__ void SoAFunctorNoN3(LJFunctorCudaGlobalsSoA<floatType> cell1) {
-  __shared__ typename vec4<floatType>::Type block_pos[block_size];
+  __shared__ typename vec4<floatType>::Type cell1_pos_shared[block_size];
+  __shared__ OwnershipState cell1_ownershipState_shared[block_size];
 
   int i, tile;
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -258,12 +262,13 @@ __global__ void SoAFunctorNoN3(LJFunctorCudaGlobalsSoA<floatType> cell1) {
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
                                                getInfinity<floatType>()};
   typename vec3<floatType>::Type myf = {0, 0, 0};
-  bool isOwned = false;
+  OwnershipState myOwnershipState = OwnershipState::dummy;
+
   if (tid < cell1._size) {
     myposition.x = cell1._posX[tid];
     myposition.y = cell1._posY[tid];
     myposition.z = cell1._posZ[tid];
-    isOwned = cell1._owned[tid] == (floatType)1.0;
+    myOwnershipState = cell1._ownershipState[tid];
   }
 
   typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
@@ -271,42 +276,51 @@ __global__ void SoAFunctorNoN3(LJFunctorCudaGlobalsSoA<floatType> cell1) {
   for (i = block_size, tile = 0; i < cell1._size; i += block_size, ++tile) {
     int idx = tile * block_size + threadIdx.x;
 
-    block_pos[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx]};
+    cell1_pos_shared[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx]};
+    cell1_ownershipState_shared[threadIdx.x] = cell1._ownershipState[idx];
     __syncthreads();
 
-    if (tid < cell1._size) {
+    if (tid < cell1._size and myOwnershipState != OwnershipState::dummy) {
       for (int j = 0; j < block_size; ++j) {
-        myf = bodyBodyF<floatType>(myposition, block_pos[j], myf, myglobals, isOwned);
+        if (cell1_ownershipState_shared[j] != OwnershipState::dummy) {
+          myf = bodyBodyF<floatType>(myposition, cell1_pos_shared[j], myf, myglobals,
+                                     myOwnershipState == OwnershipState::owned);
+        }
       }
     }
     __syncthreads();
   }
   {
     int idx = tile * block_size + threadIdx.x;
-    block_pos[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx]};
-
+    cell1_pos_shared[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx]};
+    cell1_ownershipState_shared[threadIdx.x] = cell1._ownershipState[idx];
     __syncthreads();
 
     const int size = cell1._size - tile * block_size;
-    for (int j = 0; j < size; ++j) {
-      myf = bodyBodyF<floatType>(myposition, block_pos[j], myf, myglobals, isOwned);
+    if (myOwnershipState != OwnershipState::dummy) {
+      for (int j = 0; j < size; ++j) {
+        if (cell1_ownershipState_shared[j] != OwnershipState::dummy) {
+          myf = bodyBodyF<floatType>(myposition, cell1_pos_shared[j], myf, myglobals,
+                                     myOwnershipState == OwnershipState::owned);
+        }
+      }
     }
 
     __syncthreads();
   }
 
   // reduce globals
-  block_pos[threadIdx.x] = myglobals;
+  cell1_pos_shared[threadIdx.x] = myglobals;
   __syncthreads();
 
-  reduceGlobalsShared<floatType, block_size>(block_pos);
+  reduceGlobalsShared<floatType, block_size>(cell1_pos_shared);
   __syncthreads();
 
   if (threadIdx.x == 0) {
-    atomicAdd(cell1._globals, block_pos[0].x);
-    atomicAdd(cell1._globals + 1, block_pos[0].y);
-    atomicAdd(cell1._globals + 2, block_pos[0].z);
-    atomicAdd(cell1._globals + 3, block_pos[0].w);
+    atomicAdd(cell1._globals, cell1_pos_shared[0].x);
+    atomicAdd(cell1._globals + 1, cell1_pos_shared[0].y);
+    atomicAdd(cell1._globals + 2, cell1_pos_shared[0].z);
+    atomicAdd(cell1._globals + 3, cell1_pos_shared[0].w);
   }
   __syncthreads();
 
@@ -324,47 +338,57 @@ __global__ void SoAFunctorNoN3(LJFunctorCudaGlobalsSoA<floatType> cell1) {
  */
 template <typename floatType, int block_size>
 __global__ void SoAFunctorNoN3Pair(LJFunctorCudaGlobalsSoA<floatType> cell1, LJFunctorCudaGlobalsSoA<floatType> cell2) {
-  __shared__ typename vec4<floatType>::Type block_pos[block_size];
+  __shared__ typename vec4<floatType>::Type cell2_pos_shared[block_size];
+  __shared__ OwnershipState cell2_ownershipState_shared[block_size];
+
   int i, tile;
   int tid = blockIdx.x * block_size + threadIdx.x;
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
                                                getInfinity<floatType>()};
   typename vec3<floatType>::Type myf = {0, 0, 0};
   typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
-  bool isOwned = false;
+  OwnershipState myOwnershipState = OwnershipState::dummy;
 
   if (tid < cell1._size) {
     myposition.x = cell1._posX[tid];
     myposition.y = cell1._posY[tid];
     myposition.z = cell1._posZ[tid];
-    isOwned = cell1._owned[tid] == (floatType)1.0;
+    myOwnershipState = cell1._ownershipState[tid];
   }
 
   for (i = 0, tile = 0; i < cell2._size; i += block_size, ++tile) {
     int idx = tile * block_size + threadIdx.x;
 
-    if (idx < cell2._size) block_pos[threadIdx.x] = {cell2._posX[idx], cell2._posY[idx], cell2._posZ[idx]};
+    if (idx < cell2._size) {
+      cell2_pos_shared[threadIdx.x] = {cell2._posX[idx], cell2._posY[idx], cell2._posZ[idx]};
+      cell2_ownershipState_shared[threadIdx.x] = cell2._ownershipState[idx];
+    }
     __syncthreads();
 
-    const int size = min(block_size, cell2._size - i);
-    for (int j = 0; j < size; ++j) {
-      myf = bodyBodyF<floatType>(myposition, block_pos[j], myf, myglobals, isOwned);
+    if (myOwnershipState != OwnershipState::dummy) {
+      const int size = min(block_size, cell2._size - i);
+      for (int j = 0; j < size; ++j) {
+        if (cell2_ownershipState_shared[j] != OwnershipState::dummy) {
+          myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf, myglobals,
+                                     myOwnershipState == OwnershipState::owned);
+        }
+      }
     }
     __syncthreads();
   }
 
   // reduce globals
-  block_pos[threadIdx.x] = myglobals;
+  cell2_pos_shared[threadIdx.x] = myglobals;
   __syncthreads();
 
-  reduceGlobalsShared<floatType, block_size>(block_pos);
+  reduceGlobalsShared<floatType, block_size>(cell2_pos_shared);
   __syncthreads();
 
   if (threadIdx.x == 0) {
-    atomicAdd(cell1._globals, block_pos[0].x);
-    atomicAdd(cell1._globals + 1, block_pos[0].y);
-    atomicAdd(cell1._globals + 2, block_pos[0].z);
-    atomicAdd(cell1._globals + 3, block_pos[0].w);
+    atomicAdd(cell1._globals, cell2_pos_shared[0].x);
+    atomicAdd(cell1._globals + 1, cell2_pos_shared[0].y);
+    atomicAdd(cell1._globals + 2, cell2_pos_shared[0].z);
+    atomicAdd(cell1._globals + 3, cell2_pos_shared[0].w);
   }
   __syncthreads();
 
@@ -383,13 +407,14 @@ template <typename floatType, int block_size, bool NMisMultipleBlockSize = false
 __global__ void SoAFunctorN3(LJFunctorCudaGlobalsSoA<floatType> cell1) {
   __shared__ typename vec4<floatType>::Type cell1_pos_shared[block_size];
   __shared__ typename vec3<floatType>::Type cell1_forces_shared[block_size];
+  __shared__ OwnershipState cell1_ownershipState_shared[block_size];
 
   int tid = blockIdx.x * block_size + threadIdx.x;
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
                                                getInfinity<floatType>()};
   typename vec3<floatType>::Type myf = {0, 0, 0};
   typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
-  floatType isOwned = 0.0;
+  OwnershipState myOwnershipState = OwnershipState::dummy;
 
   int i, tile;
   const int mask = block_size - 1;
@@ -398,26 +423,33 @@ __global__ void SoAFunctorN3(LJFunctorCudaGlobalsSoA<floatType> cell1) {
     myposition.x = cell1._posX[tid];
     myposition.y = cell1._posY[tid];
     myposition.z = cell1._posZ[tid];
-    isOwned = cell1._owned[tid] * (floatType)0.5;
+    myOwnershipState = cell1._ownershipState[tid];
   }
 
   for (i = 0, tile = 0; tile < blockIdx.x; i += block_size, ++tile) {
     int idx = tile * block_size + threadIdx.x;
-    cell1_pos_shared[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx],
-                                     cell1._owned[idx] * (floatType)0.5};
+    cell1_pos_shared[threadIdx.x] = {
+        cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx],
+        cell1._ownershipState[idx] == OwnershipState::owned ? (floatType)0.5 : (floatType)0.};
     cell1_forces_shared[threadIdx.x] = {0, 0, 0};
+    cell1_ownershipState_shared[threadIdx.x] = cell1._ownershipState[idx];
     __syncthreads();
 
-    for (int j = 0; j < block_size; ++j) {
-      unsigned int offset;
-      // use bitwise and if equivalent to modulo (for block_size = 2^n)
-      if ((block_size & (block_size - 1)) == 0) {
-        offset = (j + threadIdx.x) & mask;
-      } else {
-        offset = (j + threadIdx.x) % block_size;
+    if (myOwnershipState != OwnershipState::dummy) {
+      for (int j = 0; j < block_size; ++j) {
+        unsigned int offset;
+        // use bitwise and if equivalent to modulo (for block_size = 2^n)
+        if ((block_size & (block_size - 1)) == 0) {
+          offset = (j + threadIdx.x) & mask;
+        } else {
+          offset = (j + threadIdx.x) % block_size;
+        }
+        if (cell1_ownershipState_shared[offset] != OwnershipState::dummy) {
+          myf =
+              bodyBodyFN3<floatType>(myposition, cell1_pos_shared[offset], myf, cell1_forces_shared + offset, myglobals,
+                                     myOwnershipState == OwnershipState::owned ? (floatType)0.5 : (floatType)0.);
+        }
       }
-      myf = bodyBodyFN3<floatType>(myposition, cell1_pos_shared[offset], myf, cell1_forces_shared + offset, myglobals,
-                                   isOwned);
     }
     __syncthreads();
 
@@ -429,13 +461,20 @@ __global__ void SoAFunctorN3(LJFunctorCudaGlobalsSoA<floatType> cell1) {
 
   {
     int idx = blockIdx.x * block_size + threadIdx.x;
-    cell1_pos_shared[threadIdx.x] = {cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx],
-                                     cell1._owned[idx] * (floatType)0.5};
+    cell1_pos_shared[threadIdx.x] = {
+        cell1._posX[idx], cell1._posY[idx], cell1._posZ[idx],
+        cell1._ownershipState[idx] == OwnershipState::owned ? (floatType)0.5 : (floatType)0.};
     cell1_forces_shared[threadIdx.x] = {0, 0, 0};
+    cell1_ownershipState_shared[threadIdx.x] = cell1._ownershipState[idx];
     __syncthreads();
 
-    for (int j = threadIdx.x - 1; j >= 0; --j) {
-      myf = bodyBodyFN3<floatType>(myposition, cell1_pos_shared[j], myf, cell1_forces_shared + j, myglobals, isOwned);
+    if (myOwnershipState != OwnershipState::dummy) {
+      for (int j = threadIdx.x - 1; j >= 0; --j) {
+        if (cell1_ownershipState_shared[j] != OwnershipState::dummy) {
+          myf = bodyBodyFN3<floatType>(myposition, cell1_pos_shared[j], myf, cell1_forces_shared + j, myglobals,
+                                       myOwnershipState == OwnershipState::owned ? (floatType)0.5 : (floatType)0.);
+        }
+      }
     }
     __syncthreads();
 
@@ -475,6 +514,7 @@ template <typename floatType, int block_size, bool NMisMultipleBlockSize = false
 __global__ void SoAFunctorN3Pair(LJFunctorCudaGlobalsSoA<floatType> cell1, LJFunctorCudaGlobalsSoA<floatType> cell2) {
   __shared__ typename vec4<floatType>::Type cell2_pos_shared[block_size];
   __shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
+  __shared__ OwnershipState cell2_ownershipState_shared[block_size];
 
   int tid = blockIdx.x * block_size + threadIdx.x;
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
@@ -485,30 +525,38 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaGlobalsSoA<floatType> cell1, LJFun
   int i, tile;
   const int mask = block_size - 1;
 
-  floatType isOwned;
+  OwnershipState myOwnershipState = OwnershipState::dummy;
+
   if (not NMisMultipleBlockSize && tid < cell1._size) {
     myposition.x = cell1._posX[tid];
     myposition.y = cell1._posY[tid];
     myposition.z = cell1._posZ[tid];
-    isOwned = cell1._owned[tid] * (floatType)0.5;
+    myOwnershipState = cell1._ownershipState[tid];
   }
   for (i = block_size, tile = 0; i <= cell2._size; i += block_size, ++tile) {
     int idx = tile * block_size + threadIdx.x;
-    cell2_pos_shared[threadIdx.x] = {cell2._posX[idx], cell2._posY[idx], cell2._posZ[idx],
-                                     cell2._owned[idx] * (floatType)0.5};
+    cell2_pos_shared[threadIdx.x] = {
+        cell2._posX[idx], cell2._posY[idx], cell2._posZ[idx],
+        cell2._ownershipState[idx] == OwnershipState::owned ? (floatType)0.5 : (floatType)0.};
     cell2_forces_shared[threadIdx.x] = {0, 0, 0};
+    cell2_ownershipState_shared[threadIdx.x] = cell2._ownershipState[idx];
     __syncthreads();
 
-    for (int j = 0; j < block_size; ++j) {
-      unsigned int offset;
-      // use bitwise and if equivalent to modulo (for block_size = 2^n)
-      if ((block_size & (block_size - 1)) == 0) {
-        offset = (j + threadIdx.x) & mask;
-      } else {
-        offset = (j + threadIdx.x) % block_size;
+    if (myOwnershipState != OwnershipState::dummy) {
+      for (int j = 0; j < block_size; ++j) {
+        unsigned int offset;
+        // use bitwise and if equivalent to modulo (for block_size = 2^n)
+        if ((block_size & (block_size - 1)) == 0) {
+          offset = (j + threadIdx.x) & mask;
+        } else {
+          offset = (j + threadIdx.x) % block_size;
+        }
+        if (cell2_ownershipState_shared[offset] != OwnershipState::dummy) {
+          myf = bodyBodyFN3<floatType, false>(
+              myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset, myglobals,
+              myOwnershipState == OwnershipState::owned ? (floatType)0.5 : (floatType)0.);
+        }
       }
-      myf = bodyBodyFN3<floatType, false>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset,
-                                          myglobals, isOwned);
     }
     __syncthreads();
 
@@ -520,17 +568,24 @@ __global__ void SoAFunctorN3Pair(LJFunctorCudaGlobalsSoA<floatType> cell1, LJFun
   if ((not NMisMultipleBlockSize) && (i > cell2._size)) {
     int idx = tile * block_size + threadIdx.x;
     if (idx < cell2._size) {
-      cell2_pos_shared[threadIdx.x] = {cell2._posX[idx], cell2._posY[idx], cell2._posZ[idx],
-                                       cell2._owned[idx] * (floatType)0.5};
+      cell2_pos_shared[threadIdx.x] = {
+          cell2._posX[idx], cell2._posY[idx], cell2._posZ[idx],
+          cell2._ownershipState[idx] == OwnershipState::owned ? (floatType)0.5 : (floatType)0.};
       cell2_forces_shared[threadIdx.x] = {0, 0, 0};
+      cell2_ownershipState_shared[threadIdx.x] = cell2._ownershipState[idx];
     }
     __syncthreads();
 
     const int size = block_size + cell2._size - i;
-    for (int j = 0; j < size; ++j) {
-      const int offset = (j + threadIdx.x) % size;
-      myf = bodyBodyFN3<floatType>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset, myglobals,
-                                   isOwned);
+    if (myOwnershipState != OwnershipState::dummy) {
+      for (int j = 0; j < size; ++j) {
+        const int offset = (j + threadIdx.x) % size;
+        if (cell2_ownershipState_shared[offset] != OwnershipState::dummy) {
+          myf =
+              bodyBodyFN3<floatType>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset, myglobals,
+                                     myOwnershipState == OwnershipState::owned ? (floatType)0.5 : (floatType)0.);
+        }
+      }
     }
     __syncthreads();
     if (idx < cell2._size) {
@@ -659,18 +714,20 @@ __global__ void LinkedCellsTraversalNoN3(LJFunctorCudaGlobalsSoA<floatType> cell
                                          size_t *cellSizes) {
   unsigned int own_cid = cids[blockIdx.x];
   __shared__ typename vec4<floatType>::Type cell2_pos_shared[block_size];
+  __shared__ OwnershipState cell2_ownershipState_shared[block_size];
+
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
                                                getInfinity<floatType>()};
   typename vec3<floatType>::Type myf = {0, 0, 0};
   typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
-  bool isOwned = false;
+  OwnershipState myOwnershipState = OwnershipState::dummy;
 
   int index = cellSizes[own_cid] + threadIdx.x;
   if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
     myposition.x = cell._posX[index];
     myposition.y = cell._posY[index];
     myposition.z = cell._posZ[index];
-    isOwned = cell._owned[index] == (floatType)1.0;
+    myOwnershipState = cell._ownershipState[index];
   }
 
   // other cells
@@ -679,11 +736,20 @@ __global__ void LinkedCellsTraversalNoN3(LJFunctorCudaGlobalsSoA<floatType> cell
     const size_t cell2Start = cellSizes[other_id];
     const unsigned int sizeCell2 = cellSizes[other_id + 1] - cell2Start;
 
-    cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start + threadIdx.x], cell._posY[cell2Start + threadIdx.x],
-                                     cell._posZ[cell2Start + threadIdx.x]};
+    if (threadIdx.x < sizeCell2) {
+      cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start + threadIdx.x], cell._posY[cell2Start + threadIdx.x],
+                                       cell._posZ[cell2Start + threadIdx.x]};
+      cell2_ownershipState_shared[threadIdx.x] = cell._ownershipState[cell2Start + threadIdx.x];
+    }
     __syncthreads();
-    for (int j = 0; j < sizeCell2; ++j) {
-      myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf, myglobals, isOwned);
+
+    if (myOwnershipState != OwnershipState::dummy) {
+      for (int j = 0; j < sizeCell2; ++j) {
+        if (cell2_ownershipState_shared[j] != OwnershipState::dummy) {
+          myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf, myglobals,
+                                     myOwnershipState == OwnershipState::owned);
+        }
+      }
     }
     __syncthreads();
   }
@@ -721,19 +787,20 @@ __global__ void LinkedCellsTraversalN3(LJFunctorCudaGlobalsSoA<floatType> cell, 
   unsigned int own_cid = cids[blockIdx.x];
   __shared__ typename vec4<floatType>::Type cell2_pos_shared[block_size];
   __shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
+  __shared__ OwnershipState cell2_ownershipState_shared[block_size];
 
   typename vec3<floatType>::Type myposition = {getInfinity<floatType>(), getInfinity<floatType>(),
                                                getInfinity<floatType>()};
   typename vec3<floatType>::Type myf = {0, 0, 0};
   typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
-  floatType isOwned = 0.0;
+  OwnershipState myOwnershipState = OwnershipState::dummy;
 
   int index = cellSizes[own_cid] + threadIdx.x;
   if (threadIdx.x < (cellSizes[own_cid + 1] - cellSizes[own_cid])) {
     myposition.x = cell._posX[index];
     myposition.y = cell._posY[index];
     myposition.z = cell._posZ[index];
-    isOwned = (cell._owned[index]) * (floatType)0.5;
+    myOwnershipState = cell._ownershipState[index];
   }
   // other cells
   for (auto other_index = 0; other_index < linkedCellsOffsetsSize; ++other_index) {
@@ -741,15 +808,23 @@ __global__ void LinkedCellsTraversalN3(LJFunctorCudaGlobalsSoA<floatType> cell, 
     const size_t cell2Start = cellSizes[other_id];
     const int sizeCell2 = cellSizes[other_id + 1] - cell2Start;
 
-    cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start + threadIdx.x], cell._posY[cell2Start + threadIdx.x],
-                                     cell._posZ[cell2Start + threadIdx.x],
-                                     (cell._owned[cell2Start + threadIdx.x]) * (floatType)0.5};
+    cell2_pos_shared[threadIdx.x] = {
+        cell._posX[cell2Start + threadIdx.x], cell._posY[cell2Start + threadIdx.x],
+        cell._posZ[cell2Start + threadIdx.x],
+        cell._ownershipState[cell2Start + threadIdx.x] == OwnershipState::owned ? (floatType)0.5 : (floatType)0.};
     cell2_forces_shared[threadIdx.x] = {0, 0, 0};
+    cell2_ownershipState_shared[threadIdx.x] = cell._ownershipState[cell2Start + threadIdx.x];
     __syncthreads();
-    for (int j = 0; j < sizeCell2; ++j) {
-      const int offset = (j + threadIdx.x) % sizeCell2;
-      myf = bodyBodyFN3<floatType, false>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset,
-                                          myglobals, isOwned);
+
+    if (myOwnershipState != OwnershipState::dummy) {
+      for (int j = 0; j < sizeCell2; ++j) {
+        const int offset = (j + threadIdx.x) % sizeCell2;
+        if (cell2_ownershipState_shared[offset] != OwnershipState::dummy) {
+          myf = bodyBodyFN3<floatType, false>(
+              myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset, myglobals,
+              myOwnershipState == OwnershipState::owned ? (floatType)0.5 : (floatType)0.);
+        }
+      }
     }
     __syncthreads();
 
@@ -765,9 +840,16 @@ __global__ void LinkedCellsTraversalN3(LJFunctorCudaGlobalsSoA<floatType> cell, 
 
     cell2_pos_shared[threadIdx.x] = {cell._posX[cell1Start + threadIdx.x], cell._posY[cell1Start + threadIdx.x],
                                      cell._posZ[cell1Start + threadIdx.x]};
+    cell2_ownershipState_shared[threadIdx.x] = cell._ownershipState[cell1Start + threadIdx.x];
     __syncthreads();
-    for (int j = 0; j < sizeCell1; ++j) {
-      myf = bodyBodyF<floatType, true>(myposition, cell2_pos_shared[j], myf, myglobals, isOwned != 0.0);
+
+    if (myOwnershipState != OwnershipState::dummy) {
+      for (int j = 0; j < sizeCell1; ++j) {
+        if (cell2_ownershipState_shared[j] != OwnershipState::dummy) {
+          myf = bodyBodyF<floatType, true>(myposition, cell2_pos_shared[j], myf, myglobals,
+                                           myOwnershipState == OwnershipState::owned);
+        }
+      }
     }
     __syncthreads();
   }
@@ -867,21 +949,30 @@ template <typename floatType, int block_size>
 __global__ void CellVerletTraversalNoN3(LJFunctorCudaGlobalsSoA<floatType> cell, const unsigned int others_size,
                                         unsigned int *other_ids) {
   __shared__ typename vec4<floatType>::Type cell2_pos_shared[block_size];
+  __shared__ OwnershipState cell2_ownershipState_shared[block_size];
+
   typename vec3<floatType>::Type myf = {0, 0, 0};
   typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
 
   unsigned int index = blockIdx.x * block_size + threadIdx.x;
   typename vec3<floatType>::Type myposition = {cell._posX[index], cell._posY[index], cell._posZ[index]};
-  bool isOwned = cell._owned[index] == (floatType)1.0;
+  OwnershipState myOwnershipState = cell._ownershipState[index];
 
   // other cells
   unsigned int cid;
   for (auto other_index = others_size * blockIdx.x; (cid = other_ids[other_index]) < UINT_MAX; ++other_index) {
     const size_t own_particle = block_size * cid + threadIdx.x;
     cell2_pos_shared[threadIdx.x] = {cell._posX[own_particle], cell._posY[own_particle], cell._posZ[own_particle]};
+    cell2_ownershipState_shared[threadIdx.x] = cell._ownershipState[own_particle];
     __syncthreads();
-    for (int j = 0; j < block_size; ++j) {
-      myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf, myglobals, isOwned);
+
+    if (myOwnershipState != OwnershipState::dummy) {
+      for (int j = 0; j < block_size; ++j) {
+        if (cell2_ownershipState_shared[j] != OwnershipState::dummy) {
+          myf = bodyBodyF<floatType>(myposition, cell2_pos_shared[j], myf, myglobals,
+                                     myOwnershipState == OwnershipState::owned);
+        }
+      }
     }
     __syncthreads();
   }
@@ -947,34 +1038,42 @@ __global__ void CellVerletTraversalN3(LJFunctorCudaGlobalsSoA<floatType> cell, u
 
   __shared__ typename vec4<floatType>::Type cell2_pos_shared[block_size];
   __shared__ typename vec3<floatType>::Type cell2_forces_shared[block_size];
+  __shared__ OwnershipState cell2_ownershipState_shared[block_size];
 
   typename vec3<floatType>::Type myf = {0, 0, 0};
   typename vec4<floatType>::Type myglobals = {0, 0, 0, 0};
-  floatType isOwned = 0.0;
 
   int index = blockIdx.x * block_size + threadIdx.x;
   typename vec3<floatType>::Type myposition = {cell._posX[index], cell._posY[index], cell._posZ[index]};
-  isOwned = cell._owned[index] * (floatType)0.5;
+  OwnershipState myOwnershipState = cell._ownershipState[index];
 
   // other cells
   unsigned int cid;
   for (auto other_index = others_size * blockIdx.x; (cid = other_ids[other_index]) != UINT_MAX; ++other_index) {
     const unsigned int cell2Start = block_size * cid;
 
-    cell2_pos_shared[threadIdx.x] = {cell._posX[cell2Start + threadIdx.x], cell._posY[cell2Start + threadIdx.x],
-                                     cell._posZ[cell2Start + threadIdx.x],
-                                     cell._owned[cell2Start + threadIdx.x] * (floatType)0.5};
+    cell2_pos_shared[threadIdx.x] = {
+        cell._posX[cell2Start + threadIdx.x], cell._posY[cell2Start + threadIdx.x],
+        cell._posZ[cell2Start + threadIdx.x],
+        cell._ownershipState[cell2Start + threadIdx.x] == OwnershipState::owned ? (floatType)0.5 : (floatType)0.};
     cell2_forces_shared[threadIdx.x] = {0, 0, 0};
+    cell2_ownershipState_shared[threadIdx.x] = cell._ownershipState[cell2Start + threadIdx.x];
     __syncthreads();
-    for (int j = 0; j < block_size; ++j) {
-      unsigned int offset = 0;
-      if ((block_size & (block_size - 1)) == 0) {
-        offset = (j + threadIdx.x) & mask;
-      } else {
-        offset = (j + threadIdx.x) % block_size;
+
+    if (myOwnershipState != OwnershipState::dummy) {
+      for (int j = 0; j < block_size; ++j) {
+        unsigned int offset = 0;
+        if ((block_size & (block_size - 1)) == 0) {
+          offset = (j + threadIdx.x) & mask;
+        } else {
+          offset = (j + threadIdx.x) % block_size;
+        }
+        if (cell2_ownershipState_shared[offset] != OwnershipState::dummy) {
+          myf = bodyBodyFN3<floatType, false>(
+              myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset, myglobals,
+              myOwnershipState == OwnershipState::owned ? (floatType)0.5 : (floatType)0.);
+        }
       }
-      myf = bodyBodyFN3<floatType, false>(myposition, cell2_pos_shared[offset], myf, cell2_forces_shared + offset,
-                                          myglobals, isOwned);
     }
     __syncthreads();
 
@@ -990,9 +1089,16 @@ __global__ void CellVerletTraversalN3(LJFunctorCudaGlobalsSoA<floatType> cell, u
 
     cell2_pos_shared[threadIdx.x] = {cell._posX[cellStart + threadIdx.x], cell._posY[cellStart + threadIdx.x],
                                      cell._posZ[cellStart + threadIdx.x]};
+    cell2_ownershipState_shared[threadIdx.x] = cell._ownershipState[cellStart + threadIdx.x];
     __syncthreads();
-    for (int j = 0; j < block_size; ++j) {
-      myf = bodyBodyF<floatType, true>(myposition, cell2_pos_shared[j], myf, myglobals, isOwned != 0.0);
+
+    if (myOwnershipState != OwnershipState::dummy) {
+      for (int j = 0; j < block_size; ++j) {
+        if (cell2_ownershipState_shared[j] != OwnershipState::dummy) {
+          myf = bodyBodyF<floatType, true>(myposition, cell2_pos_shared[j], myf, myglobals,
+                                           myOwnershipState == OwnershipState::owned);
+        }
+      }
     }
     __syncthreads();
   }

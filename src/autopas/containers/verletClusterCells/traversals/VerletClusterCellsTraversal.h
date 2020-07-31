@@ -197,7 +197,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
       }
       case DataLayoutOption::soa: {
         for (size_t i = 0; i < (*this->_cells).size(); ++i) {
-          _functor->SoALoader((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer);
+          _functor->SoALoader((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer, 0);
         }
 
         return;
@@ -227,7 +227,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
 #pragma omp parallel for
 #endif
         for (size_t i = 0; i < (*this->_cells).size(); ++i) {
-          _functor->SoAExtractor((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer);
+          _functor->SoAExtractor((*this->_cells)[i], (*this->_cells)[i]._particleSoABuffer, 0);
         }
 
         return;
@@ -317,14 +317,12 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
           const size_t c2start = clusterSize * neighbor.second;
           SoAView cluster2(&(*cells)[neighbor.first]._particleSoABuffer, c2start, c2start + clusterSize);
 
-          // assumptions for owned state can probably not be made here, therefore false
-          _functor->SoAFunctorPair(cluster1, cluster2, useNewton3, false);
+          _functor->SoAFunctorPair(cluster1, cluster2, useNewton3);
         }
         // same cluster
         SoAView clusterSelf(&(*cells)[i]._particleSoABuffer, clusterId * clusterSize,
                             clusterId * clusterSize + clusterSize);
-        // assumptions for owned state can probably not be made here, therefore false
-        _functor->SoAFunctorSingle(clusterSelf, useNewton3, false);
+        _functor->SoAFunctorSingle(clusterSelf, useNewton3);
       }
     }
   }

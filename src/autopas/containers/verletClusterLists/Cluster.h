@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <iterator>
 #include <vector>
 
 #include "autopas/utils/SoAView.h"
@@ -48,6 +50,28 @@ class Cluster {
    * @copydoc operator[](size_t)
    */
   const Particle &operator[](size_t index) const { return *(_firstParticle + index); }
+
+  /**
+   * Get Minimum and Maximum of the particles in z-direction.
+   * @note This assumes that the particles are sorted along the z-direction!
+   * @return Tuple of minimum and maximum in z-direction and bool indicating whether this cluster contains at least one
+   * proper particle.
+   */
+  [[nodiscard]] std::tuple<double, double, bool> getZMinMax() const {
+    // Find first particle which is not a dummy and get its z-value.
+    auto *begin = &operator[](0);
+    auto *end = &operator[](_clusterSize);
+    auto pfirst = std::find_if(begin, end, [](const auto &particle) { return not particle.isDummy(); });
+    double min = pfirst != end ? pfirst->getR()[2] : std::numeric_limits<double>::max();
+
+    // Find last particle which is not a dummy and get its z-value.
+    auto rbegin = std::make_reverse_iterator(end);
+    auto rend = std::make_reverse_iterator(begin);
+    auto plast = std::find_if(rbegin, rend, [](const auto &particle) { return not particle.isDummy(); });
+    double max = plast != rend ? plast->getR()[2] : std::numeric_limits<double>::min();
+
+    return {min, max, pfirst != end};
+  }
 
   /**
    * Returns the SoAView for this cluster.

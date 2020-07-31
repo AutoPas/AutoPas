@@ -8,6 +8,7 @@
 #pragma once
 
 #include "autopas/pairwiseFunctors/FunctorCuda.cuh"
+#include "autopas/particles/OwnershipState.h"
 #include "cuda_runtime.h"
 
 namespace autopas {
@@ -25,23 +26,39 @@ class LJFunctorCudaSoA : public FunctorCudaSoA<floatType> {
    * @posX x positions of the particles
    * @posY y positions of the particles
    * @posZ z positions of the particles
+   * @param ownershipState
    */
-  LJFunctorCudaSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ)
-      : _size(size), _posX(posX), _posY(posY), _posZ(posZ), _forceX(nullptr), _forceY(nullptr), _forceZ(nullptr) {}
+  LJFunctorCudaSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ, OwnershipState *ownershipState)
+      : _size(size),
+        _posX(posX),
+        _posY(posY),
+        _posZ(posZ),
+        _forceX(nullptr),
+        _forceY(nullptr),
+        _forceZ(nullptr),
+        _ownershipState(ownershipState) {}
 
   /**
    * Constructor for only positions
    * @param size Number of particles
-   * @posX x positions of the particles
-   * @posY y positions of the particles
-   * @posZ z positions of the particles
-   * @forceX x forces of the particles
-   * @forceY y forces of the particles
-   * @forceZ z forces of the particles
+   * @param posX x positions of the particles
+   * @param posY y positions of the particles
+   * @param posZ z positions of the particles
+   * @param forceX x forces of the particles
+   * @param forceY y forces of the particles
+   * @param forceZ z forces of the particles
+   * @param ownershipState
    */
   LJFunctorCudaSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ, floatType *forceX,
-                   floatType *forceY, floatType *forceZ)
-      : _size(size), _posX(posX), _posY(posY), _posZ(posZ), _forceX(forceX), _forceY(forceY), _forceZ(forceZ) {}
+                   floatType *forceY, floatType *forceZ, OwnershipState *ownershipState)
+      : _size(size),
+        _posX(posX),
+        _posY(posY),
+        _posZ(posZ),
+        _forceX(forceX),
+        _forceY(forceY),
+        _forceZ(forceZ),
+        _ownershipState(ownershipState) {}
 
   /**
    * CopyConstructor
@@ -54,7 +71,8 @@ class LJFunctorCudaSoA : public FunctorCudaSoA<floatType> {
         _posZ(obj._posZ),
         _forceX(obj._forceX),
         _forceY(obj._forceY),
-        _forceZ(obj._forceZ) {}
+        _forceZ(obj._forceZ),
+        _ownershipState(obj._ownershipState) {}
 
   unsigned int _size;
   floatType *_posX;
@@ -63,22 +81,7 @@ class LJFunctorCudaSoA : public FunctorCudaSoA<floatType> {
   floatType *_forceX;
   floatType *_forceY;
   floatType *_forceZ;
-};
-
-/**
- * Stores all constants needed for the calculation
- * @tparam floatType of constants
- */
-template <typename floatType>
-class LJFunctorConstants : public FunctorCudaConstants<floatType> {
- public:
-  LJFunctorConstants() {}
-  LJFunctorConstants(floatType csq, floatType ep24, floatType sqs, floatType sh6)
-      : cutoffsquare(csq), epsilon24(ep24), sigmasquare(sqs), shift6(sh6) {}
-  floatType cutoffsquare;
-  floatType epsilon24;
-  floatType sigmasquare;
-  floatType shift6;
+  OwnershipState *_ownershipState;
 };
 
 template <typename floatType>

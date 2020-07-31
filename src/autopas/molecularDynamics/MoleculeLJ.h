@@ -37,7 +37,7 @@ class MoleculeLJ : public Particle {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, typeId, owned };
+  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, typeId, ownershipState };
 
   /**
    * The type for the SoA storage.
@@ -46,15 +46,19 @@ class MoleculeLJ : public Particle {
    * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
-  using SoAArraysType = typename autopas::utils::SoAType<size_t, floatType, floatType, floatType, floatType, floatType,
-                                                         floatType, size_t, floatType>::Type;
+  using SoAArraysType =
+      typename autopas::utils::SoAType<size_t /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
+                                       floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, size_t /*typeid*/,
+                                       OwnershipState /*ownershipState*/>::Type;
 
 #if defined(AUTOPAS_CUDA)
   /**
    * The type for storage arrays for Cuda.
    */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<size_t, floatType, floatType, floatType, floatType,
-                                                                    floatType, floatType, size_t, floatType>::Type;
+  using CudaDeviceArraysType =
+      typename autopas::utils::CudaSoAType<size_t /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
+                                           floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, size_t /*typeid*/,
+                                           OwnershipState /*ownershipState*/>::Type;
 #endif
 
   /**
@@ -65,28 +69,26 @@ class MoleculeLJ : public Particle {
    */
   template <AttributeNames attribute>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
-    switch (attribute) {
-      case AttributeNames::id:
-        return getID();
-      case AttributeNames::posX:
-        return getR()[0];
-      case AttributeNames::posY:
-        return getR()[1];
-      case AttributeNames::posZ:
-        return getR()[2];
-      case AttributeNames::forceX:
-        return getF()[0];
-      case AttributeNames::forceY:
-        return getF()[1];
-      case AttributeNames::forceZ:
-        return getF()[2];
-      case AttributeNames::typeId:
-        return getTypeId();
-      case AttributeNames::owned:
-        return isOwned() ? 1. : 0.;
-      default:
-        utils::ExceptionHandler::exception("ParticleBase::get: unknown attribute");
-        return 0;
+    if constexpr (attribute == AttributeNames::id) {
+      return getID();
+    } else if constexpr (attribute == AttributeNames::posX) {
+      return getR()[0];
+    } else if constexpr (attribute == AttributeNames::posY) {
+      return getR()[1];
+    } else if constexpr (attribute == AttributeNames::posZ) {
+      return getR()[2];
+    } else if constexpr (attribute == AttributeNames::forceX) {
+      return getF()[0];
+    } else if constexpr (attribute == AttributeNames::forceY) {
+      return getF()[1];
+    } else if constexpr (attribute == AttributeNames::forceZ) {
+      return getF()[2];
+    } else if constexpr (attribute == AttributeNames::typeId) {
+      return getTypeId();
+    } else if constexpr (attribute == AttributeNames::ownershipState) {
+      return this->_ownershipState;
+    } else {
+      utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
     }
   }
 
@@ -98,34 +100,26 @@ class MoleculeLJ : public Particle {
    */
   template <AttributeNames attribute>
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
-    switch (attribute) {
-      case AttributeNames::id:
-        setID(value);
-        break;
-      case AttributeNames::posX:
-        _r[0] = value;
-        break;
-      case AttributeNames::posY:
-        _r[1] = value;
-        break;
-      case AttributeNames::posZ:
-        _r[2] = value;
-        break;
-      case AttributeNames::forceX:
-        _f[0] = value;
-        break;
-      case AttributeNames::forceY:
-        _f[1] = value;
-        break;
-      case AttributeNames::forceZ:
-        _f[2] = value;
-        break;
-      case AttributeNames::typeId:
-        setTypeId(value);
-        break;
-      case AttributeNames::owned:
-        setOwned(value == 1.);
-        break;
+    if constexpr (attribute == AttributeNames::id) {
+      setID(value);
+    } else if constexpr (attribute == AttributeNames::posX) {
+      _r[0] = value;
+    } else if constexpr (attribute == AttributeNames::posY) {
+      _r[1] = value;
+    } else if constexpr (attribute == AttributeNames::posZ) {
+      _r[2] = value;
+    } else if constexpr (attribute == AttributeNames::forceX) {
+      _f[0] = value;
+    } else if constexpr (attribute == AttributeNames::forceY) {
+      _f[1] = value;
+    } else if constexpr (attribute == AttributeNames::forceZ) {
+      _f[2] = value;
+    } else if constexpr (attribute == AttributeNames::typeId) {
+      setTypeId(value);
+    } else if constexpr (attribute == AttributeNames::ownershipState) {
+      this->_ownershipState = value;
+    } else {
+      utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
     }
   }
 

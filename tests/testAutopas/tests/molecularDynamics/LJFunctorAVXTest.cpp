@@ -56,6 +56,7 @@ bool LJFunctorAVXTest::particleEqual(Particle &p1, Particle &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
   double tolerance = 1e-8;
+
   EXPECT_NEAR(p1.getR()[0], p2.getR()[0], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[1], p2.getR()[1], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[2], p2.getR()[2], tolerance) << "for particle pair " << p1.getID();
@@ -80,7 +81,7 @@ bool LJFunctorAVXTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
   return ret;
 }
 
-void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
+void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool doDeleteSomeParticles) {
   FMCell cell1AVX;
   FMCell cell2AVX;
 
@@ -91,6 +92,15 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
       cell1AVX, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
   autopasTools::generators::RandomGenerator::fillWithParticles(
       cell2AVX, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
+
+  if (doDeleteSomeParticles) {
+    for (auto &particle : cell1AVX) {
+      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+    }
+    for (auto &particle : cell2AVX) {
+      if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
+    }
+  }
 
   // copy cells
   FMCell cell1NoAVX(cell1AVX);
@@ -109,28 +119,28 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   ASSERT_TRUE(AoSParticlesEqual(cell1AVX, cell1NoAVX)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2AVX, cell2NoAVX)) << "Cells 2 not equal after copy initialization.";
 
-  ljFunctorNoAVX.SoALoader(cell1NoAVX, cell1NoAVX._particleSoABuffer);
-  ljFunctorNoAVX.SoALoader(cell2NoAVX, cell2NoAVX._particleSoABuffer);
-  ljFunctorAVX.SoALoader(cell1AVX, cell1AVX._particleSoABuffer);
-  ljFunctorAVX.SoALoader(cell2AVX, cell2AVX._particleSoABuffer);
+  ljFunctorNoAVX.SoALoader(cell1NoAVX, cell1NoAVX._particleSoABuffer, 0);
+  ljFunctorNoAVX.SoALoader(cell2NoAVX, cell2NoAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoALoader(cell1AVX, cell1AVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoALoader(cell2AVX, cell2AVX._particleSoABuffer, 0);
 
   ASSERT_TRUE(SoAParticlesEqual(cell1AVX._particleSoABuffer, cell1NoAVX._particleSoABuffer))
       << "Cells 1 not equal after loading.";
   ASSERT_TRUE(SoAParticlesEqual(cell2AVX._particleSoABuffer, cell2NoAVX._particleSoABuffer))
       << "Cells 2 not equal after loading.";
 
-  ljFunctorNoAVX.SoAFunctorPair(cell1NoAVX._particleSoABuffer, cell2NoAVX._particleSoABuffer, newton3, true);
-  ljFunctorAVX.SoAFunctorPair(cell1AVX._particleSoABuffer, cell2AVX._particleSoABuffer, newton3, true);
+  ljFunctorNoAVX.SoAFunctorPair(cell1NoAVX._particleSoABuffer, cell2NoAVX._particleSoABuffer, newton3);
+  ljFunctorAVX.SoAFunctorPair(cell1AVX._particleSoABuffer, cell2AVX._particleSoABuffer, newton3);
 
   ASSERT_TRUE(SoAParticlesEqual(cell1AVX._particleSoABuffer, cell1NoAVX._particleSoABuffer))
       << "Cells 1 not equal after applying functor.";
   ASSERT_TRUE(SoAParticlesEqual(cell2AVX._particleSoABuffer, cell2NoAVX._particleSoABuffer))
       << "Cells 2 not equal after applying functor.";
 
-  ljFunctorAVX.SoAExtractor(cell1AVX, cell1AVX._particleSoABuffer);
-  ljFunctorAVX.SoAExtractor(cell2AVX, cell2AVX._particleSoABuffer);
-  ljFunctorAVX.SoAExtractor(cell1NoAVX, cell1NoAVX._particleSoABuffer);
-  ljFunctorAVX.SoAExtractor(cell2NoAVX, cell2NoAVX._particleSoABuffer);
+  ljFunctorAVX.SoAExtractor(cell1AVX, cell1AVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoAExtractor(cell2AVX, cell2AVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoAExtractor(cell1NoAVX, cell1NoAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoAExtractor(cell2NoAVX, cell2NoAVX._particleSoABuffer, 0);
 
   ASSERT_TRUE(AoSParticlesEqual(cell1AVX, cell1NoAVX)) << "Cells 1 not equal after extracting.";
   ASSERT_TRUE(AoSParticlesEqual(cell2AVX, cell2NoAVX)) << "Cells 2 not equal after extracting.";
@@ -143,7 +153,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3) {
   EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
-void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
+void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles) {
   FMCell cellAVX;
 
   size_t numParticles = 7;
@@ -151,6 +161,12 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
+
+  if (doDeleteSomeParticles) {
+    for (auto &particle : cellAVX) {
+      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+    }
+  }
 
   // copy cells
   FMCell cellNoAVX(cellAVX);
@@ -166,20 +182,20 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   ljFunctorAVX.initTraversal();
   ljFunctorNoAVX.initTraversal();
 
-  ljFunctorNoAVX.SoALoader(cellNoAVX, cellNoAVX._particleSoABuffer);
-  ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer);
+  ljFunctorNoAVX.SoALoader(cellNoAVX, cellNoAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer, 0);
 
   ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellNoAVX._particleSoABuffer))
       << "Cells not equal after loading.";
 
-  ljFunctorNoAVX.SoAFunctorSingle(cellNoAVX._particleSoABuffer, newton3, true);
-  ljFunctorAVX.SoAFunctorSingle(cellAVX._particleSoABuffer, newton3, true);
+  ljFunctorNoAVX.SoAFunctorSingle(cellNoAVX._particleSoABuffer, newton3);
+  ljFunctorAVX.SoAFunctorSingle(cellAVX._particleSoABuffer, newton3);
 
   ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellNoAVX._particleSoABuffer))
       << "Cells not equal after applying functor.";
 
-  ljFunctorAVX.SoAExtractor(cellAVX, cellAVX._particleSoABuffer);
-  ljFunctorAVX.SoAExtractor(cellNoAVX, cellNoAVX._particleSoABuffer);
+  ljFunctorAVX.SoAExtractor(cellAVX, cellAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoAExtractor(cellNoAVX, cellNoAVX._particleSoABuffer, 0);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells 1 not equal after extracting.";
 
@@ -191,12 +207,30 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3) {
   EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
-TEST_F(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCellNewton3) { testLJFunctorVSLJFunctorAVXOneCell(true); }
+TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCell) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorAVXOneCell(newton3, doDeleteSomeParticle);
+}
 
-TEST_F(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCellNoNewton3) { testLJFunctorVSLJFunctorAVXOneCell(false); }
+TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXTwoCells) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorAVXTwoCells(newton3, doDeleteSomeParticle);
+}
 
-TEST_F(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXTwoCellNewton3) { testLJFunctorVSLJFunctorAVXTwoCells(true); }
+/**
+ * Lambda to generate a readable string out of the parameters of this test.
+ */
+static auto toString = [](const auto &info) {
+  auto [newton3, doDeleteSomeParticle] = info.param;
+  std::stringstream resStream;
+  resStream << (newton3 ? "N3" : "noN3") << "_" << (doDeleteSomeParticle ? "withDeletions" : "noDeletions");
+  std::string res = resStream.str();
+  std::replace(res.begin(), res.end(), '-', '_');
+  std::replace(res.begin(), res.end(), '.', '_');
+  return res;
+};
 
-TEST_F(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXTwoCellNoNewton3) { testLJFunctorVSLJFunctorAVXTwoCells(false); }
+INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorAVXTest, ::testing::Combine(::testing::Bool(), ::testing::Bool()),
+                         toString);
 
 #endif  // __AVX__
