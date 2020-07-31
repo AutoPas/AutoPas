@@ -1,5 +1,5 @@
 #yaml file to test the sli_blk traversal
-iterations: 5
+iterations: 2
 container: [linkedcell]
 data-layout: [aos]
 newton3: [enabled]
@@ -13,7 +13,7 @@ Objects:
       particle-epsilon: 1.
       particle-sigma: 1.
       particle-mass: 1.
-      particles-per-dimension: [8,8,8]
-      particle-spacing: 0.9
-      velocity: [0,0,0]
+      particles-per-dimension: [55,25,12]
+      particle-spacing: 0.5
+      velocity: [3,3,3]
       bottomLeftCorner: [5.,5.,5.]
