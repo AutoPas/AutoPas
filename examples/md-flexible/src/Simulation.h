@@ -103,10 +103,10 @@ class Simulation {
   [[nodiscard]] const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
 
   /**
-    * Calculate the homogeneity of the scenario by using the standard deviation.
-    * @param autopas
-    * @return double
-    */
+   * Calculate the homogeneity of the scenario by using the standard deviation.
+   * @param autopas
+   * @return double
+   */
   double getHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas);
 
  private:
@@ -147,7 +147,7 @@ class Simulation {
   /**
    * Homogeneity of the scenario, calculated by the standard deviation of the density.
    */
-   double homogeneity = 0;
+  double homogeneity = 0;
 
   /**
    * Convert a time and a name to a properly formatted string.
@@ -275,7 +275,6 @@ void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Partic
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, ParticleCell> &autopas) {
-
   this->homogeneity = Simulation::getHomogeneity(autopas);
   _timers.simulate.start();
 
@@ -417,7 +416,7 @@ void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Partic
   cout << "Tuning iterations: " << numTuningIterations << " / " << iteration << " = "
        << ((double)numTuningIterations / iteration * 100) << "%" << endl;
   cout << "MFUPs/sec    : " << mfups << endl;
-  cout << "Homogeneity    : " << homogeneity << endl;
+  cout << "Standard Deviation of Homogeneity    : " << homogeneity << endl;
 
   if (_config->dontMeasureFlops.value) {
     autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> flopCounterFunctor(
@@ -526,61 +525,66 @@ void Simulation<Particle, ParticleCell>::writeVTKFile(unsigned int iteration,
 
 template <class Particle, class ParticleCell>
 double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas) {
-
   int numberOfParticles = autopas.getNumberOfParticles();
   int numberOfCells = ceil(numberOfParticles / 10);
 
   std::array<double, 3> startCorner = autopas.getBoxMin();
   std::array<double, 3> endCorner = autopas.getBoxMax();
   std::array<double, 3> domainSizePerDimension = {};
-  std::array<double, 3> outerCellSizePerDimension = {};
-  std::array<long, 3> cellsPerDimension = {};
-
-  for(int i = 0; i < 3; ++i){
+  for (int i = 0; i < 3; ++i) {
     domainSizePerDimension[i] = endCorner[i] - startCorner[i];
   }
 
+  // get cellLength which is equal in each direction, derived from the domainsize and the requested number of cells
   double volume = domainSizePerDimension[0] * domainSizePerDimension[1] * domainSizePerDimension[2];
   double cellVolume = volume / numberOfCells;
   double cellLength = cbrt(cellVolume);
 
-  for(int i = 0; i < 3; ++i){
-    outerCellSizePerDimension[i] = domainSizePerDimension[i] - (floor(domainSizePerDimension[i] / cellLength) * cellLength);
+  // calculate the size of the boundary cells, which might be smaller then the other cells
+  std::array<long, 3> cellsPerDimension = {};
+  std::array<double, 3> outerCellSizePerDimension = {};
+  for (int i = 0; i < 3; ++i) {
+    outerCellSizePerDimension[i] =
+        domainSizePerDimension[i] - (floor(domainSizePerDimension[i] / cellLength) * cellLength);
     cellsPerDimension[i] = ceil(domainSizePerDimension[i] / cellLength);
   }
-
-  numberOfCells = cellsPerDimension[0]*cellsPerDimension[1]*cellsPerDimension[2];
+  numberOfCells = cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2];
 
   std::vector<int> allCells(numberOfCells, 0);
   std::vector<double> allVolumes(numberOfCells, 0);
-  std::vector<double> densityPerCell(numberOfCells, 0.0);
 
-  for(auto iter = autopas.begin(); iter.isValid(); ++iter){
-    std::array<double ,3> region = iter->getR();
-    std::array<long,3> index = {};
-    for(int i = 0; i < region.size(); i++){
+  // add particles accordingly to their cell to get the amount of particles in each cell
+  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    std::array<double, 3> region = iter->getR();
+    std::array<long, 3> index = {};
+    for (int i = 0; i < region.size(); i++) {
       index[i] = region[i] / cellLength;
     }
     const unsigned long cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
     allCells[cellIndex] += 1;
-    allVolumes[cellIndex] = (index[0] == cellsPerDimension[0]-1) ? outerCellSizePerDimension[0] : cellLength;
-    allVolumes[cellIndex] *= (index[1] == cellsPerDimension[1]-1) ? outerCellSizePerDimension[1] : cellLength;
-    allVolumes[cellIndex] *= (index[2] == cellsPerDimension[2]-1) ? outerCellSizePerDimension[2] : cellLength;
+    allVolumes[cellIndex] = (index[0] == cellsPerDimension[0] - 1) ? outerCellSizePerDimension[0] : cellLength;
+    allVolumes[cellIndex] *= (index[1] == cellsPerDimension[1] - 1) ? outerCellSizePerDimension[1] : cellLength;
+    allVolumes[cellIndex] *= (index[2] == cellsPerDimension[2] - 1) ? outerCellSizePerDimension[2] : cellLength;
   }
 
-  for(int i = 0; i < allCells.size(); i++){
-    densityPerCell[i] = (allCells[i] == 0) ? 0 : (allCells[i] / allVolumes[i]); //make sure there is no division of zero
+  // calculate density for each cell
+  std::vector<double> densityPerCell(numberOfCells, 0.0);
+  for (int i = 0; i < allCells.size(); i++) {
+    densityPerCell[i] =
+        (allCells[i] == 0) ? 0 : (allCells[i] / allVolumes[i]);  // make sure there is no division of zero
   }
 
+  // get mean and reserve variable for variance
   double mean = numberOfParticles / volume;
   double variance = 0.0;
 
-  for(int r = 0; r < densityPerCell.size(); ++r){
+  // calculate variance
+  for (int r = 0; r < densityPerCell.size(); ++r) {
     double distance = densityPerCell.at(r) - mean;
     variance += (distance * distance / densityPerCell.size());
   }
 
+  // finally calculate standard deviation
   double sd = sqrt(variance);
   return sd;
-
 }
