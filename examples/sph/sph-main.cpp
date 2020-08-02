@@ -215,7 +215,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   std::cout << "haloparticles... ";
   int haloparts = 0, innerparts = 0;
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    if (not part->isOwned()) {
+    if (part->isHalo()) {
       haloparts++;
     } else {
       innerparts++;
@@ -248,7 +248,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   std::cout << "haloparticles... ";
   haloparts = 0, innerparts = 0;
   for (auto part = sphSystem.begin(); part.isValid(); ++part) {
-    if (not part->isOwned()) {
+    if (part->isHalo()) {
       haloparts++;
     } else {
       innerparts++;
