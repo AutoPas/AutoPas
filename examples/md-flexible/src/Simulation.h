@@ -558,7 +558,7 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
   // add particles accordingly to their cell to get the amount of particles in each cell
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     std::array<double, 3> region = iter->getR();
-    std::array<long, 3> index = {};
+    std::array<size_t, 3> index = {};
     for (int i = 0; i < region.size(); i++) {
       index[i] = region[i] / cellLength;
     }
