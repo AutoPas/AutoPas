@@ -550,6 +550,7 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
         domainSizePerDimension[i] - (floor(domainSizePerDimension[i] / cellLength) * cellLength);
     cellsPerDimension[i] = ceil(domainSizePerDimension[i] / cellLength);
   }
+  // Actual number of cells we end up with
   numberOfCells = cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2];
 
   std::vector<size_t> allCells(numberOfCells, 0);
