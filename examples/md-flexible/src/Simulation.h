@@ -107,7 +107,7 @@ class Simulation {
    * @param autopas
    * @return double
    */
-  double getHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas);
+  double calculateHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas);
 
  private:
   using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
@@ -275,7 +275,7 @@ void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Partic
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, ParticleCell> &autopas) {
-  this->homogeneity = Simulation::getHomogeneity(autopas);
+  this->homogeneity = Simulation::calculateHomogeneity(autopas);
   _timers.simulate.start();
 
   // main simulation loop
@@ -524,7 +524,7 @@ void Simulation<Particle, ParticleCell>::writeVTKFile(unsigned int iteration,
 }
 
 template <class Particle, class ParticleCell>
-double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas) {
+double Simulation<Particle, ParticleCell>::calculateHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas) {
   int numberOfParticles = autopas.getNumberOfParticles();
   int numberOfCells = ceil(numberOfParticles / 10);
 
@@ -550,18 +550,18 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
   }
   numberOfCells = cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2];
 
-  std::vector<int> allCells(numberOfCells, 0);
+  std::vector<int> particlesPerCell(numberOfCells, 0);
   std::vector<double> allVolumes(numberOfCells, 0);
 
   // add particles accordingly to their cell to get the amount of particles in each cell
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    std::array<double, 3> region = iter->getR();
+    std::array<double, 3> particleLocation = iter->getR();
     std::array<long, 3> index = {};
-    for (int i = 0; i < region.size(); i++) {
-      index[i] = region[i] / cellLength;
+    for (int i = 0; i < particleLocation.size(); i++) {
+      index[i] = particleLocation[i] / cellLength;
     }
     const unsigned long cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
-    allCells[cellIndex] += 1;
+    particlesPerCell[cellIndex] += 1;
     allVolumes[cellIndex] = (index[0] == cellsPerDimension[0] - 1) ? outerCellSizePerDimension[0] : cellLength;
     allVolumes[cellIndex] *= (index[1] == cellsPerDimension[1] - 1) ? outerCellSizePerDimension[1] : cellLength;
     allVolumes[cellIndex] *= (index[2] == cellsPerDimension[2] - 1) ? outerCellSizePerDimension[2] : cellLength;
@@ -569,9 +569,9 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
 
   // calculate density for each cell
   std::vector<double> densityPerCell(numberOfCells, 0.0);
-  for (int i = 0; i < allCells.size(); i++) {
+  for (int i = 0; i < particlesPerCell.size(); i++) {
     densityPerCell[i] =
-        (allCells[i] == 0) ? 0 : (allCells[i] / allVolumes[i]);  // make sure there is no division of zero
+        (particlesPerCell[i] == 0) ? 0 : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
   }
 
   // get mean and reserve variable for variance
