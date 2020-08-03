@@ -526,7 +526,8 @@ void Simulation<Particle, ParticleCell>::writeVTKFile(unsigned int iteration,
 template <class Particle, class ParticleCell>
 double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas) {
   int numberOfParticles = autopas.getNumberOfParticles();
-  int numberOfCells = ceil(numberOfParticles / 10);
+  // approximately the resolution we want to get.
+  int numberOfCells = ceil(numberOfParticles / 10.);
 
   std::array<double, 3> startCorner = autopas.getBoxMin();
   std::array<double, 3> endCorner = autopas.getBoxMax();
