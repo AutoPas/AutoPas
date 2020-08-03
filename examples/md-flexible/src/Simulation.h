@@ -562,7 +562,7 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
     for (int i = 0; i < region.size(); i++) {
       index[i] = region[i] / cellLength;
     }
-    const unsigned long cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
+    const size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
     allCells[cellIndex] += 1;
     allVolumes[cellIndex] = (index[0] == cellsPerDimension[0] - 1) ? outerCellSizePerDimension[0] : cellLength;
     allVolumes[cellIndex] *= (index[1] == cellsPerDimension[1] - 1) ? outerCellSizePerDimension[1] : cellLength;
