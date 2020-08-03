@@ -552,7 +552,7 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
   }
   numberOfCells = cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2];
 
-  std::vector<int> allCells(numberOfCells, 0);
+  std::vector<size_t> allCells(numberOfCells, 0);
   std::vector<double> allVolumes(numberOfCells, 0);
 
   // add particles accordingly to their cell to get the amount of particles in each cell
