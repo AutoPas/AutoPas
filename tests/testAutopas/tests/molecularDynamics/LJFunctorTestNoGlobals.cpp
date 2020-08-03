@@ -129,18 +129,18 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
       }
     }
     // Load the particles into the soa.
-    functor->SoALoader(cell1, cell1._particleSoABuffer);
-    functor->SoALoader(cell2, cell2._particleSoABuffer);
+    functor->SoALoader(cell1, cell1._particleSoABuffer, 0);
+    functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
 
     if (auto msg = this->shouldSkipIfNotImplemented([&]() {
           switch (interactionType) {
             case TestType::InteractionType::own:
               // Interation of one cell with itself
-              functor->SoAFunctorSingle(cell1._particleSoABuffer, newton3, true);
+              functor->SoAFunctorSingle(cell1._particleSoABuffer, newton3);
               break;
             case TestType::InteractionType::pair:
               // Interation of a cell pair
-              functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3, true);
+              functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
               break;
             case TestType::InteractionType::verlet:
               // Build verlet list
@@ -158,8 +158,8 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     }
 
     // Extract the particles from the soa
-    functor->SoAExtractor(cell1, cell1._particleSoABuffer);
-    functor->SoAExtractor(cell2, cell2._particleSoABuffer);
+    functor->SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    functor->SoAExtractor(cell2, cell2._particleSoABuffer, 0);
 
     // force of particle 1
     auto f1 = cell1.begin()->getF();
@@ -203,11 +203,11 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     }
 
     if (interactionType == TestType::InteractionType::pair) {
-      functor->SoALoader(cell1, cell1._particleSoABuffer);
-      functor->SoALoader(cell2, cell2._particleSoABuffer);
-      functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3, true);
-      functor->SoAExtractor(cell1, cell1._particleSoABuffer);
-      functor->SoAExtractor(cell2, cell2._particleSoABuffer);
+      functor->SoALoader(cell1, cell1._particleSoABuffer, 0);
+      functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
+      functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
+      functor->SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+      functor->SoAExtractor(cell2, cell2._particleSoABuffer, 0);
 
       f1 = cell1.begin()->getF();
       f2 = cell2.begin()->getF();

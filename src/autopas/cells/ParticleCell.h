@@ -27,18 +27,18 @@ class ParticleCell {
   using ParticleType = Particle;
 
   /**
-   * destructor of ParticleCell
+   * Destructor of ParticleCell.
    */
   virtual ~ParticleCell() = default;
 
   /**
-   * adds a Particle to the cell
+   * Adds a Particle to the cell.
    * @param p the particle to be added
    */
   virtual void addParticle(const Particle &p) = 0;
 
   /**
-   * Get an iterator to the start of a ParticleCell
+   * Get an iterator to the start of a ParticleCell.
    * normal use:
    * for(auto iter = cell.begin(); iter.isValid; ++iter){...}
    * @return the iterator
@@ -59,7 +59,7 @@ class ParticleCell {
   constexpr bool end() const { return false; }
 
   /**
-   * Get the number of particles stored in this cell
+   * Get the number of particles stored in this cell.
    * @return number of particles stored in this cell
    */
   virtual unsigned long numParticles() const = 0;
@@ -71,12 +71,17 @@ class ParticleCell {
   virtual bool isNotEmpty() const = 0;
 
   /**
-   * Deletes all particles in this cell
+   * Deletes all particles in this cell.
    */
   virtual void clear() = 0;
 
   /**
-   * Deletes the index-th particle
+   * Deletes all dummy particles in this cell.
+   */
+  virtual void deleteDummyParticles() = 0;
+
+  /**
+   * Deletes the index-th particle.
    * @param index the index of the particle that shall be deleted
    */
   virtual void deleteByIndex(size_t index) = 0;

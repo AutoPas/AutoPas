@@ -38,11 +38,11 @@ class DataLayoutConverter {
         return;
       }
       case DataLayoutOption::soa: {
-        _functor->SoALoader(cell, cell._particleSoABuffer);
+        _functor->SoALoader(cell, cell._particleSoABuffer, 0);
         return;
       }
       case DataLayoutOption::cuda: {
-        _functor->SoALoader(cell, cell._particleSoABuffer);
+        _functor->SoALoader(cell, cell._particleSoABuffer, 0);
         _functor->deviceSoALoader(cell._particleSoABuffer, cell._particleSoABufferDevice);
         return;
       }
@@ -61,12 +61,12 @@ class DataLayoutConverter {
         return;
       }
       case DataLayoutOption::soa: {
-        _functor->SoAExtractor(cell, cell._particleSoABuffer);
+        _functor->SoAExtractor(cell, cell._particleSoABuffer, 0);
         return;
       }
       case DataLayoutOption::cuda: {
         _functor->deviceSoAExtractor(cell._particleSoABuffer, cell._particleSoABufferDevice);
-        _functor->SoAExtractor(cell, cell._particleSoABuffer);
+        _functor->SoAExtractor(cell, cell._particleSoABuffer, 0);
         return;
       }
     }

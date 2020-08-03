@@ -12,7 +12,9 @@
 #include "autopas/utils/SoA.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class LJFunctorAVXTest : public AutoPasTestBase {
+using LJFunctorAVXTestingTuple = std::tuple<bool /*newton3*/, bool /*doDeleteSomeParticles*/>;
+
+class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInterface<LJFunctorAVXTestingTuple> {
  public:
   LJFunctorAVXTest() : AutoPasTestBase() {}
 
@@ -29,19 +31,21 @@ class LJFunctorAVXTest : public AutoPasTestBase {
    * Checks SoAFunctorPair(soa1, soa2, newton3)
    *
    * @param newton3
+   * @param doDeleteSomeParticles
    */
-  void testLJFunctorVSLJFunctorAVXTwoCells(bool newton3);
+  void testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool doDeleteSomeParticles);
 
   /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
    * Expects that particles are loaded and extracted in the same order.
    * In all comparisons first is AVX2, second non-AVX2
    *
-   * Checks SoAFunctorSingle(soa, newton3, cellWiseOwnedState)
+   * Checks SoAFunctorSingle(soa, newton3)
    *
    * @param newton3
+   * @param doDeleteSomeParticles
    */
-  void testLJFunctorVSLJFunctorAVXOneCell(bool newton3);
+  void testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles);
 
   /**
    * Checks that two non empty SoAs' particles are equal
@@ -68,6 +72,7 @@ class LJFunctorAVXTest : public AutoPasTestBase {
    * @return
    */
   bool particleEqual(Particle &p1, Particle &p2);
+
   constexpr static double _cutoff{6.};
   constexpr static double _epsilon{1.};
   constexpr static double _sigma{1.};
