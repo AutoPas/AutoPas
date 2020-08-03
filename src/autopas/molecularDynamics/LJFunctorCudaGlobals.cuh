@@ -1,5 +1,5 @@
 /**
- * @file LJFunctorCuda.cuh
+ * @file LJFunctorCudaGlobals.cuh
  *
  * @date 26.4.2019
  * @author jspahl
@@ -8,6 +8,7 @@
 #pragma once
 
 #include "autopas/pairwiseFunctors/FunctorCuda.cuh"
+#include "autopas/particles/OwnershipState.h"
 #include "cuda_runtime.h"
 
 namespace autopas {
@@ -22,12 +23,14 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
   /**
    * Constructor for only positions
    * @param size Number of particles
-   * @posX x positions of the particles
-   * @posY y positions of the particles
-   * @posZ z positions of the particles
+   * @param posX x positions of the particles
+   * @param posY y positions of the particles
+   * @param posZ z positions of the particles
+   * @param ownershipState
+   * @param globals
    */
-  LJFunctorCudaGlobalsSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ, bool *owned,
-                          floatType *globals)
+  LJFunctorCudaGlobalsSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ,
+                          OwnershipState *ownershipState, floatType *globals)
       : _size(size),
         _posX(posX),
         _posY(posY),
@@ -35,21 +38,23 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
         _forceX(nullptr),
         _forceY(nullptr),
         _forceZ(nullptr),
-        _owned(owned),
+        _ownershipState(ownershipState),
         _globals(globals) {}
 
   /**
    * Constructor for only positions
    * @param size Number of particles
-   * @posX x positions of the particles
-   * @posY y positions of the particles
-   * @posZ z positions of the particles
-   * @forceX x forces of the particles
-   * @forceY y forces of the particles
-   * @forceZ z forces of the particles
+   * @param posX x positions of the particles
+   * @param posY y positions of the particles
+   * @param posZ z positions of the particles
+   * @param forceX x forces of the particles
+   * @param forceY y forces of the particles
+   * @param forceZ z forces of the particles
+   * @param ownershipState
+   * @param globals
    */
   LJFunctorCudaGlobalsSoA(unsigned int size, floatType *posX, floatType *posY, floatType *posZ, floatType *forceX,
-                          floatType *forceY, floatType *forceZ, floatType *owned, floatType *globals)
+                          floatType *forceY, floatType *forceZ, OwnershipState *ownershipState, floatType *globals)
       : _size(size),
         _posX(posX),
         _posY(posY),
@@ -57,7 +62,7 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
         _forceX(forceX),
         _forceY(forceY),
         _forceZ(forceZ),
-        _owned(owned),
+        _ownershipState(ownershipState),
         _globals(globals) {}
 
   /**
@@ -72,7 +77,7 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
         _forceX(obj._forceX),
         _forceY(obj._forceY),
         _forceZ(obj._forceZ),
-        _owned(obj._owned),
+        _ownershipState(obj._ownershipState),
         _globals(obj._globals) {}
 
   unsigned int _size;
@@ -82,7 +87,7 @@ class LJFunctorCudaGlobalsSoA : public FunctorCudaSoA<floatType> {
   floatType *_forceX;
   floatType *_forceY;
   floatType *_forceZ;
-  floatType *_owned;
+  OwnershipState *_ownershipState;
   floatType *_globals;
 };
 
