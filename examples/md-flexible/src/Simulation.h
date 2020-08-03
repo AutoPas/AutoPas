@@ -541,7 +541,7 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
   double cellLength = cbrt(cellVolume);
 
   // calculate the size of the boundary cells, which might be smaller then the other cells
-  std::array<long, 3> cellsPerDimension = {};
+  std::array<size_t, 3> cellsPerDimension = {};
   std::array<double, 3> outerCellSizePerDimension = {};
   for (int i = 0; i < 3; ++i) {
     outerCellSizePerDimension[i] =
