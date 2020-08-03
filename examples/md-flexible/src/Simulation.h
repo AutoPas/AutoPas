@@ -582,7 +582,7 @@ double Simulation<Particle, ParticleCell>::getHomogeneity(autopas::AutoPas<Parti
 
   // calculate variance
   for (int r = 0; r < densityPerCell.size(); ++r) {
-    double distance = densityPerCell.at(r) - mean;
+    double distance = densityPerCell[r] - mean;
     variance += (distance * distance / densityPerCell.size());
   }
 
