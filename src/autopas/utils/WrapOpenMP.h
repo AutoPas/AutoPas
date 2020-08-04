@@ -80,7 +80,8 @@ class AutoPasLock {
   void lock() { omp_set_lock(&_lock); }
 
   /**
-   * Acquire the lock, if possible.
+   * Acquire the lock, if possible. Always continue.
+   * @return true if lock could be aquired, false otherwise
    */
   bool testlock() { return omp_test_lock(&_lock); }
 
