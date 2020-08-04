@@ -171,6 +171,7 @@ class AutoPasLock {
    * ATTENTION: OpenMP Doc states:
    * The behavior is unspecified if a simple lock accessed by omp_test_lock is in the locked state and is owned by the
    * task that contains the call.
+   * @return true if lock could be aquired, false otherwise
    */
   bool testlock() {
     if (_locked) {
