@@ -64,7 +64,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
         _cellLength(cellLength),
         _cellBlockDimensions{},
         locks(),
-        _overlapAxis({0,0,0}),
+        _overlapAxis({0, 0, 0}),
         _dataLayoutConverter(pairwiseFunctor) {
     init(dims);
   }
@@ -81,10 +81,9 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
                                                 _cellBlockDimensions[0].back() >= _overlapAxis[0] * 2 + 1 and
                                                 _cellBlockDimensions[1].back() >= _overlapAxis[1] * 2 + 1 and
                                                 _cellBlockDimensions[2].back() >= _overlapAxis[2] * 2 + 1;
-    const bool atLeast3CellsOnEachAxis =
-        this->_cellsPerDimension[0] >= _overlapAxis[0] * 2 + 1 and
-        this->_cellsPerDimension[1] >= _overlapAxis[1] * 2 + 1 and
-        this->_cellsPerDimension[2] >= _overlapAxis[2] * 2 + 1;
+    const bool atLeast3CellsOnEachAxis = this->_cellsPerDimension[0] >= _overlapAxis[0] * 2 + 1 and
+                                         this->_cellsPerDimension[1] >= _overlapAxis[1] * 2 + 1 and
+                                         this->_cellsPerDimension[2] >= _overlapAxis[2] * 2 + 1;
     return not(dataLayout == DataLayoutOption::cuda) and atLeast27CellsForEachCellBlock and atLeast3CellsOnEachAxis;
   }
 
@@ -311,18 +310,19 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
     bool LocksThatCanBeSet[8] = {false, false, false, false, false, false, false, false};
     int no_locksSet = 0;
     _masterlock.lock();
-//    AutoPasLog(debug, "LOCKING: " + std::to_string(blockNumber) + " MASTER");
+    //    AutoPasLog(debug, "LOCKING: " + std::to_string(blockNumber) + " MASTER");
 
     for (unsigned long x = 0; x < 2; ++x) {
       for (unsigned long y = 0; y < 2; ++y) {
         for (unsigned long z = 0; z < 2; ++z) {
           LocksThatCanBeSet[no_locksSet] =
               locks[uniqueLockCalculation(blockNumber, {x + order[0], y + order[1], z + order[2]})].testlock();
-//          AutoPasLog(
-//              debug,
-//              "TRYING LOCKING " + std::to_string(blockNumber) + " Lock : " +
-//                  std::to_string(uniqueLockCalculation(blockNumber, {x + order[0], y + order[1], z + order[2]})) +
-//                  " id: " + debugHelperFunctionIntArrayToString2({x + order[0], y + order[1], z + order[2]}));
+          //          AutoPasLog(
+          //              debug,
+          //              "TRYING LOCKING " + std::to_string(blockNumber) + " Lock : " +
+          //                  std::to_string(uniqueLockCalculation(blockNumber, {x + order[0], y + order[1], z +
+          //                  order[2]})) + " id: " + debugHelperFunctionIntArrayToString2({x + order[0], y + order[1],
+          //                  z + order[2]}));
           no_locksSet++;
         }
       }
@@ -330,7 +330,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
 
     if (LocksThatCanBeSet[0] && LocksThatCanBeSet[1] && LocksThatCanBeSet[2] && LocksThatCanBeSet[3] &&
         LocksThatCanBeSet[4] && LocksThatCanBeSet[5] && LocksThatCanBeSet[6] && LocksThatCanBeSet[7]) {
-//      AutoPasLog(debug, "UNLOCKING: " + std::to_string(blockNumber) + " MASTER");
+      //      AutoPasLog(debug, "UNLOCKING: " + std::to_string(blockNumber) + " MASTER");
       _masterlock.unlock();
       return true;
     } else {
@@ -339,18 +339,19 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
         for (unsigned long y = 0; y < 2; ++y) {
           for (unsigned long z = 0; z < 2; ++z) {
             if (LocksThatCanBeSet[no_locksSet]) {
-//              AutoPasLog(
-//                  debug,
-//                  "UNLOCKING " + std::to_string(blockNumber) + " Lock : " +
-//                      std::to_string(uniqueLockCalculation(blockNumber, {x + order[0], y + order[1], z + order[2]})) +
-//                      " id: " + debugHelperFunctionIntArrayToString2({x + order[0], y + order[1], z + order[2]}));
+              //              AutoPasLog(
+              //                  debug,
+              //                  "UNLOCKING " + std::to_string(blockNumber) + " Lock : " +
+              //                      std::to_string(uniqueLockCalculation(blockNumber, {x + order[0], y + order[1], z +
+              //                      order[2]})) + " id: " + debugHelperFunctionIntArrayToString2({x + order[0], y +
+              //                      order[1], z + order[2]}));
               locks[uniqueLockCalculation(blockNumber, {x + order[0], y + order[1], z + order[2]})].unlock();
             }
             no_locksSet++;
           }
         }
       }
-//      AutoPasLog(debug, "UNLOCKING: " + std::to_string(blockNumber) + " MASTER");
+      //      AutoPasLog(debug, "UNLOCKING: " + std::to_string(blockNumber) + " MASTER");
       _masterlock.unlock();
       return false;
     }
@@ -366,11 +367,12 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
     for (unsigned long x = 0; x < 2; ++x) {
       for (unsigned long y = 0; y < 2; ++y) {
         for (unsigned long z = 0; z < 2; ++z) {
-//          AutoPasLog(
-//              debug,
-//              "UNLOCKING " + std::to_string(blockNumber) + " Lock : " +
-//                  std::to_string(uniqueLockCalculation(blockNumber, {x + order[0], y + order[1], z + order[2]})) +
-//                  " id: " + debugHelperFunctionIntArrayToString2({x + order[0], y + order[1], z + order[2]}));
+          //          AutoPasLog(
+          //              debug,
+          //              "UNLOCKING " + std::to_string(blockNumber) + " Lock : " +
+          //                  std::to_string(uniqueLockCalculation(blockNumber, {x + order[0], y + order[1], z +
+          //                  order[2]})) + " id: " + debugHelperFunctionIntArrayToString2({x + order[0], y + order[1],
+          //                  z + order[2]}));
           locks[uniqueLockCalculation(blockNumber, {x + order[0], y + order[1], z + order[2]})].unlock();
         }
       }
@@ -444,13 +446,14 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
         for (int i = 0; i < 2; ++i) {
           for (int j = 0; j < 2; ++j) {
             if (axis == 0) {
-//              AutoPasLog(debug,
-//                         "TRYING LOCKING: " + std::to_string(blockNumber) + " Lock : " +
-//                             std::to_string(uniqueLockCalculation(
-//                                 blockNumber, {orderNext[0] + diffOrderNext, i + orderNext[1], j + orderNext[2]})) +
-//                             " id: " +
-//                             debugHelperFunctionIntArrayToString2(
-//                                 {orderNext[0] + diffOrderNext, i + orderNext[1], j + orderNext[2]}));
+              //              AutoPasLog(debug,
+              //                         "TRYING LOCKING: " + std::to_string(blockNumber) + " Lock : " +
+              //                             std::to_string(uniqueLockCalculation(
+              //                                 blockNumber, {orderNext[0] + diffOrderNext, i + orderNext[1], j +
+              //                                 orderNext[2]})) +
+              //                             " id: " +
+              //                             debugHelperFunctionIntArrayToString2(
+              //                                 {orderNext[0] + diffOrderNext, i + orderNext[1], j + orderNext[2]}));
               LocksThatCanBeSet[no_locksSet] =
                   locks[uniqueLockCalculation(blockNumber,
                                               {orderNext[0] + diffOrderNext, i + orderNext[1], j + orderNext[2]})]
@@ -912,8 +915,9 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
       } else {
         int subBlockId = lockToSubBlocks(order[0], order[1], order[2]);
         subBlock currentSubBlock = currentSubBlocksInThisCellBlock[_subBlockOrderToSubBlockIndex[subBlockId]];
-        AutoPasLog(debug, "Calculating block: " + std::to_string(m) + " sub-block-order: " + debugHelperFunctionIntArrayToString(order) +
-                   std::to_string(uniqueLockCalculation(m, order)));
+        AutoPasLog(debug, "Calculating block: " + std::to_string(m) +
+                              " sub-block-order: " + debugHelperFunctionIntArrayToString(order) +
+                              std::to_string(uniqueLockCalculation(m, order)));
 
         // Create the last point of sub-block for spanning vector
         array3D _subBlockEndIteration;
