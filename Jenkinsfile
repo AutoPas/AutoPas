@@ -96,7 +96,7 @@ pipeline {
         }
         stage('build and test') {
             options {
-                timeout(time: 4, unit: 'HOURS')
+                timeout(time: 6, unit: 'HOURS')
             }
             parallel {
                 stage('gpu cloud') {
@@ -200,18 +200,6 @@ pipeline {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer-release") {
                                 sh "cmake -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
-                                sh "entrypoint.sh make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
-                                sh './tests/testAutopas/runTests'
-                            }
-                        }
-                    }
-                }
-                stage("thread sanitizer") {
-                    steps {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-threadsanitizer") {
-                                // this is for simple testing of our threading libraries.
-                                sh "cmake -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON .."
                                 sh "entrypoint.sh make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }

@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+
 namespace autopas {
 
 /**
@@ -23,40 +25,41 @@ namespace autopas {
 template <class Particle>
 class VerletListsCellsTraversal {
  public:
-  /// Verlet list storage
-  using verlet_storage_type = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
+  /**
+   * Shorthand for VerletListsCellsHelpers<Particle>::NeighborListsType.
+   */
+  using NeighborListsType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
 
   /**
    * Sets the verlet list for the traversal to iterate over.
    * @param verlet The verlet list to iterate over.
    */
-  virtual void setVerletList(verlet_storage_type &verlet) { _verletList = &verlet; }
+  virtual void setVerletList(NeighborListsType &verlet) { _verletList = &verlet; }
 
  protected:
   /**
-   * Iterate over the verlet list of a given cell.
+   * Iterate over all neighbor lists list of a given cell.
    * @tparam PairwiseFunctor
    * @tparam useNewton3
-   * @param verlet
+   * @param neighborLists Vector of neighbor lists. One for each particle in the cell.
    * @param cellIndex
    * @param pairwiseFunctor
    */
   template <class PairwiseFunctor, bool useNewton3>
-  void iterateVerletListsCell(verlet_storage_type &verlet, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
-    for (auto &list : verlet[cellIndex]) {
-      Particle &i = *list.first;
-      for (auto j_ptr : list.second) {
-        Particle &j = *j_ptr;
-        pairwiseFunctor->AoSFunctor(i, j, useNewton3);
+  void processCellLists(NeighborListsType &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
+    for (auto &[particlePtr, neighbors] : neighborLists[cellIndex]) {
+      Particle &particle = *particlePtr;
+      for (auto neighborPtr : neighbors) {
+        Particle &neighbor = *neighborPtr;
+        pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
       }
     }
   }
 
- protected:
   /**
    * The verlet list to iterate over.
    */
-  verlet_storage_type *_verletList;
+  NeighborListsType *_verletList;
 };
 
 }  // namespace autopas
