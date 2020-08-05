@@ -572,7 +572,7 @@ double Simulation<Particle, ParticleCell>::calculateHomogeneity(autopas::AutoPas
       if (index[i] == cellsPerDimension[i] - 1) {
         allVolumes[cellIndex] *= outerCellSizePerDimension[i];
       } else {
-        allVolumes[cellIndex] *=  cellLength;
+        allVolumes[cellIndex] *= cellLength;
       }
     }
   }
@@ -580,8 +580,9 @@ double Simulation<Particle, ParticleCell>::calculateHomogeneity(autopas::AutoPas
   // calculate density for each cell
   std::vector<double> densityPerCell(numberOfCells, 0.0);
   for (int i = 0; i < particlesPerCell.size(); i++) {
-    densityPerCell[i] =
-        (particlesPerCell[i] == 0) ? 0 : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
+    densityPerCell[i] = (particlesPerCell[i] == 0)
+                            ? 0
+                            : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
   }
 
   // get mean and reserve variable for variance
@@ -595,5 +596,6 @@ double Simulation<Particle, ParticleCell>::calculateHomogeneity(autopas::AutoPas
   }
 
   // finally calculate standard deviation
-  return sqrt(variance);;
+  return sqrt(variance);
+  ;
 }
