@@ -597,5 +597,4 @@ double Simulation<Particle, ParticleCell>::calculateHomogeneity(autopas::AutoPas
 
   // finally calculate standard deviation
   return sqrt(variance);
-  ;
 }
