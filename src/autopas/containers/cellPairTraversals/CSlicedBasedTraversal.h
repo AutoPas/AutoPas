@@ -53,12 +53,11 @@ class CSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairwise
    *
    * @copydetails C01BasedTraversal::c01Traversal()
    *
-   * @tparam allCells Defines whether or not to iterate over all cells with the loop body given as argument. By default
-   * (allCells=false) it will not iterate over all cells and instead skip the last few cells, because they will be
-   * covered by the base step. If you plan to use the default base step of the traversal on this function, use
-   * allCells=false. If you plan to just iterate over all cells, e.g., to iterate over verlet lists saved within the
-   * cells, use allCells=true. For the sliced step if allCells is false, iteration will not occur over the last layer of
-   * cells (for _overlap=1) (in x, y and z direction).
+   * @tparam allCells Defines whether or not to iterate over all cells with the loop body given as argument.
+   * If set to false, loopBody will not be applied to the last layer of cells (times overlap) in each dimension.
+   * This is sufficient for base steps that only cover spacially forward neighbors, like c08.
+   * For base steps that only cover index-forward neighbors like c18, it is necessary to also apply the base
+   * step to the last cells, because it calculates interactions with cells spacially behind the base cell.
    */
   template <bool allCells = false, typename LoopBody>
   inline void cSlicedTraversal(LoopBody &&loopBody);
