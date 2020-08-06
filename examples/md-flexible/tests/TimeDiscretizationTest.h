@@ -20,7 +20,7 @@ class TimeDiscretizationTest : public AutoPasTestBase {
   TimeDiscretizationTest() : AutoPasTestBase(), _particlePropertiesLibrary(1) {
     _particlePropertiesLibrary.addType(0, 1, 1, 1);
   }
-  void fillWithParticlesAndInit(autopas::AutoPas<Molecule, FMCell> &autopas);
+  void fillWithParticlesAndInit(autopas::AutoPas<Molecule> &autopas);
 
  protected:
   ParticlePropertiesLibrary<double, size_t> _particlePropertiesLibrary;

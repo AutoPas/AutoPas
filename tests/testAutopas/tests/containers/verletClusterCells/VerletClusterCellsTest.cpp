@@ -45,7 +45,7 @@ TEST_F(VerletClusterCellsTest, testNeighborListBuild) {
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, Particle(), verletLists.getBoxMin(),
                                                                verletLists.getBoxMax(), 500);
 
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> dummyTraversal(
       &emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
   verletLists.rebuildNeighborLists(&dummyTraversal);
@@ -66,7 +66,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIterator) {
   std::vector<int> particlesHalo(50, 0);
   std::vector<int> particlesBoth(500, 0);
 
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
   verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
@@ -150,7 +150,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIteratorDelete) {
 
   std::vector<int> particlesBoth(500, 0);
 
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
   verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
@@ -193,7 +193,7 @@ TEST_F(VerletClusterCellsTest, testVerletParticleLoss) {
   std::vector<int> particlesHalo(50, 0);
   std::vector<int> particlesBoth(500, 0);
 
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(AtLeast(1));
   autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
@@ -312,7 +312,7 @@ TEST_F(VerletClusterCellsTest, testIteratePairwiseWithoutNeighborlistRebuildThro
                                                                verletLists.getBoxMax(), 50);
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(verletLists, Particle(), cutoff, 50);
 
-  MockFunctor<Particle, FPCell> emptyFunctor;
+  MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(0);
   autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);

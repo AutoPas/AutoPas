@@ -125,5 +125,5 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
 
 REGISTER_TYPED_TEST_SUITE_P(LinkedCellsTest, testUpdateContainer, testUpdateContainerCloseToBoundary);
 
-using MyTypes = ::testing::Types<autopas::LinkedCells<FPCell>, autopas::ReferenceLinkedCells<RPCell>>;
+using MyTypes = ::testing::Types<autopas::LinkedCells<Particle>, autopas::ReferenceLinkedCells<Particle>>;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LinkedCellsTest, MyTypes);

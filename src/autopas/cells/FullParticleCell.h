@@ -35,7 +35,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    * Constructs a new FullParticleCell with the given cell side length.
    * @param cellLength cell side length
    */
-  FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
+  explicit FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
 
   /**
    * @copydoc ParticleCell::addParticle()
@@ -78,10 +78,16 @@ class FullParticleCell : public ParticleCell<Particle> {
   Particle &at(size_t index) { return _particles.at(index); }
 
   /**
-   * Returns the const particle at position index. Needed by SingleCellIterator.
-   * @param index the position of the particle to return.
-   * @return the particle at position index.
+   * Returns the ParticleCellType as an enum.
    */
+  ParticleCellTypeEnum getParticleCellTypeAsEnum() override  {return FullParticleCellEnum;}
+
+
+    /**
+     * Returns the const particle at position index. Needed by SingleCellIterator.
+     * @param index the position of the particle to return.
+     * @return the particle at position index.
+     */
   const Particle &at(size_t index) const { return _particles.at(index); }
 
   bool isNotEmpty() const override { return numParticles() > 0; }

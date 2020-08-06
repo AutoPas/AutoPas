@@ -12,8 +12,7 @@
 #include "autopasTools/generators/RandomGenerator.h"
 
 using Particle = autopas::sph::SPHParticle;
-using Cell = autopas::FullParticleCell<Particle>;
-using AutoPasContainer = autopas::AutoPas<Particle, Cell>;
+using AutoPasContainer = autopas::AutoPas<Particle>;
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations);

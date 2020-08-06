@@ -63,7 +63,7 @@ TEST_F(ParticlePropertiesLibraryTest, mixedShiftTestUpot) {
   Molecule m1({0, 0, 0}, {0, 0, 0}, 0, 0);
   Molecule m2({cutoff - 1e-14, 0, 0}, {0, 0, 0}, 1, 1);
 
-  autopas::LJFunctor<Molecule, autopas::FullParticleCell<Molecule>, /* shifting */ true, /*mixing*/ true,
+  autopas::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ true,
                      autopas::FunctorN3Modes::Both,
                      /*globals*/ true>
       functor(cutoff, PPL);
@@ -76,10 +76,10 @@ TEST_F(ParticlePropertiesLibraryTest, mixedShiftTestUpot) {
 }
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
-  Simulation<Molecule, FMCell> simulation;
+  Simulation<Molecule> simulation;
   // this test need to be adapted if the input file changes
   MDFlexConfig config;
-  autopas::AutoPas<Molecule, FMCell> autopas;
+  autopas::AutoPas<Molecule> autopas;
   config.yamlFilename.value = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
   MDFlexParser::YamlParser::parseYamlFile(config);
   config.calcSimulationBox();
@@ -104,10 +104,10 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitializationDefault) {
   // tests ParticleProperties initialization with only one Type
-  Simulation<Molecule, FMCell> simulation;
+  Simulation<Molecule> simulation;
   MDFlexConfig config;
   config.calcSimulationBox();
-  autopas::AutoPas<Molecule, FMCell> autopas;
+  autopas::AutoPas<Molecule> autopas;
   simulation.initialize(config, autopas);
   simulation.initializeParticlePropertiesLibrary();
   // default values: epsilon=sigma=mass=1.0

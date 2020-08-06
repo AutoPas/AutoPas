@@ -151,36 +151,36 @@ class AsBuildPairGeneratorFunctor
    * @param soa
    * @param offset
    */
-  void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset) override {
-    if (offset != 0ul) {
-      utils::ExceptionHandler::exception("offset must be 0, is: {}", offset);
-    }
-    soa.resizeArrays(cell.numParticles());
-
-    if (cell.numParticles() == 0) return;
-
-    auto *const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
-    double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
-
-    auto cellIter = cell.begin();
-    // load particles in SoAs.
-    for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
-      Particle *pptr = &(*cellIter);
-      ptrptr[i] = pptr;
-      xptr[i] = cellIter->getR()[0];
-      yptr[i] = cellIter->getR()[1];
-      zptr[i] = cellIter->getR()[2];
-    }
-  }
+//  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) override {
+//    if (offset != 0ul) {
+//      utils::ExceptionHandler::exception("offset must be 0, is: {}", offset);
+//    }
+//    soa.resizeArrays(cell.numParticles());
+//
+//    if (cell.numParticles() == 0) return;
+//
+//    auto *const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
+//    double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
+//    double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
+//    double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
+//
+//    auto cellIter = cell.begin();
+//    // load particles in SoAs.
+//    for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
+//      Particle *pptr = &(*cellIter);
+//      ptrptr[i] = pptr;
+//      xptr[i] = cellIter->getR()[0];
+//      yptr[i] = cellIter->getR()[1];
+//      zptr[i] = cellIter->getR()[2];
+//    }
+//  }
 
   /**
    * Does nothing
    * @param cell
    * @param soa
    */
-  void SoAExtractor(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t /*offset*/) override {}
+//  void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t /*offset*/) override {}
 
  private:
   /**

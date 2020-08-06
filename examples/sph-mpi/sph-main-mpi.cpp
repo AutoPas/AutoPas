@@ -14,8 +14,7 @@
 #include "autopas/sph/autopassph.h"
 
 using Particle = autopas::sph::SPHParticle;
-using Cell = autopas::FullParticleCell<Particle>;
-using AutoPasContainer = autopas::AutoPas<Particle, Cell>;
+using AutoPasContainer = autopas::AutoPas<Particle>;
 
 void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
   // Place SPH particles

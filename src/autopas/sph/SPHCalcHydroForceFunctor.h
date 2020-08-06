@@ -18,7 +18,7 @@ namespace sph {
  * @tparam ParticleCell
  */
 template <class Particle>
-class SPHCalcHydroForceFunctor : public Functor<SPHParticle, SPHParticle::SoAArraysType,
+class SPHCalcHydroForceFunctor : public Functor<Particle, typename Particle::SoAArraysType,
                                                 SPHCalcHydroForceFunctor<Particle>> {
  public:
   /// soa arrays type

@@ -33,14 +33,14 @@ namespace autopas {
  * @tparam ParticleCell type of the ParticleCells that are used to store the particles
  * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
-template <class ParticleCell, class SoAArraysType = typename ParticleCell::ParticleType::SoAArraysType>
-class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
+template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
+class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Particle>, SoAArraysType> {
  public:
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename ParticleContainer<ParticleCell>::ParticleType;
-
+  using ParticleType = Particle;
+  using ParticleCell = ReferenceParticleCell<Particle>;
   /**
    * Constructor of the LinkedCells class
    * @param boxMin
@@ -56,13 +56,6 @@ class ReferenceLinkedCells : public ParticleContainer<ParticleCell, SoAArraysTyp
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::referenceLinkedCells; }
-
-    /**
-         *  get enum of the ParticleCell.
-        */
-    [[nodiscard]] ParticleCellTypeEnum getParticleCellTypeEnum() const {
-        return ReferenceParticleCellEnum;
-    };
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()

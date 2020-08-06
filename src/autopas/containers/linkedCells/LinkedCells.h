@@ -23,6 +23,7 @@
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/cells/FullParticleCell.h"
 
 namespace autopas {
 
@@ -35,13 +36,14 @@ namespace autopas {
  * @tparam ParticleCell type of the ParticleCells that are used to store the particles
  * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
-template <class ParticleCell, class SoAArraysType = typename ParticleCell::ParticleType::SoAArraysType>
-class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
+template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
+class LinkedCells : public ParticleContainer<FullParticleCell<Particle, SoAArraysType>, SoAArraysType> {
  public:
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename ParticleContainer<ParticleCell>::ParticleType;
+  using ParticleType = Particle;
+  using ParticleCell = FullParticleCell<Particle, SoAArraysType>;
 
   /**
    * Constructor of the LinkedCells class
@@ -62,12 +64,6 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
-    /**
-         *  get enum of the ParticleCell.
-        */
-    [[nodiscard]] ParticleCellTypeEnum getParticleCellTypeEnum() const {
-        return FullParticleCellEnum;
-    };
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()

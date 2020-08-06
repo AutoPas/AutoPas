@@ -18,7 +18,7 @@
  */
 int main(int argc, char **argv) {
   // start simulation timer
-  Simulation<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> simulation;
+  Simulation<PrintableMolecule> simulation;
   // Parsing
   MDFlexConfig config;
 
@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
   std::ostream outputStream(streamBuf);
 
   // Initialization
-  autopas::AutoPas<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> autopas(outputStream);
+  autopas::AutoPas<PrintableMolecule> autopas(outputStream);
   simulation.initialize(config, autopas);
 
   std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;

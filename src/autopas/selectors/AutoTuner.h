@@ -331,8 +331,6 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   std::unique_ptr<TraversalInterface> traversal;
   switch(containerPtr->getParticleCellTypeEnum()) {
       case FullParticleCellEnum:
-          // FIXME possibly compiles stuff that does not yet exist? not all traversals work with all
-          //  cell types -> might cause problems
          traversal = TraversalSelector<FullParticleCell<Particle>>::template generateTraversal<PairwiseFunctor, dataLayout, useNewton3>(
                   _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
           break;
