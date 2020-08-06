@@ -3,24 +3,42 @@
 import sys
 import plotly.graph_objects as go
 import re
+import os
 
 # THIS SCRIPT NEEDS AT LEAST PYTHON 3.8.
 # However, lesser version will probably fail due to invalid syntax instead of this assertion
 
 # ---------------------------------------------- Input ----------------------------------------------
+flag = "none"
 for arg in sys.argv[1:]:
     if "--help" in arg:
-        print("Usage: ./plotPrediction.py OPTION path/To/mdFlex/std.out ...")
+        print("Usage: ./plotPrediction.py OPTION FLAG path/To/mdFlex/std.out ...")
         print("Output options:\n "
               " prediction  - Shows the predictions for every configuration\n "
-              " test        - Shows the predictions and tests for every configuration")
+              " test        - Shows the tests for every configuration\n "
+              " both	     - Shows predictions and tests for every configuration"
+              "Flags:\n "
+              " --png --jpeg --pdf - Plot is generated in the given file format")
+        print("If no input is given the script does not work.")
         print("If no input is given the script does not work.")
         exit(0)
+    elif "--png" in arg:
+        flag = "png"
+    elif "--jpeg" in arg:
+        flag = "jpeg"
+    elif "--pdf" in arg:
+        flag = "pdf"
 
 # take all input files as source for a plot
-if len(sys.argv) > 2:
+if flag is not "none" and len(sys.argv) > 3:
     option = sys.argv[1]
-    if option != "prediction" and option != "test":
+    if option != "prediction" and option != "test" and option != "both" and sys.argv[2] != "--" + flag:
+        print("Error: Wrong input given! ./plotDiffPredictionTest.py --help to see what is needed.")
+        sys.exit(-1)
+    datafiles = sys.argv[3:]
+elif len(sys.argv) > 2:
+    option = sys.argv[1]
+    if option != "prediction" and option != "test" and option != "both":
         print("Error: Wrong input given! ./plotPrediction.py --help to see what is needed.")
         sys.exit(-1)
     datafiles = sys.argv[2:]
@@ -64,9 +82,9 @@ for datafile in datafiles:
                     configurationTest[match.group(1)] = [(iteration, int(match.group(3)))]
 
     # test if the file contains information that can be plotted
-    if len(configurationPrediction) == 0:
-        print(datafile + ": No information could be extracted from this file!")
-        continue
+    # if len(configurationPrediction) == 0:
+    #     print(datafile + ": No information could be extracted from this file!")
+    #     continue
 
     # create figure and define layout
     fig = go.Figure(
@@ -79,19 +97,22 @@ for datafile in datafiles:
     )
 
     # plotting predictions
-    for configuration in configurationPrediction:
-        allPrediction = []
-        allIteration = []
+    configurations = configurationPrediction
+    if "test" == option or "both" == option:
+        configurations = configurationTest
+    for configuration in configurations:
+        if "prediction" == option or "both" == option:
+            allPrediction = []
+            allIteration = []
 
-        for iteration, prediction in configurationPrediction[configuration]:
-            allIteration.append(iteration)
-            allPrediction.append(prediction)
+            for iteration, prediction in configurationPrediction[configuration]:
+                allIteration.append(iteration)
+                allPrediction.append(prediction)
 
         fig.add_trace(go.Scatter(x=allIteration, y=allPrediction, mode='lines+markers', name="Predictions - " +
                                                                                              configuration))
 
-        if "test" == option:
-            # do not know if this is the right solution testing needed and some research on other options.
+        if "test" == option or "both" == option:
             allTest = []
             allIteration = []
             for iteration, test in configurationTest[configuration]:
@@ -100,4 +121,14 @@ for datafile in datafiles:
 
             fig.add_trace(go.Scatter(x=allIteration, y=allTest, mode='markers', name="Evidence - " + configuration))
 
-    fig.show()
+
+    if not os.path.exists("images"):
+        os.mkdir("images")
+
+    if flag is "none":
+        fig.show()
+    else:
+        if not os.path.exists("images"):
+            os.mkdir("images")
+
+        fig.write_image("images/" + datafile + "." + flag, scale=1.5)
