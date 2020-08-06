@@ -31,8 +31,8 @@ class GaussianClusterTest : public AutoPasTestBase {
    */
   template <class NumberSetType>
   void test2DFunctions(const std::vector<std::function<double(double, double)>> &functions,
-                       std::function<std::vector<Eigen::VectorXi>(const Eigen::VectorXi &)> neighboursFun,
-                       int targetDiscrete, const Eigen::VectorXd &targetContinuous, double precision,
+                       autopas::GaussianModelTypes::NeighbourFunction neighboursFun, int targetDiscrete,
+                       const Eigen::VectorXd &targetContinuous, double precision,
                        const std::pair<NumberSetType, NumberSetType> &domain,
                        autopas::AcquisitionFunctionOption acquisitionFunctionOption, bool visualize) {
     autopas::Random rng(42);  // random generator
@@ -99,7 +99,7 @@ class GaussianClusterTest : public AutoPasTestBase {
    */
   static void printMaps(int xChunks, int yChunks, const autopas::NumberSet<double> &domainX,
                         const autopas::NumberSet<double> &domainY, const autopas::GaussianCluster &gc,
-                        std::function<std::vector<Eigen::VectorXi>(const Eigen::VectorXi &)> neighboursFun,
+                        autopas::GaussianModelTypes::NeighbourFunction neighboursFun,
                         autopas::AcquisitionFunctionOption af);
 
   /**

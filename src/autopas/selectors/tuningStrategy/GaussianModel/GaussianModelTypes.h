@@ -30,14 +30,14 @@ using VectorContinuous = Eigen::VectorXd;
 using VectorAcquisition = std::pair<std::pair<VectorDiscrete, VectorContinuous>, double>;
 
 /**
- * function that generate all neighbouring vectors of given vector
+ * function that generate all neighbouring vectors of given vector with weights
  */
-using NeighbourFunction = std::function<std::vector<VectorDiscrete>(VectorDiscrete)>;
+using NeighbourFunction = std::function<std::vector<std::pair<VectorDiscrete, double>>(VectorDiscrete)>;
 
 /**
- * for each vector store a vector of all neighbours and their corresponding weight
+ * for each vector store a vector of all neighbours, their corresponding prior weight and final weight
  */
-using NeighboursWeights = std::vector<std::vector<std::pair<size_t, double>>>;
+using NeighboursWeights = std::vector<std::vector<std::tuple<size_t, double, double>>>;
 
 /**
  * Vector described by a discrete and a continuous part

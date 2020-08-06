@@ -11,6 +11,7 @@
 #include <set>
 #include <unordered_set>
 
+#include "FullSearch.h"
 #include "GaussianModel/GaussianCluster.h"
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
@@ -42,12 +43,30 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   constexpr static size_t discreteNewtonDim = 2;
   /**
    * Dimensions of the continuous tuples.
+   * FeatureVector continuous dimensions + 1 (time)
    */
-  constexpr static size_t continuousDims = 1;
+  constexpr static size_t continuousDims = FeatureVector::featureSpaceContinuousDims + 1;
   /**
    * Fixed noise
    */
   constexpr static double sigma = 0.01;
+
+  /**
+   * Iterations get scaled down by a multiple of max evidence to ensure not all kernels become 0.
+   */
+  constexpr static double iterationScalePerMaxEvidence = 5.;
+
+  /**
+   * Distance between evidence is expected not to exceed a upper threshold.
+   * We chose the threshold 7 because: exp(-r) < 0.1% for r > 7 but this
+   * can be increased if necessary.
+   */
+  constexpr static double suggestedMaxDistance = 7.;
+
+  /**
+   * Number of cellSizeFactors sampled for FullSearch.
+   */
+  constexpr static size_t cellSizeFactorSampleSize = 1;
 
  public:
   /**
@@ -80,13 +99,21 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _currentConfig(),
         _invalidConfigs(),
         _rng(seed),
-        _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::wasserstein2, sigma, _rng),
-        _neighbourFun([this](const Eigen::VectorXi &target) -> std::vector<Eigen::VectorXi> {
-          return FeatureVector::neighboursManhattan1(target, _gaussianCluster.getDimensions());
+        _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::evidenceMatchingScaledProbabilityGM,
+                         sigma, _rng),
+        _neighbourFun([this](const Eigen::VectorXi &target) -> std::vector<std::pair<Eigen::VectorXi, double>> {
+          return _encoder.clusterNeighboursManhattan1Container(target);
         }),
         _maxEvidence(maxEvidence),
         _predAcqFunction(predAcqFunction),
-        _predNumLHSamples(predNumLHSamples) {
+        _predNumLHSamples(predNumLHSamples),
+        _firstTuningPhase(true),
+        _currentIteration(0),
+        _iterationScale(1. / (maxEvidence * iterationScalePerMaxEvidence)),
+        _currentNumEvidence(0),
+        _fullSearch(allowedContainerOptions, allowedCellSizeFactors.uniformSampleSet(cellSizeFactorSampleSize, _rng),
+                    allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
+                    allowedNewton3Options) {
     if (predNumLHSamples <= 0) {
       utils::ExceptionHandler::exception(
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
@@ -121,29 +148,53 @@ class BayesianClusterSearch : public TuningStrategyInterface {
                                     static_cast<int>(_newton3Options.size())});
     _gaussianCluster.setVectorToStringFun(
         [this](const GaussianModelTypes::VectorPairDiscreteContinuous &vec) -> std::string {
-          return _encoder.convertFromCluster(vec).toString();
+          return _encoder.convertFromClusterWithIteration(vec).toString();
         });
 
-    tune();
+    _currentConfig = _fullSearch.getCurrentConfiguration();
   }
 
   inline const Configuration &getCurrentConfiguration() const override { return _currentConfig; }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time, size_t) override {
+  inline void addEvidence(long time, size_t iteration) override {
+    if (_firstTuningPhase) {
+      _fullSearch.addEvidence(time, iteration);
+    }
+
+    // store if first or better evidence
+    if (_currentNumEvidence == 0 or time < _currentOptimalTime) {
+      _currentOptimalTime = time;
+      _currentOptimalConfig = _currentConfig;
+    }
+
     // encoded vector
-    auto vec = _encoder.convertToCluster(_currentConfig);
+    auto vec = _encoder.convertToClusterWithIteration(_currentConfig, iteration * _iterationScale);
     // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
     // represent a maximization problem
     _gaussianCluster.addEvidence(vec, -time * secondsPerMicroseconds);
+
+    _currentIteration = iteration;
+    ++_currentNumEvidence;
     _currentAcquisitions.clear();
   }
 
-  inline void reset(size_t) override {
-    _gaussianCluster.clear();
+  inline void reset(size_t iteration) override {
+    size_t iterationSinceLastEvidence = iteration - _currentIteration;
+    if (iterationSinceLastEvidence * _iterationScale > suggestedMaxDistance) {
+      AutoPasLog(warn, "BayesianClusterSearch: Time since the last evidence may be too long.");
+    }
+
+    _currentIteration = iteration;
+    _currentNumEvidence = 0;
     _currentAcquisitions.clear();
-    tune();
+
+    if (_firstTuningPhase) {
+      _fullSearch.reset(iteration);
+    } else {
+      tune();
+    }
   }
 
   inline bool tune(bool currentInvalid = false) override;
@@ -187,9 +238,9 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   GaussianCluster _gaussianCluster;
   /**
-   * Function to generate neighbours of given vector
+   * Function to generate neighbours with weight of given vector.
    */
-  std::function<std::vector<Eigen::VectorXi>(const Eigen::VectorXi &)> _neighbourFun;
+  GaussianModelTypes::NeighbourFunction _neighbourFun;
   const size_t _maxEvidence;
   /**
    * Acquisition function used to predict informational gain.
@@ -199,11 +250,48 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Number of latin-hypercube-samples used to find a evidence with high predicted acquisition.
    */
   const size_t _predNumLHSamples;
+
+  bool _firstTuningPhase;
+  /**
+   * Iteration of last added evidence or reset.
+   */
+  size_t _currentIteration;
+  /**
+   * We scale current iteration down such that kernels do not become 0.
+   */
+  const double _iterationScale;
+  /**
+   * Number of evidence provided in current tuning phase.
+   */
+  size_t _currentNumEvidence;
+  /**
+   * Lowest time of evidence in current tuning phase.
+   */
+  long _currentOptimalTime;
+  /**
+   * Configuration with lowest time in current tuning phase.
+   */
+  FeatureVector _currentOptimalConfig;
+
+  /**
+   * FullSearch used in the first tuning phase.
+   */
+  FullSearch _fullSearch;
 };
 
 bool BayesianClusterSearch::tune(bool currentInvalid) {
   if (currentInvalid) {
     _invalidConfigs.insert(_currentConfig);
+  }
+
+  // in the first tuning phase do a full search
+  if (_firstTuningPhase) {
+    bool tuning = _fullSearch.tune(currentInvalid);
+    _currentConfig = _fullSearch.getCurrentConfiguration();
+    if (not tuning) {
+      _firstTuningPhase = false;
+    }
+    return tuning;
   }
 
   if (searchSpaceIsEmpty()) {
@@ -213,9 +301,9 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
   }
 
   // no more tunings steps
-  if (_gaussianCluster.numEvidence() >= _maxEvidence) {
-    // select best config
-    _currentConfig = _encoder.convertFromCluster(_gaussianCluster.getEvidenceMax());
+  if (_currentNumEvidence >= _maxEvidence) {
+    // select best config of current tuning phase
+    _currentConfig = _currentOptimalConfig;
     AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
 
     return false;
@@ -229,7 +317,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
 
     // test best vectors until empty
     while (not _currentAcquisitions.empty()) {
-      auto best = _encoder.convertFromCluster(_currentAcquisitions.back());
+      auto best = _encoder.convertFromClusterWithIteration(_currentAcquisitions.back());
 
       if (_invalidConfigs.find(best) == _invalidConfigs.end()) {
         // valid config found!
@@ -252,7 +340,8 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
 
 void BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOption af) {
   // create n lhs samples
-  auto continuousSamples = FeatureVector::lhsSampleFeatureContinuous(n, _rng, *_cellSizeFactors);
+  auto continuousSamples = FeatureVector::lhsSampleFeatureContinuousWithIteration(n, _rng, *_cellSizeFactors,
+                                                                                  _currentIteration * _iterationScale);
 
   // calculate all acquisitions
   _currentAcquisitions = _gaussianCluster.sampleOrderedByAcquisition(af, _neighbourFun, continuousSamples);
@@ -276,6 +365,8 @@ bool BayesianClusterSearch::searchSpaceIsEmpty() const {
 }
 
 void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
+  _fullSearch.removeN3Option(badNewton3Option);
+
   _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option),
                         _newton3Options.end());
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
@@ -290,5 +381,4 @@ void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
         "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
   }
 }
-
 }  // namespace autopas
