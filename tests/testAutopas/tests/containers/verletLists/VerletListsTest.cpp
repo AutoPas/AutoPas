@@ -271,8 +271,8 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
   const size_t dimWithHalo = 10 / ((cutoff + skin) * cellSizeFactor) + 2ul;
   const size_t numCells = dimWithHalo * dimWithHalo * dimWithHalo;
   // FIXME  add those calls back again in mock functor
-//  EXPECT_CALL(mockFunctor, SoALoaderVerlet(_, _, _)).Times(numCells);
-//  EXPECT_CALL(mockFunctor, SoAExtractorVerlet(_, _, _)).Times(numCells);
+  //  EXPECT_CALL(mockFunctor, SoALoaderVerlet(_, _, _)).Times(numCells);
+  //  EXPECT_CALL(mockFunctor, SoAExtractorVerlet(_, _, _)).Times(numCells);
   EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, _)).Times(1);
 
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -293,8 +293,8 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
   verletLists.addHaloParticle(p);
   autopas::LJFunctor<Molecule> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
-  autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, false>
-      verletTraversal(&ljFunctor);
+  autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, false> verletTraversal(
+      &ljFunctor);
 
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
@@ -320,8 +320,8 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
   ljFunctor.setParticleProperties(1., 1.);
   autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, false>
       verletTraversal1(&ljFunctor);
-  autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, false>
-      soaTraversal(&ljFunctor);
+  autopas::TraversalVerlet<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, false> soaTraversal(
+      &ljFunctor);
   verletLists1.rebuildNeighborLists(&verletTraversal1);
   verletLists2.rebuildNeighborLists(&soaTraversal);
   verletLists1.iteratePairwise(&verletTraversal1);

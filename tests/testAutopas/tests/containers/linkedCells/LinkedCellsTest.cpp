@@ -11,9 +11,8 @@
 TYPED_TEST_SUITE_P(LinkedCellsTest);
 
 TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
-    using LinkedCellsType = TypeParam;
-    LinkedCellsType linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0.,
-                                                                                 1.);
+  using LinkedCellsType = TypeParam;
+  LinkedCellsType linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
 
   autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
   autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);

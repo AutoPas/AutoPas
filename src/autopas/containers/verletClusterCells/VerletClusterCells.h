@@ -60,10 +60,10 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
     _dummyStarts = {0};
   }
 
-    /**
-     * @copydoc ParticleContainerInterface::getContainerType()
-     */
-    [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterCells; }
+  /**
+   * @copydoc ParticleContainerInterface::getContainerType()
+   */
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterCells; }
 
   /**
    * Function to iterate over all pairs of particles.
@@ -407,7 +407,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
     std::vector<Particle> invalidParticles;
 
     for (size_t i = 0; i < this->_cells.size(); ++i) {
-      for(auto it = this->_cells[i].begin(); it != this->_cells[i].end(); ++it) {
+      for (auto it = this->_cells[i].begin(); it != this->_cells[i].end(); ++it) {
         Particle &p = *it;
         if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
           invalidParticles.push_back(p);
@@ -509,7 +509,6 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
     // this is potentially called from a threaded environment, so we have to make this atomic here!
     _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
   }
-
 
  private:
   /**

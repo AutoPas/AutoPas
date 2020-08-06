@@ -33,7 +33,7 @@ namespace autopas {
 template <class Particle>
 class VerletLists : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::SoAArraysType> {
   using verlet_internal = VerletListHelpers<Particle>;
-  //using SoAArraysType = typename VerletListHelpers<Particle>::SoAArraysType;
+  // using SoAArraysType = typename VerletListHelpers<Particle>::SoAArraysType;
   using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:
@@ -223,6 +223,7 @@ class VerletLists : public VerletListsLinkedBase<Particle, typename VerletListHe
 }  // namespace autopas
 
 // autopas::VerletListsLinkedBase<autopas::sph::SPHParticle, std::tuple<std::vector<autopas::sph::SPHParticle*,
-// autopas::AlignedAllocator<autopas::sph::SPHParticle*, 64> >, std::vector<double, autopas::AlignedAllocator<double, 64>
+// autopas::AlignedAllocator<autopas::sph::SPHParticle*, 64> >, std::vector<double, autopas::AlignedAllocator<double,
+// 64>
 // >, std::vector<double, autopas::AlignedAllocator<double, 64> >, std::vector<double, autopas::AlignedAllocator<double,
 // 64> > > > autopas::VerletLists<autopas::sph::SPHParticle>

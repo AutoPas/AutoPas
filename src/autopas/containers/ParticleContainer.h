@@ -38,15 +38,15 @@ class ParticleContainer : public ParticleContainerInterface<typename ParticleCel
                     const double skin)
       : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
-      using ParticleCellType = ParticleCell;
+  using ParticleCellType = ParticleCell;
 
-    /**
-     * Destructor of ParticleContainer.
-     */
-    ParticleCellTypeEnum getParticleCellTypeEnum() override  {
-        ParticleCell someCell = ParticleCell();
-        return someCell.getParticleCellTypeAsEnum();
-    };
+  /**
+   * Destructor of ParticleContainer.
+   */
+  ParticleCellTypeEnum getParticleCellTypeEnum() override {
+    ParticleCell someCell = ParticleCell();
+    return someCell.getParticleCellTypeAsEnum();
+  };
 
   /**
    * Destructor of ParticleContainer.

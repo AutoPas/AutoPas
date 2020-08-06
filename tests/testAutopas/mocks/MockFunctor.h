@@ -54,9 +54,9 @@ class MockFunctor : public autopas::Functor<Particle> {
               (autopas::FullParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
                size_t offset));
 
-    MOCK_METHOD(void, SoALoader,
-                (autopas::ReferenceParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
-                        size_t offset));
+  MOCK_METHOD(void, SoALoader,
+              (autopas::ReferenceParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
+               size_t offset));
 
   MOCK_METHOD(void, SoALoaderRPC,
               (autopas::ReferenceParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
@@ -65,7 +65,6 @@ class MockFunctor : public autopas::Functor<Particle> {
   MOCK_METHOD(void, SoALoaderVerlet,
               (typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType & cell,
                autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
-
 
   void SoALoader(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
                  autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset) {

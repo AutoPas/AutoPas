@@ -6,9 +6,10 @@
 
 #pragma once
 
+#include <autopas/cells/ReferenceParticleCell.h>
+
 #include <array>
 #include <vector>
-#include <autopas/cells/ReferenceParticleCell.h>
 
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
@@ -73,8 +74,8 @@ class ContainerSelector {
    * @param containerInfo additional parameter for the container
    * @return smartpointer to new container
    */
-  std::unique_ptr<autopas::ParticleContainerInterface<Particle>> generateContainer(
-      ContainerOption containerChoice, ContainerSelectorInfo containerInfo);
+  std::unique_ptr<autopas::ParticleContainerInterface<Particle>> generateContainer(ContainerOption containerChoice,
+                                                                                   ContainerSelectorInfo containerInfo);
 
   const std::array<double, 3> _boxMin, _boxMax;
   const double _cutoff;
@@ -83,9 +84,8 @@ class ContainerSelector {
 };
 
 template <class Particle>
-std::unique_ptr<autopas::ParticleContainerInterface<Particle>>
-ContainerSelector<Particle>::generateContainer(ContainerOption containerChoice,
-                                                             ContainerSelectorInfo containerInfo) {
+std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector<Particle>::generateContainer(
+    ContainerOption containerChoice, ContainerSelectorInfo containerInfo) {
   std::unique_ptr<autopas::ParticleContainerInterface<Particle>> container;
   switch (containerChoice) {
     case ContainerOption::directSum: {
@@ -95,14 +95,14 @@ ContainerSelector<Particle>::generateContainer(ContainerOption containerChoice,
 
     case ContainerOption::linkedCells: {
       container = std::make_unique<LinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                      containerInfo.cellSizeFactor, containerInfo.loadEstimator);
+                                                          containerInfo.cellSizeFactor, containerInfo.loadEstimator);
       break;
     }
-      case ContainerOption::referenceLinkedCells: {
-          container = std::make_unique<ReferenceLinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                                  containerInfo.cellSizeFactor);
-          break;
-      }
+    case ContainerOption::referenceLinkedCells: {
+      container = std::make_unique<ReferenceLinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                                   containerInfo.cellSizeFactor);
+      break;
+    }
     case ContainerOption::verletLists: {
       container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                           VerletLists<Particle>::BuildVerletListType::VerletSoA,
@@ -153,8 +153,7 @@ ContainerSelector<Particle>::generateContainer(ContainerOption containerChoice,
 }
 
 template <class Particle>
-std::shared_ptr<autopas::ParticleContainerInterface<Particle>>
-ContainerSelector<Particle>::getCurrentContainer() {
+std::shared_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector<Particle>::getCurrentContainer() {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(
         "ContainerSelector: getCurrentContainer() called before any container was selected!");
@@ -163,8 +162,8 @@ ContainerSelector<Particle>::getCurrentContainer() {
 }
 
 template <class Particle>
-std::shared_ptr<const autopas::ParticleContainerInterface<Particle>>
-ContainerSelector<Particle>::getCurrentContainer() const {
+std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> ContainerSelector<Particle>::getCurrentContainer()
+    const {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(
         "ContainerSelector: getCurrentContainer() called before any container was selected!");
@@ -174,7 +173,7 @@ ContainerSelector<Particle>::getCurrentContainer() const {
 
 template <class Particle>
 void ContainerSelector<Particle>::selectContainer(ContainerOption containerOption,
-                                                                ContainerSelectorInfo containerInfo) {
+                                                  ContainerSelectorInfo containerInfo) {
   // if we already have this container do nothing.
   if (_currentContainer == nullptr or _currentContainer->getContainerType() != containerOption or
       _currentInfo != containerInfo) {

@@ -95,8 +95,8 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaTwoCells(size_t numParticles
 
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals>
-      ljFunctorNoCuda(_cutoff);
+  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoCuda(
+      _cutoff);
   ljFunctorNoCuda.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorCuda(
       _cutoff);
@@ -159,8 +159,8 @@ void LJFunctorCudaTest::testLJFunctorVSLJFunctorCudaOneCell(size_t numParticles)
   FMCell cellNoCuda(cellCuda);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals>
-      ljFunctorNoCuda(_cutoff);
+  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoCuda(
+      _cutoff);
   ljFunctorNoCuda.setParticleProperties(sqrt(_epsilon * _epsilon) * 24.0,
                                         ((_sigma + _sigma) / 2) * (_sigma + _sigma) / 2);
   autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorCuda(

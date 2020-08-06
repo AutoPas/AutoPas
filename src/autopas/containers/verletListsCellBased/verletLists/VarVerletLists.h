@@ -18,8 +18,7 @@ namespace autopas {
  * @tparam NeighborList The Neighbor List this Verlet Container uses.
  */
 template <class Particle, class NeighborList>
-class VarVerletLists
-    : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::SoAArraysType> {
+class VarVerletLists : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::SoAArraysType> {
   using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:

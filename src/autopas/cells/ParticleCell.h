@@ -8,7 +8,13 @@
 
 #include "autopas/iterators/SingleCellIteratorWrapper.h"
 
-enum ParticleCellTypeEnum { FullParticleCellEnum, ReferenceParticleCellEnum, ClusterTowerEnum, SortedCellViewEnum, IsNoCellEnum};
+enum ParticleCellTypeEnum {
+  FullParticleCellEnum,
+  ReferenceParticleCellEnum,
+  ClusterTowerEnum,
+  SortedCellViewEnum,
+  IsNoCellEnum
+};
 
 namespace autopas {
 
@@ -85,7 +91,7 @@ class ParticleCell {
   /**
    * Returns the ParticleCellType as an enum.
    */
-   virtual ParticleCellTypeEnum getParticleCellTypeAsEnum() = 0;
+  virtual ParticleCellTypeEnum getParticleCellTypeAsEnum() = 0;
 
   /**
    * Deletes the index-th particle.

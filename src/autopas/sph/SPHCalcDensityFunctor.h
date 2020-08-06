@@ -19,8 +19,8 @@ namespace sph {
  * @tparam ParticleCell
  */
 template <class Particle>
-class SPHCalcDensityFunctor : public Functor<Particle, typename Particle::SoAArraysType,
-                                             SPHCalcDensityFunctor<Particle>> {
+class SPHCalcDensityFunctor
+    : public Functor<Particle, typename Particle::SoAArraysType, SPHCalcDensityFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;

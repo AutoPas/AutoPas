@@ -171,8 +171,8 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas, Functor *functor) {
 }
 
 template <typename Functor>
-void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecule> &autoPas2,
-                      Functor *functor1, Functor *functor2) {
+void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecule> &autoPas2, Functor *functor1,
+                      Functor *functor2) {
   // 1. update Container; return value is vector of invalid = leaving particles!
   auto [invalidParticles1, updated1] = autoPas1.updateContainer();
   auto [invalidParticles2, updated2] = autoPas2.updateContainer();
@@ -232,8 +232,8 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas, Functor *functor, unsigne
 }
 
 template <typename Functor>
-void doAssertions(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecule> &autoPas2,
-                  Functor *functor1, Functor *functor2) {
+void doAssertions(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecule> &autoPas2, Functor *functor1,
+                  Functor *functor2) {
   std::array<Molecule, 2> molecules{};
   size_t numParticles = 0;
   for (auto iter = autoPas1.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {

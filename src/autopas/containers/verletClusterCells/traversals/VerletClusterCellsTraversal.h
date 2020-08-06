@@ -277,8 +277,7 @@ class VerletClusterCellsTraversal : public CellPairTraversal<ParticleCell>,
           for (size_t ownPid = 0; ownPid < clusterSize; ++ownPid) {
             for (size_t otherPid = 0; otherPid < clusterSize; ++otherPid) {
               _functor->AoSFunctor((*cells)[i][clusterSize * clusterId + ownPid],
-                                   (*cells)[neighbor.first][clusterSize * neighbor.second + otherPid],
-                                   useNewton3);
+                                   (*cells)[neighbor.first][clusterSize * neighbor.second + otherPid], useNewton3);
             }
           }
         }

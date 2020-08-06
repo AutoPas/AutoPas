@@ -56,9 +56,8 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
   autopas::AutoPas<Molecule> autoPas;
 
   // Reference to the AutoPas object to be able to check const iterators.
-  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule> &,
-                     autopas::AutoPas<Molecule> &>
-      autoPasRef = autoPas;
+  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule> &, autopas::AutoPas<Molecule> &> autoPasRef =
+      autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
@@ -213,9 +212,8 @@ void testRangeBasedIterator(autopas::ContainerOption containerOption, double cel
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas;
   // Reference to the AutoPas object to be able to check const iterators.
-  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule> &,
-                     autopas::AutoPas<Molecule> &>
-      autoPasRef = autoPas;
+  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule> &, autopas::AutoPas<Molecule> &> autoPasRef =
+      autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
@@ -310,8 +308,7 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
   int clusterSize = 64;
   autopas::AutoPas<TouchableParticle> apContainer;
   // Reference to the AutoPas object to be able to check const iterators.
-  std::conditional_t<testConstIterators,
-                     const autopas::AutoPas<TouchableParticle> &,
+  std::conditional_t<testConstIterators, const autopas::AutoPas<TouchableParticle> &,
                      autopas::AutoPas<TouchableParticle> &>
       autoPasRef = apContainer;
 
@@ -461,9 +458,8 @@ void testRegionIteratorDeletion(autopas::ContainerOption containerOption, double
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas;
   // Reference to the AutoPas object to be able to check const iterators.
-  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule> &,
-                     autopas::AutoPas<Molecule> &>
-      autoPasRef = autoPas;
+  std::conditional_t<testConstIterators, const autopas::AutoPas<Molecule> &, autopas::AutoPas<Molecule> &> autoPasRef =
+      autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));

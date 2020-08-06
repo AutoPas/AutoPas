@@ -10,8 +10,9 @@
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
-#include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
+#include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/linkedCells/ParticleVector.h"
+#include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -20,7 +21,6 @@
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-#include "autopas/containers/ParticleContainerInterface.h"
 
 namespace autopas {
 
@@ -63,7 +63,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
   void addParticleImpl(const ParticleType &p) override {
     ParticleType pCopy = p;
     _particleList.push_back(pCopy);
-      updateDirtyParticleReferences();
+    updateDirtyParticleReferences();
   }
 
   /**
@@ -98,22 +98,20 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  void rebuildNeighborLists(TraversalInterface *traversal) override {
-      updateDirtyParticleReferences();
-  }
+  void rebuildNeighborLists(TraversalInterface *traversal) override { updateDirtyParticleReferences(); }
 
   void updateDirtyParticleReferences() {
-      if(_particleList.isDirty()) {
-          for(auto &cell : this->_cells){
-              cell.clear();
-          }
+    if (_particleList.isDirty()) {
+      for (auto &cell : this->_cells) {
+        cell.clear();
       }
-        for(auto it = _particleList.beginDirty(); it < _particleList.endDirty(); it++) {
-            ParticleCell &cell = _cellBlock.getContainingCell(it->getR());
-            auto address = &(*it);
-            cell.addParticleReference(address);
-        }
-        _particleList.markAsClean();
+    }
+    for (auto it = _particleList.beginDirty(); it < _particleList.endDirty(); it++) {
+      ParticleCell &cell = _cellBlock.getContainingCell(it->getR());
+      auto address = &(*it);
+      cell.addParticleReference(address);
+    }
+    _particleList.markAsClean();
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
@@ -132,9 +130,6 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
     traversal->traverseParticlePairs();
     traversal->endTraversal();
   }
-
-
-
 
   std::vector<ParticleType> updateContainer() override {
     this->deleteHaloParticles();

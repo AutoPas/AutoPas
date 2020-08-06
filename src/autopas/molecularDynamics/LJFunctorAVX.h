@@ -38,9 +38,9 @@ namespace autopas {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-class LJFunctorAVX : public Functor<Particle, typename Particle::SoAArraysType,
-                                    LJFunctorAVX<Particle, applyShift, useMixing, useNewton3,
-                                                 calculateGlobals, relevantForTuning>> {
+class LJFunctorAVX
+    : public Functor<Particle, typename Particle::SoAArraysType,
+                     LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -58,8 +58,7 @@ class LJFunctorAVX : public Functor<Particle, typename Particle::SoAArraysType,
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
       : Functor<Particle, SoAArraysType,
-                LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                             relevantForTuning>>(cutoff),
+                LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
         _cutoffsquare{_mm256_set1_pd(cutoff * cutoff)},
         _upotSum{0.},
         _virialSum{0., 0., 0.},

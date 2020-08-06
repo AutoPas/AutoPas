@@ -43,13 +43,11 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
 }
 
 /**
-    **
-    * Lists all traversal options applicable for the Reference Linked Cells container.
-    * @return set of all applicable traversal options.
-    */
-    static const std::set<TraversalOption> &allRLCCompatibleTraversals() {
-        return allLCCompatibleTraversals();
-    }
+ **
+ * Lists all traversal options applicable for the Reference Linked Cells container.
+ * @return set of all applicable traversal options.
+ */
+static const std::set<TraversalOption> &allRLCCompatibleTraversals() { return allLCCompatibleTraversals(); }
 
 /**
  * Lists all traversal options applicable for the Verlet Cluster Lists container.
@@ -126,9 +124,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     case ContainerOption::varVerletListsAsBuild: {
       return allVarVLAsBuildCompatibleTraversals();
     }
-      case ContainerOption::referenceLinkedCells: {
-          return allRLCCompatibleTraversals();
-      }
+    case ContainerOption::referenceLinkedCells: {
+      return allRLCCompatibleTraversals();
+    }
   }
 
   autopas::utils::ExceptionHandler::exception("CompatibleTraversals: Unknown container option {}!",

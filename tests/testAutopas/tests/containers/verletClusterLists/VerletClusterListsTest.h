@@ -19,8 +19,7 @@
 
 class VerletClusterListsTest : public AutoPasTestBase {};
 
-class CollectParticlePairsFunctor
-    : public autopas::Functor<autopas::Particle> {
+class CollectParticlePairsFunctor : public autopas::Functor<autopas::Particle> {
  public:
   std::vector<std::pair<Particle *, Particle *>> _pairs{};
   std::array<double, 3> _min;
@@ -59,8 +58,7 @@ class CollectParticlePairsFunctor
 };
 
 #if defined(AUTOPAS_OPENMP)
-class CollectParticlesPerThreadFunctor
-    : public autopas::Functor<autopas::Particle> {
+class CollectParticlesPerThreadFunctor : public autopas::Functor<autopas::Particle> {
  public:
   static int _currentColor;
 #pragma omp threadprivate(_currentColor)

@@ -104,8 +104,7 @@ class AutoPas {
             _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
             _maxTuningPhasesWithoutTest, _acquisitionFunctionOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
-    _logicHandler =
-        std::make_unique<autopas::LogicHandler<Particle>>(*(_autoTuner.get()), _verletRebuildFrequency);
+    _logicHandler = std::make_unique<autopas::LogicHandler<Particle>>(*(_autoTuner.get()), _verletRebuildFrequency);
   }
 
   /**

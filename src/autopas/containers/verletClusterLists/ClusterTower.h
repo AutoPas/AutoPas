@@ -57,9 +57,7 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   void addParticle(const Particle &particle) override { _particles.addParticle(particle); }
 
-  ParticleCellTypeEnum getParticleCellTypeAsEnum() override {
-      return ClusterTowerEnum;
-  }
+  ParticleCellTypeEnum getParticleCellTypeAsEnum() override { return ClusterTowerEnum; }
 
   /**
    * Clears all particles from the tower and resets it to be ready for new particles.

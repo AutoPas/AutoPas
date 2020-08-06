@@ -63,8 +63,7 @@ TEST_F(ParticlePropertiesLibraryTest, mixedShiftTestUpot) {
   Molecule m1({0, 0, 0}, {0, 0, 0}, 0, 0);
   Molecule m2({cutoff - 1e-14, 0, 0}, {0, 0, 0}, 1, 1);
 
-  autopas::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ true,
-                     autopas::FunctorN3Modes::Both,
+  autopas::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ true, autopas::FunctorN3Modes::Both,
                      /*globals*/ true>
       functor(cutoff, PPL);
 

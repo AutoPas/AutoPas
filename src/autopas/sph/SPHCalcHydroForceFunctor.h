@@ -18,8 +18,8 @@ namespace sph {
  * @tparam ParticleCell
  */
 template <class Particle>
-class SPHCalcHydroForceFunctor : public Functor<Particle, typename Particle::SoAArraysType,
-                                                SPHCalcHydroForceFunctor<Particle>> {
+class SPHCalcHydroForceFunctor
+    : public Functor<Particle, typename Particle::SoAArraysType, SPHCalcHydroForceFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;

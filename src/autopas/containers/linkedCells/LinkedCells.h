@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
@@ -23,7 +24,6 @@
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-#include "autopas/cells/FullParticleCell.h"
 
 namespace autopas {
 
@@ -63,7 +63,6 @@ class LinkedCells : public ParticleContainer<FullParticleCell<Particle, SoAArray
         _loadEstimator(loadEstimator) {}
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
-
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()

@@ -19,7 +19,7 @@ namespace autopas {
 template <class ParticleCell>
 class VerletListsCellsHelpers {
  public:
-    using Particle = typename ParticleCell::ParticleType;
+  using Particle = typename ParticleCell::ParticleType;
   /// Verlet list storage
   using VerletList_storage_type = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
 

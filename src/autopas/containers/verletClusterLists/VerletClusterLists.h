@@ -33,8 +33,7 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class VerletClusterLists : public ParticleContainerInterface<Particle>,
-                           public internal::ParticleDeletedObserver {
+class VerletClusterLists : public ParticleContainerInterface<Particle>, public internal::ParticleDeletedObserver {
  public:
   /**
    * The number of particles in a full cluster. Currently, constexpr is necessary so it can be passed to ClusterTower as
@@ -87,12 +86,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>,
     _towers.push_back(internal::ClusterTower<Particle>(_clusterSize));
   }
 
-    /**
-       * Destructor of ParticleContainer.
-       */
-    ParticleCellTypeEnum getParticleCellTypeEnum() override  {
-        return IsNoCellEnum;
-    };
+  /**
+   * Destructor of ParticleContainer.
+   */
+  ParticleCellTypeEnum getParticleCellTypeEnum() override { return IsNoCellEnum; };
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()

@@ -6,11 +6,11 @@
 
 #pragma once
 
+#include "autopas/cells/FullParticleCell.h"
+#include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/particles/Particle.h"
 #include "mocks/MockFunctor.h"
-#include "autopas/cells/ReferenceParticleCell.h"
-#include "autopas/cells/FullParticleCell.h"
 
 // a place for usings that are commonly used in tests
 

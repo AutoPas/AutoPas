@@ -7,8 +7,8 @@
 #include "DifferentParticlesTest.h"
 
 #include "autopas/AutoPas.h"
-#include "testingHelpers/commonTypedefs.h"
 #include "testingHelpers/NonConstructibleParticle.h"
+#include "testingHelpers/commonTypedefs.h"
 
 /**
  * Tests if AutoPas still compiles with a Particle that implements the normal interface, BUT no constructor.

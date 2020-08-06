@@ -170,8 +170,9 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
           &pairwiseFunctor, info.clusterSize);
     }
     case TraversalOption::varVerletTraversalAsBuild: {
-      return std::make_unique<VarVerletTraversalAsBuild<typename ParticleCell::ParticleType,
-                                                        PairwiseFunctor, dataLayout, useNewton3>>(&pairwiseFunctor);
+      return std::make_unique<
+          VarVerletTraversalAsBuild<typename ParticleCell::ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
+          &pairwiseFunctor);
     }
     case TraversalOption::verletClustersStatic: {
       return std::make_unique<

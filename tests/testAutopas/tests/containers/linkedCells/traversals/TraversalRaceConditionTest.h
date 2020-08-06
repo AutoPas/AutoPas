@@ -29,8 +29,7 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
     using SoAArraysType = Particle::SoAArraysType;
     using floatType = double;
 
-    SimpleFunctor(floatType cutoff)
-        : autopas::Functor<Particle>(cutoff), _cutoffSquare(cutoff * cutoff){};
+    SimpleFunctor(floatType cutoff) : autopas::Functor<Particle>(cutoff), _cutoffSquare(cutoff * cutoff){};
 
     bool isRelevantForTuning() override { return true; }
 

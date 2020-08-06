@@ -26,7 +26,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
 
   TraversalTest::CountFunctor functor(cutoff);
   autopas::LinkedCells<Particle> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1.0 / cutoff,
-                                           loadEstimatorOption);
+                                             loadEstimatorOption);
 
   autopasTools::generators::GridGenerator::fillWithParticles(linkedCells, edgeLength);
   ASSERT_EQ(linkedCells.getNumParticles(), edgeLength[0] * edgeLength[1] * edgeLength[2]);

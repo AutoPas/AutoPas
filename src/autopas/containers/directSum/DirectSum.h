@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleContainer.h"
@@ -22,7 +23,6 @@
 #include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/inBox.h"
-#include "autopas/cells/FullParticleCell.h"
 
 namespace autopas {
 

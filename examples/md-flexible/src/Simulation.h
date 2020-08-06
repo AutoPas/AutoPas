@@ -168,8 +168,7 @@ void Simulation<Particle>::initializeParticlePropertiesLibrary() {
 }
 
 template <class Particle>
-void Simulation<Particle>::initialize(const MDFlexConfig &mdFlexConfig,
-                                                    autopas::AutoPas<Particle> &autopas) {
+void Simulation<Particle>::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<Particle> &autopas) {
   _timers.init.start();
 
   _config = std::make_shared<MDFlexConfig>(mdFlexConfig);
@@ -301,8 +300,9 @@ void Simulation<Particle>::simulate(autopas::AutoPas<Particle> &autopas) {
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-        this->calculateForces<autopas::LJFunctor<Particle, _shifting, _mixing,
-                                                 autopas::FunctorN3Modes::Both, /* globals */ true>>(autopas);
+        this->calculateForces<
+            autopas::LJFunctor<Particle, _shifting, _mixing, autopas::FunctorN3Modes::Both, /* globals */ true>>(
+            autopas);
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_AVX: {
@@ -360,8 +360,7 @@ void Simulation<Particle>::printStatistics(autopas::AutoPas<Particle> &autopas) 
       break;
     }
     case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
-      flopsPerKernelCall =
-          autopas::LJFunctorAVX<Particle, _shifting, _mixing>::getNumFlopsPerKernelCall();
+      flopsPerKernelCall = autopas::LJFunctorAVX<Particle, _shifting, _mixing>::getNumFlopsPerKernelCall();
       break;
     }
     default:
@@ -407,17 +406,15 @@ void Simulation<Particle>::printStatistics(autopas::AutoPas<Particle> &autopas) 
   cout << "MFUPs/sec    : " << mfups << endl;
 
   if (_config->dontMeasureFlops.value) {
-    autopas::FlopCounterFunctor<PrintableMolecule> flopCounterFunctor(
-        autopas.getCutoff());
+    autopas::FlopCounterFunctor<PrintableMolecule> flopCounterFunctor(autopas.getCutoff());
     autopas.iteratePairwise(&flopCounterFunctor);
 
     auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * iteration;
     // approximation for flops of verlet list generation
     if (autopas.getContainerType() == autopas::ContainerOption::verletLists)
-      flops +=
-          flopCounterFunctor.getDistanceCalculations() *
-          autopas::FlopCounterFunctor<PrintableMolecule>::numFlopsPerDistanceCalculation *
-          floor(iteration / _config->verletRebuildFrequency.value);
+      flops += flopCounterFunctor.getDistanceCalculations() *
+               autopas::FlopCounterFunctor<PrintableMolecule>::numFlopsPerDistanceCalculation *
+               floor(iteration / _config->verletRebuildFrequency.value);
 
     cout << "GFLOPs       : " << flops * 1e-9 << endl;
     cout << "GFLOPs/sec   : " << flops * 1e-9 / durationSimulateSec << endl;
@@ -431,7 +428,7 @@ const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &Simulation<Par
 }
 template <class Particle>
 std::string Simulation<Particle>::timerToString(const std::string &name, long timeNS, size_t numberWidth,
-                                                              long maxTime) {
+                                                long maxTime) {
   // only print timers that were actually used
   if (timeNS == 0) {
     return "";
@@ -452,8 +449,7 @@ bool Simulation<Particle>::needsMoreIterations() const {
 }
 
 template <class Particle>
-void Simulation<Particle>::writeVTKFile(unsigned int iteration,
-                                                      autopas::AutoPas<Particle> &autopas) {
+void Simulation<Particle>::writeVTKFile(unsigned int iteration, autopas::AutoPas<Particle> &autopas) {
   _timers.vtk.start();
 
   std::string fileBaseName = _config->vtkFileName.value;

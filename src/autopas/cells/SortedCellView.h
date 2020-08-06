@@ -43,9 +43,7 @@ class SortedCellView : public ParticleCell<Particle> {
               [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
   }
 
-    ParticleCellTypeEnum getParticleCellTypeAsEnum() override {
-      return SortedCellViewEnum;
-  }
+  ParticleCellTypeEnum getParticleCellTypeAsEnum() override { return SortedCellViewEnum; }
 
   /**
    * @copydoc ParticleCell::addParticle()

@@ -23,8 +23,7 @@ namespace autopas {
  * @tparam ParticleCell
  */
 template <class Particle>
-class FlopCounterFunctor : public Functor<Particle, typename Particle::SoAArraysType,
-                                          FlopCounterFunctor<Particle>> {
+class FlopCounterFunctor : public Functor<Particle, typename Particle::SoAArraysType, FlopCounterFunctor<Particle>> {
  public:
   bool isRelevantForTuning() override { return false; }
 
@@ -41,8 +40,7 @@ class FlopCounterFunctor : public Functor<Particle, typename Particle::SoAArrays
    * @param cutoffRadius the cutoff radius
    */
   explicit FlopCounterFunctor<Particle>(double cutoffRadius)
-      : autopas::Functor<Particle, typename Particle::SoAArraysType,
-                         FlopCounterFunctor<Particle>>(cutoffRadius),
+      : autopas::Functor<Particle, typename Particle::SoAArraysType, FlopCounterFunctor<Particle>>(cutoffRadius),
         _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}

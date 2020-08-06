@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include <memory>
 #include <autopas/containers/linkedCells/ReferenceLinkedCells.h>
+
+#include <memory>
 
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
@@ -28,10 +29,9 @@ namespace autopas {
  * @param function The function body to be executed. Has to take exactly one argument being a pointer to the container.
  * E.g: [&](auto *container){container->doSth();}  // The * is optional here. The auto is necessary!
  */
- // TODO remove ParticleCell template arg?
+// TODO remove ParticleCell template arg?
 template <typename Particle, typename ParticleCell, typename FunctionType>
-void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle>> &container,
-                             FunctionType &&function) {
+void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle>> &container, FunctionType &&function) {
   auto container_ptr = container.get();
   switch (container->getContainerType()) {
     case ContainerOption::directSum:
@@ -40,9 +40,9 @@ void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle>> &conta
     case ContainerOption::linkedCells:
       function(dynamic_cast<autopas::LinkedCells<Particle, ParticleCell> *>(container_ptr));
       return;
-      case ContainerOption::referenceLinkedCells:
-          function(dynamic_cast<autopas::ReferenceLinkedCells<Particle, ParticleCell> *>(container_ptr));
-          return;
+    case ContainerOption::referenceLinkedCells:
+      function(dynamic_cast<autopas::ReferenceLinkedCells<Particle, ParticleCell> *>(container_ptr));
+      return;
     case ContainerOption::verletLists:
       function(dynamic_cast<autopas::VerletLists<Particle> *>(container_ptr));
       return;

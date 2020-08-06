@@ -26,9 +26,8 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VerletClustersColoringTraversal
-    : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-      public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
+class VerletClustersColoringTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+                                        public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
 

@@ -23,7 +23,6 @@ namespace autopas {
  */
 template <class Particle, class LinkedSoAArraysType = typename Particle::SoAArraysType>
 class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
-
  public:
   /**
    * Constructor of the VerletListsLinkedBase class.
@@ -45,13 +44,13 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     }
   }
 
-    /**
-       * Destructor of ParticleContainer.
-       */
-    ParticleCellTypeEnum getParticleCellTypeEnum() override  {
-        FullParticleCell<Particle> someCell;
-        return someCell.getParticleCellTypeAsEnum();
-    };
+  /**
+   * Destructor of ParticleContainer.
+   */
+  ParticleCellTypeEnum getParticleCellTypeEnum() override {
+    FullParticleCell<Particle> someCell;
+    return someCell.getParticleCellTypeAsEnum();
+  };
 
   /**
    * @copydoc autopas::ParticleContainerInterface::addParticleImpl
@@ -105,7 +104,6 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     _neighborListIsValid = false;
     return _linkedCells.updateContainer();
   }
-
 
   /**
    * Searches the provided halo particle and updates the found particle.
