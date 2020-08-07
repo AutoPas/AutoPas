@@ -1,5 +1,5 @@
 /**
- * @file DirectSumTraversalInterface.h
+ * @file DSTraversalInterface.h
  * @author seckler
  * @date 09.01.19
  */
@@ -17,6 +17,6 @@ namespace autopas {
  * @tparam ParticleCell
  */
 template <class ParticleCell>
-class DirectSumTraversalInterface {};
+class DSTraversalInterface {};
 
 }  // namespace autopas

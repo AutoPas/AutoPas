@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "DirectSumTraversalInterface.h"
+#include "DSTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
@@ -28,7 +28,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DirectSumTraversalInterface<ParticleCell> {
+class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DSTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor for the DirectSum traversal.
