@@ -65,6 +65,9 @@ class VerletListsCellsHelpers {
       return false;  // this functor shouldn't be called with clusters!
     }
 
+    /**
+     * @copydoc Functor::AoSFunctor()
+     */
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       if (i.isDummy() or j.isDummy()) {
         return;
