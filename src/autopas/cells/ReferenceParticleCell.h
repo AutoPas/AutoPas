@@ -68,7 +68,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   Particle &operator[](size_t n) { return *(_particles[n]); }
 
   /**
-   * Returns the ParticleCellType as an enum.
+   * @copydoc ParticleCell::getParticleCellTypeAsEnum()
    */
   ParticleCellTypeEnum getParticleCellTypeAsEnum() override { return ReferenceParticleCellEnum; }
 

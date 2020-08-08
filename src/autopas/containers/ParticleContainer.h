@@ -38,11 +38,14 @@ class ParticleContainer : public ParticleContainerInterface<typename ParticleCel
                     const double skin)
       : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
+      /**
+   *  Type of the ParticleCell.
+   */
   using ParticleCellType = ParticleCell;
 
   /**
    * Get the ParticleCell type as an Enum
-   * @returns The Cell type as an Enum
+   * @return The Cell type as an Enum
    */
   ParticleCellTypeEnum getParticleCellTypeEnum() override {
     ParticleCell someCell = ParticleCell();

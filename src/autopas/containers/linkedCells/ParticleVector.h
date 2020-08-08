@@ -29,7 +29,7 @@ class ParticleVector {
 
   /**
    * Returns the dirty flag, indicating whether some of the Particle references are out of date.
-   * @returns True if dirty, false otherwise
+   * @return True if dirty, false otherwise
    */
   bool isDirty() { return _dirty; }
 
@@ -57,24 +57,24 @@ class ParticleVector {
 
   /**
    * Get the number of Particles in the data structure.
-   * @returns Total number of Particles
+   * @return Total number of Particles
    */
   int totalSize() { return particleListImp.size(); }
 
   /**
    * Get the number of dirty Particles in the data structure.
-   * @returns Number of dirty Particles
+   * @return Number of dirty Particles
    */
   int dirtySize() { return totalSize() - _dirtyIndex; }
 
   /**
    * Begin of the iterator over dirty Particles
-   * @returns Start of the iterator
+   * @return Start of the iterator
    */
   iterator beginDirty() { return particleListImp.begin() + _dirtyIndex; }
   /**
    * End of the iterator over dirty Particles
-   * @returns End of the iterator
+   * @return End of the iterator
    */
   iterator endDirty() { return particleListImp.end(); }
 

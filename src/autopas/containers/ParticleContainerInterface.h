@@ -35,14 +35,13 @@ class ParticleContainerInterface {
    */
   using ParticleType = Particle;
 
-  /**
-   *  Type of the ParticleCell.
+ /**
+   * Get the ParticleCell type as an Enum
+   * @return The Cell type as an Enum
    */
   virtual ParticleCellTypeEnum getParticleCellTypeEnum() = 0;
 
-  /**
-   * Type of the ParticleCell.
-   */
+
   /**
    * Default constructor
    */
@@ -69,8 +68,8 @@ class ParticleContainerInterface {
   ParticleContainerInterface &operator=(const ParticleContainerInterface &other) = delete;
 
   /**
-   * Return a enum representing the name of the container class.
-   * @return Enum representing the container.
+   * Get the ContainerType.
+   * @return ContainerOption of the type of this container.
    */
   [[nodiscard]] virtual ContainerOption getContainerType() const = 0;
 

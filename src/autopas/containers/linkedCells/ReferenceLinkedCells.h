@@ -40,6 +40,9 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
    *  Type of the Particle.
    */
   using ParticleType = Particle;
+  /**
+   *  Type of the ParticleCell.
+   */
   using ParticleCell = ReferenceParticleCell<Particle>;
   /**
    * Constructor of the LinkedCells class
@@ -55,6 +58,9 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
       : ParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
 
+        /**
+   * @copydoc ParticleContainerInterface::getContainerType()
+   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::referenceLinkedCells; }
 
   /**
@@ -96,10 +102,19 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
     return false;
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::deleteHaloParticles()
+   */
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
+   /**
+   * @copydoc ParticleContainerInterface::rebuildNeighborLists()
+   */
   void rebuildNeighborLists(TraversalInterface *traversal) override { updateDirtyParticleReferences(); }
 
+  /**
+   * Updates all the References in the cells that are out of date.
+   */
   void updateDirtyParticleReferences() {
     if (_particleList.isDirty()) {
       for (auto &cell : this->_cells) {
@@ -182,6 +197,9 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
     return invalidParticles;
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
+   */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getInteractionLength(),
                                  this->getCellBlock().getCellLength(), 0);
@@ -281,9 +299,12 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
 
  protected:
   /**
-   * object to manage the block of cells.
+   * object that stores the actual Particles and keeps track of the references.
    */
   ParticleVector<ParticleType> _particleList;
+  /**
+   * object to manage the block of cells.
+   */
   internal::CellBlock3D<ParticleCell> _cellBlock;
   // ThreeDimensionalCellHandler
 };

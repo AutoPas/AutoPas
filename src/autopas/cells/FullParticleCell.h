@@ -78,7 +78,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   Particle &at(size_t index) { return _particles.at(index); }
 
   /**
-   * Returns the ParticleCellType as an enum.
+   * @copydoc ParticleCell::getParticleCellTypeAsEnum()
    */
   ParticleCellTypeEnum getParticleCellTypeAsEnum() override { return FullParticleCellEnum; }
 

@@ -91,9 +91,10 @@ class ParticleCell {
    */
   virtual void deleteDummyParticles() = 0;
 
-  /**
-   * Returns the ParticleCellType as an enum.
-   */
+    /**
+     * Get the ParticleCell type as an Enum
+     * @return The Cell type as an Enum
+     */
   virtual ParticleCellTypeEnum getParticleCellTypeAsEnum() = 0;
 
   /**

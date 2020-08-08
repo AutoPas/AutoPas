@@ -40,6 +40,9 @@ class DirectSum : public ParticleContainer<FullParticleCell<Particle>> {
    *  Type of the Particle.
    */
   using ParticleType = Particle;
+  /**
+   *  Type of the ParticleCell.
+   */
   using ParticleCell = FullParticleCell<Particle>;
 
   /**
@@ -54,6 +57,9 @@ class DirectSum : public ParticleContainer<FullParticleCell<Particle>> {
     this->_cells.resize(2);
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getContainerType()
+   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::directSum; }
 
   /**
@@ -116,6 +122,9 @@ class DirectSum : public ParticleContainer<FullParticleCell<Particle>> {
     return invalidParticles;
   }
 
+    /**
+     * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
+     */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     // direct sum technically consists of two cells (owned + halo)
     return TraversalSelectorInfo(

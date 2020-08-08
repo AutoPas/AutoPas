@@ -45,7 +45,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   }
 
   /**
-   * Destructor of ParticleContainer.
+   * @copydoc autopas::ParticleContainerInterface::getParticleCellTypeEnum()
    */
   ParticleCellTypeEnum getParticleCellTypeEnum() override {
     FullParticleCell<Particle> someCell;
