@@ -76,7 +76,13 @@ class Functor {
   // TODO remove virtual if not needed
   // TODO add template to function (ParticleCellTemplate)
  public:
+  /**
+   * Make the SoAArraysType publicly available.
+   */
   using SoAArraysType = SoAArraysTypeTemplate;
+  /**
+   * Make the Implementation type template publicly available.
+   */
   using Impl_t = Impl_tTemplate;
   /**
    * Constructor

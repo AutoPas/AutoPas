@@ -6,6 +6,13 @@
 
 #include <vector>
 
+/**
+ * ParticleVector class.
+ * This class uses a std::vector to store particles and allows access to its references.
+ * It also keeps track, which references are no longer valid, which happens
+ * when operations like delete and resize are performed.
+ * @tparam Type of the Particle that is being stored
+ */
 template <class Type>
 class ParticleVector {
   using particleListImpType = std::vector<Type>;
@@ -20,13 +27,24 @@ class ParticleVector {
     particleListImp = std::vector<Type>();
   }
 
+  /**
+   * Returns the dirty flag, indicating whether some of the Particle references are out of date.
+   * @returns True if dirty, false otherwise
+   */
   bool isDirty() { return _dirty; }
 
+  /**
+   * Marks the ParticleVector as clean. Should be called after updating the references of dirty particles.
+   */
   void markAsClean() {
     _dirty = false;
     _dirtyIndex = particleListImp.size();
   }
 
+  /**
+   * Add a Particle to the data structure.
+   * @param value A reference to the value to be stored
+   */
   void push_back(Type &value) {
     particleListLock.lock();
     _dirty |= particleListImp.capacity() == particleListImp.size();
@@ -37,11 +55,27 @@ class ParticleVector {
     particleListLock.unlock();
   }
 
+  /**
+   * Get the number of Particles in the data structure.
+   * @returns Total number of Particles
+   */
   int totalSize() { return particleListImp.size(); }
 
+  /**
+   * Get the number of dirty Particles in the data structure.
+   * @returns Number of dirty Particles
+   */
   int dirtySize() { return totalSize() - _dirtyIndex; }
 
+  /**
+   * Begin of the iterator over dirty Particles
+   * @returns Start of the iterator
+   */
   iterator beginDirty() { return particleListImp.begin() + _dirtyIndex; }
+  /**
+   * End of the iterator over dirty Particles
+   * @returns End of the iterator
+   */
   iterator endDirty() { return particleListImp.end(); }
 
  private:

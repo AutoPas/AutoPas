@@ -28,8 +28,19 @@ class EmptyFunctor : public autopas::Functor<Particle> {
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {}
 
+  /**
+   * SoAFunctor for a single Particle.
+   * @param soa An autopas::SoAView for the Functor
+   * @param newton3 A boolean to indicate whether to allow newton3
+   */
   void SoAFunctorSingle(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {}
 
+  /**
+   * SoAFunctor for a pair of Particle.
+   * @param soa An autopas::SoAView for the Functor
+   * @param soa2 A second autopas::SoAView for the Functor
+   * @param newton3 A boolean to indicate whether to allow newton3
+   */
   void SoAFunctorPair(autopas::SoAView<typename Particle::SoAArraysType> soa,
                       autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3) override {}
 

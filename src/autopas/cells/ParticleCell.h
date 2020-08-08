@@ -8,6 +8,9 @@
 
 #include "autopas/iterators/SingleCellIteratorWrapper.h"
 
+/**
+ * The ParticleCell Type as an Enum.
+ */
 enum ParticleCellTypeEnum {
   FullParticleCellEnum,
   ReferenceParticleCellEnum,
