@@ -216,7 +216,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   /**
    * Factor of the range of the configurations that are not going to be blacklisted.
    */
-  const double _relativeRangeForBlacklist{10};
+  const double _relativeRangeForBlacklist{0};
   /**
    * Stores the extrapolation method that is going to be used for the traversal time predictions.
    */
@@ -628,7 +628,7 @@ void PredictiveTuning::selectOptimalConfiguration() {
   if (_currentConfig == _searchSpace.end() or _currentConfig == _optimalSearchSpace.end() or
       _currentConfig == _tooLongNotTestedSearchSpace.end()) {
     autopas::utils::ExceptionHandler::exception(
-        "PredicitveTuning: Optimal configuration not found in list of configurations!");
+        "PredictiveTuning: Optimal configuration not found in list of configurations!");
   }
 
   if (_relativeRangeForBlacklist != 0 and not _notTestedYet.empty()) {
@@ -645,6 +645,8 @@ void PredictiveTuning::blacklistBadConfigurations() {
     if (_lastTest[*configurationIter] == _tuningPhaseCounter) {
       if (_traversalTimesStorage[*configurationIter].back().second / optimumTime > _relativeRangeForBlacklist) {
         _searchSpace.erase(*configurationIter);
+        _traversalTimesStorage.erase(*configurationIter);
+        _lastTest.erase(*configurationIter);
       }
       configurationIter = _notTestedYet.erase(configurationIter);
     }

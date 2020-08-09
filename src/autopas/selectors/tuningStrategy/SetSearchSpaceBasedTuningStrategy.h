@@ -127,7 +127,7 @@ void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
   AutoPasLog(debug, "Points in search space: {}", _searchSpace.size());
 
   if (_searchSpace.empty()) {
-    autopas::utils::ExceptionHandler::exception("FullSearch: No valid configurations could be created.");
+    autopas::utils::ExceptionHandler::exception("No valid configurations could be created.");
   }
 }
 
