@@ -108,7 +108,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<FullParticleCell
    */
   bool updateHaloParticle(const Particle &particle) override {
     Particle pCopy = particle;
-    pCopy.setOwned(false);
+    pCopy.setOwnershipState(OwnershipState::halo);
     auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(pCopy.getR(), this->getSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);

@@ -42,6 +42,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // LinkedCells:           c08 traversal               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        sliced                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        balanced-sliced             (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
+  //                        cSliced                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        c18                         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        c01                         (AoS <=> SoA, noNewton3)                             = 2
   //                        c01-combined-SoA            (SoA, noNewton3)                                     = 1
@@ -51,6 +52,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VerletLists:           verlet-lists                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   // VerletListsCells:      verlet-sliced               (AoS, newton3 <=> noNewton3)                         = 2
   //                        balanced-verlet-sliced      (AoS, newton3 <=> noNewton3, 3 heuristics)           = 6
+  //                        cSlicedVerlet               (AoS, newton3 <=> noNewton3)                         = 2
   //                        verlet-c18                  (AoS, newton3 <=> noNewton3)                         = 2
   //                        verlet-c01                  (AoS, noNewton3)                                     = 1
   // VerletClusterLists:    verlet-clusters             (AoS <=> SoA, noNewton3)                             = 2
@@ -59,28 +61,28 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   // VerletClusterCells:    verlet-cluster-cells        (AoS, newton3 <=> noNewton3)                         = 2
   //                                                                                                    --------
-  //                                                                                                          66
+  //                                                                                                          72
   // Additional with cuda
   // Direct Sum:            directSum traversal         (Cuda, newton3 <=> noNewton3)                        = 2
   // LinkedCells:           c01Cuda traversal           (Cuda, newton3 <=> noNewton3)                        = 2
   // VerletClusterCells:    verlet-cluster-cells traversal (Cuda, newton3 <=> noNewton3)                     = 2
   //                                                                                                    --------
-  //                                                                                                          72
+  //                                                                                                          78
   //
   // currently disabled:
   // NORMAL:
   //                                                                                                    --------
-  // TOTAL:                                                                                                   72
+  // TOTAL:                                                                                                   78
   //
   // CUDA:
   // C01CudaTraversal for enabled N3, see #420                                                                -1
   //                                                                                                    --------
-  // TOTAL:                                                                                                   71
+  // TOTAL:                                                                                                   77
 
 #ifndef AUTOPAS_CUDA
-  const size_t expectedNumberOfIterations = 66 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 72 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 71 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 77 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;

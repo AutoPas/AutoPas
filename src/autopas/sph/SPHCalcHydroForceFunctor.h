@@ -6,11 +6,10 @@
 
 #pragma once
 
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/sph/SPHKernels.h"
-#include "autopas/sph/SPHParticle.h"
 
-namespace autopas {
-namespace sph {
+namespace autopas::sph {
 /**
  * Class that defines the hydrodynamic force functor.
  * It is used to calculate the force based on the given SPH kernels.
@@ -18,7 +17,7 @@ namespace sph {
  * @tparam ParticleCell
  */
 template <class Particle, class ParticleCell>
-class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SPHParticle>, SPHParticle::SoAArraysType,
+class SPHCalcHydroForceFunctor : public Functor<Particle, FullParticleCell<Particle>, typename Particle::SoAArraysType,
                                                 SPHCalcHydroForceFunctor<Particle, ParticleCell>> {
  public:
   /// soa arrays type
@@ -34,7 +33,8 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
 
   bool allowsNonNewton3() override { return true; }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+  [[nodiscard]] bool isAppropriateClusterSize(unsigned int clusterSize,
+                                              DataLayoutOption::Value dataLayout) const override {
     return dataLayout == DataLayoutOption::aos;  // This functor does only support clusters via aos.
   }
 
@@ -47,7 +47,10 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
    * @param j second particle of the interaction
    * @param newton3 defines whether or whether not to use newton 3
    */
-  void AoSFunctor(SPHParticle &i, SPHParticle &j, bool newton3 = true) override {
+  void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
+    if (i.isDummy() or j.isDummy()) {
+      return;
+    }
     const std::array<double, 3> dr = utils::ArrayMath::sub(i.getR(), j.getR());
     // const PS::F64vec dr = ep_i[i].pos - ep_j[j].pos;
 
@@ -106,32 +109,38 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType>, bool, bool)
+   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType>, bool)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool cellWiseOwnedState) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ massptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::mass>();
-    double *const __restrict__ densityptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::density>();
-    double *const __restrict__ smthptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr =
-        soa.template begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
+    double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict__ densityptr = soa.template begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ soundSpeedptr = soa.template begin<Particle::AttributeNames::soundSpeed>();
+    double *const __restrict__ pressureptr = soa.template begin<Particle::AttributeNames::pressure>();
+    double *const __restrict__ vsigmaxptr = soa.template begin<Particle::AttributeNames::vsigmax>();
+    double *const __restrict__ engDotptr = soa.template begin<Particle::AttributeNames::engDot>();
 
-    double *const __restrict__ xptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::velX>();
-    double *const __restrict__ velYptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::velY>();
-    double *const __restrict__ velZptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accX>();
-    double *const __restrict__ accYptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accY>();
-    double *const __restrict__ accZptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ velXptr = soa.template begin<Particle::AttributeNames::velX>();
+    double *const __restrict__ velYptr = soa.template begin<Particle::AttributeNames::velY>();
+    double *const __restrict__ velZptr = soa.template begin<Particle::AttributeNames::velZ>();
+    double *const __restrict__ accXptr = soa.template begin<Particle::AttributeNames::accX>();
+    double *const __restrict__ accYptr = soa.template begin<Particle::AttributeNames::accY>();
+    double *const __restrict__ accZptr = soa.template begin<Particle::AttributeNames::accZ>();
+
+    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     for (unsigned int indexFirst = 0; indexFirst < soa.getNumParticles(); ++indexFirst) {
+      // checks whether particle i is owned.
+      if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+        continue;
+      }
+
       double localvsigmax = 0.;
       double localengdotsum = 0.;
       double localAccX = 0.;
@@ -152,7 +161,7 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
 
         const double dr2 = drx2 + dry2 + drz2;
         double cutoff = smthptr[indexFirst] * autopas::sph::SPHKernels::getKernelSupportRadius();
-        if (dr2 >= cutoff * cutoff) continue;
+        if (dr2 >= cutoff * cutoff or ownedStatePtr[j] == OwnershipState::dummy) continue;
 
         const double dvX = velXptr[indexFirst] - velXptr[j];
         const double dvY = velYptr[indexFirst] - velYptr[j];
@@ -218,53 +227,56 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   }
 
   /**
-   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool, bool)
+   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool)
    */
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3,
-                      bool cellWiseOwnedState) override {
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    double *const __restrict__ massptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::mass>();
-    double *const __restrict__ densityptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::density>();
-    double *const __restrict__ smthptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr1 =
-        soa1.template begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr1 =
-        soa1.template begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
+    double *const __restrict__ massptr1 = soa1.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict__ densityptr1 = soa1.template begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr1 = soa1.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ soundSpeedptr1 = soa1.template begin<Particle::AttributeNames::soundSpeed>();
+    double *const __restrict__ pressureptr1 = soa1.template begin<Particle::AttributeNames::pressure>();
+    double *const __restrict__ vsigmaxptr1 = soa1.template begin<Particle::AttributeNames::vsigmax>();
+    double *const __restrict__ engDotptr1 = soa1.template begin<Particle::AttributeNames::engDot>();
 
-    double *const __restrict__ xptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::posX>();
-    double *const __restrict__ yptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::posY>();
-    double *const __restrict__ zptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::velX>();
-    double *const __restrict__ velYptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::velY>();
-    double *const __restrict__ velZptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::accX>();
-    double *const __restrict__ accYptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::accY>();
-    double *const __restrict__ accZptr1 = soa1.template begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+    double *const __restrict__ xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ velXptr1 = soa1.template begin<Particle::AttributeNames::velX>();
+    double *const __restrict__ velYptr1 = soa1.template begin<Particle::AttributeNames::velY>();
+    double *const __restrict__ velZptr1 = soa1.template begin<Particle::AttributeNames::velZ>();
+    double *const __restrict__ accXptr1 = soa1.template begin<Particle::AttributeNames::accX>();
+    double *const __restrict__ accYptr1 = soa1.template begin<Particle::AttributeNames::accY>();
+    double *const __restrict__ accZptr1 = soa1.template begin<Particle::AttributeNames::accZ>();
 
-    double *const __restrict__ massptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::mass>();
-    double *const __restrict__ densityptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::density>();
-    double *const __restrict__ smthptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr2 =
-        soa2.template begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr2 =
-        soa2.template begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
+    double *const __restrict__ massptr2 = soa2.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict__ densityptr2 = soa2.template begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr2 = soa2.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ soundSpeedptr2 = soa2.template begin<Particle::AttributeNames::soundSpeed>();
+    double *const __restrict__ pressureptr2 = soa2.template begin<Particle::AttributeNames::pressure>();
+    double *const __restrict__ vsigmaxptr2 = soa2.template begin<Particle::AttributeNames::vsigmax>();
+    double *const __restrict__ engDotptr2 = soa2.template begin<Particle::AttributeNames::engDot>();
 
-    double *const __restrict__ xptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::posX>();
-    double *const __restrict__ yptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::posY>();
-    double *const __restrict__ zptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::velX>();
-    double *const __restrict__ velYptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::velY>();
-    double *const __restrict__ velZptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::accX>();
-    double *const __restrict__ accYptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::accY>();
-    double *const __restrict__ accZptr2 = soa2.template begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+    double *const __restrict__ xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ velXptr2 = soa2.template begin<Particle::AttributeNames::velX>();
+    double *const __restrict__ velYptr2 = soa2.template begin<Particle::AttributeNames::velY>();
+    double *const __restrict__ velZptr2 = soa2.template begin<Particle::AttributeNames::velZ>();
+    double *const __restrict__ accXptr2 = soa2.template begin<Particle::AttributeNames::accX>();
+    double *const __restrict__ accYptr2 = soa2.template begin<Particle::AttributeNames::accY>();
+    double *const __restrict__ accZptr2 = soa2.template begin<Particle::AttributeNames::accZ>();
+
+    const auto *const __restrict__ ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict__ ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
 
     for (unsigned int indexFirst = 0; indexFirst < soa1.getNumParticles(); ++indexFirst) {
+      // checks whether particle i is owned.
+      if (ownedStatePtr1[indexFirst] == OwnershipState::dummy) {
+        continue;
+      }
+
       double localvsigmax = 0.;
       double localengdotsum = 0.;
       double localAccX = 0.;
@@ -285,7 +297,7 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
 
         const double dr2 = drx2 + dry2 + drz2;
         double cutoff = smthptr1[indexFirst] * autopas::sph::SPHKernels::getKernelSupportRadius();
-        if (dr2 >= cutoff * cutoff) continue;
+        if (dr2 >= cutoff * cutoff or ownedStatePtr2[j] == OwnershipState::dummy) continue;
 
         const double dvX = velXptr1[indexFirst] - velXptr2[j];
         const double dvY = velYptr1[indexFirst] - velYptr2[j];
@@ -362,24 +374,30 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
                         bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ massptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::mass>();
-    double *const __restrict__ densityptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::density>();
-    double *const __restrict__ smthptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr =
-        soa.template begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
+    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
-    double *const __restrict__ xptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::velX>();
-    double *const __restrict__ velYptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::velY>();
-    double *const __restrict__ velZptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accX>();
-    double *const __restrict__ accYptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accY>();
-    double *const __restrict__ accZptr = soa.template begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+    // checks whether particle i is owned.
+    if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+      return;
+    }
+
+    double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict__ densityptr = soa.template begin<Particle::AttributeNames::density>();
+    double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict__ soundSpeedptr = soa.template begin<Particle::AttributeNames::soundSpeed>();
+    double *const __restrict__ pressureptr = soa.template begin<Particle::AttributeNames::pressure>();
+    double *const __restrict__ vsigmaxptr = soa.template begin<Particle::AttributeNames::vsigmax>();
+    double *const __restrict__ engDotptr = soa.template begin<Particle::AttributeNames::engDot>();
+
+    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict__ velXptr = soa.template begin<Particle::AttributeNames::velX>();
+    double *const __restrict__ velYptr = soa.template begin<Particle::AttributeNames::velY>();
+    double *const __restrict__ velZptr = soa.template begin<Particle::AttributeNames::velZ>();
+    double *const __restrict__ accXptr = soa.template begin<Particle::AttributeNames::accX>();
+    double *const __restrict__ accYptr = soa.template begin<Particle::AttributeNames::accY>();
+    double *const __restrict__ accZptr = soa.template begin<Particle::AttributeNames::accZ>();
 
     double localvsigmax = 0.;
     double localengdotsum = 0.;
@@ -387,7 +405,7 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
     double localAccY = 0.;
     double localAccZ = 0.;
 
-    auto &currentList = neighborList;
+    const auto &currentList = neighborList;
     size_t listSize = currentList.size();
 
     // icpc vectorizes this.
@@ -404,7 +422,7 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
 
       const double dr2 = drx2 + dry2 + drz2;
       double cutoff = smthptr[indexFirst] * autopas::sph::SPHKernels::getKernelSupportRadius();
-      if (dr2 >= cutoff * cutoff) continue;
+      if (dr2 >= cutoff * cutoff or ownedStatePtr[currentList[j]] == OwnershipState::dummy) continue;
 
       const double dvX = velXptr[indexFirst] - velXptr[currentList[j]];
       const double dvY = velYptr[indexFirst] - velYptr[currentList[j]];
@@ -477,40 +495,39 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   /**
    * @copydoc Functor::getNeededAttr()
    */
-  constexpr static std::array<typename SPHParticle::AttributeNames, 16> getNeededAttr() {
-    ///@todo distinguish between N3 and notN3
-    return std::array<typename SPHParticle::AttributeNames, 16>{
-        SPHParticle::AttributeNames::mass,     SPHParticle::AttributeNames::density,
-        SPHParticle::AttributeNames::smth,     SPHParticle::AttributeNames::soundSpeed,
-        SPHParticle::AttributeNames::pressure, SPHParticle::AttributeNames::vsigmax,
-        SPHParticle::AttributeNames::engDot,   SPHParticle::AttributeNames::posX,
-        SPHParticle::AttributeNames::posY,     SPHParticle::AttributeNames::posZ,
-        SPHParticle::AttributeNames::velX,     SPHParticle::AttributeNames::velY,
-        SPHParticle::AttributeNames::velZ,     SPHParticle::AttributeNames::accX,
-        SPHParticle::AttributeNames::accY,     SPHParticle::AttributeNames::accZ};
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 17>{
+        Particle::AttributeNames::mass,          Particle::AttributeNames::density,
+        Particle::AttributeNames::smth,          Particle::AttributeNames::soundSpeed,
+        Particle::AttributeNames::pressure,      Particle::AttributeNames::vsigmax,
+        Particle::AttributeNames::engDot,        Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,          Particle::AttributeNames::posZ,
+        Particle::AttributeNames::velX,          Particle::AttributeNames::velY,
+        Particle::AttributeNames::velZ,          Particle::AttributeNames::accX,
+        Particle::AttributeNames::accY,          Particle::AttributeNames::accZ,
+        Particle::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
-  constexpr static std::array<typename SPHParticle::AttributeNames, 11> getNeededAttr(std::false_type) {
-    ///@todo distinguish between N3 and notN3
-    return std::array<typename SPHParticle::AttributeNames, 11>{
-        SPHParticle::AttributeNames::mass,     SPHParticle::AttributeNames::density,
-        SPHParticle::AttributeNames::smth,     SPHParticle::AttributeNames::soundSpeed,
-        SPHParticle::AttributeNames::pressure, SPHParticle::AttributeNames::posX,
-        SPHParticle::AttributeNames::posY,     SPHParticle::AttributeNames::posZ,
-        SPHParticle::AttributeNames::velX,     SPHParticle::AttributeNames::velY,
-        SPHParticle::AttributeNames::velZ};
+  constexpr static auto getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 12>{
+        Particle::AttributeNames::mass,     Particle::AttributeNames::density,
+        Particle::AttributeNames::smth,     Particle::AttributeNames::soundSpeed,
+        Particle::AttributeNames::pressure, Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,     Particle::AttributeNames::posZ,
+        Particle::AttributeNames::velX,     Particle::AttributeNames::velY,
+        Particle::AttributeNames::velZ,     Particle::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc Functor::getComputedAttr()
    */
-  constexpr static std::array<typename sph::SPHParticle::AttributeNames, 5> getComputedAttr() {
-    return std::array<typename SPHParticle::AttributeNames, 5>{
-        SPHParticle::AttributeNames::vsigmax, SPHParticle::AttributeNames::engDot, SPHParticle::AttributeNames::accX,
-        SPHParticle::AttributeNames::accY, SPHParticle::AttributeNames::accZ};
+  constexpr static auto getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 6>{
+        Particle::AttributeNames::vsigmax, Particle::AttributeNames::engDot, Particle::AttributeNames::accX,
+        Particle::AttributeNames::accY,    Particle::AttributeNames::accZ,   Particle::AttributeNames::ownershipState};
   }
 
   /**
@@ -523,5 +540,4 @@ class SPHCalcHydroForceFunctor : public Functor<SPHParticle, FullParticleCell<SP
   }
 };
 
-}  // namespace sph
-}  // namespace autopas
+}  // namespace autopas::sph
