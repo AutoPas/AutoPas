@@ -115,7 +115,7 @@ class FeatureVector : public Configuration {
    * @param n number of samples
    * @param rng
    * @param cellSizeFactors
-   * @return vector of sample featureVectors
+   * @return vector of continuous feature samples
    */
   static std::vector<Eigen::VectorXd> lhsSampleFeatureContinuous(size_t n, Random &rng,
                                                                  const NumberSet<double> &cellSizeFactors) {
@@ -140,7 +140,7 @@ class FeatureVector : public Configuration {
    * @param rng
    * @param cellSizeFactors
    * @param iteration Current iteration which may be scaled by some factor.
-   * @return vector of sample featureVectors
+   * @return vector of continuous feature samples
    */
   static std::vector<Eigen::VectorXd> lhsSampleFeatureContinuousWithIteration(size_t n, Random &rng,
                                                                               const NumberSet<double> &cellSizeFactors,
