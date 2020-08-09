@@ -111,6 +111,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _currentIteration(0),
         _iterationScale(1. / (maxEvidence * iterationScalePerMaxEvidence)),
         _currentNumEvidence(0),
+        _currentOptimalTime(std::numeric_limits<long>::max()),
         _fullSearch(allowedContainerOptions, allowedCellSizeFactors.uniformSampleSet(cellSizeFactorSampleSize, _rng),
                     allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
                     allowedNewton3Options) {
@@ -163,8 +164,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       _fullSearch.addEvidence(time, iteration);
     }
 
-    // store if first or better evidence
-    if (_currentNumEvidence == 0 or time < _currentOptimalTime) {
+    // store optimal evidence
+    if (time < _currentOptimalTime) {
       _currentOptimalTime = time;
       _currentOptimalConfig = _currentConfig;
     }
@@ -188,6 +189,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
     _currentIteration = iteration;
     _currentNumEvidence = 0;
+    _currentOptimalTime = std::numeric_limits<long>::max();
     _currentAcquisitions.clear();
 
     if (_firstTuningPhase) {
@@ -286,12 +288,15 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
 
   // in the first tuning phase do a full search
   if (_firstTuningPhase) {
-    bool tuning = _fullSearch.tune(currentInvalid);
-    _currentConfig = _fullSearch.getCurrentConfiguration();
-    if (not tuning) {
+    if (_fullSearch.tune(currentInvalid)) {
+      // continue with full-search
+      _currentConfig = _fullSearch.getCurrentConfiguration();
+      return true;
+    } else {
+      // continue with GaussianCluster
       _firstTuningPhase = false;
+      _currentNumEvidence = 0;
     }
-    return tuning;
   }
 
   if (searchSpaceIsEmpty()) {
