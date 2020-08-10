@@ -42,7 +42,7 @@ class DirectSumTraversal : public CellPairTraversal<ParticleCell>, public Direct
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::directSumTraversal; }
 
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
     cudaGetDeviceCount(&nDevices);

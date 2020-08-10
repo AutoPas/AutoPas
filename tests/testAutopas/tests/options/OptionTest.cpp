@@ -46,6 +46,8 @@ TEST(OptionTest, parseTraversalOptionsTest) {
       {autopas::TraversalOption::BalancedSliced, "balancedsliced"},
       {autopas::TraversalOption::BalancedSlicedVerlet, "balancedsliced-verlet"},
       {autopas::TraversalOption::c04HCP, "c04HCP"},
+      {autopas::TraversalOption::cSliced, "coloured-sliced"},
+      {autopas::TraversalOption::cSlicedVerlet, "coloured-sliced-verlet"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TraversalOption::getOptionNames().size());

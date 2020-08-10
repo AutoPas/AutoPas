@@ -42,6 +42,8 @@ class TraversalOption : public Option<TraversalOption> {
     BalancedSliced = 18,
     BalancedSlicedVerlet = 19,
     c04HCP = 20,
+    cSliced = 21,
+    cSlicedVerlet = 22,
   };
 
   /**
@@ -94,6 +96,8 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::BalancedSliced, "balanced-sliced"},
         {TraversalOption::BalancedSlicedVerlet, "balanced-sliced-verlet"},
         {TraversalOption::c04HCP, "c04HCP"},
+        {TraversalOption::cSliced, "colored-sliced"},
+        {TraversalOption::cSlicedVerlet, "colored-sliced-verlet"},
     };
   };
 

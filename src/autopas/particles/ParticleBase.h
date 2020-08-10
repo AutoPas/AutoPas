@@ -11,10 +11,13 @@
 #include <sstream>
 #include <tuple>
 
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/CudaSoAType.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -28,7 +31,7 @@ namespace autopas {
 template <typename floatType, typename idType>
 class ParticleBase {
  public:
-  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0), _isOwned{true} {}
+  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
 
   /**
    * Constructor of the Particle class.
@@ -37,7 +40,7 @@ class ParticleBase {
    * @param id Id of the particle.
    */
   ParticleBase(std::array<double, 3> r, std::array<double, 3> v, idType id)
-      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id), _isOwned{true} {}
+      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
 
   /**
    * Destructor of ParticleBase class
@@ -142,11 +145,13 @@ class ParticleBase {
     text << "Particle"
          << "\nID      : " << _id
          << "\nPosition: "
-         << _r[0] << " | " << _r[1] << " | " << _r[2]
+         << utils::ArrayUtils::to_string(_r)
          << "\nVelocity: "
-         << _v[0] << " | " << _v[1] << " | " << _v[2]
+         << utils::ArrayUtils::to_string(_v)
          << "\nForce   : "
-         << _f[0] << " | " << _f[1] << " | " << _f[2];
+         << utils::ArrayUtils::to_string(_f)
+         << "\nOwnershipState : "
+         << _ownershipState;
     // clang-format on
     return text.str();
   }
@@ -155,18 +160,31 @@ class ParticleBase {
    * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is owned by the current AutoPas object, false otherwise
    */
-  bool isOwned() const { return _isOwned; }
+  bool isOwned() const { return _ownershipState == OwnershipState::owned; }
 
   /**
-   * Set the owned state to the given value
-   * @param owned
+   * Defines whether the particle is a halo particle, i.e., not owned by the current AutoPas object (aka (MPI-)process)
+   * @return true if the particle is not owned by the current AutoPas object, false otherwise.
+   * @note when a
    */
-  void setOwned(bool owned) { _isOwned = owned; }
+  bool isHalo() const { return _ownershipState == OwnershipState::halo; }
+
+  /**
+   * Returns whether the particle is a dummy particle.
+   * @return true if the particle is a dummy.
+   */
+  bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
+
+  /**
+   * Set the OwnershipState to the given value
+   * @param ownershipState
+   */
+  void setOwnershipState(OwnershipState ownershipState) { _ownershipState = ownershipState; }
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, owned };
+  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
 
   /**
    * Floating Point Type used for this particle
@@ -182,8 +200,9 @@ class ParticleBase {
    * The type for the soa storage.
    * owned is currently used as a floatType to ease calculations within the functors.
    */
-  using SoAArraysType = typename autopas::utils::SoAType<idType, floatType, floatType, floatType, floatType, floatType,
-                                                         floatType, floatType>::Type;
+  using SoAArraysType = typename autopas::utils::SoAType<idType /*id*/, floatType /*x*/, floatType /*y*/,
+                                                         floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
+                                                         floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
@@ -193,26 +212,24 @@ class ParticleBase {
    */
   template <AttributeNames attribute>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
-    switch (attribute) {
-      case AttributeNames::id:
-        return getID();
-      case AttributeNames::posX:
-        return getR()[0];
-      case AttributeNames::posY:
-        return getR()[1];
-      case AttributeNames::posZ:
-        return getR()[2];
-      case AttributeNames::forceX:
-        return getF()[0];
-      case AttributeNames::forceY:
-        return getF()[1];
-      case AttributeNames::forceZ:
-        return getF()[2];
-      case AttributeNames::owned:
-        return isOwned() ? 1. : 0.;
-      default:
-        utils::ExceptionHandler::exception("ParticleBase::get: unknown attribute");
-        return 0;
+    if constexpr (attribute == AttributeNames::id) {
+      return getID();
+    } else if constexpr (attribute == AttributeNames::posX) {
+      return getR()[0];
+    } else if constexpr (attribute == AttributeNames::posY) {
+      return getR()[1];
+    } else if constexpr (attribute == AttributeNames::posZ) {
+      return getR()[2];
+    } else if constexpr (attribute == AttributeNames::forceX) {
+      return getF()[0];
+    } else if constexpr (attribute == AttributeNames::forceY) {
+      return getF()[1];
+    } else if constexpr (attribute == AttributeNames::forceZ) {
+      return getF()[2];
+    } else if constexpr (attribute == AttributeNames::ownershipState) {
+      return this->_ownershipState;
+    } else {
+      utils::ExceptionHandler::exception("ParticleBase::get() unknown attribute {}", attribute);
     }
   }
 
@@ -224,31 +241,24 @@ class ParticleBase {
    */
   template <AttributeNames attribute>
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
-    switch (attribute) {
-      case AttributeNames::id:
-        setID(value);
-        break;
-      case AttributeNames::posX:
-        _r[0] = value;
-        break;
-      case AttributeNames::posY:
-        _r[1] = value;
-        break;
-      case AttributeNames::posZ:
-        _r[2] = value;
-        break;
-      case AttributeNames::forceX:
-        _f[0] = value;
-        break;
-      case AttributeNames::forceY:
-        _f[1] = value;
-        break;
-      case AttributeNames::forceZ:
-        _f[2] = value;
-        break;
-      case AttributeNames::owned:
-        setOwned(value == 1.);
-        break;
+    if constexpr (attribute == AttributeNames::id) {
+      setID(value);
+    } else if constexpr (attribute == AttributeNames::posX) {
+      _r[0] = value;
+    } else if constexpr (attribute == AttributeNames::posY) {
+      _r[1] = value;
+    } else if constexpr (attribute == AttributeNames::posZ) {
+      _r[2] = value;
+    } else if constexpr (attribute == AttributeNames::forceX) {
+      _f[0] = value;
+    } else if constexpr (attribute == AttributeNames::forceY) {
+      _f[1] = value;
+    } else if constexpr (attribute == AttributeNames::forceZ) {
+      _f[2] = value;
+    } else if constexpr (attribute == AttributeNames::ownershipState) {
+      this->_ownershipState = value;
+    } else {
+      utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
     }
   }
 
@@ -256,8 +266,10 @@ class ParticleBase {
   /**
    * The type for storage arrays for Cuda.
    */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<idType, floatType, floatType, floatType, floatType,
-                                                                    floatType, floatType, floatType>::Type;
+  using CudaDeviceArraysType =
+      typename autopas::utils::CudaSoAType<idType /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
+                                           floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
+                                           OwnershipState /*ownershipState*/>::Type;
 #else
   /**
    * The type for storage arrays for Cuda.
@@ -266,28 +278,49 @@ class ParticleBase {
   using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
 #endif
 
+ private:
+  /**
+   * Marks a particle as deleted.
+   * @note: This function should not be used from outside of AutoPas. Instead, use AutoPas::deleteParticle(iterator).
+   * @note: From within autopas, you might want to use internal::markParticleAsDeleted(Particle &particle)
+   */
+  void markAsDeleted() {
+    // Set ownership as dummy.
+    setOwnershipState(OwnershipState::dummy);
+  }
+
+  /**
+   * Function to access hidden particle.markAsDeleted() to mark it as internal.
+   * @tparam ParticleIterator
+   */
+  template <class T>
+  friend void internal::markParticleAsDeleted(T &);
+
  protected:
   /**
    * Particle position as 3D coordinates.
    */
   std::array<double, 3> _r;
+
   /**
    * Particle velocity as 3D vector.
    */
   std::array<double, 3> _v;
+
   /**
    * Force the particle experiences as 3D vector.
    */
   std::array<double, 3> _f;
+
   /**
    * Particle id.
    */
   idType _id;
 
   /**
-   * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
+   * Defines the state of the ownership of the particle.
    */
-  bool _isOwned;
+  OwnershipState _ownershipState{OwnershipState::owned};
 };
 
 }  // namespace autopas
