@@ -16,7 +16,6 @@ for arg in sys.argv[1:]:
         print("Output options:\n "
               " prediction  - Shows the predictions for every configuration\n "
               " test        - Shows the tests for every configuration\n "
-              " both	     - Shows predictions and tests for every configuration"
               "Flags:\n "
               " --png --jpeg --pdf - Plot is generated in the given file format")
         print("If no input is given the script does not work.")
@@ -30,15 +29,15 @@ for arg in sys.argv[1:]:
         flag = "pdf"
 
 # take all input files as source for a plot
-if flag is not "none" and len(sys.argv) > 3:
+if flag != "none" and len(sys.argv) > 3:
     option = sys.argv[1]
-    if option != "prediction" and option != "test" and option != "both" and sys.argv[2] != "--" + flag:
+    if option != "prediction" and option != "test" and sys.argv[2] != "--" + flag:
         print("Error: Wrong input given! ./plotDiffPredictionTest.py --help to see what is needed.")
         sys.exit(-1)
     datafiles = sys.argv[3:]
-elif len(sys.argv) > 2:
+elif len(sys.argv) > 2 and flag == "none":
     option = sys.argv[1]
-    if option != "prediction" and option != "test" and option != "both":
+    if option != "prediction" and option != "test":
         print("Error: Wrong input given! ./plotPrediction.py --help to see what is needed.")
         sys.exit(-1)
     datafiles = sys.argv[2:]
@@ -92,16 +91,46 @@ for datafile in datafiles:
             showlegend=True,
             title_text=datafile,
             xaxis_title_text="Iteration",
-            yaxis_title_text="Predicted time per Iteration",
+            yaxis_title_text=option+"ed time per iteration",
         ),
     )
 
+    colors = {
+        "DirectSum": '#808000',  # olive
+        "LinkedCells": '#FF0000',  # red
+        "VerletLists": '#008000',  # green
+        "VerletListsCells": '#0000FF',  # blue
+        "VerletClusterLists": '#4B0082',  # indigo
+        "VarVerletListsAsBuild": '#FFA500',  # orange
+        "VerletClusterCells": "#90EE90"  # lightgreen
+    }
+
+    shown = {
+        "DirectSum": False,
+        "LinkedCells": False,
+        "VerletLists": False,
+        "VerletListsCells": False,
+        "VerletClusterLists": False,
+        "VarVerletListsAsBuild": False,
+        "VerletClusterCells": False
+    }
+
     # plotting predictions
     configurations = configurationPrediction
-    if "test" == option or "both" == option:
+    if "test" == option:
         configurations = configurationTest
+    i = 1
     for configuration in configurations:
-        if "prediction" == option or "both" == option:
+        regexContainer = '.*Container: +(.*) , Cell.*'
+        regexTraversal = '.*Traversal: +(.*) , Load.*'
+        regexDataLayout = '.*Data Layout: +(.*) , Newton.*'
+        regexNewton3 = '.*Newton 3: +(.*)}.*'
+
+        container = ""
+        if (match := re.search(regexContainer, configuration)) is not None:
+            container = match.group(1)
+
+        if "prediction" == option:
             allPrediction = []
             allIteration = []
 
@@ -109,23 +138,37 @@ for datafile in datafiles:
                 allIteration.append(iteration)
                 allPrediction.append(prediction)
 
-        fig.add_trace(go.Scatter(x=allIteration, y=allPrediction, mode='lines+markers', name="Predictions - " +
-                                                                                             configuration))
+            if not shown[container]:
+                fig.add_trace(
+                    go.Scatter(x=allIteration, y=allPrediction, mode='lines+markers', legendgroup=container,
+                               line=dict(color=colors[container]),
+                               name=container))
+                shown[container] = True
+            else:
+                fig.add_trace(
+                    go.Scatter(x=allIteration, y=allPrediction, mode='lines+markers', legendgroup=container,
+                               line=dict(color=colors[container]), name=container, showlegend=False))
 
-        if "test" == option or "both" == option:
+        if "test" == option:
             allTest = []
             allIteration = []
             for iteration, test in configurationTest[configuration]:
                 allIteration.append(iteration)
                 allTest.append(test)
 
-            fig.add_trace(go.Scatter(x=allIteration, y=allTest, mode='markers', name="Evidence - " + configuration))
+            if not shown[container]:
+                fig.add_trace(go.Scatter(x=allIteration, y=allTest, mode='markers', legendgroup=container,
+                                         line=dict(color=colors[container]),
+                                         name=container))
+                shown[container] = True
+            else:
+                fig.add_trace(go.Scatter(x=allIteration, y=allTest, mode='markers', legendgroup=container,
+                                         line=dict(color=colors[container]),
+                                         name=container, showlegend=False))
 
+        i = i + 1
 
-    if not os.path.exists("images"):
-        os.mkdir("images")
-
-    if flag is "none":
+    if flag == "none":
         fig.show()
     else:
         if not os.path.exists("images"):
