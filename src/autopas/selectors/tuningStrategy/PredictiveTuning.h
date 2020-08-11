@@ -640,8 +640,8 @@ void PredictiveTuning::selectOptimalConfiguration() {
 
 void PredictiveTuning::blacklistBadConfigurations() {
   auto optimumTime = static_cast<double>(_traversalTimesStorage[getCurrentConfiguration()].back().second);
-
-  for (auto configurationIter = _notTestedYet.begin(); configurationIter != _notTestedYet.end(); configurationIter++) {
+  auto configurationIter = _notTestedYet.begin();
+  while (configurationIter != _notTestedYet.end()) {
     if (_lastTest[*configurationIter] == _tuningPhaseCounter) {
       if (_traversalTimesStorage[*configurationIter].back().second / optimumTime > _relativeRangeForBlacklist) {
         _searchSpace.erase(*configurationIter);
@@ -649,7 +649,8 @@ void PredictiveTuning::blacklistBadConfigurations() {
         _lastTest.erase(*configurationIter);
       }
       configurationIter = _notTestedYet.erase(configurationIter);
-      configurationIter--;
+    } else {
+      configurationIter++;
     }
   }
 }
