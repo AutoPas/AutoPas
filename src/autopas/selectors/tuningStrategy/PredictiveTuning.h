@@ -644,14 +644,12 @@ void PredictiveTuning::blacklistBadConfigurations() {
   for (auto configurationIter = _notTestedYet.begin(); configurationIter != _notTestedYet.end(); configurationIter++) {
     if (_lastTest[*configurationIter] == _tuningPhaseCounter) {
       if (_traversalTimesStorage[*configurationIter].back().second / optimumTime > _relativeRangeForBlacklist) {
-        _searchSpace.extract(*configurationIter);
-        _traversalTimesStorage.extract(*configurationIter);
-        _lastTest.extract(*configurationIter);
+        _searchSpace.erase(*configurationIter);
+        _traversalTimesStorage.erase(*configurationIter);
+        _lastTest.erase(*configurationIter);
       }
       configurationIter = _notTestedYet.erase(configurationIter);
-      if (configurationIter == _notTestedYet.end()) {
-        return;
-      }
+      configurationIter--;
     }
   }
 }
