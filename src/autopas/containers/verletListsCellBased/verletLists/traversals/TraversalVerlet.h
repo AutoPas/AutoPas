@@ -79,24 +79,24 @@ class TraversalVerlet
           size_t buckets = aosNeighborLists.bucket_count();
           /// @todo find a sensible chunk size
 #pragma omp parallel for schedule(dynamic)
-          for (size_t b = 0; b < buckets; b++) {
-            auto endIter = aosNeighborLists.end(b);
-            for (auto it = aosNeighborLists.begin(b); it != endIter; ++it) {
-              Particle &i = *(it->first);
-              for (auto j_ptr : it->second) {
-                Particle &j = *j_ptr;
-                _functor->AoSFunctor(i, j, false);
+          for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
+            auto endIter = aosNeighborLists.end(bucketId);
+            for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
+              Particle &particle = *(bucketIter->first);
+              for (auto neighborPtr : bucketIter->second) {
+                Particle &neighbor = *neighborPtr;
+                _functor->AoSFunctor(particle, neighbor, false);
               }
             }
           }
         } else
 #endif
         {
-          for (auto &list : aosNeighborLists) {
-            Particle &i = *list.first;
-            for (auto j_ptr : list.second) {
-              Particle &j = *j_ptr;
-              _functor->AoSFunctor(i, j, useNewton3);
+          for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
+            Particle &particle = *particlePtr;
+            for (auto neighborPtr : neighborPtrList) {
+              Particle &neighbor = *neighborPtr;
+              _functor->AoSFunctor(particle, neighbor, useNewton3);
             }
           }
         }
@@ -109,15 +109,15 @@ class TraversalVerlet
           /// @todo find a sensible chunk size
           const size_t chunkSize = std::max(soaNeighborLists.size() / (omp_get_max_threads() * 10), 1ul);
 #pragma omp parallel for schedule(dynamic, chunkSize)
-          for (size_t i = 0; i < soaNeighborLists.size(); i++) {
-            _functor->SoAFunctorVerlet(_soa, i, soaNeighborLists[i], useNewton3);
+          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+            _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], useNewton3);
           }
         } else
 #endif
         {
           // iterate over SoA
-          for (size_t i = 0; i < soaNeighborLists.size(); i++) {
-            _functor->SoAFunctorVerlet(_soa, i, soaNeighborLists[i], useNewton3);
+          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+            _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], useNewton3);
           }
         }
         return;
@@ -135,7 +135,7 @@ class TraversalVerlet
   PairwiseFunctor *_functor;
 
   /**
-   *global SoA of verlet lists
+   * SoA buffer of verlet lists.
    */
   SoA<typename Particle::SoAArraysType> _soa;
 };

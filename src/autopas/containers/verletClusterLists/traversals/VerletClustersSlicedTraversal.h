@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/SlicedBasedTraversal.h"
+#include "autopas/containers/cellPairTraversals/LockedSlicedBasedTraversal.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/ClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
@@ -25,7 +25,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VerletClustersSlicedTraversal
-    : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+    : public LockedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
       public VerletClustersTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
@@ -57,8 +57,8 @@ class VerletClustersSlicedTraversal
   explicit VerletClustersSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                          const double interactionLength, const std::array<double, 3> &cellLength,
                                          size_t clusterSize)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                    interactionLength, cellLength),
+      : LockedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize) {}
 

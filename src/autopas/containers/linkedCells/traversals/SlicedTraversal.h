@@ -10,7 +10,7 @@
 #include <algorithm>
 
 #include "LinkedCellTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/SlicedBasedTraversal.h"
+#include "autopas/containers/cellPairTraversals/LockedSlicedBasedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/C08CellHandler.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -19,7 +19,7 @@
 namespace autopas {
 
 /**
- * This class provides the sliced traversal.
+ * This class provides the (locked) sliced traversal.
  *
  * The traversal finds the longest dimension of the simulation domain and cuts
  * the domain into multiple slices along this dimension. Slices are
@@ -33,7 +33,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+class SlicedTraversal : public LockedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                         public LinkedCellTraversalInterface<ParticleCell> {
  public:
   /**
@@ -46,8 +46,8 @@ class SlicedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFuncto
    */
   explicit SlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                            const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                    interactionLength, cellLength),
+      : LockedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 
   void traverseParticlePairs() override;

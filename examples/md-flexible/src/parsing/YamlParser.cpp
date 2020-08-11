@@ -100,6 +100,17 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.maxTuningPhasesWithoutTest.name]) {
     config.maxTuningPhasesWithoutTest.value = node[config.maxTuningPhasesWithoutTest.name].as<unsigned int>();
   }
+  if (node[config.evidenceFirstPrediction.name]) {
+    config.evidenceFirstPrediction.value = node[config.evidenceFirstPrediction.name].as<unsigned int>();
+  }
+  if (node[config.extrapolationMethodOption.name]) {
+    auto parsedOptions =
+        autopas::ExtrapolationMethodOption::parseOptions(node[config.extrapolationMethodOption.name].as<std::string>());
+    if (parsedOptions.size() != 1) {
+      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one extrapolation method option!");
+    }
+    config.extrapolationMethodOption.value = *parsedOptions.begin();
+  }
   if (node[config.tuningStrategyOption.name]) {
     auto parsedOptions =
         autopas::TuningStrategyOption::parseOptions(node[config.tuningStrategyOption.name].as<std::string>());
@@ -118,7 +129,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   }
   if (node[config.logLevel.name]) {
     auto strArg = node[config.logLevel.name].as<std::string>();
-    switch (strArg[0]) {
+    switch (std::tolower(strArg[0])) {
       case 't': {
         config.logLevel.value = autopas::Logger::LogLevel::trace;
         break;
