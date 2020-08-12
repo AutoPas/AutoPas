@@ -83,7 +83,7 @@ void Generator::cubeGauss(autopas::AutoPas<Particle> &autopas, const CubeGauss &
   dummyParticle.setTypeId(object.getTypeId());
   autopasTools::generators::GaussianGenerator::fillWithParticles(
       autopas, object.getBoxMin(), object.getBoxMax(), object.getParticlesTotal(), dummyParticle,
-      object.getDistributionMean(), object.getDistributionMean());
+      object.getDistributionMean(), object.getDistributionStdDev());
 }
 
 template <class Particle>

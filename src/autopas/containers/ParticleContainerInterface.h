@@ -18,6 +18,7 @@
 #include "autopas/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/cells/ParticleCell.h"
 
 namespace autopas {
 /**

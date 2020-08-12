@@ -13,12 +13,11 @@ namespace autopas {
 
 /**
  * Variable Verlet Lists container with different neighbor lists.
-
  * @tparam Particle The particle type this container contains.
  * @tparam NeighborList The Neighbor List this Verlet Container uses.
  */
 template <class Particle, class NeighborList>
-class VarVerletLists : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::SoAArraysType> {
+class VarVerletLists : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType> {
   using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:
@@ -33,7 +32,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle, typename VerletLis
    */
   VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                  const double skin, const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::SoAArraysType>(
+      : VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType>(
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
         _neighborList{} {}
 
@@ -64,7 +63,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle, typename VerletLis
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
-    _neighborList.buildNeighborList(this->_linkedCells, traversal->getUseNewton3());
+    _neighborList.buildAoSNeighborList(this->_linkedCells, traversal->getUseNewton3());
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
 

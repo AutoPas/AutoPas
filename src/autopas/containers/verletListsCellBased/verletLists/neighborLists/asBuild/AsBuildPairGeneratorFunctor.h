@@ -25,7 +25,7 @@ namespace internal {
  */
 template <class Particle, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
-    : public autopas::Functor<Particle, typename VerletListHelpers<Particle>::SoAArraysType> {
+    : public autopas::Functor<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType> {
   /// using declaration for soa's of verlet list's linked cells (only id and position needs to be stored)
   using SoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
 
@@ -46,7 +46,7 @@ class AsBuildPairGeneratorFunctor
    * @param cutoffskin The cutoff skin to use.
    */
   AsBuildPairGeneratorFunctor(VerletNeighborListAsBuild<Particle> &neighborList, double cutoffskin)
-      : autopas::Functor<Particle, typename VerletListHelpers<Particle>::SoAArraysType>(cutoffskin),
+      : autopas::Functor<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType>(cutoffskin),
         _list(neighborList),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
@@ -144,43 +144,6 @@ class AsBuildPairGeneratorFunctor
       }
     }
   }
-
-  /**
-   * Loads all particles of the cell into the SoA.
-   * @param cell
-   * @param soa
-   * @param offset
-   */
-  //  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) override {
-  //    if (offset != 0ul) {
-  //      utils::ExceptionHandler::exception("offset must be 0, is: {}", offset);
-  //    }
-  //    soa.resizeArrays(cell.numParticles());
-  //
-  //    if (cell.numParticles() == 0) return;
-  //
-  //    auto *const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
-  //    double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
-  //    double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
-  //    double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
-  //
-  //    auto cellIter = cell.begin();
-  //    // load particles in SoAs.
-  //    for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
-  //      Particle *pptr = &(*cellIter);
-  //      ptrptr[i] = pptr;
-  //      xptr[i] = cellIter->getR()[0];
-  //      yptr[i] = cellIter->getR()[1];
-  //      zptr[i] = cellIter->getR()[2];
-  //    }
-  //  }
-
-  /**
-   * Does nothing
-   * @param cell
-   * @param soa
-   */
-  //  void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t /*offset*/) override {}
 
  private:
   /**

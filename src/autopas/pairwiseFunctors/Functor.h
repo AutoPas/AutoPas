@@ -312,7 +312,8 @@ class Functor {
   virtual CudaWrapperInterface<typename Particle::ParticleSoAFloatPrecision> *getCudaWrapper() { return nullptr; }
 
   /**
-   * Creates Cuda SoA object containing all the relevant pointers from the generic Cuda SoA
+   * Creates a Cuda SoA object containing all the relevant pointers from the generic Cuda SoA
+   * @param device_handle
    * @return unique pointer to the object
    */
   virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleSoAFloatPrecision>> createFunctorCudaSoA(

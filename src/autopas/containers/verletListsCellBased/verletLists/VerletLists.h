@@ -31,9 +31,8 @@ namespace autopas {
  * implemented somehow
  */
 template <class Particle>
-class VerletLists : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::SoAArraysType> {
+class VerletLists : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType> {
   using verlet_internal = VerletListHelpers<Particle>;
-  // using SoAArraysType = typename VerletListHelpers<Particle>::SoAArraysType;
   using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
  public:
@@ -58,7 +57,7 @@ class VerletLists : public VerletListsLinkedBase<Particle, typename VerletListHe
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::SoAArraysType>(
+      : VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType>(
             boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
@@ -88,7 +87,7 @@ class VerletLists : public VerletListsLinkedBase<Particle, typename VerletListHe
    * get the actual neighbour list
    * @return the neighbour list
    */
-  typename verlet_internal::AoS_verletlist_storage_type &getVerletListsAoS() { return _aosNeighborLists; }
+  typename VerletListHelpers<Particle>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
@@ -113,27 +112,30 @@ class VerletLists : public VerletListsLinkedBase<Particle, typename VerletListHe
    * @param useNewton3
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
-    updateIdMapAoS();
-    typename verlet_internal::VerletListGeneratorFunctor f(_aosNeighborLists, this->getCutoff() + this->getSkin());
+    generateAoSNeighborLists();
+    typename VerletListHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborLists,
+                                                                       this->getCutoff() + this->getSkin());
 
     /// @todo autotune traversal
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS: {
         utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::aos, theBool>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength());
+          auto traversal =
+              C08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
+                           DataLayoutOption::aos, theBool>(
+                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+                  this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&traversal);
         });
         break;
       }
       case BuildVerletListType::VerletSoA: {
         utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal = C08Traversal<LinkedParticleCell, typename verlet_internal::VerletListGeneratorFunctor,
-                                        DataLayoutOption::soa, theBool>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength());
+          auto traversal =
+              C08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
+                           DataLayoutOption::soa, theBool>(
+                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+                  this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&traversal);
         });
         break;
@@ -148,53 +150,54 @@ class VerletLists : public VerletListsLinkedBase<Particle, typename VerletListHe
   }
 
   /**
-   * update the AoS id maps.
-   * The Id Map is used to map the id of a particle to the actual particle
-   * @return
+   * Clears and then generates the AoS neighbor lists.
+   * The Id Map is used to map the id of a particle to the actual particle.
+   * @return Number of particles in the container
    */
-  size_t updateIdMapAoS() {
-    size_t i = 0;
+  size_t generateAoSNeighborLists() {
+    size_t numParticles = 0;
     _aosNeighborLists.clear();
     // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
     // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
-    for (auto iter = this->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++i) {
+    for (auto iter = this->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++numParticles) {
       // create the verlet list entries for all particles
       _aosNeighborLists[&(*iter)];
     }
 
-    return i;
+    return numParticles;
   }
 
   /**
-   * Converts the verlet list stored for AoS usage into one for SoA usage
+   * Fills SoA neighbor list with particle indices.
    */
   void generateSoAListFromAoSVerletLists() {
     // resize the list to the size of the aos neighborlist
     _soaNeighborLists.resize(_aosNeighborLists.size());
     // clear the aos 2 soa map
-    _aos2soaMap.clear();
+    _particlePtr2indexMap.clear();
 
-    _aos2soaMap.reserve(_aosNeighborLists.size());
-    size_t i = 0;
+    _particlePtr2indexMap.reserve(_aosNeighborLists.size());
+    size_t index = 0;
 
     // Here we have to iterate over all particles, as particles might be later on marked for deletion, and we cannot
     // differentiate them from particles already marked for deletion.
-    for (auto iter = this->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++i) {
+    for (auto iter = this->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++index) {
       // set the map
-      _aos2soaMap[&(*iter)] = i;
+      _particlePtr2indexMap[&(*iter)] = index;
     }
     size_t accumulatedListSize = 0;
-    for (auto &aosList : _aosNeighborLists) {
-      accumulatedListSize += aosList.second.size();
-      size_t i_id = _aos2soaMap[aosList.first];
+    for (auto &[particlePtr, neighborPtrVector] : _aosNeighborLists) {
+      accumulatedListSize += neighborPtrVector.size();
+      size_t i_id = _particlePtr2indexMap[particlePtr];
       // each soa neighbor list should be of the same size as for aos
-      _soaNeighborLists[i_id].resize(aosList.second.size());
+      _soaNeighborLists[i_id].resize(neighborPtrVector.size());
       size_t j = 0;
-      for (auto neighbor : aosList.second) {
-        _soaNeighborLists[i_id][j] = _aos2soaMap.at(neighbor);
+      for (auto &neighborPtr : neighborPtrVector) {
+        _soaNeighborLists[i_id][j] = _particlePtr2indexMap[neighborPtr];
         j++;
       }
     }
+
     AutoPasLog(debug,
                "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
                "size is {}",
@@ -203,20 +206,31 @@ class VerletLists : public VerletListsLinkedBase<Particle, typename VerletListHe
   }
 
  private:
-  /// verlet lists.
-  typename verlet_internal::AoS_verletlist_storage_type _aosNeighborLists;
+  /**
+   * Neighbor Lists: Map of particle pointers to vector of particle pointers.
+   */
+  typename VerletListHelpers<Particle>::NeighborListAoSType _aosNeighborLists;
 
-  /// map converting from the aos type index (Particle *) to the soa type index
-  /// (continuous, size_t)
-  std::unordered_map<Particle *, size_t> _aos2soaMap;
+  /**
+   * Mapping of every particle, represented by its pointer, to an index.
+   * The index indexes all particles in the container.
+   */
+  std::unordered_map<Particle *, size_t> _particlePtr2indexMap;
 
-  /// verlet list for SoA:
+  /**
+   * verlet list for SoA:
+   * For every Particle, identified via the _particlePtr2indexMap, a vector of its neighbor indices is stored.
+   */
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> _soaNeighborLists;
 
-  // specifies if the SoA neighbor list is currently valid
+  /**
+   * Shows if the SoA neighbor list is currently valid.
+   */
   bool _soaListIsValid;
 
-  /// specifies how the verlet lists are build
+  /**
+   * Specifies for what data layout the verlet lists are build.
+   */
   BuildVerletListType _buildVerletListType;
 };
 

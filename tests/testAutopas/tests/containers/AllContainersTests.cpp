@@ -132,7 +132,7 @@ void AllContainersTests::testUpdateContainerDeletesDummy(bool previouslyOwned) {
   {
     auto iter = container->begin();
     ASSERT_TRUE(iter.isValid());
-    iter->markAsDeleted();
+    autopas::internal::markParticleAsDeleted(*iter);
   }
   // Check that we do not iterate over it.
   {

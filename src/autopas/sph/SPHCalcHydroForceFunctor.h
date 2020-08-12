@@ -9,8 +9,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/sph/SPHKernels.h"
 
-namespace autopas {
-namespace sph {
+namespace autopas::sph {
 /**
  * Class that defines the hydrodynamic force functor.
  * It is used to calculate the force based on the given SPH kernels.
@@ -34,7 +33,8 @@ class SPHCalcHydroForceFunctor
 
   bool allowsNonNewton3() override { return true; }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+  [[nodiscard]] bool isAppropriateClusterSize(unsigned int clusterSize,
+                                              DataLayoutOption::Value dataLayout) const override {
     return dataLayout == DataLayoutOption::aos;  // This functor does only support clusters via aos.
   }
 
@@ -136,7 +136,7 @@ class SPHCalcHydroForceFunctor
     const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     for (unsigned int indexFirst = 0; indexFirst < soa.getNumParticles(); ++indexFirst) {
-      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      // checks whether particle i is owned.
       if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
         continue;
       }
@@ -272,7 +272,7 @@ class SPHCalcHydroForceFunctor
     const auto *const __restrict__ ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
 
     for (unsigned int indexFirst = 0; indexFirst < soa1.getNumParticles(); ++indexFirst) {
-      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      // checks whether particle i is owned.
       if (ownedStatePtr1[indexFirst] == OwnershipState::dummy) {
         continue;
       }
@@ -376,7 +376,7 @@ class SPHCalcHydroForceFunctor
 
     const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
-    // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+    // checks whether particle i is owned.
     if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
       return;
     }
@@ -540,5 +540,4 @@ class SPHCalcHydroForceFunctor
   }
 };
 
-}  // namespace sph
-}  // namespace autopas
+}  // namespace autopas::sph

@@ -57,11 +57,6 @@ bool LJFunctorAVXTest::particleEqual(Particle &p1, Particle &p2) {
 
   double tolerance = 1e-8;
 
-  /*
-std::cout << "comparing:" << std::endl
-            << "P1: " << p1.toString() << std::endl
-            << "P2: " << p2.toString() << std::endl;
-*/
   EXPECT_NEAR(p1.getR()[0], p2.getR()[0], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[1], p2.getR()[1], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[2], p2.getR()[2], tolerance) << "for particle pair " << p1.getID();
@@ -100,10 +95,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
 
   if (doDeleteSomeParticles) {
     for (auto &particle : cell1AVX) {
-      if (particle.getID() == 3) particle.markAsDeleted();
+      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
     }
     for (auto &particle : cell2AVX) {
-      if (particle.getID() == 4) particle.markAsDeleted();
+      if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
     }
   }
 
@@ -169,7 +164,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
 
   if (doDeleteSomeParticles) {
     for (auto &particle : cellAVX) {
-      if (particle.getID() == 3) particle.markAsDeleted();
+      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
     }
   }
 

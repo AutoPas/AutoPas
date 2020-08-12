@@ -10,8 +10,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/sph/SPHKernels.h"
 
-namespace autopas {
-namespace sph {
+namespace autopas::sph {
 /**
  * Class that defines the density functor.
  * It is used to calculate the density based on the given SPH kernel.
@@ -33,7 +32,8 @@ class SPHCalcDensityFunctor
 
   bool allowsNonNewton3() override { return true; }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+  [[nodiscard]] bool isAppropriateClusterSize(unsigned int clusterSize,
+                                              DataLayoutOption::Value dataLayout) const override {
     return dataLayout == DataLayoutOption::aos;  // This functor does only support clusters via aos.
   }
 
@@ -93,7 +93,7 @@ class SPHCalcDensityFunctor
 
     size_t numParticles = soa.getNumParticles();
     for (unsigned int i = 0; i < numParticles; ++i) {
-      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      // checks whether particle i is owned.
       if (ownedStatePtr[i] == OwnershipState::dummy) {
         continue;
       }
@@ -156,7 +156,7 @@ class SPHCalcDensityFunctor
 
     size_t numParticlesi = soa1.getNumParticles();
     for (unsigned int i = 0; i < numParticlesi; ++i) {
-      // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+      // checks whether particle i is in the domain box, unused if calculateGlobals is false!
       if (ownedStatePtr1[i] == OwnershipState::dummy) {
         continue;
       }
@@ -206,7 +206,7 @@ class SPHCalcDensityFunctor
 
     const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
-    // checks whether particle 1 is in the domain box, unused if calculateGlobals is false!
+    // checks whether particle i is owned.
     if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
       return;
     }
@@ -278,5 +278,4 @@ class SPHCalcDensityFunctor
     return std::array<typename Particle::AttributeNames, 1>{Particle::AttributeNames::density};
   }
 };
-}  // namespace sph
-}  // namespace autopas
+}  // namespace autopas::sph

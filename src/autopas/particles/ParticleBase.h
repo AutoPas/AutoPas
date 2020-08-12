@@ -13,9 +13,11 @@
 
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/CudaSoAType.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -143,11 +145,13 @@ class ParticleBase {
     text << "Particle"
          << "\nID      : " << _id
          << "\nPosition: "
-         << _r[0] << " | " << _r[1] << " | " << _r[2]
+         << utils::ArrayUtils::to_string(_r)
          << "\nVelocity: "
-         << _v[0] << " | " << _v[1] << " | " << _v[2]
+         << utils::ArrayUtils::to_string(_v)
          << "\nForce   : "
-         << _f[0] << " | " << _f[1] << " | " << _f[2];
+         << utils::ArrayUtils::to_string(_f)
+         << "\nOwnershipState : "
+         << _ownershipState;
     // clang-format on
     return text.str();
   }
@@ -176,17 +180,6 @@ class ParticleBase {
    * @param ownershipState
    */
   void setOwnershipState(OwnershipState ownershipState) { _ownershipState = ownershipState; }
-
-  /**
-   * Marks a particle as deleted.
-   */
-  void markAsDeleted() {
-    // Set ownership as dummy.
-    _ownershipState = OwnershipState::dummy;
-    // Also mark position as very big, this prevents misuse in the force calculation.
-    //_r = {std::numeric_limits<floatType>::max(), std::numeric_limits<floatType>::max(),
-    //      std::numeric_limits<floatType>::max()};
-  }
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -273,8 +266,10 @@ class ParticleBase {
   /**
    * The type for storage arrays for Cuda.
    */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<idType, floatType, floatType, floatType, floatType,
-                                                                    floatType, floatType, floatType>::Type;
+  using CudaDeviceArraysType =
+      typename autopas::utils::CudaSoAType<idType /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
+                                           floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
+                                           OwnershipState /*ownershipState*/>::Type;
 #else
   /**
    * The type for storage arrays for Cuda.
@@ -282,6 +277,24 @@ class ParticleBase {
    */
   using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
 #endif
+
+ private:
+  /**
+   * Marks a particle as deleted.
+   * @note: This function should not be used from outside of AutoPas. Instead, use AutoPas::deleteParticle(iterator).
+   * @note: From within autopas, you might want to use internal::markParticleAsDeleted(Particle &particle)
+   */
+  void markAsDeleted() {
+    // Set ownership as dummy.
+    setOwnershipState(OwnershipState::dummy);
+  }
+
+  /**
+   * Function to access hidden particle.markAsDeleted() to mark it as internal.
+   * @tparam ParticleIterator
+   */
+  template <class T>
+  friend void internal::markParticleAsDeleted(T &);
 
  protected:
   /**

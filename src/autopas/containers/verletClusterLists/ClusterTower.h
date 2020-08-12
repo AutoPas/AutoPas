@@ -10,6 +10,7 @@
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/verletClusterLists/Cluster.h"
 #include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas::internal {
 
@@ -55,7 +56,7 @@ class ClusterTower : public ParticleCell<Particle> {
    *
    * @param particle The particle to add.
    */
-  void addParticle(const Particle &particle) override { _particles.addParticle(particle); }
+  void addParticle(const Particle &particle) override { _particlesStorage.addParticle(particle); }
 
   ParticleCellTypeEnum getParticleCellTypeAsEnum() override { return ClusterTowerEnum; }
 
@@ -64,7 +65,7 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   void clear() override {
     _clusters.clear();
-    _particles.clear();
+    _particlesStorage.clear();
     _numDummyParticles = 0;
   }
 
@@ -79,22 +80,22 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   size_t generateClusters() {
     if (getNumActualParticles() > 0) {
-      _particles.sortByDim(2);
+      _particlesStorage.sortByDim(2);
 
-      auto sizeLastCluster = (_particles.numParticles() % _clusterSize);
+      auto sizeLastCluster = (_particlesStorage.numParticles() % _clusterSize);
       _numDummyParticles = sizeLastCluster != 0 ? _clusterSize - sizeLastCluster : 0;
 
-      auto lastParticle = _particles[_particles.numParticles() - 1];
-      lastParticle.markAsDeleted();
+      auto lastParticle = _particlesStorage[_particlesStorage.numParticles() - 1];
+      markParticleAsDeleted(lastParticle);
       for (size_t i = 0; i < _numDummyParticles; i++) {
-        _particles.addParticle(lastParticle);
+        _particlesStorage.addParticle(lastParticle);
       }
 
-      // Mark start of the different clusters by adding pointers to the particle storage `_particles`.
-      size_t numClusters = _particles.numParticles() / _clusterSize;
+      // Mark start of the different clusters by adding pointers to _particlesStorage
+      size_t numClusters = _particlesStorage.numParticles() / _clusterSize;
       _clusters.reserve(numClusters);
       for (size_t index = 0; index < numClusters; index++) {
-        _clusters.emplace_back(&(_particles[_clusterSize * index]), _clusterSize);
+        _clusters.emplace_back(&(_particlesStorage[_clusterSize * index]), _clusterSize);
       }
     }
 
@@ -138,10 +139,10 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   template <class Functor>
   void loadSoA(Functor *functor) {
-    functor->SoALoader(_particles, _particles._particleSoABuffer, 0);
+    functor->SoALoader(_particlesStorage, _particlesStorage._particleSoABuffer, 0);
     for (size_t index = 0; index < getNumClusters(); index++) {
       auto &cluster = getCluster(index);
-      cluster.setSoAView({&(_particles._particleSoABuffer), index * _clusterSize, (index + 1) * _clusterSize});
+      cluster.setSoAView({&(_particlesStorage._particleSoABuffer), index * _clusterSize, (index + 1) * _clusterSize});
     }
   }
 
@@ -152,7 +153,7 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   template <class Functor>
   void extractSoA(Functor *functor) {
-    functor->SoAExtractor(_particles, _particles._particleSoABuffer, 0);
+    functor->SoAExtractor(_particlesStorage, _particlesStorage._particleSoABuffer, 0);
   }
 
   /**
@@ -162,12 +163,12 @@ class ClusterTower : public ParticleCell<Particle> {
    * @return
    */
   std::vector<Particle> &&collectAllActualParticles() {
-    if (not _particles._particles.empty()) {
+    if (not _particlesStorage._particles.empty()) {
       // Workaround to remove requirement of default constructible particles.
       // This function will always only shrink the array, particles are not actually inserted.
-      _particles._particles.resize(getNumActualParticles(), _particles._particles[0]);
+      _particlesStorage._particles.resize(getNumActualParticles(), _particlesStorage._particles[0]);
     }
-    return std::move(_particles._particles);
+    return std::move(_particlesStorage._particles);
   }
 
   /**
@@ -180,7 +181,7 @@ class ClusterTower : public ParticleCell<Particle> {
    * Returns the number of particles in the tower that are not dummies.
    * @return the number of particles in the tower that are not dummies.
    */
-  [[nodiscard]] size_t getNumActualParticles() const { return _particles.numParticles() - _numDummyParticles; }
+  [[nodiscard]] size_t getNumActualParticles() const { return _particlesStorage.numParticles() - _numDummyParticles; }
 
   /**
    * Returns the number of clusters in the tower.
@@ -234,14 +235,14 @@ class ClusterTower : public ParticleCell<Particle> {
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  Particle &at(size_t index) { return _particles._particles.at(index); }
+  Particle &at(size_t index) { return _particlesStorage._particles.at(index); }
 
   /**
    * Returns the const particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  const Particle &at(size_t index) const { return _particles._particles.at(index); }
+  const Particle &at(size_t index) const { return _particlesStorage._particles.at(index); }
 
   // Methods from here on: Only to comply with ParticleCell interface. SingleCellIterators work on ParticleCells, and
   // while those methods would not be needed, still complying to the whole interface should be helpful, if
@@ -250,7 +251,7 @@ class ClusterTower : public ParticleCell<Particle> {
   [[nodiscard]] bool isNotEmpty() const override { return getNumActualParticles() > 0; }
 
   void deleteDummyParticles() override {
-    _particles.deleteDummyParticles();
+    _particlesStorage.deleteDummyParticles();
     _numDummyParticles = 0;
   }
 
@@ -260,13 +261,13 @@ class ClusterTower : public ParticleCell<Particle> {
     /// particles. See also https://github.com/AutoPas/AutoPas/issues/435
 
     // swap particle that should be deleted to end of actual particles.
-    std::swap(_particles._particles[index], _particles._particles[getNumActualParticles() - 1]);
+    std::swap(_particlesStorage._particles[index], _particlesStorage._particles[getNumActualParticles() - 1]);
     if (getNumDummyParticles() != 0) {
       // swap particle that should be deleted (now at end of actual particles) with last dummy particle.
-      std::swap(_particles._particles[getNumActualParticles() - 1],
-                _particles._particles[_particles._particles.size() - 1]);
+      std::swap(_particlesStorage._particles[getNumActualParticles() - 1],
+                _particlesStorage._particles[_particlesStorage._particles.size() - 1]);
     }
-    _particles._particles.pop_back();
+    _particlesStorage._particles.pop_back();
 
     if (_particleDeletionObserver) {
       _particleDeletionObserver->notifyParticleDeleted();
@@ -303,7 +304,7 @@ class ClusterTower : public ParticleCell<Particle> {
   /**
    * The particle cell to store the particles and SoA for this tower.
    */
-  FullParticleCell<Particle> _particles;
+  FullParticleCell<Particle> _particlesStorage;
   /**
    * The number of dummy particles in this tower.
    */

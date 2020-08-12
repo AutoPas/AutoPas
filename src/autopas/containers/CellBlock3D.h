@@ -117,19 +117,17 @@ class CellBlock3D : public CellBorderAndFlagManager {
   /**
    * Get the lower and upper corner of the cell at the 1d index index1d
    * @param index1d the 1d index
-   * @param boxmin the lower corner (out)
-   * @param boxmax the upper corner (out)
+   * @return std::pair of boxmin (lower corner) and boxmax (upper corner) of the box.
    */
-  void getCellBoundingBox(index_t index1d, std::array<double, 3> &boxmin, std::array<double, 3> &boxmax) const;
+  std::pair<std::array<double, 3>, std::array<double, 3>> getCellBoundingBox(index_t index1d) const;
 
   /**
    * Get the lower and upper corner of the cell at the 3d index index3d
    * @param index3d the 3d index
-   * @param boxmin the lower corner (out)
-   * @param boxmax the upper corner (out)
+   * @return std::pair of boxmin (lower corner) and boxmax (upper corner) of the box.
    */
-  void getCellBoundingBox(const std::array<index_t, 3> &index3d, std::array<double, 3> &boxmin,
-                          std::array<double, 3> &boxmax) const;
+  std::pair<std::array<double, 3>, std::array<double, 3>> getCellBoundingBox(
+      const std::array<index_t, 3> &index3d) const;
 
   /**
    * get the 3d index of the cellblock for a given position
@@ -349,15 +347,15 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
 }
 
 template <class ParticleCell>
-inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const index_t index1d, std::array<double, 3> &boxmin,
-                                                          std::array<double, 3> &boxmax) const {
-  this->getCellBoundingBox(this->index3D(index1d), boxmin, boxmax);
+inline std::pair<std::array<double, 3>, std::array<double, 3>> CellBlock3D<ParticleCell>::getCellBoundingBox(
+    const index_t index1d) const {
+  return this->getCellBoundingBox(this->index3D(index1d));
 }
 
 template <class ParticleCell>
-inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const std::array<index_t, 3> &index3d,
-                                                          std::array<double, 3> &boxmin,
-                                                          std::array<double, 3> &boxmax) const {
+inline std::pair<std::array<double, 3>, std::array<double, 3>> CellBlock3D<ParticleCell>::getCellBoundingBox(
+    const std::array<index_t, 3> &index3d) const {
+  std::array<double, 3> boxmin{}, boxmax{};
   for (int d = 0; d < 3; d++) {
     // defaults
     boxmin[d] = index3d[d] * this->_cellLength[d] + _haloBoxMin[d];
@@ -379,6 +377,7 @@ inline void CellBlock3D<ParticleCell>::getCellBoundingBox(const std::array<index
       boxmax[d] = _haloBoxMax[d];
     }
   }
+  return {boxmin, boxmax};
 }
 
 template <class ParticleCell>

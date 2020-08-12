@@ -252,8 +252,8 @@ class LJFunctorAVX
       _mm_store_pd(&globals[2], hSumVirialzUpotVec);
 
       double factor = 1.;
-      // we assume newton3 to be enabled in this functor call, thus we multiply by two if the value of newton3 is false,
-      // since for newton3 disabled we divide by two later on.
+      // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
+      // false, since for newton3 disabled we divide by two later on.
       factor *= newton3 ? .5 : 1.;
       // In case we have a non-cell-wise owned state, we have multiplied everything by two, so we divide it by 2 again.
       _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;

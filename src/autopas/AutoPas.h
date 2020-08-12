@@ -12,6 +12,7 @@
 #include <type_traits>
 
 #include "autopas/LogicHandler.h"
+#include "autopas/options//ExtrapolationMethodOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TuningStrategyOption.h"
@@ -102,7 +103,8 @@ class AutoPas {
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
-            _maxTuningPhasesWithoutTest, _acquisitionFunctionOption)),
+            _maxTuningPhasesWithoutTest, _evidenceFirstPrediction, _acquisitionFunctionOption,
+            _extrapolationMethodOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler = std::make_unique<autopas::LogicHandler<Particle>>(*(_autoTuner.get()), _verletRebuildFrequency);
   }
@@ -421,7 +423,7 @@ class AutoPas {
    * Get the range for the optimum in which has to be to be tested
    * @return
    */
-  double getRelativeOptimumRange() const { return _relativeOptimumRange; }
+  [[nodiscard]] double getRelativeOptimumRange() const { return _relativeOptimumRange; }
 
   /**
    * Set the range for the optimum in which has to be to be tested
@@ -433,7 +435,7 @@ class AutoPas {
    * Get the maximum number of tuning phases a configuration can not be tested.
    * @return
    */
-  unsigned int getMaxTuningPhasesWithoutTest() const { return _maxTuningPhasesWithoutTest; }
+  [[nodiscard]] unsigned int getMaxTuningPhasesWithoutTest() const { return _maxTuningPhasesWithoutTest; }
 
   /**
    * Set the maximum number of tuning phases a configuration can not be tested.
@@ -441,6 +443,22 @@ class AutoPas {
    */
   void setMaxTuningPhasesWithoutTest(unsigned int maxTuningPhasesWithoutTest) {
     AutoPas::_maxTuningPhasesWithoutTest = maxTuningPhasesWithoutTest;
+  }
+
+  /**
+   * Get the number of tests that need to have happened for a configuration until the first predictions are going to be
+   * calculated.
+   * @return
+   */
+  [[nodiscard]] unsigned int getEvidenceFirstPrediction() const { return _evidenceFirstPrediction; }
+
+  /**
+   * Set the number of tests that need to have happened for a configuration until the first predictions are going to be
+   * calculated.
+   * @param evidenceFirstPrediction
+   */
+  void setEvidenceFirstPrediction(unsigned int evidenceFirstPrediction) {
+    AutoPas::_evidenceFirstPrediction = evidenceFirstPrediction;
   }
 
   /**
@@ -456,6 +474,20 @@ class AutoPas {
    * @param acqFun acquisition function
    */
   void setAcquisitionFunction(AcquisitionFunctionOption acqFun) { AutoPas::_acquisitionFunctionOption = acqFun; }
+
+  /**
+   * Get extrapolation method for the prediction of the configuration performance.
+   * @return
+   */
+  ExtrapolationMethodOption getExtrapolationMethodOption() const { return _extrapolationMethodOption; }
+
+  /**
+   * Set extrapolation method for the prediction of the configuration performance.
+   * @param extrapolationMethodOption
+   */
+  void setExtrapolationMethodOption(ExtrapolationMethodOption extrapolationMethodOption) {
+    AutoPas::_extrapolationMethodOption = extrapolationMethodOption;
+  }
 
   /**
    * Get the selector configuration strategy.
@@ -612,10 +644,21 @@ class AutoPas {
    */
   unsigned int _maxTuningPhasesWithoutTest{5};
   /**
+   * Specifies how many tests that need to have happened for a configuration until the first prediction is calculated in
+   * PredictiveTuning.
+   */
+  unsigned int _evidenceFirstPrediction{3};
+  /**
    * Acquisition function used for tuning.
    * For possible acquisition function choices see options::AcquisitionFunction::Value.
    */
   AcquisitionFunctionOption _acquisitionFunctionOption{AcquisitionFunctionOption::upperConfidenceBound};
+
+  /**
+   * Extrapolation method used in predictiveTuning.
+   * For possible extrapolation method choices see autopas/options/ExtrapolationMethodOption.
+   */
+  ExtrapolationMethodOption _extrapolationMethodOption{ExtrapolationMethodOption::linePrediction};
 
   /**
    * Strategy option for the auto tuner.

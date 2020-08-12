@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
-#include "autopas/containers/cellPairTraversals/SlicedBasedTraversal.h"
+#include "autopas/containers/cellPairTraversals/LockedSlicedBasedTraversal.h"
 #include "autopas/utils/Timer.h"
 
 namespace autopas {
@@ -29,8 +29,9 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                                     public BalancedTraversal {
+class BalancedSlicedBasedTraversal
+    : public LockedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+      public BalancedTraversal {
  public:
   /**
    * Constructor of the balanced sliced traversal.
@@ -38,21 +39,19 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
    */
   explicit BalancedSlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                         const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                    interactionLength, cellLength) {
+      : LockedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
+            dims, pairwiseFunctor, interactionLength, cellLength) {
     // As we create exactly one slice per thread, dynamic scheduling makes little sense.
-    this->dynamic = false;
+    this->_dynamic = false;
   }
 
   /**
-   * @copydoc SlicedBasedTraversal::initTraversal()
    * Calculates slice thickness according to estimates loads
+   * @param minSliceThickness
    */
-  void initTraversal() override {
-    this->loadDataLayout();
-    // make sure locks and thicknesses are empty
+  void initSliceThickness(unsigned long minSliceThickness) override {
+    // make thicknesses are empty
     this->_sliceThickness.clear();
-    this->_locks.clear();
 
     // estimate loads along longest axis
     auto maxDimension = this->_dimsPerLength[0];
@@ -86,8 +85,6 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
 
     auto numSlices = (size_t)autopas_get_max_threads();
     AutoPasLog(debug, "{} threads available.", numSlices);
-    auto minSliceThickness = this->_overlapLongestAxis + 1;
-
     // using greedy algorithm to assign slice thicknesses. May lead to less slices being used.
     unsigned int totalThickness = 0;
     /* minimum load for the next slice. Ideally exactly this load is reached. If this is not possible
@@ -113,6 +110,7 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
 
       } else {
         totalThickness += thickness;
+        /// @todo reserve to numSlices before push_back
         this->_sliceThickness.push_back(thickness);
         if (s != numSlices - 1) {
           // add avg of remaining load over remaining threads to min
@@ -120,24 +118,27 @@ class BalancedSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, P
         }
       }
     }
-    std::string thicknessStr;
-    std::string loadStr;
-    auto lastLoad = 0;
-    totalThickness = 0;
-    for (auto t : this->_sliceThickness) {
-      thicknessStr += std::to_string(t) + ", ";
-      totalThickness += t;
-      loadStr += std::to_string(loads[totalThickness - 1] - lastLoad) + ", ";
-      lastLoad = loads[totalThickness - 1];
-    }
 
-    AutoPasLog(debug, "Slice Thicknesses: [{}]", thicknessStr);
-    AutoPasLog(debug, "Slice loads: [{}]", loadStr);
+    // some analysis output that is only relevant when logger is set to debug
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+      std::string thicknessStr;
+      std::string loadStr;
+      auto lastLoad = 0;
+      totalThickness = 0;
+      for (auto t : this->_sliceThickness) {
+        thicknessStr += std::to_string(t) + ", ";
+        totalThickness += t;
+        loadStr += std::to_string(loads[totalThickness - 1] - lastLoad) + ", ";
+        lastLoad = loads[totalThickness - 1];
+      }
+
+      /// @todo: use autopas::utils::ArrayUtils::to_string()
+      AutoPasLog(debug, "Slice Thicknesses: [{}]", thicknessStr);
+      AutoPasLog(debug, "Slice loads: [{}]", loadStr);
+    }
 
     // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
     this->_sliceThickness.back() -= this->_overlapLongestAxis;
-
-    this->_locks.resize((numSlices - 1) * this->_overlapLongestAxis);
   }
 };
 
