@@ -172,9 +172,12 @@ def calculateMeans(xAxis, yAxis):
     counter = 0
     for x in xAxis:
         if meanXaxis.__contains__(x):
+            # newIndex means the place in meanYaxis where the values corresponding to the meanXaxis are currently stored
             newIndex = meanXaxis.index(x)
+            # oldIndex references where the Y value was found within the yAxis array
             oldIndex = counter
             meanYaxis[newIndex] += yAxis[oldIndex]
+            # update the ErrorMinus and Errorplus arrays if a smaller or larger value was found
             if valuesErrorMinus[newIndex] > yAxis[oldIndex]:
                 valuesErrorMinus[newIndex] = yAxis[oldIndex]
             if valuesErrorPlus[newIndex] < yAxis[oldIndex]:
@@ -188,13 +191,13 @@ def calculateMeans(xAxis, yAxis):
             valuesErrorPlus.append(yAxis[xAxis.index(x)])
             counter += 1
     divisor = len(yAxis) / len(meanYaxis)
-    valuesErrorMinus.sort()
-    valuesErrorPlus.sort()
-    meanYaxis.sort()
     meanYaxis = [y / divisor for y in meanYaxis]
-    meanXaxis.sort()
 
-    # TODO: sort depending
+    meanYaxis = [y for _, y in sorted(zip(meanXaxis, meanYaxis), key=lambda pair: pair[0])]
+    valuesErrorMinus = [y for _, y in sorted(zip(meanXaxis, valuesErrorMinus), key=lambda pair: pair[0])]
+    valuesErrorPlus = [y for _, y in sorted(zip(meanXaxis, valuesErrorPlus), key=lambda pair: pair[0])]
+    valuesErrorMinus = [y for _, y in sorted(zip(meanXaxis, valuesErrorMinus), key=lambda pair: pair[0])]
+    meanXaxis.sort()
 
 # ---------------------------------------------- Plot ---------------------------------------------
 
@@ -221,8 +224,21 @@ for t in allTraversals:
     elif density:
         xAxis = densityPerTraversal[allTraversals.index(t)]
     calculateMeans(xAxis, timePerTravsersal[allTraversals.index(t)])
+    # TODO: fix error bars
+ # print("meanXaxis after sorting")
+ # print(meanXaxis)
+ # print("meanYaxis after sorting")
+ # print(meanYaxis)
+ # print("valuesErrorMinus after sorting")
+ # print(valuesErrorMinus)
+ # print("valuesErrorPlus after sorting")
+ # print(valuesErrorPlus)
     upperErrorBound = [x1 - x2 for (x1, x2) in zip(valuesErrorPlus, meanYaxis)]
-    lowerErrorBound = [x1 - x2 for (x1, x2) in zip(meanYaxis, valuesErrorMinus)]
+  # print("upperBoundError")
+  # print(upperErrorBound)
+    lowerErrorBound = [y1 - y2 for (y1, y2) in zip(meanYaxis, valuesErrorMinus)]
+  # print("lowerBoundError")
+  # print(lowerErrorBound)
     fig.add_trace(go.Scatter(
         name=t,
         x=meanXaxis,
@@ -231,8 +247,8 @@ for t in allTraversals:
         error_y=dict(
             type='data',
             symmetric=False,
-            array=upperErrorBound,
-            arrayminus=lowerErrorBound,
+           #array=upperErrorBound,
+           #arrayminus=lowerErrorBound,
         ),
         hovertext=t,
         marker=dict(
