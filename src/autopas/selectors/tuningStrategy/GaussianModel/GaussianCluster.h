@@ -73,7 +73,7 @@ class GaussianCluster {
         _numEvidence(0),
         _sigma(sigma),
         _rng(rngRef),
-        _vecToStringFun(vectorToString) {
+        _logger(std::make_unique<GaussianClusterLogger>(vectorToString)) {
     initClusters();
   }
 
@@ -215,8 +215,6 @@ class GaussianCluster {
     // pair up all discrete with all continuous samples
     acquisitions.reserve(_clusters.size() * continuousSamples.size());
 
-    GaussianClusterLogger graphLogger(_vecToStringFun);
-
     auto neighbourWeights = initNeighbourWeights(neighbourFun);
 
     for (const auto &continuousSample : continuousSamples) {
@@ -224,7 +222,7 @@ class GaussianCluster {
       updateNeighbourWeights(neighbourWeights, means, vars, stddevs);
       auto currentAcquisisitions = precalculateAcquisitions(af, means, vars);
 
-      graphLogger.add(_clusters, _discreteVectorMap, continuousSample, means, vars, neighbourWeights);
+      _logger->add(_clusters, _discreteVectorMap, continuousSample, means, vars, neighbourWeights);
 
       // get acquisition considering neighbours
       for (size_t i = 0; i < _clusters.size(); ++i) {
@@ -245,7 +243,7 @@ class GaussianCluster {
       }
     }
 
-    graphLogger.end();
+    _logger->end();
 
     return acquisitions;
   }
@@ -262,23 +260,21 @@ class GaussianCluster {
       return;
     }
 
-    GaussianClusterLogger graphLogger(_vecToStringFun);
-
     auto neighbourWeights = initNeighbourWeights(neighbourFun);
     for (const auto &continuousSample : continuousSamples) {
       auto [means, vars, stddevs] = precalculateDistributions(continuousSample);
       updateNeighbourWeights(neighbourWeights, means, vars, stddevs);
 
-      graphLogger.add(_clusters, _discreteVectorMap, continuousSample, means, vars, neighbourWeights);
+      _logger->add(_clusters, _discreteVectorMap, continuousSample, means, vars, neighbourWeights);
     }
 
-    graphLogger.end();
+    _logger->end();
   }
   /**
    * Change the used function to convert from vector to string.
    * @param fun new converter
    */
-  void setVectorToStringFun(const GaussianModelTypes::VectorToStringFun &fun) { _vecToStringFun = fun; }
+  void setVectorToStringFun(const GaussianModelTypes::VectorToStringFun &fun) { _logger->setVectorToStringFun(fun); }
 
   /**
    * Generate all possible combinations of discrete tuples and continuous tuples in samples and
@@ -614,8 +610,8 @@ class GaussianCluster {
   Random &_rng;
 
   /**
-   * Function to convert vectors to strings.
+   * Logger for graphs.
    */
-  GaussianModelTypes::VectorToStringFun _vecToStringFun;
+  std::unique_ptr<GaussianClusterLogger> _logger;
 };
 }  // namespace autopas
