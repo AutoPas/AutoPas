@@ -86,9 +86,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     _towers.push_back(internal::ClusterTower<Particle>(_clusterSize));
   }
 
-    /**
-     * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
-     */
+  /**
+   * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
+   */
   ParticleCellTypeEnum getParticleCellTypeEnum() override { return IsNoCellEnum; };
 
   /**

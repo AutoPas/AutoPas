@@ -122,9 +122,9 @@ class DirectSum : public ParticleContainer<FullParticleCell<Particle>> {
     return invalidParticles;
   }
 
-    /**
-     * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
-     */
+  /**
+   * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
+   */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     // direct sum technically consists of two cells (owned + halo)
     return TraversalSelectorInfo(

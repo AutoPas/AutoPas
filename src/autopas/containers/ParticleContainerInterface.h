@@ -10,6 +10,7 @@
 #include <array>
 #include <vector>
 
+#include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
@@ -18,7 +19,6 @@
 #include "autopas/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/inBox.h"
-#include "autopas/cells/ParticleCell.h"
 
 namespace autopas {
 /**
@@ -36,12 +36,11 @@ class ParticleContainerInterface {
    */
   using ParticleType = Particle;
 
- /**
+  /**
    * Get the ParticleCell type as an Enum
    * @return The Cell type as an Enum
    */
   virtual ParticleCellTypeEnum getParticleCellTypeEnum() = 0;
-
 
   /**
    * Default constructor

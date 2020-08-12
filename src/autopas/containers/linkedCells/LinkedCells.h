@@ -65,7 +65,7 @@ class LinkedCells : public ParticleContainer<FullParticleCell<Particle, SoAArray
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
-/**
+  /**
    * @copydoc ParticleContainerInterface::getContainerType()
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
@@ -209,9 +209,9 @@ class LinkedCells : public ParticleContainer<FullParticleCell<Particle, SoAArray
     return invalidParticles;
   }
 
-    /**
-     * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
-     */
+  /**
+   * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
+   */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getInteractionLength(),
                                  this->getCellBlock().getCellLength(), 0);

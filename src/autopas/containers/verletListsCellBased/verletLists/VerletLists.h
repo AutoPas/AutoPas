@@ -31,7 +31,8 @@ namespace autopas {
  * implemented somehow
  */
 template <class Particle>
-class VerletLists : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType> {
+class VerletLists
+    : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType> {
   using verlet_internal = VerletListHelpers<Particle>;
   using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 

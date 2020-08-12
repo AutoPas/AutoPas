@@ -13,6 +13,7 @@
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
+#include "autopas/containers/linkedCells/ParticleVector.h"
 #include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
@@ -24,7 +25,6 @@
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-#include "autopas/containers/linkedCells/ParticleVector.h"
 
 namespace autopas {
 
@@ -62,7 +62,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
       : ParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
 
-        /**
+  /**
    * @copydoc ParticleContainerInterface::getContainerType()
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::referenceLinkedCells; }
@@ -111,7 +111,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
    */
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-   /**
+  /**
    * @copydoc ParticleContainerInterface::rebuildNeighborLists()
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override { updateDirtyParticleReferences(); }
@@ -166,8 +166,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
         // if empty
         if (not this->getCells()[cellId].isNotEmpty()) continue;
 
-auto [cellLowerCorner, cellUpperCorner] = this->getCellBlock().getCellBoundingBox(cellId);
-
+        auto [cellLowerCorner, cellUpperCorner] = this->getCellBlock().getCellBoundingBox(cellId);
 
         for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
           // if not in cell

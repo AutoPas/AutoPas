@@ -38,7 +38,7 @@ class ParticleContainer : public ParticleContainerInterface<typename ParticleCel
                     const double skin)
       : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
-      /**
+  /**
    *  Type of the ParticleCell.
    */
   using ParticleCellType = ParticleCell;

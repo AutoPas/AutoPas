@@ -5,6 +5,7 @@
 #pragma AUTOPAS_PARTICLELIST_H
 
 #include <vector>
+
 #include "autopas/utils/WrapOpenMP.h"
 
 /**
