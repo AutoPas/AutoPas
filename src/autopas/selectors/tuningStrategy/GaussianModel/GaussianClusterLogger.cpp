@@ -15,8 +15,6 @@
 
 namespace autopas {
 
-GaussianClusterLogger::OutputType GaussianClusterLogger::_defaultOutputType = OutputType::trace;
-
 GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun,
                                              GaussianClusterLogger::OutputType outType)
     : _outType(outType),
@@ -50,20 +48,29 @@ void GaussianClusterLogger::reset() {
   _nodeStream << std::endl << "Label,mean,var,numEvidence" << std::endl;
   _edgeStream.str(edge_start_marker);
   _edgeStream << std::endl << "Source,Target,Weight" << std::endl;
+
+  _currentContinuous.clear();
 }
 
 void GaussianClusterLogger::add(const std::vector<GaussianProcess> &clusters,
                                 const std::vector<GaussianModelTypes::VectorDiscrete> &discreteVectorMap,
-                                const GaussianModelTypes::VectorContinuous &currentContinous, std::vector<double> means,
-                                std::vector<double> vars,
+                                const GaussianModelTypes::VectorContinuous &currentContinuous,
+                                std::vector<double> means, std::vector<double> vars,
                                 const GaussianModelTypes::NeighboursWeights &neighbourWeights) {
   if (generatesNoOutput()) {
     return;
   }
 
+  // skip continuous values already added
+  if (std::find(_currentContinuous.begin(), _currentContinuous.end(), currentContinuous) != _currentContinuous.end()) {
+    return;
+  }
+
+  _currentContinuous.push_back(currentContinuous);
+
   // log nodes
   for (size_t i = 0; i < clusters.size(); ++i) {
-    std::string label = _vecToStringFun(std::make_pair(discreteVectorMap[i], currentContinous));
+    std::string label = _vecToStringFun(std::make_pair(discreteVectorMap[i], currentContinuous));
     size_t numEvidence = clusters[i].numEvidence();
     _nodeStream << "\"" << label << "\"," << means[i] << "," << vars[i] << "," << numEvidence << std::endl;
   }
@@ -72,8 +79,8 @@ void GaussianClusterLogger::add(const std::vector<GaussianProcess> &clusters,
   for (size_t i = 0; i < clusters.size(); ++i) {
     for (const auto &[n, _, weight] : neighbourWeights[i]) {
       if (weight > 0) {
-        std::string source = _vecToStringFun(std::make_pair(discreteVectorMap[i], currentContinous));
-        std::string target = _vecToStringFun(std::make_pair(discreteVectorMap[n], currentContinous));
+        std::string source = _vecToStringFun(std::make_pair(discreteVectorMap[i], currentContinuous));
+        std::string target = _vecToStringFun(std::make_pair(discreteVectorMap[n], currentContinuous));
         _edgeStream << "\"" << source << "\",\"" << target << "\"," << weight << std::endl;
       }
     }

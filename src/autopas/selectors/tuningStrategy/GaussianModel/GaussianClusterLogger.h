@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <unordered_set>
+
 #include "GaussianModelTypes.h"
 #include "GaussianProcess.h"
 
@@ -28,11 +30,13 @@ class GaussianClusterLogger {
   enum OutputType { none, trace, file };
 
   /**
-   * Constructor. Use default output type.
+   * Constructor. Use output file if log level debug or lower.
    * @param vecToStringFun
    */
   GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun)
-      : GaussianClusterLogger(vecToStringFun, _defaultOutputType) {}
+      : GaussianClusterLogger(vecToStringFun, autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug
+                                                  ? OutputType::file
+                                                  : OutputType::none) {}
 
   /**
    * Constructor
@@ -40,12 +44,6 @@ class GaussianClusterLogger {
    * @param outputType
    */
   GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun, OutputType outputType);
-
-  /**
-   * Set the default OutType used if GaussianClusterLogger is initialized with OutputType::defaultType.
-   * @param outType
-   */
-  static void setDefaultOutType(OutputType outType) { _defaultOutputType = outType; }
 
   /**
    * Change the used function to convert from vector to string.
@@ -85,7 +83,6 @@ class GaussianClusterLogger {
   bool generatesNoOutput() const;
 
   OutputType _outType;
-  static OutputType _defaultOutputType;
 
   std::string _outputFileName;
 
@@ -97,6 +94,11 @@ class GaussianClusterLogger {
    * Stream for the edges csv-files
    */
   std::stringstream _edgeStream;
+
+  /**
+   * Continuous samples already added to the graph
+   */
+  std::vector<GaussianModelTypes::VectorContinuous> _currentContinuous;
 
   /**
    * Function to convert vectors to strings.
