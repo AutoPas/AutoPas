@@ -100,9 +100,11 @@ void GaussianClusterLogger::end() {
       break;
     case OutputType::file: {
       std::ofstream outputFile(_outputFileName, std::ofstream::out | std::ofstream::app);
-      outputFile << _nodeStream.str();
-      outputFile << _edgeStream.str();
-      outputFile << end_marker << std::endl;
+      if (outputFile.is_open()) {
+        outputFile << _nodeStream.str();
+        outputFile << _edgeStream.str();
+        outputFile << end_marker << std::endl;
+      }
       outputFile.close();
     } break;
     case OutputType::none:
