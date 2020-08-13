@@ -2,7 +2,7 @@
 // Created by lunaticcoding on 04.05.20.
 //
 
-#pragma AUTOPAS_PARTICLELIST_H
+#pragma once
 
 #include <vector>
 
