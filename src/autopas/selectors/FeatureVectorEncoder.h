@@ -21,28 +21,28 @@ class FeatureVectorEncoder {
   /**
    * Number of tunable discrete dimensions.
    */
-  static constexpr size_t tunableDiscreteDims = 3;
+  static constexpr size_t tunableDiscreteDims{3};
   /**
    * Index containing information about ContainerTraversalEstimator in discrete part of convertToTunable().
    */
-  static constexpr size_t containerTraversalEstimatorIndex = 0;
+  static constexpr size_t containerTraversalEstimatorIndex{0};
   /**
    * Index containing information about DataLayout in discrete part of convertToTunable().
    */
-  static constexpr size_t dataLayoutIndex = 1;
+  static constexpr size_t dataLayoutIndex{1};
   /**
    * Index containing information about Newton3 in discrete part of convertToTunable(),
    */
-  static constexpr size_t newtonIndex = 2;
+  static constexpr size_t newtonIndex{2};
 
   /**
    * Number of tunable continuous dimensions.
    */
-  static constexpr size_t tunableContinuousDims = 1;
+  static constexpr size_t tunableContinuousDims{1};
   /**
    * Index containing information about CellSizeFactor in continuous part of convertToTunable().
    */
-  static constexpr size_t cellSizeFactorIndex = 0.;
+  static constexpr size_t cellSizeFactorIndex{0};
 
   /**
    * Array which consists of an int for each tunable discrete dimension.
@@ -279,7 +279,7 @@ class FeatureVectorEncoder {
         if (x != init) {
           auto neighbour = target;
           neighbour[i] = x;
-          result.push_back(std::make_pair(std::move(neighbour), 1.));
+          result.emplace_back(std::move(neighbour), 1.);
         }
       }
     }
@@ -322,7 +322,7 @@ class FeatureVectorEncoder {
             }
           }
 
-          result.push_back(std::make_pair(std::move(neighbour), weight));
+          result.emplace_back(std::move(neighbour), weight);
         }
       }
     }

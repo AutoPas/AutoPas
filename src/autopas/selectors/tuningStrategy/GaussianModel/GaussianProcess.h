@@ -85,8 +85,8 @@ class GaussianProcess {
    * Get all currently stored evidence
    * @return pair of inputs and outputs
    */
-  [[nodiscard]] const std::pair<std::vector<Vector>, Eigen::VectorXd> getEvidence() const {
-    return std::make_pair(_inputs, _outputs);
+  [[nodiscard]] std::pair<const std::vector<Vector> &, const Eigen::VectorXd &> getEvidence() const {
+    return std::make_pair(std::cref(_inputs), std::cref(_outputs));
   }
 
   /**
@@ -382,7 +382,7 @@ class GaussianProcess {
       }
     } else {
       // all scores are 0
-      double uniformProbability = 1 / _hypers.size();
+      double uniformProbability = 1. / _hypers.size();
       for (auto &hyper : _hypers) {
         hyper.score = uniformProbability;
       }
