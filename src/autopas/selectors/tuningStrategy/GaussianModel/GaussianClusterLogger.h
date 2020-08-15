@@ -31,7 +31,8 @@ class GaussianClusterLogger {
    * Constructor
    * @param vecToStringFun function to convert vectors to readable string
    */
-  GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun) : _vecToStringFun(vecToStringFun) {
+  GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun)
+      : _vecToStringFun(std::move(vecToStringFun)) {
     if (autopas::Logger::get()->level() > autopas::Logger::LogLevel::trace) {
       return;
     }
