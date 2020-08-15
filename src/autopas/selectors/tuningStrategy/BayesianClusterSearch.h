@@ -259,7 +259,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   size_t _currentIteration;
   /**
-   * We scale current iteration down such that kernels do not become 0.
+   * Iteration numbers get scaled down by a multiple of max evidence to ensure not all kernels become 0.
    */
   const double _iterationScale;
   /**
