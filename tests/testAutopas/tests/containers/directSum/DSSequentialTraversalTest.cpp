@@ -82,7 +82,7 @@ TEST_F(DSSequentialTraversalTest, testTraversalCuda) {
     }
   }
 
-  autopas::DirectSumTraversal<FPCell, MFunctor, autopas::DataLayoutOption::cuda, true> traversal(
+  autopas::DSSequentialTraversal<FPCell, MFunctor, autopas::DataLayoutOption::cuda, true> traversal(
       &functor, 100 /*big enough to contain both particles*/);
   // domain SoA with itself
   EXPECT_CALL(functor, CudaFunctor(_, true)).Times(1);

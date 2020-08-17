@@ -34,7 +34,7 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
         TraversalOption::lc_sliced_balanced, TraversalOption::lc_c01_combined_SoA, TraversalOption::lc_c04,
         TraversalOption::lc_c04_combined_SoA, TraversalOption::lc_c04_HCP, TraversalOption::lc_sliced_c02,
 #if defined(AUTOPAS_CUDA)
-        , TraversalOption::lc_c01_cuda
+        TraversalOption::lc_c01_cuda
 #endif
   };
   return s;
