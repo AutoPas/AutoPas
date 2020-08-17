@@ -31,7 +31,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VLCSlicedC02Traversal : public CSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                               public VLCTraversalInterface<typename ParticleCell::ParticleType> {
+                              public VLCTraversalInterface<typename ParticleCell::ParticleType> {
  public:
   /**
    * Constructor of the colored sliced traversal.
@@ -42,7 +42,7 @@ class VLCSlicedC02Traversal : public CSlicedBasedTraversal<ParticleCell, Pairwis
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
   explicit VLCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                  double interactionLength, const std::array<double, 3> &cellLength)
+                                 double interactionLength, const std::array<double, 3> &cellLength)
       : CSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                      interactionLength, cellLength),
         _functor(pairwiseFunctor) {}

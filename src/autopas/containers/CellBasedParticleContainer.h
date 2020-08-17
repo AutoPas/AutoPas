@@ -34,8 +34,8 @@ class CellBasedParticleContainer : public ParticleContainerInterface<ParticleCel
    * @param cutoff
    * @param skin
    */
-  CellBasedParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                    const double skin)
+  CellBasedParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax,
+                             const double cutoff, const double skin)
       : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
   /**

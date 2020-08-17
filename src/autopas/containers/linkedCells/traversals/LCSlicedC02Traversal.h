@@ -32,7 +32,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class LCSlicedC02Traversal : public CSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                         public LCTraversalInterface<ParticleCell> {
+                             public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the colored sliced traversal.
@@ -43,7 +43,7 @@ class LCSlicedC02Traversal : public CSlicedBasedTraversal<ParticleCell, Pairwise
    * @param cellLength cell length.
    */
   explicit LCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                            const double interactionLength, const std::array<double, 3> &cellLength)
+                                const double interactionLength, const std::array<double, 3> &cellLength)
       : CSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                      interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
