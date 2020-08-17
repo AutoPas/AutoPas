@@ -1,7 +1,7 @@
 /**
- * @file CSlicedTraversalVerlet.h
+ * @file LCSlicedC02Traversal.h
  *
- * @date 31 May 2020
+ * @date 24 May 2018
  * @author fischerv
  */
 
@@ -9,8 +9,9 @@
 
 #include <algorithm>
 
+#include "LCTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CSlicedBasedTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
+#include "autopas/containers/linkedCells/traversals/LCC08CellHandler.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -26,26 +27,26 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
+ * @tparam DataLayout
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class CSlicedTraversalVerlet : public CSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                               public VLCTraversalInterface<typename ParticleCell::ParticleType> {
+class LCSlicedC02Traversal : public CSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+                         public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the colored sliced traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param interactionLength cutoff + skin
-   * @param cellLength length of the underlying cells
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param interactionLength Interaction length (cutoff + skin).
+   * @param cellLength cell length.
    */
-  explicit CSlicedTraversalVerlet(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                  double interactionLength, const std::array<double, 3> &cellLength)
+  explicit LCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                            const double interactionLength, const std::array<double, 3> &cellLength)
       : CSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                      interactionLength, cellLength),
-        _functor(pairwiseFunctor) {}
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 
   void traverseParticlePairs() override;
 
@@ -53,19 +54,18 @@ class CSlicedTraversalVerlet : public CSlicedBasedTraversal<ParticleCell, Pairwi
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlc_sliced_c02; }
-
-  [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_c02; }
 
  private:
-  PairwiseFunctor *_functor;
+  LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void CSlicedTraversalVerlet<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
-  this->template cSlicedTraversal</*allCells*/ true>([&](unsigned long x, unsigned long y, unsigned long z) {
-    auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
+inline void LCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+  auto &cells = *(this->_cells);
+  this->cSlicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
+    auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+    _cellHandler.processBaseCell(cells, id);
   });
 }
 

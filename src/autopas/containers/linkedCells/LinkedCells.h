@@ -7,10 +7,10 @@
 
 #pragma once
 
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
-#include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
@@ -36,12 +36,12 @@ namespace autopas {
  * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
 template <class ParticleCell, class SoAArraysType = typename ParticleCell::ParticleType::SoAArraysType>
-class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
+class LinkedCells : public CellBasedParticleContainer<ParticleCell, SoAArraysType> {
  public:
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename ParticleContainer<ParticleCell>::ParticleType;
+  using ParticleType = typename CellBasedParticleContainer<ParticleCell>::ParticleType;
 
   /**
    * Constructor of the LinkedCells class
@@ -56,7 +56,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const double cellSizeFactor = 1.0,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : ParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
+      : CellBasedParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 

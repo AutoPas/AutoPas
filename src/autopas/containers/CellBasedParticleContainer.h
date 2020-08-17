@@ -1,5 +1,5 @@
 /**
- * @file ParticleContainer.h
+ * @file CellBasedParticleContainer.h
  *
  * @date 17 Jan 2018
  * @author tchipevn
@@ -20,35 +20,35 @@ namespace autopas {
 
 // consider multiple inheritance or delegation to avoid virtual call to Functor
 /**
- * The ParticleContainer class stores particles in some object and provides
+ * The CellBasedParticleContainer class stores particles in some object and provides
  * methods to iterate over its particles.
  * @tparam ParticleCell Class for the particle cells
  */
 template <class ParticleCell, class SoAArraysType = typename ParticleCell::ParticleType::SoAArraysType>
-class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
+class CellBasedParticleContainer : public ParticleContainerInterface<ParticleCell> {
  public:
   /**
-   * Constructor of ParticleContainer
+   * Constructor of CellBasedParticleContainer
    * @param boxMin
    * @param boxMax
    * @param cutoff
    * @param skin
    */
-  ParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+  CellBasedParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                     const double skin)
       : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
   /**
-   * Destructor of ParticleContainer.
+   * Destructor of CellBasedParticleContainer.
    */
-  ~ParticleContainer() override = default;
+  ~CellBasedParticleContainer() override = default;
 
   /**
    * Delete the copy constructor to prevent unwanted copies.
    * No particle container should ever be copied.
    * @param obj
    */
-  ParticleContainer(const ParticleContainer &obj) = delete;
+  CellBasedParticleContainer(const CellBasedParticleContainer &obj) = delete;
 
   /**
    * Delete the copy assignment operator to prevent unwanted copies
@@ -56,7 +56,7 @@ class ParticleContainer : public ParticleContainerInterface<ParticleCell> {
    * @param other
    * @return
    */
-  ParticleContainer &operator=(const ParticleContainer &other) = delete;
+  CellBasedParticleContainer &operator=(const CellBasedParticleContainer &other) = delete;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMax()

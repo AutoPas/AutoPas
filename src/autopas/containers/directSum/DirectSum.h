@@ -7,9 +7,9 @@
 
 #pragma once
 
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/directSum/traversals/DSTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
@@ -33,12 +33,12 @@ namespace autopas {
  * @tparam ParticleCell type of the cell that stores the particle
  */
 template <class ParticleCell>
-class DirectSum : public ParticleContainer<ParticleCell> {
+class DirectSum : public CellBasedParticleContainer<ParticleCell> {
  public:
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename ParticleContainer<ParticleCell>::ParticleType;
+  using ParticleType = typename CellBasedParticleContainer<ParticleCell>::ParticleType;
 
   /**
    * Constructor of the DirectSum class
@@ -48,7 +48,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
    * @param skin
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
-      : ParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin), _cellBorderFlagManager() {
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin), _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
 

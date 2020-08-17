@@ -12,8 +12,8 @@
 #include <vector>
 
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
-#include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
@@ -35,7 +35,7 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
+class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Particle>>,
                            public internal::ParticleDeletedObserver {
  public:
   /**
@@ -52,7 +52,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    */
   VerletClusterCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, int clusterSize = 32)
-      : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
+      : CellBasedParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _boxMinWithHalo(utils::ArrayMath::subScalar(boxMin, cutoff + skin)),
         _boxMaxWithHalo(utils::ArrayMath::addScalar(boxMax, cutoff + skin)),
         _clusterSize(clusterSize) {
@@ -366,7 +366,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
   void deleteAllParticles() override {
     _isValid = ValidityState::invalid;
     std::fill(_dummyStarts.begin(), _dummyStarts.end(), 0);
-    ParticleContainer<FullParticleCell<Particle>>::deleteAllParticles();
+    CellBasedParticleContainer<FullParticleCell<Particle>>::deleteAllParticles();
   }
 
   /**
