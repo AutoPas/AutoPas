@@ -47,16 +47,10 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
    */
   void SoAFunctorSingle(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {}
 
-  /**
-   * @copydoc autopas::Functor::SoAFunctorPair()
-   */
-  void SoAFunctorPair(autopas::SoAView<typename Particle::SoAArraysType> soa,
+  void SoAFunctorPair(autopas::SoAView<typename Particle::SoAArraysType> soa1,
                       autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3) override {}
 
 #ifdef AUTOPAS_CUDA
-  /**
-   * @copydoc autopas::Functor::CudaWrapperInterface()
-   */
   autopas::CudaWrapperInterface<typename Particle::ParticleSoAFloatPrecision> *getCudaWrapper() override {
     return &emptyCudaWrapper;
   }
@@ -97,9 +91,15 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
   void CudaFunctor(autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
                    autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {}
 
+  /**
+   * @copydoc autopas::Functor::deviceSoALoader()
+   */
   void deviceSoALoader(autopas::SoA<SoAArraysType> &soa,
                        autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {}
 
+  /**
+   * @copydoc autopas::Functor::deviceSoAExtractor()
+   */
   void deviceSoAExtractor(autopas::SoA<SoAArraysType> &soa,
                           autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {}
 
