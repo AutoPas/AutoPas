@@ -264,6 +264,9 @@ void setFromOptions(const testingTuple &options, autopas::AutoPas<Molecule, FMCe
   auto newton3Option = std::get<2>(options);
   auto cellSizeOption = std::get<3>(options);
 
+#ifdef AUTOPAS_CUDA
+  autoPas.setVerletClusterSize(32);
+#endif
   autoPas.setAllowedContainers({containerOption});
   autoPas.setAllowedTraversals({traversalOption});
   autoPas.setAllowedLoadEstimators({loadEstimatorOption});
@@ -444,15 +447,8 @@ INSTANTIATE_TEST_SUITE_P(
               }
               return tupleVector;
             }()),
-            ValuesIn([]() -> std::set<autopas::DataLayoutOption> {
-              auto all = autopas::DataLayoutOption::getAllOptions();
-              /// @TODO no cuda yet, so we erase it for now (if it is there)
-              if (all.find(autopas::DataLayoutOption::cuda) != all.end()) {
-                all.erase(all.find(autopas::DataLayoutOption::cuda));
-              }
-              return all;
-            }()),
-            ValuesIn(autopas::Newton3Option::getAllOptions()), Values(0.5, 1., 1.5)),
+            ValuesIn(autopas::DataLayoutOption::getAllOptions()), ValuesIn(autopas::Newton3Option::getAllOptions()),
+            Values(0.5, 1., 1.5)),
     AutoPasInterfaceTest::PrintToStringParamName());
 
 ///////////////////////////////////////// TWO containers //////////////////////////////////////////////////////////
@@ -463,9 +459,15 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   autopas::AutoPas<Molecule, FMCell> autoPas1;
   autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption1});
   autoPas1.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption1));
+#ifdef AUTOPAS_CUDA
+  autoPas1.setVerletClusterSize(32);
+#endif
   autopas::AutoPas<Molecule, FMCell> autoPas2;
   autoPas2.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption2});
   autoPas2.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption2));
+#ifdef AUTOPAS_CUDA
+  autoPas2.setVerletClusterSize(32);
+#endif
 
   defaultInit(autoPas1, autoPas2, autoPasDirection);
 
