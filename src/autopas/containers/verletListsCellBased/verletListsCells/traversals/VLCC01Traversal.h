@@ -45,7 +45,9 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlc_c01; }
 
-  [[nodiscard]] bool isApplicable() const override { return (not useNewton3) && (dataLayout == DataLayoutOption::aos); }
+  [[nodiscard]] bool isApplicable() const override {
+    return (not useNewton3) and (dataLayout == DataLayoutOption::aos);
+  }
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
@@ -59,7 +61,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 inline void VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    this->template iterateVerletListsCell<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
+    this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
   });
 }
 

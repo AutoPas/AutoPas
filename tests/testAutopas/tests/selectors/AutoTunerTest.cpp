@@ -42,6 +42,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // LinkedCells:           lc_c08                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        lc_sliced                   (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        lc_sliced_balanced          (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
+  //                        lc_sliced_c02               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        lc_c18                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        lc_c01                      (AoS <=> SoA, noNewton3)                             = 2
   //                        lc_c01_combined_SoA         (SoA, noNewton3)                                     = 1
@@ -51,6 +52,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                             = 2
   // VerletListsCells:      vlc_sliced                  (AoS, newton3 <=> noNewton3)                         = 2
   //                        vlc_sliced_balanced         (AoS, newton3 <=> noNewton3, 3 heuristics)           = 6
+  //                        vlc_sliced_colored          (AoS, newton3 <=> noNewton3)                         = 2
   //                        vlc_c18                     (AoS, newton3 <=> noNewton3)                         = 2
   //                        vlc_c01                     (AoS, noNewton3)                                     = 1
   // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                             = 2
@@ -59,6 +61,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                                                                                                    --------
   //                                                                                                          62
+  //                                                                                                          72
   // Additional with cuda
   // Direct Sum:            ds_sequential               (Cuda, newton3 <=> noNewton3)                        = 2
   // LinkedCells:           lc_c01_cuda                 (Cuda, newton3 <=> noNewton3)                        = 2
@@ -77,9 +80,9 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // TOTAL:                                                                                                   67
 
 #ifndef AUTOPAS_CUDA
-  const size_t expectedNumberOfIterations = 62 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 68 * maxSamples + 1;
 #else
-  const size_t expectedNumberOfIterations = 67 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 73 * maxSamples + 1;
 #endif
 
   int collectedSamples = 0;

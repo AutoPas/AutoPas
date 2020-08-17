@@ -78,6 +78,9 @@ class CollectParticlesPerThreadFunctor
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    if (i.isDummy() or j.isDummy()) {
+      return;
+    }
     auto threadNum = autopas::autopas_get_thread_num();
     _particlesPerThreadPerColor[_currentColor][threadNum].insert(&i);
     _particlesPerThreadPerColor[_currentColor][threadNum].insert(&j);

@@ -18,9 +18,9 @@ template <class Particle>
 class VerletListTypeDefinitions {
  public:
   /// using declaration for soa's of verlet list's linked cells (only id and position needs to be stored)
-  using SoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
+  using PositionSoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
 
   /// using declaration for verlet-list particle cell type
-  using VerletListParticleCellType = FullParticleCell<Particle, SoAArraysType>;
+  using VerletListParticleCellType = FullParticleCell<Particle, PositionSoAArraysType>;
 };
 }  // namespace autopas

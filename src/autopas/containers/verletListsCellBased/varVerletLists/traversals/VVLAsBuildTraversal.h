@@ -100,22 +100,22 @@ template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutO
           bool useNewton3>
 void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor, dataLayout, useNewton3>::iterateAoS(
     VerletNeighborListAsBuild<Particle> &neighborList) {
-  const auto &list = neighborList.getInternalNeighborList();
+  const auto &list = neighborList.getAoSNeighborList();
 
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel num_threads(list[0].size())
 #endif
   {
     constexpr int numColors = 8;
-    for (int c = 0; c < numColors; c++) {
+    for (int color = 0; color < numColors; color++) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(static)
 #endif
-      for (unsigned int thread = 0; thread < list[c].size(); thread++) {
-        const auto &currentParticleToNeighborMap = list[c][thread];
-        for (const auto &[currentParticle, neighborParticles] : currentParticleToNeighborMap) {
-          for (auto neighborParticle : neighborParticles) {
-            _functor->AoSFunctor(*(currentParticle), *neighborParticle, useNewton3);
+      for (unsigned int thread = 0; thread < list[color].size(); thread++) {
+        const auto &particleToNeighborMap = list[color][thread];
+        for (const auto &[particlePtr, neighborPtrList] : particleToNeighborMap) {
+          for (auto neighborPtr : neighborPtrList) {
+            _functor->AoSFunctor(*particlePtr, *neighborPtr, useNewton3);
           }
         }
       }
@@ -127,7 +127,7 @@ template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutO
           bool useNewton3>
 void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor, dataLayout, useNewton3>::iterateSoA(
     VerletNeighborListAsBuild<Particle> &neighborList) {
-  const auto &soaNeighborList = neighborList.getInternalSoANeighborList();
+  const auto &soaNeighborList = neighborList.getSoANeighborList();
 
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel num_threads(soaNeighborList[0].size())

@@ -42,7 +42,7 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ds_sequential; }
 
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
     cudaGetDeviceCount(&nDevices);

@@ -94,9 +94,18 @@ class NumberSet {
    * spaced evenly across the space.
    * @param n max samples
    * @param rng random number generator
-   * @return samples
+   * @return samples randomly ordered vector of points
    */
   virtual std::vector<Number> uniformSample(size_t n, Random &rng) const = 0;
+
+  /**
+   * Sample up to n points from the set. These points are
+   * spaced evenly across the space.
+   * @param n max samples
+   * @param rng random number generator
+   * @return samples ordered set of points
+   */
+  virtual std::set<Number> uniformSampleSet(size_t n, Random &rng) const = 0;
 };
 
 }  // namespace autopas

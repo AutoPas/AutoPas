@@ -27,6 +27,7 @@ class TraversalOption : public Option<TraversalOption> {
     // LinkedCell Traversals:
     lc_sliced,
     lc_sliced_balanced,
+    lc_sliced_c02,
     lc_c01,
     lc_c01_combined_SoA,
     lc_c01_cuda,
@@ -52,6 +53,7 @@ class TraversalOption : public Option<TraversalOption> {
     vlc_c18,
     vlc_sliced,
     vlc_sliced_balanced,
+    vlc_sliced_c02,
 
     // VarVerlet Traversals:
     vvl_as_built,
@@ -94,6 +96,7 @@ class TraversalOption : public Option<TraversalOption> {
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
+        {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
         {TraversalOption::lc_c01, "lc_c01"},
         {TraversalOption::lc_c01_cuda, "lc_c01_cuda"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
@@ -116,6 +119,7 @@ class TraversalOption : public Option<TraversalOption> {
 
         // VerletListCells Traversals:
         {TraversalOption::vlc_sliced, "vlc_sliced"},
+        {TraversalOption::vlc_sliced_c02, "vlc_sliced_c02"},
         {TraversalOption::vlc_c18, "vlc_c18"},
         {TraversalOption::vlc_c01, "vlc_c01"},
         {TraversalOption::vlc_sliced_balanced, "vlc_sliced_balanced"},

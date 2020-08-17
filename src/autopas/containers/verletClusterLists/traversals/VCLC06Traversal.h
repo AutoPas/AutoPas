@@ -118,7 +118,7 @@ void VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::pro
   }
 
   auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
-  const auto cellsPerDim = clusterList.getTowersPerDimension();
+  const auto towersPerDim = clusterList.getTowersPerDimension();
 
   for (int yInner = 0; yInner < towersPerColoringCell; yInner++) {
     for (int xInner = 0; xInner < towersPerColoringCell; xInner++) {
@@ -126,7 +126,7 @@ void VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::pro
       const auto x = xColorCell * towersPerColoringCell + xInner;
 
       // Not every coloring cell has to have gridsPerColoringCell grids in every direction.
-      if (x >= cellsPerDim[0] or y >= cellsPerDim[1]) {
+      if (x >= towersPerDim[0] or y >= towersPerDim[1]) {
         continue;
       }
 
@@ -134,8 +134,8 @@ void VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::pro
       for (auto &cluster : currentTower.getClusters()) {
         _clusterFunctor.traverseCluster(cluster);
 
-        for (auto *neighborCluster : cluster.getNeighbors()) {
-          _clusterFunctor.traverseClusterPair(cluster, *neighborCluster);
+        for (auto *neighborClusterPtr : cluster.getNeighbors()) {
+          _clusterFunctor.traverseClusterPair(cluster, *neighborClusterPtr);
         }
       }
     }

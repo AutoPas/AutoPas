@@ -28,7 +28,7 @@ namespace internal {
 template <class Particle, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
     : public autopas::Functor<Particle, typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType,
-                              typename VerletListTypeDefinitions<Particle>::SoAArraysType> {
+                              typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType> {
   /// using declaration for soa's of verlet list's linked cells (only id and position needs to be stored)
   using SoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
 
@@ -50,7 +50,7 @@ class AsBuildPairGeneratorFunctor
    */
   AsBuildPairGeneratorFunctor(VerletNeighborListAsBuild<Particle> &neighborList, double cutoffskin)
       : autopas::Functor<Particle, typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType,
-                         typename VerletListTypeDefinitions<Particle>::SoAArraysType>(cutoffskin),
+                         typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType>(cutoffskin),
         _list(neighborList),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
@@ -79,7 +79,7 @@ class AsBuildPairGeneratorFunctor
    * @param soa The SoA to add.
    * @param newton3 Whether to use newton 3 or not.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3, bool /*cellWiseOwnedState*/) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
     auto **const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
@@ -115,8 +115,7 @@ class AsBuildPairGeneratorFunctor
    * @param soa1
    * @param soa2
    */
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/,
-                      bool /*cellWiseOwnedState*/) override {
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
     auto **const __restrict__ ptrptr1 = soa1.template begin<AttributeNames::ptr>();
@@ -156,7 +155,7 @@ class AsBuildPairGeneratorFunctor
    * @param soa
    * @param offset
    */
-  void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {
+  void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset) override {
     if (offset != 0ul) {
       utils::ExceptionHandler::exception("offset must be 0, is: {}", offset);
     }
@@ -184,9 +183,8 @@ class AsBuildPairGeneratorFunctor
    * Does nothing
    * @param cell
    * @param soa
-   * @param offset
    */
-  void SoAExtractor(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset = 0) override {}
+  void SoAExtractor(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t /*offset*/) override {}
 
  private:
   /**

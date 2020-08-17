@@ -8,12 +8,16 @@ INPUT                  = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@ \
                          @PROJECT_SOURCE_DIR@/docs \
                          @PROJECT_SOURCE_DIR@/tools
 FILE_PATTERNS          = *.h \
+                         *.cuh \
                          *.cpp \
+                         *.cu \
                          *.md
+# The next line should be included, but produces too much warnings, so we don't include it yet.
+# This would enable documentation of the CUDA code.
+#EXTENSION_MAPPING      = h=c++ cpp=c++ cuh=c++ cu=c++
 RECURSIVE              = YES
 USE_MDFILE_AS_MAINPAGE = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@
 HTML_HEADER            = @AUTOPAS_SOURCE_DIR@/docs/AutoPasHeader.html
-
 
 # EXTRACT_ALL           = NO # default NO
 # EXTRACT_PRIVATE       = NO # default NO
@@ -26,6 +30,7 @@ EXTRACT_ANON_NSPACES    = YES # default NO
 # HIDE_UNDOC_CLASSES    = NO # default NO
 # HIDE_FRIEND_COMPOUNDS = NO # default NO
 # HIDE_IN_BODY_DOCS     = NO # default NO
+PREDEFINED              = AUTOPAS_CUDA
 
 JAVADOC_AUTOBRIEF      = YES # default NO
 QT_AUTOBRIEF           = YES # default NO

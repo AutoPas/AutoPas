@@ -17,10 +17,9 @@ class LJFunctorTestGlobals : public LJFunctorTest {
  public:
   LJFunctorTestGlobals() : LJFunctorTest() {}
 
-  static void testAoSGlobals(where_type where, bool newton3, bool duplicatedCalculation);
-  static void testSoAGlobals(where_type where, bool newton3, bool duplicatedCalculation,
-                             InteractionType interactionType, size_t additionalParticlesToVerletNumber,
-                             bool cellWiseOwnedState, uint64_t numParticleReplicas);
+  static void testAoSGlobals(where_type where, bool newton3);
+  static void testSoAGlobals(where_type where, bool newton3, InteractionType interactionType,
+                             size_t additionalParticlesToVerletNumber, uint64_t numParticleReplicas);
 
   constexpr static double cutoff{1.};
   constexpr static double epsilon{1.};

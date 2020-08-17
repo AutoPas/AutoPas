@@ -32,10 +32,9 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
   static const std::set<TraversalOption> s {
     TraversalOption::lc_c01, TraversalOption::lc_c08, TraversalOption::lc_c18, TraversalOption::lc_sliced,
         TraversalOption::lc_sliced_balanced, TraversalOption::lc_c01_combined_SoA, TraversalOption::lc_c04,
-        TraversalOption::lc_c04_combined_SoA, TraversalOption::lc_c04_HCP
+        TraversalOption::lc_c04_combined_SoA, TraversalOption::lc_c04_HCP, TraversalOption::lc_sliced_c02,
 #if defined(AUTOPAS_CUDA)
-        ,
-        TraversalOption::lc_c01_cuda
+        , TraversalOption::lc_c01_cuda
 #endif
   };
   return s;
@@ -66,7 +65,8 @@ static const std::set<TraversalOption> &allVLCompatibleTraversals() {
  */
 static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::vlc_sliced, TraversalOption::vlc_c18,
-                                           TraversalOption::vlc_c01, TraversalOption::vlc_sliced_balanced};
+                                           TraversalOption::vlc_c01, TraversalOption::vlc_sliced_c02,
+                                           TraversalOption::vlc_sliced_balanced};
   return s;
 }
 

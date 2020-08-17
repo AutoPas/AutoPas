@@ -42,9 +42,9 @@ void DSSequentialTraversalTest::testTraversal(bool useSoA) {
     autopas::DSSequentialTraversal<FPCell, MFunctor, autopas::DataLayoutOption::soa, true> traversal(
         &functor, std::numeric_limits<double>::max());
     // domain SoA with itself
-    EXPECT_CALL(functor, SoAFunctorSingle(_, true, true)).Times(1);
+    EXPECT_CALL(functor, SoAFunctorSingle(_, true)).Times(1);
     // domain SoA with halo
-    EXPECT_CALL(functor, SoAFunctorPair(_, _, true, true)).Times(1);
+    EXPECT_CALL(functor, SoAFunctorPair(_, _, true)).Times(1);
     std::for_each(cells.begin(), cells.end(), [](auto &c) { c._particleSoABuffer.resizeArrays(2); });
     traversal.setCellsToTraverse(cells);
     traversal.traverseParticlePairs();

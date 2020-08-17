@@ -14,15 +14,14 @@ namespace autopas {
 
 /**
  * Variable Verlet Lists container with different neighbor lists.
-
  * @tparam Particle The particle type this container contains.
  * @tparam NeighborList The Neighbor List this Verlet Container uses.
  */
 template <class Particle, class NeighborList>
 class VarVerletLists
     : public VerletListsLinkedBase<Particle, typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType,
-                                   typename VerletListTypeDefinitions<Particle>::SoAArraysType> {
-  using SoAArraysType = typename VerletListTypeDefinitions<Particle>::SoAArraysType;
+                                   typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType> {
+  using SoAArraysType = typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType;
   using LinkedParticleCell = typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType;
 
  public:
@@ -68,7 +67,7 @@ class VarVerletLists
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
-    _neighborList.buildNeighborList(this->_linkedCells, traversal->getUseNewton3());
+    _neighborList.buildAoSNeighborList(this->_linkedCells, traversal->getUseNewton3());
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
 

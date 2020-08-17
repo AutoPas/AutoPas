@@ -303,8 +303,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
         auto startIndex = baseCell.numParticles();
         auto endIndex = combinationSlice[slice]._particleSoABuffer.getNumParticles();
         _pairwiseFunctor->SoAFunctorPair(baseCell._particleSoABuffer,
-                                         {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false,
-                                         true);
+                                         {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
         // compute base cell
         this->_cellFunctor.processCell(baseCell);
       } else {

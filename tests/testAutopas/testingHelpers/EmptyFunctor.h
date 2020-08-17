@@ -28,12 +28,10 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {}
 
-  void SoAFunctorSingle(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3,
-                        bool cellWiseOwnedState) override {}
+  void SoAFunctorSingle(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {}
 
   void SoAFunctorPair(autopas::SoAView<typename Particle::SoAArraysType> soa,
-                      autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3,
-                      bool cellWiseOwnedState) override {}
+                      autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3) override {}
 
   /**
    * @copydoc autopas::Functor::SoAFunctorVerlet()
@@ -61,6 +59,9 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
   void CudaFunctor(autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
                    autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {}
 
+  /**
+   * @copydoc autopas::Functor::deviceSoALoader()
+   */
   void deviceSoALoader(autopas::SoA<SoAArraysType> &soa,
                        autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {}
 #endif
