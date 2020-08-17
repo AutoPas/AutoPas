@@ -102,8 +102,7 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
                        autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {}
 
   void deviceSoAExtractor(autopas::SoA<SoAArraysType> &soa,
-                          autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
-  }
+                          autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {}
 
 #endif
 };
