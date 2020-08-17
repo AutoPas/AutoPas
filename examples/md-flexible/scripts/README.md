@@ -44,6 +44,15 @@ Requirements:
 Compares the tuning behavior of multiple runs of md-flexible. Specifically it compares the configuration which is selected as optimum after each tuning phase with a base file and every other file given in the input and prints the percentage of the alignment.
 If the base file has fewer tuning phases than the compared file, than the rest of the compared file is not going to be compared.
 
+### extractClusterGraph.py
+
+Requirements:
+* python3.8 (tested with 3.8.2)
+
+Creates graphs for a md-flex output file of a bayesian-cluster run. Graphs consist of two csv files: one containing information for all nodes(clusters) and one for all edges(weights between clusters).
+extractClusterGraphSeparate.py creates one file-pair for each graph found in the md-flex output. extractClusterGraphCombined.py combines all found graphs into one file-pair.
+Additionaly a md-flex output of a fullSearch run can be provided. This appends the sampled runtimes to the corresponding nodes.
+
 ## Performance Measurements
 
 ### measurePerf.sh
