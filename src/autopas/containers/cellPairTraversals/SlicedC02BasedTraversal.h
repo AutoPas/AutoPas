@@ -43,7 +43,7 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairwi
    * @param cellLength cell length.
    */
   explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                 const double interactionLength, const std::array<double, 3> &cellLength)
+                                   const double interactionLength, const std::array<double, 3> &cellLength)
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                     interactionLength, cellLength) {}
 
