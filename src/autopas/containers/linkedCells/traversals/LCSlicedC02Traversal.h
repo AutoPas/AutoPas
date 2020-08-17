@@ -10,7 +10,7 @@
 #include <algorithm>
 
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/CSlicedBasedTraversal.h"
+#include "autopas/containers/cellPairTraversals/SlicedC02BasedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandler.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -31,7 +31,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class LCSlicedC02Traversal : public CSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+class LCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                              public LCTraversalInterface<ParticleCell> {
  public:
   /**
@@ -44,7 +44,7 @@ class LCSlicedC02Traversal : public CSlicedBasedTraversal<ParticleCell, Pairwise
    */
   explicit LCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 const double interactionLength, const std::array<double, 3> &cellLength)
-      : CSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
+      : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                      interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 

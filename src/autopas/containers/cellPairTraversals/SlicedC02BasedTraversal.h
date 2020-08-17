@@ -1,5 +1,5 @@
 /**
- * @file CSlicedBasedTraversal.h
+ * @file SlicedC02BasedTraversal.h
  *
  * @date 24 May 2020
  * @author fischerv
@@ -32,7 +32,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class CSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
+class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
  public:
   /**
    * Constructor of the colored sliced traversal.
@@ -42,7 +42,7 @@ class CSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairwise
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit CSlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                  const double interactionLength, const std::array<double, 3> &cellLength)
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                     interactionLength, cellLength) {}
@@ -84,7 +84,7 @@ class CSlicedBasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairwise
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 template <bool allCells, typename LoopBody>
-void CSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::cSlicedTraversal(
+void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::cSlicedTraversal(
     LoopBody &&loopBody) {
   using std::array;
 
