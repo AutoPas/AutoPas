@@ -52,7 +52,9 @@ class VCCClusterItrationCUDATraversal : public CellPairTraversal<ParticleCell>,
       int nDevices = 0;
 #if defined(AUTOPAS_CUDA)
       cudaGetDeviceCount(&nDevices);
-      if (not _functor->getCudaWrapper()) return false;
+      if (not _functor->getCudaWrapper()) {
+        return false;
+      }
 #endif
       return nDevices > 0 and _functor->isAppropriateClusterSize(_clusterSize, dataLayout);
     } else {
@@ -215,7 +217,7 @@ class VCCClusterItrationCUDATraversal : public CellPairTraversal<ParticleCell>,
  private:
   void traverseCellPairsGPU() {
 #ifdef AUTOPAS_CUDA
-    if (!_functor->getCudaWrapper()) {
+    if (not _functor->getCudaWrapper()) {
       _functor->CudaFunctor(_storageCell._particleSoABufferDevice, useNewton3);
       return;
     }

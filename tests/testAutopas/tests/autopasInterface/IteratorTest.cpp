@@ -28,9 +28,14 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setVerletSkin(skin);
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
+
+#ifdef AUTOPAS_CUDA
+  autoPas.setVerletClusterSize(32);
+#endif
   // init autopas
   autoPas.init();
 }
+
 template <typename AutoPasT>
 void checkRegionIteratorForAllParticles(AutoPasT &autoPas, autopas::IteratorBehavior behavior) {
   for (auto iter1 = autoPas.begin(behavior); iter1.isValid(); ++iter1) {
