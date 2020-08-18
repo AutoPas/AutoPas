@@ -343,9 +343,6 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
       break;
   }
 
-  //  auto traversal = TraversalSelector<p>::template generateTraversal<PairwiseFunctor, dataLayout, useNewton3>(
-  //      _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
-
   if (not traversal->isApplicable()) {
     autopas::utils::ExceptionHandler::exception(
         "Error: Trying to execute a traversal that is not applicable. Two common reasons:\n"
