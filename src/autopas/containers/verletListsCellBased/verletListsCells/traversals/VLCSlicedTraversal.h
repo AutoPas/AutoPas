@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-#include "autopas/containers/cellPairTraversals/LockedSlicedBasedTraversal.h"
+#include "autopas/containers/cellPairTraversals/SlicedLockBasedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -34,7 +34,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VLCSlicedTraversal : public LockedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                            public VLCTraversalInterface<typename ParticleCell::ParticleType> {
  public:
   /**
@@ -47,7 +47,7 @@ class VLCSlicedTraversal : public LockedSlicedBasedTraversal<ParticleCell, Pairw
    */
   explicit VLCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                               double interactionLength, const std::array<double, 3> &cellLength)
-      : LockedSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
+      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
             dims, pairwiseFunctor, interactionLength, cellLength),
         _functor(pairwiseFunctor) {}
 
