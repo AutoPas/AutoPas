@@ -87,7 +87,7 @@ class ParticleVector {
   /**
    * Index of the first out-of-date reference.
    */
-  int _dirtyIndex = 0;
+  size_t _dirtyIndex{0};
   autopas::AutoPasLock particleListLock;
   std::vector<Type> particleListImp;
 };
