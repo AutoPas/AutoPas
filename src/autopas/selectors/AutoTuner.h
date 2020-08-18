@@ -337,9 +337,8 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
               _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
       break;
     default:
-      traversal = TraversalSelector<FullParticleCell<Particle>>::template generateTraversal<PairwiseFunctor, dataLayout,
-                                                                                            useNewton3>(
-          _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
+        utils::ExceptionHandler::exception("AutoTuner: Unknown ParticleCellType Enum : {}",
+                                           containerPtr->getParticleCellTypeEnum());
       break;
   }
 
