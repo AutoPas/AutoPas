@@ -6,12 +6,11 @@
 
 #pragma once
 
-#include <autopas/containers/linkedCells/ReferenceLinkedCells.h>
-
 #include <memory>
 
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/linkedCells/ReferenceLinkedCells.h"
 #include "autopas/containers/verletClusterCells/VerletClusterCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
