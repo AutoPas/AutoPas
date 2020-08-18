@@ -80,7 +80,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * @copydoc ParticleCell::getParticleCellTypeAsEnum()
    */
-  ParticleCellTypeEnum getParticleCellTypeAsEnum() override { return FullParticleCellEnum; }
+  CellType getParticleCellTypeAsEnum() override { return CellType::FullParticleCell; }
 
   /**
    * Returns the const particle at position index. Needed by SingleCellIterator.

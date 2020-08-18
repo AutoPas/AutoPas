@@ -13,13 +13,13 @@ namespace autopas {
 /**
  * The ParticleCell Type as an Enum.
  */
-    enum ParticleCellTypeEnum {
-        FullParticleCellEnum,
-        ReferenceParticleCellEnum,
-        ClusterTowerEnum,
-        SortedCellViewEnum,
-        IsNoCellEnum
-    };
+enum class CellType {
+  FullParticleCell,
+  ReferenceParticleCell,
+  ClusterTower,
+  SortedCellView,
+  IsNoCell
+};
 
 /**
  * Class for Cells of Particles.
@@ -95,7 +95,7 @@ class ParticleCell {
    * Get the ParticleCell type as an Enum
    * @return The Cell type as an Enum
    */
-  virtual ParticleCellTypeEnum getParticleCellTypeAsEnum() = 0;
+  virtual CellType getParticleCellTypeAsEnum() = 0;
 
   /**
    * Deletes the index-th particle.

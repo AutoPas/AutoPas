@@ -47,10 +47,7 @@ class ParticleContainer : public ParticleContainerInterface<typename ParticleCel
    * Get the ParticleCell type as an Enum
    * @return The Cell type as an Enum
    */
-  ParticleCellTypeEnum getParticleCellTypeEnum() override {
-    ParticleCell someCell = ParticleCell();
-    return someCell.getParticleCellTypeAsEnum();
-  };
+  CellType getParticleCellTypeEnum() override { return _cells[0].getParticleCellTypeAsEnum(); };
 
   /**
    * Destructor of ParticleContainer.

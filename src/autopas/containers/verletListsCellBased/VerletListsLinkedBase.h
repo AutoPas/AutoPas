@@ -47,10 +47,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getParticleCellTypeEnum()
    */
-  ParticleCellTypeEnum getParticleCellTypeEnum() override {
-    FullParticleCell<Particle> someCell;
-    return someCell.getParticleCellTypeAsEnum();
-  };
+  CellType getParticleCellTypeEnum() override { return _linkedCells.getParticleCellTypeEnum(); };
 
   /**
    * @copydoc autopas::ParticleContainerInterface::addParticleImpl

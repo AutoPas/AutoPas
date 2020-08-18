@@ -101,10 +101,7 @@ class LinkedCells : public ParticleContainer<FullParticleCell<Particle, SoAArray
         return true;
       }
     }
-    AutoPasLog(trace,
-               "UpdateHaloParticle was not able to update particle at "
-               "[{}, {}, {}]",
-               pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);
+    AutoPasLog(trace, "UpdateHaloParticle was not able to update particle: {}", pCopy.toString());
     return false;
   }
 

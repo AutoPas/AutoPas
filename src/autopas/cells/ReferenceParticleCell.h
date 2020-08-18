@@ -11,6 +11,7 @@
 
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -70,7 +71,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   /**
    * @copydoc ParticleCell::getParticleCellTypeAsEnum()
    */
-  ParticleCellTypeEnum getParticleCellTypeAsEnum() override { return ReferenceParticleCellEnum; }
+  CellType getParticleCellTypeAsEnum() override { return CellType::ReferenceParticleCell; }
 
   /**
    * Returns a const reference to the element at position n in the cell.
