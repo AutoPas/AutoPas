@@ -20,11 +20,6 @@
  */
 template <class Type>
 class ParticleVector {
-  using particleListImpType = std::vector<Type>;
-
-  using iterator = typename particleListImpType::iterator;
-  using const_iterator = typename particleListImpType::const_iterator;
-
  public:
   ParticleVector<Type>() = default;
 
@@ -72,12 +67,12 @@ class ParticleVector {
    * Begin of the iterator over dirty Particles
    * @return Start of the iterator
    */
-  iterator beginDirty() { return particleListImp.begin() + _dirtyIndex; }
+  auto beginDirty() { return particleListImp.begin() + _dirtyIndex; }
   /**
    * End of the iterator over dirty Particles
    * @return End of the iterator
    */
-  iterator endDirty() { return particleListImp.end(); }
+  auto endDirty() { return particleListImp.end(); }
 
  private:
   /**
