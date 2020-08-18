@@ -8,18 +8,18 @@
 
 #include "autopas/iterators/SingleCellIteratorWrapper.h"
 
+namespace autopas {
+
 /**
  * The ParticleCell Type as an Enum.
  */
-enum ParticleCellTypeEnum {
-  FullParticleCellEnum,
-  ReferenceParticleCellEnum,
-  ClusterTowerEnum,
-  SortedCellViewEnum,
-  IsNoCellEnum
-};
-
-namespace autopas {
+    enum ParticleCellTypeEnum {
+        FullParticleCellEnum,
+        ReferenceParticleCellEnum,
+        ClusterTowerEnum,
+        SortedCellViewEnum,
+        IsNoCellEnum
+    };
 
 /**
  * Class for Cells of Particles.
