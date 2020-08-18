@@ -431,7 +431,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   return stillTuning;
 }
 
-template <class Particle>  //, class ParticleCell>
+template <class Particle> 
 template <class PairwiseFunctor>
 bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
   auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container);
