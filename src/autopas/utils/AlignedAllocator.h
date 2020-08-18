@@ -104,7 +104,7 @@ class AlignedAllocator {
       // From gnu.org: The memalign function is obsolete and aligned_alloc or posix_memalign should be used instead.
       void *raw_ptr;
       posix_memalign(&raw_ptr, Alignment, sizeof(T) * n);
-      T *ptr = static_cast<T *>(orig_ptr);
+      T *ptr = static_cast<T *>(raw_ptr);
 #endif
       if (ptr == nullptr) {
         throw std::bad_alloc();
