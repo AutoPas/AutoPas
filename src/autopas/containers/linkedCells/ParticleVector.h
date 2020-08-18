@@ -1,6 +1,9 @@
-//
-// Created by lunaticcoding on 04.05.20.
-//
+/**
+ * @file ParticleVector.h
+ *
+ * @author lunaticcoding
+ * @date 04.05.2020
+ */
 
 #pragma once
 
