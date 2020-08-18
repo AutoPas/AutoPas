@@ -72,8 +72,6 @@ class Dummy final {
 template <class Particle, class SoAArraysTypeTemplate = typename Particle::SoAArraysType,
           typename Impl_tTemplate = internal::Dummy<Particle>>
 class Functor {
-  // TODO remove virtual if not needed
-  // TODO add template to function (ParticleCellTemplate)
  public:
   /**
    * Make the SoAArraysType publicly available.
