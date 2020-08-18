@@ -236,9 +236,3 @@ class VerletLists
 };
 
 }  // namespace autopas
-
-// autopas::VerletListsLinkedBase<autopas::sph::SPHParticle, std::tuple<std::vector<autopas::sph::SPHParticle*,
-// autopas::AlignedAllocator<autopas::sph::SPHParticle*, 64> >, std::vector<double, autopas::AlignedAllocator<double,
-// 64>
-// >, std::vector<double, autopas::AlignedAllocator<double, 64> >, std::vector<double, autopas::AlignedAllocator<double,
-// 64> > > > autopas::VerletLists<autopas::sph::SPHParticle>
