@@ -21,10 +21,6 @@ template <class Particle>
 class MockFunctor : public autopas::Functor<Particle> {
  public:
   MockFunctor() : autopas::Functor<Particle>(0.){};
-  // TODO templatisierte mock methoden?
-  // TODO Mock method should take template - geht vlt nit -> copy and paste for every combination of ParticleCell and
-  // Particle
-
   // virtual void AoSFunctor(Particle &i, Particle &j, bool newton3)
   MOCK_METHOD(void, AoSFunctor, (Particle & i, Particle &j, bool newton3), (override));
 
@@ -44,11 +40,6 @@ class MockFunctor : public autopas::Functor<Particle> {
               (autopas::SoAView<typename Particle::SoAArraysType> soa, size_t indexFirst,
                (const std::vector<size_t, autopas::AlignedAllocator<size_t>> &), bool newton3),
               (override));
-
-  // void SoALoader<typename ParticleCell>(ParticleCell &cell, autopas::SoA &soa, size_t offset) {}
-  //  MOCK_METHOD(void, SoALoader,
-  //              (ParticleCell & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
-  //               size_t offset));
 
   MOCK_METHOD(void, SoALoader,
               (autopas::FullParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
