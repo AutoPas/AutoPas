@@ -47,7 +47,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
   /**
    *  Type of the ParticleCell.
    */
-  using ParticleCell = ReferenceParticleCell<Particle>;
+  using ReferenceCell = ReferenceParticleCell<Particle>;
   /**
    * Constructor of the LinkedCells class
    * @param boxMin
@@ -59,7 +59,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
    */
   ReferenceLinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                        const double skin, const double cellSizeFactor = 1.0)
-      : ParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
+      : ParticleContainer<ReferenceCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
 
   /**
@@ -126,7 +126,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
       }
     }
     for (auto it = _particleList.beginDirty(); it < _particleList.endDirty(); it++) {
-      ParticleCell &cell = _cellBlock.getContainingCell(it->getR());
+      ReferenceCell &cell = _cellBlock.getContainingCell(it->getR());
       auto address = &(*it);
       cell.addParticleReference(address);
     }
@@ -135,8 +135,8 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ReferenceCell> *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ReferenceCell> *>(traversal);
     if (traversalInterface && cellPairTraversal) {
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
@@ -211,13 +211,13 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
   ParticleIteratorWrapper<ParticleType, true> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::ParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, 0, &_cellBlock, behavior));
+        new internal::ParticleIterator<ParticleType, ReferenceCell, true>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
   ParticleIteratorWrapper<ParticleType, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBlock, behavior));
+        new internal::ParticleIterator<ParticleType, ReferenceCell, false>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
   ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
@@ -244,7 +244,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
     }
 
     return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, lowerCorner, higherCorner,
+        new internal::RegionParticleIterator<ParticleType, ReferenceCell, true>(&this->_cells, lowerCorner, higherCorner,
                                                                                cellsOfInterest, &_cellBlock, behavior));
   }
 
@@ -272,7 +272,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
     }
 
     return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
+        new internal::RegionParticleIterator<ParticleType, ReferenceCell, false>(
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior));
   }
 
@@ -280,25 +280,25 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
    * Get the cell block, not supposed to be used except by verlet lists
    * @return the cell block
    */
-  internal::CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
+  internal::CellBlock3D<ReferenceCell> &getCellBlock() { return _cellBlock; }
 
   /**
    * @copydoc getCellBlock()
    * @note const version
    */
-  const internal::CellBlock3D<ParticleCell> &getCellBlock() const { return _cellBlock; }
+  const internal::CellBlock3D<ReferenceCell> &getCellBlock() const { return _cellBlock; }
 
   /**
    * Returns reference to the data of LinkedCells
    * @return the data
    */
-  std::vector<ParticleCell> &getCells() { return this->_cells; }
+  std::vector<ReferenceCell> &getCells() { return this->_cells; }
 
   /**
    * @copydoc getCells()
    * @note const version
    */
-  const std::vector<ParticleCell> &getCells() const { return this->_cells; }
+  const std::vector<ReferenceCell> &getCells() const { return this->_cells; }
 
  protected:
   /**
@@ -308,7 +308,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
   /**
    * object to manage the block of cells.
    */
-  internal::CellBlock3D<ParticleCell> _cellBlock;
+  internal::CellBlock3D<ReferenceCell> _cellBlock;
   // ThreeDimensionalCellHandler
 };
 
