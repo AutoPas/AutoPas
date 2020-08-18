@@ -11,8 +11,8 @@ periodic-boundaries              :  false
 Objects:
   CubeUniform:
     0:
-      numberOfParticles          :  1331
-      box-length                 :  [11, 11, 11]
+      numberOfParticles          :  1000000
+      box-length                 :  [131, 131, 131]
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
       particle-type              :  2
