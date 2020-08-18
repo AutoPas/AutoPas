@@ -431,7 +431,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   return stillTuning;
 }
 
-template <class Particle> 
+template <class Particle>
 template <class PairwiseFunctor>
 bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
   auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container);
@@ -455,9 +455,8 @@ bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFu
                  conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
           ->isApplicable();
     default:
-      return TraversalSelector<FullParticleCell<Particle>>::template generateTraversal<PairwiseFunctor>(
-                 conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
-          ->isApplicable();
+        utils::ExceptionHandler::exception("AutoTuner: Unknown ParticleCellType Enum : {}",
+                                           containerPtr->getParticleCellTypeEnum());
   }
 }
 
