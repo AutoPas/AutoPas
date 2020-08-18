@@ -93,7 +93,10 @@ class AlignedAllocator {
 #elif defined(__SSE3__) && !defined(__PGI)
       T *ptr = static_cast<T *>(_mm_malloc(sizeof(T) * n, Alignment));
 #else
-      T *ptr = static_cast<T *>(aligned_alloc(Alignment, sizeof(T) * n));
+      // T *ptr = static_cast<T *>(memalign(Alignment, sizeof(T) * n));
+      // T *ptr = static_cast<T *>(aligned_alloc(Alignment, sizeof(T) * n));
+      T *ptr;
+      posix_memalign(reinterpret_cast<void**>(&ptr), Alignment, sizeof(T) * n);
 #endif
       if (ptr == nullptr) {
         throw std::bad_alloc();
