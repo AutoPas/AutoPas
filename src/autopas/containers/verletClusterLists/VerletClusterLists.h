@@ -36,12 +36,6 @@ template <class Particle>
 class VerletClusterLists : public ParticleContainerInterface<Particle>, public internal::ParticleDeletedObserver {
  public:
   /**
-   * The number of particles in a full cluster. Currently, constexpr is necessary so it can be passed to ClusterTower as
-   * a template parameter.
-   */
-  static constexpr size_t clusterSize = 4;
-
-  /**
    * Defines a cluster range used in the static cluster-thread-partition.
    */
   struct ClusterRange {
@@ -89,7 +83,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   /**
    * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
    */
-  ParticleCellTypeEnum getParticleCellTypeEnum() override { return IsNoCellEnum; };
+  CellType getParticleCellTypeEnum() override { return CellType::ClusterTower; };
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
