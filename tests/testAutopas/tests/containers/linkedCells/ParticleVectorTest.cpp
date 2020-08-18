@@ -1,6 +1,9 @@
-//
-// Created by lunaticcoding on 08.06.20.
-//
+/**
+ * @file ParticleVectorTest.cpp
+ *
+ * @author lunaticcoding
+ * @date 08.06.2020
+ */
 
 #include "ParticleVectorTest.h"
 
