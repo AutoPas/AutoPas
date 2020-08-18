@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <autopas/cells/ReferenceParticleCell.h>
 
 #include <array>
 #include <vector>
@@ -21,6 +20,7 @@
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
+#include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/selectors/ContainerSelectorInfo.h"
 #include "autopas/utils/StringUtils.h"
