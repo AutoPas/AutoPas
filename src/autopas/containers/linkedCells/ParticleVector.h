@@ -26,14 +26,10 @@ class ParticleVector {
   using const_iterator = typename particleListImpType::const_iterator;
 
  public:
-  ParticleVector<Type>() {
-    _dirty = false;
-    _dirtyIndex = 0;
-    particleListImp = std::vector<Type>();
-  }
+  ParticleVector<Type>() = default;
 
   /**
-   * Returns the dirty flag, indicating whether some of the Particle references are out of date.
+   * Returns the dirty flag, indicating whether Particles where moved and thus references to them are out of date.
    * @return True if dirty, false otherwise
    */
   bool isDirty() { return _dirty; }
@@ -84,8 +80,14 @@ class ParticleVector {
   iterator endDirty() { return particleListImp.end(); }
 
  private:
-  bool _dirty;
-  int _dirtyIndex;
+  /**
+   * Flag indicating whether there are out-of-date references in the vector.
+   */
+  bool _dirty = false;
+  /**
+   * Index of the first out-of-date reference.
+   */
+  int _dirtyIndex = 0;
   autopas::AutoPasLock particleListLock;
   std::vector<Type> particleListImp;
 };
