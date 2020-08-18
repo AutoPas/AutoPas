@@ -1,7 +1,7 @@
 /**
  * @file ReferenceParticleCell.h
- * @date 18.01.2018
- * @author seckler
+ * @date 05.04.2020
+ * @author lunaticcoding
  */
 
 #pragma once

@@ -1,8 +1,7 @@
 /**
  * @file LinkedCells.h
- *
- * @author tchipevn
- * @date 17.02.2018
+ * @date 05.04.2020
+ * @author lunaticcoding
  */
 
 #pragma once
