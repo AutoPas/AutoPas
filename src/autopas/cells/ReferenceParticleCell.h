@@ -109,6 +109,8 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
     }
 
+    _particles[index]->setOwnershipState(OwnershipState::dummy);
+
     if (index < numParticles() - 1) {
       std::swap(_particles[index], _particles[numParticles() - 1]);
     }
