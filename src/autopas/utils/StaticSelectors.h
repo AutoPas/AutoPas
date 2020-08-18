@@ -28,8 +28,7 @@ namespace autopas {
  * @param function The function body to be executed. Has to take exactly one argument being a pointer to the container.
  * E.g: [&](auto *container){container->doSth();}  // The * is optional here. The auto is necessary!
  */
-// TODO remove ParticleCell template arg?
-template <typename Particle, typename ParticleCell, typename FunctionType>
+template <typename Particle, typename FunctionType>
 void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle>> &container, FunctionType &&function) {
   auto container_ptr = container.get();
   switch (container->getContainerType()) {
@@ -37,10 +36,10 @@ void withStaticContainerType(std::shared_ptr<ParticleContainer<Particle>> &conta
       function(dynamic_cast<autopas::DirectSum<Particle> *>(container_ptr));
       return;
     case ContainerOption::linkedCells:
-      function(dynamic_cast<autopas::LinkedCells<Particle, ParticleCell> *>(container_ptr));
+      function(dynamic_cast<autopas::LinkedCells<Particle> *>(container_ptr));
       return;
     case ContainerOption::referenceLinkedCells:
-      function(dynamic_cast<autopas::ReferenceLinkedCells<Particle, ParticleCell> *>(container_ptr));
+      function(dynamic_cast<autopas::ReferenceLinkedCells<Particle> *>(container_ptr));
       return;
     case ContainerOption::verletLists:
       function(dynamic_cast<autopas::VerletLists<Particle> *>(container_ptr));
