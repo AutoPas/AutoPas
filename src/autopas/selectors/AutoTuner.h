@@ -339,7 +339,6 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
     default:
         utils::ExceptionHandler::exception("AutoTuner: Unknown ParticleCellType Enum : {}",
                                            containerPtr->getParticleCellTypeEnum());
-      break;
   }
 
   if (not traversal->isApplicable()) {
