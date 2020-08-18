@@ -325,22 +325,23 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
 
   std::unique_ptr<TraversalInterface> traversal;
   switch (containerPtr->getParticleCellTypeEnum()) {
-    case FullParticleCellEnum:
+    case CellType::ClusterTower:
+      [[fallthrough]];
+    case CellType::SortedCellView:
+      [[fallthrough]];
+    case CellType::IsNoCell:
+      [[fallthrough]];
+    case CellType::FullParticleCell:
       traversal = TraversalSelector<FullParticleCell<Particle>>::template generateTraversal<PairwiseFunctor, dataLayout,
                                                                                             useNewton3>(
           _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
       break;
-    case ReferenceParticleCellEnum:
+    case CellType::ReferenceParticleCell:
       traversal =
           TraversalSelector<ReferenceParticleCell<Particle>>::template generateTraversal<PairwiseFunctor, dataLayout,
                                                                                          useNewton3>(
               _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
       break;
-    default:
-        traversal =
-          TraversalSelector<ReferenceParticleCell<Particle>>::template generateTraversal<PairwiseFunctor, dataLayout,
-                                                                                         useNewton3>(
-              _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
   }
 
   if (not traversal->isApplicable()) {
@@ -447,16 +448,18 @@ bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFu
 
   auto containerPtr = getContainer();
   switch (containerPtr->getParticleCellTypeEnum()) {
-    case FullParticleCellEnum:
+    case CellType::ClusterTower:
+      [[fallthrough]];
+    case CellType::SortedCellView:
+      [[fallthrough]];
+    case CellType::IsNoCell:
+      [[fallthrough]];
+    case CellType::FullParticleCell:
       return TraversalSelector<FullParticleCell<Particle>>::template generateTraversal<PairwiseFunctor>(
                  conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
           ->isApplicable();
-    case ReferenceParticleCellEnum:
+    case CellType::ReferenceParticleCell:
       return TraversalSelector<ReferenceParticleCell<Particle>>::template generateTraversal<PairwiseFunctor>(
-                 conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
-          ->isApplicable();
-    default:
-        return TraversalSelector<ReferenceParticleCell<Particle>>::template generateTraversal<PairwiseFunctor>(
                  conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
           ->isApplicable();
   }
