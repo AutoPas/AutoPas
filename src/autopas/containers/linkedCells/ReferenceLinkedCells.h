@@ -98,10 +98,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
         return true;
       }
     }
-    AutoPasLog(trace,
-               "UpdateHaloParticle was not able to update particle at "
-               "[{}, {}, {}]",
-               pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);
+    AutoPasLog(trace, "UpdateHaloParticle was not able to update particle: {}", pCopy.toString());
     return false;
   }
 
@@ -243,8 +240,8 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
     }
 
     return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::RegionParticleIterator<ParticleType, ReferenceCell, true>(&this->_cells, lowerCorner, higherCorner,
-                                                                               cellsOfInterest, &_cellBlock, behavior));
+        new internal::RegionParticleIterator<ParticleType, ReferenceCell, true>(
+            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior));
   }
 
   ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
@@ -288,7 +285,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
   const internal::CellBlock3D<ReferenceCell> &getCellBlock() const { return _cellBlock; }
 
   /**
-   * Returns reference to the data of LinkedCells
+   * Returns reference to the data of ReferenceLinkedCells
    * @return the data
    */
   std::vector<ReferenceCell> &getCells() { return this->_cells; }
