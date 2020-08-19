@@ -164,14 +164,14 @@ void TraversalComparison::generateReference(mykey_t key) {
   // Calculate reference forces
   if (globals) {
     auto [calculatedForces, calculatedGlobals] =
-        calculateForces<true>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
+        calculateForces<true>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
                               autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles,
                               numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition);
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
   } else {
     auto [calculatedForces, calculatedGlobals] =
-        calculateForces<false>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
+        calculateForces<false>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
                                autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles,
                                numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition);
     _forcesReference[key] = calculatedForces;
@@ -242,9 +242,9 @@ static auto toString = [](const auto &info) {
         cellSizeFactor, doSlightShift, particleDeletionPosition, globals] = info.param;
   std::stringstream resStream;
   resStream << containerOption.to_string() << "_" << traversalOption.to_string() << "_" << dataLayoutOption.to_string()
-            << (newton3Option == autopas::Newton3Option::enabled ? "_N3" : "_noN3") << "_NP" << numParticles << "_NH"
-            << numHaloParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << "_CSF_" << cellSizeFactor
-            << "_" << (doSlightShift ? "shift" : "noshift")
+            << "_" << (newton3Option == autopas::Newton3Option::enabled ? "_N3" : "_noN3") << "_NP" << numParticles
+            << "_NH" << numHaloParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << "_CSF_"
+            << cellSizeFactor << "_" << (doSlightShift ? "withShift" : "noshift")
             << (particleDeletionPosition == DeletionPosition::never ? "_NoDeletions" : "")
             << (particleDeletionPosition & DeletionPosition::beforeLists ? "_DeletionsBeforeLists" : "")
             << (particleDeletionPosition & DeletionPosition::afterLists ? "_DeletionsAfterLists" : "")
@@ -275,7 +275,7 @@ auto TraversalComparison::getTestParams() {
                            {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
                             DeletionPosition::beforeAndAfterLists}) {
                         if (dataLayoutOption == autopas::DataLayoutOption::Value::cuda and
-                            traversalOption == autopas::TraversalOption::Value::c01Cuda and (boxMax[0] < 5.) and
+                            traversalOption == autopas::TraversalOption::Value::lc_c01_cuda and (boxMax[0] < 5.) and
                             (numParticles > 500)) {
                           // LJFunctor for cuda doesn't support this, yet: see
                           // https://github.com/AutoPas/AutoPas/issues/419

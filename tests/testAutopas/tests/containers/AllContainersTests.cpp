@@ -12,7 +12,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests, testing::ValuesIn(autopa
                          AllContainersTests::getParamToStringFunction());
 
 /**
- * Checks if ParticleContainer::getNumParticle() returns the correct number of particles.
+ * Checks if ParticleContainerInterface::getNumParticle() returns the correct number of particles.
  */
 TEST_P(AllContainersTests, testGetNumParticles) {
   auto container = getInitializedContainer();
@@ -30,7 +30,7 @@ TEST_P(AllContainersTests, testGetNumParticles) {
 }
 
 /**
- * Checks if ParticleContainer::deleteAllParticles() deletes all particles.
+ * Checks if ParticleContainerInterface::deleteAllParticles() deletes all particles.
  */
 TEST_P(AllContainersTests, testDeleteAllParticles) {
   auto container = getInitializedContainer();
