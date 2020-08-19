@@ -185,15 +185,13 @@ void MPIParallelizedStrategy::setupFallbackOptions() {
   _strategyStillWorking = false;
 
   // Essentially turn into full search if the underlying strategy dies.
-  // Ignores all constraints set by the user.
   _numFallbackConfigs = utils::AutoPasConfigurationCommunicator::getSearchSpaceSize(
       _fallbackContainers, _fallbackCellSizeFactor, _fallbackTraversalOptions, _fallbackLoadEstimators,
       _fallbackDataLayouts, _fallbackNewton3s);
   auto numbersSet = _fallbackCellSizeFactor.getAll();
   _configIterator = std::make_unique<utils::ConfigurationAndRankIteratorHandler>(
-      utils::ConfigurationAndRankIteratorHandler(_fallbackContainers, numbersSet, _fallbackTraversalOptions,
-                                                 _fallbackLoadEstimators, _fallbackDataLayouts,
-                                                 _fallbackNewton3s, _numFallbackConfigs, 1));
+      _fallbackContainers, numbersSet, _fallbackTraversalOptions, _fallbackLoadEstimators, _fallbackDataLayouts,
+      _fallbackNewton3s, _numFallbackConfigs, 1);
   _optimalConfiguration = Configuration(*_configIterator->getContainerIterator(),
                                         *_configIterator->getCellSizeFactorIterator(),
                                         *_configIterator->getTraversalIterator(),
