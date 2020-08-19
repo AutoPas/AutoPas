@@ -115,13 +115,13 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   bool _strategyStillWorking{true};
 
   // fallback configurations, in case the underlying search strategy fails.
-  const std::set<ContainerOption> &_fallbackContainers;
+  const std::set<ContainerOption> _fallbackContainers;
   // fallback options cannot deal with continuous cellSizeFactors
   const autopas::NumberSetFinite<double> _fallbackCellSizeFactor{1};
-  const std::set<TraversalOption> &_fallbackTraversalOptions;
-  const std::set<LoadEstimatorOption> &_fallbackLoadEstimators;
-  const std::set<DataLayoutOption> &_fallbackDataLayouts;
-  const std::set<Newton3Option> &_fallbackNewton3s;
+  const std::set<TraversalOption> _fallbackTraversalOptions;
+  const std::set<LoadEstimatorOption> _fallbackLoadEstimators;
+  const std::set<DataLayoutOption> _fallbackDataLayouts;
+  const std::set<Newton3Option> _fallbackNewton3s;
   int _numFallbackConfigs{0};
   std::unique_ptr<utils::ConfigurationAndRankIteratorHandler> _configIterator{nullptr};
 };
