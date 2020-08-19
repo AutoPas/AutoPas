@@ -84,7 +84,12 @@ class AlignedAllocator {
    */
   T *allocate(std::size_t n) {
     if (n <= max_size()) {
-      T *ptr = static_cast<T *>(aligned_alloc(Alignment, sizeof(T) * n));
+      size_t neededSize = sizeof(T) * n;
+      // sizeToRequest has to be a multiple of Alignment!
+      static_assert(Alignment > 0, "Alignment must be bigger than 0!");
+      // Rounds up to next multiple of Alignment.
+      size_t sizeToRequest = ((neededSize + Alignment - 1) / Alignment) * Alignment;
+      T *ptr = static_cast<T *>(aligned_alloc(Alignment, sizeToRequest));
       if (ptr == nullptr) {
         throw std::bad_alloc();
       }
