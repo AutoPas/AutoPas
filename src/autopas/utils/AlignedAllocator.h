@@ -88,23 +88,7 @@ class AlignedAllocator {
    */
   T *allocate(std::size_t n) {
     if (n <= max_size()) {
-#if defined(_SX)
-      T *ptr = static_cast<T *>(malloc(sizeof(T) * n));
-#elif defined(__SSE3__) && !defined(__PGI)
-      T *ptr = static_cast<T *>(_mm_malloc(sizeof(T) * n, Alignment));
-#else
-      // standard, but only in cstdlib 9 (gcc9) and libc++7 (clang7)
-      /// @todo c++20: enable this!
-      // T *ptr = static_cast<T *>(aligned_alloc(Alignment, sizeof(T) * n));
-
-      // non-standard:
-      // From gnu.org or man page: The memalign function is obsolete and aligned_alloc or posix_memalign should be used
-      // instead.
-      /// @todo c++20: remove this!
-      void *raw_ptr;
-      posix_memalign(&raw_ptr, Alignment, sizeof(T) * n);
-      T *ptr = static_cast<T *>(raw_ptr);
-#endif
+      T *ptr = static_cast<T *>(aligned_alloc(Alignment, sizeof(T) * n));
       if (ptr == nullptr) {
         throw std::bad_alloc();
       }
@@ -118,11 +102,7 @@ class AlignedAllocator {
    * \param ptr pointer to deallocate
    */
   void deallocate(T *ptr, std::size_t /*n*/) {
-#if defined(__SSE3__) && !defined(__PGI)
-    _mm_free(ptr);
-#else
     free(ptr);
-#endif
   }
 
   /**
