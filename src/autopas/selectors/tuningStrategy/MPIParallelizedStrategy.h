@@ -162,7 +162,7 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
   AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
   if (_allGlobalConfigurationsTested) {
     Configuration config = Configuration();
-    long localOptimalTime = std::numeric_limits<long>::max();
+    size_t localOptimalTime = std::numeric_limits<size_t>::max();
     if (_strategyStillWorking) {
       config = _tuningStrategy->getCurrentConfiguration();
       localOptimalTime = _tuningStrategy->getEvidence(config);
