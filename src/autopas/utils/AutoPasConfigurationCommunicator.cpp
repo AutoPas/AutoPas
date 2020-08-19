@@ -13,10 +13,11 @@
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
 
-size_t getSearchSpaceSize(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
-                          std::set<TraversalOption> &traversalOptions,
-                          std::set<LoadEstimatorOption> &loadEstimatorOptions,
-                          std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options) {
+size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, const NumberSet<double> &cellSizeFactors,
+                          const std::set<TraversalOption> &traversalOptions,
+                          const std::set<LoadEstimatorOption> &loadEstimatorOptions,
+                          const std::set<DataLayoutOption> &dataLayoutOptions,
+                          const std::set<Newton3Option> &newton3Options) {
   size_t numConfigs = 0;
   // only take into account finite sets of cellSizeFactors
   size_t cellSizeFactorArraySize;

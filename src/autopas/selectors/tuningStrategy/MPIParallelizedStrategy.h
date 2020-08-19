@@ -10,6 +10,9 @@
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/NumberSet.h"
+#include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
 
 namespace autopas {
 
@@ -23,11 +26,28 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   /**
    * Constructor for the wrapper. Assumes that the tuningStrategy has already been constructed with the appropriate
    * search space.
+   * If the underlying tuning strategy fails for some reason, uses the fallback-options to keep global search going.
    * @param tuningStrategy The underlying tuning strategy which tunes locally on it's node.
    * @param comm The communicator holding all ranks which participate in this tuning strategy
+   * @param fallbackContainers
+   * @param fallbackTraversals
+   * @param fallbackLoadEstimators
+   * @param fallbackDataLayouts
+   * @param fallbackNewton3s
    */
-  MPIParallelizedStrategy(std::unique_ptr<TuningStrategyInterface> tuningStrategy, const AutoPas_MPI_Comm comm)
-      : _tuningStrategy(std::move(tuningStrategy)), _comm(comm) {}
+  MPIParallelizedStrategy(std::unique_ptr<TuningStrategyInterface> tuningStrategy, const AutoPas_MPI_Comm comm,
+                          std::set<autopas::ContainerOption> &fallbackContainers,
+                          std::set<autopas::TraversalOption> &fallbackTraversals,
+                          std::set<autopas::LoadEstimatorOption> &fallbackLoadEstimators,
+                          std::set<autopas::DataLayoutOption> &fallbackDataLayouts,
+                          std::set<autopas::Newton3Option> &fallbackNewton3s)
+      : _tuningStrategy(std::move(tuningStrategy)),
+        _comm(comm),
+        _fallbackContainers(fallbackContainers),
+        _fallbackTraversalOptions(fallbackTraversals),
+        _fallbackLoadEstimators(fallbackLoadEstimators),
+        _fallbackDataLayouts(fallbackDataLayouts),
+        _fallbackNewton3s(fallbackNewton3s) {}
 
   inline void addEvidence(long time, size_t iteration) override { _tuningStrategy->addEvidence(time, iteration); }
 
@@ -67,9 +87,15 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * Getter for the internal tuningStrategy
    * @return the tuning strategy which was provided in the constructor
    */
-  inline const TuningStrategyInterface &getTuningStrategy() const { return *_tuningStrategy; }
+  [[nodiscard]] inline const TuningStrategyInterface &getTuningStrategy() const { return *_tuningStrategy; }
 
  private:
+  /**
+   * Essentially sets up a full-search-esque configuration selection, in case the underlying search strategy fails.
+   * Usually the strategy fails, because it has no valid configurations when many ranks are present.
+   */
+  void setupFallbackOptions();
+
   /**
    * The tuning strategy tuning locally
    */
@@ -86,14 +112,46 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
 
   bool _allLocalConfigurationsTested{false};
   bool _allGlobalConfigurationsTested{false};
+  bool _strategyStillWorking{true};
+
+  // fallback configurations, in case the underlying search strategy fails.
+  const std::set<ContainerOption> &_fallbackContainers;
+  // fallback options cannot deal with continuous cellSizeFactors
+  const autopas::NumberSetFinite<double> _fallbackCellSizeFactor{1};
+  const std::set<TraversalOption> &_fallbackTraversalOptions;
+  const std::set<LoadEstimatorOption> &_fallbackLoadEstimators;
+  const std::set<DataLayoutOption> &_fallbackDataLayouts;
+  const std::set<Newton3Option> &_fallbackNewton3s;
+  int _numFallbackConfigs{0};
+  std::unique_ptr<utils::ConfigurationAndRankIteratorHandler> _configIterator{nullptr};
 };
 
 bool MPIParallelizedStrategy::tune(bool currentInvalid) {
   int rank;
   AutoPas_MPI_Comm_rank(_comm, &rank);
 
+  if (not _strategyStillWorking and currentInvalid) {
+    _configIterator->advanceIterators(_numFallbackConfigs, 1);
+    if (_configIterator->getRankIterator() >= 1) {
+      // All strategies have been searched through and rejected.
+      utils::ExceptionHandler::exception("MPIParallelizedStrategy: No viable configurations were provided.");
+    }
+    _optimalConfiguration = Configuration(*_configIterator->getContainerIterator(),
+                                          *_configIterator->getCellSizeFactorIterator(),
+                                          *_configIterator->getTraversalIterator(),
+                                          *_configIterator->getLoadEstimatorIterator(),
+                                          *_configIterator->getDataLayoutIterator(),
+                                          *_configIterator->getNewton3Iterator());
+    return true;
+  }
+
   if (not _allLocalConfigurationsTested) {
-    _allLocalConfigurationsTested = not _tuningStrategy->tune(currentInvalid);
+    try {
+      _allLocalConfigurationsTested = not _tuningStrategy->tune(currentInvalid);
+    } catch (utils::ExceptionHandler::AutoPasException &exception) {
+      AutoPasLog(warn, "MPIParallelizedStrategy: Underlying strategy failed. Reverting to fallback-mode.");
+      setupFallbackOptions();
+    }
     if (currentInvalid) {
       return true;
     }
@@ -103,9 +161,14 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
   // Make all ranks ready for global tuning simultaneously
   AutoPas_MPI_Wait(&_request, AUTOPAS_MPI_STATUS_IGNORE);
   if (_allGlobalConfigurationsTested) {
-    auto config = _tuningStrategy->getCurrentConfiguration();
+    Configuration config = Configuration();
+    long localOptimalTime = std::numeric_limits<long>::max();
+    if (_strategyStillWorking) {
+      config = _tuningStrategy->getCurrentConfiguration();
+      localOptimalTime = _tuningStrategy->getEvidence(config);
+    }
     _optimalConfiguration = utils::AutoPasConfigurationCommunicator::optimizeConfiguration(
-        _comm, config, _tuningStrategy->getEvidence(config));
+        _comm, config, localOptimalTime);
 
     return false;
   }
@@ -114,6 +177,29 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
                          AUTOPAS_MPI_LAND, _comm, &_request);
 
   return true;
+}
+
+void MPIParallelizedStrategy::setupFallbackOptions() {
+  // There was probably an issue finding the optimal configuration
+  _allLocalConfigurationsTested = true;
+  _strategyStillWorking = false;
+
+  // Essentially turn into full search if the underlying strategy dies.
+  // Ignores all constraints set by the user.
+  _numFallbackConfigs = utils::AutoPasConfigurationCommunicator::getSearchSpaceSize(
+      _fallbackContainers, _fallbackCellSizeFactor, _fallbackTraversalOptions, _fallbackLoadEstimators,
+      _fallbackDataLayouts, _fallbackNewton3s);
+  auto numbersSet = _fallbackCellSizeFactor.getAll();
+  _configIterator = std::make_unique<utils::ConfigurationAndRankIteratorHandler>(
+      utils::ConfigurationAndRankIteratorHandler(_fallbackContainers, numbersSet, _fallbackTraversalOptions,
+                                                 _fallbackLoadEstimators, _fallbackDataLayouts,
+                                                 _fallbackNewton3s, _numFallbackConfigs, 1));
+  _optimalConfiguration = Configuration(*_configIterator->getContainerIterator(),
+                                        *_configIterator->getCellSizeFactorIterator(),
+                                        *_configIterator->getTraversalIterator(),
+                                        *_configIterator->getLoadEstimatorIterator(),
+                                        *_configIterator->getDataLayoutIterator(),
+                                        *_configIterator->getNewton3Iterator());
 }
 
 }  // namespace autopas

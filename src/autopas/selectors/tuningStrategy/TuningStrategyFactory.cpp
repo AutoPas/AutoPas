@@ -24,6 +24,13 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
     unsigned int evidenceFirstPrediction, AcquisitionFunctionOption acquisitionFunctionOption,
     ExtrapolationMethodOption extrapolationMethodOption, MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
+  // only needed in the MPI case, but need to be declared here.
+  std::set<autopas::ContainerOption> fallbackContainers;
+  std::unique_ptr<autopas::NumberSet<double>> fallbackCellSizeFactors;
+  std::set<autopas::TraversalOption> fallbackTraversals;
+  std::set<autopas::LoadEstimatorOption> fallbackLoadEstimators;
+  std::set<autopas::DataLayoutOption> fallbackDataLayouts;
+  std::set<autopas::Newton3Option> fallbackNewton3;
   switch (static_cast<autopas::MPIStrategyOption>(mpiStrategyOption)) {
     case MPIStrategyOption::noMPI: {
       break;
@@ -37,6 +44,18 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       int rank, commSize;
       AutoPas_MPI_Comm_rank(comm, &rank);
       AutoPas_MPI_Comm_size(comm, &commSize);
+      fallbackContainers = std::set<autopas::ContainerOption>(allowedContainers);
+      if (allowedCellSizeFactors.isFinite()) {
+        fallbackCellSizeFactors = std::make_unique<autopas::NumberSetFinite<double>>(allowedCellSizeFactors.getAll());
+      } else {
+        fallbackCellSizeFactors = std::make_unique<autopas::NumberInterval<double>>(allowedCellSizeFactors.getMin(),
+                                                                   allowedCellSizeFactors.getMax());
+      }
+      fallbackTraversals = std::set<autopas::TraversalOption>(allowedTraversals);
+      fallbackLoadEstimators = std::set<autopas::LoadEstimatorOption>(allowedLoadEstimators);
+      fallbackDataLayouts = std::set<autopas::DataLayoutOption>(allowedDataLayouts);
+      fallbackNewton3 = std::set<autopas::Newton3Option>(allowedNewton3Options);
+
       utils::AutoPasConfigurationCommunicator::distributeConfigurations(
           allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
           allowedNewton3Options, rank, commSize);
@@ -126,7 +145,9 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
           return tuningStrategy;
         }
       }
-      return std::make_unique<MPIParallelizedStrategy>(std::move(tuningStrategy), comm);
+      return std::make_unique<MPIParallelizedStrategy>(std::move(tuningStrategy), comm, fallbackContainers,
+                                                       fallbackTraversals, fallbackLoadEstimators, fallbackDataLayouts,
+                                                       fallbackNewton3);
     }
   }
 

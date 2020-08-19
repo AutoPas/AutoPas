@@ -34,8 +34,10 @@ inline void ConfigurationAndRankIteratorHandler::advanceConfigIterators() {
   if (_cellSizeFactorIt != _cellSizeFactors.end()) return;
   _cellSizeFactorIt = _cellSizeFactors.begin();
   ++_containerIt;
-  selectTraversalsForCurrentContainer();
-  selectLoadEstimatorsForCurrentContainerAndTraversal();
+  if (_containerIt != _containers.end()) {
+    selectTraversalsForCurrentContainer();
+    selectLoadEstimatorsForCurrentContainerAndTraversal();
+  }
 }
 
 void ConfigurationAndRankIteratorHandler::advanceIterators(const int numConfigs, const int commSize) {

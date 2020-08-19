@@ -48,10 +48,11 @@ inline std::byte castToByte(TOption option) {
  * @param newton3Options
  * @return
  */
-size_t getSearchSpaceSize(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
-                          std::set<TraversalOption> &traversalOptions,
-                          std::set<LoadEstimatorOption> &loadEstimatorOptions,
-                          std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options);
+size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, const NumberSet<double> &cellSizeFactors,
+                          const std::set<TraversalOption> &traversalOptions,
+                          const std::set<LoadEstimatorOption> &loadEstimatorOptions,
+                          const std::set<DataLayoutOption> &dataLayoutOptions,
+                          const std::set<Newton3Option> &newton3Options);
 
 /**
  * Distributes the provided configurations globally for equal work loads.
