@@ -6,10 +6,6 @@
 
 #pragma once
 
-#ifdef __SSE3__
-#include <xmmintrin.h>
-#endif
-
 #include <cstdlib>
 #include <limits>
 #include <new>
