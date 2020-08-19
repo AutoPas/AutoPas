@@ -40,7 +40,7 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairw
    * @param cellLength cell length.
    */
   explicit SlicedLockBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                      const double interactionLength, const std::array<double, 3> &cellLength)
+                                    const double interactionLength, const std::array<double, 3> &cellLength)
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                     interactionLength, cellLength) {}
 
