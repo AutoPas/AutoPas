@@ -101,9 +101,7 @@ class AlignedAllocator {
    * \brief Deallocate memory pointed to by ptr
    * \param ptr pointer to deallocate
    */
-  void deallocate(T *ptr, std::size_t /*n*/) {
-    free(ptr);
-  }
+  void deallocate(T *ptr, std::size_t /*n*/) { free(ptr); }
 
   /**
    * \brief Construct object of type U at already allocated memory, pointed to
