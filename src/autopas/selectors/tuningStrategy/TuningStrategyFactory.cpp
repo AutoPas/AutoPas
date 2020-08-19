@@ -37,6 +37,10 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     case MPIStrategyOption::divideAndConquer: {
+#ifndef AUTOPAS_MPI
+      utils::ExceptionHandler::exception("Cannot use the divideAndConquer search-strategy without AUTOPAS_MPI=ON."
+                                         "aborting.");
+#endif
       if (tuningStrategyOption == TuningStrategyOption::activeHarmony && getenv("HARMONY_HOST") != nullptr) {
         // rank 0 will solely set up the entire search, so we cannot divide the search space
         break;
