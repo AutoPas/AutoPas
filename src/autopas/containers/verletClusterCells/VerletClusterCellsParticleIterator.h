@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"

@@ -708,8 +708,8 @@ class AutoPas {
       std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
 
   /***
-   * Load estimation algorithm to be used for efficient parallelisation (only relevant for BalancedSlicedTraversal and
-   * BalancedSlicedTraversalVerlet).
+   * Load estimation algorithm to be used for efficient parallelisation (only relevant for LCSlicedBalancedTraversal and
+   * VLCSlicedBalancedTraversal).
    */
   std::set<LoadEstimatorOption> _allowedLoadEstimators{LoadEstimatorOption::getAllOptions()};
 

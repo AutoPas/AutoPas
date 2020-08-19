@@ -20,6 +20,7 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   autoPas.setBoxMax({3, 3, 3});
   autoPas.setCutoff(1);
   autoPas.setAllowedContainers({autopas::ContainerOption::directSum});
+  autoPas.setAllowedTraversals({autopas::TraversalOption::ds_sequential});
   autoPas.setAllowedNewton3Options({autopas::Newton3Option::enabled});
   autoPas.init();
 
