@@ -42,18 +42,8 @@ class ConfigurationAndRankIteratorHandler {
         _allowedTraversalOptions(traversalOptions),
         _allowedLoadEstimatorOptions(loadEstimatorOptions),
         _dataLayoutOptions(dataLayoutOptions),
-        _newton3Options(newton3Options),
-        _containerIt(containerOptions.begin()),
-        _cellSizeFactorIt(cellSizeFactors.begin()),
-        _dataLayoutIt(dataLayoutOptions.begin()),
-        _newton3It(newton3Options.begin()),
-        _rankIterator(0),
-        _remainingBlockSize(commSize >= numConfigs ? commSize / numConfigs - 1 : numConfigs / commSize - 1),
-        _remainder(commSize >= numConfigs ? commSize % numConfigs : numConfigs % commSize),
-        _infiniteCellSizeFactorsOffset(0),
-        _infiniteCellSizeFactorsBlockSize(commSize >= numConfigs ? commSize / numConfigs : numConfigs / commSize) {
-    selectTraversalsForCurrentContainer();
-    selectLoadEstimatorsForCurrentContainerAndTraversal();
+        _newton3Options(newton3Options) {
+    reset(numConfigs, commSize);
   }
 
   /**
@@ -63,6 +53,13 @@ class ConfigurationAndRankIteratorHandler {
    * @param commSize
    */
   void advanceIterators(int numConfigs, int commSize);
+
+  /**
+   * Resets all iterators to the beginning, while keeping the containers.
+   * @param numConfigs
+   * @param commSize
+   */
+  void reset(const int numConfigs, const int commSize);
 
   /**
    * Alternative getter for all Configuration iterators

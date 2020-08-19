@@ -71,6 +71,8 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     _optimalConfiguration = Configuration();
     _allGlobalConfigurationsTested = false;
     _allLocalConfigurationsTested = false;
+    _strategyStillWorking = true;
+    _configIterator.reset();
   }
 
   [[nodiscard]] std::set<ContainerOption> getAllowedContainerOptions() const override {
@@ -122,7 +124,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   const std::set<LoadEstimatorOption> _fallbackLoadEstimators;
   const std::set<DataLayoutOption> _fallbackDataLayouts;
   const std::set<Newton3Option> _fallbackNewton3s;
-  int _numFallbackConfigs{0};
+  int _numFallbackConfigs{-1};
   std::unique_ptr<utils::ConfigurationAndRankIteratorHandler> _configIterator{nullptr};
 };
 
@@ -185,9 +187,11 @@ void MPIParallelizedStrategy::setupFallbackOptions() {
   _strategyStillWorking = false;
 
   // Essentially turn into full search if the underlying strategy dies.
-  _numFallbackConfigs = utils::AutoPasConfigurationCommunicator::getSearchSpaceSize(
-      _fallbackContainers, _fallbackCellSizeFactor, _fallbackTraversalOptions, _fallbackLoadEstimators,
-      _fallbackDataLayouts, _fallbackNewton3s);
+  if (_numFallbackConfigs == -1) {
+    _numFallbackConfigs = utils::AutoPasConfigurationCommunicator::getSearchSpaceSize(
+        _fallbackContainers, _fallbackCellSizeFactor, _fallbackTraversalOptions, _fallbackLoadEstimators,
+        _fallbackDataLayouts, _fallbackNewton3s);
+  }
   auto numbersSet = _fallbackCellSizeFactor.getAll();
   _configIterator = std::make_unique<utils::ConfigurationAndRankIteratorHandler>(
       _fallbackContainers, numbersSet, _fallbackTraversalOptions, _fallbackLoadEstimators, _fallbackDataLayouts,

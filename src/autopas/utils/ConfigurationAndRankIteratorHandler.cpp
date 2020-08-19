@@ -74,6 +74,21 @@ void ConfigurationAndRankIteratorHandler::advanceIterators(const int numConfigs,
   --_remainingBlockSize;
 }
 
+void ConfigurationAndRankIteratorHandler::reset(const int numConfigs, const int commSize) {
+  _containerIt = _containers.begin();
+  _cellSizeFactorIt = _cellSizeFactors.begin();
+  _dataLayoutIt = _dataLayoutOptions.begin();
+  _newton3It = _newton3Options.begin();
+  selectTraversalsForCurrentContainer();
+  selectLoadEstimatorsForCurrentContainerAndTraversal();
+
+  _rankIterator = 0;
+  _remainingBlockSize = commSize >= numConfigs ? commSize / numConfigs - 1 : numConfigs / commSize - 1;
+  _remainder = commSize >= numConfigs ? commSize % numConfigs : numConfigs % commSize;
+  _infiniteCellSizeFactorsOffset = 0;
+  _infiniteCellSizeFactorsBlockSize = commSize >= numConfigs ? commSize / numConfigs : numConfigs / commSize;
+}
+
 void ConfigurationAndRankIteratorHandler::selectTraversalsForCurrentContainer() {
   // get all traversals of the container and restrict them to the allowed ones
   const std::set<TraversalOption> &allContainerTraversals =
