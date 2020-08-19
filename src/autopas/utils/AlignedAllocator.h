@@ -93,15 +93,14 @@ class AlignedAllocator {
 #elif defined(__SSE3__) && !defined(__PGI)
       T *ptr = static_cast<T *>(_mm_malloc(sizeof(T) * n, Alignment));
 #else
-      // non-standard (obsolete):
-      // T *ptr = static_cast<T *>(memalign(Alignment, sizeof(T) * n));
-
       // standard, but only in cstdlib 9 (gcc9) and libc++7 (clang7)
       /// @todo c++20: enable this!
       // T *ptr = static_cast<T *>(aligned_alloc(Alignment, sizeof(T) * n));
 
-      // non-standard v2 (preferred over v1).
-      // From gnu.org: The memalign function is obsolete and aligned_alloc or posix_memalign should be used instead.
+      // non-standard:
+      // From gnu.org or man page: The memalign function is obsolete and aligned_alloc or posix_memalign should be used
+      // instead.
+      /// @todo c++20: remove this!
       void *raw_ptr;
       posix_memalign(&raw_ptr, Alignment, sizeof(T) * n);
       T *ptr = static_cast<T *>(raw_ptr);
