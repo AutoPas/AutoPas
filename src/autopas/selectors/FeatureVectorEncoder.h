@@ -19,30 +19,24 @@ namespace autopas {
  */
 class FeatureVectorEncoder {
   /**
+   * Indices of the discrete part of convertToTunable().
+   */
+  enum class DiscreteIndices { containerTraversalEstimator, dataLayout, newton3, TOTALNUMBER };
+
+  /**
+   * Indices of the continuous part of convertToTunable().
+   */
+  enum class ContinuousIndices { cellSizeFactor, TOTALNUMBER };
+
+  /**
    * Number of tunable discrete dimensions.
    */
-  static constexpr size_t tunableDiscreteDims{3};
-  /**
-   * Index containing information about ContainerTraversalEstimator in discrete part of convertToTunable().
-   */
-  static constexpr size_t containerTraversalEstimatorIndex{0};
-  /**
-   * Index containing information about DataLayout in discrete part of convertToTunable().
-   */
-  static constexpr size_t dataLayoutIndex{1};
-  /**
-   * Index containing information about Newton3 in discrete part of convertToTunable(),
-   */
-  static constexpr size_t newtonIndex{2};
+  static constexpr size_t tunableDiscreteDims{static_cast<size_t>(DiscreteIndices::TOTALNUMBER)};
 
   /**
    * Number of tunable continuous dimensions.
    */
-  static constexpr size_t tunableContinuousDims{1};
-  /**
-   * Index containing information about CellSizeFactor in continuous part of convertToTunable().
-   */
-  static constexpr size_t cellSizeFactorIndex{0};
+  static constexpr size_t tunableContinuousDims{static_cast<size_t>(ContinuousIndices::TOTALNUMBER)};
 
   /**
    * Array which consists of an int for each tunable discrete dimension.
@@ -91,9 +85,10 @@ class FeatureVectorEncoder {
     _oneHotDims = _containerTraversalEstimatorOptions.size() + _dataLayoutOptions.size() + _newton3Options.size() +
                   tunableContinuousDims;
 
-    _dimRestrictions[containerTraversalEstimatorIndex] = _containerTraversalEstimatorOptions.size();
-    _dimRestrictions[dataLayoutIndex] = _dataLayoutOptions.size();
-    _dimRestrictions[newtonIndex] = _newton3Options.size();
+    _dimRestrictions[static_cast<size_t>(DiscreteIndices::containerTraversalEstimator)] =
+        _containerTraversalEstimatorOptions.size();
+    _dimRestrictions[static_cast<size_t>(DiscreteIndices::dataLayout)] = _dataLayoutOptions.size();
+    _dimRestrictions[static_cast<size_t>(DiscreteIndices::newton3)] = _newton3Options.size();
   }
 
   /**
@@ -299,7 +294,8 @@ class FeatureVectorEncoder {
     // dimension)
     result.reserve(std::accumulate(_dimRestrictions.begin(), _dimRestrictions.end(), -_dimRestrictions.size()));
 
-    auto targetContainer = std::get<0>(_containerTraversalEstimatorOptions[target[containerTraversalEstimatorIndex]]);
+    auto targetContainer = std::get<0>(
+        _containerTraversalEstimatorOptions[target[static_cast<int>(DiscreteIndices::containerTraversalEstimator)]]);
 
     // for each dimension
     for (int i = 0; i < target.size(); ++i) {
@@ -314,7 +310,7 @@ class FeatureVectorEncoder {
           neighbour[i] = x;
           double weight = 1.;
           // check if container changed
-          if (i == containerTraversalEstimatorIndex) {
+          if (i == static_cast<int>(DiscreteIndices::containerTraversalEstimator)) {
             auto xContainer = std::get<0>(_containerTraversalEstimatorOptions[x]);
             if (targetContainer != xContainer) {
               // assign lower weight
@@ -340,13 +336,13 @@ class FeatureVectorEncoder {
    */
   [[nodiscard]] DiscreteContinuousPair convertToTunable(const FeatureVector &vec) const {
     DiscreteDimensionType discreteValues;
-    discreteValues[containerTraversalEstimatorIndex] =
+    discreteValues[static_cast<size_t>(DiscreteIndices::containerTraversalEstimator)] =
         getIndex(_containerTraversalEstimatorOptions, std::make_tuple(vec.container, vec.traversal, vec.loadEstimator));
-    discreteValues[dataLayoutIndex] = getIndex(_dataLayoutOptions, vec.dataLayout);
-    discreteValues[newtonIndex] = getIndex(_newton3Options, vec.newton3);
+    discreteValues[static_cast<size_t>(DiscreteIndices::dataLayout)] = getIndex(_dataLayoutOptions, vec.dataLayout);
+    discreteValues[static_cast<size_t>(DiscreteIndices::newton3)] = getIndex(_newton3Options, vec.newton3);
 
     ContinuousDimensionType continuousValues;
-    continuousValues[cellSizeFactorIndex] = vec.cellSizeFactor;
+    continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = vec.cellSizeFactor;
 
     return std::make_pair(std::move(discreteValues), std::move(continuousValues));
   }
@@ -361,11 +357,12 @@ class FeatureVectorEncoder {
   [[nodiscard]] FeatureVector convertFromTunable(const DiscreteDimensionType &discreteValues,
                                                  const ContinuousDimensionType &continuousValues) const {
     const auto &[container, traversal, estimator] =
-        _containerTraversalEstimatorOptions[discreteValues[containerTraversalEstimatorIndex]];
-    auto dataLayout = _dataLayoutOptions[discreteValues[dataLayoutIndex]];
-    auto newton3 = _newton3Options[discreteValues[newtonIndex]];
+        _containerTraversalEstimatorOptions[discreteValues[static_cast<size_t>(
+            DiscreteIndices::containerTraversalEstimator)]];
+    auto dataLayout = _dataLayoutOptions[discreteValues[static_cast<size_t>(DiscreteIndices::dataLayout)]];
+    auto newton3 = _newton3Options[discreteValues[static_cast<size_t>(DiscreteIndices::newton3)]];
 
-    auto cellSizeFactor = continuousValues[cellSizeFactorIndex];
+    auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
 
     return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3);
   }
