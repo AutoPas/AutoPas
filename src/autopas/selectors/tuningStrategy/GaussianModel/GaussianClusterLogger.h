@@ -82,7 +82,7 @@ class GaussianClusterLogger {
    */
   bool generatesNoOutput() const;
 
-  OutputType _outType;
+  OutputType _outputType;
 
   std::string _outputFileName;
 

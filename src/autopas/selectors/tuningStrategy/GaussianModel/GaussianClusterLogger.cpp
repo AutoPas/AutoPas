@@ -16,8 +16,8 @@
 namespace autopas {
 
 GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun,
-                                             GaussianClusterLogger::OutputType outType)
-    : _outType(outType),
+                                             GaussianClusterLogger::OutputType outputType)
+    : _outputType(outputType),
       _nodeStream(std::ios_base::out | std::ios_base::app),
       _edgeStream(std::ios_base::out | std::ios_base::app),
       _vecToStringFun(std::move(vecToStringFun)) {
@@ -39,8 +39,8 @@ void GaussianClusterLogger::setVectorToStringFun(const GaussianModelTypes::Vecto
 }
 
 bool GaussianClusterLogger::generatesNoOutput() const {
-  return (_outType == OutputType::none or
-          (_outType == OutputType::trace and autopas::Logger::get()->level() > autopas::Logger::LogLevel::trace));
+  return (_outputType == OutputType::none or
+          (_outputType == OutputType::trace and autopas::Logger::get()->level() > autopas::Logger::LogLevel::trace));
 }
 
 void GaussianClusterLogger::reset() {
@@ -92,7 +92,7 @@ void GaussianClusterLogger::end() {
     return;
   }
 
-  switch (_outType) {
+  switch (_outputType) {
     case OutputType::trace:
       AutoPasLog(trace, _nodeStream.str());
       AutoPasLog(trace, _edgeStream.str());
@@ -108,7 +108,7 @@ void GaussianClusterLogger::end() {
       outputFile.close();
     } break;
     case OutputType::none:
-      utils::ExceptionHandler::exception("GaussianClusterLogger.end: Unexpected output type {}", _outType);
+      utils::ExceptionHandler::exception("GaussianClusterLogger.end: Unexpected output type {}", _outputType);
       break;
   }
   reset();
