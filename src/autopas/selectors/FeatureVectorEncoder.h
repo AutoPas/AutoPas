@@ -21,23 +21,23 @@ class FeatureVectorEncoder {
   /**
    * Number of discrete values in a cluster encoded vector
    */
-  static constexpr size_t clusterDiscreteSize = 3;
+  static constexpr size_t clusterDiscreteSize{3};
   /**
    * Index containing information about ContainerTraversalEstimator in continuous part of a cluster encoded vector
    */
-  static constexpr size_t containerTraversalEstimatorClusterIndex = 0;
+  static constexpr size_t containerTraversalEstimatorClusterIndex{0};
   /**
    * Index containing information about DataLayout in continuous part of a cluster encoded vector
    */
-  static constexpr size_t dataLayoutClusterIndex = 1;
+  static constexpr size_t dataLayoutClusterIndex{1};
   /**
    * Index containing information about Newton3 in continuous part of a cluster encoded vector
    */
-  static constexpr size_t newtonClusterIndex = 2;
+  static constexpr size_t newtonClusterIndex{2};
   /**
    * Index containing information about CellSizeFactor in discrete part of a cluster encoded vector
    */
-  static constexpr size_t cellSizeFactorClusterIndex = 0.;
+  static constexpr size_t cellSizeFactorClusterIndex{0};
 
  public:
   /**
@@ -284,7 +284,7 @@ class FeatureVectorEncoder {
         if (x != init) {
           auto neighbour = target;
           neighbour[i] = x;
-          result.push_back(std::make_pair(std::move(neighbour), 1.));
+          result.emplace_back(std::move(neighbour), 1.);
         }
       }
     }
@@ -327,7 +327,7 @@ class FeatureVectorEncoder {
             }
           }
 
-          result.push_back(std::make_pair(std::move(neighbour), weight));
+          result.emplace_back(std::move(neighbour), weight);
         }
       }
     }

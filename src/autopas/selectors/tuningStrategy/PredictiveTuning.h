@@ -94,7 +94,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
     selectOptimalSearchSpace();
   }
 
-  inline bool tune(bool = false) override;
+  inline bool tune(bool currentInvalid = false) override;
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
@@ -534,8 +534,8 @@ void PredictiveTuning::reselectOptimalSearchSpace() {
   _currentConfig = _optimalSearchSpace.begin();
 }
 
-bool PredictiveTuning::tune(bool valid) {
-  if (not valid) {
+bool PredictiveTuning::tune(bool currentInvalid) {
+  if (not currentInvalid) {
     _validConfigurationFound = true;
   }
 

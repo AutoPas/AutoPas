@@ -20,7 +20,7 @@ GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringF
     : _outType(outType),
       _nodeStream(std::ios_base::out | std::ios_base::app),
       _edgeStream(std::ios_base::out | std::ios_base::app),
-      _vecToStringFun(vecToStringFun) {
+      _vecToStringFun(std::move(vecToStringFun)) {
   if (generatesNoOutput()) {
     return;
   }

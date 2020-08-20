@@ -39,7 +39,7 @@ void defaultInit(AutoPasT &autoPas1, AutoPasT &autoPas2, size_t direction) {
   autoPas1.setBoxMax(midHigh);
   autoPas2.setBoxMin(midLow);
 
-  for (auto aP : {&autoPas1, &autoPas2}) {
+  for (auto &aP : {&autoPas1, &autoPas2}) {
     aP->setCutoff(cutoff);
     aP->setVerletSkin(skin);
     aP->setVerletRebuildFrequency(2);
@@ -127,9 +127,10 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule, FMCell> &autoPas) {
   return haloParticles;
 }
 
-size_t addEnteringParticles(autopas::AutoPas<Molecule, FMCell> &autoPas, std::vector<Molecule> enteringParticles) {
+size_t addEnteringParticles(autopas::AutoPas<Molecule, FMCell> &autoPas,
+                            const std::vector<Molecule> &enteringParticles) {
   size_t numAdded = 0;
-  for (auto &p : enteringParticles) {
+  for (const auto &p : enteringParticles) {
     if (autopas::utils::inBox(p.getR(), autoPas.getBoxMin(), autoPas.getBoxMax())) {
       autoPas.addParticle(p);
       ++numAdded;
@@ -138,8 +139,8 @@ size_t addEnteringParticles(autopas::AutoPas<Molecule, FMCell> &autoPas, std::ve
   return numAdded;
 }
 
-void addHaloParticles(autopas::AutoPas<Molecule, FMCell> &autoPas, std::vector<Molecule> haloParticles) {
-  for (auto &p : haloParticles) {
+void addHaloParticles(autopas::AutoPas<Molecule, FMCell> &autoPas, const std::vector<Molecule> &haloParticles) {
+  for (const auto &p : haloParticles) {
     autoPas.addOrUpdateHaloParticle(p);
   }
 }
@@ -263,6 +264,9 @@ void setFromOptions(const testingTuple &options, autopas::AutoPas<Molecule, FMCe
   auto newton3Option = std::get<2>(options);
   auto cellSizeOption = std::get<3>(options);
 
+#ifdef AUTOPAS_CUDA
+  autoPas.setVerletClusterSize(32);
+#endif
   autoPas.setAllowedContainers({containerOption});
   autoPas.setAllowedTraversals({traversalOption});
   autoPas.setAllowedLoadEstimators({loadEstimatorOption});
@@ -443,15 +447,8 @@ INSTANTIATE_TEST_SUITE_P(
               }
               return tupleVector;
             }()),
-            ValuesIn([]() -> std::set<autopas::DataLayoutOption> {
-              auto all = autopas::DataLayoutOption::getAllOptions();
-              /// @TODO no cuda yet, so we erase it for now (if it is there)
-              if (all.find(autopas::DataLayoutOption::cuda) != all.end()) {
-                all.erase(all.find(autopas::DataLayoutOption::cuda));
-              }
-              return all;
-            }()),
-            ValuesIn(autopas::Newton3Option::getAllOptions()), Values(0.5, 1., 1.5)),
+            ValuesIn(autopas::DataLayoutOption::getAllOptions()), ValuesIn(autopas::Newton3Option::getAllOptions()),
+            Values(0.5, 1., 1.5)),
     AutoPasInterfaceTest::PrintToStringParamName());
 
 ///////////////////////////////////////// TWO containers //////////////////////////////////////////////////////////
@@ -461,8 +458,16 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   // create AutoPas object
   autopas::AutoPas<Molecule, FMCell> autoPas1;
   autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption1});
+  autoPas1.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption1));
+#ifdef AUTOPAS_CUDA
+  autoPas1.setVerletClusterSize(32);
+#endif
   autopas::AutoPas<Molecule, FMCell> autoPas2;
-  autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption2});
+  autoPas2.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption2});
+  autoPas2.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption2));
+#ifdef AUTOPAS_CUDA
+  autoPas2.setVerletClusterSize(32);
+#endif
 
   defaultInit(autoPas1, autoPas2, autoPasDirection);
 
@@ -477,7 +482,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
     Molecule particle2(pos2, {0., 0., 0.}, 1, 0);
 
     // add the two particles!
-    for (auto p : {&particle1, &particle2}) {
+    for (auto *p : {&particle1, &particle2}) {
       if (autopas::utils::inBox(p->getR(), autoPas1.getBoxMin(), autoPas1.getBoxMax())) {
         autoPas1.addParticle(*p);
       } else {
@@ -500,7 +505,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   // update positions a bit (outside of domain!) + reset F
   {
     std::array<double, 3> moveVec{skin / 3., 0., 0.};
-    for (auto aP : {&autoPas1, &autoPas2}) {
+    for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
         iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
         iter->setF(zeroArr);
@@ -514,7 +519,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   doAssertions(autoPas1, autoPas2, &functor1, &functor2);
 
   // reset F
-  for (auto aP : {&autoPas1, &autoPas2}) {
+  for (auto *aP : {&autoPas1, &autoPas2}) {
     for (auto iter = aP->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       iter->setF(zeroArr);
     }
@@ -536,7 +541,16 @@ using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
 
+static inline auto getTestableContainerOptions() {
+#ifdef AUTOPAS_CUDA
+  return autopas::ContainerOption::getAllOptions();
+#else
+  auto containerOptions = autopas::ContainerOption::getAllOptions();
+  containerOptions.erase(containerOptions.find(autopas::ContainerOption::verletClusterCells));
+  return containerOptions;
+#endif
+}
+
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface2ContainersTest,
-                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()),
-                                 ValuesIn(autopas::ContainerOption::getAllOptions())),
+                         Combine(ValuesIn(getTestableContainerOptions()), ValuesIn(getTestableContainerOptions())),
                          AutoPasInterface2ContainersTest::PrintToStringParamName());

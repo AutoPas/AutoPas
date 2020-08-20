@@ -254,7 +254,7 @@ class GaussianCluster {
    * @param neighbourFun function which generates neighbours of given discrete tuple
    * @param continuousSamples continuous tuples
    */
-  void logDebugGraph(const GaussianModelTypes::NeighbourFunction neighbourFun,
+  void logDebugGraph(const GaussianModelTypes::NeighbourFunction &neighbourFun,
                      const std::vector<GaussianModelTypes::VectorContinuous> &continuousSamples) const {
     if (autopas::Logger::get()->level() > autopas::Logger::LogLevel::trace) {
       return;

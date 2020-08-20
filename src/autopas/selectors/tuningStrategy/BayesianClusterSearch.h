@@ -52,7 +52,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   constexpr static double sigma = 0.01;
 
   /**
-   * Iterations get scaled down by a multiple of max evidence to ensure not all kernels become 0.
+   * Iteration numbers get scaled down by a multiple of max evidence to ensure not all kernels become 0.
    */
   constexpr static double iterationScalePerMaxEvidence = 5.;
 
@@ -64,7 +64,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   constexpr static double suggestedMaxDistance = 7.;
 
   /**
-   * Number of cellSizeFactors sampled for FullSearch.
+   * Number of cellSizeFactors sampled during the FullSearch phase.
    */
   constexpr static size_t cellSizeFactorSampleSize = 1;
 
@@ -259,7 +259,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   size_t _currentIteration;
   /**
-   * We scale current iteration down such that kernels do not become 0.
+   * Iteration numbers get scaled down by a multiple of max evidence to ensure not all kernels become 0.
    */
   const double _iterationScale;
   /**
