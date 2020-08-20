@@ -9,6 +9,7 @@
 #include <atomic>
 
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/verletListsCellBased/VerletListTypeDefinitions.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
@@ -29,7 +30,7 @@ class VerletListHelpers {
   /**
    * Reduced SoA Type for verlet list's linked cells only storing Particle* and position.
    */
-  using PositionSoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
+  using PositionSoAArraysType = typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType;
 
   /**
    * Attributes for SoAs of verlet list's linked cells (only id and position needs to be stored)
@@ -39,7 +40,7 @@ class VerletListHelpers {
   /**
    * Type of the particle cell.
    */
-  using VerletListParticleCellType = FullParticleCell<Particle, PositionSoAArraysType>;
+  using VerletListParticleCellType = typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.

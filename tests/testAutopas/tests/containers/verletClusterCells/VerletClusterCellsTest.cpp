@@ -7,7 +7,7 @@
 #include "VerletClusterCellsTest.h"
 
 #include "autopas/containers/verletClusterCells/VerletClusterCells.h"
-#include "autopas/containers/verletClusterCells/traversals/VerletClusterCellsTraversal.h"
+#include "autopas/containers/verletClusterCells/traversals/VCCClusterItrationCUDATraversal.h"
 #include "testingHelpers/TouchableParticle.h"
 
 using ::testing::_;
@@ -46,7 +46,7 @@ TEST_F(VerletClusterCellsTest, testNeighborListBuild) {
                                                                verletLists.getBoxMax(), 500);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
-  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> dummyTraversal(
+  autopas::VCCClusterItrationCUDATraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> dummyTraversal(
       &emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
   verletLists.rebuildNeighborLists(&dummyTraversal);
 }
@@ -67,7 +67,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIterator) {
   std::vector<int> particlesBoth(500, 0);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
-  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
+  autopas::VCCClusterItrationCUDATraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
   verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
 
@@ -151,7 +151,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIteratorDelete) {
   std::vector<int> particlesBoth(500, 0);
 
   MockFunctor<Particle, FPCell> emptyFunctor;
-  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
+  autopas::VCCClusterItrationCUDATraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
   verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
 
@@ -178,128 +178,6 @@ TEST_F(VerletClusterCellsTest, testVerletListIteratorDelete) {
   }
 }
 
-TEST_F(VerletClusterCellsTest, testVerletParticleLoss) {
-  std::array<double, 3> min = {1, 1, 1};
-  std::array<double, 3> max = {3, 3, 3};
-  double cutoff = 1.;
-  double skin = 0.2;
-  int clusterSize = 32;
-  autopas::VerletClusterCells<Particle> verletLists(min, max, cutoff, skin, clusterSize);
-
-  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, Particle(), verletLists.getBoxMin(),
-                                                               verletLists.getBoxMax(), 500);
-  autopasTools::generators::RandomGenerator::fillWithHaloParticles(verletLists, Particle(), cutoff, 50);
-  std::vector<int> particlesOwn(500, 0);
-  std::vector<int> particlesHalo(50, 0);
-  std::vector<int> particlesBoth(500, 0);
-
-  MockFunctor<Particle, FPCell> emptyFunctor;
-  EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(AtLeast(1));
-  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
-      verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
-
-  verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
-
-  int numOwn = 0;
-  int numDummyOwn = 0;
-  for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-    if (iter->getID() < 500)
-      ++particlesOwn[iter->getID()];
-    else
-      ++numDummyOwn;
-
-    ++numOwn;
-  }
-  EXPECT_GT(numOwn, 499);
-  EXPECT_EQ(numOwn - numDummyOwn, 500);
-
-  int numHalo = 0;
-  int numDummyHalo = 0;
-
-  for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
-    if (iter->getID() < 50)
-      ++particlesHalo[iter->getID()];
-    else
-      ++numDummyHalo;
-    ++numHalo;
-  }
-  EXPECT_GT(numHalo, 49);
-  EXPECT_EQ(numHalo - numDummyHalo, 50);
-
-  int numBoth = 0;
-  int numDummyBoth = 0;
-  for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
-    if (iter->getID() < 500)
-
-      ++particlesBoth[iter->getID()];
-    else
-      ++numDummyBoth;
-    ++numBoth;
-  }
-  EXPECT_EQ(numBoth - numDummyBoth, 550);
-  EXPECT_EQ(numBoth, numOwn + numHalo);
-
-  for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-    iter->setR(autopasTools::generators::RandomGenerator::randomPosition(min, max));
-  }
-  verletLists.iteratePairwise(&verletClusterCellsTraversal);
-  verletLists.iteratePairwise(&verletClusterCellsTraversal);
-  verletLists.iteratePairwise(&verletClusterCellsTraversal);
-
-  numOwn = 0;
-  numDummyOwn = 0;
-  for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-    if (iter->getID() < 500)
-      ++particlesOwn[iter->getID()];
-    else
-      ++numDummyOwn;
-
-    ++numOwn;
-  }
-  EXPECT_GT(numOwn, 499);
-  EXPECT_EQ(numOwn - numDummyOwn, 500);
-
-  numHalo = 0;
-  numDummyHalo = 0;
-
-  for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
-    if (iter->getID() < 50)
-      ++particlesHalo[iter->getID()];
-    else
-      ++numDummyHalo;
-    ++numHalo;
-  }
-  EXPECT_GT(numHalo, 49);
-  EXPECT_EQ(numHalo - numDummyHalo, 50);
-
-  numBoth = 0;
-  numDummyBoth = 0;
-  for (auto iter = verletLists.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
-    if (iter->getID() < 500)
-
-      ++particlesBoth[iter->getID()];
-    else
-      ++numDummyBoth;
-    ++numBoth;
-  }
-  EXPECT_EQ(numBoth - numDummyBoth, 550);
-  EXPECT_EQ(numBoth, numOwn + numHalo);
-
-  for (auto &it : particlesOwn) {
-    EXPECT_EQ(it, 2);
-  }
-  for (auto &it : particlesHalo) {
-    EXPECT_EQ(it, 2);
-  }
-  int i = 0;
-  for (; i < 50; ++i) {
-    EXPECT_EQ(particlesBoth[i], 4) << "on index " << i << std::endl;
-  }
-  for (; i < 500; ++i) {
-    EXPECT_EQ(particlesBoth[i], 2) << "on index " << i << std::endl;
-  }
-}
-
 TEST_F(VerletClusterCellsTest, testIteratePairwiseWithoutNeighborlistRebuildThrows) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
@@ -314,7 +192,7 @@ TEST_F(VerletClusterCellsTest, testIteratePairwiseWithoutNeighborlistRebuildThro
 
   MockFunctor<Particle, FPCell> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(0);
-  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
+  autopas::VCCClusterItrationCUDATraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
 
   EXPECT_ANY_THROW(verletLists.iteratePairwise(&verletClusterCellsTraversal));

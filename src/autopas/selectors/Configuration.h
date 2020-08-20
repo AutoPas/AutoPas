@@ -31,8 +31,8 @@ class Configuration {
    * @param _newton3
    * @param _cellSizeFactor
    */
-  Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3)
+  constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
+                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3)
       : container(_container),
         traversal(_traversal),
         loadEstimator(_loadEstimator),
@@ -43,7 +43,7 @@ class Configuration {
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
    */
-  Configuration() : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.) {}
+  constexpr Configuration() : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.) {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
