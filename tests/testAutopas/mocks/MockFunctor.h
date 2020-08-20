@@ -57,10 +57,10 @@ class MockFunctor : public autopas::Functor<Particle> {
               (typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType & cell,
                autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
-  void SoALoader(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
-                 autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset) {
-    SoALoaderVerlet(cell, soa, offset);
-  }
+  //  void SoALoader(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
+  //                 autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset) {
+  //    SoALoaderVerlet(cell, soa, offset);
+  //  }
 
   MOCK_METHOD(void, SoAExtractor,
               (autopas::FullParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
@@ -74,10 +74,10 @@ class MockFunctor : public autopas::Functor<Particle> {
               (typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType & cell,
                autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset));
 
-  void SoAExtractor(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
-                    autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset) {
-    SoAExtractorVerlet(cell, soa, offset);
-  }
+  //  void SoAExtractor(typename autopas::VerletListHelpers<Particle>::VerletListParticleCellType &cell,
+  //                    autopas::SoA<typename Particle::SoAArraysType> &soa, size_t offset) {
+  //    SoAExtractorVerlet(cell, soa, offset);
+  //  }
 
   // virtual bool allowsNewton3() { return true; }
   MOCK_METHOD(bool, allowsNewton3, (), (override));

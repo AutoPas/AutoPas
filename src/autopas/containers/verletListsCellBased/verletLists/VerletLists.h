@@ -31,8 +31,7 @@ namespace autopas {
  * implemented somehow
  */
 template <class Particle>
-class VerletLists
-    : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType> {
+class VerletLists : public VerletListsLinkedBase<Particle> {
   using verlet_internal = VerletListHelpers<Particle>;
   using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
 
@@ -58,8 +57,8 @@ class VerletLists
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType>(
-            boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCompatibleTraversals(),
+                                        cellSizeFactor),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
 

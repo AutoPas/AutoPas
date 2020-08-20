@@ -380,6 +380,7 @@ class SPHParticle : public autopas::Particle {
    * Attribute names for the soa arrays
    */
   enum AttributeNames : int {
+    ptr,
     mass,
     posX,
     posY,
@@ -403,8 +404,8 @@ class SPHParticle : public autopas::Particle {
    * SoA arrays type, cf. AttributeNames
    */
   using SoAArraysType =
-      autopas::utils::SoAType<double, double, double, double, double, double, double, double, double, double, double,
-                              double, double, double, double, double, OwnershipState>::Type;
+      autopas::utils::SoAType<SPHParticle *, double, double, double, double, double, double, double, double, double,
+                              double, double, double, double, double, double, double, OwnershipState>::Type;
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
@@ -412,8 +413,10 @@ class SPHParticle : public autopas::Particle {
    * @return Value of the requested attribute.
    */
   template <AttributeNames attribute>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
-    if constexpr (attribute == AttributeNames::mass) {
+  constexpr typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type get() const {
+    if constexpr (attribute == AttributeNames::ptr) {
+      return this;
+    } else if constexpr (attribute == AttributeNames::mass) {
       return getMass();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
@@ -446,7 +449,7 @@ class SPHParticle : public autopas::Particle {
     } else if constexpr (attribute == AttributeNames::engDot) {
       return getEngDot();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
-      return _ownershipState;
+      return this->_ownershipState;
     } else {
       utils::ExceptionHandler::exception("SPHParticle::get: unknown attribute");
     }
@@ -458,7 +461,8 @@ class SPHParticle : public autopas::Particle {
    * @param value New value of the requested attribute.
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+  constexpr void set(
+      typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::mass) {
       setMass(value);
     } else if constexpr (attribute == AttributeNames::posX) {

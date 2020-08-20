@@ -6,7 +6,6 @@
 
 #pragma once
 
-
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ReferenceParticleCell.h"

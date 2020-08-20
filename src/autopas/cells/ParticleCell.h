@@ -13,13 +13,7 @@ namespace autopas {
 /**
  * The ParticleCell Type as an Enum.
  */
-enum class CellType {
-  FullParticleCell,
-  ReferenceParticleCell,
-  ClusterTower,
-  SortedCellView,
-  IsNoCell
-};
+enum class CellType { FullParticleCell, ReferenceParticleCell, ClusterTower, SortedCellView, IsNoCell };
 
 /**
  * Class for Cells of Particles.

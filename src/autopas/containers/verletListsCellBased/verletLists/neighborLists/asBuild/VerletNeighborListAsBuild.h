@@ -87,9 +87,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle, F
    * It executes C08 on the passed LinkedCells container and saves the resulting pairs in the neighbor list, remembering
    * the thread and current color for each pair.
    */
-  void buildAoSNeighborList(
-      LinkedCells<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType> &linkedCells,
-      bool useNewton3) override {
+  void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3) override {
     _soaListIsValid = false;
     _baseLinkedCells = &linkedCells;
 
@@ -312,7 +310,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle, F
   /**
    * The LinkedCells object this neighbor list should use to build.
    */
-  LinkedCells<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType> *_baseLinkedCells;
+  LinkedCells<Particle> *_baseLinkedCells;
 
   /**
    * The internal SoA neighbor list. For format, see getSoANeighborList().

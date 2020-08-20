@@ -184,7 +184,7 @@ class ParticleBase {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
+  enum AttributeNames : int { ptr, id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
 
   /**
    * Floating Point Type used for this particle
@@ -200,9 +200,10 @@ class ParticleBase {
    * The type for the soa storage.
    * owned is currently used as a floatType to ease calculations within the functors.
    */
-  using SoAArraysType = typename autopas::utils::SoAType<idType /*id*/, floatType /*x*/, floatType /*y*/,
-                                                         floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                                         floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
+  using SoAArraysType =
+      typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
+                                       floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
+                                       floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
@@ -211,8 +212,10 @@ class ParticleBase {
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
-    if constexpr (attribute == AttributeNames::id) {
+  constexpr typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type get() const {
+    if constexpr (attribute == AttributeNames::ptr) {
+      return this;
+    } else if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
@@ -240,7 +243,8 @@ class ParticleBase {
    * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+  constexpr void set(
+      typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {

@@ -38,9 +38,7 @@ class VerletNeighborListInterface {
    * @param linkedCells The linked cells to use for building the neighbor list.
    * @param useNewton3 If true, use newton 3 for the neighbor list.
    */
-  virtual void buildAoSNeighborList(
-      LinkedCells<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType> &linkedCells,
-      bool useNewton3) = 0;
+  virtual void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3) = 0;
 
   /**
    * Checks if the neighbor list contains all pairs that is should.
