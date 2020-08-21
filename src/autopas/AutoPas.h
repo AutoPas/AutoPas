@@ -121,23 +121,14 @@ class AutoPas {
    * no longer belong into the container will be returned, the lists will be invalidated. If the internal container is
    * still valid and a rebuild of the container is not forced, this will return an empty list of particles and nothing
    * else will happen.
+   * @param forced specifies whether an update of the container is enforced.
    * @return A pair of a vector of invalid particles that do no belong in the current container and a bool that
    * specifies whether the container was updated. If the bool is false, the vector will be an empty vector. If the
    * returned bool evaluates to true, the vector can both be empty or non-empty, depending on whether particles have
    * left the container or not.
    */
-  [[nodiscard]] std::pair<std::vector<Particle>, bool> updateContainer() {
-    return _logicHandler->updateContainer(false);
-  }
-
-  /**
-   * Forces a container update.
-   * On an update, the particles are resorted into appropriate cells and will return particles that do no longer belong
-   * into the container.
-   * @return A vector of invalid particles that do no belong in the current container.
-   */
-  [[nodiscard]] std::vector<Particle> updateContainerForced() {
-    return std::get<0>(_logicHandler->updateContainer(true));
+  [[nodiscard]] std::pair<std::vector<Particle>, bool> updateContainer(bool forced = false) {
+    return _logicHandler->updateContainer(forced);
   }
 
   /**

@@ -217,13 +217,13 @@ TEST_F(AutoPasTest, getNumParticlesTest) {
   expectedParticles(1, 1);
 
   // update container is expected to remove all halo particles
-  auto haloParticles = autoPas.updateContainerForced();
+  auto [haloParticles, _] = autoPas.updateContainer(true);
   EXPECT_EQ(haloParticles.size(), 0);
   expectedParticles(1, 0);
 
   // move the owned particle in the halo
   autoPas.begin()->setR({-0.2, -0.2, -0.2});
-  haloParticles = autoPas.updateContainerForced();
+  haloParticles = std::get<0>(autoPas.updateContainer(true));
   EXPECT_EQ(haloParticles.size(), 1);
   expectedParticles(0, 0);
 }
