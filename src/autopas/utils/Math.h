@@ -10,6 +10,12 @@
 #include <cmath>
 
 namespace autopas::utils::Math {
+
+/**
+ * Factor of PDF of standard normal distribution.
+ */
+const double normalScale = 1. / std::sqrt(2 * M_PI);
+
 /**
  * Probability density function PDF of the standard normal distribution.
  * @param x

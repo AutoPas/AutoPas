@@ -52,13 +52,13 @@ TEST_F(FeatureVectorTest, lhsSampleContinuous) {
 }
 
 TEST_F(FeatureVectorTest, distanceTest) {
-  autopas::FeatureVector f1(ContainerOption::linkedCells, 1., TraversalOption::c01, LoadEstimatorOption::none,
+  autopas::FeatureVector f1(ContainerOption::linkedCells, 1., TraversalOption::lc_c01, LoadEstimatorOption::none,
                             DataLayoutOption::aos, Newton3Option::enabled);
-  autopas::FeatureVector f2(ContainerOption::linkedCells, 1., TraversalOption::c08, LoadEstimatorOption::none,
+  autopas::FeatureVector f2(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
                             DataLayoutOption::aos, Newton3Option::enabled);
-  autopas::FeatureVector f3(ContainerOption::linkedCells, 1., TraversalOption::c08, LoadEstimatorOption::none,
+  autopas::FeatureVector f3(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
                             DataLayoutOption::soa, Newton3Option::enabled);
-  autopas::FeatureVector f4(ContainerOption::linkedCells, 1., TraversalOption::c08, LoadEstimatorOption::none,
+  autopas::FeatureVector f4(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
                             DataLayoutOption::soa, Newton3Option::disabled);
 
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f1 - f1).squaredNorm(), 0);
@@ -150,7 +150,7 @@ TEST_F(FeatureVectorTest, clusterEncode) {
 }
 
 /**
- * Check neighboursManhattan1 generates unique and correct number of neighbours.
+ * Check clusterNeighboursManhattan1 generates unique and correct number of neighbours.
  */
 TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
   auto cellSizeFactor = 1.0;
@@ -178,7 +178,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
   for (auto fv : vecList) {
     // get neighbours of encoded vector
     auto [encodedDiscrete, encodedContinuous] = encoder.convertToCluster(fv);
-    auto neighbours = autopas::FeatureVector::neighboursManhattan1(encodedDiscrete, dimRestriction);
+    auto neighbours = encoder.clusterNeighboursManhattan1(encodedDiscrete);
 
     // neighbours should contain all container-traversals-estimator + all datalayouts + all newtons - 3 (initial vector
     // is counted trice)
@@ -188,7 +188,52 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
     // neighbours should be unique
     for (size_t i = 0; i < neighbours.size(); ++i) {
       for (size_t j = i + 1; j < neighbours.size(); ++j) {
-        EXPECT_NE(neighbours[i], neighbours[j]);
+        EXPECT_NE(neighbours[i].first, neighbours[j].first);
+      }
+    }
+  }
+}
+
+/**
+ * Check clusterNeighboursManhattan1Container generates unique and correct number of neighbours.
+ */
+TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
+  auto cellSizeFactor = 1.0;
+  auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
+  auto newtons = autopas::Newton3Option::getAllOptions();
+
+  std::vector<DataLayoutOption> dataLayoutsVec(dataLayouts.begin(), dataLayouts.end());
+  std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
+
+  FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, dataLayoutsVec, newtonsVec);
+
+  std::vector<int> dimRestriction = {static_cast<int>(allCompatibleContainerTraversalEstimators.size()),
+                                     static_cast<int>(dataLayouts.size()), static_cast<int>(newtons.size())};
+
+  // generate all possible combinations
+  std::vector<FeatureVector> vecList;
+  for (auto [container, traversal, estimator] : allCompatibleContainerTraversalEstimators) {
+    for (auto dataLayout : dataLayouts) {
+      for (auto newton3 : newtons) {
+        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3);
+      }
+    }
+  }
+
+  for (auto fv : vecList) {
+    // get neighbours of encoded vector
+    auto [encodedDiscrete, encodedContinuous] = encoder.convertToCluster(fv);
+    auto neighbours = encoder.clusterNeighboursManhattan1Container(encodedDiscrete);
+
+    // neighbours should contain all container-traversals-estimator + all datalayouts + all newtons - 3 (initial vector
+    // is counted trice)
+    EXPECT_EQ(neighbours.size(),
+              allCompatibleContainerTraversalEstimators.size() + dataLayouts.size() + newtons.size() - 3);
+
+    // neighbours should be unique
+    for (size_t i = 0; i < neighbours.size(); ++i) {
+      for (size_t j = i + 1; j < neighbours.size(); ++j) {
+        EXPECT_NE(neighbours[i].first, neighbours[j].first);
       }
     }
   }

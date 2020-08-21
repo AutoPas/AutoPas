@@ -16,3 +16,7 @@ venv/
 *testTuning_*/
 *measurePerf_*/
 
+# sourcetrail stuff
+*.srctrlbm
+*.srctrldb
+*.srctrlprj

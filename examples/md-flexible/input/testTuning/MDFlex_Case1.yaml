@@ -8,7 +8,7 @@ tuning-max-evidence              :  10
 functor                          :  Lennard-Jones (12-6)
 cutoff                           :  2
 deltaT                           :  0
-# 138 tuning iterations + 50 to observe choses configuration
+# 138 tuning iterations + 50 to observe chosen configuration
 iterations                       :  188
 Objects:                         
   CubeGrid:
