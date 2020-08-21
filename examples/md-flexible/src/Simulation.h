@@ -298,7 +298,7 @@ void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, Par
       // apply boundary conditions AFTER the position update!
       if (_config->periodic.value) {
         _timers.boundaries.start();
-        BoundaryConditions<ParticleCell>::applyPeriodic(autopas);
+        BoundaryConditions<ParticleCell>::applyPeriodic(autopas, false);
         _timers.boundaries.stop();
       } else {
         throw std::runtime_error(
@@ -349,6 +349,9 @@ void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, Par
 
   // writes final state of the simulation
   if ((not _config->vtkFileName.value.empty())) {
+    _timers.boundaries.start();
+    BoundaryConditions<ParticleCell>::applyPeriodic(autopas, true);
+    _timers.boundaries.stop();
     this->writeVTKFile(_config->iterations.value, autopas);
   }
 
