@@ -463,28 +463,28 @@ class MDFlexConfig {
   /**
    * initTemperature
    */
-  MDFlexOption<double, 0> initTemperature{0., "initialTemperature", true,
-                                          "Thermostat option. Initial temperature of the system."};
+  MDFlexOption<double, __LINE__> initTemperature{0., "initialTemperature", true,
+                                                 "Thermostat option. Initial temperature of the system."};
   /**
    * targetTemperature
    */
-  MDFlexOption<double, 0> targetTemperature{0., "targetTemperature", true,
-                                            "Thermostat option. Target temperature of the system."};
+  MDFlexOption<double, __LINE__> targetTemperature{0., "targetTemperature", true,
+                                                   "Thermostat option. Target temperature of the system."};
   /**
    * deltaTemp
    */
-  MDFlexOption<double, 0> deltaTemp{0., "deltaTemperature", true,
-                                    "Thermostat option. Maximal temperature jump the thermostat is allowed to apply."};
+  MDFlexOption<double, __LINE__> deltaTemp{
+      0., "deltaTemperature", true, "Thermostat option. Maximal temperature jump the thermostat is allowed to apply."};
   /**
    * thermostatInterval
    */
-  MDFlexOption<size_t, 0> thermostatInterval{
+  MDFlexOption<size_t, __LINE__> thermostatInterval{
       0, "thermostatInterval", true,
       "Thermostat option. Number of Iterations between two applications of the thermostat."};
   /**
    * addBrownianMotion
    */
-  MDFlexOption<bool, 0> addBrownianMotion{
+  MDFlexOption<bool, __LINE__> addBrownianMotion{
       true, "addBrownianMotion", true,
       "Thermostat option. Whether the particle velocities should be initialized using "
       "Brownian motion. Possible Values: (true false) Default: true"};
