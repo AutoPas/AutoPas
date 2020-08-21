@@ -23,10 +23,10 @@ class ClosestPackingGenerator {
    * Particle properties will be used from the default particle. Particle IDs start from the default particle.
    * @tparam Container Arbitrary container class that needs to support addParticle().
    * @param container
-   * @param particlesPerDim Number of particles per dimension.
+   * @param boxMin
+   * @param boxMax
    * @param defaultParticle
-   * @param spacing Factor for distance between two particles along one dimension (default is 1).
-   * @param offset Offset to move all particles.
+   * @param spacing Distance between all neighboring particles
    */
   template <class Container>
   static void fillWithParticles(Container &container, const std::array<double, 3> &boxMin,
