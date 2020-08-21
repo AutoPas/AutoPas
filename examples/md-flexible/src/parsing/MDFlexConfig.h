@@ -489,6 +489,27 @@ class MDFlexConfig {
       "Thermostat option. Whether the particle velocities should be initialized using "
       "Brownian motion. Possible Values: (true false) Default: true"};
 
+  /**
+   * gravity
+   */
+  MDFlexOption<std::array<double, 3>, __LINE__> globalForce{
+      {0, 0, 0},
+      "globalForce",
+      true,
+      "Global force applied on every particle. Useful to model e.g. gravity. Default: {0,0,0}"};
+
+  /**
+   * Convenience function testing if the global force contains only 0 entries.
+   * @return false if any entry in globalForce.value is != 0.
+   */
+  [[nodiscard]] bool globalForceIsZero() const {
+    bool isZero = true;
+    for (auto gf : globalForce.value) {
+      isZero &= gf == 0;
+    }
+    return isZero;
+  }
+
   // Checkpoint Options
   /**
    * checkpointfile
