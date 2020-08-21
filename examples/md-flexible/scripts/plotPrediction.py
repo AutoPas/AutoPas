@@ -9,7 +9,7 @@ import os
 # However, lesser version will probably fail due to invalid syntax instead of this assertion
 
 # ---------------------------------------------- Input ----------------------------------------------
-flag = "none"
+outputfileType = "none"
 for arg in sys.argv[1:]:
     if "--help" in arg:
         print("Usage: ./plotPrediction.py OPTION FLAG path/To/mdFlex/std.out ...")
@@ -22,20 +22,20 @@ for arg in sys.argv[1:]:
         print("If no input is given the script does not work.")
         exit(0)
     elif "--png" in arg:
-        flag = "png"
+        outputfileType = "png"
     elif "--jpeg" in arg:
-        flag = "jpeg"
+        outputfileType = "jpeg"
     elif "--pdf" in arg:
-        flag = "pdf"
+        outputfileType = "pdf"
 
 # take all input files as source for a plot
-if flag != "none" and len(sys.argv) > 3:
+if outputfileType != "none" and len(sys.argv) > 3:
     option = sys.argv[1]
-    if option != "prediction" and option != "test" and sys.argv[2] != "--" + flag:
+    if option != "prediction" and option != "test" and sys.argv[2] != "--" + outputfileType:
         print("Error: Wrong input given! ./plotDiffPredictionTest.py --help to see what is needed.")
         sys.exit(-1)
     datafiles = sys.argv[3:]
-elif len(sys.argv) > 2 and flag == "none":
+elif len(sys.argv) > 2 and outputfileType == "none":
     option = sys.argv[1]
     if option != "prediction" and option != "test":
         print("Error: Wrong input given! ./plotPrediction.py --help to see what is needed.")
@@ -86,12 +86,15 @@ for datafile in datafiles:
     #     continue
 
     # create figure and define layout
+    text = "Test"
+    if option == "prediction":
+        text = "Predict"
     fig = go.Figure(
         layout=dict(
             showlegend=True,
             title_text=datafile,
             xaxis_title_text="Iteration",
-            yaxis_title_text=option+"ed time per iteration",
+            yaxis_title_text=text + "ed time per iteration",
         ),
     )
 
@@ -168,10 +171,10 @@ for datafile in datafiles:
 
         i = i + 1
 
-    if flag == "none":
+    if outputfileType == "none":
         fig.show()
     else:
         if not os.path.exists("images"):
             os.mkdir("images")
 
-        fig.write_image("images/" + datafile + "." + flag, scale=1.5)
+        fig.write_image("images/" + datafile + "." + outputfileType, scale=1.5)
