@@ -262,7 +262,7 @@ void PredictiveTuning::selectOptimalSearchSpace() {
   for (const auto &configuration : _searchSpace) {
     // Adds configurations that have not been tested for _maxTuningIterationsWithoutTest or are within the
     // _relativeOptimumRange
-    if ((double)_configurationPredictions[configuration] / optimum->second <= _relativeOptimumRange) {
+    if (static_cast<double>(_configurationPredictions[configuration]) / optimum->second <= _relativeOptimumRange) {
       _optimalSearchSpace.emplace(configuration);
     } else if (_tuningPhaseCounter - _lastTest[configuration] > _maxTuningIterationsWithoutTest) {
       _tooLongNotTestedSearchSpace.emplace(configuration);
