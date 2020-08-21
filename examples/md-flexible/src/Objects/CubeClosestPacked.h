@@ -1,5 +1,5 @@
 /**
- * @file CubeClosestPacked.cpp
+ * @file CubeClosestPacked.h
  * @author F. Gratl
  * @date 21.08.20
  */

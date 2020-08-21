@@ -8,6 +8,7 @@
 
 #include <vector>
 
+#include "Objects/CubeClosestPacked.h"
 #include "Objects/CubeGauss.h"
 #include "Objects/CubeGrid.h"
 #include "Objects/CubeUniform.h"
@@ -64,6 +65,13 @@ class Generator {
   template <class Particle, class ParticleCell>
   static void sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const Sphere &object);
 
+  /**
+   * Generates a cube of particles that are arranged with the hexagonal closest packing.
+   * @tparam Particle
+   * @tparam ParticleCell
+   * @param autopas
+   * @param object
+   */
   template <class Particle, class ParticleCell>
   static void cubeClosestPacked(autopas::AutoPas<Particle, ParticleCell> &autopas, const CubeClosestPacked &object) {
     Particle dummyParticle;

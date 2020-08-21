@@ -70,6 +70,7 @@ class BoundaryConditions {
   /**
    * Realizes periodic Boundaries for the simulation by handling halo particles and updating the container
    * @param autoPas
+   * @param forceUpdate If the container update should be forced or left to autopas.
    */
   static void applyPeriodic(autopas::AutoPas<ParticleType, ParticleCell> &autoPas, bool forceUpdate);
 };
