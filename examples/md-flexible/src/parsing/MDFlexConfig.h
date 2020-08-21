@@ -403,19 +403,19 @@ class MDFlexConfig {
   /**
    * velocityStr
    */
-  static inline const char *velocityStr{"velocity"};
+  static inline const char *const velocityStr{"velocity"};
   /**
    * particleTypeStr
    */
-  static inline const char *particleTypeStr{"particle-type"};
+  static inline const char *const particleTypeStr{"particle-type"};
   /**
    * particlesPerObjectStr
    */
-  static inline const char *particlesPerObjectStr{"numberOfParticles"};
+  static inline const char *const particlesPerObjectStr{"numberOfParticles"};
   /**
    * cubeGridObjectsStr
    */
-  static inline const char *cubeGridObjectsStr{"CubeGrid"};
+  static inline const char *const cubeGridObjectsStr{"CubeGrid"};
   /**
    * cubeGridObjects
    */
@@ -423,7 +423,7 @@ class MDFlexConfig {
   /**
    * cubeGaussObjectsStr
    */
-  static inline const char *cubeGaussObjectsStr{"CubeGauss"};
+  static inline const char *const cubeGaussObjectsStr{"CubeGauss"};
   /**
    * cubeGaussObjects
    */
@@ -431,7 +431,7 @@ class MDFlexConfig {
   /**
    * cubeUniformObjectsStr
    */
-  static inline const char *cubeUniformObjectsStr{"CubeUniform"};
+  static inline const char *const cubeUniformObjectsStr{"CubeUniform"};
   /**
    * cubeUniformObjects
    */
@@ -439,15 +439,15 @@ class MDFlexConfig {
   /**
    * sphereObjectsStr
    */
-  static inline const char *sphereObjectsStr{"Sphere"};
+  static inline const char *const sphereObjectsStr{"Sphere"};
   /**
    * sphereCenterStr
    */
-  static inline const char *sphereCenterStr{"center"};
+  static inline const char *const sphereCenterStr{"center"};
   /**
    * sphereRadiusStr
    */
-  static inline const char *sphereRadiusStr{"radius"};
+  static inline const char *const sphereRadiusStr{"radius"};
   /**
    * sphereObjects
    */
