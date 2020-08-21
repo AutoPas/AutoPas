@@ -181,6 +181,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.vtkWriteFrequency.name]) {
     config.vtkWriteFrequency.value = node[config.vtkWriteFrequency.name].as<size_t>();
   }
+  if (node[config.globalForce.name]) {
+    config.globalForce.value = {node[config.globalForce.name][0].as<double>(),
+                                node[config.globalForce.name][1].as<double>(),
+                                node[config.globalForce.name][2].as<double>()};
+  }
   if (node[config.objectsStr]) {
     // remove default objects
     config.cubeGridObjects.clear();

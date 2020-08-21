@@ -38,7 +38,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.periodic, config.tuningPhases, config.verletClusterSize, config.verletSkinRadius, config.particleSpacing,
       config.tuningSamples, config.traversalOptions, config.tuningStrategyOption, config.useThermostat,
       config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy,
-      config.yamlFilename, config.distributionStdDev, zshCompletionsOption, helpOption)};
+      config.yamlFilename, config.distributionStdDev, config.globalForce, zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -498,6 +498,19 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
+      case decltype(config.globalForce)::getoptChar: {
+        // when passing via cli global force can only be in y direction. For fancier forces use yaml input.
+        try {
+          auto force = stod(strArg);
+          config.globalForce.value = {0, 0, force};
+        } catch (const exception &) {
+          cerr << "Error parsing global force: " << optarg << endl;
+          cerr << "Expecting one double as force along the y axis." << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+
       default: {
         // error message handled by getopt
         displayHelp = true;
