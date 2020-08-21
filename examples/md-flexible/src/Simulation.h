@@ -303,7 +303,7 @@ void Simulation<Particle, ParticleCell>::globalForces(autopas::AutoPas<Particle,
 #pragma omp parallel default(none) shared(autopas)
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    iter->setV(autopas::utils::ArrayMath::add(iter->getV(), _config->globalForce.value));
+    iter->addF(_config->globalForce.value);
   }
 }
 
