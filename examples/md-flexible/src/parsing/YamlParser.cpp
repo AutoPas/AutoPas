@@ -186,7 +186,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                 node[config.globalForce.name][1].as<double>(),
                                 node[config.globalForce.name][2].as<double>()};
   }
-  if (node[config.objectsStr]) {
+  if (node[MDFlexConfig::objectsStr]) {
     // remove default objects
     config.cubeGridObjects.clear();
     config.cubeGaussObjects.clear();
@@ -196,9 +196,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.sigmaMap.value.clear();
     config.massMap.value.clear();
 
-    for (YAML::const_iterator objectIterator = node[config.objectsStr].begin();
-         objectIterator != node[config.objectsStr].end(); ++objectIterator) {
-      if (objectIterator->first.as<std::string>() == config.cubeGridObjectsStr) {
+    for (YAML::const_iterator objectIterator = node[MDFlexConfig::objectsStr].begin();
+         objectIterator != node[MDFlexConfig::objectsStr].end(); ++objectIterator) {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGridObjectsStr) {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
           CubeGrid cubeGrid({it->second[MDFlexConfig::velocityStr][0].as<double>(),
                              it->second[MDFlexConfig::velocityStr][1].as<double>(),
@@ -222,7 +222,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
         continue;
       }
-      if (objectIterator->first.as<std::string>() == config.cubeGaussObjectsStr) {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGaussObjectsStr) {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
           CubeGauss cubeGauss(
               {it->second[MDFlexConfig::velocityStr][0].as<double>(),
@@ -251,7 +251,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
         continue;
       }
-      if (objectIterator->first.as<std::string>() == config.cubeUniformObjectsStr) {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeUniformObjectsStr) {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
           CubeUniform cubeUniform(
               {it->second[MDFlexConfig::velocityStr][0].as<double>(),
@@ -274,7 +274,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
         continue;
       }
-      if (objectIterator->first.as<std::string>() == config.sphereObjectsStr) {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::sphereObjectsStr) {
         for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
           Sphere sphere({it->second[MDFlexConfig::velocityStr][0].as<double>(),
                          it->second[MDFlexConfig::velocityStr][1].as<double>(),
