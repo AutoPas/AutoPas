@@ -15,6 +15,7 @@
 #include "PrintableMolecule.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/ClosestPackingGenerator.h"
 #include "autopasTools/generators/GaussianGenerator.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "autopasTools/generators/RandomGenerator.h"
@@ -62,6 +63,16 @@ class Generator {
    */
   template <class Particle, class ParticleCell>
   static void sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const Sphere &object);
+
+  template <class Particle, class ParticleCell>
+  static void cubeClosestPacked(autopas::AutoPas<Particle, ParticleCell> &autopas, const CubeClosestPacked &object) {
+    Particle dummyParticle;
+    dummyParticle.setV(object.getVelocity());
+    dummyParticle.setID(autopas.getNumberOfParticles());
+    dummyParticle.setTypeId(object.getTypeId());
+    autopasTools::generators::ClosestPackingGenerator::fillWithParticles(
+        autopas, object.getBoxMin(), object.getBoxMax(), dummyParticle, object.getParticleSpacing());
+  }
 };
 
 template <class Particle, class ParticleCell>

@@ -22,6 +22,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/NumberSet.h"
+#include "src/Objects/CubeClosestPacked.h"
 #include "src/Objects/CubeGauss.h"
 #include "src/Objects/CubeGrid.h"
 #include "src/Objects/CubeUniform.h"
@@ -125,7 +126,7 @@ class MDFlexConfig {
   /**
    * Choice of the particle generators specified in the command line
    */
-  enum class GeneratorOption { grid, uniform, gaussian, sphere };
+  enum class GeneratorOption { grid, uniform, gaussian, sphere, closestPacked };
 
   //  All options in the config
   //  Make sure that the description is parsable by `CLIParser::createZSHCompletionFile()`!
@@ -388,7 +389,7 @@ class MDFlexConfig {
    */
   MDFlexOption<GeneratorOption, __LINE__> generatorOption{
       GeneratorOption::grid, "particle-generator", true,
-      "Scenario generator. Possible Values: (grid uniform gaussian sphere) Default: grid"};
+      "Scenario generator. Possible Values: (grid uniform gaussian sphere closestPacking) Default: grid"};
 
   // Object Generation:
   /**
@@ -451,6 +452,14 @@ class MDFlexConfig {
    * sphereObjects
    */
   std::vector<Sphere> sphereObjects{};
+  /**
+   * cubeClosestPacedObjects
+   */
+  std::vector<CubeClosestPacked> cubeClosestPacedObjects{};
+  /**
+   * sphereObjectsStr
+   */
+  static inline const char *const cubeClosestPacedObjectsStr{"CubeClosestPacked"};
 
   // Thermostat Options
   /**

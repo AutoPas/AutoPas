@@ -242,6 +242,9 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   for (const auto &sphere : _config->sphereObjects) {
     Generator::sphere<Particle, ParticleCell>(autopas, sphere);
   }
+  for (const auto &cube : _config->cubeClosestPacedObjects) {
+    Generator::cubeClosestPacked<Particle, ParticleCell>(autopas, cube);
+  }
 
   // initializing system to initial temperature and Brownian motion
   if (_config->useThermostat.value and _config->deltaT.value != 0) {

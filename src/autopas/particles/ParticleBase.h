@@ -74,7 +74,6 @@ class ParticleBase {
   OwnershipState _ownershipState{OwnershipState::owned};
 
  public:
-
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
