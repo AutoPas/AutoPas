@@ -13,10 +13,6 @@ namespace autopas {
  */
 template <class Number>
 class NumberInterval : public NumberSet<Number> {
- private:
-  Number _min;
-  Number _max;
-
  public:
   /**
    * Default Constructor: Create a range which only contains 0
@@ -103,8 +99,8 @@ class NumberInterval : public NumberSet<Number> {
       result.insert(_min);
       return result;
     } else if (n == 1) {
-      // if only one sample choose middle
-      result.insert((_max + _min) / 2);
+      // if only one sample choose median
+      result.insert(getMedian());
       return result;
     }
 
@@ -117,5 +113,11 @@ class NumberInterval : public NumberSet<Number> {
 
     return result;
   }
+
+  Number getMedian() const override { return (_max + _min) / 2; }
+
+ private:
+  Number _min;
+  Number _max;
 };
 }  // namespace autopas
