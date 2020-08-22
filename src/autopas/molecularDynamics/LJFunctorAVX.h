@@ -61,6 +61,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
                 LJFunctorAVX<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals,
                              relevantForTuning>>(cutoff),
         _cutoffsquare{_mm256_set1_pd(cutoff * cutoff)},
+        _cutoffsquareAoS(cutoff * cutoff),
         _upotSum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
@@ -118,7 +119,58 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    utils::ExceptionHandler::exception("LJFunctorAVX.AoSFunctor() not implemented!");
+    if (i.isDummy() or j.isDummy()) {
+      return;
+    }
+    auto sigmasquare = _sigmaSquareAoS;
+    auto epsilon24 = _epsilon24AoS;
+    auto shift6 = _shift6AoS;
+    if constexpr (useMixing) {
+      sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
+      epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
+      if constexpr (applyShift) {
+        shift6 = _PPLibrary->mixingShift6(i.getTypeId(), j.getTypeId());
+      }
+    }
+    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+    double dr2 = utils::ArrayMath::dot(dr, dr);
+
+    if (dr2 > _cutoffsquareAoS) {
+      return;
+    }
+
+    double invdr2 = 1. / dr2;
+    double lj6 = sigmasquare * invdr2;
+    lj6 = lj6 * lj6 * lj6;
+    double lj12 = lj6 * lj6;
+    double lj12m6 = lj12 - lj6;
+    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    auto f = utils::ArrayMath::mulScalar(dr, fac);
+    i.addF(f);
+    if (newton3) {
+      // only if we use newton 3 here, we want to
+      j.subF(f);
+    }
+    if (calculateGlobals) {
+      auto virial = utils::ArrayMath::mul(dr, f);
+      double upot = epsilon24 * lj12m6 + shift6;
+
+      const int threadnum = autopas_get_thread_num();
+      // for non-newton3 the division is in the post-processing step.
+      if (newton3) {
+        upot *= 0.5;
+        virial = utils::ArrayMath::mulScalar(virial, (double)0.5);
+      }
+      if (i.isOwned()) {
+        _aosThreadData[threadnum].upotSum += upot;
+        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+      }
+      // for non-newton3 the second particle will be considered in a separate calculation
+      if (newton3 and j.isOwned()) {
+        _aosThreadData[threadnum].upotSum += upot;
+        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+      }
+    }
   }
 
   /**
@@ -702,6 +754,14 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       _shift6 = _mm256_setzero_pd();
     }
 #endif
+
+    _epsilon24AoS = epsilon24;
+    _sigmaSquareAoS = sigmaSquare;
+    if constexpr (applyShift) {
+      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquare[0]);
+    } else {
+      _shift6AoS = 0.;
+    }
   }
 
  private:
@@ -761,6 +821,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   __m256d _epsilon24{};
   __m256d _sigmaSquare{};
 #endif
+
+  const double _cutoffsquareAoS = 0;
+  double _epsilon24AoS, _sigmaSquareAoS, _shift6AoS = 0;
 
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
