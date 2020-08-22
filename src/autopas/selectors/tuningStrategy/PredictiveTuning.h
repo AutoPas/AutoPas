@@ -51,7 +51,6 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
                    unsigned int testsUntilFirstPrediction, ExtrapolationMethodOption extrapolationMethodOption)
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                           allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options),
-        _currentConfig(_searchSpace.begin()),
         _notTestedYet(_searchSpace),
         _relativeOptimumRange(relativeOptimum),
         _maxTuningIterationsWithoutTest(maxTuningIterationsWithoutTest),
@@ -72,16 +71,12 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
    */
   explicit PredictiveTuning(std::set<Configuration> allowedConfigurations)
-      : SetSearchSpaceBasedTuningStrategy(std::move(allowedConfigurations)),
-        _currentConfig(_searchSpace.begin()),
-        _notTestedYet(_searchSpace) {}
+      : SetSearchSpaceBasedTuningStrategy(std::move(allowedConfigurations)), _notTestedYet(_searchSpace) {}
 
   inline void addEvidence(long time, size_t iteration) override {
     _traversalTimesStorage[*_currentConfig].emplace_back(iteration, time);
     _lastTest[*_currentConfig] = _tuningPhaseCounter;
   }
-
-  inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
 
   inline void reset(size_t iteration) override {
     _configurationPredictions.clear();
@@ -95,8 +90,6 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   }
 
   inline bool tune(bool currentInvalid = false) override;
-
-  inline void removeN3Option(Newton3Option badNewton3Option) override;
 
  private:
   /**
@@ -146,7 +139,6 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    */
   inline void predictionOutput(Configuration configuration);
 
-  std::set<Configuration>::iterator _currentConfig;
   /**
    * Stores the traversal times for each configuration.
    * @param Configuration
@@ -652,27 +644,6 @@ void PredictiveTuning::blacklistBadConfigurations() {
     } else {
       configurationIter++;
     }
-  }
-}
-
-void PredictiveTuning::removeN3Option(Newton3Option badNewton3Option) {
-  for (auto ssIter = _searchSpace.begin(); ssIter != _searchSpace.end();) {
-    if (ssIter->newton3 == badNewton3Option) {
-      // change current config to the next non-deleted
-      if (ssIter == _currentConfig) {
-        ssIter = _searchSpace.erase(ssIter);
-        _currentConfig = ssIter;
-      } else {
-        ssIter = _searchSpace.erase(ssIter);
-      }
-    } else {
-      ++ssIter;
-    }
-  }
-
-  if (this->searchSpaceIsEmpty()) {
-    utils::ExceptionHandler::exception(
-        "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
   }
 }
 
