@@ -13,7 +13,6 @@
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
-#include "autopas/utils/AutoPasConfigurationCommunicator.h"
 
 namespace autopas {
 
