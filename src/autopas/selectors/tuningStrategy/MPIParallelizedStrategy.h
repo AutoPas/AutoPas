@@ -157,6 +157,9 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
     if (currentInvalid) {
       return true;
     }
+  } else if (currentInvalid) {
+    AutoPasLog(warn, "MPIParallelizedStrategy: Underlying strategy found invalid optimum. Reverting to fallback-mode.");
+    setupFallbackOptions();
   }
 
   // Wait for the Iallreduce from the last tuning step to finish
