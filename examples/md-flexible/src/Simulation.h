@@ -567,7 +567,7 @@ double Simulation<Particle, ParticleCell>::calculateHomogeneity(autopas::AutoPas
     const size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
     particlesPerCell[cellIndex] += 1;
     // calculate the size of the current cell
-    allVolumes[cellIndex] = 0;
+    allVolumes[cellIndex] = 1;
     for (int i = 0; i < cellsPerDimension.size(); ++i) {
       // the last cell layer has a special size
       if (index[i] == cellsPerDimension[i] - 1) {
