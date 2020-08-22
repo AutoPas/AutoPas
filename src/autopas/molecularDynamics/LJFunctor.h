@@ -879,7 +879,7 @@ class LJFunctor
     // we will use a vectorized version.
     if (neighborListSize >= vecsize) {
       alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
-      alignas(64) std::array<OwnershipState, vecsize> ownedStateArr;
+      alignas(64) std::array<OwnershipState, vecsize> ownedStateArr{};
       // broadcast of the position of particle i
       for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
         xtmp[tmpj] = xptr[indexFirst];
