@@ -164,6 +164,6 @@ for datafile in datafiles:
 with open('dataForPlotting.csv', 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(
-        ["Traversal", "Container", "Newton3", "Data Layout", "Cellsize Factor", "Load Estimator",
-         "Form", "Name of Scenario", "Hardware", "x", "y", "z", "Number of Particles", "Iteration Time"])
+        ["Traversal", "Container", "Newton3", "DataLayout", "CellsizeFactor", "LoadEstimator",
+         "Form", "NameOfScenario", "Hardware", "x", "y", "z", "NumberOfParticles", "IterationTime"])
     writer.writerows(rowList)
