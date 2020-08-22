@@ -13,6 +13,7 @@
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/AutoPasConfigurationCommunicator.h"
 
 namespace autopas {
 
@@ -47,7 +48,8 @@ class RandomSearch : public TuningStrategyInterface {
         _cellSizeFactors(allowedCellSizeFactors.clone()),
         _currentConfig(),
         _rng(seed),
-        _maxEvidence(maxEvidence) {
+        _maxEvidence(maxEvidence),
+        _initialMaxEvidence(maxEvidence) {
     if (searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("RandomSearch: No valid configurations could be created.");
     }
@@ -59,12 +61,18 @@ class RandomSearch : public TuningStrategyInterface {
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time, size_t iteration) override { _traversalTimes[_currentConfig] = time; }
+  inline void addEvidence(long time, size_t iteration) override {
+    if (_traversalTimes.find(_currentConfig) != _traversalTimes.end()) {
+      --_maxEvidence;
+    }
+    _traversalTimes[_currentConfig] = time;
+  }
 
   inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
   inline void reset(size_t iteration) override {
     _traversalTimes.clear();
+    _maxEvidence = _initialMaxEvidence;
     tune();
   }
 
@@ -91,9 +99,14 @@ class RandomSearch : public TuningStrategyInterface {
 
   Random _rng;
   size_t _maxEvidence;
+  size_t _initialMaxEvidence;
 };
 
-bool RandomSearch::tune(bool) {
+bool RandomSearch::tune(bool currentInvalid) {
+  if (currentInvalid) {
+    --_maxEvidence;
+  }
+
   if (searchSpaceIsEmpty()) {
     // no valid configuration
     _currentConfig = Configuration();
