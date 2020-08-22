@@ -48,6 +48,13 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
   void testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles);
 
   /**
+   * Creates two cells, generates neighbor lists manually and then compares the SoAFunctorVerlet calls.
+   * @param newton3
+   * @param doDeleteSomeParticles
+   */
+  void testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDeleteSomeParticles);
+
+  /**
    * Checks that two non empty SoAs' particles are equal
    * @tparam SoAType
    * @param soa1
@@ -74,6 +81,8 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
   bool particleEqual(Particle &p1, Particle &p2);
 
   constexpr static double _cutoff{6.};
+  constexpr static double _skin{2.};
+  constexpr static double _interactionLengthSquare{(_cutoff + _skin) * (_cutoff + _skin)};
   constexpr static double _epsilon{1.};
   constexpr static double _sigma{1.};
   const std::array<double, 3> _lowCorner{0., 0., 0.};

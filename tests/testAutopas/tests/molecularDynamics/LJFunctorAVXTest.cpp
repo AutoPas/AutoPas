@@ -207,6 +207,80 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
   EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
+void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDeleteSomeParticles) {
+  FMCell cellAVX;
+
+  constexpr size_t numParticles = 7;
+
+  Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
+                                                               numParticles);
+
+  if (doDeleteSomeParticles) {
+    // mark some particles as deleted to test if the functor handles them correctly
+    for (auto &particle : cellAVX) {
+      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+    }
+  }
+
+  // generate neighbor lists
+  std::array<std::vector<size_t, autopas::AlignedAllocator<size_t>>, numParticles> neighborLists;
+  for (size_t i = 0; i < numParticles; ++i) {
+    for (size_t j = newton3 ? i + 1 : 0; j < numParticles; ++j) {
+      auto dr = autopas::utils::ArrayMath::sub(cellAVX[i].getR(), cellAVX[j].getR());
+      double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+      if (dr2 <= _interactionLengthSquare) {
+        neighborLists[i].push_back(j);
+      }
+    }
+  }
+
+  // copy cells
+  FMCell cellNoAVX(cellAVX);
+  constexpr bool shifting = true;
+  constexpr bool mixing = false;
+  autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
+  ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  autopas::LJFunctorAVX<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
+  ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+
+  ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
+
+  ljFunctorAVX.initTraversal();
+  ljFunctorNoAVX.initTraversal();
+
+  ljFunctorNoAVX.SoALoader(cellNoAVX, cellNoAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer, 0);
+
+  ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellNoAVX._particleSoABuffer))
+      << "Cells not equal after loading.";
+
+  for (size_t i = 0; i < numParticles; ++i) {
+    ljFunctorNoAVX.SoAFunctorVerlet(cellNoAVX._particleSoABuffer, i, neighborLists[i], newton3);
+    ljFunctorAVX.SoAFunctorVerlet(cellAVX._particleSoABuffer, i, neighborLists[i], newton3);
+  }
+
+  ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellNoAVX._particleSoABuffer))
+      << "Cells not equal after applying functor.";
+
+  ljFunctorAVX.SoAExtractor(cellAVX, cellAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoAExtractor(cellNoAVX, cellNoAVX._particleSoABuffer, 0);
+
+  ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells 1 not equal after extracting.";
+
+  ljFunctorAVX.endTraversal(newton3);
+  ljFunctorNoAVX.endTraversal(newton3);
+
+  double tolerance = 1e-8;
+  EXPECT_NEAR(ljFunctorAVX.getUpot(), ljFunctorNoAVX.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
+}
+
+TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXVerlet) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorAVXVerlet(newton3, doDeleteSomeParticle);
+}
+
 TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCell) {
   auto [newton3, doDeleteSomeParticle] = GetParam();
   testLJFunctorVSLJFunctorAVXOneCell(newton3, doDeleteSomeParticle);
