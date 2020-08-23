@@ -503,6 +503,7 @@ class LJFunctor
   void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {
+    if (soa.getNumParticles() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
     } else {
@@ -823,8 +824,6 @@ class LJFunctor
   template <bool newton3>
   void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
-    if (soa.getNumParticles() == 0) return;
-
     const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
