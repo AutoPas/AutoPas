@@ -227,6 +227,9 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   std::array<std::vector<size_t, autopas::AlignedAllocator<size_t>>, numParticles> neighborLists;
   for (size_t i = 0; i < numParticles; ++i) {
     for (size_t j = newton3 ? i + 1 : 0; j < numParticles; ++j) {
+      if (i == j) {
+        continue;
+      }
       auto dr = autopas::utils::ArrayMath::sub(cellAVX[i].getR(), cellAVX[j].getR());
       double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
       if (dr2 <= _interactionLengthSquare) {
