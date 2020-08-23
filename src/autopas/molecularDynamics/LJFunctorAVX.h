@@ -948,7 +948,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     _epsilon24AoS = epsilon24;
     _sigmaSquareAoS = sigmaSquare;
     if constexpr (applyShift) {
-      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquare[0]);
+      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquareAoS);
     } else {
       _shift6AoS = 0.;
     }
