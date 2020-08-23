@@ -108,8 +108,8 @@ class AutoPas {
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
-            _maxTuningPhasesWithoutTest, _relativeRangeForBlacklist, _evidenceFirstPrediction,
-            _acquisitionFunctionOption, _extrapolationMethodOption)),
+            _maxTuningPhasesWithoutTest, _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption,
+            _extrapolationMethodOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler =
         std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
@@ -455,14 +455,14 @@ class AutoPas {
    * Get the range of the configurations that are not going to be blacklisted.
    * @return
    */
-  [[nodiscard]] double getRelativeRangeForBlacklist() const { return _relativeRangeForBlacklist; }
+  [[nodiscard]] double getRelativeBlacklistRange() const { return _relativeBlacklistRange; }
 
   /**
    * Set the range of the configurations that are not going to be blacklisted.
-   * @param relativeRangeForBlacklist
+   * @param relativeBlacklistRange
    */
-  void setRelativeRangeForBlacklist(double relativeRangeForBlacklist) {
-    AutoPas::_relativeRangeForBlacklist = relativeRangeForBlacklist;
+  void setRelativeBlacklistRange(double relativeBlacklistRange) {
+    AutoPas::_relativeBlacklistRange = relativeBlacklistRange;
   }
 
   /**
@@ -666,7 +666,7 @@ class AutoPas {
   /**
    * Factor of the range of the configurations that are not going to be blacklisted.
    */
-  double _relativeRangeForBlacklist{0};
+  double _relativeBlacklistRange{0};
   /**
    * Specifies how many tests that need to have happened for a configuration until the first prediction is calculated in
    * PredictiveTuning.

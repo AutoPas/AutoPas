@@ -54,7 +54,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
         _notTestedYet(_searchSpace),
         _relativeOptimumRange(relativeOptimum),
         _maxTuningIterationsWithoutTest(maxTuningIterationsWithoutTest),
-        _relativeRangeForBlacklist(relativeRangeForBlacklist),
+        _relativeBlacklistRange(relativeRangeForBlacklist),
         _extrapolationMethod(extrapolationMethodOption) {
     setTestsUntilFirstPrediction(testsUntilFirstPrediction);
 
@@ -208,7 +208,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   /**
    * Factor of the range of the configurations that are not going to be blacklisted.
    */
-  const double _relativeRangeForBlacklist{0};
+  const double _relativeBlacklistRange{0};
   /**
    * Stores the extrapolation method that is going to be used for the traversal time predictions.
    */
@@ -623,7 +623,7 @@ void PredictiveTuning::selectOptimalConfiguration() {
         "PredictiveTuning: Optimal configuration not found in list of configurations!");
   }
 
-  if (_relativeRangeForBlacklist != 0 and not _notTestedYet.empty()) {
+  if (_relativeBlacklistRange != 0 and not _notTestedYet.empty()) {
     blacklistBadConfigurations();
   }
 
@@ -635,7 +635,7 @@ void PredictiveTuning::blacklistBadConfigurations() {
   auto configurationIter = _notTestedYet.begin();
   while (configurationIter != _notTestedYet.end()) {
     if (_lastTest[*configurationIter] == _tuningPhaseCounter) {
-      if (_traversalTimesStorage[*configurationIter].back().second / optimumTime > _relativeRangeForBlacklist) {
+      if (_traversalTimesStorage[*configurationIter].back().second / optimumTime > _relativeBlacklistRange) {
         _searchSpace.erase(*configurationIter);
         _traversalTimesStorage.erase(*configurationIter);
         _lastTest.erase(*configurationIter);
