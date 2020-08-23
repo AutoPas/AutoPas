@@ -254,7 +254,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       // a & ~(b -1) == a - (a mod b)
       for (; j < (i & ~(vecLength - 1)); j += 4) {
         SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
+                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
                                &virialSumY, &virialSumZ, &upotSum, 0);
       }
       // If b is a power of 2 the following holds:
@@ -262,7 +262,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
         SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                              zptr, fxptr, fyptr, fzptr, typeIDptr, typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
+                              zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
                               &virialSumY, &virialSumZ, &upotSum, rest);
       }
 
@@ -619,7 +619,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {
-    if (soa.getNumParticles() == 0) return;
+    if (soa.getNumParticles() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
     } else {
@@ -671,6 +671,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     alignas(64) std::array<double, vecLength> fy2tmp{};
     alignas(64) std::array<double, vecLength> fz2tmp{};
     alignas(64) std::array<size_t, vecLength> typeID2tmp{};
+    alignas(64) std::array<autopas::OwnershipState, vecLength> ownedStates2tmp{};
 
     // load 4 neighbors
     size_t j = 0;
@@ -695,12 +696,21 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
         fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
         fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
         typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
+        ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
 
-      SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1,
+      SoAKernel<newton3, false>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
                                 x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
-                                typeIDptr, typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
-                                &virialSumZ, &upotSum, 0);
+                                &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX,
+                                &virialSumY, &virialSumZ, &upotSum, 0);
+
+      if (newton3) {
+        for (size_t vecIndex = 0; vecIndex < vecLength; ++vecIndex) {
+          fxptr[neighborList[j + vecIndex]] = fx2tmp[vecIndex];
+          fyptr[neighborList[j + vecIndex]] = fy2tmp[vecIndex];
+          fzptr[neighborList[j + vecIndex]] = fz2tmp[vecIndex];
+        }
+      }
     }
     // If b is a power of 2 the following holds:
     // a & (b -1) == a mod b
@@ -725,12 +735,21 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
         fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
         fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
         typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
+        ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
 
-      SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1,
+      SoAKernel<newton3, true>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
                                x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
-                               typeIDptr, typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ,
-                               &upotSum, rest);
+                               &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
+                               &virialSumZ, &upotSum, rest);
+
+      if (newton3) {
+        for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
+          fxptr[neighborList[j + vecIndex]] = fx2tmp[vecIndex];
+          fyptr[neighborList[j + vecIndex]] = fy2tmp[vecIndex];
+          fzptr[neighborList[j + vecIndex]] = fz2tmp[vecIndex];
+        }
+      }
     }
 
     // horizontally reduce fDacc to sumfD
