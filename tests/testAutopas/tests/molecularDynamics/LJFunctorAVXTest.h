@@ -55,6 +55,13 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
   void testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDeleteSomeParticles);
 
   /**
+   * Create two cells and compare AoSFunctor
+   * @param newton3
+   * @param doDeleteSomeParticles
+   */
+  void testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDeleteSomeParticles);
+
+  /**
    * Checks that two non empty SoAs' particles are equal
    * @tparam SoAType
    * @param soa1
