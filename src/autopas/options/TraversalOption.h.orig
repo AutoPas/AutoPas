@@ -166,8 +166,8 @@ class TraversalOption : public Option<TraversalOption> {
     BalancedSliced = 18,
     BalancedSlicedVerlet = 19,
     c04HCP = 20,
-    sli_blk = 21
->>>>>>> Adapt master to include sli_blk traversal
+    lc_sliced_blocks = 21
+>>>>>>> renaming to lc_sliced_blocks
   };
 
   /**
@@ -242,7 +242,7 @@ class TraversalOption : public Option<TraversalOption> {
 =======
         {TraversalOption::c08, "c08"},
         {TraversalOption::sliced, "sliced"},
-        {TraversalOption::sli_blk, "sli-blk"},
+        {TraversalOption::sli_blk, "lc_sliced_blocks"},
         {TraversalOption::c18, "c18"},
         {TraversalOption::c01, "c01"},
         {TraversalOption::directSumTraversal, "directSum"},

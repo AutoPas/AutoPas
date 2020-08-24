@@ -176,7 +176,6 @@ class TraversalOption : public Option<TraversalOption> {
    */
   static std::map<TraversalOption, std::string> getOptionNames() {
     return {
-<<<<<<< HEAD
         // DirectSum Traversals:
         {TraversalOption::ds_sequential, "ds_sequential"},
 
@@ -214,30 +213,6 @@ class TraversalOption : public Option<TraversalOption> {
         // VarVerlet Traversals:
         {TraversalOption::vvl_as_built, "vvl_as_built"},
 
-=======
-        {TraversalOption::c08, "c08"},
-        {TraversalOption::sliced, "sliced"},
-        {TraversalOption::sli_blk, "sli-blk"},
-        {TraversalOption::c18, "c18"},
-        {TraversalOption::c01, "c01"},
-        {TraversalOption::directSumTraversal, "directSum"},
-        {TraversalOption::slicedVerlet, "verlet-sliced"},
-        {TraversalOption::c18Verlet, "verlet-c18"},
-        {TraversalOption::c01Verlet, "verlet-c01"},
-        {TraversalOption::c01Cuda, "cuda-c01"},
-        {TraversalOption::verletTraversal, "verlet-lists"},
-        {TraversalOption::c01CombinedSoA, "c01-combined-SoA"},
-        {TraversalOption::verletClusters, "verlet-clusters"},
-        {TraversalOption::c04, "c04"},
-        {TraversalOption::varVerletTraversalAsBuild, "var-verlet-lists-as-build"},
-        {TraversalOption::verletClustersColoring, "verlet-clusters-coloring"},
-        {TraversalOption::c04SoA, "c04SoA"},
-        {TraversalOption::verletClusterCells, "verlet-cluster-cells"},
-        {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
-        {TraversalOption::BalancedSliced, "balanced-sliced"},
-        {TraversalOption::BalancedSlicedVerlet, "balanced-sliced-verlet"},
-        {TraversalOption::c04HCP, "c04HCP"},
->>>>>>> Adapt master to include sli_blk traversal
     };
   };
 
