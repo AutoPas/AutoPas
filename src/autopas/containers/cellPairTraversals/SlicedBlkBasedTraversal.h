@@ -214,7 +214,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
    * A vector holding all subblocks.
    * Each vector entry x corresponds to block at blocks[x]. Each entry holds an array of 27 sub blocks.
    * Each sub block has a starting corner and unique order identity (000-222) assigned as follows:
-   *            220      	          221    	           222
+   *            220      	    221    	       222
    *           / |                / |                / |
    *       120   |            121   |            122   |
    *      / |   210          / |   211          / |   212
@@ -238,16 +238,18 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   int lockToSubBlocks(int x, int y, int z) {
     // 0 => my lock and 1 => neighbour lock
-    // x,y,z == 0 does not include 111 as this does not need a lock!
     if (x == 0 && y == 0 && z == 0) return 0;
-    if (x == 1 && y == 0 && z == 0) return 100;
-    if (x == 0 && y == 1 && z == 0) return 10;
-    if (x == 0 && y == 0 && z == 1) return 1;
+    else if (x == 1 && y == 0 && z == 0) return 100;
+    else if (x == 0 && y == 1 && z == 0) return 10;
+    else if (x == 0 && y == 0 && z == 1) return 1;
 
-    if (x == 1 && y == 1 && z == 0) return 110;
-    if (x == 1 && y == 0 && z == 1) return 101;
-    if (x == 0 && y == 1 && z == 1) return 11;
-    if (x == 1 && y == 1 && z == 1) return 111;
+    else if (x == 1 && y == 1 && z == 0) return 110;
+    else if (x == 1 && y == 0 && z == 1) return 101;
+    else if (x == 0 && y == 1 && z == 1) return 11;
+    else if (x == 1 && y == 1 && z == 1) return 111;
+    else {
+      AutoPasLog(error, "Requested not a SubBlock for Locking.");
+    }
   }
 
   /**
@@ -327,103 +329,6 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
   }
 
   /**
-   * Locking the next sub-blocks necessary for c08 calculation, given a neighbouring previous sub-block.
-   * WARNING: This is only possible to use if we can assure that we do not queue the sub-blocks!
-   * @param blockNumber The number of the block/ thread which wants the sub-block to lock.
-   * @param orderCurrent The block unique order id of the sub-block. e.g. 000-222 as an array. = {0,0,0}-{2,2,2}
-   * @param orderNext The block unique order id of the next sub-block to iterate over as an array.
-   */
-  bool locking2x2x2sub_blocksNext(unsigned long blockNumber, std::array<unsigned long, 3> orderCurrent,
-                                  std::array<unsigned long, 3> orderNext) {
-    for (int axis = 0; axis < 3; ++axis) {
-      if (orderCurrent[axis] != orderNext[axis]) {  // MUST ONLY BE TRUE ONCE IN FOR LOOP
-        // we need the difference between orderCurrent and orderNext
-        unsigned long diffOrderNext = orderNext[axis];
-        unsigned long diffOrderCurrent = orderCurrent[axis];
-
-        if (diffOrderNext > 1 || diffOrderCurrent > 1) {
-          AutoPasLog(error, "Iterating trough a sub-block of another block!");
-        }
-
-        for (int i = 0; i < 2; ++i) {
-          for (int j = 0; j < 2; ++j) {
-            if (axis == 0) {
-              locks[uniqueLockCalculation(
-                        blockNumber, {orderCurrent[0] + diffOrderCurrent, i + orderCurrent[1], j + orderCurrent[2]})]
-                  .unlock();
-            } else if (axis == 1) {
-              locks[uniqueLockCalculation(
-                        blockNumber, {j + orderCurrent[0], orderCurrent[1] + diffOrderCurrent, i + orderCurrent[2]})]
-                  .unlock();
-            } else if (axis == 2) {
-              locks[uniqueLockCalculation(
-                        blockNumber, {i + orderCurrent[0], j + orderCurrent[1], orderCurrent[2] + diffOrderCurrent})]
-                  .unlock();
-            }
-          }
-        }
-
-        // OPEN MP CHECK IF LOCK IS POSSIBLE
-        bool LocksThatCanBeSet[4] = {false, false, false, false};
-        int no_locksSet = 0;
-        _masterlock.lock();
-
-        for (int i = 0; i < 2; ++i) {
-          for (int j = 0; j < 2; ++j) {
-            if (axis == 0) {
-              LocksThatCanBeSet[no_locksSet] =
-                  locks[uniqueLockCalculation(blockNumber,
-                                              {orderNext[0] + diffOrderNext, i + orderNext[1], j + orderNext[2]})]
-                      .testlock();
-            } else if (axis == 1) {
-              LocksThatCanBeSet[no_locksSet] =
-                  locks[uniqueLockCalculation(blockNumber,
-                                              {j + orderNext[0], orderNext[1] + diffOrderNext, i + orderNext[2]})]
-                      .testlock();
-            } else if (axis == 2) {
-              LocksThatCanBeSet[no_locksSet] =
-                  locks[uniqueLockCalculation(blockNumber,
-                                              {i + orderNext[0], j + orderNext[1], orderNext[2] + diffOrderNext})]
-                      .testlock();
-            }
-            no_locksSet++;
-          }
-        }
-
-        // IF LOCK POSSIBLE, LOCK & SET MASTER LOCK & return true
-        // IF IMPOSSIBLE UNLOCK locked Locks & SET MASTER LOCK & return false
-        if (LocksThatCanBeSet[0] && LocksThatCanBeSet[1] && LocksThatCanBeSet[2] && LocksThatCanBeSet[3]) {
-          _masterlock.unlock();
-          return true;
-        } else {
-          no_locksSet = 0;
-          for (int i = 0; i < 2; ++i) {
-            for (int j = 0; j < 2; ++j) {
-              if (axis == 0 && LocksThatCanBeSet[no_locksSet]) {
-                locks[uniqueLockCalculation(blockNumber,
-                                            {orderNext[0] + diffOrderNext, i + orderNext[1], j + orderNext[2]})]
-                    .unlock();
-              } else if (axis == 1 && LocksThatCanBeSet[no_locksSet]) {
-                locks[uniqueLockCalculation(blockNumber,
-                                            {j + orderNext[0], orderNext[1] + diffOrderNext, i + orderNext[2]})]
-                    .unlock();
-              } else if (axis == 2 && LocksThatCanBeSet[no_locksSet]) {
-                locks[uniqueLockCalculation(blockNumber,
-                                            {i + orderNext[0], j + orderNext[1], orderNext[2] + diffOrderNext})]
-                    .unlock();
-              }
-              no_locksSet++;
-            }
-          }
-          AutoPasLog(debug, "UNLOCKING: " + std::to_string(blockNumber) + " MASTER");
-          _masterlock.unlock();
-          return false;
-        }
-      }
-    }
-  }
-
-  /**
    * Calculates a unique id of the sub-block for locking
    *
    * @param blockNumber The number of the block, which the sub-block is part of
@@ -450,7 +355,6 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::init(
     const std::array<unsigned long, 3> &dims) {
-  AutoPasLog(debug, "Init");
   using array3D = std::array<unsigned long, 3>;
   using subBlock = std::array<std::array<unsigned long, 2>, 3>;
   using subBlocksSingleCellblock = std::array<subBlock, 27>;
@@ -466,8 +370,6 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
     _dims[l] = dims[l];
   }
 
-  // we need to calculate the size of the standard cube only once by one axis
-  // if we want different shapes of boxes or rectangles, we need to adapt the 2D or 3D vectors
   auto max_threads = (size_t)autopas_get_max_threads();
   _numCellsInBlock = {0ul, 0ul, 0ul};
 
@@ -517,7 +419,7 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
       AutoPasLog(error, "Negative overlap or other errors might have occured.");
     }
     if (allCells) {
-      // because of how we handle overlap
+      // This is necessary because of the overlap handling.
       _cellBlockDimensions[axis].back() += _overlapAxis[axis];
     }
   }
@@ -533,13 +435,13 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
     }
   }
 
-  // INIT sub-block Order to block unique index.
+  // Mapping SubBlock Id to SubBlock Index
   _subBlockOrderToSubBlockIndex = {{0, 0},    {100, 1},  {200, 2},  {10, 3},   {110, 4},  {210, 5},  {20, 6},
                                    {120, 7},  {220, 8},  {1, 9},    {101, 10}, {201, 11}, {11, 12},  {111, 13},
                                    {211, 14}, {21, 15},  {121, 16}, {221, 17}, {2, 18},   {102, 19}, {202, 20},
                                    {12, 21},  {112, 22}, {212, 23}, {22, 24},  {122, 25}, {222, 26}};
 
-  // INIT locking steps, minimizing lock changes per step to max. 1 change
+  // SubBlock Traverse Order
   _cellBlockTraverseOrderByLocks[0] = {0, 0, 0};
   _cellBlockTraverseOrderByLocks[1] = {0, 0, 1};
   _cellBlockTraverseOrderByLocks[2] = {0, 1, 1};
@@ -752,7 +654,7 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 
     // Iterate over own sub-blocks (excluding all with 2)
     while (!traversalOrderQueue->empty()) {
-      // todo: maybe make an indicator if a broken traversalOrder was used e.g. >10.000 Iterations per thread
+      // todo: maybe make an indicator if a broken traversalOrder was used e.g. >1000 Iterations per thread
       //  or tell scheduler to give thread less priority after x iterations of this
       int traversalOrder = traversalOrderQueue->front();
       traversalOrderQueue->pop();
