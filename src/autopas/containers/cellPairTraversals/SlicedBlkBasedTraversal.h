@@ -150,7 +150,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @copydetails C01BasedTraversal::c01Traversal()
    */
   template <typename LoopBody>
-  inline void slicedBlkTraversal(LoopBody &&loopBody);
+  inline void slicedBlkTraversal(LoopBody and loopBody);
 
   /**
    * Overlap of interacting cells. Array allows asymmetric cell sizes.
@@ -238,15 +238,15 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   int lockToSubBlocks(int x, int y, int z) {
     // 0 => my lock and 1 => neighbour lock
-    if (x == 0 && y == 0 && z == 0) return 0;
-    else if (x == 1 && y == 0 && z == 0) return 100;
-    else if (x == 0 && y == 1 && z == 0) return 10;
-    else if (x == 0 && y == 0 && z == 1) return 1;
+    if (x == 0 and  y == 0 and  z == 0) return 0;
+    else if (x == 1 and  y == 0 and  z == 0) return 100;
+    else if (x == 0 and  y == 1 and  z == 0) return 10;
+    else if (x == 0 and  y == 0 and  z == 1) return 1;
 
-    else if (x == 1 && y == 1 && z == 0) return 110;
-    else if (x == 1 && y == 0 && z == 1) return 101;
-    else if (x == 0 && y == 1 && z == 1) return 11;
-    else if (x == 1 && y == 1 && z == 1) return 111;
+    else if (x == 1 and  y == 1 and  z == 0) return 110;
+    else if (x == 1 and  y == 0 and  z == 1) return 101;
+    else if (x == 0 and  y == 1 and  z == 1) return 11;
+    else if (x == 1 and  y == 1 and  z == 1) return 111;
     else {
       AutoPasLog(error, "Requested not a SubBlock for Locking.");
     }
@@ -290,8 +290,8 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
         }
       }
 
-      if (LocksThatCanBeSet[0] && LocksThatCanBeSet[1] && LocksThatCanBeSet[2] && LocksThatCanBeSet[3] &&
-          LocksThatCanBeSet[4] && LocksThatCanBeSet[5] && LocksThatCanBeSet[6] && LocksThatCanBeSet[7]) {
+      if (LocksThatCanBeSet[0] and  LocksThatCanBeSet[1] and  LocksThatCanBeSet[2] and  LocksThatCanBeSet[3] and
+          LocksThatCanBeSet[4] and  LocksThatCanBeSet[5] and  LocksThatCanBeSet[6] and  LocksThatCanBeSet[7]) {
         _masterlock.unlock();
         return true;
       } else {
@@ -630,7 +630,7 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 template <typename LoopBody>
 void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::slicedBlkTraversal(
-    LoopBody &&loopBody) {
+    LoopBody and loopBody) {
   using array3D = std::array<unsigned long, 3>;
   using subBlock = std::array<std::array<unsigned long, 2>, 3>;
   using subBlocksOfSingleBlock = std::array<subBlock, 27>;
