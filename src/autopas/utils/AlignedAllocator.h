@@ -6,12 +6,6 @@
 
 #pragma once
 
-#ifdef __SSE3__
-#include <xmmintrin.h>
-#endif
-
-#include <malloc.h>
-
 #include <cstdlib>
 #include <limits>
 #include <new>
@@ -90,15 +84,12 @@ class AlignedAllocator {
    */
   T *allocate(std::size_t n) {
     if (n <= max_size()) {
-#if defined(_SX)
-      T *ptr = static_cast<T *>(malloc(sizeof(T) * n));
-#elif defined(__SSE3__) && !defined(__PGI)
-      T *ptr = static_cast<T *>(_mm_malloc(sizeof(T) * n, Alignment));
-#else
-      T *ptr = static_cast<T *>(memalign(Alignment, sizeof(T) * n));
-// T* ptr = static_cast<T*>(aligned_alloc(Alignment, sizeof(T) * n));
-// T* ptr; posix_memalign(&ptr,Alignment, sizeof(T) * n);
-#endif
+      size_t neededSize = sizeof(T) * n;
+      // sizeToRequest has to be a multiple of Alignment!
+      static_assert(Alignment > 0, "Alignment must be bigger than 0!");
+      // Rounds up to next multiple of Alignment.
+      size_t sizeToRequest = ((neededSize + Alignment - 1) / Alignment) * Alignment;
+      T *ptr = static_cast<T *>(aligned_alloc(Alignment, sizeToRequest));
       if (ptr == nullptr) {
         throw std::bad_alloc();
       }
@@ -111,13 +102,7 @@ class AlignedAllocator {
    * \brief Deallocate memory pointed to by ptr
    * \param ptr pointer to deallocate
    */
-  void deallocate(T *ptr, std::size_t /*n*/) {
-#if defined(__SSE3__) && !defined(__PGI)
-    _mm_free(ptr);
-#else
-    free(ptr);
-#endif
-  }
+  void deallocate(T *ptr, std::size_t /*n*/) { free(ptr); }
 
   /**
    * \brief Construct object of type U at already allocated memory, pointed to
