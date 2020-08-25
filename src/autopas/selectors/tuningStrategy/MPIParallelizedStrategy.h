@@ -67,12 +67,19 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   bool tune(bool currentInvalid) override;
 
   void reset(size_t iteration) override {
-    _tuningStrategy->reset(iteration);
     _optimalConfiguration = Configuration();
     _allGlobalConfigurationsTested = false;
     _allLocalConfigurationsTested = false;
     _strategyStillWorking = true;
-    _configIterator.reset();
+    if (_configIterator != nullptr) {
+      _configIterator.reset();
+    }
+    try {
+      _tuningStrategy->reset(iteration);
+    } catch (utils::ExceptionHandler::AutoPasException &exception) {
+      AutoPasLog(warn, "MPIParallelizedStrategy: Underlying strategy failed. Reverting to fallback-mode.");
+      setupFallbackOptions();
+    }
   }
 
   [[nodiscard]] std::set<ContainerOption> getAllowedContainerOptions() const override {
