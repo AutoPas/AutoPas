@@ -18,8 +18,8 @@ namespace autopas {
 GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun,
                                              GaussianClusterLogger::OutputType outputType)
     : _outputType(outputType),
-      _nodeStream(std::ios_base::out | std::ios_base::app),
-      _edgeStream(std::ios_base::out | std::ios_base::app),
+      _nodeStream(streamMode),
+      _edgeStream(streamMode),
       _vecToStringFun(std::move(vecToStringFun)) {
   if (generatesNoOutput()) {
     return;

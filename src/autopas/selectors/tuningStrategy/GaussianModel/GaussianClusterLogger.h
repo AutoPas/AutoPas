@@ -23,6 +23,11 @@ class GaussianClusterLogger {
   const std::string edge_start_marker = "GaussianCluster Graph: Edges";
   const std::string end_marker = "GaussianCluster Graph: End";
 
+  /**
+   * Mode of used string streams. Streams are open for input and append these to the end.
+   */
+  constexpr static auto streamMode = std::ios_base::out | std::ios_base::app;
+
  public:
   /**
    * Options how to output the graphs.
@@ -33,10 +38,10 @@ class GaussianClusterLogger {
    * Constructor. Use output file if log level debug or lower.
    * @param vecToStringFun
    */
-  GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun)
-      : GaussianClusterLogger(vecToStringFun, autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug
-                                                  ? OutputType::file
-                                                  : OutputType::none) {}
+  explicit GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun)
+      : GaussianClusterLogger(std::move(vecToStringFun),
+                              autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug ? OutputType::file
+                                                                                                  : OutputType::none) {}
 
   /**
    * Constructor
@@ -52,7 +57,7 @@ class GaussianClusterLogger {
   void setVectorToStringFun(const GaussianModelTypes::VectorToStringFun &fun);
 
   /**
-   * Add nodes and edges for given continous sample.
+   * Add nodes and edges for given continuous sample.
    * @param clusters all clusters
    * @param discreteVectorMap map to convert index to vector
    * @param currentContinous continuous sample
@@ -96,7 +101,7 @@ class GaussianClusterLogger {
   std::stringstream _edgeStream;
 
   /**
-   * Continuous samples already added to the graph
+   * Continuous samples already added to the graph.
    */
   std::vector<GaussianModelTypes::VectorContinuous> _currentContinuous;
 

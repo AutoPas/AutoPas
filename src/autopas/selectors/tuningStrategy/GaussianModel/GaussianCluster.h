@@ -610,7 +610,7 @@ class GaussianCluster {
   Random &_rng;
 
   /**
-   * Logger for graphs.
+   * Logger for graphs. Can be used for visualization of cluster map.
    */
   std::unique_ptr<GaussianClusterLogger> _logger;
 };
