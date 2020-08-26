@@ -6,13 +6,10 @@
 
 #pragma once
 
-#include <functional>
-#include <iostream>
-#include <sstream>
+#include <unordered_set>
 
 #include "GaussianModelTypes.h"
 #include "GaussianProcess.h"
-#include "autopas/utils/Logger.h"
 
 namespace autopas {
 
@@ -26,26 +23,41 @@ class GaussianClusterLogger {
   const std::string edge_start_marker = "GaussianCluster Graph: Edges";
   const std::string end_marker = "GaussianCluster Graph: End";
 
+  /**
+   * Mode of used string streams. Streams are open for input and append these to the end.
+   */
+  constexpr static auto streamMode = std::ios_base::out | std::ios_base::app;
+
  public:
+  /**
+   * Options how to output the graphs.
+   */
+  enum OutputType { none, trace, file };
+
+  /**
+   * Constructor. Use output file if log level debug or lower.
+   * @param vecToStringFun
+   */
+  explicit GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun)
+      : GaussianClusterLogger(std::move(vecToStringFun),
+                              autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug ? OutputType::file
+                                                                                                  : OutputType::none) {}
+
   /**
    * Constructor
    * @param vecToStringFun function to convert vectors to readable string
+   * @param outputType
    */
-  GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun)
-      : _vecToStringFun(std::move(vecToStringFun)) {
-    if (autopas::Logger::get()->level() > autopas::Logger::LogLevel::trace) {
-      return;
-    }
-
-    _nodeStream << node_start_marker << std::endl;
-    _nodeStream << "Label,mean,var,numEvidence" << std::endl;
-
-    _edgeStream << edge_start_marker << std::endl;
-    _edgeStream << "Source,Target,Weight" << std::endl;
-  }
+  GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun, OutputType outputType);
 
   /**
-   * Add nodes and edges for given continous sample.
+   * Change the used function to convert from vector to string.
+   * @param fun new converter
+   */
+  void setVectorToStringFun(const GaussianModelTypes::VectorToStringFun &fun);
+
+  /**
+   * Add nodes and edges for given continuous sample.
    * @param clusters all clusters
    * @param discreteVectorMap map to convert index to vector
    * @param currentContinous continuous sample
@@ -56,42 +68,28 @@ class GaussianClusterLogger {
   void add(const std::vector<GaussianProcess> &clusters,
            const std::vector<GaussianModelTypes::VectorDiscrete> &discreteVectorMap,
            const GaussianModelTypes::VectorContinuous &currentContinous, std::vector<double> means,
-           std::vector<double> vars, const GaussianModelTypes::NeighboursWeights &neighbourWeights) {
-    if (autopas::Logger::get()->level() > autopas::Logger::LogLevel::trace) {
-      return;
-    }
-
-    // log nodes
-    for (size_t i = 0; i < clusters.size(); ++i) {
-      std::string label = _vecToStringFun(std::make_pair(discreteVectorMap[i], currentContinous));
-      size_t numEvidence = clusters[i].numEvidence();
-      _nodeStream << "\"" << label << "\"," << means[i] << "," << vars[i] << "," << numEvidence << std::endl;
-    }
-
-    // log edges
-    for (size_t i = 0; i < clusters.size(); ++i) {
-      for (const auto &[n, _, weight] : neighbourWeights[i]) {
-        if (weight > 0) {
-          std::string source = _vecToStringFun(std::make_pair(discreteVectorMap[i], currentContinous));
-          std::string target = _vecToStringFun(std::make_pair(discreteVectorMap[n], currentContinous));
-          _edgeStream << "\"" << source << "\",\"" << target << "\"," << weight << std::endl;
-        }
-      }
-    }
-  }
+           std::vector<double> vars, const GaussianModelTypes::NeighboursWeights &neighbourWeights);
 
   /**
-   * Output graph stream in AutoPasLog trace.
+   * Output graph stream accumulated from add() since last call of end().
    */
-  void end() const {
-    if (autopas::Logger::get()->level() > autopas::Logger::LogLevel::trace) {
-      return;
-    }
+  void end();
 
-    AutoPasLog(trace, _nodeStream.str());
-    AutoPasLog(trace, _edgeStream.str());
-    AutoPasLog(trace, end_marker);
-  }
+ private:
+  /**
+   * Reset the stream for both csv-files.
+   */
+  void reset();
+
+  /**
+   * Checks if logger can skip calculations.
+   * @return
+   */
+  bool generatesNoOutput() const;
+
+  OutputType _outputType;
+
+  std::string _outputFileName;
 
   /**
    * Stream for the nodes csv-file.
@@ -101,6 +99,11 @@ class GaussianClusterLogger {
    * Stream for the edges csv-files
    */
   std::stringstream _edgeStream;
+
+  /**
+   * Continuous samples already added to the graph.
+   */
+  std::vector<GaussianModelTypes::VectorContinuous> _currentContinuous;
 
   /**
    * Function to convert vectors to strings.
