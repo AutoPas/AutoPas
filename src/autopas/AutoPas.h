@@ -444,7 +444,8 @@ class AutoPas {
   [[nodiscard]] unsigned int getMaxTuningPhasesWithoutTest() const { return _maxTuningPhasesWithoutTest; }
 
   /**
-   * Set the maximum number of tuning phases a configuration can not be tested.
+   * For Predictive tuning: Set the relative cutoff for configurations to be blacklisted.
+   * E.g. 2.5 means all configurations that take 2.5x the time of the optimum are blacklisted.
    * @param maxTuningPhasesWithoutTest
    */
   void setMaxTuningPhasesWithoutTest(unsigned int maxTuningPhasesWithoutTest) {
@@ -452,7 +453,8 @@ class AutoPas {
   }
 
   /**
-   * Get the range of the configurations that are not going to be blacklisted.
+   * For Predictive tuning: Get the relative cutoff for configurations to be blacklisted.
+   * E.g. 2.5 means all configurations that take 2.5x the time of the optimum are blacklisted.
    * @return
    */
   [[nodiscard]] double getRelativeBlacklistRange() const { return _relativeBlacklistRange; }
@@ -664,7 +666,8 @@ class AutoPas {
    */
   unsigned int _maxTuningPhasesWithoutTest{5};
   /**
-   * Factor of the range of the configurations that are not going to be blacklisted.
+   * The relative cutoff for configurations to be blacklisted.
+   * E.g. 2.5 means all configurations that take 2.5x the time of the optimum are blacklisted.
    */
   double _relativeBlacklistRange{0};
   /**

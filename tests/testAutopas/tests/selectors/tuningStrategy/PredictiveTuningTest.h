@@ -47,7 +47,7 @@ class PredictiveTuningTest : public AutoPasTestBase {
 
   static autopas::PredictiveTuning getPredictiveTuning(
       unsigned int testsUntilFirstPrediction, autopas::ExtrapolationMethodOption extrapolationMethodOption,
-      int blacklistRange = 0,
+      double blacklistRange = 0,
       const std::set<autopas::TraversalOption> &allowedTraversalOptions = {
           autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced});
 
@@ -71,6 +71,5 @@ class PredictiveTuningTest : public AutoPasTestBase {
 
   static constexpr double relativeOptimumRange{1.2};
   static constexpr unsigned int maxTuningIterationsWithoutTest{5};
-  static constexpr unsigned int relativeRangeForBlacklist{0};
   static constexpr unsigned int evidenceFirstPrediction{2};
 };

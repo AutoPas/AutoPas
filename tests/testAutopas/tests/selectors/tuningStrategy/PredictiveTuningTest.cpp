@@ -8,7 +8,7 @@
 
 autopas::PredictiveTuning PredictiveTuningTest::getPredictiveTuning(
     unsigned int testsUntilFirstPrediction, autopas::ExtrapolationMethodOption extrapolationMethodOption,
-    int blacklistRange, const std::set<autopas::TraversalOption> &allowedTraversalOptions) {
+    double blacklistRange, const std::set<autopas::TraversalOption> &allowedTraversalOptions) {
   return autopas::PredictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.}, allowedTraversalOptions, {autopas::LoadEstimatorOption::none},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, relativeOptimumRange,

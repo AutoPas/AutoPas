@@ -206,7 +206,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    */
   const unsigned int _maxTuningIterationsWithoutTest{5};
   /**
-   * Factor of the range of the configurations that are not going to be blacklisted.
+   * The relative cutoff for configurations to be blacklisted.
    */
   const double _relativeBlacklistRange{0};
   /**
