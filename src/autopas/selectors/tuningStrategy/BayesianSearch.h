@@ -100,7 +100,8 @@ class BayesianSearch : public TuningStrategyInterface {
       autopas::utils::ExceptionHandler::exception("BayesianSearch: No valid configurations could be created.");
     }
 
-    _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
+    _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
+                               *_cellSizeFactors);
     _gaussianProcess.setDimension(_encoder.getOneHotDims());
 
     tune();
@@ -205,8 +206,7 @@ bool BayesianSearch::tune(bool currentInvalid) {
 
 void BayesianSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOption af) {
   // create n lhs samples
-  _currentSamples = FeatureVector::lhsSampleFeatures(n, _rng, *_cellSizeFactors, _containerTraversalEstimatorOptions,
-                                                     _dataLayoutOptions, _newton3Options);
+  _currentSamples = _encoder.lhsSampleFeatures(n, _rng);
 
   // map container and calculate all acquisition function values
   std::map<FeatureVector, double> acquisitions;
@@ -241,7 +241,8 @@ bool BayesianSearch::searchSpaceIsEmpty() const {
 void BayesianSearch::removeN3Option(Newton3Option badNewton3Option) {
   _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option),
                         _newton3Options.end());
-  _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
+  _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
+                             *_cellSizeFactors);
 
   _gaussianProcess.setDimension(_encoder.getOneHotDims());
   _currentSamples.clear();
