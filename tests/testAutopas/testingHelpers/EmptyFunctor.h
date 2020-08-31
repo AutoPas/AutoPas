@@ -6,11 +6,17 @@
 
 #pragma once
 
+#include <glob.h>
+#if defined(AUTOPAS_CUDA)
+#include "cuda_runtime.h"
+#endif
+
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #if defined(AUTOPAS_CUDA)
+#include "EmptyCudaWrapper.cuh"
 #include "autopas/utils/CudaSoA.h"
 #endif
 
@@ -20,20 +26,35 @@
  */
 template <class Particle, class ParticleCell_t, class SoAArraysType = typename Particle::SoAArraysType>
 class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
+ private:
+#ifdef AUTOPAS_CUDA
+  EmptyCudaWrapper<typename Particle::ParticleSoAFloatPrecision> emptyCudaWrapper;
+#endif
+
  public:
   /**
    * Default constructor.
    */
   EmptyFunctor() : autopas::Functor<Particle, ParticleCell_t>(0.){};
 
+  /**
+   * @copydoc autopas::Functor::AoSFunctor()
+   */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {}
 
-  void SoAFunctorSingle(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3,
-                        bool cellWiseOwnedState) override {}
+  /**
+   * @copydoc autopas::Functor::SoAFunctorSingle()
+   */
+  void SoAFunctorSingle(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {}
 
-  void SoAFunctorPair(autopas::SoAView<typename Particle::SoAArraysType> soa,
-                      autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3,
-                      bool cellWiseOwnedState) override {}
+  void SoAFunctorPair(autopas::SoAView<typename Particle::SoAArraysType> soa1,
+                      autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3) override {}
+
+#ifdef AUTOPAS_CUDA
+  autopas::CudaWrapperInterface<typename Particle::ParticleSoAFloatPrecision> *getCudaWrapper() override {
+    return &emptyCudaWrapper;
+  }
+#endif
 
   /**
    * @copydoc autopas::Functor::SoAFunctorVerlet()
@@ -42,8 +63,14 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override{};
 
+  /**
+   * @copydoc autopas::Functor::allowsNewton3()
+   */
   bool allowsNewton3() override { return true; }
 
+  /**
+   * @copydoc autopas::Functor::allowsNonNewton3()
+   */
   bool allowsNonNewton3() override { return true; }
 
   /**
@@ -53,6 +80,9 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
     return true;
   }
 
+  /**
+   * @copydoc autopas::Functor::isRelevantForTuning()
+   */
   bool isRelevantForTuning() override { return true; }
 
 #if defined(AUTOPAS_CUDA)
@@ -61,7 +91,17 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
   void CudaFunctor(autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
                    autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {}
 
+  /**
+   * @copydoc autopas::Functor::deviceSoALoader()
+   */
   void deviceSoALoader(autopas::SoA<SoAArraysType> &soa,
                        autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {}
+
+  /**
+   * @copydoc autopas::Functor::deviceSoAExtractor()
+   */
+  void deviceSoAExtractor(autopas::SoA<SoAArraysType> &soa,
+                          autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {}
+
 #endif
 };

@@ -24,59 +24,61 @@ TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
 // Generate Unittests for all Container / Traversal / Datalayout combinations
 INSTANTIATE_TEST_SUITE_P(
     Generated, Newton3OnOffTest,
-    Combine(ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> {
-              // needed because CellBlock3D (called when building containers) logs always
-              autopas::Logger::create();
+    Combine(
+        ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> {
+          // needed because CellBlock3D (called when building containers) logs always
+          autopas::Logger::create();
 
-              std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> ret;
+          std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> ret;
 
-              // container factory
-              autopas::ContainerSelector<Particle, FPCell> containerSelector({0., 0., 0.}, {10., 10., 10.}, 1.);
-              autopas::ContainerSelectorInfo containerInfo(1., 0., 64, autopas::LoadEstimatorOption::none);
+          // container factory
+          autopas::ContainerSelector<Particle, FPCell> containerSelector({0., 0., 0.}, {10., 10., 10.}, 1.);
+          autopas::ContainerSelectorInfo containerInfo(1., 0., 64, autopas::LoadEstimatorOption::none);
 
-              // generate for all containers, even those to come
-              for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
-                // skip containers that do not work with both newton modes
-                // @TODO: let verlet lists support Newton 3
-                if (containerOption == autopas::ContainerOption::verletLists ||
-                    containerOption == autopas::ContainerOption::verletListsCells ||
-                    containerOption == autopas::ContainerOption::verletClusterLists ||
-                    containerOption == autopas::ContainerOption::varVerletListsAsBuild ||
-                    containerOption == autopas::ContainerOption::verletClusterCells) {
-                  continue;
-                }
+          // generate for all containers, even those to come
+          for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
+            // skip containers that do not work with both newton modes
+            // @TODO: let verlet lists support Newton 3
+            if (containerOption == autopas::ContainerOption::verletLists or
+                containerOption == autopas::ContainerOption::verletListsCells or
+                containerOption == autopas::ContainerOption::verletClusterLists or
+                containerOption == autopas::ContainerOption::varVerletListsAsBuild or
+                containerOption == autopas::ContainerOption::verletClusterCells) {
+              continue;
+            }
 
-                containerSelector.selectContainer(containerOption, containerInfo);
+            containerSelector.selectContainer(containerOption, containerInfo);
 
-                auto container = containerSelector.getCurrentContainer();
+            auto container = containerSelector.getCurrentContainer();
 
-                for (auto traversalOption : container->getAllTraversals()) {
-                  if (traversalOption == autopas::TraversalOption::c01 ||
-                      traversalOption ==
-                          autopas::TraversalOption::c01CombinedSoA /*and autopas::autopas_get_max_threads() > 1*/) {
-                    continue;
-                  }
-                  if (traversalOption == autopas::TraversalOption::c01Cuda) {
-                    // Traversal provides no AoS and SoA Traversal
-                    continue;
-                  }
-
-                  ret.emplace_back(containerOption, traversalOption);
-                }
+            for (auto traversalOption : container->getAllTraversals()) {
+              if (traversalOption == autopas::TraversalOption::lc_c01 or
+                  traversalOption ==
+                      autopas::TraversalOption::lc_c01_combined_SoA /*and autopas::autopas_get_max_threads() > 1*/) {
+                continue;
+              }
+              if (traversalOption == autopas::TraversalOption::lc_c01_cuda) {
+                // Traversal provides no AoS and SoA Traversal
+                continue;
               }
 
-              autopas::Logger::unregister();
+              ret.emplace_back(containerOption, traversalOption);
+            }
+          }
 
-              return ret;
-            }()),
-            ValuesIn(autopas::DataLayoutOption::getAllOptions())),
+          autopas::Logger::unregister();
+
+          return ret;
+        }()),
+        ValuesIn(autopas::DataLayoutOption::getAllOptions())),
     Newton3OnOffTest::PrintToStringParamName());
 
 // Count number of Functor calls with and without newton 3 and compare
 void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
-  if (traversalOption == autopas::TraversalOption::c04SoA and not(dataLayout == autopas::DataLayoutOption::soa)) {
+  if (traversalOption == autopas::TraversalOption::lc_c04_combined_SoA and
+      not(dataLayout == autopas::DataLayoutOption::soa)) {
     return;
   }
 
@@ -98,11 +100,11 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   if (dataLayout == autopas::DataLayoutOption::soa or dataLayout == autopas::DataLayoutOption::cuda) {
     // loader and extractor will be called, we don't care how often.
-    EXPECT_CALL(mockFunctor, SoALoader(_, _))
+    EXPECT_CALL(mockFunctor, SoALoader(_, _, _))
         .Times(testing::AtLeast(1))
         .WillRepeatedly(testing::WithArgs<0, 1>(
             testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
-    EXPECT_CALL(mockFunctor, SoAExtractor(_, _)).Times(testing::AtLeast(1));
+    EXPECT_CALL(mockFunctor, SoAExtractor(_, _, _)).Times(testing::AtLeast(1));
   }
 #if defined(AUTOPAS_CUDA)
   if (dataLayout == autopas::DataLayoutOption::cuda) {
@@ -149,17 +151,17 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
   switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // single cell
-      EXPECT_CALL(mockFunctor, SoAFunctorSingle(_, useNewton3, _))
+      EXPECT_CALL(mockFunctor, SoAFunctorSingle(_, useNewton3))
           .Times(testing::AtLeast(1))
           .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsSC++; }));
 
       // pair of cells
-      EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, useNewton3, _))
+      EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, useNewton3))
           .Times(testing::AtLeast(1))
           .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsPair++; }));
 
       // non useNewton3 variant should not happen
-      EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, not useNewton3, _)).Times(0);
+      EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, not useNewton3)).Times(0);
       iterate(
           container,
           autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,

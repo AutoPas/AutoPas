@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleCellHelpers.h"
@@ -108,7 +108,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<FullParticleCell
    */
   bool updateHaloParticle(const Particle &particle) override {
     Particle pCopy = particle;
-    pCopy.setOwned(false);
+    pCopy.setOwnershipState(OwnershipState::halo);
     auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(pCopy.getR(), this->getSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);

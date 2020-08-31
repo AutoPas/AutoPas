@@ -49,12 +49,12 @@ function separate {
 
 
 # workaround because bash3 does not support declare -A
-traversals__DirectSum=directSumTraversal
-traversals__LinkedCells=c08
-traversals__VerletLists=verlet-lists
-traversals__VerletCells=verletC18
-traversals__VerletClusterLists=verlet-clusters-coloring
-#traversals__VerletClusterCells=verlet-cluster-cells
+traversals__DirectSum=ds_sequential
+traversals__LinkedCells=lc_c08
+traversals__VerletLists=vl_list_iteration
+traversals__VerletCells=vlc_c18
+traversals__VerletClusterLists=vcl_c06
+#traversals__VerletClusterCells=vcc_cluster_iteration
 
 # iterate over containers
 # add VerletClusterCells when it supports SoAs with global calculation
@@ -75,8 +75,13 @@ do
     do
         separate "${dataLayout}"
 
-        for newton3Opt in on off ;
+        for newton3Opt in enabled disabled ;
         do
+
+            if [[ ${container} =~ 'VerletLists' && ${newton3Opt} =~ 'enabled' ]];
+            then
+                continue
+            fi
 
             separate "Newton 3 ${newton3Opt}"
 

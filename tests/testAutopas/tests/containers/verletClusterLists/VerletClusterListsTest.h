@@ -10,7 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/containers/verletClusterLists/traversals/VerletClustersColoringTraversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/particles/Particle.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/RandomGenerator.h"
@@ -78,6 +78,9 @@ class CollectParticlesPerThreadFunctor
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    if (i.isDummy() or j.isDummy()) {
+      return;
+    }
     auto threadNum = autopas::autopas_get_thread_num();
     _particlesPerThreadPerColor[_currentColor][threadNum].insert(&i);
     _particlesPerThreadPerColor[_currentColor][threadNum].insert(&j);
@@ -98,13 +101,12 @@ class CollectParticlesPerThreadFunctor
 int CollectParticlesPerThreadFunctor::_currentColor = 0;
 
 class ColoringTraversalWithColorChangeNotify
-    : public autopas::VerletClustersColoringTraversal<FPCell, CollectParticlesPerThreadFunctor,
-                                                      autopas::DataLayoutOption::aos, true> {
+    : public autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor, autopas::DataLayoutOption::aos, true> {
  public:
   ColoringTraversalWithColorChangeNotify(CollectParticlesPerThreadFunctor *functor, size_t clusterSize,
                                          std::function<void(int)> whenColorChanges)
-      : autopas::VerletClustersColoringTraversal<FPCell, CollectParticlesPerThreadFunctor,
-                                                 autopas::DataLayoutOption::aos, true>(functor, clusterSize) {
+      : autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor, autopas::DataLayoutOption::aos, true>(
+            functor, clusterSize) {
     _whenColorChanges = std::move(whenColorChanges);
   }
 

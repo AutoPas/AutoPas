@@ -19,10 +19,18 @@ template <typename T>
 struct vec3 {
   using Type = T;
 };
+
+/**
+ * Specialized version for float.
+ */
 template <>
 struct vec3<float> {
   using Type = float3;
 };
+
+/**
+ * Specialized version for double.
+ */
 template <>
 struct vec3<double> {
   using Type = double3;
@@ -36,21 +44,41 @@ template <typename T>
 struct vec4 {
   using Type = T;
 };
+
+/**
+ * Specialized version for float.
+ */
 template <>
 struct vec4<float> {
   using Type = float4;
 };
+
+/**
+ * Specialized version for float.
+ */
 template <>
 struct vec4<double> {
   using Type = double4;
 };
 
+/**
+ * Class to specify SoAs for cuda.
+ * @tparam floatingPointType
+ */
 template <typename floatingPointType>
 class FunctorCudaSoA {};
 
+/**
+ * Class to specify constants.
+ * @tparam floatingPointType
+ */
 template <typename floatingPointType>
 class FunctorCudaConstants {};
 
+/**
+ * Interface for Cuda wrapper classes.
+ * @tparam floatingPointType
+ */
 template <typename floatingPointType>
 class CudaWrapperInterface {
  public:

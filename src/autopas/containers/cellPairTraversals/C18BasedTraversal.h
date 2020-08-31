@@ -25,7 +25,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 class C18BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
  public:
   /**
-   * Constructor of the c18 traversal.
+   * Constructor of the lc_c18 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.

@@ -48,11 +48,11 @@ class RandomSearch : public TuningStrategyInterface {
         _currentConfig(),
         _rng(seed),
         _maxEvidence(maxEvidence) {
-    if (searchSpaceIsEmpty()) {
+    if (RandomSearch::searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("RandomSearch: No valid configurations could be created.");
     }
 
-    tune();
+    RandomSearch::tune();
   }
 
   inline const Configuration &getCurrentConfiguration() const override { return _currentConfig; }

@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 #include <utility>
 
+#include "GaussianClusterLogger.h"
 #include "GaussianProcess.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -26,12 +27,6 @@ namespace autopas {
  * Some sample input-output pairs (x,f(x)) should be provided as evidence.
  */
 class GaussianCluster {
-  using VectorDiscrete = Eigen::VectorXi;
-  using VectorContinuous = Eigen::VectorXd;
-
-  // store pairs of vectors and corresponding acquisition
-  using VectorAcquisition = std::pair<std::pair<VectorDiscrete, VectorContinuous>, double>;
-
   // number of samples to find optimal hyperparameters
   static constexpr size_t hp_sample_size = 500;
   // number of hyperparameters
@@ -39,26 +34,46 @@ class GaussianCluster {
 
  public:
   /**
-   * Vector described by a discrete and a continuous part
+   * Different weight functions between clusters
    */
-  using VectorPairDiscreteContinuous = std::pair<VectorDiscrete, VectorContinuous>;
+  enum WeightFunction {
+    /**
+     * geometric mean of probability densitiy over all evidence in neighbouring cluster if provided to the target
+     * cluster
+     */
+    evidenceMatchingProbabilityGM,
+    /**
+     * geometric mean of scaled probability densitiy over all evidence in neighbouring cluster if provided to the target
+     * cluster Probability densities are scaled such that the maximum is 1.
+     */
+    evidenceMatchingScaledProbabilityGM,
+    /**
+     * Wasserstein-2 distance of normal distributions of cluster given a continuous cluster
+     */
+    wasserstein2
+  };
 
   /**
    * Constructor
    * @param dimRestriction restrict the i-th dimension to a integer between 0 and dimRestriction[i]-1
    * @param continuousDims additional unrestricted dimensions
+   * @param weightFun function to calculate weight between clusters
    * @param sigma fixed noise
    * @param rngRef reference to random number generator
+   * @param vectorToString function to convert vectors to a readable string
    */
-  GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims, double sigma, Random &rngRef)
+  GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims, WeightFunction weightFun, double sigma,
+                  Random &rngRef, const GaussianModelTypes::VectorToStringFun &vectorToString = defaultVecToString)
       : _dimRestriction(dimRestriction),
         _continuousDims(continuousDims),
         _clusters(),
+        _weightFun(weightFun),
         _evidenceMinValue(0),
         _evidenceMaxValue(0),
         _numEvidence(0),
         _sigma(sigma),
-        _rng(rngRef) {
+        _rng(rngRef),
+        _logger(std::make_unique<GaussianClusterLogger>(vectorToString)) {
     initClusters();
   }
 
@@ -69,12 +84,12 @@ class GaussianCluster {
   [[nodiscard]] const std::vector<int> &getDimensions() const { return _dimRestriction; }
 
   /**
-   * Change the number of cluster in a dimension
-   * @param dim the dimension to change
-   * @param newValue new number of clusters
+   * Change the number of cluster in all dimension.
+   * This will discard all evidence.
+   * @param newValue new number of clusters in each dimension
    */
-  void setDimension(size_t dim, int newValue) {
-    _dimRestriction[dim] = newValue;
+  void setDimensions(const std::vector<int> &newValue) {
+    _dimRestriction = newValue;
     initClusters();
   }
 
@@ -109,7 +124,8 @@ class GaussianCluster {
    * @param inputContinuous y
    * @param output f((x,y))
    */
-  void addEvidence(const VectorDiscrete &inputDiscrete, const VectorContinuous &inputContinuous, double output) {
+  void addEvidence(const GaussianModelTypes::VectorDiscrete &inputDiscrete,
+                   const GaussianModelTypes::VectorContinuous &inputContinuous, double output) {
     size_t clusterIdx = getIndex(inputDiscrete);
     if (static_cast<size_t>(inputContinuous.size()) != _continuousDims) {
       utils::ExceptionHandler::exception(
@@ -142,10 +158,15 @@ class GaussianCluster {
     // combine score of each cluster
     for (size_t i = 0; i < hp_sample_size; ++i) {
       // set the score of a hyperparameter sample to the product of all scores
-      double combinedScore = 1.;
+      double combinedScore = 0.;
       for (auto &cluster : _clusters) {
-        combinedScore *= cluster.getHyperparameters()[i].score;
+        combinedScore += cluster.getHyperparameters()[i].score;
       }
+
+      if (std::isnan(combinedScore) or std::isinf(combinedScore)) {
+        utils::ExceptionHandler::exception("GaussianCluster: Score of hyperparameter is {}", combinedScore);
+      }
+
       for (auto &cluster : _clusters) {
         cluster.getHyperparameters()[i].score = combinedScore;
       }
@@ -159,11 +180,11 @@ class GaussianCluster {
 
   /**
    * Provide a input-output pair as evidence.
-   * Each evidence improve the quality of future predictions.
+   * Each evidence improves the quality of future predictions.
    * @param input (x,y)
    * @param output f((x,y))
    */
-  inline void addEvidence(const VectorPairDiscreteContinuous &input, double output) {
+  inline void addEvidence(const GaussianModelTypes::VectorPairDiscreteContinuous &input, double output) {
     addEvidence(input.first, input.second, output);
   }
 
@@ -171,7 +192,7 @@ class GaussianCluster {
    * Get the evidence with the highest output value
    * @return input of max
    */
-  [[nodiscard]] VectorPairDiscreteContinuous getEvidenceMax() const {
+  [[nodiscard]] GaussianModelTypes::VectorPairDiscreteContinuous getEvidenceMax() const {
     if (_numEvidence == 0) {
       utils::ExceptionHandler::exception("GaussianCluster has no evidence");
     }
@@ -180,96 +201,129 @@ class GaussianCluster {
   }
 
   /**
-   * Calculates the acquisition function for given input.
-   * @param af acquisition function a:input->double
-   * @param inputDiscrete x
-   * @param inputContinuous y
-   * @param neighbours neighbouring clusters
-   * @return a(x,y) This value can be compared with values a(v,w) of other inputs (v,w) to weigh which input would give
-   * the most gain if its evidence were provided.
+   * Generate all possible combinations of discrete tuples and continuous tuples in samples
+   * and calculate their corresponding acquisition.
+   * @param af function to optimize
+   * @param neighbourFun function which generates neighbours of given discrete tuple
+   * @param continuousSamples continuous tuples
+   * @return all discrete-continuous tuples paired with their corresponding acquisition
    */
-  [[nodiscard]] double calcAcquisition(AcquisitionFunctionOption af, VectorDiscrete &inputDiscrete,
-                                       const VectorContinuous &inputContinuous,
-                                       const std::vector<VectorDiscrete> &neighbours) const {
-    auto inputIndex = getIndex(inputDiscrete);
-    double inputMean = _clusters[inputIndex].predictMean(inputContinuous);
-    double inputVar = _clusters[inputIndex].predictVar(inputContinuous);
-    double inputStddev = std::sqrt(inputVar);
+  [[nodiscard]] std::vector<GaussianModelTypes::VectorAcquisition> sampleAcquisition(
+      AcquisitionFunctionOption af, const GaussianModelTypes::NeighbourFunction &neighbourFun,
+      const std::vector<GaussianModelTypes::VectorContinuous> &continuousSamples) const {
+    std::vector<GaussianModelTypes::VectorAcquisition> acquisitions;
+    // pair up all discrete with all continuous samples
+    acquisitions.reserve(_clusters.size() * continuousSamples.size());
 
-    double mixMean = inputMean;
-    double mixVar = inputVar;
-    double weightSum = 1.;
+    auto neighbourWeights = initNeighbourWeights(neighbourFun);
 
-    // calculate the weighted sum over all neighbours
-    for (const auto &n : neighbours) {
-      size_t n_index = getIndex(n);
-      // ignore clusters without evidence
-      if (_clusters[n_index].numEvidence() > 0) {
-        double nMean = _clusters[n_index].predictMean(inputContinuous);
-        double nVar = _clusters[n_index].predictVar(inputContinuous);
-        double nStddev = std::sqrt(nVar);
+    for (const auto &continuousSample : continuousSamples) {
+      auto [means, vars, stddevs] = precalculateDistributions(continuousSample);
+      updateNeighbourWeights(neighbourWeights, means, vars, stddevs);
+      auto currentAcquisisitions = precalculateAcquisitions(af, means, vars);
 
-        // weight based on 2-wasserstein distance
-        double distance = std::pow(nMean - inputMean, 2) + std::pow(nStddev - inputStddev, 2);
-        double n_weight = inputVar / (inputVar + distance);
-        mixMean += nMean * n_weight;
-        mixVar += nVar * n_weight * n_weight;
-        weightSum += n_weight;
+      _logger->add(_clusters, _discreteVectorMap, continuousSample, means, vars, neighbourWeights);
+
+      // get acquisition considering neighbours
+      for (size_t i = 0; i < _clusters.size(); ++i) {
+        // target cluster gets weight 1.
+        double mixAcquisition = currentAcquisisitions[i];
+        double weightSum = 1.;
+
+        // weighted sum over neighbours
+        for (const auto &[n, _, weight] : neighbourWeights[i]) {
+          mixAcquisition += currentAcquisisitions[n] * weight;
+          weightSum += weight;
+        }
+
+        // normalize
+        mixAcquisition /= weightSum;
+
+        acquisitions.emplace_back(std::make_pair(_discreteVectorMap[i], continuousSample), mixAcquisition);
       }
     }
 
-    mixMean /= weightSum;
-    mixVar /= weightSum * weightSum;
+    _logger->end();
 
-    return AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMaxValue);
+    return acquisitions;
   }
+
+  /**
+   * Generate all possible combinations of discrete tuples and continuous tuples in samples
+   * and calculate their weight to each other. Output graph in AutoPasLog Trace.
+   * @param neighbourFun function which generates neighbours of given discrete tuple
+   * @param continuousSamples continuous tuples
+   */
+  void logDebugGraph(const GaussianModelTypes::NeighbourFunction &neighbourFun,
+                     const std::vector<GaussianModelTypes::VectorContinuous> &continuousSamples) const {
+    if (autopas::Logger::get()->level() > autopas::Logger::LogLevel::trace) {
+      return;
+    }
+
+    auto neighbourWeights = initNeighbourWeights(neighbourFun);
+    for (const auto &continuousSample : continuousSamples) {
+      auto [means, vars, stddevs] = precalculateDistributions(continuousSample);
+      updateNeighbourWeights(neighbourWeights, means, vars, stddevs);
+
+      _logger->add(_clusters, _discreteVectorMap, continuousSample, means, vars, neighbourWeights);
+    }
+
+    _logger->end();
+  }
+  /**
+   * Change the used function to convert from vector to string.
+   * @param fun new converter
+   */
+  void setVectorToStringFun(const GaussianModelTypes::VectorToStringFun &fun) { _logger->setVectorToStringFun(fun); }
 
   /**
    * Generate all possible combinations of discrete tuples and continuous tuples in samples and
    * returns the vector with maximum acquisition.
    * @param af function to optimize
-   * @param neighbourFun function which generates neighbours of given discrete tuple
+   * @param neighbourFun function which generates neighbours with prior weight of given discrete tuple
    * @param continuousSamples continuous tuples
    * @return pair of vector and corresponding maximum acquistion
    */
-  [[nodiscard]] VectorAcquisition sampleAcquisitionMax(
-      AcquisitionFunctionOption af, const std::function<std::vector<VectorDiscrete>(VectorDiscrete)> &neighbourFun,
-      const std::vector<VectorContinuous> &continuousSamples) const {
+  [[nodiscard]] GaussianModelTypes::VectorAcquisition sampleAcquisitionMax(
+      AcquisitionFunctionOption af, const GaussianModelTypes::NeighbourFunction &neighbourFun,
+      const std::vector<GaussianModelTypes::VectorContinuous> &continuousSamples) const {
     // generate all combinations and acquisitions
     auto acquisitions = sampleAcquisition(af, neighbourFun, continuousSamples);
 
     // return maximum
-    return *std::max_element(acquisitions.begin(), acquisitions.end(),
-                             [](const VectorAcquisition &va1, const VectorAcquisition &va2) {
-                               auto acquisition1 = va1.second;
-                               auto acquisition2 = va2.second;
-                               return acquisition1 < acquisition2;
-                             });
+    return *std::max_element(
+        acquisitions.begin(), acquisitions.end(),
+        [](const GaussianModelTypes::VectorAcquisition &va1, const GaussianModelTypes::VectorAcquisition &va2) {
+          auto acquisition1 = va1.second;
+          auto acquisition2 = va2.second;
+          return acquisition1 < acquisition2;
+        });
   }
 
   /**
    * Generate all possible combinations of discrete tuples and continuous tuples in samples and
    * order them by their acquisition.
    * @param af function to optimize
-   * @param neighbourFun function which generates neighbours of given discrete tuple
+   * @param neighbourFun function which generates neighbours with prior weight of given discrete tuple
    * @param continuousSamples continuous tuples
    * @return all discrete-continuous tuples ordered by their corresponding acquisition
    */
-  [[nodiscard]] std::vector<VectorPairDiscreteContinuous> sampleOrderedByAcquisition(
-      AcquisitionFunctionOption af, const std::function<std::vector<VectorDiscrete>(VectorDiscrete)> &neighbourFun,
-      const std::vector<VectorContinuous> &continuousSamples) const {
+  [[nodiscard]] std::vector<GaussianModelTypes::VectorPairDiscreteContinuous> sampleOrderedByAcquisition(
+      AcquisitionFunctionOption af, const GaussianModelTypes::NeighbourFunction &neighbourFun,
+      const std::vector<GaussianModelTypes::VectorContinuous> &continuousSamples) const {
     // generate all combinations and acquisitions
     auto acquisitions = sampleAcquisition(af, neighbourFun, continuousSamples);
 
     // order by acquisition
-    std::sort(acquisitions.begin(), acquisitions.end(), [](const VectorAcquisition &va1, const VectorAcquisition &va2) {
-      auto acquisition1 = va1.second;
-      auto acquisition2 = va2.second;
-      return acquisition1 < acquisition2;
-    });
+    std::sort(acquisitions.begin(), acquisitions.end(),
+              [](const GaussianModelTypes::VectorAcquisition &va1, const GaussianModelTypes::VectorAcquisition &va2) {
+                auto acquisition1 = va1.second;
+                auto acquisition2 = va2.second;
+                return acquisition1 < acquisition2;
+              });
 
     // project to vectors, removing acquisitions
-    std::vector<VectorPairDiscreteContinuous> orderedVectors;
+    std::vector<GaussianModelTypes::VectorPairDiscreteContinuous> orderedVectors;
     orderedVectors.reserve(acquisitions.size());
     for (const auto &[vec, acq] : acquisitions) {
       orderedVectors.push_back(vec);
@@ -279,6 +333,9 @@ class GaussianCluster {
   }
 
  private:
+  /**
+   * Create a GaussianProcess for each cluster and precalculate DiscreteVector for each cluster index.
+   */
   void initClusters() {
     size_t numClusters = 1;
     for (auto restriction : _dimRestriction) {
@@ -291,20 +348,25 @@ class GaussianCluster {
     }
 
     _clusters.clear();
+    _discreteVectorMap.clear();
     _numEvidence = 0;
 
     _clusters.reserve(numClusters);
-    for (size_t i = 0; i < numClusters; ++i) {
+    _discreteVectorMap.reserve(numClusters);
+
+    GaussianModelTypes::VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
+    for (size_t i = 0; i < numClusters; ++i, discreteIncrement(currentDiscrete)) {
       _clusters.emplace_back(_continuousDims, _sigma, _rng);
+      _discreteVectorMap.emplace_back(currentDiscrete);
     }
   }
 
   /**
-   * Get the cluster index of a discrete tuple
+   * Get the cluster index of a discrete tuple.
    * @param x the discrete tuple
    * @return
    */
-  [[nodiscard]] size_t getIndex(const VectorDiscrete &x) const {
+  [[nodiscard]] size_t getIndex(const GaussianModelTypes::VectorDiscrete &x) const {
     if (static_cast<size_t>(x.size()) != _dimRestriction.size()) {
       utils::ExceptionHandler::exception(
           "GaussianCluster: size of discrete input {} does not match specified dimensions {}", x.size(),
@@ -332,7 +394,7 @@ class GaussianCluster {
    * If this entry overflows also the next entry is incremented and so on.
    * @param x discrete tuple
    */
-  void discreteIncrement(VectorDiscrete &x) const {
+  void discreteIncrement(GaussianModelTypes::VectorDiscrete &x) const {
     for (Eigen::Index i = 0; i < x.size(); ++i) {
       if (++x[i] < _dimRestriction[i]) {
         break;
@@ -342,70 +404,161 @@ class GaussianCluster {
   }
 
   /**
-   * Generate all possible combinations of discrete tuples and continuous tuples in samples
-   * and calculate their corresponding aquisition
-   * @param af function to optimize
-   * @param neighbourFun function which generates neighbours of given discrete tuple
-   * @param continuousSamples continuous tuples
-   * @return all discrete-continuous tuples paired with their corresponding acquisition
+   * Calculate mean, variance and stddev for all clusters for given continous tuple.
+   * @param continuousTuple
+   * @return Vectors means, vars, stddevs containing corresponding values for each cluster
    */
-  [[nodiscard]] std::vector<VectorAcquisition> sampleAcquisition(
-      AcquisitionFunctionOption af, const std::function<std::vector<VectorDiscrete>(VectorDiscrete)> &neighbourFun,
-      const std::vector<VectorContinuous> &continuousSamples) const {
-    std::vector<VectorAcquisition> acquisitions;
-    // pair up all discrete with all continuous samples
-    acquisitions.reserve(_clusters.size() * continuousSamples.size());
+  [[nodiscard]] std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> precalculateDistributions(
+      const GaussianModelTypes::VectorContinuous &continuousTuple) const {
+    std::vector<double> means;
+    std::vector<double> vars;
+    std::vector<double> stddevs;
+    means.reserve(_clusters.size());
+    vars.reserve(_clusters.size());
+    stddevs.reserve(_clusters.size());
+    for (const auto &cluster : _clusters) {
+      means.push_back(cluster.predictMean(continuousTuple));
 
-    for (const auto &currentContinuous : continuousSamples) {
-      // calc means of given continuous tuple for each cluster
-      std::vector<double> means;
-      std::vector<double> vars;
-      std::vector<double> stddevs;
-      means.reserve(_clusters.size());
-      vars.reserve(_clusters.size());
-      stddevs.reserve(_clusters.size());
-      for (const auto &cluster : _clusters) {
-        means.push_back(cluster.predictMean(currentContinuous));
-
-        double var = cluster.predictVar(currentContinuous);
-        vars.push_back(var);
-        stddevs.push_back(std::sqrt(var));
-      }
-
-      // get acquisition considering neighbours
-      VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
-      for (size_t i = 0; i < _clusters.size(); ++i, discreteIncrement(currentDiscrete)) {
-        auto neighbours = neighbourFun(currentDiscrete);
-
-        double mixMean = means[i];
-        double mixVar = vars[i];
-        double weightSum = 1.;
-
-        // sum over neighbours
-        for (const auto &n : neighbours) {
-          size_t n_index = getIndex(n);
-          // ignore clusters without evidence
-          if (_clusters[n_index].numEvidence() > 0) {
-            // weight based on 2-wasserstein distance
-            double distance = std::pow(means[n_index] - means[i], 2) + std::pow(stddevs[n_index] - stddevs[i], 2);
-            double n_weight = vars[i] / (vars[i] + distance);
-            mixMean += means[n_index] * n_weight;
-            mixVar += vars[n_index] * n_weight * n_weight;
-            weightSum += n_weight;
-          }
-        }
-
-        // normalize
-        mixMean /= weightSum;
-        mixVar /= weightSum * weightSum;
-
-        // calc acquisition
-        double currentValue = AcquisitionFunction::calcAcquisition(af, mixMean, mixVar, _evidenceMaxValue);
-        acquisitions.emplace_back(std::make_pair(currentDiscrete, currentContinuous), currentValue);
-      }
+      double var = cluster.predictVar(continuousTuple);
+      vars.push_back(var);
+      stddevs.push_back(std::sqrt(var));
     }
 
-    return acquisitions;
+    return std::make_tuple(means, vars, stddevs);
+  }
+
+  /**
+   * Calculate acquisition for all clusters.
+   * @param af acquisition function
+   * @param means mean for each cluster
+   * @param vars variance for each cluster
+   * @return
+   */
+  [[nodiscard]] std::vector<double> precalculateAcquisitions(AcquisitionFunctionOption af,
+                                                             const std::vector<double> &means,
+                                                             const std::vector<double> &vars) const {
+    std::vector<double> result;
+    result.reserve(_clusters.size());
+
+    for (size_t i = 0; i < _clusters.size(); ++i) {
+      result.push_back(AcquisitionFunction::calcAcquisition(af, means[i], vars[i], _evidenceMaxValue));
+    }
+
+    return result;
+  }
+
+  /**
+   * Initalize the neighbour-weight list for each cluster.
+   * @param neighbourFun function which generates neighbours with prior weight of given discrete tuple
+   * @return
+   */
+  [[nodiscard]] GaussianModelTypes::NeighboursWeights initNeighbourWeights(
+      const GaussianModelTypes::NeighbourFunction &neighbourFun) const {
+    GaussianModelTypes::NeighboursWeights result;
+    result.reserve(_clusters.size());
+
+    // for each cluster create a neighbour list
+    for (size_t i = 0; i < _clusters.size(); ++i) {
+      auto neighbours = neighbourFun(_discreteVectorMap[i]);
+
+      // calculate initial weight for each neighbour
+      std::vector<std::tuple<size_t, double, double>> neighbourWeights;
+      neighbourWeights.reserve(neighbours.size());
+      for (const auto &[n, priorWeight] : neighbours) {
+        size_t n_index = getIndex(n);
+        // ignore clusters without evidence
+        if (_clusters[n_index].numEvidence() > 0) {
+          // calculate initial value for given weight function
+          double weight = 0.;
+          switch (_weightFun) {
+            case evidenceMatchingProbabilityGM: {
+              const auto &[inputs, outputs] = _clusters[n_index].getEvidence();
+              weight = 1.;
+              // product of probability densitiy over all evidence in neighbouring cluster if provided to the target
+              // cluster
+              for (size_t e = 0; e < inputs.size(); ++e) {
+                weight *= _clusters[i].predictOutputPDF(inputs[e], outputs[e]);
+              }
+              // geometric mean
+              weight = std::pow(weight, 1.0 / inputs.size());
+              break;
+            }
+            case evidenceMatchingScaledProbabilityGM: {
+              const auto &[inputs, outputs] = _clusters[n_index].getEvidence();
+              weight = 1.;
+              // product of probability densitiy over all evidence in neighbouring cluster if provided to the target
+              // cluster
+              for (size_t e = 0; e < inputs.size(); ++e) {
+                weight *= _clusters[i].predictOutputScaledPDF(inputs[e], outputs[e]);
+              }
+              // geometric mean
+              weight = std::pow(weight, 1.0 / inputs.size());
+              break;
+            }
+            case wasserstein2:
+              break;
+          }
+          neighbourWeights.emplace_back(n_index, priorWeight, priorWeight * weight);
+        }
+      }
+      result.push_back(std::move(neighbourWeights));
+    }
+
+    return result;
+  }
+
+  /**
+   * Update the neighbour-weight list for each cluster. This function is called for each continuous tuple.
+   * Given mean, var and stddev should be evaluated for the current continuous tuple.
+   * @param neighbourWeights list to update
+   * @param means mean for each cluster
+   * @param vars variance for each cluster
+   * @param stddev standard deviation for each cluster
+   * @return
+   */
+  void updateNeighbourWeights(GaussianModelTypes::NeighboursWeights &neighbourWeights, const std::vector<double> &means,
+                              const std::vector<double> &vars, const std::vector<double> &stddevs) const {
+    // for each cluster update neighbour-weight list
+    GaussianModelTypes::VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
+    for (size_t i = 0; i < _clusters.size(); ++i) {
+      // for each neighbour update weight
+      for (auto &[n, priorWeight, weight] : neighbourWeights[i]) {
+        switch (_weightFun) {
+          case evidenceMatchingProbabilityGM:
+          case evidenceMatchingScaledProbabilityGM:
+            // keep inital value
+            break;
+          case wasserstein2:
+            weight = vars[i] / (vars[i] + std::pow(means[n] - means[i], 2) + std::pow(stddevs[n] - stddevs[i], 2));
+            weight *= priorWeight;
+            break;
+        }
+      }
+    }
+  }
+
+  /**
+   * Default function used to convert vectors to readable strings.
+   * @note begin() and end() currently not available for Eigen::Vector, so AutoPas ArrayUtils cannot be used.
+   * @param vec
+   * @return string with format (a,b,...,n) beginning with discrete values.
+   */
+  static std::string defaultVecToString(const GaussianModelTypes::VectorPairDiscreteContinuous &vec) {
+    std::stringstream result;
+    const auto &[discreteVec, continuousVec] = vec;
+
+    result << "(" << discreteVec[0];
+    for (long d = 1; d < discreteVec.size(); ++d) {
+      result << "," << discreteVec[d];
+    }
+
+    for (long c = 0; c < continuousVec.size(); ++c) {
+      result << "," << continuousVec[c];
+    }
+
+    result << ")";
+
+    return result.str();
   }
 
   /**
@@ -423,6 +576,16 @@ class GaussianCluster {
   std::vector<GaussianProcess> _clusters;
 
   /**
+   * Vector to easiliy map from index to DiscreteVector
+   */
+  std::vector<GaussianModelTypes::VectorDiscrete> _discreteVectorMap;
+
+  /**
+   * Function used to calculate the weight between two clusters.
+   */
+  WeightFunction _weightFun;
+
+  /**
    * Current smallest evidence output.
    */
   double _evidenceMinValue;
@@ -433,7 +596,7 @@ class GaussianCluster {
   /**
    * Current greatest evidence input
    */
-  VectorPairDiscreteContinuous _evidenceMaxVector;
+  GaussianModelTypes::VectorPairDiscreteContinuous _evidenceMaxVector;
   /**
    * Current number of evidence.
    */
@@ -445,5 +608,10 @@ class GaussianCluster {
   const double _sigma;
 
   Random &_rng;
+
+  /**
+   * Logger for graphs. Can be used for visualization of cluster map.
+   */
+  std::unique_ptr<GaussianClusterLogger> _logger;
 };
 }  // namespace autopas

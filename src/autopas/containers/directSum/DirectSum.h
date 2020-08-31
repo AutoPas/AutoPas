@@ -7,14 +7,15 @@
 
 #pragma once
 
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/containers/directSum/DirectSumTraversalInterface.h"
+#include "autopas/containers/directSum/traversals/DSTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/CudaStreamHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -32,12 +33,12 @@ namespace autopas {
  * @tparam ParticleCell type of the cell that stores the particle
  */
 template <class ParticleCell>
-class DirectSum : public ParticleContainer<ParticleCell> {
+class DirectSum : public CellBasedParticleContainer<ParticleCell> {
  public:
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename ParticleContainer<ParticleCell>::ParticleType;
+  using ParticleType = typename CellBasedParticleContainer<ParticleCell>::ParticleType;
 
   /**
    * Constructor of the DirectSum class
@@ -47,7 +48,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
    * @param skin
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
-      : ParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin), _cellBorderFlagManager() {
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin), _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
 
@@ -63,7 +64,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType p_copy = haloParticle;
-    p_copy.setOwned(false);
+    p_copy.setOwnershipState(OwnershipState::halo);
     getHaloCell().addParticle(p_copy);
   }
 
@@ -72,7 +73,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
-    pCopy.setOwned(false);
+    pCopy.setOwnershipState(OwnershipState::halo);
     return internal::checkParticleInCellAndUpdateByIDAndPosition(getHaloCell(), pCopy, this->getSkin());
   }
 
@@ -84,7 +85,7 @@ class DirectSum : public ParticleContainer<ParticleCell> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<DSTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
     if (traversalInterface && cellPairTraversal) {
       cellPairTraversal->setCellsToTraverse(this->_cells);
@@ -101,6 +102,8 @@ class DirectSum : public ParticleContainer<ParticleCell> {
   [[nodiscard]] std::vector<ParticleType> updateContainer() override {
     // first we delete halo particles, as we don't want them here.
     deleteHaloParticles();
+    getCell().deleteDummyParticles();
+
     std::vector<ParticleType> invalidParticles{};
     for (auto iter = getCell().begin(); iter.isValid(); ++iter) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
@@ -142,7 +145,10 @@ class DirectSum : public ParticleContainer<ParticleCell> {
         cellsOfInterest.push_back(0);
         break;
       case IteratorBehavior::haloOnly:
-        // for haloOnly all cells can contain halo particles!
+        cellsOfInterest.push_back(1);
+        break;
+      case IteratorBehavior::haloOwnedAndDummy:
+        // dummy particles can be in all cells.
         [[fallthrough]];
       case IteratorBehavior::haloAndOwned:
         cellsOfInterest.push_back(0);
@@ -166,6 +172,9 @@ class DirectSum : public ParticleContainer<ParticleCell> {
         break;
       case IteratorBehavior::haloOnly:
         // for haloOnly all cells can contain halo particles!
+        [[fallthrough]];
+      case IteratorBehavior::haloOwnedAndDummy:
+        // dummy particles can be in all cells.
         [[fallthrough]];
       case IteratorBehavior::haloAndOwned:
         cellsOfInterest.push_back(0);

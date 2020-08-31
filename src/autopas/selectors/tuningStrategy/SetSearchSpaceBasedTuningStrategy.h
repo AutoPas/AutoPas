@@ -49,15 +49,20 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
     for (const auto &config : _searchSpace) {
       _allowedContainerOptions.insert(config.container);
     }
+    _currentConfig = _searchSpace.begin();
   }
 
   [[nodiscard]] inline std::set<ContainerOption> getAllowedContainerOptions() const override {
     return _allowedContainerOptions;
   }
 
+  inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
+
   [[nodiscard]] inline bool searchSpaceIsTrivial() const override { return _searchSpace.size() == 1; }
 
   [[nodiscard]] inline bool searchSpaceIsEmpty() const override { return _searchSpace.empty(); }
+
+  inline void removeN3Option(Newton3Option badNewton3Option) override;
 
  protected:
   /**
@@ -91,6 +96,10 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
    * Contains every configuration.
    */
   std::set<Configuration> _searchSpace;
+  /**
+   * Contains the corrent configuration.
+   */
+  std::set<Configuration>::iterator _currentConfig;
 };
 
 void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
@@ -127,8 +136,10 @@ void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
   AutoPasLog(debug, "Points in search space: {}", _searchSpace.size());
 
   if (_searchSpace.empty()) {
-    autopas::utils::ExceptionHandler::exception("FullSearch: No valid configurations could be created.");
+    autopas::utils::ExceptionHandler::exception("No valid configurations could be created.");
   }
+
+  _currentConfig = _searchSpace.begin();
 }
 
 auto SetSearchSpaceBasedTuningStrategy::getOptimum(
@@ -138,4 +149,26 @@ auto SetSearchSpaceBasedTuningStrategy::getOptimum(
                             return a.second < b.second;
                           });
 }
+
+void SetSearchSpaceBasedTuningStrategy::removeN3Option(Newton3Option badNewton3Option) {
+  for (auto ssIter = _searchSpace.begin(); ssIter != _searchSpace.end();) {
+    if (ssIter->newton3 == badNewton3Option) {
+      // change current config to the next non-deleted
+      if (ssIter == _currentConfig) {
+        ssIter = _searchSpace.erase(ssIter);
+        _currentConfig = ssIter;
+      } else {
+        ssIter = _searchSpace.erase(ssIter);
+      }
+    } else {
+      ++ssIter;
+    }
+  }
+
+  if (this->searchSpaceIsEmpty()) {
+    utils::ExceptionHandler::exception(
+        "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
+  }
+}
+
 }  // namespace autopas

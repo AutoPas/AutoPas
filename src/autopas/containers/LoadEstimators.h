@@ -11,6 +11,7 @@
 #include <set>
 #include <vector>
 
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -60,7 +61,7 @@ unsigned long squaredParticlesPerCell(const std::vector<ParticleCell> &cells,
  */
 template <class Particle>
 unsigned long neighborListLength(
-    const std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>> &neighborLists,
+    const typename autopas::VerletListsCellsHelpers<Particle>::NeighborListsType &neighborLists,
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
     const std::array<unsigned long, 3> &upperCorner) {
   unsigned long sum = 0;
@@ -110,10 +111,10 @@ static std::set<autopas::LoadEstimatorOption> allCompatibleLoadEstimators(autopa
  */
 static bool usesLoadEstimator(autopas::TraversalOption traversal) {
   switch (traversal) {
-    case TraversalOption::BalancedSliced: {
+    case TraversalOption::lc_sliced_balanced: {
       return true;
     }
-    case TraversalOption::BalancedSlicedVerlet: {
+    case TraversalOption::vlc_sliced_balanced: {
       return true;
     }
     default: {
