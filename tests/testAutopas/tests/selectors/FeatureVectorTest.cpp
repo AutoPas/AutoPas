@@ -9,8 +9,8 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
+#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
 
 using namespace autopas;
 
