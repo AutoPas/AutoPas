@@ -34,14 +34,11 @@ class VerletClustersCSlicedTraversal
   internal::ClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;
 
   void processBaseStep(unsigned long x, unsigned long y) {
-    std::cout << "x: " << x << "y: " << y << std::endl;
     auto &clusterList = *VerletClustersTraversalInterface<Particle>::_verletClusterLists;
     auto &currentTower = clusterList.getTowerAtCoordinates(x, y);
     for (auto &cluster : currentTower.getClusters()) {
-      std::cout << "cluster: " << &cluster << std::endl;
       _clusterFunctor.traverseCluster(cluster);
       for (auto *neighborCluster : cluster.getNeighbors()) {
-        std::cout << "neighbour: " << neighborCluster << std::endl;
         _clusterFunctor.traverseClusterPair(cluster, *neighborCluster);
       }
     }

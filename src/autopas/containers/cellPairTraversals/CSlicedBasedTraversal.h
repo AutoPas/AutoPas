@@ -103,7 +103,6 @@ void CSlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
 #pragma omp parallel for schedule(dynamic, 1)
 #endif
     for (size_t slice = offset; slice < numSlices; slice += 2) {
-      std::cout << "Processing slice " << slice << " of " << numSlices << std::endl;
       array<unsigned long, 3> myStartArray{0, 0, 0};
       for (size_t i = 0; i < slice; ++i) {
         myStartArray[this->_dimsPerLength[0]] += this->_sliceThickness[i];
