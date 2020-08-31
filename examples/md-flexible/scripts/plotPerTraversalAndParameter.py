@@ -19,7 +19,7 @@ containsParameterArg = False
 # help message
 for arg in sys.argv[1:]:
     if "--help" in arg:
-        print("Usage: ./plotPerTraversalAndParameter.py parameter=[number, size, density] [path/To//Output/*.out ...]. Meaning number = number of particles, size = boxSize and density = particle density")
+        print("Usage: ./plotPerTraversalAndParameter.py parameter=[number, size, density, homogeneity] [path/To//Output/*.out ...]. Meaning number = number of particles, size = boxSize and density = particle density")
         print("Please use at least python 3.8.")
         exit(0)
     elif parameterIdentifierString in arg:
@@ -50,10 +50,12 @@ allContainers = [[]] * 7
 numberOfParticlesPerTraversal = []
 boxSizePerTraversal = []
 densityPerTraversal = []
+homogeneityPerTraversal = []
 timePerTravsersal = []
 number = False
 size = False
 density = False
+homogeneity = False
 xAxisTitle = "empty"
 xAxis = []
 meanXaxis = []
@@ -71,6 +73,9 @@ elif parameterArg == 'size':
 elif parameterArg == 'density':
     density = True
     xAxisTitle = 'Density of particles'
+elif parameterArg == 'homogeneity':
+    homogeneity = True
+    xAxisTitle = 'Standard Deviation of Homogeneity'
 
 allContainers[0] = ["directSum"]  # directSum
 allContainers[1] = ["c01", "c08", "c18", "sliced", "c01-combined-SoA", "c04", "c04SoA", "c04HCP"]  # linkedCells
@@ -98,6 +103,7 @@ for datafile in datafiles:
     regexBoxMin = '.*box-min*'
     regexBoxMax = '.*box-max*'
     regexTraversal = '.*traversal*'
+    regexHomogeneity = '.*Homogeneity*'
 
     # parse file
     with open(datafile) as f:
@@ -117,6 +123,7 @@ for datafile in datafiles:
                         boxSizePerTraversal.append([])
                         densityPerTraversal.append([])
                         timePerTravsersal.append([])
+                        homogeneityPerTraversal.append([])
                     foundTraversal = True
             elif (number or density) and (match := re.search(regexNumOfParticles, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
@@ -140,6 +147,10 @@ for datafile in datafiles:
                 currentLine = line.split(':', 1)[1]
                 currentLine.strip()
                 currentDensity = float(currentLine)
+            elif homogeneity and (match := re.search(regexHomogeneity, line)) is not None:
+                currentLine = line.split(':', 1)[1]
+                currentLine.strip()
+                homogeneityPerTraversal[allTraversals.index(traversal)].append(float(currentLine))
             elif (match := re.search(regexIterTook, line)) is not None:
                 values.append(int(match.group(1)))  # append time needed to perform iteration
         foundTraversal = False
@@ -222,6 +233,8 @@ for t in allTraversals:
         xAxis = boxSizePerTraversal[allTraversals.index(t)]
     elif density:
         xAxis = densityPerTraversal[allTraversals.index(t)]
+    elif homogeneity:
+        xAxis = homogeneityPerTraversal[allTraversals.index(t)]
     calculateMeans(xAxis, timePerTravsersal[allTraversals.index(t)])
     upperErrorBound = [x1 - x2 for (x1, x2) in zip(valuesErrorPlus, meanYaxis)]
     lowerErrorBound = [y1 - y2 for (y1, y2) in zip(meanYaxis, valuesErrorMinus)]
