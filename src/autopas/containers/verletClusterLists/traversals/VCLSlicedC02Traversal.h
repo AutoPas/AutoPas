@@ -1,5 +1,5 @@
 /**
- * @file VerletClustersCSlicedTraversal.h
+ * @file VCLSlicedC02Traversal.h
  * @author fischerv
  * @date 11 Aug 2020
  */

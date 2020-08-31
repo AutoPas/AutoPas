@@ -1,5 +1,5 @@
 /**
- * @file VerletClustersBalancedSlicedTraversal.h
+ * @file VCLSlicedBalancedTraversal.h
  * @author fischerv
  * @date 09 Jun 2020
  */
