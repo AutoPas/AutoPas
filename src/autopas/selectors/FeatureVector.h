@@ -77,38 +77,6 @@ class FeatureVector : public Configuration {
   }
 
   /**
-   * Get cluster-encoded neighbours of given target.
-   * Neighbours are all configurations which differ in at most one configuration from target
-   * @param target
-   * @param dimRestrictions restriction on each dimension
-   * @return all neighbours
-   */
-  static std::vector<Eigen::VectorXi> neighboursManhattan1(const Eigen::VectorXi &target,
-                                                           const std::vector<int> &dimRestrictions) {
-    std::vector<Eigen::VectorXi> result;
-    // neighbours should contain #(possible values for each dimension) - #dimensions (initial vector is skipped once per
-    // dimension)
-    result.reserve(std::accumulate(dimRestrictions.begin(), dimRestrictions.end(), -dimRestrictions.size()));
-
-    // for each dimension
-    for (int i = 0; i < target.size(); ++i) {
-      // initial value
-      auto init = target[i];
-
-      // for each possible value of that dimension
-      for (int x = 0; x < dimRestrictions[i]; ++x) {
-        // skip initial value
-        if (x != init) {
-          auto neighbour = target;
-          neighbour[i] = x;
-          result.push_back(std::move(neighbour));
-        }
-      }
-    }
-    return result;
-  }
-
-  /**
    * Create n latin-hypercube-samples from given featureSpace.
    * @param n number of samples
    * @param rng
@@ -147,7 +115,7 @@ class FeatureVector : public Configuration {
    * @param n number of samples
    * @param rng
    * @param cellSizeFactors
-   * @return vector of sample featureVectors
+   * @return vector of continuous feature samples
    */
   static std::vector<Eigen::VectorXd> lhsSampleFeatureContinuous(size_t n, Random &rng,
                                                                  const NumberSet<double> &cellSizeFactors) {
@@ -159,6 +127,32 @@ class FeatureVector : public Configuration {
     for (size_t i = 0; i < n; ++i) {
       Eigen::VectorXd vec(featureSpaceContinuousDims);
       vec << csf[i];
+      result.emplace_back(vec);
+    }
+
+    return result;
+  }
+
+  /**
+   * From a given continuous featureSpace, create n pairs of latin-hypercube-samples and a value representing the
+   * current iteration.
+   * @param n number of samples
+   * @param rng
+   * @param cellSizeFactors
+   * @param iteration Current iteration which may be scaled by some factor.
+   * @return vector of continuous feature samples
+   */
+  static std::vector<Eigen::VectorXd> lhsSampleFeatureContinuousWithIteration(size_t n, Random &rng,
+                                                                              const NumberSet<double> &cellSizeFactors,
+                                                                              double iteration) {
+    // create n samples from each set
+    auto csf = cellSizeFactors.uniformSample(n, rng);
+
+    std::vector<Eigen::VectorXd> result;
+    result.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+      Eigen::VectorXd vec(featureSpaceContinuousDims + 1);
+      vec << csf[i], iteration;
       result.emplace_back(vec);
     }
 

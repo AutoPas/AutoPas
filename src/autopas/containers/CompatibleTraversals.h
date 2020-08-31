@@ -20,7 +20,7 @@ namespace autopas::compatibleTraversals {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allDSCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::directSumTraversal};
+  static const std::set<TraversalOption> s{TraversalOption::ds_sequential};
   return s;
 }
 
@@ -30,12 +30,11 @@ static const std::set<TraversalOption> &allDSCompatibleTraversals() {
  */
 static const std::set<TraversalOption> &allLCCompatibleTraversals() {
   static const std::set<TraversalOption> s {
-    TraversalOption::c01, TraversalOption::c08, TraversalOption::c18, TraversalOption::sliced,
-        TraversalOption::BalancedSliced, TraversalOption::c01CombinedSoA, TraversalOption::c04, TraversalOption::c04SoA,
-        TraversalOption::c04HCP, TraversalOption::cSliced
+    TraversalOption::lc_c01, TraversalOption::lc_c08, TraversalOption::lc_c18, TraversalOption::lc_sliced,
+        TraversalOption::lc_sliced_balanced, TraversalOption::lc_c01_combined_SoA, TraversalOption::lc_c04,
+        TraversalOption::lc_c04_combined_SoA, TraversalOption::lc_c04_HCP, TraversalOption::lc_sliced_c02,
 #if defined(AUTOPAS_CUDA)
-        ,
-        TraversalOption::c01Cuda
+        TraversalOption::lc_c01_cuda
 #endif
   };
   return s;
@@ -46,12 +45,9 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::verletClusters,
-                                           TraversalOption::verletClustersColoring,
-                                           TraversalOption::verletClustersSliced,
-                                           TraversalOption::verletClustersCSliced,
-                                           TraversalOption::verletClustersBalancedSliced,
-                                           TraversalOption::verletClustersStatic};
+  static const std::set<TraversalOption> s{TraversalOption::vcl_cluster_iteration, TraversalOption::vcl_c06,
+                                           TraversalOption::vcl_c01_balanced,      TraversalOption::vcl_sliced,
+                                           TraversalOption::vcl_sliced_balanced,   TraversalOption::vcl_sliced_c02};
   return s;
 }
 
@@ -60,7 +56,7 @@ static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVLCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::verletTraversal};
+  static const std::set<TraversalOption> s{TraversalOption::vl_list_iteration};
   return s;
 }
 
@@ -69,9 +65,9 @@ static const std::set<TraversalOption> &allVLCompatibleTraversals() {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::slicedVerlet, TraversalOption::c18Verlet,
-                                           TraversalOption::c01Verlet, TraversalOption::cSlicedVerlet,
-                                           TraversalOption::BalancedSlicedVerlet};
+  static const std::set<TraversalOption> s{TraversalOption::vlc_sliced, TraversalOption::vlc_c18,
+                                           TraversalOption::vlc_c01, TraversalOption::vlc_sliced_c02,
+                                           TraversalOption::vlc_sliced_balanced};
   return s;
 }
 
@@ -80,7 +76,7 @@ static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
  * @return Set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVCCCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::verletClusterCells};
+  static const std::set<TraversalOption> s{TraversalOption::vcc_cluster_iteration_cuda};
   return s;
 }
 
@@ -89,7 +85,7 @@ static const std::set<TraversalOption> &allVCCCompatibleTraversals() {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::varVerletTraversalAsBuild};
+  static const std::set<TraversalOption> s{TraversalOption::vvl_as_built};
   return s;
 }
 

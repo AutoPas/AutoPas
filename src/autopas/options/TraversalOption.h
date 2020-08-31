@@ -21,32 +21,45 @@ class TraversalOption : public Option<TraversalOption> {
    * Possible choices for the cell pair traversal.
    */
   enum Value {
-    c08 = 0,
-    sliced = 1,
-    c18 = 2,
-    c01 = 3,
-    directSumTraversal = 4,
-    slicedVerlet = 5,
-    c18Verlet = 6,
-    c01Verlet = 7,
-    c01Cuda = 8,
-    verletTraversal = 9,
-    c01CombinedSoA = 10,
-    verletClusters = 11,
-    c04 = 12,
-    varVerletTraversalAsBuild = 13,
-    verletClustersColoring = 14,
-    c04SoA = 15,
-    verletClusterCells = 16,
-    verletClustersStatic = 17,
-    BalancedSliced = 18,
-    BalancedSlicedVerlet = 19,
-    c04HCP = 20,
-    verletClustersSliced = 21,
-    verletClustersBalancedSliced = 22,
-    cSliced = 23,
-    cSlicedVerlet = 24,
-    verletClustersCSliced = 25,
+    // DirectSum Traversals:
+    ds_sequential,
+
+    // LinkedCell Traversals:
+    lc_sliced,
+    lc_sliced_balanced,
+    lc_sliced_c02,
+    lc_c01,
+    lc_c01_combined_SoA,
+    lc_c01_cuda,
+    lc_c04,
+    lc_c04_HCP,
+    lc_c04_combined_SoA,
+    lc_c08,
+    lc_c18,
+
+    // VerletClusterCells Traversals:
+    vcc_cluster_iteration_cuda,
+
+    // VerletClusterLists Traversals:
+    vcl_cluster_iteration,
+    vcl_c06,
+    vcl_c01_balanced,
+    vcl_sliced,
+    vcl_sliced_balanced,
+    vcl_sliced_c02,
+
+    // VerletList Traversals:
+    vl_list_iteration,
+
+    // VerletListCells Traversals:
+    vlc_c01,
+    vlc_c18,
+    vlc_sliced,
+    vlc_sliced_balanced,
+    vlc_sliced_c02,
+
+    // VarVerlet Traversals:
+    vvl_as_built,
   };
 
   /**
@@ -70,7 +83,9 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that are very unlikely to be interesting.
    * @return
    */
-  static std::set<TraversalOption> getDiscouragedOptions() { return {}; }
+  static std::set<TraversalOption> getDiscouragedOptions() {
+    return {Value::ds_sequential, Value::vcl_cluster_iteration};
+  }
 
   /**
    * Provides a way to iterate over the possible choices of TraversalOption.
@@ -78,32 +93,45 @@ class TraversalOption : public Option<TraversalOption> {
    */
   static std::map<TraversalOption, std::string> getOptionNames() {
     return {
-        {TraversalOption::c08, "c08"},
-        {TraversalOption::sliced, "sliced"},
-        {TraversalOption::c18, "c18"},
-        {TraversalOption::c01, "c01"},
-        {TraversalOption::directSumTraversal, "directSum"},
-        {TraversalOption::slicedVerlet, "verlet-sliced"},
-        {TraversalOption::c18Verlet, "verlet-c18"},
-        {TraversalOption::c01Verlet, "verlet-c01"},
-        {TraversalOption::c01Cuda, "cuda-c01"},
-        {TraversalOption::verletTraversal, "verlet-lists"},
-        {TraversalOption::c01CombinedSoA, "c01-combined-SoA"},
-        {TraversalOption::verletClusters, "verlet-clusters"},
-        {TraversalOption::c04, "c04"},
-        {TraversalOption::varVerletTraversalAsBuild, "var-verlet-lists-as-build"},
-        {TraversalOption::verletClustersColoring, "verlet-clusters-coloring"},
-        {TraversalOption::c04SoA, "c04SoA"},
-        {TraversalOption::verletClusterCells, "verlet-cluster-cells"},
-        {TraversalOption::verletClustersStatic, "verlet-clusters-static"},
-        {TraversalOption::BalancedSliced, "balanced-sliced"},
-        {TraversalOption::BalancedSlicedVerlet, "balanced-sliced-verlet"},
-        {TraversalOption::c04HCP, "c04HCP"},
-        {TraversalOption::verletClustersSliced, "verlet-clusters-sliced"},
-        {TraversalOption::verletClustersBalancedSliced, "verlet-clusters-balanced-sliced"},
-        {TraversalOption::cSliced, "colored-sliced"},
-        {TraversalOption::cSlicedVerlet, "colored-sliced-verlet"},
-        {TraversalOption::verletClustersCSliced, "verlet-clusters-colored-sliced"},
+        // DirectSum Traversals:
+        {TraversalOption::ds_sequential, "ds_sequential"},
+
+        // LinkedCell Traversals:
+        {TraversalOption::lc_sliced, "lc_sliced"},
+        {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
+        {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
+        {TraversalOption::lc_c01, "lc_c01"},
+        {TraversalOption::lc_c01_cuda, "lc_c01_cuda"},
+        {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
+        {TraversalOption::lc_c04, "lc_c04"},
+        {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
+        {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
+        {TraversalOption::lc_c08, "lc_c08"},
+        {TraversalOption::lc_c18, "lc_c18"},
+
+        // VerletClusterCells Traversals:
+        {TraversalOption::vcc_cluster_iteration_cuda, "vcc_cluster_iteration_cuda"},
+
+        // VerletClusterLists Traversals:
+        {TraversalOption::vcl_cluster_iteration, "vcl_cluster_iteration"},
+        {TraversalOption::vcl_c06, "vcl_c06"},
+        {TraversalOption::vcl_c01_balanced, "vcl_c01_balanced"},
+        {TraversalOption::vcl_sliced, "vcl_sliced"},
+        {TraversalOption::vcl_sliced_c02, "vcl_sliced_c02"},
+        {TraversalOption::vcl_sliced_balanced, "vcl_sliced_balanced"},
+
+        // VerletList Traversals:
+        {TraversalOption::vl_list_iteration, "vl_list_iteration"},
+
+        // VerletListCells Traversals:
+        {TraversalOption::vlc_sliced, "vlc_sliced"},
+        {TraversalOption::vlc_sliced_c02, "vlc_sliced_c02"},
+        {TraversalOption::vlc_c18, "vlc_c18"},
+        {TraversalOption::vlc_c01, "vlc_c01"},
+        {TraversalOption::vlc_sliced_balanced, "vlc_sliced_balanced"},
+
+        // VarVerlet Traversals:
+        {TraversalOption::vvl_as_built, "vvl_as_built"},
     };
   };
 

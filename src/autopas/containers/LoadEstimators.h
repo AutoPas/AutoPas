@@ -114,9 +114,9 @@ static std::set<autopas::LoadEstimatorOption> allCompatibleLoadEstimators(autopa
  */
 static bool usesLoadEstimator(autopas::TraversalOption traversal) {
   switch (traversal) {
-    case TraversalOption::BalancedSliced:       /* FALL THROUGH */
-    case TraversalOption::BalancedSlicedVerlet: /* FALL THROUGH */
-    case TraversalOption::verletClustersBalancedSliced: {
+    case TraversalOption::lc_sliced_balanced:  /* FALL THROUGH */
+    case TraversalOption::vlc_sliced_balanced: /* FALL THROUgh */
+    case TraversalOption::vcl_sliced_balanced: {
       return true;
     }
     default: {
@@ -125,28 +125,28 @@ static bool usesLoadEstimator(autopas::TraversalOption traversal) {
   }
 }
 
-/**
- * If traversal uses load estimation, returns all load estimators in allowedOptions,
- * that are compatible with the container, but always allows none if the intersection is empty.
- *
- * @param container
- * @param traversal
- * @param allowedOptions
- * @return applicable traversals or {none}
- */
-static std::set<autopas::LoadEstimatorOption> getApplicableLoadEstimators(
-    autopas::ContainerOption container, autopas::TraversalOption traversal,
-    const std::set<autopas::LoadEstimatorOption> allowedOptions) {
-  if (usesLoadEstimator(traversal)) {
-    auto compatible = allCompatibleLoadEstimators(container);
-    std::set<autopas::LoadEstimatorOption> intersection;
-    std::set_intersection(allowedOptions.begin(), allowedOptions.end(), compatible.begin(), compatible.end(),
-                          std::inserter(intersection, intersection.begin()));
-    if (not intersection.empty()) {
-      return intersection;
+  /**
+   * If traversal uses load estimation, returns all load estimators in allowedOptions,
+   * that are compatible with the container, but always allows none if the intersection is empty.
+   *
+   * @param container
+   * @param traversal
+   * @param allowedOptions
+   * @return applicable traversals or {none}
+   */
+  static std::set<autopas::LoadEstimatorOption> getApplicableLoadEstimators(
+      autopas::ContainerOption container, autopas::TraversalOption traversal,
+      const std::set<autopas::LoadEstimatorOption> allowedOptions) {
+    if (usesLoadEstimator(traversal)) {
+      auto compatible = allCompatibleLoadEstimators(container);
+      std::set<autopas::LoadEstimatorOption> intersection;
+      std::set_intersection(allowedOptions.begin(), allowedOptions.end(), compatible.begin(), compatible.end(),
+                            std::inserter(intersection, intersection.begin()));
+      if (not intersection.empty()) {
+        return intersection;
+      }
     }
+    return std::set<autopas::LoadEstimatorOption>{LoadEstimatorOption::none};
   }
-  return std::set<autopas::LoadEstimatorOption>{LoadEstimatorOption::none};
-}
 
 }  // namespace autopas::loadEstimators

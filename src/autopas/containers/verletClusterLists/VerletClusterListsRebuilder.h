@@ -355,7 +355,7 @@ class VerletClusterListsRebuilder {
    * A forward neighbor is either in a interaction cell with a higher index
    * or in the same interaction cell with a higher tower index.
    *
-   * Helps the VerletClustersColoringTraversal to have no data races.
+   * Helps the VCLC06Traversal to have no data races.
    *
    * @param towerIndexX The x-index of the given tower.
    * @param towerIndexY The y-index of the given tower.

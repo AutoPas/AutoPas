@@ -53,5 +53,6 @@ class NumberSetFinite : public NumberSet<Number> {
   std::vector<Number> uniformSample(size_t n, Random &rng) const override {
     return rng.uniformSample(_set.begin(), _set.end(), n);
   }
+  std::set<Number> uniformSampleSet(size_t n, Random &rng) const override { return rng.randomSubset(_set, n); }
 };
 }  // namespace autopas

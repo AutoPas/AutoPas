@@ -11,6 +11,8 @@
 #include <random>
 #include <set>
 
+#include "autopas/utils/ExceptionHandler.h"
+
 namespace autopas {
 
 /**
@@ -48,6 +50,10 @@ class Random : public std::mt19937 {
    */
   template <class Iter>
   std::vector<typename std::iterator_traits<Iter>::value_type> uniformSample(Iter poolBegin, Iter poolEnd, size_t n) {
+    if (poolBegin == poolEnd) {
+      autopas::utils::ExceptionHandler::exception("Random.uniformSample: Cannot sample from empty set.");
+    }
+
     std::vector<typename std::iterator_traits<Iter>::value_type> result;
     result.reserve(n);
 
@@ -83,9 +89,37 @@ class Random : public std::mt19937 {
     size_t pos = distr(*this);
 
     auto it = pool.begin();
-    for (size_t i = 0; i < pos; ++i) ++it;
+    std::advance(it, pos);
 
     return *it;
+  }
+
+  /**
+   * Pick up to n random elements from the set.
+   * Each elements has the same probability to be chosen
+   * @param pool set
+   * @param n number of elements
+   * @return n random elements
+   */
+  template <class T>
+  std::set<T> randomSubset(std::set<T> pool, size_t n) {
+    size_t size = std::min(n, pool.size());
+
+    // create randomly shuffled vector of points to all elements in the pool
+    std::vector<const T *> pointerVec;
+    pointerVec.reserve(pool.size());
+    for (const T &element : pool) {
+      pointerVec.push_back(&element);
+    }
+    std::shuffle(pointerVec.begin(), pointerVec.end(), *this);
+
+    // return first elements of the shuffled vector
+    std::set<T> result;
+    for (size_t i = 0; i < size; ++i) {
+      result.insert(*pointerVec[i]);
+    }
+
+    return result;
   }
 };
 
