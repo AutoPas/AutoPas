@@ -225,7 +225,7 @@ def calculateMeans(xAxis, yAxis):
 # build the full rgb color space
 colorrange = ['rgb(  0, 0, 0)', 'rgb(0, 100,   100)', 'rgb(255, 219,   0)', 'rgb(255, 0,   0)', 'rgb(  0, 147, 255)',
               'rgb(71, 0, 255)', 'rgb(73, 255,   0)', 'rgb(255,   0, 221)']
-symbolrange = ['circle', 'square', 'star', 'diamond', 'star-diamond', 'bowtie', 'hourglass', 'triangle-up',
+symbolrange = ['circle', 'square', 'cross', 'star', 'diamond', 'star-diamond', 'bowtie', 'hourglass', 'triangle-up',
                'triangle-down', 'triangle-left', 'triangle-right']
 
 # create figure and define layout
