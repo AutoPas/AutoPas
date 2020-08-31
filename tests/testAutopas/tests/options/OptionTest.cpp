@@ -50,6 +50,7 @@ TEST(OptionTest, parseTraversalOptionsTest) {
       {autopas::TraversalOption::verletClustersBalancedSliced, "verlet-cluster-balanced-sliced"},
       {autopas::TraversalOption::cSliced, "coloured-sliced"},
       {autopas::TraversalOption::cSlicedVerlet, "coloured-sliced-verlet"},
+      {autopas::TraversalOption::verletClustersCSliced, "verlet-cluster-coloured-sliced"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TraversalOption::getOptionNames().size());
