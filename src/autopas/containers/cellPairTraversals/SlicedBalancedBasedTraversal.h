@@ -100,7 +100,9 @@ class SlicedBalancedBasedTraversal
                loads[totalThickness + thickness - 1] - lastLoad < avg) {
           auto load1 = loads[totalThickness + thickness - 1] - lastLoad;
           auto load2 = loads[totalThickness + thickness] - lastLoad;
-          if (std::labs(avg - load1) < std::labs(avg - load2)) break;
+          // if (abs(avg-load1) < abs(avg-load2))
+          // doing this manually as we are using unsigned longs and would have to cast otherwise
+          if (((avg > load1) ? (avg - load1) : (load1 - avg)) < ((avg > load2) ? (avg - load2) : (load2 - avg))) break;
           thickness++;
         }
       }
