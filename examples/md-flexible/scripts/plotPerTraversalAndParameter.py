@@ -19,7 +19,8 @@ containsParameterArg = False
 # help message
 for arg in sys.argv[1:]:
     if "--help" in arg:
-        print("Usage: ./plotPerTraversalAndParameter.py parameter=[number, size, density, homogeneity] [path/To//Output/*.out ...]. Meaning number = number of particles, size = boxSize and density = particle density")
+        print(
+            "Usage: ./plotPerTraversalAndParameter.py parameter=[number, size, density, homogeneity] [path/To//Output/*.out ...]. Meaning number = number of particles, size = boxSize and density = particle density")
         print("Please use at least python 3.8.")
         exit(0)
     elif parameterIdentifierString in arg:
@@ -63,7 +64,6 @@ meanYaxis = []
 valuesErrorPlus = []
 valuesErrorMinus = []
 
-
 if parameterArg == 'number':
     number = True
     xAxisTitle = 'Number of particles'
@@ -84,7 +84,6 @@ allContainers[3] = ["verlet-sliced", "verlet-c18", "verlet-c01"]  # verletListsC
 allContainers[4] = ["verlet-cluster-cells"]  # verletClusterCells
 allContainers[5] = ["var-verlet-lists-as-build"]  # varVerletListsAsBuild
 allContainers[6] = ["verlet-lists"]  # verletLists
-
 
 # gather data per file
 for datafile in datafiles:
@@ -128,7 +127,8 @@ for datafile in datafiles:
             elif (number or density) and (match := re.search(regexNumOfParticles, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')  # split content inside brackets and show as array
-                numberOfParticles = numpy.prod(list(map(int, arrayOfCurrentLine)))  # calculate overall number of particles
+                numberOfParticles = numpy.prod(
+                    list(map(int, arrayOfCurrentLine)))  # calculate overall number of particles
                 numberOfParticlesPerTraversal[allTraversals.index(traversal)].append(numberOfParticles)
                 currentDensity += numberOfParticles
             elif number and (match := re.search(regexNumOfParticlesAbsolute, line)) is not None:
@@ -155,9 +155,11 @@ for datafile in datafiles:
                 values.append(int(match.group(1)))  # append time needed to perform iteration
         foundTraversal = False
 
-    timePerTravsersal[allTraversals.index(traversal)].append((sum(values)/len(values)))  # append mean time of this traversal
+    timePerTravsersal[allTraversals.index(traversal)].append(
+        (sum(values) / len(values)))  # append mean time of this traversal
     if size or density:
-        boxSize = numpy.prod([a - b for a, b in zip(boxSizeListMax, boxSizeListMin)])  # get size per dimension and then multiply to get overall boxsize
+        boxSize = numpy.prod([a - b for a, b in zip(boxSizeListMax,
+                                                    boxSizeListMin)])  # get size per dimension and then multiply to get overall boxsize
         boxSizePerTraversal[allTraversals.index(traversal)].append(boxSize)
         if density:
             currentDensity = currentDensity / boxSize
@@ -170,6 +172,14 @@ def getContainerByTraversal(traversal):
     for c in allContainers:
         if c.__contains__(traversal):
             return c
+
+
+def getTraversalIndexInContainer(traversal):
+    for c in allContainers:
+        if c.__contains__(traversal):
+            return c.index(traversal)
+    return 0
+
 
 def calculateMeans(xAxis, yAxis):
     global meanYaxis
@@ -209,11 +219,14 @@ def calculateMeans(xAxis, yAxis):
     valuesErrorMinus = [y for _, y in sorted(zip(meanXaxis, valuesErrorMinus), key=lambda pair: pair[0])]
     meanXaxis.sort()
 
+
 # ---------------------------------------------- Plot ---------------------------------------------
 
 # build the full rgb color space
-colorrange = ['rgb(  0, 0, 0)', 'rgb(0, 100,   100)', 'rgb(255, 219,   0)', 'rgb(255, 0,   0)', 'rgb(  0, 147, 255)', 'rgb(71, 0, 255)', 'rgb(73, 255,   0)', 'rgb(255,   0, 221)']
-
+colorrange = ['rgb(  0, 0, 0)', 'rgb(0, 100,   100)', 'rgb(255, 219,   0)', 'rgb(255, 0,   0)', 'rgb(  0, 147, 255)',
+              'rgb(71, 0, 255)', 'rgb(73, 255,   0)', 'rgb(255,   0, 221)']
+symbolrange = ['circle', 'square', 'star', 'diamond', 'star-diamond', 'bowtie', 'hourglass', 'triangle-up',
+               'triangle-down', 'triangle-left', 'triangle-right']
 
 # create figure and define layout
 fig = go.Figure(
@@ -251,12 +264,13 @@ for t in allTraversals:
         ),
         hovertext=t,
         marker=dict(
-            color=allTraversals.index(t),
+            color=colorrange[allContainers.index(getContainerByTraversal(t))],
+            symbol=symbolrange[getTraversalIndexInContainer(t)],
+            size=15,
         ),
         line=dict(
-            color=colorrange[allContainers.index(getContainerByTraversal(t))],
+            color=colorrange[allContainers.index(getContainerByTraversal(t))]
         ),
-        )
+    )
     )
 fig.show()
-
