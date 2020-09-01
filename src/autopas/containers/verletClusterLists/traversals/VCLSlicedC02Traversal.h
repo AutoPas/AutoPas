@@ -67,18 +67,16 @@ class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  void initTraversal() override {
+  void loadDataLayout() override {
     if constexpr (dataLayout == DataLayoutOption::soa) {
       VCLTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
     }
-    SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::initTraversal();
   }
 
   void endTraversal() override {
     if constexpr (dataLayout == DataLayoutOption::soa) {
       VCLTraversalInterface<Particle>::_verletClusterLists->extractParticlesFromSoAs(_functor);
     }
-    SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::endTraversal();
   }
 
   void traverseParticlePairs() override {

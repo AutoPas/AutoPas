@@ -115,7 +115,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * Load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
    */
-  void loadDataLayout() {
+  virtual void loadDataLayout() {
     if (this->_cells) {
       auto &cells = *(this->_cells);
 #ifdef AUTOPAS_OPENMP
