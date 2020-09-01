@@ -46,7 +46,7 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class LJFunctor
-    : public Functor<Particle, typename Particle::SoAArraysType,
+    : public Functor<Particle,
                      LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
   using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
@@ -64,7 +64,7 @@ class LJFunctor
    * @param dummy unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
-      : Functor<Particle, SoAArraysType,
+      : Functor<Particle,
                 LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
         _cutoffsquare{cutoff * cutoff},
         _upotSum{0.},

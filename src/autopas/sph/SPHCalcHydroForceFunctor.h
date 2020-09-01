@@ -18,14 +18,14 @@ namespace autopas::sph {
  */
 template <class Particle>
 class SPHCalcHydroForceFunctor
-    : public Functor<Particle, typename Particle::SoAArraysType, SPHCalcHydroForceFunctor<Particle>> {
+    : public Functor<Particle, SPHCalcHydroForceFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;
 
   SPHCalcHydroForceFunctor()
       // the actual cutoff used is dynamic. 0 is used to pass the sanity check.
-      : autopas::Functor<Particle, SoAArraysType, SPHCalcHydroForceFunctor>(0.){};
+      : autopas::Functor<Particle, SPHCalcHydroForceFunctor<Particle>>(0.){};
 
   bool isRelevantForTuning() override { return true; }
 

@@ -24,7 +24,7 @@ namespace internal {
  * validity only works with the AoSFunctor().
  */
 template <class Particle, bool callCheckInstead = false>
-class AsBuildPairGeneratorFunctor : public autopas::Functor<Particle> {
+class AsBuildPairGeneratorFunctor : public autopas::Functor<Particle, AsBuildPairGeneratorFunctor<Particle, callCheckInstead>> {
  public:
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
@@ -58,7 +58,7 @@ class AsBuildPairGeneratorFunctor : public autopas::Functor<Particle> {
    * @param cutoffskin The cutoff skin to use.
    */
   AsBuildPairGeneratorFunctor(VerletNeighborListAsBuild<Particle> &neighborList, double cutoffskin)
-      : autopas::Functor<Particle>(cutoffskin), _list(neighborList), _cutoffskinsquared(cutoffskin * cutoffskin) {}
+      : autopas::Functor<Particle, AsBuildPairGeneratorFunctor<Particle, callCheckInstead>>(cutoffskin), _list(neighborList), _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
   bool isRelevantForTuning() override { return false; }
 

@@ -39,7 +39,7 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class LJFunctorAVX
-    : public Functor<Particle, typename Particle::SoAArraysType,
+    : public Functor<Particle,
                      LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -57,7 +57,7 @@ class LJFunctorAVX
    */
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
-      : Functor<Particle, SoAArraysType,
+      : Functor<Particle,
                 LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
         _cutoffsquare{_mm256_set1_pd(cutoff * cutoff)},
         _upotSum{0.},
@@ -69,7 +69,7 @@ class LJFunctorAVX
     }
   }
 #else
-      : Functor<Particle, SoAArraysType,
+      : Functor<Particle,
                 LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff) {
     utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");

@@ -19,12 +19,12 @@
  * It returns that it is applicable for everything.
  */
 template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
-class EmptyFunctor : public autopas::Functor<Particle> {
+class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle, SoAArraysType>> {
  public:
   /**
    * Default constructor.
    */
-  EmptyFunctor() : autopas::Functor<Particle>(0.){};
+  EmptyFunctor() : autopas::Functor<Particle, EmptyFunctor<Particle, SoAArraysType>>(0.){};
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {}
 

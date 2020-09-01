@@ -34,7 +34,7 @@ class VerletListHelpers {
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
-  class VerletListGeneratorFunctor : public Functor<Particle> {
+  class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorFunctor> {
    public:
     /**
      * Constructor
@@ -42,7 +42,7 @@ class VerletListHelpers {
      * @param interactionLength
      */
     VerletListGeneratorFunctor(NeighborListAoSType &verletListsAoS, double interactionLength)
-        : Functor<Particle>(interactionLength),
+        : Functor<Particle, VerletListGeneratorFunctor>(interactionLength),
           _verletListsAoS(verletListsAoS),
           _interactionLengthSquared(interactionLength * interactionLength) {}
 
@@ -175,29 +175,29 @@ class VerletListHelpers {
      */
     // TODO remove this whole function
     // TODO remove sanity check ? maybe add test for it? how?
-    //    void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) override {
-    //      if (offset > 0) {
-    //        utils::ExceptionHandler::exception("VerletListGeneratorFunctor: requires offset == 0");
-    //      }
-    //      soa.resizeArrays(cell.numParticles());
-    //
-    //      if (cell.numParticles() == 0) return;
-    //
-    //      auto *const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
-    //      double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
-    //      double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
-    //      double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
-    //
-    //      auto cellIter = cell.begin();
-    //      // load particles in SoAs
-    //      for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
-    //        Particle *pptr = &(*cellIter);
-    //        ptrptr[i] = pptr;
-    //        xptr[i] = cellIter->getR()[0];
-    //        yptr[i] = cellIter->getR()[1];
-    //        zptr[i] = cellIter->getR()[2];
-    //      }
-    //    }
+//        void SoALoader(VerletListParticleCellType &cell, SoA<Particle::SoAArraysType> &soa, size_t offset) override {
+//          if (offset > 0) {
+//            utils::ExceptionHandler::exception("VerletListGeneratorFunctor: requires offset == 0");
+//          }
+//          soa.resizeArrays(cell.numParticles());
+//
+//          if (cell.numParticles() == 0) return;
+//
+//          auto *const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
+//          double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
+//          double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
+//          double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
+//
+//          auto cellIter = cell.begin();
+//          // load particles in SoAs
+//          for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
+//            Particle *pptr = &(*cellIter);
+//            ptrptr[i] = pptr;
+//            xptr[i] = cellIter->getR()[0];
+//            yptr[i] = cellIter->getR()[1];
+//            zptr[i] = cellIter->getR()[2];
+//          }
+//        }
 
     /**
      * Does nothing
@@ -236,7 +236,7 @@ class VerletListHelpers {
    * @todo: SoA?
    * @tparam ParticleCell
    */
-  class VerletListValidityCheckerFunctor : public Functor<Particle> {
+  class VerletListValidityCheckerFunctor : public Functor<Particle, VerletListValidityCheckerFunctor> {
    public:
     /**
      * Constructor
@@ -244,7 +244,7 @@ class VerletListHelpers {
      * @param cutoff
      */
     VerletListValidityCheckerFunctor(NeighborListAoSType &verletListsAoS, double cutoff)
-        : Functor<Particle>(cutoff), _verletListsAoS(verletListsAoS), _cutoffsquared(cutoff * cutoff), _valid(true) {}
+        : Functor<Particle, VerletListValidityCheckerFunctor>(cutoff), _verletListsAoS(verletListsAoS), _cutoffsquared(cutoff * cutoff), _valid(true) {}
 
     bool isRelevantForTuning() override { return false; }
 

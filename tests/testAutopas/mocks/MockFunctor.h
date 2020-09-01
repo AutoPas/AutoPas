@@ -18,9 +18,9 @@
 #endif
 
 template <class Particle>
-class MockFunctor : public autopas::Functor<Particle> {
+class MockFunctor : public autopas::Functor<Particle, MockFunctor<Particle>> {
  public:
-  MockFunctor() : autopas::Functor<Particle>(0.){};
+  MockFunctor() : autopas::Functor<Particle, MockFunctor<Particle>>(0.){};
   // virtual void AoSFunctor(Particle &i, Particle &j, bool newton3)
   MOCK_METHOD(void, AoSFunctor, (Particle & i, Particle &j, bool newton3), (override));
 

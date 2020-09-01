@@ -30,7 +30,7 @@ class VerletListsCellsHelpers {
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
-  class VerletListGeneratorFunctor : public Functor<Particle> {
+  class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorFunctor> {
    public:
     /**
      * Constructor
@@ -41,7 +41,7 @@ class VerletListsCellsHelpers {
     VerletListGeneratorFunctor(NeighborListsType &neighborLists,
                                std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
                                double cutoffskin)
-        : Functor<Particle>(0.),
+        : Functor<Particle, VerletListGeneratorFunctor>(0.),
           _neighborLists(neighborLists),
           _particleToCellMap(particleToCellMap),
           _cutoffskinsquared(cutoffskin * cutoffskin) {}

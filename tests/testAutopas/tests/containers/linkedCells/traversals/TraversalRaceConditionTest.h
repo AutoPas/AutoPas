@@ -24,12 +24,12 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
    * Simple AoS only functor which repulses paritcles from each other with a
    * constant force of 1.
    */
-  class SimpleFunctor : public autopas::Functor<Particle> {
+  class SimpleFunctor : public autopas::Functor<Particle, SimpleFunctor> {
    public:
     using SoAArraysType = Particle::SoAArraysType;
     using floatType = double;
 
-    SimpleFunctor(floatType cutoff) : autopas::Functor<Particle>(cutoff), _cutoffSquare(cutoff * cutoff){};
+    SimpleFunctor(floatType cutoff) : autopas::Functor<Particle, SimpleFunctor>(cutoff), _cutoffSquare(cutoff * cutoff){};
 
     bool isRelevantForTuning() override { return true; }
 

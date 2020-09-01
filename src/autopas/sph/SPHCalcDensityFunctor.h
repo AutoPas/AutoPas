@@ -19,12 +19,12 @@ namespace autopas::sph {
  */
 template <class Particle>
 class SPHCalcDensityFunctor
-    : public Functor<Particle, typename Particle::SoAArraysType, SPHCalcDensityFunctor<Particle>> {
+    : public Functor<Particle, SPHCalcDensityFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;
 
-  SPHCalcDensityFunctor() : autopas::Functor<Particle, SoAArraysType, SPHCalcDensityFunctor>(0.){};
+  SPHCalcDensityFunctor() : autopas::Functor<Particle, SPHCalcDensityFunctor<Particle>>(0.){};
 
   bool isRelevantForTuning() override { return true; }
 

@@ -178,7 +178,7 @@ class AutoPas {
    */
   template <class Functor>
   bool iteratePairwise(Functor *f) {
-    static_assert(not std::is_same<Functor, autopas::Functor<Particle>>::value,
+    static_assert(not std::is_same<Functor, autopas::Functor<Particle, Functor>>::value,
                   "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
                   "derived type instead, e.g. by using a dynamic_cast.");
     if (f->getCutoff() > this->getCutoff()) {
