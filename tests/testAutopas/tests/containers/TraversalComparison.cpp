@@ -117,9 +117,17 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
       *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container->getCutoff(),
       numHaloMolecules);
 
+  auto traversal = autopas::TraversalSelector<FMCell>::generateTraversal(
+      traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+  if (not traversal->isApplicable()) {
+    return {};
+  }
+
   if (particleDeletionPosition & DeletionPosition::beforeLists) {
     markSomeParticlesAsDeleted(container, numMolecules + numHaloMolecules, 19);
   }
+
+  container->rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
     executeShift(container, skin / 2, numMolecules + numHaloMolecules);
@@ -128,14 +136,6 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   if (particleDeletionPosition & DeletionPosition::afterLists) {
     markSomeParticlesAsDeleted(container, numMolecules + numHaloMolecules, 99);
   }
-
-  auto traversal = autopas::TraversalSelector<FMCell>::generateTraversal(
-      traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
-  if (not traversal->isApplicable()) {
-    return {};
-  }
-
-  container->rebuildNeighborLists(traversal.get());
 
   functor.initTraversal();
   container->iteratePairwise(traversal.get());
