@@ -12,7 +12,6 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/CudaSoA.h"
-#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAView.h"
 
 #if defined(AUTOPAS_CUDA)

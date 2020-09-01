@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/utils/CudaExceptionHandler.h"
-#include "autopas/utils/ExceptionHandler.h"
 #if defined(AUTOPAS_CUDA)
 #include "cuda_runtime.h"
 #endif
