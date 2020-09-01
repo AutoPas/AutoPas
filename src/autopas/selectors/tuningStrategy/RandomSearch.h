@@ -75,7 +75,7 @@ class RandomSearch : public TuningStrategyInterface {
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
   inline void addEvidence(long time, size_t iteration) override {
-    Configuration testingConfig = Configuration(_currentConfig);
+    auto testingConfig = Configuration(_currentConfig);
     testingConfig.cellSizeFactor = 1;
     if (_traversalTimes.find(testingConfig) == _traversalTimes.end()) {
       ++_numTestedConfigsNoCSF;
@@ -86,10 +86,9 @@ class RandomSearch : public TuningStrategyInterface {
   inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
   inline void reset(size_t iteration) override {
-    _invalidConfigs.clear();
-    _searchSpaceSizeNoCSF = 0;
-    _numTestedConfigsNoCSF = 0;
     _traversalTimes.clear();
+    _invalidConfigs.clear();
+    _numTestedConfigsNoCSF = 0;
     tune();
   }
 

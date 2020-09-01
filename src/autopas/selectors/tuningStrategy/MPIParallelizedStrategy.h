@@ -106,6 +106,11 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   void setupFallbackOptions();
 
   /**
+   * Uses _configIterator to get a new config from the global search space.
+   */
+  void nextFallbackConfig();
+
+  /**
    * The tuning strategy tuning locally
    */
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
@@ -140,17 +145,7 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
   AutoPas_MPI_Comm_rank(_comm, &rank);
 
   if (not _strategyStillWorking and currentInvalid) {
-    _configIterator->advanceIterators(_numFallbackConfigs, 1);
-    if (_configIterator->getRankIterator() >= 1) {
-      // All strategies have been searched through and rejected.
-      utils::ExceptionHandler::exception("MPIParallelizedStrategy: No viable configurations were provided.");
-    }
-    _optimalConfiguration = Configuration(*_configIterator->getContainerIterator(),
-                                          *_configIterator->getCellSizeFactorIterator(),
-                                          *_configIterator->getTraversalIterator(),
-                                          *_configIterator->getLoadEstimatorIterator(),
-                                          *_configIterator->getDataLayoutIterator(),
-                                          *_configIterator->getNewton3Iterator());
+    nextFallbackConfig();
     return true;
   }
 
@@ -161,12 +156,13 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
       AutoPasLog(warn, "MPIParallelizedStrategy: Underlying strategy failed. Reverting to fallback-mode.");
       setupFallbackOptions();
     }
-    if (currentInvalid) {
-      return true;
-    }
   } else if (currentInvalid) {
     AutoPasLog(warn, "MPIParallelizedStrategy: Underlying strategy found invalid optimum. Reverting to fallback-mode.");
     setupFallbackOptions();
+  }
+
+  if (currentInvalid) {
+    return true;
   }
 
   // Wait for the Iallreduce from the last tuning step to finish
@@ -206,6 +202,20 @@ void MPIParallelizedStrategy::setupFallbackOptions() {
   _configIterator = std::make_unique<utils::ConfigurationAndRankIteratorHandler>(
       _fallbackContainers, numbersSet, _fallbackTraversalOptions, _fallbackLoadEstimators, _fallbackDataLayouts,
       _fallbackNewton3s, _numFallbackConfigs, 1);
+  _optimalConfiguration = Configuration(*_configIterator->getContainerIterator(),
+                                        *_configIterator->getCellSizeFactorIterator(),
+                                        *_configIterator->getTraversalIterator(),
+                                        *_configIterator->getLoadEstimatorIterator(),
+                                        *_configIterator->getDataLayoutIterator(),
+                                        *_configIterator->getNewton3Iterator());
+}
+
+void MPIParallelizedStrategy::nextFallbackConfig() {
+  _configIterator->advanceIterators(_numFallbackConfigs, 1);
+  if (_configIterator->getRankIterator() >= 1) {
+    // All strategies have been searched through and rejected.
+    utils::ExceptionHandler::exception("MPIParallelizedStrategy: No viable configurations were provided.");
+  }
   _optimalConfiguration = Configuration(*_configIterator->getContainerIterator(),
                                         *_configIterator->getCellSizeFactorIterator(),
                                         *_configIterator->getTraversalIterator(),
