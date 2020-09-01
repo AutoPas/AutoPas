@@ -76,7 +76,6 @@ for datafile in datafiles:
     # lists to gather data series
     values = []
     thisConfig = None
-    finishedHeader = False
 
     regexConf = '.*Iterating with configuration: +({.*})'
     regexCellSizeFactor = '.* CellSizeFactor +({.*})'
@@ -86,12 +85,12 @@ for datafile in datafiles:
     regexBoxMin = '.*box-min*'
     regexBoxMax = '.*box-max*'
     regexTraversal = '.*traversal*'
-    regexSimulationStarted = 'Starting simulation...*'
     regexCubeUniform = '.*CubeUniform:*'
     regexCubeGrid = '.*CubeGrid:*'
     regexSphere = '.*Sphere:*'
     regexCubeGauss = '.*CubeGauss:*'
     regexHomogeneity = '.*Homogeneity*'
+    regexThreads = '.*Threads*'
 
     if setNameOfScenario:
         datafileNames = datafile.split('/')
@@ -112,13 +111,12 @@ for datafile in datafiles:
         dataLayout = None
         newton3 = None
         homogeneity = None
+        threads = None
 
         lines = f.readlines()
         for line in lines:
             # parse header and footer
-            if (match := re.search(regexSimulationStarted, line)) is not None:
-                finishedHeader = True
-            elif (match := re.search(regexNumOfParticles, line)) is not None:
+            if (match := re.search(regexNumOfParticles, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')  # split content inside brackets and show as array
                 numberOfParticles = numpy.prod(
@@ -143,6 +141,8 @@ for datafile in datafiles:
                 form = appendForm(form, 'Sphere')
             elif (match := re.search(regexCubeGauss, line)) is not None:
                 form = appendForm(form, 'CubeGauss')
+            elif (match := re.search(regexThreads, line)) is not None:
+                threads = line.split(' ', 2)[1]
             elif (match := re.search(regexHomogeneity, line)) is not None:
                 currentLine = line.split(':', 1)[1]
                 currentLine.strip()
@@ -163,7 +163,7 @@ for datafile in datafiles:
                 y = boxSizeListMax[1] - boxSizeListMin[1]
                 z = boxSizeListMax[2] - boxSizeListMin[2]
                 rowList.append([traversal, container, newton3, dataLayout, cellSizeFactor, loadEstimator, form,
-                                nameOfScenario, hardware, x, y, z, numberOfParticles, time, homogeneity])
+                                nameOfScenario, hardware, x, y, z, numberOfParticles, time, homogeneity, threads])
 
 # ---------------------------------------------- Write CSV ---------------------------------------------
 
@@ -171,5 +171,5 @@ with open('dataForPlotting.csv', 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(
         ["Traversal", "Container", "Newton3", "DataLayout", "CellsizeFactor", "LoadEstimator",
-         "Form", "NameOfScenario", "Hardware", "x", "y", "z", "NumberOfParticles", "IterationTime", "Homogeneity"])
+         "Form", "NameOfScenario", "Hardware", "x", "y", "z", "NumberOfParticles", "IterationTime", "Homogeneity", "Threads"])
     writer.writerows(rowList)
