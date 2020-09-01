@@ -68,7 +68,7 @@ class MoleculeLJ : public Particle {
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type get() const {
+  constexpr typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type get() {
     if constexpr (attribute == AttributeNames::ptr) {
       return this;
     } else if constexpr (attribute == AttributeNames::id) {
