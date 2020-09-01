@@ -401,5 +401,3 @@ class Functor {
 };
 
 }  // namespace autopas
-
-#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
