@@ -32,31 +32,6 @@ enum class FunctorN3Modes {
 template <class Particle>
 class VerletListHelpers;
 
-namespace internal {
-/**
- * Dummy class to provide empty arrays.
- * This class is needed to provide a default argument to the implementation type (Impl_t) template parameter of Functor.
- * @tparam Particle
- */
-template <class Particle>
-class Dummy final {
- public:
-  /**
-   * @copydoc Functor::getNeededAttr()
-   */
-  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 0>{};
-  }
-
-  /**
-   * @copydoc Functor::getComputedAttr()
-   */
-  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 0>{};
-  }
-};
-}  // namespace internal
-
 /**
  * Functor class. This class describes the pairwise interactions between
  * particles.
@@ -69,14 +44,13 @@ class Dummy final {
  * @tparam Particle the type of Particle
  * @tparam ParticleCell_t the type of ParticleCell
  */
-template <class Particle, class SoAArraysTypeTemplate = typename Particle::SoAArraysType,
-          typename Impl_tTemplate = internal::Dummy<Particle>>
+template <class Particle, class Impl_tTemplate>
 class Functor {
  public:
   /**
    * Make the SoAArraysType publicly available.
    */
-  using SoAArraysType = SoAArraysTypeTemplate;
+  using SoAArraysType = typename Particle::SoAArraysType;
   /**
    * Make the Implementation type template publicly available.
    */
