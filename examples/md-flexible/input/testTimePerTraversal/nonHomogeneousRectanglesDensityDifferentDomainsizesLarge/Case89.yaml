@@ -14,7 +14,7 @@ Objects:
   CubeGrid:
     0:
       particles-per-dimension    :  [100, 100, 100]
-      particle-spacing           :  1.0
+      particle-spacing           :  1.5
       bottomLeftCorner           :  [50, 50, 50]
       velocity                   :  [0, 0, 0]
       particle-type              :  0
