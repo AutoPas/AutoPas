@@ -32,7 +32,7 @@ Objects:
       particle-mass              :  1
     2:
       particles-per-dimension    :  [60, 60, 60]
-      particle-spacing           :  0.5
+      particle-spacing           :  1.0
       bottomLeftCorner           :  [200, 200, 200]
       velocity                   :  [0, 0, 0]
       particle-type              :  0
