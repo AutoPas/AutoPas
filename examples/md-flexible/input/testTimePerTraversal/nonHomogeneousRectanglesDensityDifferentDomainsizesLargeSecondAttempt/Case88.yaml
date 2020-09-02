@@ -14,7 +14,7 @@ Objects:
   CubeGauss:
     0:
       distribution-mean          :  [2, 2, 2]
-      distribution-stddeviation  :  [50, 50, 50]
+      distribution-stddeviation  :  [25, 25, 25]
       numberOfParticles          :  1000000
       box-length                 :  [200, 200, 200]
       bottomLeftCorner           :  [0, 0, 0]
