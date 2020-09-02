@@ -266,7 +266,7 @@ for t in allTraversals:
         marker=dict(
             color=colorrange[allContainers.index(getContainerByTraversal(t))],
             symbol=symbolrange[getTraversalIndexInContainer(t)],
-            size=15,
+            size=10,
         ),
         line=dict(
             color=colorrange[allContainers.index(getContainerByTraversal(t))]
