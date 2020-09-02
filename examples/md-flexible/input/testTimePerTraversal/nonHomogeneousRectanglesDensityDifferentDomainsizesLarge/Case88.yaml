@@ -15,7 +15,7 @@ Objects:
     0:
       particles-per-dimension    :  [100, 100, 100]
       particle-spacing           :  0.5
-      bottomLeftCorner           :  [20, 20, 20]
+      bottomLeftCorner           :  [50, 50, 50]
       velocity                   :  [0, 0, 0]
       particle-type              :  0
       particle-epsilon           :  1
