@@ -17,7 +17,7 @@ Objects:
       particle-spacing           :  2.0
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
-      particle-type              :  0
+      particle-type              :  2
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1
