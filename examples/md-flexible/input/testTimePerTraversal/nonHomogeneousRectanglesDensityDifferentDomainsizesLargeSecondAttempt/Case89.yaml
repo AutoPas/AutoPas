@@ -15,7 +15,7 @@ Objects:
     0:
       distribution-mean          :  [2, 2, 2]
       distribution-stddeviation  :  [7, 7, 7]
-      numberOfParticles          :  1000000
+      numberOfParticles          :  100000
       box-length                 :  [200, 200, 200]
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
