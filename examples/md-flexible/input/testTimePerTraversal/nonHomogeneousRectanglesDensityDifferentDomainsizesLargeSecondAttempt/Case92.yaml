@@ -13,7 +13,7 @@ periodic-boundaries              :  false
 Objects:
   CubeGrid:
     0:
-      particles-per-dimension    :  [50, 50, 40]
+      particles-per-dimension    :  [20, 20, 25]
       particle-spacing           :  2.0
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
