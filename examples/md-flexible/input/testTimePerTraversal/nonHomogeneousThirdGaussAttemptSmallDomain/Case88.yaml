@@ -25,5 +25,3 @@ Objects:
       particle-mass              :  1
 no-flops                         :  true
 no-end-config                    :  true
-vtk-filename                     :  Case88CubeGauss
-vtk-write-frequency              :  1
