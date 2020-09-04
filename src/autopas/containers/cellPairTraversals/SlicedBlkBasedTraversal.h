@@ -242,13 +242,13 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
     else if (x == 1 and  y == 0 and  z == 0) return 100;
     else if (x == 0 and  y == 1 and  z == 0) return 10;
     else if (x == 0 and  y == 0 and  z == 1) return 1;
-
     else if (x == 1 and  y == 1 and  z == 0) return 110;
     else if (x == 1 and  y == 0 and  z == 1) return 101;
     else if (x == 0 and  y == 1 and  z == 1) return 11;
     else if (x == 1 and  y == 1 and  z == 1) return 111;
     else {
       AutoPasLog(error, "Requested not a SubBlock for Locking.");
+      return 0;
     }
   }
 
@@ -270,7 +270,10 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * Testing the locking of all neighbour sub-blocks of the given one, including the given one.
    *
-   * @param blockNumber The number of the block/ thread which wants the sub-block to lock.
+   * All sub-blocks which are not already locked will be locked.
+   * If one lock could not be set, all locks are freed again.
+   *
+   * @param blockNumber The number of the block/ thread which wants to lock a sub-block and the corresponding locks.
    * @param order The block unique order id of the sub-block. e.g. 000-222 as an array. = {0,0,0}-{2,2,2}
    * @return A boolean corresponding true if the locks could been set, or false otherwise.
    */
@@ -313,7 +316,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
   }
 
   /**
-   * Unlocks all neigbor sub-blocks and the current sub-block.
+   * Unlocks all neigbour sub-blocks and the current sub-block.
    * No need to test these, as we always want to unlock after we finished a sub-block.
    * @param blockNumber The number of the block/ thread which wants the sub-block to lock.
    * @param order The block unique order id of the sub-block. e.g. 000-222 as an array. = {0,0,0}-{2,2,2}
@@ -333,7 +336,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
    *
    * @param blockNumber The number of the block, which the sub-block is part of
    * @param order The order of the sub-block, which to lock.
-   * @return The number for locking.
+   * @return Unique SubBlock Lock Id
    */
   unsigned long uniqueLockCalculation(unsigned long blockNumber, std::array<unsigned long, 3> order) {
     std::array<std::array<unsigned long, 3>, 2> currentBlock = blocks[blockNumber];
