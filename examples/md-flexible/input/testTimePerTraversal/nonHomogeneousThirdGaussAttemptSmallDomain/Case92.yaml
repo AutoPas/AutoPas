@@ -25,5 +25,5 @@ Objects:
       particle-mass              :  1
 no-flops                         :  true
 no-end-config                    :  true
-vtk-filename                     :  Case85CubeGauss
+vtk-filename                     :  Case92CubeGauss
 vtk-write-frequency              :  1
