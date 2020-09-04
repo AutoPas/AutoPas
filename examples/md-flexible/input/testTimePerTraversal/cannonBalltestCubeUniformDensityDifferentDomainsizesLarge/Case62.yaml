@@ -21,3 +21,5 @@ Objects:
       particle-mass              :  1
 no-flops                         :  true
 no-end-config                    :  true
+vtk-filename                     :  Case62cannonBallLarge
+vtk-write-frequency              :  1
