@@ -362,7 +362,6 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
    *  and the upper right back corner {2,2,2}. Allowing to build a spanning vector in cells for each block.
    *  All starting coordinates form an iterable cubic mesh.
    *  Please consider that the Spanning Vector MUST be build in the same direction as the c08 cell handling direction!
-   *
    */
   void calculateBlocks() {
 
@@ -374,36 +373,24 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
 
     AutoPasLog(debug, "Amount of Blocks: " + std::to_string(blocks.size()));
 
-    unsigned long acc_x = 0ul;
-    unsigned long acc_y = 0ul;
-    unsigned long acc_z = 0ul;
     unsigned long cellBlockIterator = 0ul;
     std::array<unsigned long, 3> cellBlockOrder = {0, 0, 0};
-    unsigned long x = 0ul;
-    unsigned long y = 0ul;
-    unsigned long z = 0ul;
     std::array<unsigned long, 3> acc_dim = {0ul, 0ul, 0ul};
     std::array<unsigned long, 3> it_dim = {0ul, 0ul, 0ul};
     std::array<unsigned long, 3> acc_it_dim = {0ul, 0ul, 0ul};
 
-    unsigned long max_cellblocks =
-        _cellBlockDimensions[0].size() * _cellBlockDimensions[1].size() * _cellBlockDimensions[2].size();
-
-    // Todo: parallel execution of block building possible
-
     // each step builds the previous cellblock spanning vector + the next cellblock starting point
     for (unsigned long xit = 0; xit < _cellBlockDimensions[0].size(); ++xit) {
       acc_it_dim[1] = 0;
-      for (unsigned long yit = 0; yit < _cellBlockDimensions[1].size(); ++yit) {
-        acc_it_dim[2] = 0;
-        for (unsigned long zit = 0; zit < _cellBlockDimensions[2].size(); ++zit) {
-          // for parallelization we calculate the cellBlockIterator from the block coordinates
-          // cellBlockIterator = utils::ThreeDimensionalMapping::threeToOneD(xit, yit, zit, max_cellblocks);
-          cellBlockIterator = (zit * _cellBlockDimensions[1].size() + yit) * _cellBlockDimensions[0].size() + xit;
+      it_dim[0] = xit;
 
-          it_dim[0] = xit;
-          it_dim[1] = yit;
+      for (unsigned long yit = 0; yit < _cellBlockDimensions[1].size(); ++yit) {
+        it_dim[1] = yit;
+        acc_it_dim[2] = 0;
+
+        for (unsigned long zit = 0; zit < _cellBlockDimensions[2].size(); ++zit) {
           it_dim[2] = zit;
+          cellBlockIterator = (zit * _cellBlockDimensions[1].size() + yit) * _cellBlockDimensions[0].size() + xit;
 
           for (int i = 0; i < 3; ++i) {
             acc_dim[i] = acc_it_dim[i] + it_dim[i];
@@ -423,12 +410,13 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
 
           acc_it_dim[2] += _cellBlockDimensions[2][it_dim[2]];
         }
+
         acc_it_dim[1] += _cellBlockDimensions[1][it_dim[1]];
       }
+
       acc_it_dim[0] += _cellBlockDimensions[0][it_dim[0]];
     }
   }
-
 
 };
 
