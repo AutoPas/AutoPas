@@ -364,6 +364,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
    *  Please consider that the Spanning Vector MUST be build in the same direction as the c08 cell handling direction!
    */
   void calculateBlocks() {
+    using array3D = std::array<unsigned long, 3>;
 
     AutoPasLog(debug, "_cellBlockDimensions Size: " + std::to_string(_cellBlockDimensions[0].size()) + " " +
                       std::to_string(_cellBlockDimensions[1].size()) + " " +
@@ -415,6 +416,102 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
       }
 
       acc_it_dim[0] += _cellBlockDimensions[0][it_dim[0]];
+    }
+  }
+
+    /**
+    * Splitting each block into its subBlocks
+    *            220      	        221    	            222
+    *           / |                / |                / |
+    *       120   |            121   |            122   |
+    *      / |   210          / |   211          / |   212
+    *  020   |  / |       021   |  / |       022   |  / |
+    *   |   110   |        |   111   |        |   112   |
+    *   |  / |   200       |  / |   201       |  / |   202
+    *  010   |  /         011   |  /         012   |  /
+    *   |   100            |   101            |   102
+    *   |  /               |  /               |  /
+    *  000................001................002
+    *
+    * Above model shows the numbering of each sub_block, be aware that they can be different in cellsizes.
+    * And the blocks bordering the end of a dimension, will have different sizes for subBlocks bordering a
+    * dimension end. Very often, if the simulation-dimension will not be perfectly splittable into the
+    * thread-amount of equally sized cubes.
+    *
+    * Each block including a 0 or a 2 is also a sub-block of another block. Unless the block borders the domain.
+    * Each sub-block saves its order and its starting coordinates. The end coordinates can be calculated by order
+    * and overlap.
+    *
+    * Generation of Subblocks always is in the Order: 000 - 100 - 200 - 010 - 110 - 210 - 020 - 120 - 220 - 001 - ...
+    */
+  void calculateSubBlocks() {
+    using array3D = std::array<unsigned long, 3>;
+    using subBlock = std::array<std::array<unsigned long, 2>, 3>;
+    using subBlocksSingleCellblock = std::array<subBlock, 27>;
+    using subBlocksAllCellblocks = std::vector<subBlocksSingleCellblock>;
+
+    auto _threads = blocks.size();
+
+
+    for (unsigned long n = 0; n < _threads; ++n) {
+      auto &block = blocks[n];
+
+      // subBlocks accessing: [0-27][0-2][0-1] -->
+      //  [subBlockNumber][dimension][0: coordinates of starting cell of subblock, 1: 000 to 222 subblock description]
+      subBlocksSingleCellblock _subBlocksSingleCellBlock;
+
+      // loop over the dimensions and build the subBlocks
+      int subBlockNumber = 0;
+      for (unsigned long xAxis = 0; xAxis < 3; ++xAxis) {
+          for (unsigned long yAxis = 0; yAxis < 3; ++yAxis) {
+              for (unsigned long zAxis = 0; zAxis < 3; ++zAxis) {
+                  subBlock currentSubBlock;
+                  if (zAxis == 0) {
+                      currentSubBlock[0][0] = block[0][0];
+                  } else if (zAxis == 1) {
+                      currentSubBlock[0][0] = block[0][0] + this->_overlapAxis[0];
+                  } else if (zAxis == 2) {
+                      currentSubBlock[0][0] = block[1][0] + 1;  // is in the next block
+                  }
+                  currentSubBlock[0][1] = zAxis;
+
+                  if (yAxis == 0) {
+                      currentSubBlock[1][0] = block[0][1];
+                  } else if (yAxis == 1) {
+                      currentSubBlock[1][0] = block[0][1] + this->_overlapAxis[1];
+                  } else if (yAxis == 2) {
+                      currentSubBlock[1][0] = block[1][1] + 1;  // is in the next block
+                  }
+                  currentSubBlock[1][1] = yAxis;
+
+                  if (xAxis == 0) {
+                      currentSubBlock[2][0] = block[0][2];
+                  } else if (xAxis == 1) {
+                      currentSubBlock[2][0] = block[0][2] + this->_overlapAxis[2];
+                  } else if (xAxis == 2) {
+                      currentSubBlock[2][0] = block[1][2] + 1;  // is in the next block
+                  }
+                  currentSubBlock[2][1] = xAxis;
+                  _subBlocksSingleCellBlock[subBlockNumber] = currentSubBlock;
+
+                  // one block finished building
+                  subBlockNumber++;
+              }
+          }
+      }
+      // Make this by reference, if the compiler does not so automatically
+      _allSubBlocks[n] = _subBlocksSingleCellBlock;
+      /** SubBlock Order in _allSubBlocks:
+       * 000 -> 100 -> 200 ->
+       * 010 -> 110 -> 210 ->
+       * 020 -> 120 -> 220 ->
+       * 001 -> 101 -> 201 ->
+       * 011 -> 111 -> 211 ->
+       * 021 -> 121 -> 221 ->
+       * 002 -> 102 -> 202 ->
+       * 012 -> 112 -> 212 ->
+       * 022 -> 122 -> 222
+       */
     }
   }
 
@@ -526,99 +623,14 @@ inline void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
 
   calculateBlocks();
 
-  /**
-   * Splitting each cellblock = slice into its subdomains = subBlocks
-   *            220      	   221    	      222
-   *           / |                / |                / |
-   *       120   |            121   |            122   |
-   *      / |   210          / |   211          / |   212
-   *  020   |  / |       021   |  / |       022   |  / |
-   *   |   110   |        |   111   |        |   112   |
-   *   |  / |   200       |  / |   201       |  / |   202
-   *  010   |  /         011   |  /         012   |  /
-   *   |   100            |   101            |   102
-   *   |  /               |  /               |  /
-   *  000................001................002
-   *
-   * Above model shows the numbering of each sub_block, be aware that they can be different in cellsizes.
-   * And the blocks bordering the end of a dimension, will have different sizes for subBlocks bordering a
-   * dimension end. Very often, if the simulation-dimension will not be perfectly splittable into the
-   * thread-amount of equally sized cubes.
-   *
-   * Each block including a 0 or a 2 is also a sub-block of another block. Unless the block borders the domain.
-   * Each sub-block saves its order and its starting coordinates. The end coordinates can be calculated by order
-   * and overlap.
-   *
-   * Generation of Subblocks always is in the Order: 000 - 100 - 200 - 010 - 110 - 210 - 020 - 120 - 220 - 001 - ...
-   */
-
-  _allSubBlocks.resize(blocks.size());
-  auto _threads = blocks.size();
-  if (_threads != max_threads) {
-    AutoPasLog(debug, "Sliced Bulk traversal only using {} threads because the number of cells is too small.",
-               _threads);
-  }
-
-  for (unsigned long n = 0; n < _threads; ++n) {
-    auto &block = blocks[n];
-
-    // subBlocks accessing: [0-27][0-2][0-1] -->
-    //  [subBlockNumber][dimension][0: coordinates of starting cell of subblock, 1: 000 to 222 subblock description]
-    subBlocksSingleCellblock _subBlocksSingleCellBlock;
-
-    // loop over the dimensions and build the subBlocks
-    int subBlockNumber = 0;
-    for (unsigned long xAxis = 0; xAxis < 3; ++xAxis) {
-      for (unsigned long yAxis = 0; yAxis < 3; ++yAxis) {
-        for (unsigned long zAxis = 0; zAxis < 3; ++zAxis) {
-          subBlock currentSubBlock;
-          if (zAxis == 0) {
-            currentSubBlock[0][0] = block[0][0];
-          } else if (zAxis == 1) {
-            currentSubBlock[0][0] = block[0][0] + this->_overlapAxis[0];
-          } else if (zAxis == 2) {
-            currentSubBlock[0][0] = block[1][0] + 1;  // is in the next block
-          }
-          currentSubBlock[0][1] = zAxis;
-
-          if (yAxis == 0) {
-            currentSubBlock[1][0] = block[0][1];
-          } else if (yAxis == 1) {
-            currentSubBlock[1][0] = block[0][1] + this->_overlapAxis[1];
-          } else if (yAxis == 2) {
-            currentSubBlock[1][0] = block[1][1] + 1;  // is in the next block
-          }
-          currentSubBlock[1][1] = yAxis;
-
-          if (xAxis == 0) {
-            currentSubBlock[2][0] = block[0][2];
-          } else if (xAxis == 1) {
-            currentSubBlock[2][0] = block[0][2] + this->_overlapAxis[2];
-          } else if (xAxis == 2) {
-            currentSubBlock[2][0] = block[1][2] + 1;  // is in the next block
-          }
-          currentSubBlock[2][1] = xAxis;
-          _subBlocksSingleCellBlock[subBlockNumber] = currentSubBlock;
-
-          // one block finished building
-          subBlockNumber++;
-        }
-      }
+    _allSubBlocks.resize(blocks.size());
+    auto _threads = blocks.size();
+    if (_threads != max_threads) {
+        AutoPasLog(debug, "Sliced Bulk traversal only using {} of {} threads because the number of cells is too small.",
+                   _threads, max_threads);
     }
-    // Make this by reference, if the compiler does not so automatically
-    _allSubBlocks[n] = _subBlocksSingleCellBlock;
-    /** SubBlock Order in _allSubBlocks:
-     * 000 -> 100 -> 200 ->
-     * 010 -> 110 -> 210 ->
-     * 020 -> 120 -> 220 ->
-     * 001 -> 101 -> 201 ->
-     * 011 -> 111 -> 211 ->
-     * 021 -> 121 -> 221 ->
-     * 002 -> 102 -> 202 ->
-     * 012 -> 112 -> 212 ->
-     * 022 -> 122 -> 222
-     */
-  }
+
+  calculateSubBlocks();
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
