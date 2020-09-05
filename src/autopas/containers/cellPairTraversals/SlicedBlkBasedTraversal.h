@@ -74,7 +74,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
    *
    * @return true if the traversal can be applied.
    */
-  bool isApplicable() const override {
+  [[nodiscard]] bool isApplicable() const override {
     const bool atLeast27CellsForEachCellBlock = _cellBlockDimensions[0].front() >= _overlapAxis[0] * 2 + 1 and
                                                 _cellBlockDimensions[1].front() >= _overlapAxis[1] * 2 + 1 and
                                                 _cellBlockDimensions[2].front() >= _overlapAxis[2] * 2 + 1 and
@@ -373,7 +373,7 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
 
     AutoPasLog(debug, "Amount of Blocks: " + std::to_string(blocks.size()));
 
-    unsigned long cellBlockIterator = 0ul;
+    unsigned long cellBlockIterator;
     std::array<unsigned long, 3> cellBlockOrder = {0, 0, 0};
     std::array<unsigned long, 3> acc_dim = {0ul, 0ul, 0ul};
     std::array<unsigned long, 3> it_dim = {0ul, 0ul, 0ul};
@@ -647,13 +647,13 @@ void SlicedBlkBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
     }
 
     // Iterate over own sub-blocks (excluding all with 2)
-    while (!traversalOrderQueue->empty()) {
+    while (not traversalOrderQueue->empty()) {
       // todo: maybe make an indicator if a broken traversalOrder was used e.g. >1000 Iterations per thread
       //  or tell scheduler to give thread less priority after x iterations of this
       int traversalOrder = traversalOrderQueue->front();
       traversalOrderQueue->pop();
       auto &order = _cellBlockTraverseOrderByLocks[traversalOrder];
-      if (!locking2x2x2sub_blocks(m, order)) {
+      if (not locking2x2x2sub_blocks(m, order)) {
         traversalOrderQueue->push(traversalOrder);
       } else {
         int subBlockId = lockToSubBlocks(order[0], order[1], order[2]);
