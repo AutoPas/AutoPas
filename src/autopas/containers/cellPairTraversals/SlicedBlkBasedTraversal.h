@@ -382,8 +382,9 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
     unsigned long x = 0ul;
     unsigned long y = 0ul;
     unsigned long z = 0ul;
-    std::array<unsigned long, 3> acc_start_dim = {0ul, 0ul, 0ul};
-    std::array<unsigned long, 3> acc_end_dim = {0ul, 0ul, 0ul};
+    std::array<unsigned long, 3> acc_dim = {0ul, 0ul, 0ul};
+    std::array<unsigned long, 3> it_dim = {0ul, 0ul, 0ul};
+    std::array<unsigned long, 3> acc_it_dim = {0ul, 0ul, 0ul};
 
     unsigned long max_cellblocks =
         _cellBlockDimensions[0].size() * _cellBlockDimensions[1].size() * _cellBlockDimensions[2].size();
@@ -392,50 +393,39 @@ class SlicedBlkBasedTraversal : public CellPairTraversal<ParticleCell> {
 
     // each step builds the previous cellblock spanning vector + the next cellblock starting point
     for (unsigned long xit = 0; xit < _cellBlockDimensions[0].size(); ++xit) {
-      acc_y = 0;
+      acc_it_dim[1] = 0;
       for (unsigned long yit = 0; yit < _cellBlockDimensions[1].size(); ++yit) {
-        acc_z = 0;
+        acc_it_dim[2] = 0;
         for (unsigned long zit = 0; zit < _cellBlockDimensions[2].size(); ++zit) {
           // for parallelization we calculate the cellBlockIterator from the block coordinates
           // cellBlockIterator = utils::ThreeDimensionalMapping::threeToOneD(xit, yit, zit, max_cellblocks);
           cellBlockIterator = (zit * _cellBlockDimensions[1].size() + yit) * _cellBlockDimensions[0].size() + xit;
 
-          x = acc_x + xit;
-          y = acc_y + yit;
-          z = acc_z + zit;
+          it_dim[0] = xit;
+          it_dim[1] = yit;
+          it_dim[2] = zit;
 
-          blocks[cellBlockIterator][0][0] = x;
-          blocks[cellBlockIterator][0][1] = y;
-          blocks[cellBlockIterator][0][2] = z;
-
-          if (x + _cellBlockDimensions[0][xit] < _dims[0] - _overlapAxis[0]) {
-            blocks[cellBlockIterator][1][0] = x + _cellBlockDimensions[0][xit];
-          } else {
-            blocks[cellBlockIterator][1][0] = x + _cellBlockDimensions[0][xit] - _overlapAxis[0];
+          for (int i = 0; i < 3; ++i) {
+            acc_dim[i] = acc_it_dim[i] + it_dim[i];
+            blocks[cellBlockIterator][0][i] = acc_dim[i];
           }
 
-          if (y + _cellBlockDimensions[1][yit] < _dims[1] - _overlapAxis[1]) {
-            blocks[cellBlockIterator][1][1] = y + _cellBlockDimensions[1][yit];
-          } else {
-            blocks[cellBlockIterator][1][1] = y + _cellBlockDimensions[1][yit] - _overlapAxis[1];
+          for (int j = 0; j < 3; ++j) {
+            if (acc_dim[j] + _cellBlockDimensions[j][it_dim[j]] < _dims[j] - _overlapAxis[j]) {
+              blocks[cellBlockIterator][1][j] = acc_dim[j] + _cellBlockDimensions[j][it_dim[j]];
+            } else {
+              blocks[cellBlockIterator][1][j] = acc_dim[j] + _cellBlockDimensions[j][it_dim[j]] - _overlapAxis[j];
+            }
           }
 
-          if (z + _cellBlockDimensions[2][zit] < _dims[2] - _overlapAxis[2]) {
-            blocks[cellBlockIterator][1][2] = z + _cellBlockDimensions[2][zit];
-          } else {
-            blocks[cellBlockIterator][1][2] = z + _cellBlockDimensions[2][zit] - _overlapAxis[2];
-          }
+          _cellBlocksToIndex[it_dim] = cellBlockIterator;
+          _indexToCellBlock[cellBlockIterator] = it_dim;
 
-          cellBlockOrder = {xit, yit, zit};
-          _cellBlocksToIndex[cellBlockOrder] = cellBlockIterator;
-          _indexToCellBlock[cellBlockIterator] = cellBlockOrder;
-
-          // cellBlockIterator++;
-          acc_z += _cellBlockDimensions[2][zit];
+          acc_it_dim[2] += _cellBlockDimensions[2][it_dim[2]];
         }
-        acc_y += _cellBlockDimensions[1][yit];
+        acc_it_dim[1] += _cellBlockDimensions[1][it_dim[1]];
       }
-      acc_x += _cellBlockDimensions[0][xit];
+      acc_it_dim[0] += _cellBlockDimensions[0][it_dim[0]];
     }
   }
 
