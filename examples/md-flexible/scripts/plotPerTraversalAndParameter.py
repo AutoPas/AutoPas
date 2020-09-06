@@ -66,13 +66,13 @@ valuesErrorMinus = []
 
 if parameterArg == 'number':
     number = True
-    xAxisTitle = 'Number of particles'
+    xAxisTitle = 'Number of Particles'
 elif parameterArg == 'size':
     size = True
-    xAxisTitle = 'Boxsize'
+    xAxisTitle = 'Domain Size'
 elif parameterArg == 'density':
     density = True
-    xAxisTitle = 'Density of particles'
+    xAxisTitle = 'Density of Particles'
 elif parameterArg == 'homogeneity':
     homogeneity = True
     xAxisTitle = 'Standard Deviation of Homogeneity'
@@ -225,15 +225,18 @@ def calculateMeans(xAxis, yAxis):
 # build the full rgb color space
 colorrange = ['rgb(  0, 0, 0)', 'rgb(0, 100,   100)', 'rgb(255, 219,   0)', 'rgb(255, 0,   0)', 'rgb(  0, 147, 255)',
               'rgb(71, 0, 255)', 'rgb(73, 255,   0)', 'rgb(255,   0, 221)']
-symbolrange = ['circle', 'square', 'cross', 'star', 'diamond', 'star-diamond', 'bowtie', 'hourglass', 'triangle-up',
+symbolrange = ['circle', 'star', 'cross', 'square', 'diamond', 'star-diamond', 'bowtie', 'hourglass', 'triangle-up',
                'triangle-down', 'triangle-left', 'triangle-right']
 
 # create figure and define layout
 fig = go.Figure(
     layout=dict(
-        title_text="Plot per " + xAxisTitle.lower() + " and per traversal",
+        title_text="Plot Per " + xAxisTitle + " And Per Traversal",
         xaxis_title_text=xAxisTitle,
-        yaxis_title_text="Time per Iteration [ns]",
+        yaxis_title_text="Time Per Iteration [ns]",
+        font=dict(
+            size=30,
+        )
     ),
 )
 
@@ -266,7 +269,7 @@ for t in allTraversals:
         marker=dict(
             color=colorrange[allContainers.index(getContainerByTraversal(t))],
             symbol=symbolrange[getTraversalIndexInContainer(t)],
-            size=10,
+            size=16,
         ),
         line=dict(
             color=colorrange[allContainers.index(getContainerByTraversal(t))]
