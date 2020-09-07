@@ -12,8 +12,8 @@
 
 #include "SetSearchSpaceBasedTuningStrategy.h"
 #include "TuningStrategyInterface.h"
+#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
