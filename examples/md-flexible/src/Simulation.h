@@ -204,6 +204,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   autopas.setCutoff(_config->cutoff.value);
   autopas.setRelativeOptimumRange(_config->relativeOptimumRange.value);
   autopas.setMaxTuningPhasesWithoutTest(_config->maxTuningPhasesWithoutTest.value);
+  autopas.setRelativeBlacklistRange(_config->relativeBlacklistRange.value);
   autopas.setEvidenceFirstPrediction(_config->evidenceFirstPrediction.value);
   autopas.setExtrapolationMethodOption(_config->extrapolationMethodOption.value);
   autopas.setNumSamples(_config->tuningSamples.value);
@@ -606,7 +607,7 @@ double Simulation<Particle, ParticleCell>::calculateHomogeneity(autopas::AutoPas
     const size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
     particlesPerCell[cellIndex] += 1;
     // calculate the size of the current cell
-    allVolumes[cellIndex] = 0;
+    allVolumes[cellIndex] = 1;
     for (int i = 0; i < cellsPerDimension.size(); ++i) {
       // the last cell layer has a special size
       if (index[i] == cellsPerDimension[i] - 1) {
