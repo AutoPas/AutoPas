@@ -124,6 +124,6 @@ void Generator::cubeClosestPacked(autopas::AutoPas<Particle, ParticleCell> &auto
   dummyParticle.setV(object.getVelocity());
   dummyParticle.setID(autopas.getNumberOfParticles());
   dummyParticle.setTypeId(object.getTypeId());
-  autopasTools::generators::ClosestPackingGenerator::fillWithParticles(
-      autopas, object.getBoxMin(), object.getBoxMax(), dummyParticle, object.getParticleSpacing());
+  autopasTools::generators::ClosestPackingGenerator::fillWithParticles(autopas, object.getBoxMin(), object.getBoxMax(),
+                                                                       dummyParticle, object.getParticleSpacing());
 }
