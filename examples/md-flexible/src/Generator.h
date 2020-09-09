@@ -73,14 +73,7 @@ class Generator {
    * @param object
    */
   template <class Particle, class ParticleCell>
-  static void cubeClosestPacked(autopas::AutoPas<Particle, ParticleCell> &autopas, const CubeClosestPacked &object) {
-    Particle dummyParticle;
-    dummyParticle.setV(object.getVelocity());
-    dummyParticle.setID(autopas.getNumberOfParticles());
-    dummyParticle.setTypeId(object.getTypeId());
-    autopasTools::generators::ClosestPackingGenerator::fillWithParticles(
-        autopas, object.getBoxMin(), object.getBoxMax(), dummyParticle, object.getParticleSpacing());
-  }
+  static void cubeClosestPacked(autopas::AutoPas<Particle, ParticleCell> &autopas, const CubeClosestPacked &object);
 };
 
 template <class Particle, class ParticleCell>
@@ -123,4 +116,14 @@ void Generator::sphere(autopas::AutoPas<Particle, ParticleCell> &autopas, const 
     autopas.addParticle(dummyParticle);
     dummyParticle.setID(dummyParticle.getID() + 1);
   });
+}
+
+template <class Particle, class ParticleCell>
+void Generator::cubeClosestPacked(autopas::AutoPas<Particle, ParticleCell> &autopas, const CubeClosestPacked &object) {
+  Particle dummyParticle;
+  dummyParticle.setV(object.getVelocity());
+  dummyParticle.setID(autopas.getNumberOfParticles());
+  dummyParticle.setTypeId(object.getTypeId());
+  autopasTools::generators::ClosestPackingGenerator::fillWithParticles(
+      autopas, object.getBoxMin(), object.getBoxMax(), dummyParticle, object.getParticleSpacing());
 }
