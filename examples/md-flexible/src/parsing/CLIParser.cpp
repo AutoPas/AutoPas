@@ -515,13 +515,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.globalForce)::getoptChar: {
-        // when passing via cli global force can only be in y direction. For fancier forces use yaml input.
+        // when passing via cli global force can only be in z-direction. For fancier forces use yaml input.
         try {
           auto force = stod(strArg);
           config.globalForce.value = {0, 0, force};
         } catch (const exception &) {
           cerr << "Error parsing global force: " << optarg << endl;
-          cerr << "Expecting one double as force along the y axis." << endl;
+          cerr << "Expecting one double as force along the z-axis." << endl;
           displayHelp = true;
         }
         break;

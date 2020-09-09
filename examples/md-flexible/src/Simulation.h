@@ -291,9 +291,11 @@ void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Partic
 
   // global forces
 
+  _timers.forceUpdateTotal.start();
   _timers.forceUpdateGlobal.start();
   globalForces(autopas);
   _timers.forceUpdateGlobal.stop();
+  _timers.forceUpdateTotal.stop();
 }
 
 template <class Particle, class ParticleCell>

@@ -19,7 +19,7 @@ namespace autopasTools::generators {
 class ClosestPackingGenerator {
  public:
   /**
-   * Fills any container (also AutoPas object) with a hexagonal closest packed  particles.
+   * Fills any container (also AutoPas object) with a hexagonally closest packed particles.
    * Particle properties will be used from the default particle. Particle IDs start from the default particle.
    * @tparam Container Arbitrary container class that needs to support addParticle().
    * @param container
