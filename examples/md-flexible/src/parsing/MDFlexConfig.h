@@ -509,7 +509,7 @@ class MDFlexConfig {
       "Brownian motion. Possible Values: (true false) Default: true"};
 
   /**
-   * gravity
+   * Global external force like e.g. gravity
    */
   MDFlexOption<std::array<double, 3>, __LINE__> globalForce{
       {0, 0, 0},

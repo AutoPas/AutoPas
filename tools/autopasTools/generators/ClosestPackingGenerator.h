@@ -34,13 +34,13 @@ class ClosestPackingGenerator {
                                 const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle =
                                     typename autopas::utils::ParticleTypeTrait<Container>::value(),
                                 const double spacing = 1.) {
-    // spacing in y direction when only moving 60° on the unit circle. Or the height in a equilateral triangle.
+    // Spacing in y direction when only moving 60° on the unit circle. Or the height in an equilateral triangle.
     const double spacingRow = spacing * sqrt(3. / 4.);
-    // spacing in z direction. Height in a equilateral tetraeder.
+    // Spacing in z direction. Height in an equilateral tetraeder.
     const double spacingLayer = spacing * sqrt(2. / 3.);
-    // Shorter part of the bisectrix when split at the intersection of all bisectrix.
+    // Shorter part of the bisectrix when split at the intersection of all bisectrices.
     const double xOffset = spacing * 1. / 2.;
-    // Shorter part of the bisectrix when split at the intersection of all bisectrix.
+    // Shorter part of the bisectrix when split at the intersection of all bisectrices.
     const double yOffset = spacing * sqrt(1. / 12.);
 
     // The packing alternates between odd and even layers and rows
