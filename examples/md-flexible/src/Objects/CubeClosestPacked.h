@@ -14,7 +14,7 @@
 #include "autopas/utils/ArrayMath.h"
 
 /**
- * Class describing a regular 3D particle grid object.
+ * Class describing a cube of hexagonally closest packed particles.
  */
 class CubeClosestPacked : public Object {
  public:
