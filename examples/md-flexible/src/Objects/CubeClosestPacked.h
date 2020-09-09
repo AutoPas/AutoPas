@@ -39,15 +39,6 @@ class CubeClosestPacked : public Object {
 
   [[nodiscard]] double getParticleSpacing() const override { return particleSpacing; }
 
-  [[nodiscard]] size_t getParticlesTotal() const override {
-    // TODO: This is an estimate. The true value WILL differ. However this should be ok since it is not used
-    const double volumeBox = boxLength[0] * boxLength[1] * boxLength[2];
-    const double density = M_PI / sqrt(18.);
-    const double volumeAllSpheres = density * volumeBox;  // <- This line here is the estimate
-    const double volumeOneSphere = 4. / 3. * M_PI * particleSpacing * particleSpacing * particleSpacing;
-    return std::floor(volumeAllSpheres / volumeOneSphere);
-  }
-
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
 
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
