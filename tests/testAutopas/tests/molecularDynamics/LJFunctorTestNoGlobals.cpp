@@ -24,6 +24,7 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
     functor = std::make_unique<FuncType>(this->cutoff);
     functor->setParticleProperties(this->epsilon * 24, 1);
   }
+  particlePropertiesLibrary.calculateMixingCoefficients();
 
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
@@ -99,11 +100,13 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     if constexpr (mixing) {
       particlePropertiesLibrary.addType(0, this->epsilon, this->sigma, 1.0);
       particlePropertiesLibrary.addType(1, this->epsilon2, this->sigma2, 1.0);
+      particlePropertiesLibrary.calculateMixingCoefficients();
       functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
     } else {
       functor = std::make_unique<FuncType>(this->cutoff);
       functor->setParticleProperties(this->epsilon * 24, 1);
     }
+
 
     FMCell cell1, cell2;
     {

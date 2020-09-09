@@ -17,6 +17,7 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
   particlePropertiesLibrary.addType(0, this->epsilon, this->sigma, 1);
+  particlePropertiesLibrary.calculateMixingCoefficients();
   FunPPL funPPL(this->cutoff, particlePropertiesLibrary);
 
   size_t numParticlesPerCell = 9;
@@ -63,6 +64,7 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLAoS) {
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
   particlePropertiesLibrary.addType(0, this->epsilon, this->sigma, 1);
+  particlePropertiesLibrary.calculateMixingCoefficients();
   FunPPL funPPL(this->cutoff, particlePropertiesLibrary);
 
   std::vector<Molecule> moleculesNoPPL = {Molecule({0, 0, 0}, {0, 0, 0}, 0, 0), Molecule({0, 0, 1}, {0, 0, 0}, 1, 0)};

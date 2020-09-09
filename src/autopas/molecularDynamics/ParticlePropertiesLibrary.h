@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/utils/ExceptionHandler.h>
+
 #include <cmath>
 #include <map>
 #include <set>
@@ -60,6 +62,8 @@ class ParticlePropertiesLibrary {
    */
   void addType(intType typeID, floatType epsilon, floatType sigma, floatType mass);
 
+  void calculateMixingCoefficients();
+
   ~ParticlePropertiesLibrary() = default;
 
   /**
@@ -68,8 +72,9 @@ class ParticlePropertiesLibrary {
    */
   std::set<intType> getTypes() const {
     std::set<intType> typeIDs;
-    for (auto &[typeID, _] : _masses) {
-      typeIDs.insert(typeID);
+
+    for (size_t index = 0; index < _numRegisteredTypes; ++index) {
+      typeIDs.emplace(index);
     }
 
     return typeIDs;
@@ -103,8 +108,7 @@ class ParticlePropertiesLibrary {
    * @return 24*epsilon_ij
    */
   inline floatType mixing24Epsilon(intType i, intType j) const {
-    auto key = std::make_pair((i < j) ? i : j, (i < j) ? j : i);  // key in preprocessed maps: (i,j) with i<j
-    return _computedMixing24Epsilon.at(key);
+    return _computedMixing24Epsilon.at(i * _numRegisteredTypes + j);
   }
 
   /**
@@ -114,8 +118,7 @@ class ParticlePropertiesLibrary {
    * @return sigma_ij²
    */
   inline floatType mixingSigmaSquare(intType i, intType j) const {
-    auto key = std::make_pair((i < j) ? i : j, (i < j) ? j : i);  // key in preprocessed maps: (i,j) with i<j
-    return _computedMixingSigmaSquare.at(key);
+    return _computedMixingSigmaSquare.at(i * _numRegisteredTypes + j);
   }
 
   /**
@@ -125,8 +128,7 @@ class ParticlePropertiesLibrary {
    * @return shift * 6
    */
   inline floatType mixingShift6(intType i, intType j) const {
-    auto key = std::make_pair((i < j) ? i : j, (i < j) ? j : i);  // key in preprocessed maps: (i,j) with i<j
-    return _computedMixingShift6.at(key);
+    return _computedMixingShift6.at(i * _numRegisteredTypes + j);
   }
 
   /**
@@ -139,41 +141,56 @@ class ParticlePropertiesLibrary {
   static double calcShift6(double epsilon24, double sigmaSquare, double cutoffSquare);
 
  private:
+  intType _numRegisteredTypes{0};
   const double _cutoff;
-  std::map<intType, floatType> _epsilons;
-  std::map<intType, floatType> _sigmas;
-  std::map<intType, floatType> _masses;
-  std::map<std::pair<intType, intType>, floatType> _computedMixing24Epsilon;
-  std::map<std::pair<intType, intType>, floatType> _computedMixingSigmaSquare;
-  std::map<std::pair<intType, intType>, floatType> _computedMixingShift6;
+
+  std::vector<floatType> _epsilons;
+  std::vector<floatType> _sigmas;
+  std::vector<floatType> _masses;
+
+  std::vector<floatType> _computedMixing24Epsilon;
+  std::vector<floatType> _computedMixingSigmaSquare;
+  std::vector<floatType> _computedMixingShift6;
 };
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addType(intType typeID, floatType epsilon, floatType sigma,
                                                             floatType mass) {
-  _masses.emplace(typeID, mass);
-
+  if (_numRegisteredTypes != typeID) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addType(): trying to register a type with id {}. Please register types "
+        "consecutively, starting at id 0. Currently there are {} registered types.",
+        typeID, _numRegisteredTypes);
+  }
+  ++_numRegisteredTypes;
   _epsilons.emplace(typeID, epsilon);
-  for (auto &[indexOfExistingEpsilon, secondEpsilon] : _epsilons) {
-    floatType epsilon24 = 24 * sqrt(epsilon * secondEpsilon);
-    auto newEntry = std::make_pair(indexOfExistingEpsilon, typeID);
-    _computedMixing24Epsilon.emplace(newEntry, epsilon24);
-  }
-
   _sigmas.emplace(typeID, sigma);
-  for (auto &[indexOfExistingSigma, existingSigma] : _sigmas) {
-    floatType newSigma = (sigma + existingSigma) / 2.0;
-    auto newEntry = std::make_pair(indexOfExistingSigma, typeID);
-    _computedMixingSigmaSquare.emplace(newEntry, (newSigma * newSigma));
-  }
+  _masses.emplace(typeID, mass);
+}
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
+  _computedMixing24Epsilon.resize(_numRegisteredTypes * _numRegisteredTypes);
 
   auto cutoffSquare = _cutoff * _cutoff;
-  // getTypes relies on types saved in the masses map so the new type needs to be added there first
-  for (auto id : getTypes()) {
-    auto newEntry = std::make_pair(id, typeID);
-    floatType newShift6 =
-        calcShift6(_computedMixing24Epsilon[newEntry], _computedMixingSigmaSquare[newEntry], cutoffSquare);
-    _computedMixingShift6.emplace(newEntry, newShift6);
+
+  for (size_t firstIndex = 0ul; firstIndex < _numRegisteredTypes; ++firstIndex) {
+    for (size_t secondIndex = 0ul; secondIndex < _numRegisteredTypes; ++secondIndex) {
+      auto globalIndex = _numRegisteredTypes * firstIndex + secondIndex;
+
+      // epsilon
+      floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+      _computedMixing24Epsilon[globalIndex] = epsilon24;
+
+      // sigma
+      floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
+      floatType sigmaSquare = sigma * sigma;
+      _computedMixingSigmaSquare[globalIndex] = sigmaSquare;
+
+      // shift6
+      floatType newShift6 = calcShift6(epsilon24, sigmaSquare, cutoffSquare);
+      _computedMixingShift6[globalIndex] = newShift6;
+    }
   }
 }
 
@@ -184,12 +201,12 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getMass(intType i) cons
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::get24Epsilon(intType i) const {
-  return _computedMixing24Epsilon.at(std::make_pair(i, i));
+  return _computedMixing24Epsilon.at(i * _numRegisteredTypes + i);
 }
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquare(intType i) const {
-  return _computedMixingSigmaSquare.at(std::make_pair(i, i));
+  return _computedMixingSigmaSquare.at(i * _numRegisteredTypes + i);
 }
 
 template <typename floatType, typename intType>
