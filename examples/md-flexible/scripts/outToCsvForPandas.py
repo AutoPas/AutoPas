@@ -49,6 +49,7 @@ if len(sys.argv) > lengthOfArguments:
         datafiles = sys.argv[lengthOfArguments:]
         setNameOfScenario = True
 
+
 # -------------------------------------------- Functions --------------------------------------------
 
 def parseConfigToDict(confStr):
@@ -66,10 +67,8 @@ def appendForm(outerForm, appender):
 # ---------------------------------------------- Script ---------------------------------------------
 
 # values for plotting in the end
-configs = []
-valuesErrorPlus = []
-valuesErrorMinus = []
-rowList = []
+configs = []  # Whole Configuration with most parameters included
+rowList = []  # Output rows for CSV file
 
 # gather data per file
 for datafile in datafiles:
@@ -91,6 +90,8 @@ for datafile in datafiles:
     regexCubeGauss = '.*CubeGauss:*'
     regexHomogeneity = '.*Homogeneity*'
     regexThreads = '.*Threads*'
+    regexMFUPS = '.*MFUPs/sec*'
+    regexFunctor = '.*functor*'
 
     if setNameOfScenario:
         datafileNames = datafile.split('/')
@@ -99,7 +100,6 @@ for datafile in datafiles:
     with open(datafile) as f:
         currentDensity = 0.0
         foundTraversal = False
-        traversal = "noTraversal"
         boxSizeListMin = []
         boxSizeListMax = []
         numberOfParticles = 0
@@ -110,13 +110,19 @@ for datafile in datafiles:
         loadEstimator = None
         dataLayout = None
         newton3 = None
-        homogeneity = None
+        homogeneity = None  # Standard Deviation of Homogeneity
         threads = None
+        mfups = None  # Million Force Updates per Second
+        functor = None
 
         lines = f.readlines()
         for line in lines:
             # parse header and footer
-            if (match := re.search(regexNumOfParticles, line)) is not None:
+            if (match := re.search(regexFunctor, line)) is not None:
+                currentLine = line.split(':', 1)[1]
+                currentLine.strip()
+                functor = currentLine
+            elif (match := re.search(regexNumOfParticles, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')  # split content inside brackets and show as array
                 numberOfParticles = numpy.prod(
@@ -147,6 +153,10 @@ for datafile in datafiles:
                 currentLine = line.split(':', 1)[1]
                 currentLine.strip()
                 homogeneity = currentLine
+            elif (match := re.search(regexMFUPS, line)) is not None:
+                currentLine = line.split(':', 1)[1]
+                currentLine.strip()
+                mfups = currentLine
         # parse Iterations
         for line in lines:
             if (match := re.search(regexConf, line)) is not None:
@@ -163,7 +173,8 @@ for datafile in datafiles:
                 y = boxSizeListMax[1] - boxSizeListMin[1]
                 z = boxSizeListMax[2] - boxSizeListMin[2]
                 rowList.append([traversal, container, newton3, dataLayout, cellSizeFactor, loadEstimator, form,
-                                nameOfScenario, hardware, x, y, z, numberOfParticles, time, homogeneity, threads])
+                                nameOfScenario, hardware, x, y, z, numberOfParticles, time, homogeneity, threads,
+                                mfups, functor])
 
 # ---------------------------------------------- Write CSV ---------------------------------------------
 
@@ -171,5 +182,6 @@ with open('dataForPlotting.csv', 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(
         ["Traversal", "Container", "Newton3", "DataLayout", "CellsizeFactor", "LoadEstimator",
-         "Form", "NameOfScenario", "Hardware", "x", "y", "z", "NumberOfParticles", "IterationTime", "Homogeneity", "Threads"])
+         "Form", "NameOfScenario", "Hardware", "x", "y", "z", "NumberOfParticles", "IterationTime", "Homogeneity",
+         "Threads", "MFUPS", "Functor"])
     writer.writerows(rowList)
