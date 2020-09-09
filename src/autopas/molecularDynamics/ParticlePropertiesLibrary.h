@@ -163,9 +163,9 @@ void ParticlePropertiesLibrary<floatType, intType>::addType(intType typeID, floa
         typeID, _numRegisteredTypes);
   }
   ++_numRegisteredTypes;
-  _epsilons.emplace(typeID, epsilon);
-  _sigmas.emplace(typeID, sigma);
-  _masses.emplace(typeID, mass);
+  _epsilons.emplace_back(epsilon);
+  _sigmas.emplace_back(sigma);
+  _masses.emplace_back(mass);
 }
 
 template <typename floatType, typename intType>
