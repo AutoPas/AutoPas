@@ -171,6 +171,8 @@ void ParticlePropertiesLibrary<floatType, intType>::addType(intType typeID, floa
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
   _computedMixing24Epsilon.resize(_numRegisteredTypes * _numRegisteredTypes);
+  _computedMixingSigmaSquare.resize(_numRegisteredTypes * _numRegisteredTypes);
+  _computedMixingShift6.resize(_numRegisteredTypes * _numRegisteredTypes);
 
   auto cutoffSquare = _cutoff * _cutoff;
 
