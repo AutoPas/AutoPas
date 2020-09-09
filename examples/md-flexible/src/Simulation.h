@@ -243,7 +243,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   for (const auto &sphere : _config->sphereObjects) {
     Generator::sphere<Particle, ParticleCell>(autopas, sphere);
   }
-  for (const auto &cube : _config->cubeClosestPacedObjects) {
+  for (const auto &cube : _config->cubeClosestPackedObjects) {
     Generator::cubeClosestPacked<Particle, ParticleCell>(autopas, cube);
   }
 

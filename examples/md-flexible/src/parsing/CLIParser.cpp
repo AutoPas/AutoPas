@@ -536,7 +536,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
 
   // only create objects if nothing was set by a yaml file and there was no checkpoint
   if (config.checkpointfile.value.empty() and config.cubeGaussObjects.empty() and config.cubeGridObjects.empty() and
-      config.cubeUniformObjects.empty() and config.sphereObjects.empty() and config.cubeClosestPacedObjects.empty()) {
+      config.cubeUniformObjects.empty() and config.sphereObjects.empty() and config.cubeClosestPackedObjects.empty()) {
     // common settings for any object type:
     unsigned int typeID = 0;
     double epsilon = 1.;
@@ -578,7 +578,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         CubeClosestPacked cubeClosestPacked(velocity, typeID, epsilon, sigma, mass, config.particleSpacing.value,
                                             {config.boxLength.value, config.boxLength.value, config.boxLength.value},
                                             bottomLeftCorner);
-        config.cubeClosestPacedObjects.push_back(cubeClosestPacked);
+        config.cubeClosestPackedObjects.push_back(cubeClosestPacked);
         break;
       }
     }

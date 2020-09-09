@@ -152,7 +152,7 @@ void MDFlexConfig::calcSimulationBox() {
   resizeToObjectLimits(cubeGridObjects);
   resizeToObjectLimits(cubeUniformObjects);
   resizeToObjectLimits(sphereObjects);
-  resizeToObjectLimits(cubeClosestPacedObjects);
+  resizeToObjectLimits(cubeClosestPackedObjects);
 
   // guarantee the box is at least of size interationLength
   for (int i = 0; i < 3; i++) {

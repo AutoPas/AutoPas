@@ -463,13 +463,13 @@ class MDFlexConfig {
    */
   std::vector<Sphere> sphereObjects{};
   /**
-   * cubeClosestPacedObjects
+   * cubeClosestPackedObjects
    */
-  std::vector<CubeClosestPacked> cubeClosestPacedObjects{};
+  std::vector<CubeClosestPacked> cubeClosestPackedObjects{};
   /**
-   * sphereObjectsStr
+   * cubeClosestPackedObjectsStr
    */
-  static inline const char *const cubeClosestPacedObjectsStr{"CubeClosestPacked"};
+  static inline const char *const cubeClosestPackedObjectsStr{"CubeClosestPacked"};
 
   // Thermostat Options
   /**

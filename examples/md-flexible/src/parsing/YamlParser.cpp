@@ -203,7 +203,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.cubeGaussObjects.clear();
     config.cubeUniformObjects.clear();
     config.sphereObjects.clear();
-    config.cubeClosestPacedObjects.clear();
+    config.cubeClosestPackedObjects.clear();
     config.epsilonMap.value.clear();
     config.sigmaMap.value.clear();
     config.massMap.value.clear();
@@ -307,7 +307,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
         continue;
       }
-      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeClosestPacedObjectsStr) {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeClosestPackedObjectsStr) {
         for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
           CubeClosestPacked cubeClosestPacked(
               {it->second[MDFlexConfig::velocityStr][0].as<double>(),
@@ -321,7 +321,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
                it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
                it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
-          config.cubeClosestPacedObjects.emplace_back(cubeClosestPacked);
+          config.cubeClosestPackedObjects.emplace_back(cubeClosestPacked);
           config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
                                  it->second[config.epsilonMap.name].as<double>(),
                                  it->second[config.sigmaMap.name].as<double>(),
