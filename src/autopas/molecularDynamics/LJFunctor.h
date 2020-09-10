@@ -215,6 +215,19 @@ class LJFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
+    std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
+    std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
+    std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> shift6s;
+    if constexpr (useMixing) {
+      // preload all sigma and epsilons for next vectorized region
+      sigmaSquares.resize(soa.getNumParticles());
+      epsilon24s.resize(soa.getNumParticles());
+      // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
+      if constexpr (applyShift) {
+        shift6s.resize(soa.getNumParticles());
+      }
+    }
+
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       const auto ownedStateI = ownedStatePtr[i];
       if (ownedStateI == OwnershipState::dummy) {
@@ -225,17 +238,7 @@ class LJFunctor
       SoAFloatPrecision fyacc = 0.;
       SoAFloatPrecision fzacc = 0.;
 
-      std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
-      std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
-      std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> shift6s;
       if constexpr (useMixing) {
-        // preload all sigma and epsilons for next vectorized region
-        sigmaSquares.resize(soa.getNumParticles());
-        epsilon24s.resize(soa.getNumParticles());
-        // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
-        if constexpr (applyShift) {
-          shift6s.resize(soa.getNumParticles());
-        }
         for (unsigned int j = 0; j < soa.getNumParticles(); ++j) {
           sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
           epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
