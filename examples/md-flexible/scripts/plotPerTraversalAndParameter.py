@@ -43,11 +43,28 @@ if len(sys.argv) > 1:
     else:
         datafiles = sys.argv[2:]
 
+# -------------------------------------------- Functions --------------------------------------------
+
+def parseConfig(confStr):
+    return {key.strip(): val.strip() for key, val in [pair.split(":") for pair in confStr[1:-1].split(',')]}
+
+def getIndexInContainer(item):
+    for c in allContainers:
+        if c.__contains__(item):
+            return allContainers.index(c)
+    return 0
+
+def itemInAllcontainers(item):
+    for c in allContainers:
+        if c.__contains__(item):
+            return True
+    return False
+
 # ---------------------------------------------- Script ---------------------------------------------
 
 # values for plotting in the end
 allTraversals = []
-allContainers = [[]] * 7
+allContainers = []
 numberOfParticlesPerTraversal = []
 boxSizePerTraversal = []
 densityPerTraversal = []
@@ -77,14 +94,6 @@ elif parameterArg == 'homogeneity':
     homogeneity = True
     xAxisTitle = 'Standard Deviation of Homogeneity'
 
-allContainers[0] = ["directSum"]  # directSum
-allContainers[1] = ["c01", "c08", "c18", "sliced", "c01-combined-SoA", "c04", "c04SoA", "c04HCP"]  # linkedCells
-allContainers[2] = ["verlet-clusters", "verlet-clusters-coloring", "verlet-clusters-static"]  # verletClusterLists
-allContainers[3] = ["verlet-sliced", "verlet-c18", "verlet-c01"]  # verletListsCells
-allContainers[4] = ["verlet-cluster-cells"]  # verletClusterCells
-allContainers[5] = ["var-verlet-lists-as-build"]  # varVerletListsAsBuild
-allContainers[6] = ["verlet-lists"]  # verletLists
-
 # gather data per file
 for datafile in datafiles:
 
@@ -103,27 +112,35 @@ for datafile in datafiles:
     regexBoxMax = '.*box-max*'
     regexTraversal = '.*traversal*'
     regexHomogeneity = '.*Homogeneity*'
+    regexConf = '.*Iterating with configuration: +({.*})'
 
     # parse file
     with open(datafile) as f:
         currentDensity = 0.0
         foundTraversal = False
         traversal = "noTraversal"
+        thisConfig = "EmptyConfig"
 
         counter = 0
         for line in f.readlines():
-            if (match := re.search(regexTraversal, line)) is not None:
-                currentLine = re.findall('\[(.*?)\]', line)  # get content inside the brackets
-                if not foundTraversal:
-                    traversal = currentLine[0]
-                    if (not allTraversals.__contains__(traversal)):
-                        allTraversals.append(traversal)
-                        numberOfParticlesPerTraversal.append([])
-                        boxSizePerTraversal.append([])
-                        densityPerTraversal.append([])
-                        timePerTravsersal.append([])
-                        homogeneityPerTraversal.append([])
-                    foundTraversal = True
+            if ((match := re.search(regexConf, line)) is not None) & (not foundTraversal):
+                thisConfig = parseConfig(match.group(1))
+                container = thisConfig.get("Container")
+                traversal = thisConfig.get("Traversal")
+                if not itemInAllcontainers(container):
+                    allContainers.append([container])
+                if not itemInAllcontainers(traversal):
+                    allContainers[getIndexInContainer(container)].append(traversal)
+                if not allTraversals.__contains__(traversal):
+                    traversal = thisConfig.get("Traversal")
+                    allTraversals.append(traversal)
+                    numberOfParticlesPerTraversal.append([])
+                    boxSizePerTraversal.append([])
+                    densityPerTraversal.append([])
+                    timePerTravsersal.append([])
+                    homogeneityPerTraversal.append([])
+                foundTraversal = True
+
             elif (number or density) and (match := re.search(regexNumOfParticles, line)) is not None:
                 currentLine = re.findall(r'\[(.*?)\]', line)  # get content inside the brackets
                 arrayOfCurrentLine = currentLine[0].split(',')  # split content inside brackets and show as array
@@ -164,7 +181,6 @@ for datafile in datafiles:
         if density:
             currentDensity = currentDensity / boxSize
             densityPerTraversal[allTraversals.index(traversal)].append(currentDensity)
-
 
 # ---------------------------------------------- Functions ----------------------------------------
 
@@ -223,10 +239,10 @@ def calculateMeans(xAxis, yAxis):
 # ---------------------------------------------- Plot ---------------------------------------------
 
 # build the full rgb color space
-colorrange = ['rgb(  0, 0, 0)', 'rgb(0, 100,   100)', 'rgb(255, 219,   0)', 'rgb(255, 0,   0)', 'rgb(  0, 147, 255)',
-              'rgb(71, 0, 255)', 'rgb(73, 255,   0)', 'rgb(255,   0, 221)']
-symbolrange = ['circle', 'star', 'cross', 'square', 'diamond', 'star-diamond', 'bowtie', 'hourglass', 'triangle-up',
-               'triangle-down', 'triangle-left', 'triangle-right']
+colorrange = ['rgb(0, 100,   100)', 'rgb(255, 0,   0)', 'rgb(255, 219,   0)', 'rgb(71, 0, 255)',
+              'rgb(  0, 147, 255)', 'rgb(73, 255,   0)', 'rgb(  0, 0, 0)', 'rgb(255,   0, 221)']
+symbolrange = ['triangle-right', 'circle', 'star', 'cross', 'square', 'diamond', 'star-diamond', 'bowtie', 'hourglass', 'triangle-up',
+               'triangle-down', 'triangle-left']
 
 # create figure and define layout
 fig = go.Figure(
