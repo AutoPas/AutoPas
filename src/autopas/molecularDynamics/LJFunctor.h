@@ -215,12 +215,12 @@ class LJFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
-    // Pulling these array outside of the vectorizable loop prevents vectorization and time is lost.
     std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
     std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
     std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> shift6s;
     if constexpr (useMixing) {
-      // preload all sigma and epsilons for next vectorized region
+      // Preload all sigma and epsilons for next vectorized region.
+      // Not preloading and directly using the values, will produce worse results.
       sigmaSquares.resize(soa.getNumParticles());
       epsilon24s.resize(soa.getNumParticles());
       // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
