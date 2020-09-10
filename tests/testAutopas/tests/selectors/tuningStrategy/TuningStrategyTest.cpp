@@ -22,7 +22,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceEmpty) {
   auto noNewton3Options = std::set<autopas::Newton3Option>({});
   EXPECT_THROW(autopas::TuningStrategyFactory::generateTuningStrategy(
                    tuningStrategy, noContainers, noInterval, noTraversals, noLoadEstimators, noDataLayouts,
-                   noNewton3Options, 42, 1.2, 5, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
+                   noNewton3Options, 42, 1.2, 5, 0, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
                    autopas::ExtrapolationMethodOption::linePrediction),
                autopas::utils::ExceptionHandler::AutoPasException);
 }
@@ -37,7 +37,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceOneOption) {
   auto oneNewton3Option = std::set<autopas::Newton3Option>({autopas::Newton3Option::enabled});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
       tuningStrategy, oneContainer, oneInterval, oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3Option, 42,
-      1.2, 5, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
+      1.2, 5, 0, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
       autopas::ExtrapolationMethodOption::linePrediction);
 
   EXPECT_FALSE(search->searchSpaceIsEmpty());
@@ -56,7 +56,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceMoreOptions) {
       std::set<autopas::Newton3Option>({autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
       tuningStrategy, oneContainer, oneInterval, oneTraversal, oneLoadEstimator, oneDataLayout, twoNewton3Options, 1,
-      1.2, 5, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
+      1.2, 5, 0, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
       autopas::ExtrapolationMethodOption::linePrediction);
 
   EXPECT_FALSE(search->searchSpaceIsEmpty());
@@ -73,14 +73,14 @@ TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveAll) {
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto oneContainer = std::set<autopas::ContainerOption>({autopas::ContainerOption::linkedCells});
   auto twoTraversals =
-      std::set<autopas::TraversalOption>({autopas::TraversalOption::lc_sliced, autopas::TraversalOption::sliced});
+      std::set<autopas::TraversalOption>({autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced});
   auto oneLoadEstimator = std::set<autopas::LoadEstimatorOption>({autopas::LoadEstimatorOption::none});
   auto twoDataLayouts =
       std::set<autopas::DataLayoutOption>({autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos});
   auto oneNewton3Option = std::set<autopas::Newton3Option>({autopas::Newton3Option::enabled});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
       tuningStrategy, oneContainer, oneInterval, twoTraversals, oneLoadEstimator, twoDataLayouts, oneNewton3Option, 1,
-      1.2, 5, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
+      1.2, 5, 0, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
       autopas::ExtrapolationMethodOption::linePrediction);
 
   EXPECT_THROW(search->removeN3Option(autopas::Newton3Option::enabled),
@@ -96,7 +96,7 @@ TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveSome) {
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto oneContainer = std::set<autopas::ContainerOption>({autopas::ContainerOption::linkedCells});
   auto twoTraversals =
-      std::set<autopas::TraversalOption>({autopas::TraversalOption::lc_c08, autopas::TraversalOption::sliced});
+      std::set<autopas::TraversalOption>({autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced});
   auto oneLoadEstimator = std::set<autopas::LoadEstimatorOption>({autopas::LoadEstimatorOption::none});
   auto twoDataLayouts =
       std::set<autopas::DataLayoutOption>({autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos});
@@ -104,7 +104,7 @@ TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveSome) {
       std::set<autopas::Newton3Option>({autopas::Newton3Option::enabled, autopas::Newton3Option::disabled});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
       tuningStrategy, oneContainer, oneInterval, twoTraversals, oneLoadEstimator, twoDataLayouts, twoNewton3Options, 1,
-      1.2, 5, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
+      1.2, 5, 0, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
       autopas::ExtrapolationMethodOption::linePrediction);
 
   EXPECT_NO_THROW(search->removeN3Option(autopas::Newton3Option::enabled));
