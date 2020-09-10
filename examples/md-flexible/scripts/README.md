@@ -70,11 +70,17 @@ The last parameter needs to be the path to one or many input files.
 Plots all traversals from all input files according to the time and a defined parameter for the x-axis.
 Traversals are colored according to their container.
 
-Command: `./plotTuning.py parameter=[number, size, density] [path/To//Output/*.out ...]`
+Command: `./plotTuning.py parameter=[number, size, density, homogeneity] [path/To//Output/*.out ...]`
 
 Wehere you can define the x-axis by setting the parameter. The parameter "number" will plot the time per number of particles,
-"size" will plot per Boxsize and "density" per particle density.
+"size" will plot per Boxsize, "density" per particle density and "homogeneity" the overall homogeneity of the scenario.
 The last input parameter is the folder with one or many output files, produced by testTimePerTraversal.py
+
+### outToCsvForPandas.py
+Reads *.out files into csv which can by used for data analysis. Hardware has to be specified manually.
+
+Command: `./outToCsvForPandas.py [hardware={name of hardware}] [path/To//Output/*.out ...]`
+
 
 ## Performance Measurements
 
