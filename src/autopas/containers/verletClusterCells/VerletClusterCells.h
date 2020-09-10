@@ -12,13 +12,13 @@
 #include <vector>
 
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
-#include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/verletClusterCells/VerletClusterCellsParticleIterator.h"
-#include "autopas/containers/verletClusterCells/traversals/VerletClusterCellsTraversalInterface.h"
+#include "autopas/containers/verletClusterCells/traversals/VCCTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -35,7 +35,7 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
+class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Particle>>,
                            public internal::ParticleDeletedObserver {
  public:
   /**
@@ -52,7 +52,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    */
   VerletClusterCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, int clusterSize = 32)
-      : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
+      : CellBasedParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _boxMinWithHalo(utils::ArrayMath::subScalar(boxMin, cutoff + skin)),
         _boxMaxWithHalo(utils::ArrayMath::addScalar(boxMax, cutoff + skin)),
         _clusterSize(clusterSize) {
@@ -71,8 +71,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    * @param traversal to be used used
    */
   void iteratePairwise(TraversalInterface *traversal) override {
-    auto *traversalInterface =
-        dynamic_cast<VerletClusterCellsTraversalInterface<FullParticleCell<Particle>> *>(traversal);
+    auto *traversalInterface = dynamic_cast<VCCTraversalInterface<FullParticleCell<Particle>> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<FullParticleCell<Particle>> *>(traversal);
 
     if ((!traversalInterface) or (!cellPairTraversal)) {
@@ -112,7 +111,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
     Particle p_copy = haloParticle;
     _isValid = ValidityState::invalid;
     removeDummiesFromFirstCell();
-    p_copy.setOwned(false);
+    p_copy.setOwnershipState(OwnershipState::halo);
     // add particle somewhere, because lists will be rebuild anyways
     this->_cells[0].addParticle(p_copy);
     ++_dummyStarts[0];
@@ -125,7 +124,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    */
   bool updateHaloParticle(const Particle &haloParticle) override {
     Particle pCopy = haloParticle;
-    pCopy.setOwned(false);
+    pCopy.setOwnershipState(OwnershipState::halo);
 
     for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
                                      utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2),
@@ -144,8 +143,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    * @param traversal The used traversal.
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    auto *traversalInterface =
-        dynamic_cast<VerletClusterCellsTraversalInterface<FullParticleCell<Particle>> *>(traversal);
+    auto *traversalInterface = dynamic_cast<VCCTraversalInterface<FullParticleCell<Particle>> *>(traversal);
     if (!traversalInterface) {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletClusterCells::iteratePairwise");
@@ -194,6 +192,14 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
   std::vector<Particle> updateContainer() override {
     // first delete all halo particles.
     this->deleteHaloParticles();
+
+    // Delete dummy particles.
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for
+#endif
+    for (auto i = 0ul; i < this->_cells.size(); ++i) {
+      this->_cells[i].deleteDummyParticles();
+    }
 
     // next find invalid particles
     std::vector<Particle> invalidParticles;
@@ -360,7 +366,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
   void deleteAllParticles() override {
     _isValid = ValidityState::invalid;
     std::fill(_dummyStarts.begin(), _dummyStarts.end(), 0);
-    ParticleContainer<FullParticleCell<Particle>>::deleteAllParticles();
+    CellBasedParticleContainer<FullParticleCell<Particle>>::deleteAllParticles();
   }
 
   /**
@@ -466,7 +472,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
                               _boxMaxWithHalo[1] + 8 * this->getInteractionLength() + static_cast<double>(j),
                               _boxMaxWithHalo[2] + 8 * this->getInteractionLength()});
           dummyParticle.setID(std::numeric_limits<size_t>::max());
-          dummyParticle.setOwned(false);
+          dummyParticle.setOwnershipState(OwnershipState::dummy);
           this->_cells[i].addParticle(dummyParticle);
         }
       }

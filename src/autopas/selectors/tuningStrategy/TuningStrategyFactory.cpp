@@ -22,8 +22,9 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
     std::set<autopas::DataLayoutOption> &allowedDataLayouts, std::set<autopas::Newton3Option> &allowedNewton3Options,
     unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
-    unsigned int evidenceFirstPrediction, AcquisitionFunctionOption acquisitionFunctionOption,
-    ExtrapolationMethodOption extrapolationMethodOption, MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
+    double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
+    AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
+    MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
   // only needed in the MPI case, but need to be declared here.
   std::set<autopas::ContainerOption> fallbackContainers;
   std::unique_ptr<autopas::NumberSet<double>> fallbackCellSizeFactors;
@@ -123,11 +124,10 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     case TuningStrategyOption::predictiveTuning: {
-      tuningStrategy = std::make_unique<PredictiveTuning>(
-          allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals, allowedLoadEstimators,
-          allowedDataLayouts, allowedNewton3Options, relativeOptimum, maxTuningPhasesWithoutTest,
-          evidenceFirstPrediction, extrapolationMethodOption);
-      break;
+      tuningStrategy = std::make_unique<PredictiveTuning>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
+                                                allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
+                                                relativeOptimum, maxTuningPhasesWithoutTest, relativeBlacklistRange, evidenceFirstPrediction,
+                                                extrapolationMethodOption);
     }
 
     default: {

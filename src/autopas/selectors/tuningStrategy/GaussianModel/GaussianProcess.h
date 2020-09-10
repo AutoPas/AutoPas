@@ -82,6 +82,14 @@ class GaussianProcess {
   [[nodiscard]] size_t numEvidence() const { return _inputs.size(); }
 
   /**
+   * Get all currently stored evidence
+   * @return pair of inputs and outputs
+   */
+  [[nodiscard]] std::pair<const std::vector<Vector> &, const Eigen::VectorXd &> getEvidence() const {
+    return std::make_pair(std::cref(_inputs), std::cref(_outputs));
+  }
+
+  /**
    * Provide a input-output pair as evidence.
    * Each evidence improve the quality of future predictions.
    * @param input x
@@ -90,8 +98,8 @@ class GaussianProcess {
    */
   void addEvidence(const Vector &input, double output, bool tuneHypers) {
     if (static_cast<size_t>(input.size()) != _dims) {
-      utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
-                                         input.size(), _dims);
+      utils::ExceptionHandler::exception(
+          "GaussianProcess.addEvidence: size of input {} does not match specified dimensions {}", input.size(), _dims);
     }
 
     if (_inputs.empty()) {
@@ -124,7 +132,7 @@ class GaussianProcess {
    * Get the evidence with the highest output value
    * @return input of max
    */
-  [[nodiscard]] Vector getEvidenceMax() {
+  [[nodiscard]] const Vector &getEvidenceMax() const {
     if (_inputs.empty()) {
       utils::ExceptionHandler::exception("GaussianProcess has no evidence");
     }
@@ -155,8 +163,8 @@ class GaussianProcess {
    */
   [[nodiscard]] double predictMean(const Vector &input) const {
     if (static_cast<size_t>(input.size()) != _dims) {
-      utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
-                                         input.size(), _dims);
+      utils::ExceptionHandler::exception(
+          "GaussianProcess.predictMean: size of input {} does not match specified dimensions {}", input.size(), _dims);
     }
 
     double result = 0.;
@@ -175,22 +183,32 @@ class GaussianProcess {
   }
 
   /**
+   * Get the variance if evidence are ignored.
+   * @return
+   */
+  [[nodiscard]] double getDefaultVar() const {
+    double result = 0.;
+    for (const auto &hyper : _hypers) {
+      result += hyper.score * hyper.theta;
+    }
+    return result;
+  }
+
+  /**
    * The variance of the predicted f(x) from predictMean().
    * @param input x
    * @return variance
    */
   [[nodiscard]] double predictVar(const Vector &input) const {
     if (static_cast<size_t>(input.size()) != _dims) {
-      utils::ExceptionHandler::exception("GaussianProcess: size of input {} does not match specified dimensions {}",
-                                         input.size(), _dims);
+      utils::ExceptionHandler::exception(
+          "GaussianProcess.predictVar: size of input {} does not match specified dimensions {}", input.size(), _dims);
     }
 
     double result = 0.;
     if (_inputs.empty()) {
       // no evidence
-      for (const auto &hyper : _hypers) {
-        result += hyper.score * hyper.theta;
-      }
+      return getDefaultVar();
     } else {
       for (const auto &hyper : _hypers) {
         auto kVec = kernelVector(input, hyper.theta, hyper.dimScales);
@@ -199,6 +217,31 @@ class GaussianProcess {
     }
 
     return result;
+  }
+
+  /**
+   * Calculate the probability density of provided output given provided input.
+   * @param input
+   * @param output
+   * @return
+   */
+  [[nodiscard]] double predictOutputPDF(const Vector &input, double output) const {
+    double stddev = std::sqrt(predictVar(input));
+    double mean = predictMean(input);
+    return utils::Math::normalPDF((mean - output) / stddev) / stddev;
+  }
+
+  /**
+   * Calculate the scaled probability density of provided output given provided input.
+   * The probability density is scaled such that the maximum is 1.
+   * @param input
+   * @param output
+   * @return
+   */
+  [[nodiscard]] double predictOutputScaledPDF(const Vector &input, double output) const {
+    double stddev = std::sqrt(predictVar(input));
+    double mean = predictMean(input);
+    return utils::Math::normalPDF((mean - output) / stddev) / utils::Math::normalScale;
   }
 
   /**
@@ -348,8 +391,16 @@ class GaussianProcess {
     for (auto &hyper : _hypers) {
       scoreSum += hyper.score;
     }
-    for (auto &hyper : _hypers) {
-      hyper.score /= scoreSum;
+    if (scoreSum > 0) {
+      for (auto &hyper : _hypers) {
+        hyper.score /= scoreSum;
+      }
+    } else {
+      // all scores are 0
+      double uniformProbability = 1. / _hypers.size();
+      for (auto &hyper : _hypers) {
+        hyper.score = uniformProbability;
+      }
     }
   }
 

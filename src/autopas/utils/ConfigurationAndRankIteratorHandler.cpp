@@ -7,7 +7,7 @@
 #include "ConfigurationAndRankIteratorHandler.h"
 
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
+#include "autopas/containers/CompatibleLoadEstimators.h"
 
 namespace autopas::utils {
 

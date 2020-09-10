@@ -14,7 +14,7 @@
  */
 TEST_P(TuningStrategyTest, testSearchSpaceEmpty) {
   auto tuningStrategy = GetParam();
-  auto noInterval = autopas::NumberInterval<double>({});
+  auto noInterval = autopas::NumberSetFinite<double>({});
   auto noContainers = std::set<autopas::ContainerOption>({});
   auto noTraversals = std::set<autopas::TraversalOption>({});
   auto noLoadEstimators = std::set<autopas::LoadEstimatorOption>({});
@@ -31,7 +31,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceOneOption) {
   auto tuningStrategy = GetParam();
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto oneContainer = std::set<autopas::ContainerOption>({autopas::ContainerOption::directSum});
-  auto oneTraversal = std::set<autopas::TraversalOption>({autopas::TraversalOption::directSumTraversal});
+  auto oneTraversal = std::set<autopas::TraversalOption>({autopas::TraversalOption::ds_sequential});
   auto oneLoadEstimator = std::set<autopas::LoadEstimatorOption>({autopas::LoadEstimatorOption::none});
   auto oneDataLayout = std::set<autopas::DataLayoutOption>({autopas::DataLayoutOption::soa});
   auto oneNewton3Option = std::set<autopas::Newton3Option>({autopas::Newton3Option::enabled});
@@ -49,7 +49,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceMoreOptions) {
   auto tuningStrategy = GetParam();
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto oneContainer = std::set<autopas::ContainerOption>({autopas::ContainerOption::linkedCells});
-  auto oneTraversal = std::set<autopas::TraversalOption>({autopas::TraversalOption::c08});
+  auto oneTraversal = std::set<autopas::TraversalOption>({autopas::TraversalOption::lc_c08});
   auto oneLoadEstimator = std::set<autopas::LoadEstimatorOption>({autopas::LoadEstimatorOption::none});
   auto oneDataLayout = std::set<autopas::DataLayoutOption>({autopas::DataLayoutOption::soa});
   auto twoNewton3Options =
@@ -73,7 +73,7 @@ TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveAll) {
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto oneContainer = std::set<autopas::ContainerOption>({autopas::ContainerOption::linkedCells});
   auto twoTraversals =
-      std::set<autopas::TraversalOption>({autopas::TraversalOption::c08, autopas::TraversalOption::sliced});
+      std::set<autopas::TraversalOption>({autopas::TraversalOption::lc_sliced, autopas::TraversalOption::sliced});
   auto oneLoadEstimator = std::set<autopas::LoadEstimatorOption>({autopas::LoadEstimatorOption::none});
   auto twoDataLayouts =
       std::set<autopas::DataLayoutOption>({autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos});
@@ -96,7 +96,7 @@ TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveSome) {
   auto oneInterval = autopas::NumberSetFinite<double>({1.});
   auto oneContainer = std::set<autopas::ContainerOption>({autopas::ContainerOption::linkedCells});
   auto twoTraversals =
-      std::set<autopas::TraversalOption>({autopas::TraversalOption::c08, autopas::TraversalOption::sliced});
+      std::set<autopas::TraversalOption>({autopas::TraversalOption::lc_c08, autopas::TraversalOption::sliced});
   auto oneLoadEstimator = std::set<autopas::LoadEstimatorOption>({autopas::LoadEstimatorOption::none});
   auto twoDataLayouts =
       std::set<autopas::DataLayoutOption>({autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos});

@@ -243,6 +243,14 @@ class MDFlexConfig {
       "For predictive based tuning strategies: Maximal number of "
       "tuning phases a configurations can be excluded from testing."};
   /**
+   * relativeBlacklistRange
+   */
+  MDFlexOption<double, __LINE__> relativeBlacklistRange{
+      0, "relative-blacklist-range", true,
+      "For predictive based tuning strategies: When the first evidence of a configuration is further away from the "
+      "optimum than this relative range, the configuration is ignored for the rest of the simulation. Set to zero to "
+      "disable blacklisting."};
+  /**
    * evidenceFirstPrediction
    */
   MDFlexOption<unsigned int, __LINE__> evidenceFirstPrediction{
@@ -254,8 +262,10 @@ class MDFlexConfig {
    * extrapolationMethodOption
    */
   MDFlexOption<autopas::ExtrapolationMethodOption, __LINE__> extrapolationMethodOption{
-      autopas::ExtrapolationMethodOption::linePrediction, "extrapolation-method", true,
-      "For predictive based tuning strategies: The extrapolation method that calculates the prediction."};
+      autopas::ExtrapolationMethodOption::linearRegression, "extrapolation-method", true,
+      "For predictive based tuning strategies: The extrapolation method that calculates the prediction. Possible "
+      "Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * vtkFileName
    */

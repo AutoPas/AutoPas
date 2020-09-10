@@ -12,8 +12,8 @@
 
 #include "SetSearchSpaceBasedTuningStrategy.h"
 #include "TuningStrategyInterface.h"
+#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -39,8 +39,8 @@ class FullSearch : public SetSearchSpaceBasedTuningStrategy {
              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
              const std::set<Newton3Option> &allowedNewton3Options)
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                                          allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options),
-        _currentConfig(_searchSpace.begin()) {}
+                                          allowedLoadEstimatorOptions, allowedDataLayoutOptions,
+                                          allowedNewton3Options) {}
 
   /**
    * Constructor for the FullSearch that only contains the given configurations.
@@ -48,7 +48,7 @@ class FullSearch : public SetSearchSpaceBasedTuningStrategy {
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
    */
   explicit FullSearch(std::set<Configuration> allowedConfigurations)
-      : SetSearchSpaceBasedTuningStrategy(std::move(allowedConfigurations)), _currentConfig(_searchSpace.begin()) {}
+      : SetSearchSpaceBasedTuningStrategy(std::move(allowedConfigurations)) {}
 
   inline void addEvidence(long time, size_t iteration) override { _traversalTimes[*_currentConfig] = time; }
 
@@ -63,12 +63,9 @@ class FullSearch : public SetSearchSpaceBasedTuningStrategy {
 
   inline bool tune(bool = false) override;
 
-  inline void removeN3Option(Newton3Option badNewton3Option) override;
-
  private:
   inline void selectOptimalConfiguration();
 
-  std::set<Configuration>::iterator _currentConfig;
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
 };
 
@@ -111,24 +108,4 @@ void FullSearch::selectOptimalConfiguration() {
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
 }
 
-void FullSearch::removeN3Option(Newton3Option badNewton3Option) {
-  for (auto ssIter = _searchSpace.begin(); ssIter != _searchSpace.end();) {
-    if (ssIter->newton3 == badNewton3Option) {
-      // change current config to the next non-deleted
-      if (ssIter == _currentConfig) {
-        ssIter = _searchSpace.erase(ssIter);
-        _currentConfig = ssIter;
-      } else {
-        ssIter = _searchSpace.erase(ssIter);
-      }
-    } else {
-      ++ssIter;
-    }
-  }
-
-  if (this->searchSpaceIsEmpty()) {
-    utils::ExceptionHandler::exception(
-        "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
-  }
-}
 }  // namespace autopas

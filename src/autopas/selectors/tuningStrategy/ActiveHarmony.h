@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "TuningStrategyInterface.h"
+#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/options/MPIStrategyOption.h"

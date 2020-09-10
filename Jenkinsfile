@@ -96,7 +96,7 @@ pipeline {
         }
         stage('build and test') {
             options {
-                timeout(time: 4, unit: 'HOURS')
+                timeout(time: 6, unit: 'HOURS')
             }
             parallel {
                 stage('gpu cloud') {
@@ -206,18 +206,6 @@ pipeline {
                         }
                     }
                 }
-                stage("thread sanitizer") {
-                    steps {
-                        container('autopas-gcc7-cmake-make') {
-                            dir("build-threadsanitizer") {
-                                // this is for simple testing of our threading libraries.
-                                sh "cmake -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON .."
-                                sh "entrypoint.sh make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
-                                sh './tests/testAutopas/runTests'
-                            }
-                        }
-                    }
-                }
                 stage("clang openmp") {
                     steps {
                         container('autopas-clang6-cmake-ninja-make') {
@@ -263,7 +251,7 @@ pipeline {
                             dir("build-archer") {
                                 sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON -DAUTOPAS_OPENMP=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_USE_VECTORIZATION=OFF .."
                                 sh "entrypoint.sh ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
-                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest --verbose'
+                                sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest --verbose -j8'
                             }
                             dir("build-archer/examples") {
                                 sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest -C checkExamples -j8 --verbose'

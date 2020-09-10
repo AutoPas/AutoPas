@@ -20,6 +20,7 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   autoPas.setBoxMax({3, 3, 3});
   autoPas.setCutoff(1);
   autoPas.setAllowedContainers({autopas::ContainerOption::directSum});
+  autoPas.setAllowedTraversals({autopas::TraversalOption::ds_sequential});
   autoPas.setAllowedNewton3Options({autopas::Newton3Option::enabled});
   autoPas.init();
 
@@ -143,19 +144,19 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3, true);
+      functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctorSingle(cell2._particleSoABuffer, newton3, true);
+      functor.SoAFunctorSingle(cell2._particleSoABuffer, newton3);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctorSingle(cell3._particleSoABuffer, newton3, true);
+      functor.SoAFunctorSingle(cell3._particleSoABuffer, newton3);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctorSingle(cell4._particleSoABuffer, newton3, true);
+      functor.SoAFunctorSingle(cell4._particleSoABuffer, newton3);
     }
   }
 
@@ -171,11 +172,11 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3, true);
+      functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp section
 #endif
-      functor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3, true);
+      functor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
     }
   }
 }

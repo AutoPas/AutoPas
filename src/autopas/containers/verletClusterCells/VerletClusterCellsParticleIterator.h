@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
@@ -136,12 +136,14 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    */
   bool fitsBehavior(const Particle &p) const {
     switch (_behavior) {
-      case IteratorBehavior::haloAndOwned:
+      case IteratorBehavior::haloOwnedAndDummy:
         return true;
+      case IteratorBehavior::haloAndOwned:
+        return not p.isDummy();
       case IteratorBehavior::ownedOnly:
         return p.isOwned();
       case IteratorBehavior::haloOnly:
-        return not p.isOwned();
+        return p.isHalo();
     }
     return false;
   }

@@ -18,7 +18,7 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
   constexpr size_t domainSize = 900;
   autopas::TraversalSelectorInfo traversalSelectorInfo({domainSize, domainSize, domainSize}, 1., {1., 1., 1.}, 32);
 
-  for (auto &traversalOption : autopas::TraversalOption::getAllOptions()) {
+  for (const auto &traversalOption : autopas::TraversalOption::getAllOptions()) {
     auto traversal =
         autopas::TraversalSelector<FPCell>::template generateTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(
             traversalOption, functor, traversalSelectorInfo);

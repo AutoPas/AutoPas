@@ -102,6 +102,13 @@ class Simulation {
    */
   [[nodiscard]] const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
 
+  /**
+   * Calculate the homogeneity of the scenario by using the standard deviation.
+   * @param autopas
+   * @return double
+   */
+  double calculateHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas);
+
  private:
   using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
   constexpr static bool _shifting = true;
@@ -136,6 +143,11 @@ class Simulation {
    * Precision of floating point numbers printed.
    */
   constexpr static auto _floatStringPrecision = 3;
+
+  /**
+   * Homogeneity of the scenario, calculated by the standard deviation of the density.
+   */
+  double homogeneity = 0;
 
   /**
    * Convert a time and a name to a properly formatted string.
@@ -186,6 +198,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   autopas.setCutoff(_config->cutoff.value);
   autopas.setRelativeOptimumRange(_config->relativeOptimumRange.value);
   autopas.setMaxTuningPhasesWithoutTest(_config->maxTuningPhasesWithoutTest.value);
+  autopas.setRelativeBlacklistRange(_config->relativeBlacklistRange.value);
   autopas.setEvidenceFirstPrediction(_config->evidenceFirstPrediction.value);
   autopas.setExtrapolationMethodOption(_config->extrapolationMethodOption.value);
   autopas.setNumSamples(_config->tuningSamples.value);
@@ -264,6 +277,7 @@ void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Partic
 
 template <class Particle, class ParticleCell>
 void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, ParticleCell> &autopas) {
+  this->homogeneity = Simulation::calculateHomogeneity(autopas);
   _timers.simulate.start();
 
   // main simulation loop
@@ -404,6 +418,7 @@ void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Partic
   cout << "Tuning iterations: " << numTuningIterations << " / " << iteration << " = "
        << ((double)numTuningIterations / iteration * 100) << "%" << endl;
   cout << "MFUPs/sec    : " << mfups << endl;
+  cout << "Standard Deviation of Homogeneity    : " << homogeneity << endl;
 
   if (_config->dontMeasureFlops.value) {
     autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> flopCounterFunctor(
@@ -508,4 +523,80 @@ void Simulation<Particle, ParticleCell>::writeVTKFile(unsigned int iteration,
   vtkFile.close();
 
   _timers.vtk.stop();
+}
+
+template <class Particle, class ParticleCell>
+double Simulation<Particle, ParticleCell>::calculateHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas) {
+  int numberOfParticles = autopas.getNumberOfParticles();
+  // approximately the resolution we want to get.
+  int numberOfCells = ceil(numberOfParticles / 10.);
+
+  std::array<double, 3> startCorner = autopas.getBoxMin();
+  std::array<double, 3> endCorner = autopas.getBoxMax();
+  std::array<double, 3> domainSizePerDimension = {};
+  for (int i = 0; i < 3; ++i) {
+    domainSizePerDimension[i] = endCorner[i] - startCorner[i];
+  }
+
+  // get cellLength which is equal in each direction, derived from the domainsize and the requested number of cells
+  double volume = domainSizePerDimension[0] * domainSizePerDimension[1] * domainSizePerDimension[2];
+  double cellVolume = volume / numberOfCells;
+  double cellLength = cbrt(cellVolume);
+
+  // calculate the size of the boundary cells, which might be smaller then the other cells
+  std::array<size_t, 3> cellsPerDimension = {};
+  // size of the last cell layer per dimension. This cell might get truncated to fit in the domain.
+  std::array<double, 3> outerCellSizePerDimension = {};
+  for (int i = 0; i < 3; ++i) {
+    outerCellSizePerDimension[i] =
+        domainSizePerDimension[i] - (floor(domainSizePerDimension[i] / cellLength) * cellLength);
+    cellsPerDimension[i] = ceil(domainSizePerDimension[i] / cellLength);
+  }
+  // Actual number of cells we end up with
+  numberOfCells = cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2];
+
+  std::vector<size_t> particlesPerCell(numberOfCells, 0);
+  std::vector<double> allVolumes(numberOfCells, 0);
+
+  // add particles accordingly to their cell to get the amount of particles in each cell
+  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    std::array<double, 3> particleLocation = iter->getR();
+    std::array<size_t, 3> index = {};
+    for (int i = 0; i < particleLocation.size(); i++) {
+      index[i] = particleLocation[i] / cellLength;
+    }
+    const size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
+    particlesPerCell[cellIndex] += 1;
+    // calculate the size of the current cell
+    allVolumes[cellIndex] = 1;
+    for (int i = 0; i < cellsPerDimension.size(); ++i) {
+      // the last cell layer has a special size
+      if (index[i] == cellsPerDimension[i] - 1) {
+        allVolumes[cellIndex] *= outerCellSizePerDimension[i];
+      } else {
+        allVolumes[cellIndex] *= cellLength;
+      }
+    }
+  }
+
+  // calculate density for each cell
+  std::vector<double> densityPerCell(numberOfCells, 0.0);
+  for (int i = 0; i < particlesPerCell.size(); i++) {
+    densityPerCell[i] = (particlesPerCell[i] == 0)
+                            ? 0
+                            : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
+  }
+
+  // get mean and reserve variable for variance
+  double mean = numberOfParticles / volume;
+  double variance = 0.0;
+
+  // calculate variance
+  for (int r = 0; r < densityPerCell.size(); ++r) {
+    double distance = densityPerCell[r] - mean;
+    variance += (distance * distance / densityPerCell.size());
+  }
+
+  // finally calculate standard deviation
+  return sqrt(variance);
 }

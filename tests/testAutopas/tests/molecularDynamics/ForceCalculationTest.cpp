@@ -22,7 +22,7 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
   autoPas.setAllowedContainers({autopas::ContainerOption::linkedCells});
-  autoPas.setAllowedTraversals({autopas::TraversalOption::c08});
+  autoPas.setAllowedTraversals({autopas::TraversalOption::lc_c08});
   autoPas.setAllowedDataLayouts({dataLayoutOption});
 
   autoPas.init();

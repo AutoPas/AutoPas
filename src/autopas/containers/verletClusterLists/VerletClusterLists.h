@@ -9,15 +9,16 @@
 #include <cmath>
 
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
-#include "autopas/containers/verletClusterLists/traversals/VerletClustersTraversalInterface.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
 
@@ -94,7 +95,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
           "VerletClusterLists::iteratePairwise(): Trying to do a pairwise iteration, even though verlet lists are not "
           "valid.");
     }
-    auto *traversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
+    auto *traversalInterface = dynamic_cast<VCLTraversalInterface<Particle> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setClusterLists(*this);
       traversalInterface->setTowers(_towers);
@@ -124,7 +125,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   void addHaloParticleImpl(const Particle &haloParticle) override {
     _isValid = ValidityState::invalid;
     Particle copy = haloParticle;
-    copy.setOwned(false);
+    copy.setOwnershipState(OwnershipState::halo);
     _particlesToAdd.push_back(copy);
   }
 
@@ -133,7 +134,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    */
   bool updateHaloParticle(const Particle &haloParticle) override {
     Particle pCopy = haloParticle;
-    pCopy.setOwned(false);
+    pCopy.setOwnershipState(OwnershipState::halo);
 
     for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
                                      utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2),
@@ -170,8 +171,16 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @copydoc VerletLists::updateContainer()
    */
   [[nodiscard]] std::vector<Particle> updateContainer() override {
-    // first delete all halo particles.
+    // First delete all halo particles.
     this->deleteHaloParticles();
+
+    // Delete dummy particles.
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for
+#endif
+    for (size_t i = 0ul; i < _towers.size(); ++i) {
+      _towers[i].deleteDummyParticles();
+    }
 
     // next find invalid particles
     std::vector<Particle> invalidParticles;
@@ -324,7 +333,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     }
     _builder->rebuildNeighborListsAndFillClusters(traversal->getUseNewton3());
 
-    auto *clusterTraversalInterface = dynamic_cast<VerletClustersTraversalInterface<Particle> *>(traversal);
+    auto *clusterTraversalInterface = dynamic_cast<VCLTraversalInterface<Particle> *>(traversal);
     if (clusterTraversalInterface) {
       if (clusterTraversalInterface->needsStaticClusterThreadPartition()) {
         calculateClusterThreadPartition();
@@ -543,7 +552,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
         _builder->rebuildTowersAndClusters();
     _isValid = ValidityState::cellsValidListsInvalid;
     for (auto &tower : _towers) {
-      tower.setParticleDeletionObserser(this);
+      tower.setParticleDeletionObserver(this);
     }
   }
 

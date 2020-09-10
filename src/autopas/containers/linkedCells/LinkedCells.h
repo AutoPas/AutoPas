@@ -7,16 +7,17 @@
 
 #pragma once
 
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
-#include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
-#include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
+#include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/StringUtils.h"
@@ -35,12 +36,12 @@ namespace autopas {
  * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
 template <class ParticleCell, class SoAArraysType = typename ParticleCell::ParticleType::SoAArraysType>
-class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
+class LinkedCells : public CellBasedParticleContainer<ParticleCell, SoAArraysType> {
  public:
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename ParticleContainer<ParticleCell>::ParticleType;
+  using ParticleType = typename CellBasedParticleContainer<ParticleCell>::ParticleType;
 
   /**
    * Constructor of the LinkedCells class
@@ -55,7 +56,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const double cellSizeFactor = 1.0,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : ParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
+      : CellBasedParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
@@ -74,7 +75,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
-    pCopy.setOwned(false);
+    pCopy.setOwnershipState(OwnershipState::halo);
     ParticleCell &cell = _cellBlock.getContainingCell(pCopy.getR());
     cell.addParticle(pCopy);
   }
@@ -84,7 +85,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
-    pCopy.setOwned(false);
+    pCopy.setOwnershipState(OwnershipState::halo);
     auto cells = _cellBlock.getNearbyHaloCells(pCopy.getR(), this->getSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
@@ -128,7 +129,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ParticleCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
@@ -148,6 +149,7 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 
   [[nodiscard]] std::vector<ParticleType> updateContainer() override {
     this->deleteHaloParticles();
+
     std::vector<ParticleType> invalidParticles;
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -159,6 +161,9 @@ class LinkedCells : public ParticleContainer<ParticleCell, SoAArraysType> {
 #pragma omp for
 #endif  // AUTOPAS_OPENMP
       for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
+        // Delete dummy particles of each cell.
+        this->getCells()[cellId].deleteDummyParticles();
+
         // if empty
         if (not this->getCells()[cellId].isNotEmpty()) continue;
 

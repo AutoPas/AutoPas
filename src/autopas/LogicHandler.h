@@ -10,6 +10,7 @@
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/utils/Logger.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -130,13 +131,12 @@ class LogicHandler {
    * @param iter
    */
   void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) {
-    _containerIsValid = false;
     if ((*iter).isOwned()) {
       _numParticlesOwned.fetch_sub(1, std::memory_order_relaxed);
     } else {
       _numParticlesHalo.fetch_sub(1, std::memory_order_relaxed);
     }
-    internal::deleteParticle(iter);
+    internal::markParticleAsDeleted(*iter);
   }
 
   /**

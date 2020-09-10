@@ -21,9 +21,9 @@ class LoadEstimatorOption : public Option<LoadEstimatorOption> {
    * Possible choices for the load estimation algorithm.
    */
   enum Value {
-    none = 0,
-    squaredParticlesPerCell = 1,
-    neighborListLength = 2,
+    none,
+    squaredParticlesPerCell,
+    neighborListLength,
   };
 
   /**

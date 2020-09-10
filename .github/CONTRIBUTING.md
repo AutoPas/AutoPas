@@ -117,7 +117,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 
 ### Adding a new Container
 * Create a new container class under `src/autopas/containers/`.
-* Derive your new container from `src/autopas/containers/ParticleContainer.h` or a more similar one.
+* Derive your new container from `src/autopas/containers/ParticleContainerInterface.h` or a more similar one.
 * Go to `src/autopas/options/ContainerOption.h`.
   * Add a new enum in `ContainerOption::Value`.
   * Add a new string representation in the `map` of `ContainerOption::getOptionNames()`.
