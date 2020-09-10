@@ -102,11 +102,10 @@ class LJFunctor
    * @param particlePropertiesLibrary
    */
   explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJFunctor(cutoff, nullptr) {
+      : LJFunctor(cutoff, nullptr), _PPLibrary{&particlePropertiesLibrary} {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
-    _PPLibrary = &particlePropertiesLibrary;
   }
 
   bool isRelevantForTuning() override { return relevantForTuning; }
@@ -1099,7 +1098,7 @@ class LJFunctor
   // not const because they might be reset through PPL
   double _epsilon24, _sigmasquare, _shift6 = 0;
 
-  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
+  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *const _PPLibrary{nullptr};
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _upotSum;
