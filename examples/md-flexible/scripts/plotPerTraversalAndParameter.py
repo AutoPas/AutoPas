@@ -43,10 +43,12 @@ if len(sys.argv) > 1:
     else:
         datafiles = sys.argv[2:]
 
+
 # -------------------------------------------- Functions --------------------------------------------
 
 def parseConfig(confStr):
     return {key.strip(): val.strip() for key, val in [pair.split(":") for pair in confStr[1:-1].split(',')]}
+
 
 def getIndexInContainer(item):
     for c in allContainers:
@@ -54,11 +56,13 @@ def getIndexInContainer(item):
             return allContainers.index(c)
     return 0
 
+
 def itemInAllcontainers(item):
     for c in allContainers:
         if c.__contains__(item):
             return True
     return False
+
 
 # ---------------------------------------------- Script ---------------------------------------------
 
@@ -182,6 +186,7 @@ for datafile in datafiles:
             currentDensity = currentDensity / boxSize
             densityPerTraversal[allTraversals.index(traversal)].append(currentDensity)
 
+
 # ---------------------------------------------- Functions ----------------------------------------
 
 def getContainerByTraversal(traversal):
@@ -241,7 +246,8 @@ def calculateMeans(xAxis, yAxis):
 # build the full rgb color space
 colorrange = ['rgb(0, 100,   100)', 'rgb(255, 0,   0)', 'rgb(255, 219,   0)', 'rgb(71, 0, 255)',
               'rgb(  0, 147, 255)', 'rgb(73, 255,   0)', 'rgb(  0, 0, 0)', 'rgb(255,   0, 221)']
-symbolrange = ['triangle-right', 'circle', 'star', 'cross', 'square', 'diamond', 'star-diamond', 'bowtie', 'hourglass', 'triangle-up',
+symbolrange = ['triangle-right', 'circle', 'star', 'cross', 'square', 'diamond', 'star-diamond', 'bowtie', 'hourglass',
+               'triangle-up',
                'triangle-down', 'triangle-left']
 
 # create figure and define layout
