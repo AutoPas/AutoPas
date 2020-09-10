@@ -19,7 +19,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     const std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
     const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
     const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
-    unsigned int maxTuningPhasesWithoutTest, unsigned int evidenceFirstPrediction,
+    unsigned int maxTuningPhasesWithoutTest, double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
     AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption) {
   // clang compiler bug requires static cast
   switch (static_cast<TuningStrategyOption>(tuningStrategyOption)) {
@@ -59,8 +59,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     case TuningStrategyOption::predictiveTuning: {
       return std::make_unique<PredictiveTuning>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
                                                 allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
-                                                relativeOptimum, maxTuningPhasesWithoutTest, evidenceFirstPrediction,
-                                                extrapolationMethodOption);
+                                                relativeOptimum, maxTuningPhasesWithoutTest, relativeBlacklistRange,
+                                                evidenceFirstPrediction, extrapolationMethodOption);
     }
   }
 

@@ -8,11 +8,11 @@
 
 autopas::PredictiveTuning PredictiveTuningTest::getPredictiveTuning(
     unsigned int testsUntilFirstPrediction, autopas::ExtrapolationMethodOption extrapolationMethodOption,
-    const std::set<autopas::TraversalOption> &allowedTraversalOptions) {
+    double blacklistRange, const std::set<autopas::TraversalOption> &allowedTraversalOptions) {
   return autopas::PredictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.}, allowedTraversalOptions, {autopas::LoadEstimatorOption::none},
       {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, relativeOptimumRange,
-      maxTuningIterationsWithoutTest, testsUntilFirstPrediction, extrapolationMethodOption);
+      maxTuningIterationsWithoutTest, blacklistRange, testsUntilFirstPrediction, extrapolationMethodOption);
 }
 
 void PredictiveTuningTest::testGeneric(autopas::ExtrapolationMethodOption extrapolationMethodOption,
@@ -48,7 +48,7 @@ void PredictiveTuningTest::testGeneric(autopas::ExtrapolationMethodOption extrap
  *      - first that is not optimal but it getting less expensive.
  *      - second is optimal in the beginning but is getting more expensive.
  *      - third is constant and not in the optimum range.
- * In the third iteration lc_c08 should be predicted to be the optimum.
+ * In the third iteration the first configuration should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testLinePrediction) {
   testGeneric(autopas::ExtrapolationMethodOption::linePrediction, {{4, 1, 20}, {3, 2, 20}}, 0);
@@ -60,7 +60,7 @@ TEST_F(PredictiveTuningTest, testLinePrediction) {
  *      - first that is not optimal but it getting less expensive.
  *      - second is optimal in the beginning but is getting more expensive.
  *      - third is constant and not in the optimum range.
- * In the third iteration lc_c08 should be predicted to be the optimum.
+ * In the third iteration the first configuration should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testLinearRegression) {
   testGeneric(autopas::ExtrapolationMethodOption::linearRegression, {{375, 300, 2000}, {350, 325, 2000}}, 0);
@@ -72,7 +72,7 @@ TEST_F(PredictiveTuningTest, testLinearRegression) {
  *      - first that is not optimal but it getting less expensive.
  *      - second is optimal in the beginning but is getting more expensive.
  *      - third is constant and not in the optimum range.
- * In the third iteration lc_c08 should be predicted to be the optimum.
+ * In the third iteration the first configuration should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testLagrange) {
   testGeneric(autopas::ExtrapolationMethodOption::lagrange, {{6, 1, 20}, {5, 2, 20}, {4, 3, 20}}, 0);
@@ -84,7 +84,7 @@ TEST_F(PredictiveTuningTest, testLagrange) {
  *      - first that is not optimal but it getting less expensive.
  *      - second is optimal in the beginning but is getting more expensive.
  *      - third is constant and not in the optimum range.
- * In the third iteration lc_c08 should be predicted to be the optimum.
+ * In the third iteration the first configuration should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testNewton) {
   testGeneric(autopas::ExtrapolationMethodOption::newton, {{60, 10, 200}, {50, 20, 200}, {40, 30, 200}}, 0);
@@ -96,8 +96,8 @@ TEST_F(PredictiveTuningTest, testNewton) {
  *      - first is constant near the optimum (11).
  *      - second is constant the optimum (10).
  *      - third is constant and not in the optimum range (20).
- * In the third iteration lc_c08 and sliced should be in _optimalSearchSpace and after the tuning phase sliced should be
- * the optimal configuration.
+ * In the third iteration the first and second configuration should be in _optimalSearchSpace and after the tuning phase
+ * the second should be the optimal configuration.
  */
 TEST_F(PredictiveTuningTest, testLinearPredictionTuningThreeIterations) {
   size_t iteration = 0;
@@ -138,14 +138,14 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTuningThreeIterations) {
  * tuning. Two different configurations:
  *      - first is constant out of the optimum range (20).
  *      - second is constant the optimum (10).
- * In iteration three to six only sliced should be in _optimalSearchSpace.
- * In the seventh iteration lc_c08 and sliced should be in _optimalSearchSpace.
+ * In iteration three to six only the second configuration should be in _optimalSearchSpace.
+ * In the seventh iteration both configuration should be tested in the tuning phase.
  */
 TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
   size_t iteration = 0;
   std::vector<autopas::Configuration> configurationsToCompare{configurationLC_C08, configurationLC_Sliced};
   auto predictiveTuning =
-      getPredictiveTuning(evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction,
+      getPredictiveTuning(evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction, 0,
                           {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced});
 
   predictiveTuning.reset(iteration);
@@ -205,8 +205,8 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
  *      - first is constant out of the optimum range (15) and invalid in the third iteration.
  *      - second is constant the optimum (10) and invalid in the third iteration.
  *      - third is constant out of the optimum range (20).
- * In the third iteration reselectOptimalSearchSpace should be called twice and C01 should be selected after the
- * tuning phase.
+ * In the third iteration reselectOptimalSearchSpace should be called twice and the third configuration should be
+ * selected after the tuning phase.
  */
 TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
   size_t iteration = 0;
@@ -248,4 +248,32 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
   // Tests if thirdBestConfiguration still gets selected if the second one is invalid.
   predictiveTuning.tune();
   EXPECT_EQ(thirdBestConfiguration, predictiveTuning.getCurrentConfiguration());
+}
+
+/*
+ * Tests the correct use of the blacklist:
+ *      - first is constant the optimum (1).
+ *      - second is constant in the blacklist range (5).
+ *      - third is  out of the optimum range (20) and should not be tested after the first tuning phase.
+ * In the second iteration the third configuration should not be tested in the tuning phase.
+ */
+TEST_F(PredictiveTuningTest, testBlacklist) {
+  size_t iteration = 0;
+  auto predictiveTuning =
+      getPredictiveTuning(evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction, 10);
+
+  auto testedConfigs = tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, {1, 5, 20}, iteration);
+
+  auto bestConfiguration = testedConfigs[0];
+  auto secondBestConfiguration = testedConfigs[1];
+
+  // End of the first tuning phase.
+  predictiveTuning.reset(iteration);
+
+  tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, {1, 5}, iteration,
+                                        {bestConfiguration, secondBestConfiguration});
+  // End of the second tuning phase.
+  predictiveTuning.reset(iteration);
+
+  EXPECT_EQ(bestConfiguration, predictiveTuning.getCurrentConfiguration());
 }

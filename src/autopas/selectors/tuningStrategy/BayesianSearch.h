@@ -13,8 +13,8 @@
 
 #include "GaussianModel/GaussianProcess.h"
 #include "TuningStrategyInterface.h"
+#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
 #include "autopas/selectors/FeatureVectorEncoder.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
