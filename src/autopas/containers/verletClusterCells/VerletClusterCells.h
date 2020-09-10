@@ -412,7 +412,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
           if (p.isOwned()) {
             autopas::utils::ExceptionHandler::exception(
                 "VerletClusterCells::rebuildClusterStructure(): Detected particle leak: Possible reason: \n"
-                "Please ensure that you call an updateContainerForced after manually adding or removing particles! "
+                "Please ensure that you call an updateContainer(true) after manually adding or removing particles! "
                 "\nThe particle that will be lost: {}",
                 p.toString());
           } else {
