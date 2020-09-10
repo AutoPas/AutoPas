@@ -108,7 +108,7 @@ class ParticlePropertiesLibrary {
    * @return 24*epsilon_ij
    */
   inline floatType mixing24Epsilon(intType i, intType j) const {
-    return _computedMixing24Epsilon[i * _numRegisteredTypes + j];
+    return _computedMixingData[i * _numRegisteredTypes + j].epsilon24;
   }
 
   /**
@@ -118,7 +118,7 @@ class ParticlePropertiesLibrary {
    * @return sigma_ij²
    */
   inline floatType mixingSigmaSquare(intType i, intType j) const {
-    return _computedMixingSigmaSquare[i * _numRegisteredTypes + j];
+    return _computedMixingData[i * _numRegisteredTypes + j].sigmaSquare;
   }
 
   /**
@@ -128,7 +128,7 @@ class ParticlePropertiesLibrary {
    * @return shift * 6
    */
   inline floatType mixingShift6(intType i, intType j) const {
-    return _computedMixingShift6[i * _numRegisteredTypes + j];
+    return _computedMixingData[i * _numRegisteredTypes + j].shift6;
   }
 
   /**
@@ -148,9 +148,13 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _sigmas;
   std::vector<floatType> _masses;
 
-  std::vector<floatType> _computedMixing24Epsilon;
-  std::vector<floatType> _computedMixingSigmaSquare;
-  std::vector<floatType> _computedMixingShift6;
+  struct PackedMixingData {
+    floatType epsilon24;
+    floatType sigmaSquare;
+    floatType shift6;
+  };
+
+  std::vector<PackedMixingData> _computedMixingData;
 };
 
 template <typename floatType, typename intType>
@@ -170,9 +174,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addType(intType typeID, floa
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
-  _computedMixing24Epsilon.resize(_numRegisteredTypes * _numRegisteredTypes);
-  _computedMixingSigmaSquare.resize(_numRegisteredTypes * _numRegisteredTypes);
-  _computedMixingShift6.resize(_numRegisteredTypes * _numRegisteredTypes);
+  _computedMixingData.resize(_numRegisteredTypes * _numRegisteredTypes);
 
   auto cutoffSquare = _cutoff * _cutoff;
 
@@ -182,33 +184,33 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
 
       // epsilon
       floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
-      _computedMixing24Epsilon[globalIndex] = epsilon24;
+      _computedMixingData[globalIndex].epsilon24 = epsilon24;
 
       // sigma
       floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
       floatType sigmaSquare = sigma * sigma;
-      _computedMixingSigmaSquare[globalIndex] = sigmaSquare;
+      _computedMixingData[globalIndex].sigmaSquare = sigmaSquare;
 
       // shift6
-      floatType newShift6 = calcShift6(epsilon24, sigmaSquare, cutoffSquare);
-      _computedMixingShift6[globalIndex] = newShift6;
+      floatType shift6 = calcShift6(epsilon24, sigmaSquare, cutoffSquare);
+      _computedMixingData[globalIndex].shift6 = shift6;
     }
   }
 }
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getMass(intType i) const {
-  return _masses.at(i);
+  return _masses[i];
 }
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::get24Epsilon(intType i) const {
-  return _computedMixing24Epsilon.at(i * _numRegisteredTypes + i);
+  return _computedMixingData[i * _numRegisteredTypes + i].epsilon24;
 }
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquare(intType i) const {
-  return _computedMixingSigmaSquare.at(i * _numRegisteredTypes + i);
+  return _computedMixingData[i * _numRegisteredTypes + i].sigmaSquare;
 }
 
 template <typename floatType, typename intType>
