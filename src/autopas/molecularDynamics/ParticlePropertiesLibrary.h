@@ -160,13 +160,7 @@ class ParticlePropertiesLibrary {
     floatType epsilon24;
     floatType sigmaSquare;
     floatType shift6;
-
-   private:
-    // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 3 * sizeof(floatType)) / sizeof(floatType)];
   };
-  // make sure of the size of PackedMixingData
-  static_assert(sizeof(PackedMixingData) % 64 == 0, "PackedMixingData has wrong size");
 
   std::vector<PackedMixingData, autopas::AlignedAllocator<PackedMixingData>> _computedMixingData;
 };
