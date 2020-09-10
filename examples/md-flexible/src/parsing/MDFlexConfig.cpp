@@ -101,6 +101,11 @@ std::string MDFlexConfig::to_string() const {
   printObjectCollection(cubeUniformObjects, cubeUniformObjectsStr, os);
   printObjectCollection(sphereObjects, sphereObjectsStr, os);
 
+  if (not globalForceIsZero()) {
+    os << setw(valueOffset) << left << globalForce.name << ":  "
+       << autopas::utils::ArrayUtils::to_string(globalForce.value) << endl;
+  }
+
   if (useThermostat.value) {
     os << useThermostat.name << ":" << endl;
     os << "  " << setw(valueOffset - 2) << left << initTemperature.name << ":  " << initTemperature.value << endl;
@@ -148,6 +153,7 @@ void MDFlexConfig::calcSimulationBox() {
   resizeToObjectLimits(cubeGridObjects);
   resizeToObjectLimits(cubeUniformObjects);
   resizeToObjectLimits(sphereObjects);
+  resizeToObjectLimits(cubeClosestPackedObjects);
 
   // guarantee the box is at least of size interationLength
   for (int i = 0; i < 3; i++) {

@@ -70,8 +70,9 @@ class BoundaryConditions {
   /**
    * Realizes periodic Boundaries for the simulation by handling halo particles and updating the container
    * @param autoPas
+   * @param forceUpdate If the container update should be forced or left to autopas.
    */
-  static void applyPeriodic(autopas::AutoPas<ParticleType, ParticleCell> &autoPas);
+  static void applyPeriodic(autopas::AutoPas<ParticleType, ParticleCell> &autoPas, bool forceUpdate);
 };
 template <typename ParticleCell>
 std::vector<typename ParticleCell::ParticleType> BoundaryConditions<ParticleCell>::convertToEnteringParticles(
@@ -159,9 +160,10 @@ void BoundaryConditions<ParticleCell>::addHaloParticles(autopas::AutoPas<Particl
 }
 
 template <typename ParticleCell>
-void BoundaryConditions<ParticleCell>::applyPeriodic(autopas::AutoPas<ParticleType, ParticleCell> &autoPas) {
+void BoundaryConditions<ParticleCell>::applyPeriodic(autopas::AutoPas<ParticleType, ParticleCell> &autoPas,
+                                                     bool forceUpdate) {
   // 1. update Container; return value is vector of invalid == leaving particles!
-  auto [invalidParticles, updated] = autoPas.updateContainer();
+  auto [invalidParticles, updated] = autoPas.updateContainer(forceUpdate);
   if (updated) {
     // 2. leaving and entering particles
     const auto &sendLeavingParticles = invalidParticles;

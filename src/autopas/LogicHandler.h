@@ -34,7 +34,6 @@ class LogicHandler {
 
   /**
    * @copydoc AutoPas::updateContainer()
-   * @param forced specifies whether an update of the container is enforced.
    */
   [[nodiscard]] std::pair<std::vector<Particle>, bool> updateContainer(bool forced) {
     if (not isContainerValid() or forced) {
@@ -64,7 +63,7 @@ class LogicHandler {
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Adding of particles not allowed while neighborlists are still valid. Please invalidate the neighborlists "
-          "by calling AutoPas::updateContainerForced(). Do this on EVERY AutoPas instance, i.e., on all mpi "
+          "by calling AutoPas::updateContainer(true). Do this on EVERY AutoPas instance, i.e., on all mpi "
           "processes!");
     }
   }
