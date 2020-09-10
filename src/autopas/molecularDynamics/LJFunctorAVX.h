@@ -680,6 +680,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     // If b is a power of 2 the following holds:
     // a & ~(b -1) == a - (a mod b)
     for (; j < (neighborList.size() & ~(vecLength - 1)); j += vecLength) {
+      // AVX2 variant:
       // create buffer for 4 interaction particles
       // and fill buffers via gathering
       //      const __m256d x2tmp = _mm256_i64gather_pd(&xptr[j], _vindex, 1);
@@ -718,9 +719,10 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     // a & (b -1) == a mod b
     const int rest = (int)(neighborList.size() & (vecLength - 1));
     if (rest > 0) {
+      // AVX2 variant:
       // create buffer for 4 interaction particles
       // and fill buffers via gathering
-      //      // TODO: masking
+      //      TODO: use masked load because there will not be enough data left for the whole gather
       //      const __m256d x2tmp = _mm256_i64gather_pd(&xptr[j], _vindex, 1);
       //      const __m256d y2tmp = _mm256_i64gather_pd(&yptr[j], _vindex, 1);
       //      const __m256d z2tmp = _mm256_i64gather_pd(&zptr[j], _vindex, 1);
