@@ -117,23 +117,23 @@ int main(int argc, char *argv[]) {
   autopas::TraversalOption traversalType;
   switch (*containerOptions.begin()) {
     case autopas::ContainerOption::linkedCells: {
-      traversalType = autopas::TraversalOption::c08;
+      traversalType = autopas::TraversalOption::lc_c08;
       break;
     }
     case autopas::ContainerOption::directSum: {
-      traversalType = autopas::TraversalOption::directSumTraversal;
+      traversalType = autopas::TraversalOption::ds_sequential;
       break;
     }
     case autopas::ContainerOption::verletListsCells: {
       if (useNewton3) {
-        traversalType = autopas::TraversalOption::c18;
+        traversalType = autopas::TraversalOption::lc_c18;
       } else {
-        traversalType = autopas::TraversalOption::c01;
+        traversalType = autopas::TraversalOption::lc_c01;
       }
       break;
     }
     case autopas::ContainerOption::verletLists: {
-      traversalType = autopas::TraversalOption::verletTraversal;
+      traversalType = autopas::TraversalOption::vl_list_iteration;
       break;
     }
     default:

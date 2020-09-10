@@ -21,23 +21,29 @@ ENDCOLOR='\033[0m'
 simulationIdentifierString='sim='
 # the tuning strategy
 tuningIdentifierString='tune='
+# the log level
+logIdentifierString='log='
 
 # path to the testing binary. This path is correct after cmake copied this script to the build dir.
 simulation='./md-flexible'
 # placeholder for a globally set tuning strategy
 tuningArg=[]
+# log level
+logLevel = 'debug'
 # list of input files or directories
 configsDirs=[]
 
 # parse special args
 for arg in sys.argv[1:]:
     if "help" in arg:
-        print("Usage: ./testTuning.py [sim=path/to/simulation/binary] [tune=tuningStrategy] [paths/to/yaml/files or/to/directories]")
+        print("Usage: ./testTuning.py [sim=path/to/simulation/binary] [tune=tuningStrategy] [log=logLevel] [paths/to/yaml/files or/to/directories]")
         exit(0)
     elif simulationIdentifierString in arg:
         simulation=arg.split('=', 1)[1]
     elif tuningIdentifierString in arg:
         tuningArg=["--tuning-strategy", arg.split('=',1)[1]]
+    elif logIdentifierString in arg:
+        logLevel=arg.split('=',1)[1]
     else:
         # everything else is considered a path to inputs
         configsDirs.append(arg)
@@ -78,7 +84,7 @@ def testScenario(yamlFile):
 
     # build and execute command for simulation
     # append tuningArg list (if nothing is set this is empty)
-    command=[simulation, "--log-level", "debug" , "--no-end-config" , "--yaml-filename" , yamlFile] + tuningArg
+    command=[simulation, "--log-level", logLevel , "--no-end-config" , "--yaml-filename" , yamlFile] + tuningArg
     print(" ".join(command))
     outputFile=os.path.join(outputDir, scenarioName + '.out')
     with open(outputFile, 'w+') as outputLocation:

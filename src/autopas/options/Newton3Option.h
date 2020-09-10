@@ -20,7 +20,7 @@ class Newton3Option : public Option<Newton3Option> {
   /**
    * Possible choices for the particle data layout. Values consistent with bool.
    */
-  enum Value { disabled = 0, enabled = 1 };
+  enum Value { disabled, enabled };
 
   /**
    * Constructor.
