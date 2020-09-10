@@ -63,18 +63,17 @@ class LJFunctor
   /**
    * Internal, actual constructor.
    * @param cutoff
+   * @param particlePropertiesLibrary pointer to particlePropertiesLibrary
    * @param dummy unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctor(double cutoff, void * /*dummy*/)
+  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> const *const particlePropertiesLibrary,
+                     void * /*dummy*/)
       : Functor<
             Particle, ParticleCell, SoAArraysType,
             LJFunctor<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffsquare{cutoff * cutoff},
-        _upotSum{0.},
-        _virialSum{0., 0., 0.},
-        _aosThreadData(),
-        _postProcessed{false} {
+        _PPLibrary{particlePropertiesLibrary} {
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas_get_max_threads());
     }
@@ -89,7 +88,7 @@ class LJFunctor
    *
    * @param cutoff
    */
-  explicit LJFunctor(double cutoff) : LJFunctor(cutoff, nullptr) {
+  explicit LJFunctor(double cutoff) : LJFunctor(cutoff, nullptr, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -102,7 +101,7 @@ class LJFunctor
    * @param particlePropertiesLibrary
    */
   explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJFunctor(cutoff, nullptr), _PPLibrary{&particlePropertiesLibrary} {
+      : LJFunctor(cutoff, &particlePropertiesLibrary, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -1096,21 +1095,21 @@ class LJFunctor
 
   const double _cutoffsquare;
   // not const because they might be reset through PPL
-  double _epsilon24, _sigmasquare, _shift6 = 0;
+  double _epsilon24{0.}, _sigmasquare{0.}, _shift6{0.};
 
-  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *const _PPLibrary{nullptr};
+  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> const *const _PPLibrary{nullptr};
 
   // sum of the potential energy, only calculated if calculateGlobals is true
-  double _upotSum;
+  double _upotSum{};
 
   // sum of the virial, only calculated if calculateGlobals is true
-  std::array<double, 3> _virialSum;
+  std::array<double, 3> _virialSum{};
 
   // thread buffer for aos
   std::vector<AoSThreadData> _aosThreadData;
 
   // defines whether or whether not the global values are already preprocessed
-  bool _postProcessed;
+  bool _postProcessed{false};
 
 #if defined(AUTOPAS_CUDA)
   using CudaWrapperType = typename std::conditional<calculateGlobals, LJFunctorCudaGlobalsWrapper<SoAFloatPrecision>,
