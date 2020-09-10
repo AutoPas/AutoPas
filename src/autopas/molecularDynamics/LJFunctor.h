@@ -280,17 +280,14 @@ class LJFunctor
 
         // Mask away if distance is too large or any particle is a dummy.
         // Particle ownedStateI was already checked previously.
-        const uint64_t mask = (dr2 <= cutoffsquare and ownedStateJ != OwnershipState::dummy) ? 0xFFFFFFFFFFFFFFFF : 0x0;
+        const bool mask = dr2 <= cutoffsquare and ownedStateJ != OwnershipState::dummy;
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmasquare * invdr2;
         const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
         const SoAFloatPrecision lj12 = lj6 * lj6;
         const SoAFloatPrecision lj12m6 = lj12 - lj6;
-
-        const SoAFloatPrecision facNotMasked = epsilon24 * (lj12 + lj12m6) * invdr2;
-        const auto fac_int = mask & reinterpret_cast<const uint64_t &>(facNotMasked);
-        const SoAFloatPrecision fac = reinterpret_cast<const SoAFloatPrecision &>(fac_int);
+        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
