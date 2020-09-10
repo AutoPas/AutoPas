@@ -215,6 +215,7 @@ class LJFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
+    // Pulling these array outside of the vectorizable loop prevents vectorization and time is lost.
     std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
     std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
     std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> shift6s;
