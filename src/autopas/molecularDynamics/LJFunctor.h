@@ -215,6 +215,19 @@ class LJFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
+    std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
+    std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
+    std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> shift6s;
+    if constexpr (useMixing) {
+      // preload all sigma and epsilons for next vectorized region
+      sigmaSquares.resize(soa.getNumParticles());
+      epsilon24s.resize(soa.getNumParticles());
+      // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
+      if constexpr (applyShift) {
+        shift6s.resize(soa.getNumParticles());
+      }
+    }
+
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       const auto ownedStateI = ownedStatePtr[i];
       if (ownedStateI == OwnershipState::dummy) {
@@ -225,16 +238,26 @@ class LJFunctor
       SoAFloatPrecision fyacc = 0.;
       SoAFloatPrecision fzacc = 0.;
 
+      if constexpr (useMixing) {
+        for (unsigned int j = 0; j < soa.getNumParticles(); ++j) {
+          auto mixingData = _PPLibrary->getMixingData(typeptr[i], typeptr[j]);
+          sigmaSquares[j] = mixingData.sigmaSquare;
+          epsilon24s[j] = mixingData.epsilon24;
+          if constexpr (applyShift) {
+            shift6s[j] = mixingData.shift6;
+          }
+        }
+      }
+
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
         if constexpr (useMixing) {
-          auto mixingData = _PPLibrary->getMixingData(typeptr[i], typeptr[j]);
-          sigmasquare = mixingData.sigmaSquare;
-          epsilon24 = mixingData.epsilon24;
+          sigmasquare = sigmaSquares[j];
+          epsilon24 = epsilon24s[j];
           if constexpr (applyShift) {
-            shift6 = mixingData.shift6;
+            shift6 = shift6s[j];
           }
         }
 
