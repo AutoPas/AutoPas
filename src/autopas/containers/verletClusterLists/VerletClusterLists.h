@@ -282,10 +282,29 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _haloBoxMin);
     const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _haloBoxMax);
 
-    // iterate over all cells
-    /// @todo optimize, see https://github.com/AutoPas/AutoPas/issues/438
-    std::vector<size_t> cellsOfInterest(this->_towers.size());
-    std::iota(cellsOfInterest.begin(), cellsOfInterest.end(), 0);
+    // Find cells intersecting the search region
+    auto xmin =
+        static_cast<size_t>((lowerCornerInBounds[0] - _haloBoxMin[0] - this->getSkin()) * _towerSideLengthReciprocal);
+    auto ymin =
+        static_cast<size_t>((lowerCornerInBounds[1] - _haloBoxMin[1] - this->getSkin()) * _towerSideLengthReciprocal);
+
+    auto xlength =
+        (static_cast<size_t>((upperCornerInBounds[0] - _haloBoxMin[0] + this->getSkin()) * _towerSideLengthReciprocal) -
+         xmin) +
+        1;
+    auto ylength =
+        (static_cast<size_t>((upperCornerInBounds[1] - _haloBoxMin[1] + this->getSkin()) * _towerSideLengthReciprocal) -
+         ymin) +
+        1;
+
+    std::vector<size_t> cellsOfInterest(xlength * ylength);
+
+    auto cellsOfInterestIterator = cellsOfInterest.begin();
+    int start = xmin + ymin * _towersPerDim[0];
+    for (size_t i = 0; i < ylength; ++i) {
+      std::iota(cellsOfInterestIterator, cellsOfInterestIterator + xlength, start + i * _towersPerDim[0]);
+      cellsOfInterestIterator += xlength;
+    }
 
     return ParticleIteratorWrapper<Particle, true>(
         new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
@@ -311,10 +330,29 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _haloBoxMin);
     const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _haloBoxMax);
 
-    // iterate over all cells
-    /// @todo optimize, see https://github.com/AutoPas/AutoPas/issues/438
-    std::vector<size_t> cellsOfInterest(this->_towers.size());
-    std::iota(cellsOfInterest.begin(), cellsOfInterest.end(), 0);
+    // Find cells intersecting the search region
+    auto xmin =
+        static_cast<size_t>((lowerCornerInBounds[0] - _haloBoxMin[0] - this->getSkin()) * _towerSideLengthReciprocal);
+    auto ymin =
+        static_cast<size_t>((lowerCornerInBounds[1] - _haloBoxMin[1] - this->getSkin()) * _towerSideLengthReciprocal);
+
+    auto xlength =
+        (static_cast<size_t>((upperCornerInBounds[0] - _haloBoxMin[0] + this->getSkin()) * _towerSideLengthReciprocal) -
+            xmin) +
+            1;
+    auto ylength =
+        (static_cast<size_t>((upperCornerInBounds[1] - _haloBoxMin[1] + this->getSkin()) * _towerSideLengthReciprocal) -
+            ymin) +
+            1;
+
+    std::vector<size_t> cellsOfInterest(xlength * ylength);
+
+    auto cellsOfInterestIterator = cellsOfInterest.begin();
+    int start = xmin + ymin * _towersPerDim[0];
+    for (size_t i = 0; i < ylength; ++i) {
+      std::iota(cellsOfInterestIterator, cellsOfInterestIterator + xlength, start + i * _towersPerDim[0]);
+      cellsOfInterestIterator += xlength;
+    }
 
     return ParticleIteratorWrapper<Particle, false>(
         new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
@@ -549,6 +587,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
                                                                                  _clusterSize);
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
         _builder->rebuildTowersAndClusters();
+    _towerSideLengthReciprocal = 1 / _towerSideLength;
     _isValid = ValidityState::cellsValidListsInvalid;
     for (auto &tower : _towers) {
       tower.setParticleDeletionObserver(this);
@@ -722,6 +761,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * Side length of xy-grid.
    */
   double _towerSideLength{0.};
+  double _towerSideLengthReciprocal{0.};
 
   /**
    * The number of clusters in the container.
