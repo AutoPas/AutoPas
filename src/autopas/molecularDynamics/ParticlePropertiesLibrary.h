@@ -6,12 +6,12 @@
 
 #pragma once
 
-#include <autopas/utils/ExceptionHandler.h>
-
 #include <cmath>
 #include <map>
 #include <set>
 #include <vector>
+
+#include "autopas/utils/ExceptionHandler.h"
 
 /**
  * This class stores the (physical) properties of particle types.
@@ -62,6 +62,9 @@ class ParticlePropertiesLibrary {
    */
   void addType(intType typeID, floatType epsilon, floatType sigma, floatType mass);
 
+  /**
+   * Calculates the actual mixing coefficients.
+   */
   void calculateMixingCoefficients();
 
   ~ParticlePropertiesLibrary() = default;
