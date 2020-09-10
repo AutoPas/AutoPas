@@ -107,7 +107,6 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
       functor->setParticleProperties(this->epsilon * 24, 1);
     }
 
-
     FMCell cell1, cell2;
     {
       // particle 1 is always in cell1
