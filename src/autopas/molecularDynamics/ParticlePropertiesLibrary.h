@@ -11,6 +11,7 @@
 #include <set>
 #include <vector>
 
+#include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 /**
