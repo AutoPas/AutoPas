@@ -18,8 +18,7 @@ namespace autopas::sph {
  * @tparam ParticleCell
  */
 template <class Particle>
-class SPHCalcDensityFunctor
-    : public Functor<Particle, SPHCalcDensityFunctor<Particle>> {
+class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;

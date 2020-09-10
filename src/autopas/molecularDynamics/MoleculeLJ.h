@@ -47,18 +47,18 @@ class MoleculeLJ : public Particle {
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
-                                       floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, size_t /*typeid*/,
-                                       OwnershipState /*ownershipState*/>::Type;
+      typename autopas::utils::SoAType<MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/,
+                                       floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
+                                       size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
 
 #if defined(AUTOPAS_CUDA)
   /**
    * The type for storage arrays for Cuda.
    */
   using CudaDeviceArraysType =
-      typename autopas::utils::CudaSoAType<MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
-                                           floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, size_t /*typeid*/,
-                                           OwnershipState /*ownershipState*/>::Type;
+      typename autopas::utils::CudaSoAType<MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/,
+                                           floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
+                                           size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
 #endif
 
   /**

@@ -64,8 +64,8 @@ class LJFunctor
    * @param dummy unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
-      : Functor<Particle,
-                LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
+      : Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+            cutoff),
         _cutoffsquare{cutoff * cutoff},
         _upotSum{0.},
         _virialSum{0., 0., 0.},
