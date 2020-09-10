@@ -108,7 +108,7 @@ class ParticlePropertiesLibrary {
    * @return 24*epsilon_ij
    */
   inline floatType mixing24Epsilon(intType i, intType j) const {
-    return _computedMixing24Epsilon.at(i * _numRegisteredTypes + j);
+    return _computedMixing24Epsilon[i * _numRegisteredTypes + j];
   }
 
   /**
@@ -118,7 +118,7 @@ class ParticlePropertiesLibrary {
    * @return sigma_ij²
    */
   inline floatType mixingSigmaSquare(intType i, intType j) const {
-    return _computedMixingSigmaSquare.at(i * _numRegisteredTypes + j);
+    return _computedMixingSigmaSquare[i * _numRegisteredTypes + j];
   }
 
   /**
@@ -128,7 +128,7 @@ class ParticlePropertiesLibrary {
    * @return shift * 6
    */
   inline floatType mixingShift6(intType i, intType j) const {
-    return _computedMixingShift6.at(i * _numRegisteredTypes + j);
+    return _computedMixingShift6[i * _numRegisteredTypes + j];
   }
 
   /**
