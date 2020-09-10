@@ -160,6 +160,7 @@ class ParticlePropertiesLibrary {
     floatType epsilon24;
     floatType sigmaSquare;
     floatType shift6;
+
    private:
     // dummy parameter to get the right size (64 bytes)
     double __remainingTo64[(64 - 3 * sizeof(floatType)) / sizeof(floatType)];
