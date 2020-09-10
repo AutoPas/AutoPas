@@ -633,7 +633,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   template <bool newton3>
   void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
-#ifdef __AVX2__
+#ifdef __AVX__
     const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
     if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
       return;
@@ -806,7 +806,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
       _aosThreadData[threadnum].upotSum += globals[3] * factor;
     }
     // interact with i with 4 neighbors
-#endif  // __AVX2__
+#endif  // __AVX__
   }
 
  public:
