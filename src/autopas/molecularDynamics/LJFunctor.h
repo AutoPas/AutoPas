@@ -240,10 +240,11 @@ class LJFunctor
 
       if constexpr (useMixing) {
         for (unsigned int j = 0; j < soa.getNumParticles(); ++j) {
-          sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr[i], typeptr[j]);
-          epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr[i], typeptr[j]);
+          auto mixingData = _PPLibrary->getMixingData(typeptr[i], typeptr[j]);
+          sigmaSquares[j] = mixingData.sigmaSquare;
+          epsilon24s[j] = mixingData.epsilon24;
           if constexpr (applyShift) {
-            shift6s[j] = _PPLibrary->mixingShift6(typeptr[i], typeptr[j]);
+            shift6s[j] = mixingData.shift6;
           }
         }
       }

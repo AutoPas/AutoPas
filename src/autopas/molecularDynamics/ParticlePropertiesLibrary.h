@@ -112,6 +112,14 @@ class ParticlePropertiesLibrary {
   }
 
   /**
+   * Get Mixing Data as one thing.
+   * @param i
+   * @param j
+   * @return
+   */
+  inline auto getMixingData(intType i, intType j) const { return _computedMixingData[i * _numRegisteredTypes + j]; }
+
+  /**
    * Returns precomputed mixed squared sigma.
    * @param i typeId of particle one.
    * @param j typeId of particle two.
