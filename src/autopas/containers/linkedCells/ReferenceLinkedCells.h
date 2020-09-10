@@ -105,7 +105,10 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
   /**
    * @copydoc ParticleContainerInterface::deleteHaloParticles()
    */
-  void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
+  void deleteHaloParticles() override {
+    _particleList.clearHaloParticles();
+    _cellBlock.clearHaloCells();
+  }
 
   /**
    * @copydoc ParticleContainerInterface::rebuildNeighborLists()
@@ -116,23 +119,28 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
    * Updates all the References in the cells that are out of date.
    */
   void updateDirtyParticleReferences() {
-    if (_particleList.isDirty()) {
-      for (auto &cell : this->_cells) {
-        cell.clear();
-      }
+    //    if (_particleList.isDirty()) {
+    for (auto &cell : this->_cells) {
+      cell.clear();
     }
+
     for (auto it = _particleList.beginDirty(); it < _particleList.endDirty(); it++) {
       ReferenceCell &cell = _cellBlock.getContainingCell(it->getR());
       auto address = &(*it);
       cell.addParticleReference(address);
     }
     _particleList.markAsClean();
+    //    }
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
+    traversal;
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ReferenceCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ReferenceCell> *>(traversal);
+    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
+      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
+    }
     if (traversalInterface && cellPairTraversal) {
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
@@ -144,6 +152,27 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
     traversal->initTraversal();
     traversal->traverseParticlePairs();
     traversal->endTraversal();
+  }
+
+  /**
+   * Generates the load estimation function depending on _loadEstimator.
+   * @return load estimator function object.
+   */
+  BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
+    switch (this->_loadEstimator) {
+      case LoadEstimatorOption::squaredParticlesPerCell: {
+        return [&](const std::array<unsigned long, 3> &cellsPerDimension,
+                   const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
+          return loadEstimators::squaredParticlesPerCell(this->_cells, cellsPerDimension, lowerCorner, upperCorner);
+        };
+      }
+      case LoadEstimatorOption::none: /* FALL THROUgh */
+      default: {
+        return
+            [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
+                const std::array<unsigned long, 3> &upperCorner) { return 1; };
+      }
+    }
   }
 
   std::vector<ParticleType> updateContainer() override {
@@ -306,6 +335,10 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
    */
   internal::CellBlock3D<ReferenceCell> _cellBlock;
   // ThreeDimensionalCellHandler
+  /**
+   * load estimation algorithm for balanced traversals.
+   */
+  autopas::LoadEstimatorOption _loadEstimator;
 };
 
 }  // namespace autopas

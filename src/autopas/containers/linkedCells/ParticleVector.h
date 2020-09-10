@@ -37,6 +37,12 @@ class ParticleVector {
     _dirtyIndex = particleListImp.size();
   }
 
+  void clearHaloParticles() {
+    particleListImp.erase(std::remove_if(particleListImp.begin(), particleListImp.end(),
+                                         [](const auto &particle) { return particle.isHalo(); }),
+                          particleListImp.end());
+  }
+
   /**
    * Add a Particle to the data structure.
    * @param value A reference to the value to be stored
@@ -67,7 +73,7 @@ class ParticleVector {
    * Begin of the iterator over dirty Particles
    * @return Start of the iterator
    */
-  auto beginDirty() { return particleListImp.begin() + _dirtyIndex; }
+  auto beginDirty() { return particleListImp.begin(); }  // + _dirtyIndex; }
   /**
    * End of the iterator over dirty Particles
    * @return End of the iterator

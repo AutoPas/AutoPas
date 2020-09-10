@@ -59,7 +59,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
     return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
-  unsigned long numParticles() const override { return _particles.size(); }
+  [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
 
   /**
    * Returns a reference to the element at position n in the cell.
@@ -135,9 +135,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    */
   void sortByDim(const size_t dim) {
     std::sort(_particles.begin(), _particles.end(),
-              [dim](const std::unique_ptr<Particle> a, const std::unique_ptr<Particle> b) -> bool {
-                return a->getR()[dim] < b->getR()[dim];
-              });
+              [dim](const auto *a, const auto *b) -> bool { return a->getR()[dim] < b->getR()[dim]; });
   }
 
   /**
