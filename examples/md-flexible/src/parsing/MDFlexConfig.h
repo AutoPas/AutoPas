@@ -22,6 +22,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/NumberSet.h"
+#include "src/Objects/CubeClosestPacked.h"
 #include "src/Objects/CubeGauss.h"
 #include "src/Objects/CubeGrid.h"
 #include "src/Objects/CubeUniform.h"
@@ -125,7 +126,7 @@ class MDFlexConfig {
   /**
    * Choice of the particle generators specified in the command line
    */
-  enum class GeneratorOption { grid, uniform, gaussian, sphere };
+  enum class GeneratorOption { grid, uniform, gaussian, sphere, closestPacked };
 
   //  All options in the config
   //  Make sure that the description is parsable by `CLIParser::createZSHCompletionFile()`!
@@ -398,7 +399,7 @@ class MDFlexConfig {
    */
   MDFlexOption<GeneratorOption, __LINE__> generatorOption{
       GeneratorOption::grid, "particle-generator", true,
-      "Scenario generator. Possible Values: (grid uniform gaussian sphere) Default: grid"};
+      "Scenario generator. Possible Values: (grid uniform gaussian sphere closestPacking) Default: grid"};
 
   // Object Generation:
   /**
@@ -412,19 +413,19 @@ class MDFlexConfig {
   /**
    * velocityStr
    */
-  static inline const char *velocityStr{"velocity"};
+  static inline const char *const velocityStr{"velocity"};
   /**
    * particleTypeStr
    */
-  static inline const char *particleTypeStr{"particle-type"};
+  static inline const char *const particleTypeStr{"particle-type"};
   /**
    * particlesPerObjectStr
    */
-  static inline const char *particlesPerObjectStr{"numberOfParticles"};
+  static inline const char *const particlesPerObjectStr{"numberOfParticles"};
   /**
    * cubeGridObjectsStr
    */
-  static inline const char *cubeGridObjectsStr{"CubeGrid"};
+  static inline const char *const cubeGridObjectsStr{"CubeGrid"};
   /**
    * cubeGridObjects
    */
@@ -432,7 +433,7 @@ class MDFlexConfig {
   /**
    * cubeGaussObjectsStr
    */
-  static inline const char *cubeGaussObjectsStr{"CubeGauss"};
+  static inline const char *const cubeGaussObjectsStr{"CubeGauss"};
   /**
    * cubeGaussObjects
    */
@@ -440,7 +441,7 @@ class MDFlexConfig {
   /**
    * cubeUniformObjectsStr
    */
-  static inline const char *cubeUniformObjectsStr{"CubeUniform"};
+  static inline const char *const cubeUniformObjectsStr{"CubeUniform"};
   /**
    * cubeUniformObjects
    */
@@ -448,19 +449,27 @@ class MDFlexConfig {
   /**
    * sphereObjectsStr
    */
-  static inline const char *sphereObjectsStr{"Sphere"};
+  static inline const char *const sphereObjectsStr{"Sphere"};
   /**
    * sphereCenterStr
    */
-  static inline const char *sphereCenterStr{"center"};
+  static inline const char *const sphereCenterStr{"center"};
   /**
    * sphereRadiusStr
    */
-  static inline const char *sphereRadiusStr{"radius"};
+  static inline const char *const sphereRadiusStr{"radius"};
   /**
    * sphereObjects
    */
   std::vector<Sphere> sphereObjects{};
+  /**
+   * cubeClosestPackedObjects
+   */
+  std::vector<CubeClosestPacked> cubeClosestPackedObjects{};
+  /**
+   * cubeClosestPackedObjectsStr
+   */
+  static inline const char *const cubeClosestPackedObjectsStr{"CubeClosestPacked"};
 
   // Thermostat Options
   /**
@@ -473,31 +482,52 @@ class MDFlexConfig {
   /**
    * initTemperature
    */
-  MDFlexOption<double, 0> initTemperature{0., "initialTemperature", true,
-                                          "Thermostat option. Initial temperature of the system."};
+  MDFlexOption<double, __LINE__> initTemperature{0., "initialTemperature", true,
+                                                 "Thermostat option. Initial temperature of the system."};
   /**
    * targetTemperature
    */
-  MDFlexOption<double, 0> targetTemperature{0., "targetTemperature", true,
-                                            "Thermostat option. Target temperature of the system."};
+  MDFlexOption<double, __LINE__> targetTemperature{0., "targetTemperature", true,
+                                                   "Thermostat option. Target temperature of the system."};
   /**
    * deltaTemp
    */
-  MDFlexOption<double, 0> deltaTemp{0., "deltaTemperature", true,
-                                    "Thermostat option. Maximal temperature jump the thermostat is allowed to apply."};
+  MDFlexOption<double, __LINE__> deltaTemp{
+      0., "deltaTemperature", true, "Thermostat option. Maximal temperature jump the thermostat is allowed to apply."};
   /**
    * thermostatInterval
    */
-  MDFlexOption<size_t, 0> thermostatInterval{
+  MDFlexOption<size_t, __LINE__> thermostatInterval{
       0, "thermostatInterval", true,
       "Thermostat option. Number of Iterations between two applications of the thermostat."};
   /**
    * addBrownianMotion
    */
-  MDFlexOption<bool, 0> addBrownianMotion{
+  MDFlexOption<bool, __LINE__> addBrownianMotion{
       true, "addBrownianMotion", true,
       "Thermostat option. Whether the particle velocities should be initialized using "
       "Brownian motion. Possible Values: (true false) Default: true"};
+
+  /**
+   * Global external force like e.g. gravity
+   */
+  MDFlexOption<std::array<double, 3>, __LINE__> globalForce{
+      {0, 0, 0},
+      "globalForce",
+      true,
+      "Global force applied on every particle. Useful to model e.g. gravity. Default: {0,0,0}"};
+
+  /**
+   * Convenience function testing if the global force contains only 0 entries.
+   * @return false if any entry in globalForce.value is != 0.
+   */
+  [[nodiscard]] bool globalForceIsZero() const {
+    bool isZero = true;
+    for (auto gf : globalForce.value) {
+      isZero &= gf == 0;
+    }
+    return isZero;
+  }
 
   // Checkpoint Options
   /**
