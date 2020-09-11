@@ -166,8 +166,8 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeOneConfigPerRank) {
 
   std::set<ContainerOption> oneContainer{ContainerOption::linkedCells};
   std::set<double> cellSizeSet;
-  for(int i = 0; i < commSize; ++i) {
-    cellSizeSet.emplace(1.0 + i/100.0);
+  for (int i = 0; i < commSize; ++i) {
+    cellSizeSet.emplace(1.0 + i / 100.0);
   }
   autopas::NumberSetFinite rankManyCellSizes(cellSizeSet);
   std::set<TraversalOption> oneTraversal{TraversalOption::lc_c08};
@@ -175,15 +175,15 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeOneConfigPerRank) {
   std::set<DataLayoutOption> oneDataLayout{DataLayoutOption::aos};
   std::set<Newton3Option> oneNewton3{Newton3Option::disabled};
 
-  distributeConfigurations(oneContainer, rankManyCellSizes, oneTraversal, oneLoadEstimator, oneDataLayout,oneNewton3,
+  distributeConfigurations(oneContainer, rankManyCellSizes, oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3,
                            rank, commSize);
-  size_t size = getSearchSpaceSize(oneContainer, rankManyCellSizes, oneTraversal, oneLoadEstimator, oneDataLayout,
-                                   oneNewton3);
+  size_t size =
+      getSearchSpaceSize(oneContainer, rankManyCellSizes, oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);
 
   EXPECT_EQ(size, 1);
   double error = 0.001;
-  EXPECT_GE(rankManyCellSizes.getAll(), std::set<double>{1.0 + rank/100.0 - error});
-  EXPECT_LE(rankManyCellSizes.getAll(), std::set<double>{1.0 + rank/100.0 + error});
+  EXPECT_GE(rankManyCellSizes.getAll(), std::set<double>{1.0 + rank / 100.0 - error});
+  EXPECT_LE(rankManyCellSizes.getAll(), std::set<double>{1.0 + rank / 100.0 + error});
 }
 
 TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeValid) {
@@ -197,8 +197,8 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeValid) {
   std::set<DataLayoutOption> oneDataLayout{DataLayoutOption::aos};
   std::set<Newton3Option> oneNewton3{Newton3Option::disabled};
 
-  size_t size = getSearchSpaceSize(threeContainers, twoCellSizes, threeTraversals, twoLoadEstimators, oneDataLayout,
-                                   oneNewton3);
+  size_t size =
+      getSearchSpaceSize(threeContainers, twoCellSizes, threeTraversals, twoLoadEstimators, oneDataLayout, oneNewton3);
 
   EXPECT_GE(size, 6);
   EXPECT_LE(size, 12);

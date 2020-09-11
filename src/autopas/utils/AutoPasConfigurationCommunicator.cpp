@@ -6,8 +6,8 @@
 
 #include "AutoPasConfigurationCommunicator.h"
 
-#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
 #include "autopas/utils/Logger.h"
 

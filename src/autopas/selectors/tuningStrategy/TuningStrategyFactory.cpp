@@ -39,8 +39,9 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
 
     case MPIStrategyOption::divideAndConquer: {
 #ifndef AUTOPAS_MPI
-      utils::ExceptionHandler::exception("Cannot use the divideAndConquer search-strategy without AUTOPAS_MPI=ON."
-                                         "aborting.");
+      utils::ExceptionHandler::exception(
+          "Cannot use the divideAndConquer search-strategy without AUTOPAS_MPI=ON."
+          "aborting.");
 #endif
       if (tuningStrategyOption == TuningStrategyOption::activeHarmony && getenv("HARMONY_HOST") != nullptr) {
         // rank 0 will solely set up the entire search, so we cannot divide the search space
@@ -54,7 +55,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
         fallbackCellSizeFactors = std::make_unique<autopas::NumberSetFinite<double>>(allowedCellSizeFactors.getAll());
       } else {
         fallbackCellSizeFactors = std::make_unique<autopas::NumberInterval<double>>(allowedCellSizeFactors.getMin(),
-                                                                   allowedCellSizeFactors.getMax());
+                                                                                    allowedCellSizeFactors.getMax());
       }
       fallbackTraversals = std::set<autopas::TraversalOption>(allowedTraversals);
       fallbackLoadEstimators = std::set<autopas::LoadEstimatorOption>(allowedLoadEstimators);
@@ -124,10 +125,10 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     case TuningStrategyOption::predictiveTuning: {
-      tuningStrategy = std::make_unique<PredictiveTuning>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
-                                                allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
-                                                relativeOptimum, maxTuningPhasesWithoutTest, relativeBlacklistRange, evidenceFirstPrediction,
-                                                extrapolationMethodOption);
+      tuningStrategy = std::make_unique<PredictiveTuning>(
+          allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals, allowedLoadEstimators,
+          allowedDataLayouts, allowedNewton3Options, relativeOptimum, maxTuningPhasesWithoutTest,
+          relativeBlacklistRange, evidenceFirstPrediction, extrapolationMethodOption);
       break;
     }
 

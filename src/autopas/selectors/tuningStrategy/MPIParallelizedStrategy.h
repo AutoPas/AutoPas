@@ -9,10 +9,10 @@
 #include "TuningStrategyInterface.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
-#include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
-#include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
+#include "autopas/utils/WrapMPI.h"
 
 namespace autopas {
 
@@ -175,8 +175,8 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
       config = _tuningStrategy->getCurrentConfiguration();
       localOptimalTime = _tuningStrategy->getEvidence(config);
     }
-    _optimalConfiguration = utils::AutoPasConfigurationCommunicator::optimizeConfiguration(
-        _comm, config, localOptimalTime);
+    _optimalConfiguration =
+        utils::AutoPasConfigurationCommunicator::optimizeConfiguration(_comm, config, localOptimalTime);
 
     return false;
   }
@@ -202,12 +202,10 @@ void MPIParallelizedStrategy::setupFallbackOptions() {
   _configIterator = std::make_unique<utils::ConfigurationAndRankIteratorHandler>(
       _fallbackContainers, numbersSet, _fallbackTraversalOptions, _fallbackLoadEstimators, _fallbackDataLayouts,
       _fallbackNewton3s, _numFallbackConfigs, 1);
-  _optimalConfiguration = Configuration(*_configIterator->getContainerIterator(),
-                                        *_configIterator->getCellSizeFactorIterator(),
-                                        *_configIterator->getTraversalIterator(),
-                                        *_configIterator->getLoadEstimatorIterator(),
-                                        *_configIterator->getDataLayoutIterator(),
-                                        *_configIterator->getNewton3Iterator());
+  _optimalConfiguration =
+      Configuration(*_configIterator->getContainerIterator(), *_configIterator->getCellSizeFactorIterator(),
+                    *_configIterator->getTraversalIterator(), *_configIterator->getLoadEstimatorIterator(),
+                    *_configIterator->getDataLayoutIterator(), *_configIterator->getNewton3Iterator());
 }
 
 void MPIParallelizedStrategy::nextFallbackConfig() {
@@ -216,12 +214,10 @@ void MPIParallelizedStrategy::nextFallbackConfig() {
     // All strategies have been searched through and rejected.
     utils::ExceptionHandler::exception("MPIParallelizedStrategy: No viable configurations were provided.");
   }
-  _optimalConfiguration = Configuration(*_configIterator->getContainerIterator(),
-                                        *_configIterator->getCellSizeFactorIterator(),
-                                        *_configIterator->getTraversalIterator(),
-                                        *_configIterator->getLoadEstimatorIterator(),
-                                        *_configIterator->getDataLayoutIterator(),
-                                        *_configIterator->getNewton3Iterator());
+  _optimalConfiguration =
+      Configuration(*_configIterator->getContainerIterator(), *_configIterator->getCellSizeFactorIterator(),
+                    *_configIterator->getTraversalIterator(), *_configIterator->getLoadEstimatorIterator(),
+                    *_configIterator->getDataLayoutIterator(), *_configIterator->getNewton3Iterator());
 }
 
 }  // namespace autopas
