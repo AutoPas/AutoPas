@@ -56,7 +56,7 @@ class VerletClusterListsRebuilder {
         _towers(towers),
         _towerSideLength(clusterList.getTowerSideLength()),
         _interactionLengthInTowers(clusterList.getNumTowersPerInteractionLength()),
-        _towerSideLengthReciprocal(1 / _towerSideLength),
+        _towerSideLengthReciprocal(clusterList.getTowerSideLengthReciprocal()),
         _towersPerDim(clusterList.getTowersPerDimension()),
         _interactionLength(clusterList.getInteractionLength()),
         _interactionLengthSqr(_interactionLength * _interactionLength),

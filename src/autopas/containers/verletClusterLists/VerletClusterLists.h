@@ -429,6 +429,12 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   auto getTowerSideLength() const { return _towerSideLength; }
 
   /**
+   * Returns 1 / towerSideLength
+   * @return
+   */
+  auto getTowerSideLengthReciprocal() const { return _towerSideLengthReciprocal; }
+
+  /**
    * Returns the number of grids per dimension on the container.
    * @return the number of grids per dimension on the container.
    */
