@@ -36,6 +36,13 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.init();
 }
 
+/**
+ * Iterate over all particles, generate a region iterator for each that spans a tiny space around them and check if this
+ * region iterator finds exactly this particle.
+ * @tparam AutoPasT
+ * @param autoPas
+ * @param behavior
+ */
 template <typename AutoPasT>
 void checkRegionIteratorForAllParticles(AutoPasT &autoPas, autopas::IteratorBehavior behavior) {
   for (auto iter1 = autoPas.begin(behavior); iter1.isValid(); ++iter1) {
@@ -45,9 +52,9 @@ void checkRegionIteratorForAllParticles(AutoPasT &autoPas, autopas::IteratorBeha
 
     for (auto iter2 = autoPas.getRegionIterator(low, up, behavior); iter2.isValid(); ++iter2) {
       ++count;
-      EXPECT_EQ(&(*iter1), &(*iter2));
+      EXPECT_EQ(&(*iter1), &(*iter2)) << "Wrong particle found";
     }
-    EXPECT_EQ(count, 1u);
+    EXPECT_EQ(count, 1u) << "The following particle was not found exactly once:\n" << iter1->toString();
   }
 }
 
