@@ -49,6 +49,16 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        c04                         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        c04SoA                      (SoA, newton3 <=> noNewton3)                         = 2
   //                        c04HCP                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  // ReferenceLinkedCells:  c08 traversal               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        sliced                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        balanced-sliced             (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
+  //                        cSliced                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        c18                         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        c01                         (AoS <=> SoA, noNewton3)                             = 2
+  //                        c01-combined-SoA            (SoA, noNewton3)                                     = 1
+  //                        c04                         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        c04SoA                      (SoA, newton3 <=> noNewton3)                         = 2
+  //                        c04HCP                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   // VerletLists:           verlet-lists                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   // VerletListsCells:      verlet-sliced               (AoS, newton3 <=> noNewton3)                         = 2
   //                        balanced-verlet-sliced      (AoS, newton3 <=> noNewton3, 3 heuristics)           = 6
@@ -61,26 +71,27 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VarVerletListsAsBuild: var-verlet-lists-as-build   (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   // VerletClusterCells:    verlet-cluster-cells        (AoS, newton3 <=> noNewton3)                         = 2
   //                                                                                                    --------
-  //                                                                                                          72
+  //                                                                                                         109
   // Additional with cuda
   // Direct Sum:            directSum traversal         (Cuda, newton3 <=> noNewton3)                        = 2
   // LinkedCells:           c01Cuda traversal           (Cuda, newton3 <=> noNewton3)                        = 2
+  // ReferenceLinkedCells:  c01Cuda traversal           (Cuda, newton3 <=> noNewton3)                        = 2
   // VerletClusterCells:    verlet-cluster-cells traversal (Cuda, newton3 <=> noNewton3)                     = 2
   //                                                                                                    --------
-  //                                                                                                          78
+  //                                                                                                         117
   //
   // currently disabled:
   // NORMAL:
   //                                                                                                    --------
-  // TOTAL:                                                                                                   78
+  // TOTAL:                                                                                                  117
   //
   // CUDA:
   // C01CudaTraversal for enabled N3, see #420                                                                -1
   //                                                                                                    --------
-  // TOTAL:                                                                                                   77
+  // TOTAL:                                                                                                  116
 
 #ifndef AUTOPAS_CUDA
-  const size_t expectedNumberOfIterations = 72 * maxSamples + 1;
+  const size_t expectedNumberOfIterations = 109 * maxSamples + 1;
 #else
   const size_t expectedNumberOfIterations = 77 * maxSamples + 1;
 #endif
