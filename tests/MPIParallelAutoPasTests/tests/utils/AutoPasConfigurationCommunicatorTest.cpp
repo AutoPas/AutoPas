@@ -158,3 +158,62 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfinit
   EXPECT_GE(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1) - error);
   EXPECT_LE(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1) + error);
 }
+
+TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeOneConfigPerRank) {
+  int rank, commSize;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &commSize);
+
+  std::set<ContainerOption> oneContainer{ContainerOption::linkedCells};
+  std::set<double> cellSizeSet;
+  for(int i = 0; i < commSize; ++i) {
+    cellSizeSet.emplace(1.0 + i/100.0);
+  }
+  autopas::NumberSetFinite rankManyCellSizes(cellSizeSet);
+  std::set<TraversalOption> oneTraversal{TraversalOption::lc_c08};
+  std::set<LoadEstimatorOption> oneLoadEstimator{LoadEstimatorOption::none};
+  std::set<DataLayoutOption> oneDataLayout{DataLayoutOption::aos};
+  std::set<Newton3Option> oneNewton3{Newton3Option::disabled};
+
+  distributeConfigurations(oneContainer, rankManyCellSizes, oneTraversal, oneLoadEstimator, oneDataLayout,oneNewton3,
+                           rank, commSize);
+  size_t size = getSearchSpaceSize(oneContainer, rankManyCellSizes, oneTraversal, oneLoadEstimator, oneDataLayout,
+                                   oneNewton3);
+
+  EXPECT_EQ(size, 1);
+  double error = 0.001;
+  EXPECT_GE(rankManyCellSizes.getAll(), std::set<double>{1.0 + rank/100.0 - error});
+  EXPECT_LE(rankManyCellSizes.getAll(), std::set<double>{1.0 + rank/100.0 + error});
+}
+
+TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeValid) {
+  std::set<ContainerOption> threeContainers{ContainerOption::linkedCells, ContainerOption::verletClusterCells,
+                                            ContainerOption::directSum};
+  autopas::NumberSetFinite<double> twoCellSizes{1, 1.2};
+  std::set<TraversalOption> threeTraversals{TraversalOption::lc_c08, TraversalOption::vcc_cluster_iteration_cuda,
+                                            TraversalOption::ds_sequential};
+  std::set<LoadEstimatorOption> twoLoadEstimators{LoadEstimatorOption::none,
+                                                  LoadEstimatorOption::squaredParticlesPerCell};
+  std::set<DataLayoutOption> oneDataLayout{DataLayoutOption::aos};
+  std::set<Newton3Option> oneNewton3{Newton3Option::disabled};
+
+  size_t size = getSearchSpaceSize(threeContainers, twoCellSizes, threeTraversals, twoLoadEstimators, oneDataLayout,
+                                   oneNewton3);
+
+  EXPECT_GE(size, 6);
+  EXPECT_LE(size, 12);
+}
+
+TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeInvalid) {
+  std::set<ContainerOption> twoContainers{ContainerOption::linkedCells, ContainerOption::verletListsCells};
+  autopas::NumberSetFinite<double> twoCellSizes{1, 1.2};
+  std::set<TraversalOption> twoTraversals{TraversalOption::ds_sequential, TraversalOption::vcl_cluster_iteration};
+  std::set<LoadEstimatorOption> oneLoadEstimators{LoadEstimatorOption::neighborListLength};
+  std::set<DataLayoutOption> oneDataLayout{DataLayoutOption::aos};
+  std::set<Newton3Option> oneNewton3{Newton3Option::disabled};
+
+  size_t size =
+      getSearchSpaceSize(twoContainers, twoCellSizes, twoTraversals, oneLoadEstimators, oneDataLayout, oneNewton3);
+
+  EXPECT_EQ(size, 0);
+}
