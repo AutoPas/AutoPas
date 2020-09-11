@@ -63,11 +63,6 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   constexpr static double suggestedMaxDistance = 7.;
 
-  /**
-   * Number of cellSizeFactors sampled during the FullSearch phase.
-   */
-  constexpr static size_t cellSizeFactorSampleSize = 1;
-
  public:
   /**
    * Constructor
@@ -112,9 +107,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _iterationScale(1. / (maxEvidence * iterationScalePerMaxEvidence)),
         _currentNumEvidence(0),
         _currentOptimalTime(std::numeric_limits<long>::max()),
-        _fullSearch(allowedContainerOptions, allowedCellSizeFactors.uniformSampleSet(cellSizeFactorSampleSize, _rng),
-                    allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-                    allowedNewton3Options) {
+        _fullSearch(allowedContainerOptions, {allowedCellSizeFactors.getMedian()}, allowedTraversalOptions,
+                    allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options) {
     if (predNumLHSamples <= 0) {
       utils::ExceptionHandler::exception(
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
