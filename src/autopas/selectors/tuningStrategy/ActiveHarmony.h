@@ -9,8 +9,8 @@
 #include <string>
 
 #include "TuningStrategyInterface.h"
+#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
 #include "autopas/selectors/Configuration.h"
 #include "hclient.h"
 

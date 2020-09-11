@@ -3,28 +3,41 @@
 import sys
 import plotly.graph_objects as go
 import re
+import os
 from numpy import double
 
 # THIS SCRIPT NEEDS AT LEAST PYTHON 3.8.
 # However, lesser version will probably fail due to invalid syntax instead of this assertion
 
 # ---------------------------------------------- Input ----------------------------------------------
-
-# help message
+outputfileType = "none"
 for arg in sys.argv[1:]:
     if "--help" in arg:
-        print("Usage: ./plotDiffPredictionTest.py OPTION path/To/mdFlex/std.out ...")
+        print("Usage: ./plotDiffPredictionTest.py OPTION FLAG path/To/mdFlex/std.out ...")
         print("Output options:\n "
               " relative - Shows the relative difference between prediction and test\n "
               " total    - Shows the total difference between prediction and test\n"
-              " both     - Shows the total and relative difference between prediction and test")
+              "Flags:\n "
+              " --png --jpeg --pdf - Plot is generated in the given file format")
         print("If no input is given the script does not work.")
         exit(0)
+    elif "--png" in arg:
+        outputfileType = "png"
+    elif "--jpeg" in arg:
+        outputfileType = "jpeg"
+    elif "--pdf" in arg:
+        outputfileType = "pdf"
 
 # take all input files as source for a plot
-if len(sys.argv) > 2:
+if outputfileType != "none" and len(sys.argv) > 3:
     option = sys.argv[1]
-    if option != "relative" and option != "total" and option != "both":
+    if option != "relative" and option != "total" and sys.argv[2] != "--" + outputfileType:
+        print("Error: Wrong input given! ./plotDiffPredictionTest.py --help to see what is needed.")
+        sys.exit(-1)
+    datafiles = sys.argv[3:]
+elif len(sys.argv) > 2 and outputfileType == "none":
+    option = sys.argv[1]
+    if option != "relative" and option != "total":
         print("Error: Wrong input given! ./plotDiffPredictionTest.py --help to see what is needed.")
         sys.exit(-1)
     datafiles = sys.argv[2:]
@@ -53,7 +66,7 @@ for datafile in datafiles:
         regexNoPrediction = '.* No traversal time prediction for +({.*})'
         regexCollectedTimes = '.* Collected times for +({.*})..*\[(.*)\].*: *([0-9]+)'
         regexIter = '.*Iteration +([0-9]+)'
-        regexTuning = '.*Tuning: +([a-z]+)'
+        regexTuning = '.*tuning: +([a-z]+)'
 
         for line in file.readlines():
 
@@ -106,36 +119,91 @@ for datafile in datafiles:
         continue
 
     # create figure and define layout
+    text = "Total"
+    if option == "relative":
+        text = "Relative"
+
     fig = go.Figure(
         layout=dict(
             showlegend=True,
             title_text=datafile,
             xaxis_title_text="Iteration",
-            yaxis_title_text=" Difference Predicted time - Tested time per Iteration",
+            yaxis_title_text=text + " difference between predicted time and tested time per iteration",
         ),
     )
 
-    # plotting predictions
-    for configuration in configurationDiffTestPredictionTotal:
-        allDiffTotal = []
-        allIterationTotal = []
-        if "total" == option or "both" == option:
+    colors = {
+        "DirectSum": '#808000',  # olive
+        "LinkedCells": '#FF0000',  # red
+        "VerletLists": '#008000',  # green
+        "VerletListsCells": '#0000FF',  # blue
+        "VerletClusterLists": '#4B0082',  # indigo
+        "VarVerletListsAsBuild": '#FFA500',  # orange
+        "VerletClusterCells": "#90EE90"  # lightgreen
+    }
 
+    shown = {
+        "DirectSum": False,
+        "LinkedCells": False,
+        "VerletLists": False,
+        "VerletListsCells": False,
+        "VerletClusterLists": False,
+        "VarVerletListsAsBuild": False,
+        "VerletClusterCells": False
+    }
+
+    # plotting predictions
+    i = 1
+    for configuration in configurationDiffTestPredictionTotal:
+        regexContainer = '.*Container: +(.*) , Cell.*'
+        regexTraversal = '.*Traversal: +(.*) , Load.*'
+        regexDataLayout = '.*Data Layout: +(.*) , Newton.*'
+        regexNewton3 = '.*Newton 3: +(.*)}.*'
+
+        container = ""
+        if (match := re.search(regexContainer, configuration)) is not None:
+            container = match.group(1)
+
+        if "total" == option:
+            allDiffTotal = []
+            allIterationTotal = []
             for iteration, diff in configurationDiffTestPredictionTotal[configuration]:
                 allIterationTotal.append(iteration)
                 allDiffTotal.append(diff)
 
-            fig.add_trace(go.Scatter(x=allIterationTotal, y=allDiffTotal, mode='lines+markers',
-                                     name="Total Difference - " + configuration))
+            if not shown[container]:
+                fig.add_trace(
+                    go.Scatter(x=allIterationTotal, y=allDiffTotal, mode='lines+markers', legendgroup=container,
+                               line=dict(color=colors[container]), name=container))
+                shown[container] = True
+            else:
+                fig.add_trace(
+                    go.Scatter(x=allIterationTotal, y=allDiffTotal, mode='lines+markers', legendgroup=container,
+                               line=dict(color=colors[container]), name=container, showlegend=False))
 
-        allDiffRelative = []
-        allIterationRelative = []
-        if "relative" == option or "both" == option:
+        if "relative" == option:
+            allDiffRelative = []
+            allIterationRelative = []
             for iteration, diff in configurationDiffTestPredictionRelative[configuration]:
                 allIterationRelative.append(iteration)
                 allDiffRelative.append(diff)
 
-            fig.add_trace(go.Scatter(x=allIterationRelative, y=allDiffRelative, mode='lines+markers',
-                                     name="Realtive Difference - " + configuration))
+            if not shown[container]:
+                fig.add_trace(
+                    go.Scatter(x=allIterationRelative, y=allDiffRelative, mode='lines+markers', legendgroup=container,
+                               line=dict(color=colors[container]), name=container))
+                shown[container] = True
+            else:
+                fig.add_trace(
+                    go.Scatter(x=allIterationRelative, y=allDiffRelative, mode='lines+markers', legendgroup=container,
+                               line=dict(color=colors[container]), name=container, showlegend=False))
+                fig.update_yaxes(range=[0, 2])
+        i = i + 1
 
-    fig.show()
+    if outputfileType == "none":
+        fig.show()
+    else:
+        if not os.path.exists("images"):
+            os.mkdir("images")
+
+        fig.write_image("images/" + datafile + "." + outputfileType, scale=1.5)
