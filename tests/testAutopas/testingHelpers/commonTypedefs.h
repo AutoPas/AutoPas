@@ -37,6 +37,12 @@ using Molecule = autopas::MoleculeLJ<>;
  */
 using FMCell = autopas::FullParticleCell<Molecule>;
 
+/**
+ * Short for the Reference Particle Cell with the single center Lennard-Jones molecule
+ */
+using RMCell = autopas::ReferenceParticleCell<Molecule>;
+
+
 // M prefix for mocks
 /**
  * Short for Mock Functor
