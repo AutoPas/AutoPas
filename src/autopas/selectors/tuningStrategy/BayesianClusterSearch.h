@@ -14,8 +14,8 @@
 #include "FullSearch.h"
 #include "GaussianModel/GaussianCluster.h"
 #include "TuningStrategyInterface.h"
+#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
 #include "autopas/selectors/FeatureVectorEncoder.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
@@ -58,11 +58,6 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * can be increased if necessary.
    */
   constexpr static double suggestedMaxDistance = 7.;
-
-  /**
-   * Number of cellSizeFactors sampled during the FullSearch phase.
-   */
-  constexpr static size_t cellSizeFactorSampleSize = 1;
 
  public:
   /**
@@ -108,9 +103,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _iterationScale(1. / (maxEvidence * iterationScalePerMaxEvidence)),
         _currentNumEvidence(0),
         _currentOptimalTime(std::numeric_limits<long>::max()),
-        _fullSearch(allowedContainerOptions, allowedCellSizeFactors.uniformSampleSet(cellSizeFactorSampleSize, _rng),
-                    allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-                    allowedNewton3Options) {
+        _fullSearch(allowedContainerOptions, {allowedCellSizeFactors.getMedian()}, allowedTraversalOptions,
+                    allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options) {
     if (predNumLHSamples <= 0) {
       utils::ExceptionHandler::exception(
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");

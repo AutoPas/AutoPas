@@ -47,6 +47,48 @@ class ParticleBase {
    */
   virtual ~ParticleBase() = default;
 
+ protected:
+  /**
+   * Particle position as 3D coordinates.
+   */
+  std::array<floatType, 3> _r;
+
+  /**
+   * Particle velocity as 3D vector.
+   */
+  std::array<floatType, 3> _v;
+
+  /**
+   * Force the particle experiences as 3D vector.
+   */
+  std::array<floatType, 3> _f;
+
+  /**
+   * Particle id.
+   */
+  idType _id;
+
+  /**
+   * Defines the state of the ownership of the particle.
+   */
+  OwnershipState _ownershipState{OwnershipState::owned};
+
+ public:
+  /**
+   * Enums used as ids for accessing and creating a dynamically sized SoA.
+   */
+  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
+
+  /**
+   * The type for the soa storage.
+   * owned is currently used as a floatType to ease calculations within the functors.
+   */
+  using SoAArraysType =
+      typename autopas::utils::SoAType<decltype(_id), typename decltype(_r)::value_type,
+                                       typename decltype(_r)::value_type, typename decltype(_r)::value_type,
+                                       typename decltype(_f)::value_type, typename decltype(_f)::value_type,
+                                       typename decltype(_f)::value_type, decltype(_ownershipState)>::Type;
+
   /**
    * Equality operator for ParticleBase class.
    * @param rhs
@@ -182,11 +224,6 @@ class ParticleBase {
   void setOwnershipState(OwnershipState ownershipState) { _ownershipState = ownershipState; }
 
   /**
-   * Enums used as ids for accessing and creating a dynamically sized SoA.
-   */
-  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
-
-  /**
    * Floating Point Type used for this particle
    */
   using ParticleSoAFloatPrecision = floatType;
@@ -195,14 +232,6 @@ class ParticleBase {
    * Id Type used for this particle
    */
   using ParticleIdType = idType;
-
-  /**
-   * The type for the soa storage.
-   * owned is currently used as a floatType to ease calculations within the functors.
-   */
-  using SoAArraysType = typename autopas::utils::SoAType<idType /*id*/, floatType /*x*/, floatType /*y*/,
-                                                         floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                                         floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
@@ -295,32 +324,6 @@ class ParticleBase {
    */
   template <class T>
   friend void internal::markParticleAsDeleted(T &);
-
- protected:
-  /**
-   * Particle position as 3D coordinates.
-   */
-  std::array<double, 3> _r;
-
-  /**
-   * Particle velocity as 3D vector.
-   */
-  std::array<double, 3> _v;
-
-  /**
-   * Force the particle experiences as 3D vector.
-   */
-  std::array<double, 3> _f;
-
-  /**
-   * Particle id.
-   */
-  idType _id;
-
-  /**
-   * Defines the state of the ownership of the particle.
-   */
-  OwnershipState _ownershipState{OwnershipState::owned};
 };
 
 }  // namespace autopas

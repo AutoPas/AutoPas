@@ -27,7 +27,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto parsedOptions =
         autopas::SelectorStrategyOption::parseOptions(node[config.selectorStrategy.name].as<std::string>());
     if (parsedOptions.size() != 1) {
-      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one selector strategy option!");
+      throw std::runtime_error(
+          "YamlParser::parseYamlFile: Pass exactly one selector strategy option! Possible values:\n" +
+          autopas::utils::ArrayUtils::to_string(autopas::SelectorStrategyOption::getAllOptions(), "", {"(", ")"}));
     }
     config.selectorStrategy.value = *parsedOptions.begin();
   }
@@ -100,6 +102,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.maxTuningPhasesWithoutTest.name]) {
     config.maxTuningPhasesWithoutTest.value = node[config.maxTuningPhasesWithoutTest.name].as<unsigned int>();
   }
+  if (node[config.relativeBlacklistRange.name]) {
+    config.relativeBlacklistRange.value = node[config.relativeBlacklistRange.name].as<double>();
+  }
   if (node[config.evidenceFirstPrediction.name]) {
     config.evidenceFirstPrediction.value = node[config.evidenceFirstPrediction.name].as<unsigned int>();
   }
@@ -107,7 +112,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto parsedOptions =
         autopas::ExtrapolationMethodOption::parseOptions(node[config.extrapolationMethodOption.name].as<std::string>());
     if (parsedOptions.size() != 1) {
-      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one extrapolation method option!");
+      throw std::runtime_error(
+          "YamlParser::parseYamlFile: Pass exactly one extrapolation method option! Possible values:\n" +
+          autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), "", {"(", ")"}));
     }
     config.extrapolationMethodOption.value = *parsedOptions.begin();
   }
@@ -115,7 +122,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto parsedOptions =
         autopas::TuningStrategyOption::parseOptions(node[config.tuningStrategyOption.name].as<std::string>());
     if (parsedOptions.size() != 1) {
-      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one tuning strategy option!");
+      throw std::runtime_error(
+          "YamlParser::parseYamlFile: Pass exactly one tuning strategy option! Possible values:\n" +
+          autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions(), "", {"(", ")"}));
     }
     config.tuningStrategyOption.value = *parsedOptions.begin();
   }
@@ -123,7 +132,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto parsedOptions =
         autopas::AcquisitionFunctionOption::parseOptions(node[config.acquisitionFunctionOption.name].as<std::string>());
     if (parsedOptions.size() != 1) {
-      throw std::runtime_error("YamlParser::parseYamlFile: Pass exactly one acquisition function option!");
+      throw std::runtime_error(
+          "YamlParser::parseYamlFile: Pass exactly one acquisition function option! Possible values:\n" +
+          autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), "", {"(", ")"}));
     }
     config.acquisitionFunctionOption.value = *parsedOptions.begin();
   }
@@ -181,20 +192,26 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.vtkWriteFrequency.name]) {
     config.vtkWriteFrequency.value = node[config.vtkWriteFrequency.name].as<size_t>();
   }
-  if (node[config.objectsStr]) {
+  if (node[config.globalForce.name]) {
+    config.globalForce.value = {node[config.globalForce.name][0].as<double>(),
+                                node[config.globalForce.name][1].as<double>(),
+                                node[config.globalForce.name][2].as<double>()};
+  }
+  if (node[MDFlexConfig::objectsStr]) {
     // remove default objects
     config.cubeGridObjects.clear();
     config.cubeGaussObjects.clear();
     config.cubeUniformObjects.clear();
     config.sphereObjects.clear();
+    config.cubeClosestPackedObjects.clear();
     config.epsilonMap.value.clear();
     config.sigmaMap.value.clear();
     config.massMap.value.clear();
 
-    for (YAML::const_iterator objectIterator = node[config.objectsStr].begin();
-         objectIterator != node[config.objectsStr].end(); ++objectIterator) {
-      if (objectIterator->first.as<std::string>() == config.cubeGridObjectsStr) {
-        for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+    for (auto objectIterator = node[MDFlexConfig::objectsStr].begin();
+         objectIterator != node[MDFlexConfig::objectsStr].end(); ++objectIterator) {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGridObjectsStr) {
+        for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
           CubeGrid cubeGrid({it->second[MDFlexConfig::velocityStr][0].as<double>(),
                              it->second[MDFlexConfig::velocityStr][1].as<double>(),
                              it->second[MDFlexConfig::velocityStr][2].as<double>()},
@@ -217,8 +234,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
         continue;
       }
-      if (objectIterator->first.as<std::string>() == config.cubeGaussObjectsStr) {
-        for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGaussObjectsStr) {
+        for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
           CubeGauss cubeGauss(
               {it->second[MDFlexConfig::velocityStr][0].as<double>(),
                it->second[MDFlexConfig::velocityStr][1].as<double>(),
@@ -246,8 +263,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
         continue;
       }
-      if (objectIterator->first.as<std::string>() == config.cubeUniformObjectsStr) {
-        for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeUniformObjectsStr) {
+        for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
           CubeUniform cubeUniform(
               {it->second[MDFlexConfig::velocityStr][0].as<double>(),
                it->second[MDFlexConfig::velocityStr][1].as<double>(),
@@ -269,8 +286,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
         continue;
       }
-      if (objectIterator->first.as<std::string>() == config.sphereObjectsStr) {
-        for (YAML::const_iterator it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::sphereObjectsStr) {
+        for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
           Sphere sphere({it->second[MDFlexConfig::velocityStr][0].as<double>(),
                          it->second[MDFlexConfig::velocityStr][1].as<double>(),
                          it->second[MDFlexConfig::velocityStr][2].as<double>()},
@@ -283,6 +300,28 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                         it->second[MDFlexConfig::sphereRadiusStr].as<int>(),
                         it->second[config.particleSpacing.name].as<double>());
           config.sphereObjects.emplace_back(sphere);
+          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+                                 it->second[config.epsilonMap.name].as<double>(),
+                                 it->second[config.sigmaMap.name].as<double>(),
+                                 it->second[config.massMap.name].as<double>());
+        }
+        continue;
+      }
+      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeClosestPackedObjectsStr) {
+        for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+          CubeClosestPacked cubeClosestPacked(
+              {it->second[MDFlexConfig::velocityStr][0].as<double>(),
+               it->second[MDFlexConfig::velocityStr][1].as<double>(),
+               it->second[MDFlexConfig::velocityStr][2].as<double>()},
+              it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+              it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
+              it->second[config.massMap.name].as<double>(), it->second[config.particleSpacing.name].as<double>(),
+              {it->second[config.boxLength.name][0].as<double>(), it->second[config.boxLength.name][1].as<double>(),
+               it->second[config.boxLength.name][2].as<double>()},
+              {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
+               it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
+               it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
+          config.cubeClosestPackedObjects.emplace_back(cubeClosestPacked);
           config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
                                  it->second[config.epsilonMap.name].as<double>(),
                                  it->second[config.sigmaMap.name].as<double>(),
