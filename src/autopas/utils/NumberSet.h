@@ -106,6 +106,12 @@ class NumberSet {
    * @return samples ordered set of points
    */
   virtual std::set<Number> uniformSampleSet(size_t n, Random &rng) const = 0;
+
+  /**
+   * Get the median of the set.
+   * @return
+   */
+  virtual Number getMedian() const = 0;
 };
 
 }  // namespace autopas
