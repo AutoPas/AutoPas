@@ -43,6 +43,12 @@ class ParticleVector {
                           particleListImp.end());
   }
 
+    void deleteDummyParticles() {
+        particleListImp.erase(std::remove_if(particleListImp.begin(), particleListImp.end(),
+                                             [](const auto &particle) { return particle.isDummy(); }),
+                              particleListImp.end());
+    }
+
   /**
    * Add a Particle to the data structure.
    * @param value A reference to the value to be stored

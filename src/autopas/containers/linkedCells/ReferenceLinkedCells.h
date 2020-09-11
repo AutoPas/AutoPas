@@ -176,6 +176,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
 
   std::vector<ParticleType> updateContainer() override {
     this->deleteHaloParticles();
+
     std::vector<ParticleType> invalidParticles;
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -187,6 +188,9 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
 #pragma omp for
 #endif  // AUTOPAS_OPENMP
       for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
+        // Delete dummy particles of each cell.
+        this->getCells()[cellId].deleteDummyParticles();
+
         // if empty
         if (not this->getCells()[cellId].isNotEmpty()) continue;
 
@@ -221,6 +225,8 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
                                 myInvalidNotOwnedParticles.end());
       }
     }
+_particleList.deleteDummyParticles();
+updateDirtyParticleReferences();
     return invalidParticles;
   }
 
