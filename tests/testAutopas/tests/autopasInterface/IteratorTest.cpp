@@ -119,10 +119,11 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
     size_t count = 0;
     for (auto iter = autoPasRef.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       ++count;
-      EXPECT_TRUE(iter->isOwned());
+      EXPECT_TRUE(iter->isOwned()) << "Iterator: Found a particle that is not owned while looking only for owned ones!";
     }
 
-    EXPECT_EQ(count, numParticles1dOwned * numParticles1dOwned * numParticles1dOwned);
+    EXPECT_EQ(count, numParticles1dOwned * numParticles1dOwned * numParticles1dOwned)
+        << "Iterator: Found incorrect number of owned particles!";
   }
 
   // check number of halo particles
@@ -130,11 +131,13 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
     size_t count = 0;
     for (auto iter = autoPasRef.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
       ++count;
-      EXPECT_FALSE(iter->isOwned());
+      EXPECT_FALSE(iter->isOwned())
+          << "Iterator: Found a particle that is owned while looking only for not owned ones!";
     }
 
     EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal -
-                         numParticles1dOwned * numParticles1dOwned * numParticles1dOwned);
+                         numParticles1dOwned * numParticles1dOwned * numParticles1dOwned)
+        << "Iterator: Found incorrect number of halo only particles!";
   }
 
   // check number of particles
@@ -143,7 +146,8 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
     for (auto iter = autoPasRef.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
       ++count;
     }
-    EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal);
+    EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal)
+        << "Iterator: Found incorrect number of halo + owned particles!";
   }
 
   // check number of halo particles for region iterator
@@ -152,11 +156,13 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
     for (auto iter = autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloOnly);
          iter.isValid(); ++iter) {
       ++count;
-      EXPECT_FALSE(iter->isOwned());
+      EXPECT_FALSE(iter->isOwned())
+          << "RegionIterator: Found a particle that is owned while looking only for not owned ones!";
     }
 
     EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal -
-                         numParticles1dOwned * numParticles1dOwned * numParticles1dOwned);
+                         numParticles1dOwned * numParticles1dOwned * numParticles1dOwned)
+        << "RegionIterator: Found incorrect number of halo only particles!";
   }
 
   // check number of particles for region iterator
@@ -166,7 +172,8 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
          iter.isValid(); ++iter) {
       ++count;
     }
-    EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal);
+    EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal)
+        << "RegionIterator: Found incorrect number of halo + owned particles!";
   }
 
   // check number of owned particles for region iterator
@@ -175,9 +182,12 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
     for (auto iter = autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::ownedOnly);
          iter.isValid(); ++iter) {
       ++count;
+      EXPECT_TRUE(iter->isOwned())
+          << "RegionIterator: Found a particle that is not owned while looking only for owned ones!";
     }
 
-    EXPECT_EQ(count, numParticles1dOwned * numParticles1dOwned * numParticles1dOwned);
+    EXPECT_EQ(count, numParticles1dOwned * numParticles1dOwned * numParticles1dOwned)
+        << "RegionIterator: Found incorrect number of owned particles!";
   }
 
   // check all particles are in region iterator of their position, ownedOnly
