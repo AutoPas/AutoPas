@@ -45,7 +45,7 @@ class TouchableParticle : public autopas::Particle {
    */
   using SoAArraysType =
       typename autopas::utils::SoAType<TouchableParticle *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
-                                       double /*fx*/, double /*fy*/, double /*fz*/, size_t /*typeid*/,
+                                       double /*fx*/, double /*fy*/, double /*fz*/,
                                        autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
@@ -78,6 +78,36 @@ class TouchableParticle : public autopas::Particle {
       autopas::utils::ExceptionHandler::exception("ParticleBase::get() unknown attribute {}", attribute);
     }
   }
+
+    /**
+     * Setter, which allows set an attribute using the corresponding attribute name (defined in AttributeNames).
+     * @tparam attribute Attribute name.
+     * @param value New value of the requested attribute.
+     * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
+     */
+    template <AttributeNames attribute>
+    constexpr void set(
+            typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type value) {
+        if constexpr (attribute == AttributeNames::id) {
+            setID(value);
+        } else if constexpr (attribute == AttributeNames::posX) {
+            _r[0] = value;
+        } else if constexpr (attribute == AttributeNames::posY) {
+            _r[1] = value;
+        } else if constexpr (attribute == AttributeNames::posZ) {
+            _r[2] = value;
+        } else if constexpr (attribute == AttributeNames::forceX) {
+            _f[0] = value;
+        } else if constexpr (attribute == AttributeNames::forceY) {
+            _f[1] = value;
+        } else if constexpr (attribute == AttributeNames::forceZ) {
+            _f[2] = value;
+        } else if constexpr (attribute == AttributeNames::ownershipState) {
+            this->_ownershipState = value;
+        } else {
+            autopas::utils::ExceptionHandler::exception("TouchableParticle::set() unknown attribute {}", attribute);
+        }
+    }
 
   /**
    * Touch the particle.
