@@ -429,7 +429,7 @@ class VerletClusterListsRebuilder {
 
     for (int dim = 0; dim < 2; dim++) {
       const auto towerDimIndex =
-          (static_cast<long int>(floor((location[dim] - _haloBoxMin[dim]) * _towerSideLengthReciprocal))) + 1l;
+          (static_cast<long int>(floor((location[dim] - _haloBoxMin[dim]) * _towerSideLengthReciprocal)));
       const auto towerDimIndexNonNegative = static_cast<size_t>(std::max(towerDimIndex, 0l));
       const auto towerDimIndexNonLargerValue = std::min(towerDimIndexNonNegative, _towersPerDim[dim] - 1);
       towerIndex2D[dim] = towerDimIndexNonLargerValue;
