@@ -52,6 +52,14 @@ class SoAStorage {
     return std::get<soaAttribute>(soaStorageTuple);
   }
 
+  /**
+   * Getter for the internal tuple.
+   * @return
+   */
+  inline constexpr const auto &getTuple() const {
+    return soaStorageTuple;
+  }
+
  private:
   SoAArraysType soaStorageTuple;
 };

@@ -176,7 +176,11 @@ class SoA {
    *
    * @return Number of particles.
    */
-  inline size_t getNumParticles() const { return soaStorage.template get<0>().size(); }
+  inline size_t getNumParticles() const {
+    size_t maxLength = 0;
+    utils::TupleUtils::for_each(soaStorage.getTuple(), [&](auto &v) { maxLength = std::max(maxLength, v.size()); });
+    return maxLength;
+  }
 
   /**
    * delete all particles in the soa
