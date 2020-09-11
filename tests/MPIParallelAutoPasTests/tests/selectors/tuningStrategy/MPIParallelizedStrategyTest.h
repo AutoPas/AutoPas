@@ -11,7 +11,7 @@
 
 #include "AutoPasMPITestBase.h"
 #include "autopas/selectors/tuningStrategy/ActiveHarmony.h"
-#include "autopas/selectors/tuningStrategy/BayesianClusterSearch.h"
+#include "autopas/selectors/tuningStrategy/BayesianSearch.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopas/selectors/tuningStrategy/MPIParallelizedStrategy.h"
 #include "autopas/selectors/tuningStrategy/RandomSearch.h"

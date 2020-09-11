@@ -128,6 +128,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
                                                 allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
                                                 relativeOptimum, maxTuningPhasesWithoutTest, relativeBlacklistRange, evidenceFirstPrediction,
                                                 extrapolationMethodOption);
+      break;
     }
 
     default: {

@@ -36,11 +36,11 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * @param fallbackNewton3s
    */
   MPIParallelizedStrategy(std::unique_ptr<TuningStrategyInterface> tuningStrategy, const AutoPas_MPI_Comm comm,
-                          std::set<autopas::ContainerOption> &fallbackContainers,
-                          std::set<autopas::TraversalOption> &fallbackTraversals,
-                          std::set<autopas::LoadEstimatorOption> &fallbackLoadEstimators,
-                          std::set<autopas::DataLayoutOption> &fallbackDataLayouts,
-                          std::set<autopas::Newton3Option> &fallbackNewton3s)
+                          const std::set<autopas::ContainerOption> &fallbackContainers,
+                          const std::set<autopas::TraversalOption> &fallbackTraversals,
+                          const std::set<autopas::LoadEstimatorOption> &fallbackLoadEstimators,
+                          const std::set<autopas::DataLayoutOption> &fallbackDataLayouts,
+                          const std::set<autopas::Newton3Option> &fallbackNewton3s)
       : _tuningStrategy(std::move(tuningStrategy)),
         _comm(comm),
         _fallbackContainers(fallbackContainers),

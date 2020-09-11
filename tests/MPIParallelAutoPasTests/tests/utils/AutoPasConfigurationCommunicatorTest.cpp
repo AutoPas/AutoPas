@@ -10,7 +10,7 @@ using namespace autopas::utils::AutoPasConfigurationCommunicator;
 using namespace autopas;
 
 TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
-  Configuration config = Configuration(ContainerOption::directSum, 1.2, TraversalOption::sliced,
+  Configuration config = Configuration(ContainerOption::directSum, 1.2, TraversalOption::lc_sliced,
                                        LoadEstimatorOption::none, DataLayoutOption::cuda, Newton3Option::disabled);
   Configuration passedConfig = deserializeConfiguration(serializeConfiguration(config));
   EXPECT_EQ(passedConfig, config);
@@ -21,19 +21,19 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   Configuration config =
-      Configuration(ContainerOption::directSum, 1 + rank, TraversalOption::sliced,
+      Configuration(ContainerOption::directSum, 1 + rank, TraversalOption::lc_sliced,
                     LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled);
   Configuration optimized = optimizeConfiguration(MPI_COMM_WORLD, config, rank);
 
   EXPECT_EQ(optimized,
-            Configuration(ContainerOption::directSum, 1, TraversalOption::sliced,
+            Configuration(ContainerOption::directSum, 1, TraversalOption::lc_sliced,
                           LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled));
 }
 
 TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCellSizeFactors) {
   std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists, ContainerOption::linkedCells};
   NumberSetFinite<double> cellSizeFactors{0.9, 1.0, 1.1};
-  std::set<TraversalOption> traversalOptions{TraversalOption::verletClusters, TraversalOption::sliced};
+  std::set<TraversalOption> traversalOptions{TraversalOption::vcl_cluster_iteration, TraversalOption::lc_sliced};
   std::set<LoadEstimatorOption> loadEstimatorOptions{LoadEstimatorOption::none,
                                                      LoadEstimatorOption::squaredParticlesPerCell};
   std::set<DataLayoutOption> dataLayoutOptions{DataLayoutOption::aos, DataLayoutOption::soa};
@@ -60,7 +60,7 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
 TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCellSizeFactorsFakeMPI) {
   std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists, ContainerOption::linkedCells};
   NumberSetFinite<double> cellSizeFactors{0.9, 1.0, 1.1};
-  std::set<TraversalOption> traversalOptions{TraversalOption::verletClusters, TraversalOption::sliced};
+  std::set<TraversalOption> traversalOptions{TraversalOption::vcl_cluster_iteration, TraversalOption::lc_sliced};
   std::set<LoadEstimatorOption> loadEstimatorOptions{LoadEstimatorOption::none};
   std::set<DataLayoutOption> dataLayoutOptions{DataLayoutOption::aos, DataLayoutOption::soa};
   std::set<Newton3Option> newton3Options{Newton3Option::enabled, Newton3Option::disabled};
@@ -79,7 +79,7 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
                            newton3Tmp, 0, 4);
   EXPECT_EQ(containersTmp, std::set<ContainerOption>{ContainerOption::linkedCells});
   EXPECT_EQ(cellSizeFactorsTmp.getAll(), firstAndSecondCellSizes);
-  EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::sliced});
+  EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::lc_sliced});
   EXPECT_EQ(loadEstimatorTmp, std::set<LoadEstimatorOption>{LoadEstimatorOption::none});
   EXPECT_EQ(dataLayoutTmp, dataLayoutOptions);
   EXPECT_EQ(newton3Tmp, newton3Options);
@@ -96,7 +96,7 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
                            newton3Tmp, 1, 4);
   EXPECT_EQ(containersTmp, std::set<ContainerOption>{ContainerOption::linkedCells});
   EXPECT_EQ(cellSizeFactorsTmp.getAll(), secondAndThirdCellSizes);
-  EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::sliced});
+  EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::lc_sliced});
   EXPECT_EQ(loadEstimatorTmp, std::set<LoadEstimatorOption>{LoadEstimatorOption::none});
   EXPECT_EQ(dataLayoutTmp, dataLayoutOptions);
   EXPECT_EQ(newton3Tmp, newton3Options);
@@ -113,7 +113,7 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
                            newton3Tmp, 2, 4);
   EXPECT_EQ(containersTmp, std::set<ContainerOption>{ContainerOption::verletClusterLists});
   EXPECT_EQ(cellSizeFactorsTmp.getAll(), firstAndSecondCellSizes);
-  EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::verletClusters});
+  EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::vcl_cluster_iteration});
   EXPECT_EQ(loadEstimatorTmp, std::set<LoadEstimatorOption>{LoadEstimatorOption::none});
   EXPECT_EQ(dataLayoutTmp, dataLayoutOptions);
   EXPECT_EQ(newton3Tmp, newton3Options);
@@ -130,7 +130,7 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
                            newton3Tmp, 3, 4);
   EXPECT_EQ(containersTmp, std::set<ContainerOption>{ContainerOption::verletClusterLists});
   EXPECT_EQ(cellSizeFactorsTmp.getAll(), secondAndThirdCellSizes);
-  EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::verletClusters});
+  EXPECT_EQ(traversalsTmp, std::set<TraversalOption>{TraversalOption::vcl_cluster_iteration});
   EXPECT_EQ(loadEstimatorTmp, std::set<LoadEstimatorOption>{LoadEstimatorOption::none});
   EXPECT_EQ(dataLayoutTmp, dataLayoutOptions);
   EXPECT_EQ(newton3Tmp, newton3Options);
@@ -139,7 +139,7 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
 TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfiniteCellSizeFactors) {
   std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists};
   NumberInterval<double> cellSizeFactors{0.8, 1.2};
-  std::set<TraversalOption> traversalOptions{TraversalOption::verletClusters};
+  std::set<TraversalOption> traversalOptions{TraversalOption::vcl_cluster_iteration};
   std::set<LoadEstimatorOption> loadEstimatorOptions{LoadEstimatorOption::squaredParticlesPerCell};
   std::set<DataLayoutOption> dataLayoutOptions{DataLayoutOption::aos};
   std::set<Newton3Option> newton3Options{Newton3Option::enabled};
