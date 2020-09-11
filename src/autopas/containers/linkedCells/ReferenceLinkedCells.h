@@ -134,7 +134,6 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    traversal;
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ReferenceCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ReferenceCell> *>(traversal);
