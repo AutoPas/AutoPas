@@ -131,7 +131,6 @@ class VerletClusterListsRebuilder {
     }
   }
 
- protected:
   /**
    * Removes previously saved neighbors from clusters and sets the positions of the dummy particles to inside of the
    * cluster. The latter reduces the amount of calculated interaction partners.
@@ -414,24 +413,36 @@ class VerletClusterListsRebuilder {
    * @return Tower reference.
    */
   auto &getTower(std::array<double, 3> location) {
-    std::array<size_t, 2> towerIndex{};
+    auto [towerIndexX, towerIndexY] = getTowerCoordinates(location);
+    return getTower(towerIndexX, towerIndexY);
+  }
+
+  /**
+   * Returns the coordinates of the tower in the tower grid the given 3D coordinates are in.
+   * If the location is outside of the domain, the tower nearest tower is returned.
+   *
+   * @param location The 3D coordinates.
+   * @return Tower reference.
+   */
+  std::array<size_t, 2> getTowerCoordinates(std::array<double, 3> location) {
+    std::array<size_t, 2> towerIndex2D{};
 
     for (int dim = 0; dim < 2; dim++) {
       const auto towerDimIndex =
           (static_cast<long int>(floor((location[dim] - _haloBoxMin[dim]) * _towerSideLengthReciprocal))) + 1l;
       const auto towerDimIndexNonNegative = static_cast<size_t>(std::max(towerDimIndex, 0l));
       const auto towerDimIndexNonLargerValue = std::min(towerDimIndexNonNegative, _towersPerDim[dim] - 1);
-      towerIndex[dim] = towerDimIndexNonLargerValue;
+      towerIndex2D[dim] = towerDimIndexNonLargerValue;
       /// @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
       // flag manager
       if (location[dim] >= _haloBoxMax[dim]) {
-        towerIndex[dim] = _towersPerDim[dim] - 1;
+        towerIndex2D[dim] = _towersPerDim[dim] - 1;
       } else if (location[dim] < _haloBoxMin[dim]) {
-        towerIndex[dim] = 0;
+        towerIndex2D[dim] = 0;
       }
     }
 
-    return getTower(towerIndex[0], towerIndex[1]);
+    return towerIndex2D;
   }
 
   /**
