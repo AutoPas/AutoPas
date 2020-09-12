@@ -56,9 +56,7 @@ class SoAStorage {
    * Getter for the internal tuple.
    * @return
    */
-  inline constexpr const auto &getTuple() const {
-    return soaStorageTuple;
-  }
+  inline constexpr const auto &getTuple() const { return soaStorageTuple; }
 
  private:
   SoAArraysType soaStorageTuple;
