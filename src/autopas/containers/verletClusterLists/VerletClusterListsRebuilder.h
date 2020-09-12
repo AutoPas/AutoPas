@@ -97,8 +97,21 @@ class VerletClusterListsRebuilder {
     // resize to number of towers. Cannot use resize since towers are not default constructable.
     _towers.clear();
     _towers.reserve(numTowers);
-    for (int i = 0; i < numTowers; ++i) {
-      _towers.emplace_back(ClusterTower<Particle>(_clusterSize));
+
+    // create towers and make an estimate for how many particles memory needs to be allocated
+    // 2.7 seems high but gave the best performance when testing
+    // check if previously towers existed
+    if (invalidParticles.size() - 1 == _towers.size()) {
+      for (int i = 0; i < numTowers; ++i) {
+        _towers.emplace_back(ClusterTower<Particle>(_clusterSize));
+        _towers[i].reserve(invalidParticles[i].size() * 2.7);
+      }
+    } else {
+      const size_t sizeEstimation = (static_cast<double>(numParticles) / numTowers) * 2.7;
+      for (int i = 0; i < numTowers; ++i) {
+        _towers.emplace_back(ClusterTower<Particle>(_clusterSize));
+        _towers[i].reserve(sizeEstimation);
+      }
     }
 
     sortParticlesIntoTowers(invalidParticles);
