@@ -16,6 +16,7 @@ class ParticlePropertiesLibraryTest : public AutoPasTestBase {
   ParticlePropertiesLibraryTest() : AutoPasTestBase(), PPL(cutoff) {
     PPL.addType(0, epsilons[0], sigmas[0], masses[0]);
     PPL.addType(1, epsilons[1], sigmas[1], masses[1]);
+    PPL.calculateMixingCoefficients();
   }
 
   static double mixingE(double e1, double e2);

@@ -157,7 +157,8 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Adjust the individual tuning strategies accordingly; the exact implementation will depend on the purpose of your option, but some general advice is:
   * Depending on your new option, it might make sense for some tuning strategies to merge it with another option to avoid sparse dimensions.
   * `FullSearch` and `PredictiveTuning` inherit from `SetSearchSpaceBasedTuningStrategy`, adjust the constructor for this class and the method `populateSearchSpace()`.
-  * For bayesian based tuning strategies your option will also have to be integrated into `FeatureVector`.
+  * For bayesian based tuning strategies your option will also have to be integrated into `FeatureVector` and `FeatureVectorEncoder`.
+  * Extend `FeatureVectorEncoder` by modifying `setAllowedOptions()`, `convertToTunable()` and `convertFromTunable()`. If the new option wasn't merged with another one you may have to add a new index to `DiscreteIndices` or `ContinuousIndices`
   * Make sure to declare your option by calling `configureTuningParameter()` in `ActiveHarmony::resetHarmony()`.
 * Adjust any tests that are affected by these changes. The following tests will definately require changes:
   * `tests/testAutopas/tests/autopasInterface/AutoPasInterfaceTest.{h,cpp}`
