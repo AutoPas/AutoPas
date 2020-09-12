@@ -87,17 +87,24 @@ class SlicedBalancedBasedTraversal
     AutoPasLog(debug, "{} threads available.", numSlices);
     // using greedy algorithm to assign slice thicknesses. May lead to less slices being used.
     unsigned int totalThickness = 0;
-    /* minimum load for the next slice. Ideally exactly this load is reached. If this is not possible
-     * the remaining load is again divided upon the remaining slices.
-     */
-    auto min = fullLoad / numSlices;
+    // avg load per slice
+    auto avg = fullLoad / numSlices;
+    auto lastLoad = 0;
     for (auto s = 0; s < numSlices; s++) {
       unsigned int thickness;
       if (s == numSlices - 1) {
         thickness = maxDimensionLength - totalThickness;
       } else {
         thickness = minSliceThickness;
-        while (totalThickness + thickness + 1 < maxDimensionLength && loads[totalThickness + thickness - 1] < min) {
+        while (totalThickness + thickness + 1 < maxDimensionLength and
+               loads[totalThickness + thickness - 1] - lastLoad < avg) {
+          auto load1 = loads[totalThickness + thickness - 1] - lastLoad;
+          auto load2 = loads[totalThickness + thickness] - lastLoad;
+          // if (abs(avg-load1) < abs(avg-load2))
+          // doing this manually as we are using unsigned longs and would have to cast otherwise
+          if (((avg > load1) ? (avg - load1) : (load1 - avg)) < ((avg > load2) ? (avg - load2) : (load2 - avg))) {
+            break;
+          }
           thickness++;
         }
       }
@@ -113,10 +120,21 @@ class SlicedBalancedBasedTraversal
         /// @todo reserve to numSlices before push_back
         this->_sliceThickness.push_back(thickness);
         if (s != numSlices - 1) {
-          // add avg of remaining load over remaining threads to min
-          min = loads[totalThickness - 1] + (fullLoad - loads[totalThickness - 1]) / (numSlices - s - 1);
+          // avg of remaining load over remaining threads
+          avg = (fullLoad - loads[totalThickness - 1]) / (numSlices - s - 1);
+          lastLoad = loads[totalThickness - 1];
         }
       }
+    }
+    std::string thicknessStr;
+    std::string loadStr;
+    lastLoad = 0;
+    totalThickness = 0;
+    for (auto t : this->_sliceThickness) {
+      thicknessStr += std::to_string(t) + ", ";
+      totalThickness += t;
+      loadStr += std::to_string(loads[totalThickness - 1] - lastLoad) + ", ";
+      lastLoad = loads[totalThickness - 1];
     }
 
     // some analysis output that is only relevant when logger is set to debug
