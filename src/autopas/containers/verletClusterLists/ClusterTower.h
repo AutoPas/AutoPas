@@ -295,7 +295,7 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   void reserve(size_t n) { _particlesStorage.reserve(n); }
 
-  // private:
+ private:
   /**
    * The number of particles in a full cluster.
    */
