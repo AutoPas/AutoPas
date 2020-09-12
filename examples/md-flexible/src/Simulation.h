@@ -183,6 +183,7 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
     _particlePropertiesLibrary->addType(type, epsilon, _config->sigmaMap.value.at(type),
                                         _config->massMap.value.at(type));
   }
+  _particlePropertiesLibrary->calculateMixingCoefficients();
 }
 
 template <class Particle, class ParticleCell>
