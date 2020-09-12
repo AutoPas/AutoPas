@@ -6,6 +6,7 @@
 
 #include "TraversalTest.h"
 
+#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
