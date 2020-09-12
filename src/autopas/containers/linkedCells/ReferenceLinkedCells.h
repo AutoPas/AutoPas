@@ -119,18 +119,23 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
    * Updates all the References in the cells that are out of date.
    */
   void updateDirtyParticleReferences() {
-    //    if (_particleList.isDirty()) {
-    for (auto &cell : this->_cells) {
-      cell.clear();
-    }
+    if (_particleList.isDirty()) {
+      if (_particleList.needsRebuild()) {
+        for (auto &cell : this->_cells) {
+          cell.clear();
+        }
+      }
 
-    for (auto it = _particleList.beginDirty(); it < _particleList.endDirty(); it++) {
-      ReferenceCell &cell = _cellBlock.getContainingCell(it->getR());
-      auto address = &(*it);
-      cell.addParticleReference(address);
+      for (auto it = _particleList.beginDirty(); it < _particleList.endDirty(); it++) {
+        if (it->isDummy()) {
+          continue;
+        }
+        ReferenceCell &cell = _cellBlock.getContainingCell(it->getR());
+        auto address = &(*it);
+        cell.addParticleReference(address);
+      }
+      _particleList.markAsClean();
     }
-    _particleList.markAsClean();
-    //    }
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
@@ -225,8 +230,8 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
                                 myInvalidNotOwnedParticles.end());
       }
     }
-_particleList.deleteDummyParticles();
-updateDirtyParticleReferences();
+    _particleList.deleteDummyParticles();
+    updateDirtyParticleReferences();
     return invalidParticles;
   }
 

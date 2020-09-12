@@ -24,7 +24,7 @@ class ParticleVector {
   ParticleVector<Type>() = default;
 
   /**
-   * Returns the dirty flag, indicating whether Particles where moved and thus references to them are out of date.
+   * Returns the dirty flag, indicating whether Particles exist in the vector that are not stored in a cell yet.
    * @return True if dirty, false otherwise
    */
   bool isDirty() { return _dirty; }
@@ -37,17 +37,27 @@ class ParticleVector {
     _dirtyIndex = particleListImp.size();
   }
 
+  /**
+   * Remove all halo particles from the container and mark it as dirty.
+   */
   void clearHaloParticles() {
     particleListImp.erase(std::remove_if(particleListImp.begin(), particleListImp.end(),
                                          [](const auto &particle) { return particle.isHalo(); }),
                           particleListImp.end());
+    _dirty = true;
+    _dirtyIndex = 0;
   }
 
-    void deleteDummyParticles() {
-        particleListImp.erase(std::remove_if(particleListImp.begin(), particleListImp.end(),
-                                             [](const auto &particle) { return particle.isDummy(); }),
-                              particleListImp.end());
-    }
+  /**
+   * Remove all dummy particles from the container and mark it as dirty.
+   */
+  void deleteDummyParticles() {
+    particleListImp.erase(std::remove_if(particleListImp.begin(), particleListImp.end(),
+                                         [](const auto &particle) { return particle.isDummy(); }),
+                          particleListImp.end());
+    _dirty = true;
+    _dirtyIndex = 0;
+  }
 
   /**
    * Add a Particle to the data structure.
@@ -55,8 +65,8 @@ class ParticleVector {
    */
   void push_back(Type &value) {
     particleListLock.lock();
-    _dirty |= particleListImp.capacity() == particleListImp.size();
-    if (_dirty) {
+    _dirty = true;
+    if (particleListImp.capacity() == particleListImp.size()) {
       _dirtyIndex = 0;
     }
     particleListImp.push_back(value);
@@ -76,10 +86,16 @@ class ParticleVector {
   int dirtySize() { return totalSize() - _dirtyIndex; }
 
   /**
+   * Indicates, whether References already stored in cells need to be updated.
+   * @return Boolean indicating the above
+   */
+  bool needsRebuild() { return _dirtyIndex == 0; }
+
+  /**
    * Begin of the iterator over dirty Particles
    * @return Start of the iterator
    */
-  auto beginDirty() { return particleListImp.begin(); }  // + _dirtyIndex; }
+  auto beginDirty() { return particleListImp.begin() + _dirtyIndex; }
   /**
    * End of the iterator over dirty Particles
    * @return End of the iterator
