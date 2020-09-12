@@ -53,6 +53,44 @@ Creates graphs for a md-flex output file of a bayesian-cluster run. Graphs consi
 extractClusterGraphSeparate.py creates one file-pair for each graph found in the md-flex output. extractClusterGraphCombined.py combines all found graphs into one file-pair.
 Additionaly a md-flex output of a fullSearch run can be provided. This appends the sampled runtimes to the corresponding nodes.
 
+## Compare Traversals per time
+
+Enables you to compare several traversals per time and number of particles or domain size or density.
+In the plot you will find the time as the x-axis and the other parameter as y-axis.
+
+Requirements:
+* python3 (tested with 3.8.2)
+* [plotly](https://github.com/plotly/plotly.py) (tested with 4.7.1)
+
+### testTimePerTraversal.py
+Test several traversals at once.
+
+Examples can be found in AutoPas/examples/md-flexible/input/testTimePerTraversal/
+
+Command:
+` ./testTimePerTraversal.py [traversal=chosenTraversal] [tests=iterations of tests] [paths/to/yaml/files or/to/directories] `
+Where traversal specifies a specific traversal and will run the scenario only for this traversal. This parameter may be left empty.
+
+The tests parameter defines how often the scenario will be run per traversal. If it is not defined it will run once.
+
+The last parameter needs to be the path to one or many input files.
+
+### plotPerTraversalAndParameter.py
+Plots all traversals from all input files according to the time and a defined parameter for the x-axis.
+Traversals are colored according to their container.
+
+Command: `./plotTuning.py parameter=[number, size, density, homogeneity] [path/To//Output/*.out ...]`
+
+Wehere you can define the x-axis by setting the parameter. The parameter "number" will plot the time per number of particles,
+"size" will plot per Boxsize, "density" per particle density and "homogeneity" the overall homogeneity of the scenario.
+The last input parameter is the folder with one or many output files, produced by testTimePerTraversal.py
+
+### outToCsvForPandas.py
+Reads *.out files into csv which can by used for data analysis. Hardware has to be specified manually.
+
+Command: `./outToCsvForPandas.py [hardware={name of hardware}] [path/To//Output/*.out ...]`
+
+
 ## Performance Measurements
 
 ### measurePerf.sh
