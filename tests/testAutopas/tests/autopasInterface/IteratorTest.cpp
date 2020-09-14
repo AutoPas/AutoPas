@@ -37,7 +37,7 @@ void defaultInit(AutoPasT &autoPas) {
 }
 
 /**
- * Iterate over all particles, generate a region iterator for each that spans a tiny space around them and check if this
+ * Iterate over all particles, generate a region iterator for each particle that spans a tiny space around them and check if this
  * region iterator finds exactly this particle.
  * @tparam AutoPasT
  * @param autoPas

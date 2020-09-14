@@ -735,11 +735,11 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
 
     std::vector<size_t> towersOfInterest(towersOfInterstPerDim[0] * towersOfInterstPerDim[1]);
 
-    auto cellsOfInterestIterator = towersOfInterest.begin();
+    auto towersOfInterestIterator = towersOfInterest.begin();
     for (size_t i = 0; i < towersOfInterstPerDim[1]; ++i) {
-      std::iota(cellsOfInterestIterator, cellsOfInterestIterator + towersOfInterstPerDim[0],
+      std::iota(towersOfInterestIterator, towersOfInterestIterator + towersOfInterstPerDim[0],
                 firstTowerIndex + i * _towersPerDim[0]);
-      cellsOfInterestIterator += towersOfInterstPerDim[0];
+      towersOfInterestIterator += towersOfInterstPerDim[0];
     }
 
     return std::make_tuple(lowerCornerInBounds, upperCornerInBounds, towersOfInterest);
