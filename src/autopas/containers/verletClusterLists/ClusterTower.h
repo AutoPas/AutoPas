@@ -289,6 +289,12 @@ class ClusterTower : public ParticleCell<Particle> {
     _particleDeletionObserver = observer;
   };
 
+  /**
+   * Calls reserve on the underlying particle vector to allocate space for particles to come.
+   * @param n
+   */
+  void reserve(size_t n) { _particlesStorage.reserve(n); }
+
  private:
   /**
    * The number of particles in a full cluster.
