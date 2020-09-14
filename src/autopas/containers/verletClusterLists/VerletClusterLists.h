@@ -720,6 +720,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     auto firstTowerCoords = _builder->getTowerCoordinates(lowerCornerInBounds);
     auto firstTowerIndex = _builder->towerIndex2DTo1D(firstTowerCoords[0], firstTowerCoords[1]);
     auto lastTowerCoords = _builder->getTowerCoordinates(upperCornerInBounds);
+    auto lastTowerIndex = _builder->towerIndex2DTo1D(lastTowerCoords[0], lastTowerCoords[1]);
 
     std::array<size_t, 2> towersOfInterstPerDim;
     for (size_t dim = 0; dim < towersOfInterstPerDim.size(); ++dim) {
@@ -738,7 +739,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     auto towersOfInterestIterator = towersOfInterest.begin();
     for (size_t i = 0; i < towersOfInterstPerDim[1]; ++i) {
       std::iota(towersOfInterestIterator, towersOfInterestIterator + towersOfInterstPerDim[0],
-                firstTowerIndex + i * _towersPerDim[0]);
+                std::min(firstTowerIndex, lastTowerIndex) + i * _towersPerDim[0]);
       towersOfInterestIterator += towersOfInterstPerDim[0];
     }
 
