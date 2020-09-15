@@ -120,9 +120,7 @@ class BayesianSearch : public TuningStrategyInterface {
     _traversalTimes[_currentConfig] = time;
   }
 
-  inline long getEvidence(Configuration configuration) const override {
-    return _traversalTimes.at(configuration);
-  }
+  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
   inline void reset(size_t iteration) override {
     _gaussianProcess.clear();
