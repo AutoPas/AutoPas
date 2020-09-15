@@ -14,13 +14,22 @@ assert sys.version_info >= (3,8)
 # help message
 for arg in sys.argv[1:]:
     if "--help" in arg:
-        print("Usage: ./plotTuning.py [path/To/mdFlex/std.out ...]")
+        print("Usage: ./plotTuning.py [path/To/mdFlex/std.out ...] or [path/To/mdFlex/directoryWithOutput]")
         print("If no input is given the script looks for the latest testTuning directory in the current directory.")
         exit(0)
 
 # take all input files as source for a plot
 if len(sys.argv) > 1:
-    datafiles=sys.argv[1:]
+    if os.path.isdir(arg):
+        datadirs = sys.argv[1:]
+        datadirs = list(datadirs)
+        datadirs.sort(reverse=True)
+        datafiles = os.listdir(datadirs[0])
+        datafiles = filter(lambda s: s.endswith('.out'), datafiles)
+        datafiles = map(lambda s: datadirs[0] + '/' + s, datafiles)
+        datafiles = list(datafiles)
+    else:
+        datafiles = sys.argv[1:]
 else:
     # if nothing is given search for the latest test dir
     datadirs=os.listdir("./")
