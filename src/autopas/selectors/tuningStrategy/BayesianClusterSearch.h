@@ -89,6 +89,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _encoder(),
         _currentConfig(),
         _invalidConfigs(),
+        _traversalTimes(),
         _rng(seed),
         _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::evidenceMatchingScaledProbabilityGM,
                          sigma, _rng),
@@ -166,11 +167,12 @@ class BayesianClusterSearch : public TuningStrategyInterface {
     _currentIteration = iteration;
     ++_currentNumEvidence;
     _currentAcquisitions.clear();
+
+    _traversalTimes[_currentConfig] = time;
   }
 
   inline long getEvidence(Configuration configuration) const override {
-    auto vec = _encoder.convertToCluster(FeatureVector(configuration));
-    return -static_cast<long>(_gaussianCluster.getOutput(vec) / secondsPerMicroseconds);
+    return _traversalTimes.at(configuration);
   }
 
   inline void reset(size_t iteration) override {
@@ -232,6 +234,11 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Configurations marked invalid.
    */
   std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
+  /**
+   * Explicitly store traversal times for getEvidence().
+   * Refrain from reading the data from GaussianProcesses to maintain abstraction.
+   */
+  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
 
   Random _rng;
   /**

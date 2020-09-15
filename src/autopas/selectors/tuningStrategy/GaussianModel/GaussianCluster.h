@@ -201,27 +201,6 @@ class GaussianCluster {
   }
 
   /**
-   * Get the output value to corresponding inputs if such has been saved
-   * @param inputDiscrete
-   * @param inputContinuous
-   * @return
-   */
-  [[nodiscard]] inline double getOutput(const GaussianModelTypes::VectorDiscrete &inputDiscrete,
-                                        const GaussianModelTypes::VectorContinuous &inputContinuous) const {
-    auto index = getIndex(inputDiscrete);
-    return _clusters[index].getOutput(inputContinuous);
-  }
-
-  /**
-   * Get the output value to a corresponding input pair if such has been saved
-   * @param input
-   * @return
-   */
-  [[nodiscard]] inline double getOutput(const GaussianModelTypes::VectorPairDiscreteContinuous &input) const {
-    return getOutput(input.first, input.second);
-  }
-
-  /**
    * Generate all possible combinations of discrete tuples and continuous tuples in samples
    * and calculate their corresponding acquisition.
    * @param af function to optimize
