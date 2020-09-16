@@ -187,7 +187,7 @@ class FeatureVectorEncoder {
   /**
    * Convert Feature vector to cluster representation for GaussianCluster.
    * Discrete values are encoded using their index in given std::vector.
-   * Additionally append current iteration to the continuous tuple.
+   * Additionally, append current iteration to the continuous tuple.
    * @param vec vector to encode
    * @param iteration current iteration which may be scaled by some factor
    * @return cluster encoded vector
