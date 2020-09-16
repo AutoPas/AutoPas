@@ -174,7 +174,6 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
   inline void reset(size_t iteration) override {
-    _gaussianCluster.clear();
     size_t iterationSinceLastEvidence = iteration - _currentIteration;
     if (iterationSinceLastEvidence * _iterationScale > suggestedMaxDistance) {
       AutoPasLog(warn, "BayesianClusterSearch: Time since the last evidence may be too long.");
