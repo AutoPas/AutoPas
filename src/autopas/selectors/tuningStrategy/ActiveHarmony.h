@@ -360,7 +360,7 @@ void ActiveHarmony::resetHarmony() {
       utils::ExceptionHandler::exception("ActiveHarmony::reset: Error connecting to Harmony session: {}", ah_error());
     }
 
-    if (!_nonLocalServer || rank == 0) {
+    if (not _nonLocalServer || rank == 0) {
       hdef_t *hdef = ah_def_alloc();
       if (hdef == nullptr) {
         utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating definition descriptor: {}",
