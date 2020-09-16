@@ -59,7 +59,6 @@ class ActiveHarmony : public TuningStrategyInterface {
         _mpiStrategyOption(mpiStrategyOption),
         _comm(comm),
         _nonLocalServer(getenv("HARMONY_HOST") != nullptr && mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
-    AutoPasLog(debug, "Reducing traversal, container and loadEstimator options to possible combinations");
     auto cellSizeDummy = NumberSetFinite<double>{-1};
     utils::AutoPasConfigurationCommunicator::distributeConfigurations(
         _allowedContainerOptions, cellSizeDummy, _allowedTraversalOptions, _allowedLoadEstimatorOptions,
