@@ -165,7 +165,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * In `src/autopas/utils/AutoPasConfigurationCommunicator.h/.cpp`:
   * Change the size and (de-)serialization of SerializedConfiguration
   * Add the new option to all appropriate functions and adjust their functioning respectively.
-* In `src/autopas/utils/ConfigurationAndRankIteratorHandler.h/.cpp:
+* In `src/autopas/utils/ConfigurationAndRankIteratorHandler.h/.cpp`:
   * Add the new option wherever appropriate.
   * If the new options depends on others, implement it similarly to traversals, containers, and load estimators.
 * Adjust any tests that are affected by these changes. The following tests will definitely require changes:
