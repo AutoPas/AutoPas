@@ -26,7 +26,10 @@
 namespace autopas {
 
 /**
- * Interface to the Active Harmony tuning framework.
+ * Interface to the Active Harmony (AH) tuning framework.
+ * If a global AH server is provided and MPI is enabled, the server can be reached via the environment variables
+ * HARMONY_HOST and HARMONY_PORT.
+ * They have to be set to the host address and port of the server respectively.
  */
 class ActiveHarmony : public TuningStrategyInterface {
  public:
@@ -39,16 +42,16 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param mpiStrategyOption
-   * @param comm Default value shouldn't be used. Only provided to not have to set it as first parameter.
+   * @param comm
    */
-  ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
-                const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
-                const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
-                const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
-                const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-                const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
-                const MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI,
-                const AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD)
+  ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions,
+                const NumberSet<double> &allowedCellSizeFactors,
+                const std::set<TraversalOption> &allowedTraversalOptions,
+                const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+                const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                const std::set<Newton3Option> &allowedNewton3Options,
+                const MPIStrategyOption mpiStrategyOption,
+                const AutoPas_MPI_Comm comm)
       : _allowedContainerOptions(allowedContainerOptions),
         _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
         _allowedTraversalOptions(allowedTraversalOptions),
@@ -265,7 +268,7 @@ bool ActiveHarmony::tune(bool currentInvalid) {
     }
     fetchConfiguration();
     if (_traversalTimes.find(_currentConfig) != _traversalTimes.end()) {
-      // we already know performance for this config
+      // we already know the performance for this config
       addEvidence(_traversalTimes[_currentConfig], 0);
       skipConfig = true;
     }
@@ -283,7 +286,9 @@ bool ActiveHarmony::tune(bool currentInvalid) {
     }
 
     if (_nonLocalServer) {
-      // when using a non-local server, the do-while loop can be endless
+      // When using a non-local server, it is possible that only tested configurations are fetched before the search
+      // converges.
+      // Because this is difficult to test for, the loop is simply ignored for non-local servers.
       return true;
     }
   } while (skipConfig);
