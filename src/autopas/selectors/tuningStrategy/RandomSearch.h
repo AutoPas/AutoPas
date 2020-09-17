@@ -75,7 +75,7 @@ class RandomSearch : public TuningStrategyInterface {
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
   inline void addEvidence(long time, size_t iteration) override {
-    auto testingConfig = Configuration(_currentConfig);
+    auto testingConfig = _currentConfig;
     testingConfig.cellSizeFactor = 1;
     if (_traversalTimes.find(testingConfig) == _traversalTimes.end()) {
       ++_numTestedConfigsNoCSF;
