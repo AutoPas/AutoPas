@@ -25,6 +25,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
     AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
     MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
+  // ======== prepare MPI =====================================================
+
   // only needed in the MPI case, but need to be declared here.
   std::set<autopas::ContainerOption> fallbackContainers;
   std::unique_ptr<autopas::NumberSet<double>> fallbackCellSizeFactors;
@@ -32,6 +34,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
   std::set<autopas::LoadEstimatorOption> fallbackLoadEstimators;
   std::set<autopas::DataLayoutOption> fallbackDataLayouts;
   std::set<autopas::Newton3Option> fallbackNewton3;
+  // if an mpi-strategy is used, the local search space is set up here, as well as the fallback options.
   switch (static_cast<autopas::MPIStrategyOption>(mpiStrategyOption)) {
     case MPIStrategyOption::noMPI: {
       break;
@@ -44,7 +47,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
           "aborting.");
 #endif
       if (tuningStrategyOption == TuningStrategyOption::activeHarmony && getenv("HARMONY_HOST") != nullptr) {
-        // rank 0 will solely set up the entire search, so we cannot divide the search space
+        // rank 0 will solely set up the entire search, so we cannot divide the search space.
         break;
       }
       int rank, commSize;
@@ -73,6 +76,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
                                          mpiStrategyOption);
     }
   }
+
+  // ======== initiate tuning strategy ========================================
 
   std::unique_ptr<autopas::TuningStrategyInterface> tuningStrategy = nullptr;
   switch (static_cast<autopas::TuningStrategyOption>(tuningStrategyOption)) {
@@ -111,7 +116,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     case TuningStrategyOption::activeHarmony: {
-      // If a AH-server is provided, but MPI is disallowed, we have to ignore the server
+      // If a AH-server is provided, but MPI is disallowed, we have to ignore the server.
       if (getenv("HARMONY_HOST") != nullptr && mpiStrategyOption == MPIStrategyOption::noMPI) {
         unsetenv("HARMONY_HOST");
         AutoPasLog(warn,
@@ -138,6 +143,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       break;
     }
   }
+
+  // ======== Wrap strategy into MPI wrapper if appropriate ===================
 
   switch (static_cast<MPIStrategyOption>(mpiStrategyOption)) {
     case MPIStrategyOption::noMPI: {

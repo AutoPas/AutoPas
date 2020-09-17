@@ -9,6 +9,7 @@
 using namespace autopas::utils::AutoPasConfigurationCommunicator;
 using namespace autopas;
 
+// Test if serializing and deserializing again works as expected.
 TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
   Configuration config = Configuration(ContainerOption::directSum, 1.2, TraversalOption::lc_sliced,
                                        LoadEstimatorOption::none, DataLayoutOption::cuda, Newton3Option::disabled);
@@ -16,6 +17,7 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
   EXPECT_EQ(passedConfig, config);
 }
 
+// Test if the optimization distributes the configuration with the lowest provided time.
 TEST_F(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -23,13 +25,16 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
   Configuration config =
       Configuration(ContainerOption::directSum, 1 + rank, TraversalOption::lc_sliced,
                     LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled);
+  // provide rank as the time for the config.
   Configuration optimized = optimizeConfiguration(MPI_COMM_WORLD, config, rank);
 
+  // CSF should be 1, because rank 0 provided the lowest time.
   EXPECT_EQ(optimized,
             Configuration(ContainerOption::directSum, 1, TraversalOption::lc_sliced,
                           LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled));
 }
 
+// Test if the search space does get reduced.
 TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCellSizeFactors) {
   std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists, ContainerOption::linkedCells};
   NumberSetFinite<double> cellSizeFactors{0.9, 1.0, 1.1};
@@ -49,7 +54,10 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
   int totalNumConfigsAfter = getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions,
                                                 loadEstimatorOptions, dataLayoutOptions, newton3Options);
 
+  // If true, each rank should have several configurations left.
   if (commSize <= totalNumConfigsBefore) {
+    // No upper bound can properly be tested, because configurations are converted to sets of options, inflating the
+    // search space.
     EXPECT_GE(totalNumConfigsAfter, totalNumConfigsBefore / commSize);
   } else {
     EXPECT_EQ(totalNumConfigsAfter, 1);
@@ -57,6 +65,7 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
 }
 
 // tests the precise outcomes of each rank for a fictional commSize of 4
+// The distribution has been computed manually.
 TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteCellSizeFactorsFakeMPI) {
   std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists, ContainerOption::linkedCells};
   NumberSetFinite<double> cellSizeFactors{0.9, 1.0, 1.1};
@@ -136,6 +145,7 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
   EXPECT_EQ(newton3Tmp, newton3Options);
 }
 
+// Test if CSFs are distributed if only one configuration exists for several ranks.
 TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfiniteCellSizeFactors) {
   std::set<ContainerOption> containerOptions{ContainerOption::verletClusterLists};
   NumberInterval<double> cellSizeFactors{0.8, 1.2};
@@ -150,15 +160,20 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsInfinit
   distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions,
                            newton3Options, rank, commSize);
 
+  // Distribution should never return an empty search space.
   EXPECT_FALSE(containerOptions.empty() or cellSizeFactors.isEmpty() or traversalOptions.empty() or
                dataLayoutOptions.empty() or newton3Options.empty());
   double error = 0.001;
+  // Test even distribution.
+  // Example of rank = 0 for 4 ranks in total:
+  // Bounds: 0.8 + (0.4 / 4) * 0 = 0.8 and 0.8 + (0.4 / 4) * 1 = 0.9
   EXPECT_GE(cellSizeFactors.getMin(), 0.8 + (0.4 / commSize) * rank - error);
   EXPECT_LE(cellSizeFactors.getMin(), 0.8 + (0.4 / commSize) * rank + error);
   EXPECT_GE(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1) - error);
   EXPECT_LE(cellSizeFactors.getMax(), 0.8 + (0.4 / commSize) * (rank + 1) + error);
 }
 
+// Test where the number of configurations equals the number of ranks.
 TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeOneConfigPerRank) {
   int rank, commSize;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -182,10 +197,12 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeOneConfigPerRank) {
 
   EXPECT_EQ(size, 1);
   double error = 0.001;
+  // Assumes that the CSFs are ordered increasingly in cellSizeSet.
   EXPECT_GE(rankManyCellSizes.getAll(), std::set<double>{1.0 + rank / 100.0 - error});
   EXPECT_LE(rankManyCellSizes.getAll(), std::set<double>{1.0 + rank / 100.0 + error});
 }
 
+// Example search space.
 TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeValid) {
   std::set<ContainerOption> threeContainers{ContainerOption::linkedCells, ContainerOption::verletClusterCells,
                                             ContainerOption::directSum};
@@ -200,10 +217,11 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeValid) {
   size_t size =
       getSearchSpaceSize(threeContainers, twoCellSizes, threeTraversals, twoLoadEstimators, oneDataLayout, oneNewton3);
 
-  EXPECT_GE(size, 6);
-  EXPECT_LE(size, 12);
+  // There are 36 configurations in the Cartesian product, but only 6 of them are valid.
+  EXPECT_EQ(size, 6);
 }
 
+// Example search space without valid configurations.
 TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeInvalid) {
   std::set<ContainerOption> twoContainers{ContainerOption::linkedCells, ContainerOption::verletListsCells};
   autopas::NumberSetFinite<double> twoCellSizes{1, 1.2};
@@ -215,5 +233,6 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeInvalid) {
   size_t size =
       getSearchSpaceSize(twoContainers, twoCellSizes, twoTraversals, oneLoadEstimators, oneDataLayout, oneNewton3);
 
+  // There are 8 configurations in the Cartesian product, but none are valid.
   EXPECT_EQ(size, 0);
 }

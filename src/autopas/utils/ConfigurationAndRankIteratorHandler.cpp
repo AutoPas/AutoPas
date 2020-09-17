@@ -49,13 +49,13 @@ void ConfigurationAndRankIteratorHandler::advanceIterators(const int numConfigs,
     // advance to the next rank
     ++_rankIterator;
 
-    // advance offset to the position relative to the first rank with the same configuration
+    // advance offset to the position relative to the first rank with the same configuration.
     ++_infiniteCellSizeFactorsOffset;
   }
 
   // Set information necessary to compute the next block.
-  // Block here means either a block of ranks that all have the same configuration or a set of configuration that all
-  // have the same ranks.
+  // A block is a set of consecutive pairs of configurations and ranks where only the one with more possible values
+  // changes. e.g. if there are three configurations for every rank, a block's size is three.
   if (_remainingBlockSize == 0) {
     if (numConfigs >= commSize) {
       _remainingBlockSize = numConfigs / commSize;

@@ -55,7 +55,7 @@ class RandomSearch : public TuningStrategyInterface {
       autopas::utils::ExceptionHandler::exception("RandomSearch: No valid configurations could be created.");
     }
 
-    // Allow invalid container-traversal-combinations, because so does tune()
+    // Allow invalid container-traversal-combinations, because so does tune().
     for (auto container : _containerOptions) {
       for (auto traversal : _traversalOptions) {
         auto applicableLoadEstimators =
@@ -75,11 +75,14 @@ class RandomSearch : public TuningStrategyInterface {
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
   inline void addEvidence(long time, size_t iteration) override {
+    // Count the number of valid, tested configurations to test if there are still untested configurations that could be
+    // valid. Ignore CellSizeFactors because infinite CSFs make this test difficult.
     auto testingConfig = _currentConfig;
     testingConfig.cellSizeFactor = 1;
     if (_traversalTimes.find(testingConfig) == _traversalTimes.end()) {
       ++_numTestedConfigsNoCSF;
     }
+
     _traversalTimes[_currentConfig] = time;
   }
 
@@ -142,7 +145,7 @@ bool RandomSearch::tune(bool currentInvalid) {
     return false;
   }
 
-  // needed to test if a new configuration has been found for infinite cellSizeFactors
+  // needed to test if a new configuration has been found for infinite cellSizeFactors.
   Configuration testingConfig;
   do {
     // select random config
@@ -207,7 +210,7 @@ bool RandomSearch::searchSpaceIsTrivial() const {
 }
 
 bool RandomSearch::searchSpaceIsEmpty() const {
-  // if one enum is empty return true
+  // if one enum is empty return true.
   return _containerOptions.empty() or (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 0) or
          _traversalOptions.empty() or _dataLayoutOptions.empty() or _newton3Options.empty();
 }

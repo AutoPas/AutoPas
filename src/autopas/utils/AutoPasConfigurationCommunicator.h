@@ -23,11 +23,13 @@
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
 
-/** type definition for the serialization of configurations. A serialized config is an array of 12 bytes */
+/**
+ * type definition for the serialization of configurations. A serialized config is an array of 12 bytes.
+ * */
 using SerializedConfiguration = std::array<std::byte, 13>;
 
 /**
- * Simply a shorter way of static_casting from Option to std::byte
+ * Simply a shorter way of static_casting from Option to std::byte.
  * @tparam TOption
  * @param option
  * @return
@@ -41,7 +43,7 @@ inline std::byte castToByte(TOption option) {
  * Calculates the maximum number of valid configs from several sets of options.
  * This does not equal the cartesian product as not all containers are compatible with all traversals.
  * @param containerOptions
- * @param cellSizeFactors The size of cellSizeFactors will only be taken into account if the NumberSet is finite
+ * @param cellSizeFactors The size of cellSizeFactors will only be taken into account if the NumberSet is finite.
  * @param traversalOptions
  * @param loadEstimatorOptions
  * @param dataLayoutOptions
@@ -57,7 +59,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
 /**
  * Distributes the provided configurations globally for equal work loads.
  * All parameters' values (except for comm) are only relevant at the root node (0).
- * All parameters' values (except for comm) will be changed by this function
+ * All parameters' values (except for comm) will be changed by this function.
  * @param containerOptions
  * @param cellSizeFactors
  * @param traversalOptions
@@ -74,25 +76,25 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               int rank, int commSize);
 
 /**
- * Serializes a configuration object for communication via MPI
- * @param configuration: the configuration to be sent
+ * Serializes a configuration object for communication via MPI.
+ * @param configuration: the configuration to be sent.
  * @return The serialization
  */
 SerializedConfiguration serializeConfiguration(Configuration configuration);
 
 /**
- * Recreates a Configuration object from the object obtained by _serializeConfiguration
- * @param config: The SerializedConfiguration objects returned by _serializeConfiguration
- * @return The deserialized Configuration object
+ * Recreates a Configuration object from the object obtained by _serializeConfiguration.
+ * @param config: The SerializedConfiguration objects returned by _serializeConfiguration.
+ * @return The deserialized Configuration object.
  */
 Configuration deserializeConfiguration(SerializedConfiguration config);
 
 /**
  * Handles communication to select the globally best configuration.
- * @param comm: The communicator used for sending and receiving the optimal configuration
- * @param localOptimalConfig: The locally optimal configuration to be compared with others
- * @param localOptimalTime: The time measured for localOptimalConfig
- * @return The globally optimal configuration
+ * @param comm: The communicator used for sending and receiving the optimal configuration.
+ * @param localOptimalConfig: The locally optimal configuration to be compared with others.
+ * @param localOptimalTime: The time measured for localOptimalConfig.
+ * @return The globally optimal configuration.
  */
 Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime);
 

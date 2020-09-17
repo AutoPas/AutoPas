@@ -14,13 +14,16 @@
 
 namespace autopas::utils {
 /**
- * Holds functionality needed to iterate through ranks and configurations simultaneously in an evenly distributed manner
- * Also provides useful information for dealing with infinite NumberSets as cellSizeFactors
+ * Functionality needed to iterate through ranks and configurations simultaneously in an evenly distributed manner.
+ * If more configurations than ranks exist, each configuration is paired with a single rank.
+ * If more ranks exist, it's the other way around.
+ * Since it cannot traverse infinite sets of CellSizeFactors, it provides information for splitting those among
+ * configurations if more ranks than configurations exist.
  */
 class ConfigurationAndRankIteratorHandler {
  public:
   /**
-   * Constructor for ConfigurationAndRankIteratorHandler
+   * Constructor for ConfigurationAndRankIteratorHandler.
    * @param containerOptions
    * @param cellSizeFactors
    * @param traversalOptions
@@ -47,8 +50,8 @@ class ConfigurationAndRankIteratorHandler {
   }
 
   /**
-   * Advances the rankIterator (getRankIterator()) and/or the Option iterators for a single step such that repeated
-   * execution of this function ends up in both reaching their respective ends simultaneously
+   * Advances the rankIterator (getRankIterator()) and/or the Option iterators for a single step such that repeated.
+   * execution of this function ends up in both reaching their respective ends simultaneously.
    * @param numConfigs
    * @param commSize
    */
@@ -62,7 +65,7 @@ class ConfigurationAndRankIteratorHandler {
   void reset(const int numConfigs, const int commSize);
 
   /**
-   * Alternative getter for all Configuration iterators
+   * Alternative getter for all Configuration iterators.
    * @param containerIt out
    * @param cellSizeFactorIt out
    * @param loadEstimatorIt out
@@ -85,44 +88,47 @@ class ConfigurationAndRankIteratorHandler {
   }
 
   /**
-   * Getter for the rankIterator. The value will correspond to the rank that holds the Options that the other iterators
-   * point to
+   * Getter for the rankIterator.
+   * The value will correspond to the rank that holds the Options that the other iterators
+   * point to.
    * @return
    */
   [[nodiscard]] inline int getRankIterator() const { return _rankIterator; }
 
   /**
    * Getter for the number of ranks smaller than getRankIterator that have the exact same configs assigned to them.
+   * Used to reduce infinite CSFs on a rank if more ranks than configurations exist.
    * @return
    */
   [[nodiscard]] inline int getInfiniteCellSizeFactorsOffset() const { return _infiniteCellSizeFactorsOffset; }
 
   /**
    * Getter for the number of ranks in total that have the exact same configs assigned to them.
+   * Used to reduce infinite CSFs on a rank if more ranks than configurations exist.
    * @return
    */
   [[nodiscard]] inline int getInfiniteCellSizeFactorsBlockSize() const { return _infiniteCellSizeFactorsBlockSize; }
 
   /**
-   * Getter for containerIterator
+   * Getter for containerIterator.
    * @return
    */
   [[nodiscard]] inline std::set<ContainerOption>::iterator getContainerIterator() const { return _containerIt; }
 
   /**
-   * Getter for the CellSizeFactorIterator
+   * Getter for the CellSizeFactorIterator.
    * @return
    */
   [[nodiscard]] inline std::set<double>::iterator getCellSizeFactorIterator() const { return _cellSizeFactorIt; }
 
   /**
-   * Getter for the TraversalIterator
+   * Getter for the TraversalIterator.
    * @return
    */
   [[nodiscard]] inline std::set<TraversalOption>::iterator getTraversalIterator() const { return _traversalIt; }
 
   /**
-   * Getter for the LoadEstimatorIterator
+   * Getter for the LoadEstimatorIterator.
    * @return
    */
   [[nodiscard]] inline std::set<LoadEstimatorOption>::iterator getLoadEstimatorIterator() const {
@@ -130,13 +136,13 @@ class ConfigurationAndRankIteratorHandler {
   }
 
   /**
-   * Getter for the DataLayoutIterator
+   * Getter for the DataLayoutIterator.
    * @return
    */
   [[nodiscard]] inline std::set<DataLayoutOption>::iterator getDataLayoutIterator() const { return _dataLayoutIt; }
 
   /**
-   * Getter for the Newton3Iterator
+   * Getter for the Newton3Iterator.
    * @return
    */
   [[nodiscard]] inline std::set<Newton3Option>::iterator getNewton3Iterator() const { return _newton3It; }
@@ -153,8 +159,8 @@ class ConfigurationAndRankIteratorHandler {
   void selectLoadEstimatorsForCurrentContainerAndTraversal();
 
   /**
-   * Selects the next config from containers X cellSizeFactors X traversals X dataLayouts X newton3Options
-   * Later named options are changed first, because they are easier to switch between simulation steps
+   * Selects the next config from containers X cellSizeFactors X traversals X dataLayouts X newton3Options.
+   * Later named options are changed first, because they are easier to switch between simulation steps.
    */
   inline void advanceConfigIterators();
 

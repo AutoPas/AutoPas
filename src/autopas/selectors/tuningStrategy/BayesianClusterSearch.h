@@ -186,6 +186,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
     if (_firstTuningPhase) {
       _fullSearch.reset(iteration);
+      _currentConfig = _fullSearch.getCurrentConfiguration();
     } else {
       tune();
     }

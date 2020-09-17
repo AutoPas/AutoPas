@@ -19,7 +19,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<DataLayoutOption> &dataLayoutOptions,
                           const std::set<Newton3Option> &newton3Options) {
   size_t numConfigs = 0;
-  // only take into account finite sets of cellSizeFactors
+  // only take into account finite sets of cellSizeFactors.
   size_t cellSizeFactorArraySize;
   if (cellSizeFactors.isFinite()) {
     cellSizeFactorArraySize = cellSizeFactors.size();
@@ -28,7 +28,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
   }
 
   for (const auto &containerOption : containerOptions) {
-    // get all traversals of the container and restrict them to the allowed ones
+    // get all traversals of the container and restrict them to the allowed ones.
     const std::set<TraversalOption> &allContainerTraversals =
         compatibleTraversals::allCompatibleTraversals(containerOption);
     std::set<TraversalOption> allowedAndApplicableTraversalOptions;
@@ -48,7 +48,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
 }
 
 /**
- * Calculates which Options the current rank should handle based on the total number of options and ranks
+ * Calculates which Options the current rank should handle based on the total number of options and ranks.
  * @param numConfigs in
  * @param commSize in
  * @param rank in
@@ -66,7 +66,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
                           std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options) {
   // ============== setup ======================================================
 
-  // These will be set to the Options specific to this rank and will overwrite the input sets
+  // These will be set to the Options specific to this rank and will overwrite the input sets.
   auto newContainerOptions = std::set<ContainerOption>();
   auto newCellSizeFactors = std::set<double>();
   auto newTraversalOptions = std::set<TraversalOption>();
@@ -94,12 +94,12 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     iteratorHandler.advanceIterators(numConfigs, commSize);
   }
 
-  // Only important for infinite cellSizeFactors if commSize > numConfigs
+  // Only important for infinite cellSizeFactors if commSize > numConfigs.
   int infiniteCellSizeFactorsOffset = iteratorHandler.getInfiniteCellSizeFactorsOffset();
   int infiniteCellSizeFactorsBlockSize = iteratorHandler.getInfiniteCellSizeFactorsBlockSize();
 
   while (iteratorHandler.getRankIterator() == rank) {
-    // std::set handles duplicate elements
+    // std::set handles duplicate elements.
     newContainerOptions.emplace(*iteratorHandler.getContainerIterator());
     newCellSizeFactors.emplace(*iteratorHandler.getCellSizeFactorIterator());
     newTraversalOptions.emplace(*iteratorHandler.getTraversalIterator());
@@ -149,7 +149,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
 
   size_t cellSizeFactorsSize = cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1;
   AutoPasLog(debug,
-             "After distributing {} containers, {} cellSizeFactors, {} traversals, {} dataLayouts, {} newton3s"
+             "After distributing: {} containers, {} cellSizeFactors, {} traversals, {} dataLayouts, {} newton3s"
              " => {} total configs",
              containerOptions.size(), cellSizeFactorsSize, traversalOptions.size(), dataLayoutOptions.size(),
              newton3Options.size(),

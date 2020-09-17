@@ -9,7 +9,9 @@
 using namespace autopas;
 
 /**
- * Simple setup for two configurations with different cellSizeFactors depending on rank
+ * Simple setup for two configurations with different cellSizeFactors depending on rank.
+ * The provided evidence increases strictly monotonically with the cellSizeFactor, so the configuration with the
+ * smallest CSF wins.
  * @param mpiParallelizedStrategy
  * @param rank
  */
@@ -21,7 +23,9 @@ void finiteCellSizeFactorsSetup(MPIParallelizedStrategy &mpiParallelizedStrategy
 }
 
 /**
- * Simple setup for configurations differing only in the min-max value of their cellSizeFactors
+ * Simple setup for configurations differing only in the min-max value of their cellSizeFactors.
+ * The provided evidence increases strictly monotonically with the cellSizeFactor, so the configuration with the
+ * smallest CSF wins.
  * @param mpiParallelizedStrategy
  * @param rank
  * @return the smallest cellSizeFactor that was generated
@@ -59,6 +63,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneFullSearch) {
                                                          oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);
   finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
+  // CSF should be 1.0, because of how finiteCellSizeFactorsSetup() handles evidences.
   EXPECT_EQ(mpiParallelizedStrategy.getCurrentConfiguration(),
             Configuration(ContainerOption::linkedCells, 1.0, TraversalOption::lc_sliced, LoadEstimatorOption::none,
                           DataLayoutOption::aos, Newton3Option::enabled));
@@ -82,7 +87,8 @@ TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchFiniteCellSizeFactors) {
                                                          oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);
   finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
-  EXPECT_LE(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor, 1.1);
+  // CSF should be 1.0, because of how finiteCellSizeFactorsSetup() handles evidences.
+  EXPECT_EQ(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor, 1.0);
 }
 
 TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchInfiniteCellSizeFactors) {
@@ -103,6 +109,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchInfiniteCellSizeFactors)
                                                          oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);
   auto smallestLocalCellSizeFactor = infiniteCellSizeFactorSetup(mpiParallelizedStrategy);
 
+  // CSF should be the smallest, because of how finiteCellSizeFactorsSetup() handles evidences.
   EXPECT_LE(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor, smallestLocalCellSizeFactor);
 }
 
@@ -124,6 +131,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneActiveHarmonyFiniteCellSizeFactors) 
                                                          oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);
   finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
+  // CSF should be 1.0, because of how finiteCellSizeFactorsSetup() handles evidences.
   EXPECT_EQ(mpiParallelizedStrategy.getCurrentConfiguration(),
             Configuration(ContainerOption::linkedCells, 1.0, TraversalOption::lc_sliced, LoadEstimatorOption::none,
                           DataLayoutOption::aos, Newton3Option::enabled));
@@ -149,5 +157,6 @@ TEST_F(MPIParallelizedStrategyTest, testTuneBayesianSearchInfiniteCellSizeFactor
 
   // BayesianSearch seems to not be absolutely optimal in this case.
   double error = 0.01;
+  // CSF should be the smallest, because of how finiteCellSizeFactorsSetup() handles evidences.
   EXPECT_LE(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor, smallestCellSizeFactor + error);
 }
