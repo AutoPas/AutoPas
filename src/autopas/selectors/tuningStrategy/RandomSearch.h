@@ -76,7 +76,8 @@ class RandomSearch : public TuningStrategyInterface {
 
   inline void addEvidence(long time, size_t iteration) override {
     // Count the number of valid, tested configurations to test if there are still untested configurations that could be
-    // valid. Ignore CellSizeFactors because infinite CSFs make this test difficult.
+    // valid.
+    // Ignore CellSizeFactors because infinite CSFs make this test difficult.
     auto testingConfig = _currentConfig;
     testingConfig.cellSizeFactor = 1;
     if (_traversalTimes.find(testingConfig) == _traversalTimes.end()) {

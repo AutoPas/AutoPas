@@ -87,8 +87,9 @@ TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchFiniteCellSizeFactors) {
                                                          oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);
   finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
-  // CSF should be 1.0, because of how finiteCellSizeFactorsSetup() handles evidences.
-  EXPECT_EQ(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor, 1.0);
+  // Currently, RandomSearch ignores cellSizeFactors to determine how many configurations can be tested.
+  // Thus, only one is tested despite maxEvidence=2, so we can only assume that the best configuration is at rank 0.
+  EXPECT_LE(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor, 1.1);
 }
 
 TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchInfiniteCellSizeFactors) {
@@ -125,7 +126,9 @@ TEST_F(MPIParallelizedStrategyTest, testTuneActiveHarmonyFiniteCellSizeFactors) 
   const auto oneNewton3 = std::set<Newton3Option>{Newton3Option::enabled};
 
   auto strategy = std::make_unique<ActiveHarmony>(oneContainer, twoCellSizes, oneTraversal, oneLoadEstimator,
-                                                  oneDataLayout, oneNewton3);
+                                                  oneDataLayout, oneNewton3,
+                                                  autopas::MPIStrategyOption::divideAndConquer,
+                                                  MPI_COMM_WORLD);
 
   auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD, oneContainer,
                                                          oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);

@@ -44,14 +44,14 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param mpiStrategyOption
    * @param comm
    */
-  ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
-                const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
-                const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
-                const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
-                const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-                const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
-                const MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI,
-                const AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD)
+  ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions,
+                const NumberSet<double> &allowedCellSizeFactors,
+                const std::set<TraversalOption> &allowedTraversalOptions,
+                const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+                const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                const std::set<Newton3Option> &allowedNewton3Options,
+                const MPIStrategyOption mpiStrategyOption,
+                const AutoPas_MPI_Comm comm)
       : _allowedContainerOptions(allowedContainerOptions),
         _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
         _allowedTraversalOptions(allowedTraversalOptions),
