@@ -125,10 +125,9 @@ TEST_F(MPIParallelizedStrategyTest, testTuneActiveHarmonyFiniteCellSizeFactors) 
   const auto oneDataLayout = std::set<DataLayoutOption>{DataLayoutOption::aos};
   const auto oneNewton3 = std::set<Newton3Option>{Newton3Option::enabled};
 
-  auto strategy = std::make_unique<ActiveHarmony>(oneContainer, twoCellSizes, oneTraversal, oneLoadEstimator,
-                                                  oneDataLayout, oneNewton3,
-                                                  autopas::MPIStrategyOption::divideAndConquer,
-                                                  MPI_COMM_WORLD);
+  auto strategy =
+      std::make_unique<ActiveHarmony>(oneContainer, twoCellSizes, oneTraversal, oneLoadEstimator, oneDataLayout,
+                                      oneNewton3, autopas::MPIStrategyOption::divideAndConquer, MPI_COMM_WORLD);
 
   auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD, oneContainer,
                                                          oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);
