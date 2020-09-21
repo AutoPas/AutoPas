@@ -62,12 +62,8 @@ class Configuration {
    * @return
    */
   [[nodiscard]] bool hasValidValues() const {
-    return container != ContainerOption() and
-           cellSizeFactor != -1 and
-           traversal != TraversalOption() and
-           loadEstimator != LoadEstimatorOption() and
-           dataLayout != DataLayoutOption() and
-           newton3 != Newton3Option();
+    return container != ContainerOption() and cellSizeFactor != -1 and traversal != TraversalOption() and
+           loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option();
   }
 
   /**
