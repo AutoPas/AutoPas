@@ -17,6 +17,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -204,6 +205,13 @@ class MDFlexConfig {
       autopas::TuningStrategyOption::fullSearch, "tuning-strategy", true,
       "Strategy how to reduce the sample measurements to a single value. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions(), " ", {"(", ")"})};
+  /**
+   * mpiStrategyOption
+   */
+  MDFlexOption<autopas::MPIStrategyOption, __LINE__> mpiStrategyOption{
+      autopas::MPIStrategyOption::noMPI, "mpi-strategy", true,
+      "Whether to tune using with MPI or not. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::MPIStrategyOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * tuningInterval
    */

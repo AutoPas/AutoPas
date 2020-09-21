@@ -35,6 +35,7 @@ std::string MDFlexConfig::to_string() const {
     os << setw(valueOffset) << left << acquisitionFunctionOption.name << ":  " << acquisitionFunctionOption.value
        << endl;
   }
+  os << setw(valueOffset) << left << mpiStrategyOption.name << ":  " << mpiStrategyOption.value << endl;
   os << setw(valueOffset) << left << tuningInterval.name << ":  " << tuningInterval.value << endl;
   os << setw(valueOffset) << left << tuningSamples.name << ":  " << tuningSamples.value << endl;
   os << setw(valueOffset) << left << tuningMaxEvidence.name << ":  " << tuningMaxEvidence.value << endl;

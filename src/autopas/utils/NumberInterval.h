@@ -36,6 +36,26 @@ class NumberInterval : public NumberSet<Number> {
 
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberInterval>(*this); }
 
+  /**
+   * Setter for NumberInterval
+   * @param numbers One or two values, like the available constructors for NumberInterval.
+   * If two are provided the smaller one is assumed to be the min value.
+   */
+  inline void resetValues(std::set<Number> &numbers) override {
+    if (numbers.size() == 1) {
+      _min = *numbers.begin();
+      _max = *numbers.begin();
+    } else if (numbers.size() == 2) {
+      _min = std::min(*numbers.begin(), *++numbers.begin());
+      _max = std::max(*numbers.begin(), *++numbers.begin());
+
+    } else {
+      utils::ExceptionHandler::exception(
+          "NumberInterval::resetValues: NumberInterval constructor takes exactly"
+          " one or two values");
+    }
+  }
+
   std::string to_string() const override {
     std::ostringstream ss;
     ss << _min << "-" << _max;
