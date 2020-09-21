@@ -46,7 +46,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
           "Cannot use the divideAndConquer search-strategy without AUTOPAS_MPI=ON."
           "aborting.");
 #endif
-      if (tuningStrategyOption == TuningStrategyOption::activeHarmony && getenv("HARMONY_HOST") != nullptr) {
+      if (tuningStrategyOption == TuningStrategyOption::activeHarmony and getenv("HARMONY_HOST") != nullptr) {
         // rank 0 will solely set up the entire search, so we cannot divide the search space.
         break;
       }
@@ -117,7 +117,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
 
     case TuningStrategyOption::activeHarmony: {
       // If a AH-server is provided, but MPI is disallowed, we have to ignore the server.
-      if (getenv("HARMONY_HOST") != nullptr && mpiStrategyOption == MPIStrategyOption::noMPI) {
+      if (getenv("HARMONY_HOST") != nullptr and mpiStrategyOption == MPIStrategyOption::noMPI) {
         unsetenv("HARMONY_HOST");
         AutoPasLog(warn,
                    "HARMONY_HOST is set to a value, but the MPI strategy option is set to noMPI. "

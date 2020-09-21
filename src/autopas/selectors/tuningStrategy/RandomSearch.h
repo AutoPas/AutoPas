@@ -140,7 +140,7 @@ bool RandomSearch::tune(bool currentInvalid) {
     return false;
   }
 
-  if (_traversalTimes.size() >= _maxEvidence || _numTestedConfigsNoCSF >= _searchSpaceSizeNoCSF) {
+  if (_traversalTimes.size() >= _maxEvidence or _numTestedConfigsNoCSF >= _searchSpaceSizeNoCSF) {
     // select best config
     selectOptimalConfiguration();
     return false;
@@ -163,7 +163,7 @@ bool RandomSearch::tune(bool currentInvalid) {
     if (not _cellSizeFactors->isFinite()) {
       testingConfig.cellSizeFactor = 1;
     }
-  } while (_invalidConfigs.find(testingConfig) != _invalidConfigs.end() ||
+  } while (_invalidConfigs.find(testingConfig) != _invalidConfigs.end() or
            _traversalTimes.find(_currentConfig) != _traversalTimes.end());
   return true;
 }
@@ -205,14 +205,14 @@ bool RandomSearch::searchSpaceIsTrivial() const {
   }
 
   // if no load estimators are specified, none is automatically added.
-  return _containerOptions.size() == 1 and (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 1) and
+  return _containerOptions.size() == 1 and (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 1) and
          _traversalOptions.size() == 1 and _loadEstimatorOptions.size() <= 1 and _dataLayoutOptions.size() == 1 and
          _newton3Options.size() == 1;
 }
 
 bool RandomSearch::searchSpaceIsEmpty() const {
   // if one enum is empty return true.
-  return _containerOptions.empty() or (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 0) or
+  return _containerOptions.empty() or (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or
          _traversalOptions.empty() or _dataLayoutOptions.empty() or _newton3Options.empty();
 }
 

@@ -60,7 +60,7 @@ class ActiveHarmony : public TuningStrategyInterface {
         _currentConfig(),
         _mpiStrategyOption(mpiStrategyOption),
         _comm(comm),
-        _nonLocalServer(getenv("HARMONY_HOST") != nullptr && mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+        _nonLocalServer(getenv("HARMONY_HOST") != nullptr and mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
     auto cellSizeDummy = NumberSetFinite<double>{-1};
     utils::AutoPasConfigurationCommunicator::distributeConfigurations(
         _allowedContainerOptions, cellSizeDummy, _allowedTraversalOptions, _allowedLoadEstimatorOptions,
@@ -364,7 +364,7 @@ void ActiveHarmony::resetHarmony() {
       utils::ExceptionHandler::exception("ActiveHarmony::reset: Error connecting to Harmony session: {}", ah_error());
     }
 
-    if (not _nonLocalServer || rank == 0) {
+    if (not _nonLocalServer or rank == 0) {
       hdef_t *hdef = ah_def_alloc();
       if (hdef == nullptr) {
         utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating definition descriptor: {}",
