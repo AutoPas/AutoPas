@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/utils/ExecutionPolicy.h>
+
 #include <iostream>
 #include <memory>
 #include <set>
@@ -227,6 +229,47 @@ class AutoPas {
    * @note cbegin will guarantee to return a const_iterator.
    */
   const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const { return begin(behavior); }
+
+  /**
+   * This function iterates over particles stored in this AutoPas instance.
+   * @tparam ParticleFunction
+   * @param executionPolicy
+   * @param behavior
+   * @param particleFunction A function that should take a particle as an input.
+   */
+  template <typename ParticleFunction>
+  void for_each(autopas::ExecutionPolicy executionPolicy, IteratorBehavior behavior,
+                ParticleFunction particleFunction) {
+    /**
+     * @todo: Pass this to containers instead. This will enable kokkos, cuda or openmp depending on the underlying
+     * backend.
+     */
+#ifdef AUTPAS_OPENMP
+#pragma omp parallel if (executionPolicy == autopas::ExecutionPolicy::parallel)
+#endif
+    for (auto iter = begin(behavior); iter.isValid(); ++iter) {
+      particleFunction(*iter);
+    }
+  }
+
+  /**
+   * @copydoc for_each()
+   * @note const version
+   */
+  template <typename ParticleFunction>
+  void for_each(autopas::ExecutionPolicy executionPolicy, IteratorBehavior behavior,
+                ParticleFunction particleFunction) const {
+    /**
+     * @todo: Pass this to containers instead. This will enable kokkos, cuda or openmp depending on the underlying
+     * backend.
+     */
+#ifdef AUTPAS_OPENMP
+#pragma omp parallel if (executionPolicy == autopas::ExecutionPolicy::parallel)
+#endif
+    for (auto iter = begin(behavior); iter.isValid(); ++iter) {
+      particleFunction(*iter);
+    }
+  }
 
   /**
    * End of the iterator.
