@@ -5,13 +5,25 @@ file(
     "src/*.h"
 )
 
+message(STATUS "searching for mpi...")
+find_package(MPI)
+
+if (NOT ${MPI_CXX_FOUND})
+    message(STATUS "cxx mpi not found, not building sph-main-mpi")
+    return()
+else ()
+    message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
+endif ()
+
+include_directories(SYSTEM ${MPI_INCLUDE_PATH})
+
 add_executable(md-flexible ${MDFlex_SRC})
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(autopas_yaml-cpp)
 
-target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp)
+target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp MPI::MPI_CXX)
 
 # --- copy script files to build dir ---
 file(

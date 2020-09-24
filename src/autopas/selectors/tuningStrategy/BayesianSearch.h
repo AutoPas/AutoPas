@@ -67,6 +67,7 @@ class BayesianSearch : public TuningStrategyInterface {
         _encoder(),
         _currentConfig(),
         _invalidConfigs(),
+        _traversalTimes(),
         _rng(seed),
         _gaussianProcess(0, 0.01, _rng),
         _maxEvidence(maxEvidence),
@@ -116,11 +117,15 @@ class BayesianSearch : public TuningStrategyInterface {
     // represent a maximization problem
     _gaussianProcess.addEvidence(_encoder.oneHotEncode(_currentConfig), -time * secondsPerMicroseconds, true);
     _currentSamples.clear();
+    _traversalTimes[_currentConfig] = time;
   }
+
+  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
   inline void reset(size_t iteration) override {
     _gaussianProcess.clear();
     _currentSamples.clear();
+    _traversalTimes.clear();
     tune();
   }
 
@@ -151,6 +156,11 @@ class BayesianSearch : public TuningStrategyInterface {
   FeatureVector _currentConfig;
   std::vector<FeatureVector> _currentSamples;
   std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
+  /**
+   * Explicitly store traversal times for getEvidence().
+   * Refrain from reading the data from GaussianProcesses to maintain abstraction.
+   */
+  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
 
   Random _rng;
   GaussianProcess _gaussianProcess;

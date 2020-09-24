@@ -213,6 +213,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   autopas.setSelectorStrategy(_config->selectorStrategy.value);
   autopas.setTuningInterval(_config->tuningInterval.value);
   autopas.setTuningStrategyOption(_config->tuningStrategyOption.value);
+  autopas.setMPIStrategy(_config->mpiStrategyOption.value);
   autopas.setVerletClusterSize(_config->verletClusterSize.value);
   autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency.value);
   autopas.setVerletSkin(_config->verletSkinRadius.value);

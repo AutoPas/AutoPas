@@ -30,6 +30,12 @@ class NumberSet {
   virtual std::unique_ptr<NumberSet> clone() const = 0;
 
   /**
+   * A unified setter for all derived classes
+   * @param numbers
+   */
+  virtual void resetValues(std::set<Number> &numbers) = 0;
+
+  /**
    * Get a string representation of the set
    * @return string representation
    */

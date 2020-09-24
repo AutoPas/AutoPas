@@ -56,6 +56,17 @@ class Configuration {
   }
 
   /**
+   * Returns whether the configuration has been initialized with valid values or as an invalid one.
+   * Does not return false if it has valid values whose combination is invalid (e.g. when the container and traversal do
+   * not fit).
+   * @return
+   */
+  [[nodiscard]] bool hasValidValues() const {
+    return container != ContainerOption() and cellSizeFactor != -1 and traversal != TraversalOption() and
+           loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option();
+  }
+
+  /**
    * Container option.
    */
   ContainerOption container;

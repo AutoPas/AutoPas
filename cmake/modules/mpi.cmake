@@ -1,0 +1,11 @@
+option(AUTOPAS_MPI "Activates MPI distributed memory parallelization." OFF)
+
+if (AUTOPAS_MPI)
+    message(STATUS "MPI enabled.")
+    find_package(MPI REQUIRED)
+    if (NOT ${MPI_CXX_FOUND})
+        message(FATAL_ERROR "cxx mpi could not be found")
+    endif ()
+else ()
+    message(STATUS "MPI disabled.")
+endif ()

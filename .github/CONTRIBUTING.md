@@ -134,7 +134,9 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Go to `src/autopas/options/TuningStrategyOption.h`.
   * Add a new enum in `TuningStrategyOption::Value`.
   * Add a new string representation in the `map` of `TuningStrategyOption::getOptionNames()`.
-* Add a `case` for the new strategy in `src/autopas/AutoPas.h::generateTuningStrategy()`.
+* In `src/autopas/AutoPas.h::generateTuningStrategy()`:
+  * Add a `case` for the new strategy.
+  * If the new strategy handles communication between processes itself, make sure to not wrap it in the lower `mpiStrategyOption`-switch.
 * Check that the new option is working in the md-flexible example.
 * Add new unit tests for your strategy.
 
@@ -160,7 +162,13 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * For bayesian based tuning strategies your option will also have to be integrated into `FeatureVector` and `FeatureVectorEncoder`.
   * Extend `FeatureVectorEncoder` by modifying `setAllowedOptions()`, `convertToTunable()` and `convertFromTunable()`. If the new option wasn't merged with another one you may have to add a new index to `DiscreteIndices` or `ContinuousIndices`
   * Make sure to declare your option by calling `configureTuningParameter()` in `ActiveHarmony::resetHarmony()`.
-* Adjust any tests that are affected by these changes. The following tests will definately require changes:
+* In `src/autopas/utils/AutoPasConfigurationCommunicator.h/.cpp`:
+  * Change the size and (de-)serialization of SerializedConfiguration
+  * Add the new option to all appropriate functions and adjust their functioning respectively.
+* In `src/autopas/utils/ConfigurationAndRankIteratorHandler.h/.cpp`:
+  * Add the new option wherever appropriate.
+  * If the new options depends on others, implement it similarly to traversals, containers, and load estimators.
+* Adjust any tests that are affected by these changes. The following tests will definitely require changes:
   * `tests/testAutopas/tests/autopasInterface/AutoPasInterfaceTest.{h,cpp}`
   * `tests/testAutopas/tests/selectors/AutoTunerTest.cpp`
   * `tests/testAutopas/tests/selectors/FeatureVectorTest.cpp`

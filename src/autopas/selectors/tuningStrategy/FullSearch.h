@@ -52,6 +52,10 @@ class FullSearch : public SetSearchSpaceBasedTuningStrategy {
 
   inline void addEvidence(long time, size_t iteration) override { _traversalTimes[*_currentConfig] = time; }
 
+  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
+
+  inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
+
   inline void reset(size_t iteration) override {
     _traversalTimes.clear();
     _currentConfig = _searchSpace.begin();

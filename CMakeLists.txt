@@ -70,6 +70,7 @@ include(cmake-format)
 include(format)
 include(CodeCoverageAutopas)
 include(OpenMP)
+include(mpi)
 
 include(version.cmake)
 
