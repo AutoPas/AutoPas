@@ -80,6 +80,22 @@ add_test(
         CONFIGURATIONS checkExamples
 )
 
+#dangerous, as lc_c04_combined_SoA uses unaligned values.
+add_test(
+        NAME md-flexible-avx.test-unaligned
+        COMMAND
+        md-flexible
+        --no-end-config
+        --no-flops
+        --functor lennard-jones-AVX2
+        --deltaT 0
+        --particle-generator uniform
+        --log-level debug
+        --traversal lc_c04_combined_SoA
+        --particles-total 71
+        CONFIGURATIONS checkExamples
+)
+
 add_test(
     NAME md-flexMeasurePerf
     COMMAND measurePerf.sh md-flexible -silent
