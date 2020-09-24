@@ -1,8 +1,8 @@
 file(
-    GLOB_RECURSE
-    MDFlex_SRC
-    "src/*.cpp"
-    "src/*.h"
+        GLOB_RECURSE
+        MDFlex_SRC
+        "src/*.cpp"
+        "src/*.h"
 )
 
 message(STATUS "searching for mpi...")
@@ -27,12 +27,12 @@ target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp MPI::MPI_
 
 # --- copy script files to build dir ---
 file(
-    GLOB_RECURSE SCRIPTS
-    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-    "*.sh"
-    "*.gp"
-    "*.py"
-    "*.yaml"
+        GLOB_RECURSE SCRIPTS
+        RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+        "*.sh"
+        "*.gp"
+        "*.py"
+        "*.yaml"
 )
 
 foreach (script ${SCRIPTS})
@@ -49,8 +49,8 @@ add_subdirectory(tests)
 # randomly generated imbalanced scenario tested with LC only
 # also tests the flop functor
 add_test(
-    NAME md-flexible.test-static
-    COMMAND
+        NAME md-flexible.test-static
+        COMMAND
         md-flexible
         --container linked
         --cutoff 1.
@@ -67,7 +67,7 @@ add_test(
         --periodic false
         --deltaT 0.
         --no-end-config
-    CONFIGURATIONS checkExamples
+        CONFIGURATIONS checkExamples
 )
 
 #stable, periodic particle grid tested with all configurations
@@ -92,26 +92,53 @@ add_test(
         CONFIGURATIONS checkExamples
 )
 
-#dangerous, as lc_c04_combined_SoA uses unaligned values.
-add_test(
-        NAME md-flexible-avx.test-unaligned
-        COMMAND
-        md-flexible
-        --no-end-config
-        --no-flops
-        --functor lennard-jones-AVX2
-        --deltaT 0
-        --particle-generator uniform
-        --log-level debug
-        --traversal lc_c04_combined_SoA
-        --particles-total 71
-        CONFIGURATIONS checkExamples
-)
+set(HAS_AVX true)
+if (NOT AUTOPAS_USE_VECTORIZATION)
+    message(STATUS "No vectorization used, not adding md-flexible-avx.test-unaligned to ctest.")
+    set(HAS_AVX false)
+elseif(AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "SSE")
+    message(STATUS "Only SSE specified, not adding md-flexible-avx.test-unaligned to ctest.")
+    set(HAS_AVX false)
+elseif(AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "NATIVE")
+    message(STATUS "Native vectorization level, trying to detect AVX capability.")
+    if(UNIX)
+        message(STATUS "Unix")
+        EXEC_PROGRAM(cat ARGS "/proc/cpuinfo" OUTPUT_VARIABLE CPUINFO)
+        STRING(REGEX REPLACE "^.*(avx).*$" "\\1" AVX_THERE ${CPUINFO})
+        STRING(COMPARE EQUAL "avx" "${AVX_THERE}" HAS_AVX)
+        message(STATUS "detected avx on Unix? ${HAS_AVX}")
+    else()
+        message(STATUS "no Unix")
+        # set to false, as we don't know...
+        set(HAS_AVX false)
+    endif()
+else()
+    message(STATUS "Adding AVX example to test, as proper vectorization is manually specified.")
+endif ()
+
+if (HAS_AVX)
+    message(STATUS "AVX detected. Adding AVX test.")
+    #dangerous, as lc_c04_combined_SoA uses unaligned values.
+    add_test(
+            NAME md-flexible-avx.test-unaligned
+            COMMAND
+            md-flexible
+            --no-end-config
+            --no-flops
+            --functor lennard-jones-AVX2
+            --deltaT 0
+            --particle-generator uniform
+            --log-level debug
+            --traversal lc_c04_combined_SoA
+            --particles-total 71
+            CONFIGURATIONS checkExamples
+    )
+endif ()
 
 add_test(
-    NAME md-flexMeasurePerf
-    COMMAND measurePerf.sh md-flexible -silent
-    CONFIGURATIONS checkExamples
+        NAME md-flexMeasurePerf
+        COMMAND measurePerf.sh md-flexible -silent
+        CONFIGURATIONS checkExamples
 )
 # cmake-format: on
 
