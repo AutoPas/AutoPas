@@ -88,11 +88,12 @@ include(logging)
 include(other-compileroptions)
 include(vectorization)
 include(cuda)
-include(doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES
 
 # tests and examples
 add_subdirectory(examples)
 add_subdirectory(tests)
+
+include(doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES, which is defined in examples.
 
 # write version information
 include(CMakePackageConfigHelpers)
