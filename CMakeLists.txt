@@ -82,10 +82,6 @@ add_subdirectory(src)
 # autopasTools
 add_subdirectory(tools)
 
-# tests and examples
-add_subdirectory(examples)
-add_subdirectory(tests)
-
 # modules needing targets:
 include(coloring)
 include(logging)
@@ -93,6 +89,10 @@ include(other-compileroptions)
 include(vectorization)
 include(cuda)
 include(doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES
+
+# tests and examples
+add_subdirectory(examples)
+add_subdirectory(tests)
 
 # write version information
 include(CMakePackageConfigHelpers)

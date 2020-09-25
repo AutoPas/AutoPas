@@ -133,6 +133,8 @@ if (HAS_AVX)
             --particles-total 71
             CONFIGURATIONS checkExamples
     )
+else()
+    message(STATUS "AVX could not be detected. Not adding AVX test.")
 endif ()
 
 add_test(
