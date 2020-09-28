@@ -5,7 +5,7 @@ file(
         "src/*.h"
 )
 
-if(AUTOPAS_MPI)
+if (AUTOPAS_MPI)
     message(STATUS "AUTOPAS_MPI set, searching for mpi to link against md-flexible ...")
     find_package(MPI)
 
@@ -14,9 +14,9 @@ if(AUTOPAS_MPI)
     else ()
         message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
     endif ()
-else()
+else ()
     message(STATUS "AUTOPAS_MPI not set, not linking MPI to md-flexible.")
-endif(AUTOPAS_MPI)
+endif (AUTOPAS_MPI)
 
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
@@ -95,27 +95,28 @@ add_test(
         CONFIGURATIONS checkExamples
 )
 
+# The AVX example should only be tested if AVX is available.
 set(HAS_AVX true)
 if (NOT AUTOPAS_USE_VECTORIZATION)
+    # If no vectorization is used, don't enable the example.
     message(STATUS "No vectorization used, not adding md-flexible-avx.test-unaligned to ctest.")
     set(HAS_AVX false)
-elseif(AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "SSE")
+elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "SSE")
+    # If vectorization is set to SSE: don't enable the example
     message(STATUS "Only SSE specified, not adding md-flexible-avx.test-unaligned to ctest.")
     set(HAS_AVX false)
-elseif(AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "NATIVE")
+elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "NATIVE")
+    # If Vectorization is set to native: we try to figure out the vectorization level.
     message(STATUS "Native vectorization level, trying to detect AVX capability.")
-    if(UNIX)
-        message(STATUS "Unix")
-        EXEC_PROGRAM(cat ARGS "/proc/cpuinfo" OUTPUT_VARIABLE CPUINFO)
-        STRING(REGEX REPLACE "^.*(avx).*$" "\\1" AVX_THERE ${CPUINFO})
-        STRING(COMPARE EQUAL "avx" "${AVX_THERE}" HAS_AVX)
-        message(STATUS "detected avx on Unix? ${HAS_AVX}")
-    else()
-        message(STATUS "no Unix")
-        # set to false, as we don't know...
-        set(HAS_AVX false)
-    endif()
-else()
+    try_compile(
+            HAS_AVX
+            ${CMAKE_BINARY_DIR}
+            ${AUTOPAS_SOURCE_DIR}/cmake/tests/has_avx_test.cpp
+            # We are abusing COMPILE_DEFINITIONS here. There is no other sane way of passing "-march=native" ...
+            COMPILE_DEFINITIONS "-march=native"
+            OUTPUT_VARIABLE HAS_AVX_ERROR
+            )
+else ()
     message(STATUS "Adding AVX example to test, as proper vectorization is manually specified.")
 endif ()
 
@@ -136,7 +137,7 @@ if (HAS_AVX)
             --particles-total 71
             CONFIGURATIONS checkExamples
     )
-else()
+else ()
     message(STATUS "AVX could not be detected. Not adding AVX test.")
 endif ()
 
