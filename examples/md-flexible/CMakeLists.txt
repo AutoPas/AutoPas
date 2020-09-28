@@ -115,7 +115,7 @@ elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "NATIVE")
             # We are abusing COMPILE_DEFINITIONS here. There is no other sane way of passing "-march=native" ...
             COMPILE_DEFINITIONS "-march=native"
             OUTPUT_VARIABLE HAS_AVX_ERROR
-            )
+    )
 else ()
     message(STATUS "Adding AVX example to test, as proper vectorization is manually specified.")
 endif ()
