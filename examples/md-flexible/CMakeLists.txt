@@ -1,19 +1,22 @@
 file(
-    GLOB_RECURSE
-    MDFlex_SRC
-    "src/*.cpp"
-    "src/*.h"
+        GLOB_RECURSE
+        MDFlex_SRC
+        "src/*.cpp"
+        "src/*.h"
 )
 
-message(STATUS "searching for mpi...")
-find_package(MPI)
+if (AUTOPAS_MPI)
+    message(STATUS "AUTOPAS_MPI set, searching for mpi to link against md-flexible ...")
+    find_package(MPI)
 
-if (NOT ${MPI_CXX_FOUND})
-    message(STATUS "cxx mpi not found, not building sph-main-mpi")
-    return()
+    if (NOT ${MPI_CXX_FOUND})
+        message(FATAL_ERROR "cxx mpi could not be found, even though AUTOPAS_MPI was set.")
+    else ()
+        message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
+    endif ()
 else ()
-    message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
-endif ()
+    message(STATUS "AUTOPAS_MPI not set, not linking MPI to md-flexible.")
+endif (AUTOPAS_MPI)
 
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
@@ -23,16 +26,16 @@ target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(autopas_yaml-cpp)
 
-target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp MPI::MPI_CXX)
+target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp $<$<BOOL:${AUTOPAS_MPI}>:MPI::MPI_CXX>)
 
 # --- copy script files to build dir ---
 file(
-    GLOB_RECURSE SCRIPTS
-    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-    "*.sh"
-    "*.gp"
-    "*.py"
-    "*.yaml"
+        GLOB_RECURSE SCRIPTS
+        RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+        "*.sh"
+        "*.gp"
+        "*.py"
+        "*.yaml"
 )
 
 foreach (script ${SCRIPTS})
@@ -49,8 +52,8 @@ add_subdirectory(tests)
 # randomly generated imbalanced scenario tested with LC only
 # also tests the flop functor
 add_test(
-    NAME md-flexible.test-static
-    COMMAND
+        NAME md-flexible.test-static
+        COMMAND
         md-flexible
         --container linked
         --cutoff 1.
@@ -67,7 +70,7 @@ add_test(
         --periodic false
         --deltaT 0.
         --no-end-config
-    CONFIGURATIONS checkExamples
+        CONFIGURATIONS checkExamples
 )
 
 #stable, periodic particle grid tested with all configurations
@@ -92,10 +95,56 @@ add_test(
         CONFIGURATIONS checkExamples
 )
 
+# The AVX example should only be tested if AVX is available.
+set(HAS_AVX true)
+if (NOT AUTOPAS_USE_VECTORIZATION)
+    # If no vectorization is used, don't enable the example.
+    message(STATUS "No vectorization used, not adding md-flexible-avx.test-unaligned to ctest.")
+    set(HAS_AVX false)
+elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "SSE")
+    # If vectorization is set to SSE: don't enable the example
+    message(STATUS "Only SSE specified, not adding md-flexible-avx.test-unaligned to ctest.")
+    set(HAS_AVX false)
+elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "NATIVE")
+    # If Vectorization is set to native: we try to figure out the vectorization level.
+    message(STATUS "Native vectorization level, trying to detect AVX capability.")
+    try_compile(
+            HAS_AVX
+            ${CMAKE_BINARY_DIR}
+            ${AUTOPAS_SOURCE_DIR}/cmake/tests/has_avx_test.cpp
+            # We are abusing COMPILE_DEFINITIONS here. There is no other sane way of passing "-march=native" ...
+            COMPILE_DEFINITIONS "-march=native"
+            OUTPUT_VARIABLE HAS_AVX_ERROR
+    )
+else ()
+    message(STATUS "Adding AVX example to test, as proper vectorization is manually specified.")
+endif ()
+
+if (HAS_AVX)
+    message(STATUS "AVX detected. Adding AVX test.")
+    #dangerous, as lc_c04_combined_SoA uses unaligned values.
+    add_test(
+            NAME md-flexible-avx.test-unaligned
+            COMMAND
+            md-flexible
+            --no-end-config
+            --no-flops
+            --functor lennard-jones-AVX2
+            --deltaT 0
+            --particle-generator uniform
+            --log-level debug
+            --traversal lc_c04_combined_SoA
+            --particles-total 71
+            CONFIGURATIONS checkExamples
+    )
+else ()
+    message(STATUS "AVX could not be detected. Not adding AVX test.")
+endif ()
+
 add_test(
-    NAME md-flexMeasurePerf
-    COMMAND measurePerf.sh md-flexible -silent
-    CONFIGURATIONS checkExamples
+        NAME md-flexMeasurePerf
+        COMMAND measurePerf.sh md-flexible -silent
+        CONFIGURATIONS checkExamples
 )
 # cmake-format: on
 
