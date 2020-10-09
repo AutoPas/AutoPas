@@ -154,15 +154,23 @@ template <class T, std::size_t SIZE>
 namespace {
 /**
  * Helper function to provide a templated dot product that is basically the same as writing it out by hand.
- * @tparam T
- * @tparam I
+ *
+ * @note With Clang recursion produces 1 ASM instruction less than parameter expansion. No difference for ICC and GCC.
+ *
+ * @tparam I Helper index for the recursion.
+ * @tparam T Type of the arrays.
+ * @tparam SIZE Size of the arrays.
  * @param a
  * @param b
  * @return
  */
-template <typename T, size_t... I>
-double dotAux(T a, T b, std::integer_sequence<size_t, I...>) {
-  return ((std::get<I>(a) * std::get<I>(b)) + ...);
+template <std::size_t I, class T, std::size_t SIZE>
+[[nodiscard]] constexpr T dotAux(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  if constexpr (I != 0) {
+    return a[I]*b[I] + dotAux<I-1>(a, b);
+  } else {
+    return a[0] * b[0];
+  }
 }
 }  // namespace
 
@@ -177,7 +185,7 @@ double dotAux(T a, T b, std::integer_sequence<size_t, I...>) {
  */
 template <class T, std::size_t SIZE>
 [[nodiscard]] constexpr T dot(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
-  return dotAux(a, b, std::make_index_sequence<SIZE>{});
+  return dotAux<SIZE-1>(a, b);
 }
 
 /**
