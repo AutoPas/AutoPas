@@ -32,8 +32,9 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
    *
    * @param newton3
    * @param doDeleteSomeParticles
+   * @param useUnalignedViews
    */
-  void testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool doDeleteSomeParticles);
+  void testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
 
   /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
@@ -44,8 +45,23 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
    *
    * @param newton3
    * @param doDeleteSomeParticles
+   * @param useUnalignedViews
    */
-  void testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles);
+  void testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
+
+  /**
+   * Creates two cells, generates neighbor lists manually and then compares the SoAFunctorVerlet calls.
+   * @param newton3
+   * @param doDeleteSomeParticles
+   */
+  void testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDeleteSomeParticles);
+
+  /**
+   * Create two cells and compare AoSFunctor
+   * @param newton3
+   * @param doDeleteSomeParticles
+   */
+  void testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDeleteSomeParticles);
 
   /**
    * Checks that two non empty SoAs' particles are equal
@@ -74,6 +90,8 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
   bool particleEqual(Particle &p1, Particle &p2);
 
   constexpr static double _cutoff{6.};
+  constexpr static double _skin{2.};
+  constexpr static double _interactionLengthSquare{(_cutoff + _skin) * (_cutoff + _skin)};
   constexpr static double _epsilon{1.};
   constexpr static double _sigma{1.};
   const std::array<double, 3> _lowCorner{0., 0., 0.};

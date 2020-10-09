@@ -17,9 +17,6 @@ namespace autopas {
  */
 template <class Number>
 class NumberSetFinite : public NumberSet<Number> {
- private:
-  std::set<Number> _set;
-
  public:
   /**
    * Default Constructor: Empty set
@@ -37,6 +34,11 @@ class NumberSetFinite : public NumberSet<Number> {
   NumberSetFinite(std::set<Number> values) : _set(values) {}
 
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberSetFinite>(*this); }
+  /**
+   * Setter for NumberSetFinite
+   * @param numbers The set of numbers the new NumberSetFinite represents
+   */
+  inline void resetValues(std::set<Number> &numbers) override { _set = numbers; }
 
   std::string to_string() const override { return "" + utils::ArrayUtils::to_string(_set) + ""; }
 
@@ -54,5 +56,16 @@ class NumberSetFinite : public NumberSet<Number> {
     return rng.uniformSample(_set.begin(), _set.end(), n);
   }
   std::set<Number> uniformSampleSet(size_t n, Random &rng) const override { return rng.randomSubset(_set, n); }
+  Number getMedian() const override {
+    auto it = std::begin(_set);
+    std::advance(it, _set.size() / 2);
+    return *it;
+  }
+
+ private:
+  /**
+   * Set containing all numbers.
+   */
+  std::set<Number> _set;
 };
 }  // namespace autopas

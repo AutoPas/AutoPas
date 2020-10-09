@@ -12,8 +12,8 @@
 
 #include "SetSearchSpaceBasedTuningStrategy.h"
 #include "TuningStrategyInterface.h"
+#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -77,6 +77,18 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
     _traversalTimesStorage[*_currentConfig].emplace_back(iteration, time);
     _lastTest[*_currentConfig] = _tuningPhaseCounter;
   }
+
+  inline long getEvidence(Configuration configuration) const override {
+    // compute the average of times for this configuration
+    auto times = _traversalTimesStorage.at(configuration);
+    long result = 0;
+    for (auto time : times) {
+      result += time.second;
+    }
+    return result / times.size();
+  }
+
+  inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
 
   inline void reset(size_t iteration) override {
     _configurationPredictions.clear();

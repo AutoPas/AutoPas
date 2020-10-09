@@ -37,9 +37,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal, config.relativeOptimumRange,
       config.relativeBlacklistRange, config.periodic, config.tuningPhases, config.verletClusterSize,
       config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
-      config.tuningStrategyOption, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
-      config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
-      zshCompletionsOption, helpOption)};
+      config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat, config.verletRebuildFrequency,
+      config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename,
+      config.distributionStdDev, config.globalForce, zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -225,6 +225,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.generatorOption.value = MDFlexConfig::GeneratorOption::gaussian;
         } else if (strArg.find("sp") != string::npos) {
           config.generatorOption.value = MDFlexConfig::GeneratorOption::sphere;
+        } else if (strArg.find("cl") != string::npos) {
+          config.generatorOption.value = MDFlexConfig::GeneratorOption::closestPacked;
         } else {
           cerr << "Unknown generator: " << strArg << endl;
           cerr << "Please use 'Grid' or 'Gaussian'" << endl;
@@ -461,6 +463,17 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.tuningStrategyOption.value = *parsedOptions.begin();
         break;
       }
+      case decltype(config.mpiStrategyOption)::getoptChar: {
+        auto parsedOptions = autopas::MPIStrategyOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one mpi strategy option. AutoPas cannot switch between several." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.mpiStrategyOption.value = *parsedOptions.begin();
+        break;
+      }
       case decltype(config.useThermostat)::getoptChar: {
         config.useThermostat.value = autopas::utils::StringUtils::parseBoolOption(strArg);
         break;
@@ -512,6 +525,19 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
+      case decltype(config.globalForce)::getoptChar: {
+        // when passing via cli global force can only be in z-direction. For fancier forces use yaml input.
+        try {
+          auto force = stod(strArg);
+          config.globalForce.value = {0, 0, force};
+        } catch (const exception &) {
+          cerr << "Error parsing global force: " << optarg << endl;
+          cerr << "Expecting one double as force along the z-axis." << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+
       default: {
         // error message handled by getopt
         displayHelp = true;
@@ -521,7 +547,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
 
   // only create objects if nothing was set by a yaml file and there was no checkpoint
   if (config.checkpointfile.value.empty() and config.cubeGaussObjects.empty() and config.cubeGridObjects.empty() and
-      config.cubeUniformObjects.empty() and config.sphereObjects.empty()) {
+      config.cubeUniformObjects.empty() and config.sphereObjects.empty() and config.cubeClosestPackedObjects.empty()) {
     // common settings for any object type:
     unsigned int typeID = 0;
     double epsilon = 1.;
@@ -557,6 +583,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         Sphere sphere(velocity, typeID, epsilon, sigma, mass, {centerOfBox, centerOfBox, centerOfBox}, centerOfBox,
                       config.particleSpacing.value);
         config.sphereObjects.push_back(sphere);
+        break;
+      }
+      case MDFlexConfig::GeneratorOption::closestPacked: {
+        CubeClosestPacked cubeClosestPacked(velocity, typeID, epsilon, sigma, mass, config.particleSpacing.value,
+                                            {config.boxLength.value, config.boxLength.value, config.boxLength.value},
+                                            bottomLeftCorner);
+        config.cubeClosestPackedObjects.push_back(cubeClosestPacked);
         break;
       }
     }

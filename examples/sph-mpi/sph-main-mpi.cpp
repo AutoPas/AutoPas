@@ -562,6 +562,7 @@ int main(int argc, char *argv[]) {
     printConservativeVariables(sphSystem, comm);
   }
   std::cout << "-----------------\nfinished" << std::endl;
+  sphSystem.finalize();
   MPI_Comm_free(&comm);
   MPI_Finalize();
 }

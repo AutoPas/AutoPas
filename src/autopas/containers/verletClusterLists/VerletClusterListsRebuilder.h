@@ -56,7 +56,7 @@ class VerletClusterListsRebuilder {
         _towers(towers),
         _towerSideLength(clusterList.getTowerSideLength()),
         _interactionLengthInTowers(clusterList.getNumTowersPerInteractionLength()),
-        _towerSideLengthReciprocal(1 / _towerSideLength),
+        _towerSideLengthReciprocal(clusterList.getTowerSideLengthReciprocal()),
         _towersPerDim(clusterList.getTowersPerDimension()),
         _interactionLength(clusterList.getInteractionLength()),
         _interactionLengthSqr(_interactionLength * _interactionLength),
@@ -97,8 +97,13 @@ class VerletClusterListsRebuilder {
     // resize to number of towers. Cannot use resize since towers are not default constructable.
     _towers.clear();
     _towers.reserve(numTowers);
+
+    // create towers and make an estimate for how many particles memory needs to be allocated
+    // 2.7 seems high but gave the best performance when testing
+    const size_t sizeEstimation = (static_cast<double>(numParticles) / numTowers) * 2.7;
     for (int i = 0; i < numTowers; ++i) {
       _towers.emplace_back(ClusterTower<Particle>(_clusterSize));
+      _towers[i].reserve(sizeEstimation);
     }
 
     sortParticlesIntoTowers(invalidParticles);
@@ -167,7 +172,6 @@ class VerletClusterListsRebuilder {
     return towersPerDim;
   }
 
- protected:
   /**
    * Removes previously saved neighbors from clusters and sets the positions of the dummy particles to inside of the
    * cluster. The latter reduces the amount of calculated interaction partners.
@@ -450,24 +454,36 @@ class VerletClusterListsRebuilder {
    * @return Tower reference.
    */
   auto &getTower(std::array<double, 3> location) {
-    std::array<size_t, 2> towerIndex{};
+    auto [towerIndexX, towerIndexY] = getTowerCoordinates(location);
+    return getTower(towerIndexX, towerIndexY);
+  }
+
+  /**
+   * Returns the coordinates of the tower in the tower grid the given 3D coordinates are in.
+   * If the location is outside of the domain, the tower nearest tower is returned.
+   *
+   * @param location The 3D coordinates.
+   * @return Tower reference.
+   */
+  std::array<size_t, 2> getTowerCoordinates(std::array<double, 3> location) {
+    std::array<size_t, 2> towerIndex2D{};
 
     for (int dim = 0; dim < 2; dim++) {
       const auto towerDimIndex =
-          (static_cast<long int>(floor((location[dim] - _haloBoxMin[dim]) * _towerSideLengthReciprocal))) + 1l;
+          static_cast<long int>(floor((location[dim] - _haloBoxMin[dim]) * _towerSideLengthReciprocal));
       const auto towerDimIndexNonNegative = static_cast<size_t>(std::max(towerDimIndex, 0l));
       const auto towerDimIndexNonLargerValue = std::min(towerDimIndexNonNegative, _towersPerDim[dim] - 1);
-      towerIndex[dim] = towerDimIndexNonLargerValue;
+      towerIndex2D[dim] = towerDimIndexNonLargerValue;
       /// @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
       // flag manager
       if (location[dim] >= _haloBoxMax[dim]) {
-        towerIndex[dim] = _towersPerDim[dim] - 1;
+        towerIndex2D[dim] = _towersPerDim[dim] - 1;
       } else if (location[dim] < _haloBoxMin[dim]) {
-        towerIndex[dim] = 0;
+        towerIndex2D[dim] = 0;
       }
     }
 
-    return getTower(towerIndex[0], towerIndex[1]);
+    return towerIndex2D;
   }
 
   /**

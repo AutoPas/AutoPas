@@ -19,15 +19,7 @@ include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
 add_executable(sph-main-mpi ${MY_SRC})
 
-target_link_libraries(sph-main-mpi autopas ${MPI_LIBRARIES})
-
-if (MPI_COMPILE_FLAGS)
-    set_target_properties(sph-main-mpi PROPERTIES COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
-endif ()
-
-if (MPI_LINK_FLAGS)
-    set_target_properties(sph-main-mpi PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS}")
-endif ()
+target_link_libraries(sph-main-mpi autopas MPI::MPI_CXX)
 
 # -----------------test-----------------
 # add check for current target

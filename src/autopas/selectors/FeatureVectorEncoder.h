@@ -19,42 +19,56 @@ namespace autopas {
  */
 class FeatureVectorEncoder {
   /**
-   * Number of discrete values in a cluster encoded vector
+   * Indices of the discrete part of convertToTunable().
    */
-  static constexpr size_t clusterDiscreteSize{3};
+  enum class DiscreteIndices { containerTraversalEstimator, dataLayout, newton3, TOTALNUMBER };
+
   /**
-   * Index containing information about ContainerTraversalEstimator in continuous part of a cluster encoded vector
+   * Indices of the continuous part of convertToTunable().
    */
-  static constexpr size_t containerTraversalEstimatorClusterIndex{0};
+  enum class ContinuousIndices { cellSizeFactor, TOTALNUMBER };
+
+ public:
   /**
-   * Index containing information about DataLayout in continuous part of a cluster encoded vector
+   * Number of tunable discrete dimensions.
    */
-  static constexpr size_t dataLayoutClusterIndex{1};
+  static constexpr size_t tunableDiscreteDims{static_cast<size_t>(DiscreteIndices::TOTALNUMBER)};
+
   /**
-   * Index containing information about Newton3 in continuous part of a cluster encoded vector
+   * Number of tunable continuous dimensions.
    */
-  static constexpr size_t newtonClusterIndex{2};
+  static constexpr size_t tunableContinuousDims{static_cast<size_t>(ContinuousIndices::TOTALNUMBER)};
+
+ private:
   /**
-   * Index containing information about CellSizeFactor in discrete part of a cluster encoded vector
+   * Generalized form of all discrete vector representations. Every representation of discrete values should be able to
+   * be brought to and from this form.
    */
-  static constexpr size_t cellSizeFactorClusterIndex{0};
+  using DiscreteDimensionType = std::array<int, tunableDiscreteDims>;
+  /**
+   * Generalized form of all continuous vector representations. Any representation of continuous values should be able
+   * to be brought to and from this form.
+   */
+  using ContinuousDimensionType = std::array<double, tunableContinuousDims>;
 
  public:
   /**
    * Default Constructor
    */
-  FeatureVectorEncoder() : _containerTraversalEstimatorOptions(), _dataLayoutOptions(), _newton3Options() {}
+  FeatureVectorEncoder() {}
 
   /**
    * Contructor
    * @param containerTraversalEstimatorOptions
    * @param dataLayoutOptions
    * @param newton3Options
+   * @param cellSizeFactors
    */
   FeatureVectorEncoder(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
-      const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options) {
-    setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options);
+      const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
+      const NumberSet<double> &cellSizeFactors) {
+    setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors);
   }
 
   /**
@@ -62,22 +76,25 @@ class FeatureVectorEncoder {
    * @param containerTraversalEstimatorOptions
    * @param dataLayoutOptions
    * @param newton3Options
+   * @param cellSizeFactors
    */
   void setAllowedOptions(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
-      const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options) {
+      const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
+      const NumberSet<double> &cellSizeFactors) {
     _containerTraversalEstimatorOptions = containerTraversalEstimatorOptions;
     _dataLayoutOptions = dataLayoutOptions;
     _newton3Options = newton3Options;
 
-    _oneHotDims = FeatureVector::featureSpaceContinuousDims + _containerTraversalEstimatorOptions.size() +
-                  _dataLayoutOptions.size() + _newton3Options.size();
+    _oneHotDims = _containerTraversalEstimatorOptions.size() + _dataLayoutOptions.size() + _newton3Options.size() +
+                  tunableContinuousDims;
 
-    _dimRestrictions.clear();
-    _dimRestrictions.reserve(clusterDiscreteSize);
-    _dimRestrictions.push_back(_containerTraversalEstimatorOptions.size());
-    _dimRestrictions.push_back(_dataLayoutOptions.size());
-    _dimRestrictions.push_back(_newton3Options.size());
+    _discreteRestrictions[static_cast<size_t>(DiscreteIndices::containerTraversalEstimator)] =
+        _containerTraversalEstimatorOptions.size();
+    _discreteRestrictions[static_cast<size_t>(DiscreteIndices::dataLayout)] = _dataLayoutOptions.size();
+    _discreteRestrictions[static_cast<size_t>(DiscreteIndices::newton3)] = _newton3Options.size();
+
+    _continuousRestrictions[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = cellSizeFactors.clone();
   }
 
   /**
@@ -85,6 +102,14 @@ class FeatureVectorEncoder {
    * @return
    */
   [[nodiscard]] size_t getOneHotDims() const { return _oneHotDims; }
+
+  /**
+   * Get the number of allowed options of each discrete dimension.
+   * @return
+   */
+  [[nodiscard]] const std::array<int, tunableDiscreteDims> getDiscreteRestrictions() const {
+    return _discreteRestrictions;
+  }
 
   /**
    * Encode FeatureVector to Eigen::VectorXd using one-hot-encoding.
@@ -95,16 +120,18 @@ class FeatureVectorEncoder {
     std::vector<double> data;
     data.reserve(_oneHotDims);
 
-    data.push_back(vec.cellSizeFactor);
-    for (const auto &[container, traversal, estimator] : _containerTraversalEstimatorOptions) {
-      data.push_back(
-          (container == vec.container and traversal == vec.traversal and estimator == vec.loadEstimator) ? 1. : 0.);
+    auto [discreteValues, continuousValues] = convertToTunable(vec);
+
+    // discrete values are encoded using one-hot-encoding
+    for (size_t i = 0; i < tunableDiscreteDims; ++i) {
+      for (int listIndex = 0; listIndex < _discreteRestrictions[i]; ++listIndex) {
+        data.push_back(listIndex == discreteValues[i] ? 1. : 0.);
+      }
     }
-    for (const auto &dataLayout : _dataLayoutOptions) {
-      data.push_back((dataLayout == vec.dataLayout) ? 1. : 0.);
-    }
-    for (const auto &newton3 : _newton3Options) {
-      data.push_back((newton3 == vec.newton3) ? 1. : 0.);
+
+    // continuous values are simply copied
+    for (size_t i = 0; i < tunableContinuousDims; ++i) {
+      data.push_back(continuousValues[i]);
     }
 
     return Eigen::Map<Eigen::VectorXd>(data.data(), _oneHotDims);
@@ -122,143 +149,84 @@ class FeatureVectorEncoder {
     }
 
     size_t pos = 0;
-    double cellSizeFactor = vec[pos++];
 
-    // get container, traversal, loadEstimator
-    std::optional<FeatureVector::ContainerTraversalEstimatorOption> cteOption{};
-    for (const auto &option : _containerTraversalEstimatorOptions) {
-      if (vec[pos++] == 1.) {
-        if (cteOption) {
-          utils::ExceptionHandler::exception(
-              "FeatureVectorEncoder.oneHotDecode: Vector encodes more than one ContainerTraversalEstimator. (More than "
-              "one value for ContainerTraversalEstimator "
-              "equals 1.)");
+    DiscreteDimensionType discreteValues;
+
+    // extract each one-hot-encoded discrete option
+    for (size_t i = 0; i < tunableDiscreteDims; ++i) {
+      // for each dimension get index whose value equals 1.
+      std::optional<int> value = {};
+      for (int listIndex = 0; listIndex < _discreteRestrictions[i]; ++listIndex) {
+        if (vec[pos++] == 1.) {
+          if (value) {
+            utils::ExceptionHandler::exception(
+                "FeatureVectorEncoder.oneHotDecode: Vector encodes more than one option for tunable dimension {}. "
+                "(More than one value equals 1.)",
+                i);
+          }
+          value = listIndex;
         }
-        cteOption = option;
       }
-    }
-    if (not cteOption) {
-      utils::ExceptionHandler::exception(
-          "FeatureVectorEncoder.oneHotDecode: Vector encodes no ContainerTraversalEstimator. (All values for "
-          "ContainerTraversalEstimator equal 0.)");
+      if (not value) {
+        utils::ExceptionHandler::exception(
+            "FeatureVectorEncoder.oneHotDecode: Vector encodes no option for tunable dimension {}. (All values equal "
+            "0.)",
+            i);
+      }
+      discreteValues[i] = *value;
     }
 
-    // get data layout
-    std::optional<DataLayoutOption> dataLayout = {};
-    for (const auto &option : _dataLayoutOptions) {
-      if (vec[pos++] == 1.) {
-        if (dataLayout) {
-          utils::ExceptionHandler::exception(
-              "FeatureVectorEncoder.oneHotDecode: Vector encodes more than one data layout. (More than one value for "
-              "dataLayout equals 1.)");
-        }
-        dataLayout = option;
-      }
-    }
-    if (not dataLayout) {
-      utils::ExceptionHandler::exception(
-          "FeatureVectorEncoder.oneHotDecode: Vector encodes no data layout. (All values for dataLayout equal 0.)");
+    ContinuousDimensionType continuousValues;
+    for (size_t i = 0; i < tunableContinuousDims; ++i) {
+      continuousValues[i] = vec[pos++];
     }
 
-    // get newton3
-    std::optional<Newton3Option> newton3 = {};
-    for (const auto &option : _newton3Options) {
-      if (vec[pos++] == 1.) {
-        if (newton3) {
-          utils::ExceptionHandler::exception(
-              "FeatureVectorEncoder.oneHotDecode: Vector encodes more than one newton3. (More than one value for "
-              "newton3 "
-              "equals 1.)");
-        }
-        newton3 = option;
-      }
-    }
-    if (not newton3) {
-      utils::ExceptionHandler::exception(
-          "FeatureVectorEncoder.oneHotDecode: Vector encodes no newton3. (All values for newton3 equal 0.)");
-    }
-
-    const auto &[container, traversal, estimator] = *cteOption;
-    return FeatureVector(container, cellSizeFactor, traversal, estimator, *dataLayout, *newton3);
+    return convertFromTunable(discreteValues, continuousValues);
   }
 
   /**
    * Convert Feature vector to cluster representation for GaussianCluster.
    * Discrete values are encoded using their index in given std::vector.
+   * Additionally, append current iteration to the continuous tuple.
    * @param vec vector to encode
+   * @param iteration current iteration which may be scaled by some factor
    * @return cluster encoded vector
    */
-  [[nodiscard]] std::pair<Eigen::VectorXi, Eigen::VectorXd> convertToCluster(const FeatureVector &vec) const {
-    int containerTraversalEstimatorIndex = static_cast<int>(
-        std::distance(_containerTraversalEstimatorOptions.begin(),
-                      std::find(_containerTraversalEstimatorOptions.begin(), _containerTraversalEstimatorOptions.end(),
-                                std::make_tuple(vec.container, vec.traversal, vec.loadEstimator))));
-    int dataLayoutIndex = static_cast<int>(std::distance(
-        _dataLayoutOptions.begin(), std::find(_dataLayoutOptions.begin(), _dataLayoutOptions.end(), vec.dataLayout)));
-    int newton3Index = static_cast<int>(
-        std::distance(_newton3Options.begin(), std::find(_newton3Options.begin(), _newton3Options.end(), vec.newton3)));
+  [[nodiscard]] std::pair<Eigen::VectorXi, Eigen::VectorXd> convertToCluster(const FeatureVector &vec,
+                                                                             double iteration) const {
+    auto [discreteValues, continuousValues] = convertToTunable(vec);
+    Eigen::Map<Eigen::VectorXi> vecDiscrete(discreteValues.data(), tunableDiscreteDims);
 
-    Eigen::Vector3i vecDiscrete({containerTraversalEstimatorIndex, dataLayoutIndex, newton3Index});
-    Eigen::VectorXd vecContinuous(FeatureVector::featureSpaceContinuousDims);
-    vecContinuous << vec.cellSizeFactor;
+    std::vector<double> continuousData;
+    continuousData.reserve(tunableContinuousDims + 1);
+    for (size_t i = 0; i < tunableContinuousDims; ++i) {
+      continuousData.push_back(continuousValues[i]);
+    }
+    continuousData.push_back(iteration);
+    Eigen::Map<Eigen::VectorXd> vecContinuous(continuousData.data(), tunableContinuousDims + 1);
     return std::make_pair(vecDiscrete, vecContinuous);
   }
 
   /**
    * Inverse of convertToCluster. Convert cluster representation back
-   * to Feature vector.
-   * @param vec cluster encoded vector
-   * @return decoded vector
-   */
-  FeatureVector convertFromCluster(const std::pair<Eigen::VectorXi, Eigen::VectorXd> &vec) {
-    const auto &[vecDiscrete, vecContinuous] = vec;
-    auto [container, traversal, estimator] =
-        _containerTraversalEstimatorOptions[vecDiscrete[containerTraversalEstimatorClusterIndex]];
-
-    return FeatureVector(container, vecContinuous[cellSizeFactorClusterIndex], traversal, estimator,
-                         _dataLayoutOptions[vecDiscrete[dataLayoutClusterIndex]],
-                         _newton3Options[vecDiscrete[newtonClusterIndex]]);
-  }
-
-  /**
-   * Convert Feature vector to cluster representation for GaussianCluster.
-   * Discrete values are encoded using their index in given std::vector.
-   * Additionaly append current iteration to the continuous tuple.
-   * @param vec vector to encode
-   * @param iteration current iteration which may be scaled by some factor
-   * @return cluster encoded vector
-   */
-  [[nodiscard]] std::pair<Eigen::VectorXi, Eigen::VectorXd> convertToClusterWithIteration(const FeatureVector &vec,
-                                                                                          double iteration) const {
-    int containerTraversalEstimatorIndex = static_cast<int>(
-        std::distance(_containerTraversalEstimatorOptions.begin(),
-                      std::find(_containerTraversalEstimatorOptions.begin(), _containerTraversalEstimatorOptions.end(),
-                                std::make_tuple(vec.container, vec.traversal, vec.loadEstimator))));
-    int dataLayoutIndex = static_cast<int>(std::distance(
-        _dataLayoutOptions.begin(), std::find(_dataLayoutOptions.begin(), _dataLayoutOptions.end(), vec.dataLayout)));
-    int newton3Index = static_cast<int>(
-        std::distance(_newton3Options.begin(), std::find(_newton3Options.begin(), _newton3Options.end(), vec.newton3)));
-
-    Eigen::Vector3i vecDiscrete({containerTraversalEstimatorIndex, dataLayoutIndex, newton3Index});
-    Eigen::VectorXd vecContinuous(FeatureVector::featureSpaceContinuousDims + 1);
-    vecContinuous << vec.cellSizeFactor, iteration;
-    return std::make_pair(vecDiscrete, vecContinuous);
-  }
-
-  /**
-   * Inverse of convertToClusterWithIteration. Convert cluster representation with iteration back
    * to Feature vector while ignoring the iteration.
    * @param vec cluster encoded vector
    * @return decoded vector
    */
-  FeatureVector convertFromClusterWithIteration(const std::pair<Eigen::VectorXi, Eigen::VectorXd> &vec) {
+  [[nodiscard]] FeatureVector convertFromCluster(const std::pair<Eigen::VectorXi, Eigen::VectorXd> &vec) {
     const auto &[vecDiscrete, vecContinuous] = vec;
-    auto [container, traversal, estimator] =
-        _containerTraversalEstimatorOptions[vecDiscrete[containerTraversalEstimatorClusterIndex]];
 
-    return FeatureVector(container, vecContinuous[cellSizeFactorClusterIndex], traversal, estimator,
-                         _dataLayoutOptions[vecDiscrete[dataLayoutClusterIndex]],
-                         _newton3Options[vecDiscrete[newtonClusterIndex]]);
+    DiscreteDimensionType discreteValues;
+    for (size_t i = 0; i < tunableDiscreteDims; ++i) {
+      discreteValues[i] = vecDiscrete[i];
+    }
+
+    ContinuousDimensionType continuousValues;
+    for (size_t i = 0; i < tunableContinuousDims; ++i) {
+      continuousValues[i] = vecContinuous[i];
+    }
+
+    return convertFromTunable(discreteValues, continuousValues);
   }
 
   /**
@@ -267,11 +235,13 @@ class FeatureVectorEncoder {
    * @param target
    * @return
    */
-  std::vector<std::pair<Eigen::VectorXi, double>> clusterNeighboursManhattan1(const Eigen::VectorXi &target) {
+  [[nodiscard]] std::vector<std::pair<Eigen::VectorXi, double>> clusterNeighboursManhattan1(
+      const Eigen::VectorXi &target) {
     std::vector<std::pair<Eigen::VectorXi, double>> result;
     // neighbours should contain #(possible values for each dimension) - #dimensions (initial vector is skipped once per
     // dimension)
-    result.reserve(std::accumulate(_dimRestrictions.begin(), _dimRestrictions.end(), -_dimRestrictions.size()));
+    result.reserve(
+        std::accumulate(_discreteRestrictions.begin(), _discreteRestrictions.end(), -_discreteRestrictions.size()));
 
     // for each dimension
     for (int i = 0; i < target.size(); ++i) {
@@ -279,7 +249,7 @@ class FeatureVectorEncoder {
       auto init = target[i];
 
       // for each possible value of that dimension
-      for (int x = 0; x < _dimRestrictions[i]; ++x) {
+      for (int x = 0; x < _discreteRestrictions[i]; ++x) {
         // skip initial value
         if (x != init) {
           auto neighbour = target;
@@ -297,14 +267,16 @@ class FeatureVectorEncoder {
    * @param target
    * @return
    */
-  std::vector<std::pair<Eigen::VectorXi, double>> clusterNeighboursManhattan1Container(const Eigen::VectorXi &target) {
+  [[nodiscard]] std::vector<std::pair<Eigen::VectorXi, double>> clusterNeighboursManhattan1Container(
+      const Eigen::VectorXi &target) {
     std::vector<std::pair<Eigen::VectorXi, double>> result;
     // neighbours should contain #(possible values for each dimension) - #dimensions (initial vector is skipped once per
     // dimension)
-    result.reserve(std::accumulate(_dimRestrictions.begin(), _dimRestrictions.end(), -_dimRestrictions.size()));
+    result.reserve(
+        std::accumulate(_discreteRestrictions.begin(), _discreteRestrictions.end(), -_discreteRestrictions.size()));
 
-    auto targetContainer =
-        std::get<0>(_containerTraversalEstimatorOptions[target[containerTraversalEstimatorClusterIndex]]);
+    auto targetContainer = std::get<0>(
+        _containerTraversalEstimatorOptions[target[static_cast<int>(DiscreteIndices::containerTraversalEstimator)]]);
 
     // for each dimension
     for (int i = 0; i < target.size(); ++i) {
@@ -312,14 +284,14 @@ class FeatureVectorEncoder {
       auto init = target[i];
 
       // for each possible value of that dimension
-      for (int x = 0; x < _dimRestrictions[i]; ++x) {
+      for (int x = 0; x < _discreteRestrictions[i]; ++x) {
         // skip initial value
         if (x != init) {
           auto neighbour = target;
           neighbour[i] = x;
           double weight = 1.;
           // check if container changed
-          if (i == containerTraversalEstimatorClusterIndex) {
+          if (i == static_cast<int>(DiscreteIndices::containerTraversalEstimator)) {
             auto xContainer = std::get<0>(_containerTraversalEstimatorOptions[x]);
             if (targetContainer != xContainer) {
               // assign lower weight
@@ -334,15 +306,145 @@ class FeatureVectorEncoder {
     return result;
   }
 
- private:
-  std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
-  std::vector<DataLayoutOption> _dataLayoutOptions;
-  std::vector<Newton3Option> _newton3Options;
+  /**
+   * Create n latin-hypercube-samples from given featureSpace.
+   * @param n number of samples
+   * @param rng
+   * @return vector of sample featureVectors
+   */
+  std::vector<FeatureVector> lhsSampleFeatures(size_t n, Random &rng) const {
+    // create n samples for each discrete dimension.
+    std::array<std::vector<size_t>, tunableDiscreteDims> lhsDiscreteSamples;
+    for (size_t i = 0; i < tunableDiscreteDims; ++i) {
+      lhsDiscreteSamples[i] = rng.uniformSample(0, _discreteRestrictions[i] - 1, n);
+    }
+
+    // create n samples for each continuous dimension.
+    std::array<std::vector<double>, tunableContinuousDims> lhsContinuousSamples;
+    for (size_t i = 0; i < tunableContinuousDims; ++i) {
+      lhsContinuousSamples[i] = _continuousRestrictions[i]->uniformSample(n, rng);
+    }
+
+    // create FeatureVectors from raw samples
+    std::vector<FeatureVector> result;
+    for (size_t i = 0; i < n; ++i) {
+      DiscreteDimensionType discreteValues;
+      for (size_t d = 0; d < tunableDiscreteDims; ++d) {
+        discreteValues[d] = lhsDiscreteSamples[d][i];
+      }
+
+      ContinuousDimensionType continuousValues;
+      for (size_t c = 0; c < tunableContinuousDims; ++c) {
+        continuousValues[c] = lhsContinuousSamples[c][i];
+      }
+
+      result.emplace_back(convertFromTunable(discreteValues, continuousValues));
+    }
+
+    return result;
+  }
 
   /**
-   * Restriction of a cluster-encoded vector in each dimension.
+   * Create n latin-hypercube-samples from the continuous featureSpace and append a value representing the
+   * current iteration to each sample.
+   * @param n number of samples
+   * @param rng
+   * @param iteration Current iteration which may be scaled by some factor.
+   * @return vector of continuous feature samples
    */
-  std::vector<int> _dimRestrictions;
+  std::vector<Eigen::VectorXd> lhsSampleFeatureCluster(size_t n, Random &rng, double iteration) const {
+    // create n samples for each continuous dimension.
+    std::array<std::vector<double>, tunableContinuousDims> lhsContinuousSamples;
+    for (size_t i = 0; i < tunableContinuousDims; ++i) {
+      lhsContinuousSamples[i] = _continuousRestrictions[i]->uniformSample(n, rng);
+    }
+
+    // create FeatureVectors from raw samples
+    std::vector<Eigen::VectorXd> result;
+    for (size_t i = 0; i < n; ++i) {
+      std::array<double, tunableContinuousDims + 1> data;
+      for (size_t c = 0; c < tunableContinuousDims; ++c) {
+        data[c] = lhsContinuousSamples[c][i];
+      }
+      data[tunableContinuousDims] = iteration;
+      result.emplace_back(Eigen::Map<Eigen::VectorXd>(data.data(), data.size()));
+    }
+
+    return result;
+  }
+
+ private:
+  /**
+   * Create a pair of array from a FeatureVector.
+   * The first array contains all discrete options converted to a int which
+   * indicates the position of the option in the respectively provided allowedOptions list.
+   * The second array contains all continuous options which are converted to a double.
+   * @param vec
+   * @return
+   */
+  [[nodiscard]] std::pair<DiscreteDimensionType, ContinuousDimensionType> convertToTunable(
+      const FeatureVector &vec) const {
+    DiscreteDimensionType discreteValues;
+    discreteValues[static_cast<size_t>(DiscreteIndices::containerTraversalEstimator)] =
+        getIndex(_containerTraversalEstimatorOptions, std::make_tuple(vec.container, vec.traversal, vec.loadEstimator));
+    discreteValues[static_cast<size_t>(DiscreteIndices::dataLayout)] = getIndex(_dataLayoutOptions, vec.dataLayout);
+    discreteValues[static_cast<size_t>(DiscreteIndices::newton3)] = getIndex(_newton3Options, vec.newton3);
+
+    ContinuousDimensionType continuousValues;
+    continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = vec.cellSizeFactor;
+
+    return std::make_pair(discreteValues, continuousValues);
+  }
+
+  /**
+   * Inverse of convertToTunable. Generate FeatureVector from two arrays
+   * which contain information of all discrete options and continuous options respectively.
+   * @param discreteValues
+   * @param continuousValues
+   * @return
+   */
+  [[nodiscard]] FeatureVector convertFromTunable(const DiscreteDimensionType &discreteValues,
+                                                 const ContinuousDimensionType &continuousValues) const {
+    const auto &[container, traversal, estimator] =
+        _containerTraversalEstimatorOptions[discreteValues[static_cast<size_t>(
+            DiscreteIndices::containerTraversalEstimator)]];
+    auto dataLayout = _dataLayoutOptions[discreteValues[static_cast<size_t>(DiscreteIndices::dataLayout)]];
+    auto newton3 = _newton3Options[discreteValues[static_cast<size_t>(DiscreteIndices::newton3)]];
+
+    auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
+
+    return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3);
+  }
+
+  /**
+   * Get position of a value in provided list.
+   * @param list
+   * @param value
+   * @return index i such that list[i] == value
+   */
+  template <typename T>
+  static size_t getIndex(const std::vector<T> &list, const T &value) {
+    for (size_t i = 0; i < list.size(); ++i) {
+      if (list[i] == value) return i;
+    }
+
+    utils::ExceptionHandler::exception("FeatureVectorEncoder.getIndex: Value not allowed!");
+    return list.size();
+  }
+
+  std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions{};
+  std::vector<DataLayoutOption> _dataLayoutOptions{};
+  std::vector<Newton3Option> _newton3Options{};
+
+  /**
+   * Number of allowed options of each discrete dimension.
+   */
+  std::array<int, tunableDiscreteDims> _discreteRestrictions{};
+
+  /**
+   * Allowed values of each continuous dimension.
+   */
+  std::array<std::unique_ptr<NumberSet<double>>, tunableContinuousDims> _continuousRestrictions{};
 
   /**
    * Dimensions of a one-hot-encoded vector.

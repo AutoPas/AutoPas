@@ -12,8 +12,8 @@
 
 #include "SetSearchSpaceBasedTuningStrategy.h"
 #include "TuningStrategyInterface.h"
+#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -51,6 +51,10 @@ class FullSearch : public SetSearchSpaceBasedTuningStrategy {
       : SetSearchSpaceBasedTuningStrategy(std::move(allowedConfigurations)) {}
 
   inline void addEvidence(long time, size_t iteration) override { _traversalTimes[*_currentConfig] = time; }
+
+  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
+
+  inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
 
   inline void reset(size_t iteration) override {
     _traversalTimes.clear();

@@ -14,8 +14,8 @@
 #include "FullSearch.h"
 #include "GaussianModel/GaussianCluster.h"
 #include "TuningStrategyInterface.h"
+#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
 #include "autopas/selectors/FeatureVectorEncoder.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
@@ -38,14 +38,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   constexpr static double secondsPerMicroseconds = 1. / 1000000.;
   /**
-   * Dimension corresponding to the newton3 option in the discrete tuple.
-   */
-  constexpr static size_t discreteNewtonDim = 2;
-  /**
    * Dimensions of the continuous tuples.
    * FeatureVector continuous dimensions + 1 (time)
    */
-  constexpr static size_t continuousDims = FeatureVector::featureSpaceContinuousDims + 1;
+  constexpr static size_t continuousDims = FeatureVectorEncoder::tunableContinuousDims + 1;
   /**
    * Fixed noise
    */
@@ -62,11 +58,6 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * can be increased if necessary.
    */
   constexpr static double suggestedMaxDistance = 7.;
-
-  /**
-   * Number of cellSizeFactors sampled during the FullSearch phase.
-   */
-  constexpr static size_t cellSizeFactorSampleSize = 1;
 
  public:
   /**
@@ -98,6 +89,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _encoder(),
         _currentConfig(),
         _invalidConfigs(),
+        _traversalTimes(),
         _rng(seed),
         _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::evidenceMatchingScaledProbabilityGM,
                          sigma, _rng),
@@ -112,9 +104,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _iterationScale(1. / (maxEvidence * iterationScalePerMaxEvidence)),
         _currentNumEvidence(0),
         _currentOptimalTime(std::numeric_limits<long>::max()),
-        _fullSearch(allowedContainerOptions, allowedCellSizeFactors.uniformSampleSet(cellSizeFactorSampleSize, _rng),
-                    allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-                    allowedNewton3Options) {
+        _fullSearch(allowedContainerOptions, {allowedCellSizeFactors.getMedian()}, allowedTraversalOptions,
+                    allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options) {
     if (predNumLHSamples <= 0) {
       utils::ExceptionHandler::exception(
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
@@ -143,13 +134,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       autopas::utils::ExceptionHandler::exception("BayesianClusterSearch: No valid configurations could be created.");
     }
 
-    _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
-    _gaussianCluster.setDimensions({static_cast<int>(_containerTraversalEstimatorOptions.size()),
-                                    static_cast<int>(_dataLayoutOptions.size()),
-                                    static_cast<int>(_newton3Options.size())});
+    updateOptions();
     _gaussianCluster.setVectorToStringFun(
         [this](const GaussianModelTypes::VectorPairDiscreteContinuous &vec) -> std::string {
-          return _encoder.convertFromClusterWithIteration(vec).toString();
+          return _encoder.convertFromCluster(vec).toString();
         });
 
     _currentConfig = _fullSearch.getCurrentConfiguration();
@@ -171,7 +159,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
     }
 
     // encoded vector
-    auto vec = _encoder.convertToClusterWithIteration(_currentConfig, iteration * _iterationScale);
+    auto vec = _encoder.convertToCluster(_currentConfig, iteration * _iterationScale);
     // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
     // represent a maximization problem
     _gaussianCluster.addEvidence(vec, -time * secondsPerMicroseconds);
@@ -179,7 +167,11 @@ class BayesianClusterSearch : public TuningStrategyInterface {
     _currentIteration = iteration;
     ++_currentNumEvidence;
     _currentAcquisitions.clear();
+
+    _traversalTimes[_currentConfig] = time;
   }
+
+  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
   inline void reset(size_t iteration) override {
     size_t iterationSinceLastEvidence = iteration - _currentIteration;
@@ -194,6 +186,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
     if (_firstTuningPhase) {
       _fullSearch.reset(iteration);
+      _currentConfig = _fullSearch.getCurrentConfiguration();
     } else {
       tune();
     }
@@ -217,6 +210,12 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   inline void sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
 
+  /**
+   * If allowed options are changed this functions should be called
+   * to update encoder and clusters.
+   */
+  inline void updateOptions();
+
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
   std::vector<DataLayoutOption> _dataLayoutOptions;
@@ -233,6 +232,11 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Configurations marked invalid.
    */
   std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
+  /**
+   * Explicitly store traversal times for getEvidence().
+   * Refrain from reading the data from GaussianProcesses to maintain abstraction.
+   */
+  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
 
   Random _rng;
   /**
@@ -322,7 +326,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
 
     // test best vectors until empty
     while (not _currentAcquisitions.empty()) {
-      auto best = _encoder.convertFromClusterWithIteration(_currentAcquisitions.back());
+      auto best = _encoder.convertFromCluster(_currentAcquisitions.back());
 
       if (_invalidConfigs.find(best) == _invalidConfigs.end()) {
         // valid config found!
@@ -338,15 +342,14 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
     AutoPasLog(debug, "Tuning could not generate a valid configuration.");
   }
 
-  utils::ExceptionHandler::exception("BayesianSearch: Failed to sample an valid FeatureVector");
+  utils::ExceptionHandler::exception("BayesianClusterSearch: Failed to sample an valid FeatureVector");
   _currentConfig = FeatureVector();
   return false;
 }
 
 void BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOption af) {
   // create n lhs samples
-  auto continuousSamples = FeatureVector::lhsSampleFeatureContinuousWithIteration(n, _rng, *_cellSizeFactors,
-                                                                                  _currentIteration * _iterationScale);
+  auto continuousSamples = _encoder.lhsSampleFeatureCluster(n, _rng, _currentIteration * _iterationScale);
 
   // calculate all acquisitions
   _currentAcquisitions = _gaussianCluster.sampleOrderedByAcquisition(af, _neighbourFun, continuousSamples);
@@ -374,11 +377,8 @@ void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
 
   _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option),
                         _newton3Options.end());
-  _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
 
-  _gaussianCluster.setDimensions({static_cast<int>(_containerTraversalEstimatorOptions.size()),
-                                  static_cast<int>(_dataLayoutOptions.size()),
-                                  static_cast<int>(_newton3Options.size())});
+  updateOptions();
   _currentAcquisitions.clear();
 
   if (this->searchSpaceIsEmpty()) {
@@ -386,4 +386,13 @@ void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
         "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
   }
 }
+
+void BayesianClusterSearch::updateOptions() {
+  _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
+                             *_cellSizeFactors);
+
+  auto newRestrictions = _encoder.getDiscreteRestrictions();
+  _gaussianCluster.setDimensions(std::vector<int>(newRestrictions.begin(), newRestrictions.end()));
+}
+
 }  // namespace autopas

@@ -30,6 +30,12 @@ class NumberSet {
   virtual std::unique_ptr<NumberSet> clone() const = 0;
 
   /**
+   * A unified setter for all derived classes
+   * @param numbers
+   */
+  virtual void resetValues(std::set<Number> &numbers) = 0;
+
+  /**
    * Get a string representation of the set
    * @return string representation
    */
@@ -106,6 +112,12 @@ class NumberSet {
    * @return samples ordered set of points
    */
   virtual std::set<Number> uniformSampleSet(size_t n, Random &rng) const = 0;
+
+  /**
+   * Get the median of the set.
+   * @return
+   */
+  virtual Number getMedian() const = 0;
 };
 
 }  // namespace autopas

@@ -75,6 +75,12 @@ class Simulation {
   void calculateForces(autopas::AutoPas<Particle, ParticleCell> &autopas);
 
   /**
+   * Calculate influences from global, non pairwise forces, e.g. gravity.
+   * @param autopas
+   */
+  void globalForces(autopas::AutoPas<Particle, ParticleCell> &autopas);
+
+  /**
    * This function processes the main simulation loop
    * -calls the time discretization class(calculate fores, etc ...)
    * -do the output each timestep
@@ -118,8 +124,8 @@ class Simulation {
   std::unique_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
 
   struct timers {
-    autopas::utils::Timer positionUpdate, forceUpdateTotal, forceUpdateTuning, forceUpdateNonTuning, velocityUpdate,
-        simulate, vtk, init, total, thermostat, boundaries;
+    autopas::utils::Timer positionUpdate, forceUpdateTotal, forceUpdatePairwise, forceUpdateGlobal, forceUpdateTuning,
+        forceUpdateNonTuning, velocityUpdate, simulate, vtk, init, total, thermostat, boundaries;
   } _timers;
 
   /**
@@ -177,6 +183,7 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
     _particlePropertiesLibrary->addType(type, epsilon, _config->sigmaMap.value.at(type),
                                         _config->massMap.value.at(type));
   }
+  _particlePropertiesLibrary->calculateMixingCoefficients();
 }
 
 template <class Particle, class ParticleCell>
@@ -206,6 +213,7 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   autopas.setSelectorStrategy(_config->selectorStrategy.value);
   autopas.setTuningInterval(_config->tuningInterval.value);
   autopas.setTuningStrategyOption(_config->tuningStrategyOption.value);
+  autopas.setMPIStrategy(_config->mpiStrategyOption.value);
   autopas.setVerletClusterSize(_config->verletClusterSize.value);
   autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency.value);
   autopas.setVerletSkin(_config->verletSkinRadius.value);
@@ -237,6 +245,9 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   for (const auto &sphere : _config->sphereObjects) {
     Generator::sphere<Particle, ParticleCell>(autopas, sphere);
   }
+  for (const auto &cube : _config->cubeClosestPackedObjects) {
+    Generator::cubeClosestPacked<Particle, ParticleCell>(autopas, cube);
+  }
 
   // initializing system to initial temperature and Brownian motion
   if (_config->useThermostat.value and _config->deltaT.value != 0) {
@@ -256,10 +267,17 @@ template <class FunctorType>
 void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Particle, ParticleCell> &autopas) {
   _timers.forceUpdateTotal.start();
 
+  // pairwise forces
+
+  _timers.forceUpdatePairwise.start();
+
   FunctorType functor{autopas.getCutoff(), *_particlePropertiesLibrary};
   bool tuningIteration = autopas.iteratePairwise(&functor);
 
-  auto timeIteration = _timers.forceUpdateTotal.stop();
+  _timers.forceUpdateTotal.stop();
+  auto timeIteration = _timers.forceUpdatePairwise.stop();
+
+  // count time spent for tuning
   if (tuningIteration) {
     _timers.forceUpdateTuning.addTime(timeIteration);
     ++numTuningIterations;
@@ -272,6 +290,29 @@ void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Partic
     }
   }
   previousIterationWasTuningIteration = tuningIteration;
+
+  // global forces
+
+  _timers.forceUpdateTotal.start();
+  _timers.forceUpdateGlobal.start();
+  globalForces(autopas);
+  _timers.forceUpdateGlobal.stop();
+  _timers.forceUpdateTotal.stop();
+}
+
+template <class Particle, class ParticleCell>
+void Simulation<Particle, ParticleCell>::globalForces(autopas::AutoPas<Particle, ParticleCell> &autopas) {
+  // skip application of zero force
+  if (_config->globalForceIsZero()) {
+    return;
+  }
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel default(none) shared(autopas)
+#endif
+  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    iter->addF(_config->globalForce.value);
+  }
 }
 
 template <class Particle, class ParticleCell>
@@ -299,7 +340,7 @@ void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, Par
       // apply boundary conditions AFTER the position update!
       if (_config->periodic.value) {
         _timers.boundaries.start();
-        BoundaryConditions<ParticleCell>::applyPeriodic(autopas);
+        BoundaryConditions<ParticleCell>::applyPeriodic(autopas, false);
         _timers.boundaries.stop();
       } else {
         throw std::runtime_error(
@@ -350,6 +391,9 @@ void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, Par
 
   // writes final state of the simulation
   if ((not _config->vtkFileName.value.empty())) {
+    _timers.boundaries.start();
+    BoundaryConditions<ParticleCell>::applyPeriodic(autopas, true);
+    _timers.boundaries.stop();
     this->writeVTKFile(_config->iterations.value, autopas);
   }
 

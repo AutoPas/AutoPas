@@ -213,7 +213,6 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   [[nodiscard]] std::vector<Particle> updateContainer() override {
     // First delete all halo particles.
     this->deleteHaloParticles();
-
     // Delete dummy particles.
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel for
@@ -324,15 +323,8 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     }
     // there is an implicit barrier at end of single!
 
-    // Check all cells, as dummy particles are outside the domain they are only found if the search region is outside
-    // the domain.
-    const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _haloBoxMin);
-    const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _haloBoxMax);
-
-    // iterate over all cells
-    /// @todo optimize, see https://github.com/AutoPas/AutoPas/issues/438
-    std::vector<size_t> cellsOfInterest(this->_towers.size());
-    std::iota(cellsOfInterest.begin(), cellsOfInterest.end(), 0);
+    auto [lowerCornerInBounds, upperCornerInBounds, cellsOfInterest] =
+        getRegionIteratorHelper(lowerCorner, higherCorner, behavior);
 
     return ParticleIteratorWrapper<Particle, true>(
         new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
@@ -353,15 +345,8 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
           "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
     }
 
-    // Check all cells, as dummy particles are outside the domain they are only found if the search region is outside
-    // the domain.
-    const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _haloBoxMin);
-    const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _haloBoxMax);
-
-    // iterate over all cells
-    /// @todo optimize, see https://github.com/AutoPas/AutoPas/issues/438
-    std::vector<size_t> cellsOfInterest(this->_towers.size());
-    std::iota(cellsOfInterest.begin(), cellsOfInterest.end(), 0);
+    auto [lowerCornerInBounds, upperCornerInBounds, cellsOfInterest] =
+        getRegionIteratorHelper(lowerCorner, higherCorner, behavior);
 
     return ParticleIteratorWrapper<Particle, false>(
         new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
@@ -436,6 +421,12 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * @return the grid side length of the grids in the container.
    */
   auto getTowerSideLength() const { return _towerSideLength; }
+
+  /**
+   * Returns 1 / towerSideLength
+   * @return
+   */
+  auto getTowerSideLengthReciprocal() const { return _towerSideLengthReciprocal; }
 
   /**
    * Returns the number of grids per dimension on the container.
@@ -596,6 +587,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
                                                                                  _clusterSize);
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
         _builder->rebuildTowersAndClusters();
+    _towerSideLengthReciprocal = 1 / _towerSideLength;
     _isValid = ValidityState::cellsValidListsInvalid;
     for (auto &tower : _towers) {
       tower.setParticleDeletionObserver(this);
@@ -756,6 +748,56 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
   autopas::LoadEstimatorOption _loadEstimator;
 
   /**
+   * Helper function for the region iterators to determine bounds and towers to iterate over.
+   * @param lowerCorner
+   * @param higherCorner
+   * @param behavior
+   * @return
+   */
+  [[nodiscard]] auto getRegionIteratorHelper(const std::array<double, 3> &lowerCorner,
+                                             const std::array<double, 3> &higherCorner,
+                                             IteratorBehavior behavior) const {
+    // Check all cells, as dummy particles are outside the domain they are only found if the search region is outside
+    // the domain.
+    const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _haloBoxMin);
+    const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _haloBoxMax);
+
+    if (not _builder) {
+      // if no builder exists the clusters have not been built yet and all particles are stored in the first tower.
+      return std::make_tuple(lowerCornerInBounds, upperCornerInBounds, std::vector<size_t>{0});
+    }
+
+    // Find towers intersecting the search region
+    auto firstTowerCoords = _builder->getTowerCoordinates(lowerCornerInBounds);
+    auto firstTowerIndex = _builder->towerIndex2DTo1D(firstTowerCoords[0], firstTowerCoords[1]);
+    auto lastTowerCoords = _builder->getTowerCoordinates(upperCornerInBounds);
+    auto lastTowerIndex = _builder->towerIndex2DTo1D(lastTowerCoords[0], lastTowerCoords[1]);
+
+    std::array<size_t, 2> towersOfInterstPerDim;
+    for (size_t dim = 0; dim < towersOfInterstPerDim.size(); ++dim) {
+      // use ternary operators instead of abs because these are unsigned values
+      towersOfInterstPerDim[dim] = firstTowerCoords[dim] > lastTowerCoords[dim]
+                                       ? firstTowerCoords[dim] - lastTowerCoords[dim]
+                                       : lastTowerCoords[dim] - firstTowerCoords[dim];
+      // +1 because we want to include first AND last
+      towersOfInterstPerDim[dim] += 1;
+      // sanity check
+      towersOfInterstPerDim[dim] = std::max(towersOfInterstPerDim[dim], static_cast<size_t>(1));
+    }
+
+    std::vector<size_t> towersOfInterest(towersOfInterstPerDim[0] * towersOfInterstPerDim[1]);
+
+    auto towersOfInterestIterator = towersOfInterest.begin();
+    for (size_t i = 0; i < towersOfInterstPerDim[1]; ++i) {
+      std::iota(towersOfInterestIterator, towersOfInterestIterator + towersOfInterstPerDim[0],
+                std::min(firstTowerIndex, lastTowerIndex) + i * _towersPerDim[0]);
+      towersOfInterestIterator += towersOfInterstPerDim[0];
+    }
+
+    return std::make_tuple(lowerCornerInBounds, upperCornerInBounds, towersOfInterest);
+  }
+
+  /**
    * The number of particles in a full cluster.
    */
   size_t _clusterSize;
@@ -774,6 +816,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    * Side length of xy-grid.
    */
   double _towerSideLength{0.};
+  double _towerSideLengthReciprocal{0.};
 
   /**
    * The number of clusters in the container.

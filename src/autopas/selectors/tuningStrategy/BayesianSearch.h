@@ -13,8 +13,8 @@
 
 #include "GaussianModel/GaussianProcess.h"
 #include "TuningStrategyInterface.h"
+#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
 #include "autopas/selectors/FeatureVectorEncoder.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
@@ -67,6 +67,7 @@ class BayesianSearch : public TuningStrategyInterface {
         _encoder(),
         _currentConfig(),
         _invalidConfigs(),
+        _traversalTimes(),
         _rng(seed),
         _gaussianProcess(0, 0.01, _rng),
         _maxEvidence(maxEvidence),
@@ -100,7 +101,8 @@ class BayesianSearch : public TuningStrategyInterface {
       autopas::utils::ExceptionHandler::exception("BayesianSearch: No valid configurations could be created.");
     }
 
-    _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
+    _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
+                               *_cellSizeFactors);
     _gaussianProcess.setDimension(_encoder.getOneHotDims());
 
     tune();
@@ -115,11 +117,15 @@ class BayesianSearch : public TuningStrategyInterface {
     // represent a maximization problem
     _gaussianProcess.addEvidence(_encoder.oneHotEncode(_currentConfig), -time * secondsPerMicroseconds, true);
     _currentSamples.clear();
+    _traversalTimes[_currentConfig] = time;
   }
+
+  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
   inline void reset(size_t iteration) override {
     _gaussianProcess.clear();
     _currentSamples.clear();
+    _traversalTimes.clear();
     tune();
   }
 
@@ -150,6 +156,11 @@ class BayesianSearch : public TuningStrategyInterface {
   FeatureVector _currentConfig;
   std::vector<FeatureVector> _currentSamples;
   std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
+  /**
+   * Explicitly store traversal times for getEvidence().
+   * Refrain from reading the data from GaussianProcesses to maintain abstraction.
+   */
+  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
 
   Random _rng;
   GaussianProcess _gaussianProcess;
@@ -205,8 +216,7 @@ bool BayesianSearch::tune(bool currentInvalid) {
 
 void BayesianSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOption af) {
   // create n lhs samples
-  _currentSamples = FeatureVector::lhsSampleFeatures(n, _rng, *_cellSizeFactors, _containerTraversalEstimatorOptions,
-                                                     _dataLayoutOptions, _newton3Options);
+  _currentSamples = _encoder.lhsSampleFeatures(n, _rng);
 
   // map container and calculate all acquisition function values
   std::map<FeatureVector, double> acquisitions;
@@ -241,7 +251,8 @@ bool BayesianSearch::searchSpaceIsEmpty() const {
 void BayesianSearch::removeN3Option(Newton3Option badNewton3Option) {
   _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option),
                         _newton3Options.end());
-  _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options);
+  _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
+                             *_cellSizeFactors);
 
   _gaussianProcess.setDimension(_encoder.getOneHotDims());
   _currentSamples.clear();

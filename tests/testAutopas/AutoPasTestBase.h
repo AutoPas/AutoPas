@@ -1,5 +1,5 @@
 /**
- * @file AutoPasTest.h
+ * @file AutoPasTestBase.h
  * @author seckler
  * @date 24.04.18
  */

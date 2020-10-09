@@ -79,6 +79,22 @@ class Random : public std::mt19937 {
   }
 
   /**
+   * Sample n points from the set {min;min+1;...;max}. Each element in the set will
+   * appear about the same number of times in the sample.
+   * @param min
+   * @param max
+   * @param n number samples
+   * @return samples
+   */
+  std::vector<size_t> uniformSample(size_t min, size_t max, size_t n) {
+    std::set<size_t> allAllowed;
+    for (size_t i = min; i <= max; ++i) {
+      allAllowed.insert(i);
+    }
+    return uniformSample(allAllowed.begin(), allAllowed.end(), n);
+  }
+
+  /**
    * Get a uniformly random object from the given set.
    * @param pool set
    * @return random element
