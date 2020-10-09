@@ -37,10 +37,14 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
+   * @param spaciallyForward Whether the base step only covers neigbouring cells tha are spacially forward (for example
+   * c08).
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                const double interactionLength, const std::array<double, 3> &cellLength)
+                                const double interactionLength, const std::array<double, 3> &cellLength,
+                                const bool spaciallyForward)
       : CellPairTraversal<ParticleCell>(dims),
+        _spaciallyForward{spaciallyForward},
         _overlap{},
         _dimsPerLength{},
         _interactionLength(interactionLength),
@@ -48,7 +52,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
         _overlapLongestAxis(0),
         _sliceThickness{},
         _dataLayoutConverter(pairwiseFunctor) {
-    this->init(dims);
+    this->init(dims, spaciallyForward);
   }
 
   /**
@@ -75,8 +79,10 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
     _sliceThickness.insert(_sliceThickness.begin(), numSlices, minSliceThickness);
     auto rest = this->_cellsPerDimension[_dimsPerLength[0]] - _sliceThickness[0] * numSlices;
     for (size_t i = 0; i < rest; ++i) ++_sliceThickness[i];
-    // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
-    _sliceThickness.back() -= _overlapLongestAxis;
+    if (this->_spaciallyForward) {
+      // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
+      _sliceThickness.back() -= _overlapLongestAxis;
+    }
   }
 
   /**
@@ -107,10 +113,16 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
 
  protected:
   /**
+   * Whether the base step used only covers neighbouring cells, that are spacially forward.
+   */
+  bool _spaciallyForward;
+
+  /**
    * Resets the cell structure of the traversal.
    * @param dims
+   * @param spaciallyForward Whether the base step only covers neigbouring cells tha are spacially forward (for example
    */
-  void init(const std::array<unsigned long, 3> &dims);
+  void init(const std::array<unsigned long, 3> &dims, const bool spaciallyForward);
 
   /**
    * Load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
@@ -166,9 +178,13 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::init(
-    const std::array<unsigned long, 3> &dims) {
+    const std::array<unsigned long, 3> &dims, const bool spaciallyForward) {
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
+    if (not spaciallyForward) {
+      // there is potentially overlap in both directions.
+      _overlap[d] *= 2;
+    }
   }
 
   // find longest dimension

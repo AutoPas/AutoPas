@@ -49,7 +49,7 @@ class LCSlicedBalancedTraversal
   explicit LCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                      const double interactionLength, const std::array<double, 3> &cellLength)
       : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
-            dims, pairwiseFunctor, interactionLength, cellLength),
+            dims, pairwiseFunctor, interactionLength, cellLength, true),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 
   void traverseParticlePairs() override;

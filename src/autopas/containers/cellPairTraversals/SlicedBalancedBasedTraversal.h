@@ -38,9 +38,10 @@ class SlicedBalancedBasedTraversal
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
   explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                        const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                        interactionLength, cellLength) {
+                                        const double interactionLength, const std::array<double, 3> &cellLength,
+                                        const bool spaciallyForward)
+      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
+            dims, pairwiseFunctor, interactionLength, cellLength, spaciallyForward) {
     // As we create exactly one slice per thread, dynamic scheduling makes little sense.
     this->_dynamic = false;
   }
@@ -155,8 +156,10 @@ class SlicedBalancedBasedTraversal
       AutoPasLog(debug, "Slice loads: [{}]", loadStr);
     }
 
-    // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
-    this->_sliceThickness.back() -= this->_overlapLongestAxis;
+    if (this->_spaciallyForward) {
+      // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
+      this->_sliceThickness.back() -= this->_overlapLongestAxis;
+    }
   }
 };
 

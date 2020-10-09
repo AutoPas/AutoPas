@@ -97,9 +97,9 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       doRebuild = true;
       // add particles, so VerletClusterLists uses more than one tower.
       autoTuner.getContainer().get()->deleteAllParticles();
-      const std::array<size_t, 3> particlesPerDim = {4, 4, 2};
-      const std::array<double, 3> spacing = {0.5, 1, 1};
-      const std::array<double, 3> offset = {0.25, 0.5, 0.5};
+      const std::array<size_t, 3> particlesPerDim = {8, 16, 8};
+      const std::array<double, 3> spacing = {0.25, 0.25, 0.25};
+      const std::array<double, 3> offset = {0.125, 0.125, 0.125};
       auto defaultParticle = Molecule();
       autopasTools::generators::GridGenerator::fillWithParticles(*(autoTuner.getContainer().get()), particlesPerDim,
                                                                  defaultParticle, spacing, offset);

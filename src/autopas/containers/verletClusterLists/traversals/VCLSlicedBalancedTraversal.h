@@ -58,7 +58,7 @@ class VCLSlicedBalancedTraversal
                                       const double interactionLength, const std::array<double, 3> &cellLength,
                                       size_t clusterSize)
       : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
-            dims, pairwiseFunctor, interactionLength, cellLength),
+            dims, pairwiseFunctor, interactionLength, cellLength, false),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize) {}
 
@@ -81,8 +81,7 @@ class VCLSlicedBalancedTraversal
   }
 
   void traverseParticlePairs() override {
-    this->template slicedTraversal</*allCells*/ true>(
-        [&](unsigned long x, unsigned long y, unsigned long z) { processBaseStep(x, y); });
+    this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) { processBaseStep(x, y); });
   }
 };
 }  // namespace autopas
