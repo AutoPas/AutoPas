@@ -167,7 +167,7 @@ namespace {
 template <std::size_t I, class T, std::size_t SIZE>
 [[nodiscard]] constexpr T dotAux(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   if constexpr (I != 0) {
-    return a[I] * b[I] + dotAux<I - 1>(a, b);
+    return a[I]*b[I] + dotAux<I-1>(a, b);
   } else {
     return a[0] * b[0];
   }
@@ -185,7 +185,7 @@ template <std::size_t I, class T, std::size_t SIZE>
  */
 template <class T, std::size_t SIZE>
 [[nodiscard]] constexpr T dot(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
-  return dotAux<SIZE - 1>(a, b);
+  return dotAux<SIZE-1>(a, b);
 }
 
 /**
