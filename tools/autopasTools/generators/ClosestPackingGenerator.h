@@ -47,7 +47,7 @@ class ClosestPackingGenerator {
     bool evenLayer = true;
     bool evenRow = true;
 
-    size_t id = 0;
+    size_t id = defaultParticle.getID();
     for (double z = boxMin[2]; z < boxMax[2]; z += spacingLayer) {
       double starty = evenLayer ? boxMin[1] : boxMin[1] + yOffset;
       for (double y = starty; y < boxMax[1]; y += spacingRow) {
