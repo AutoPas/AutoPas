@@ -150,6 +150,22 @@ template <class T, std::size_t SIZE>
   return result;
 }
 
+// unnamed namespace for private helper functions
+namespace {
+/**
+ * Helper function to provide a templated dot product that is basically the same as writing it out by hand.
+ * @tparam T
+ * @tparam I
+ * @param a
+ * @param b
+ * @return
+ */
+template <typename T, size_t... I>
+double dotAux(T a, T b, std::integer_sequence<size_t, I...>) {
+  return ((std::get<I>(a) * std::get<I>(b)) + ...);
+}
+}  // namespace
+
 /**
  * Generates the dot product of two arrays.
  * Returns the sum of a[i]*b[i] summed over all i, where i is in [0, SIZE)
@@ -161,7 +177,7 @@ template <class T, std::size_t SIZE>
  */
 template <class T, std::size_t SIZE>
 [[nodiscard]] constexpr T dot(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
-  return std::inner_product(a.cbegin(), a.cend(), b.cbegin(), static_cast<T>(0));
+  return dotAux(a, b, std::make_index_sequence<SIZE>{});
 }
 
 /**
