@@ -42,4 +42,5 @@ if (AUTOPAS_ENABLE_CUDA)
     target_include_directories(autopas SYSTEM PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 endif ()
 
-target_include_directories(autopas PUBLIC ../.)
+target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
+target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)
