@@ -54,7 +54,7 @@ if(NOT AutoPas_VERSION_NO_GIT)
 
         # If this is not the exact commit of a release, add dev info.
         if(NOT "${git_subject}" MATCHES "^[Cc][Mm]ake ${AutoPas_VERSION}$")
-            set(AutoPas_VERSION "${AutoPas_VERSION}-g${git_hash}")
+            set(AutoPas_VERSION "${AutoPas_VERSION}-${git_hash}")
         endif()
 
         # If this is a work tree, check whether it is dirty.
