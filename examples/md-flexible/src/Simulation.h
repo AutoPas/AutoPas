@@ -563,6 +563,14 @@ void Simulation<Particle, ParticleCell>::writeVTKFile(unsigned int iteration,
   }
   vtkFile << std::endl;
 
+  // print TypeIDs
+  vtkFile << "SCALARS particleIds int" << std::endl;
+  vtkFile << "LOOKUP_TABLE default" << std::endl;
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    vtkFile << iter->getID() << std::endl;
+  }
+  vtkFile << std::endl;
+
   vtkFile.close();
 
   _timers.vtk.stop();
