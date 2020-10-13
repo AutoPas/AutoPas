@@ -1,0 +1,13 @@
+/**
+ * @file Version.h
+ *
+ * @note copy-paste from cmake's configuration.
+ */
+#pragma once
+
+#define AutoPas_VERSION_MAJOR @AutoPas_VERSION_MAJOR@
+#define AutoPas_VERSION_MINOR @AutoPas_VERSION_MINOR@
+#define AutoPas_VERSION_PATCH @AutoPas_VERSION_PATCH@
+#define AutoPas_VERSION_SUFFIX "@AutoPas_VERSION_SUFFIX@"
+#define AutoPas_VERSION_IS_DIRTY @AutoPas_VERSION_IS_DIRTY@
+#define AutoPas_VERSION "@AutoPas_VERSION@"
