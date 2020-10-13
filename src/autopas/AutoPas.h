@@ -12,6 +12,7 @@
 #include <type_traits>
 
 #include "autopas/LogicHandler.h"
+#include "autopas/Version.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
@@ -75,6 +76,8 @@ class AutoPas {
     // The logger is normally only flushed on successful program termination.
     // This line ensures flushing when log messages of level warning or more severe are created.
     autopas::Logger::get()->flush_on(spdlog::level::warn);
+
+    AutoPasLog(info, "AutoPas Version: {}", AutoPas_VERSION);
   }
 
   ~AutoPas() {
