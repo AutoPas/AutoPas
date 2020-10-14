@@ -524,6 +524,10 @@ void Simulation<Particle, ParticleCell>::writeVTKFile(unsigned int iteration,
   std::ofstream vtkFile;
   vtkFile.open(strstr.str());
 
+  if (not vtkFile.is_open()) {
+    throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + strstr.str() + "\"");
+  }
+
   vtkFile << "# vtk DataFile Version 2.0" << std::endl;
   vtkFile << "Timestep" << std::endl;
   vtkFile << "ASCII" << std::endl;
@@ -560,6 +564,14 @@ void Simulation<Particle, ParticleCell>::writeVTKFile(unsigned int iteration,
   vtkFile << "LOOKUP_TABLE default" << std::endl;
   for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     vtkFile << iter->getTypeId() << std::endl;
+  }
+  vtkFile << std::endl;
+
+  // print TypeIDs
+  vtkFile << "SCALARS particleIds int" << std::endl;
+  vtkFile << "LOOKUP_TABLE default" << std::endl;
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    vtkFile << iter->getID() << std::endl;
   }
   vtkFile << std::endl;
 
