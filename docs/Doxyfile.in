@@ -47,3 +47,5 @@ MACRO_EXPANSION        = YES
 INCLUDE_PATH           = @PROJECT_SOURCE_DIR@/src
 
 IMAGE_PATH             = @PROJECT_SOURCE_DIR@/docs/graphics
+TEMPLATE_RELATIONS     = YES
+HAVE_DOT               = YES

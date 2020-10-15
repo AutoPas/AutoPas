@@ -36,4 +36,7 @@ WARN_NO_PARAMDOC       = YES # default NO
 
 # Macro expansion settings:
 MACRO_EXPANSION        = YES
+
 IMAGE_PATH             = @PROJECT_SOURCE_DIR@/docs/graphics
+TEMPLATE_RELATIONS     = YES
+HAVE_DOT               = YES
