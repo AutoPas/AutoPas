@@ -78,7 +78,12 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
 
     _sliceThickness.insert(_sliceThickness.begin(), numSlices, minSliceThickness);
     auto rest = this->_cellsPerDimension[_dimsPerLength[0]] - _sliceThickness[0] * numSlices;
-    for (size_t i = 0; i < rest; ++i) ++_sliceThickness[i];
+    // remaining slices to distribute the remaining layers on
+    auto remSlices = std::min(rest, numSlices);
+    for (size_t i = 0; i < remSlices; ++i) {
+      _sliceThickness[i] += rest / (remSlices - i);
+      rest -= rest / (remSlices - i);
+    }
     if (this->_spaciallyForward) {
       // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
       _sliceThickness.back() -= _overlapLongestAxis;
