@@ -29,7 +29,7 @@ jobs:
           args: -B ./build-doxygen -S ./
 
       - name: Doxygen Action
-        uses: SteffenSeckler/doxygen-action@v2.2.0beta3
+        uses: SteffenSeckler/doxygen-action@v2.2.0beta4
         with:
           # Path to Doxyfile
           doxyfile-path: "./Doxyfile" # default is ./Doxyfile
