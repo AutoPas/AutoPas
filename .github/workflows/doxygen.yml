@@ -22,12 +22,26 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - name: Run Cmake
+        uses: docker://autopas/autopas-build-doxygen
+        with:
+          entrypoint: cmake
+          args: -B ./build-doxygen -S ./
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+      - name: Doxygen Action
+        uses: SteffenSeckler/doxygen-action@v2.2.0beta
+        with:
+          # Path to Doxyfile
+          doxyfile-path: "./build-doxygen/Doxyfile" # default is ./Doxyfile
+          # Working directory
+          working-directory: "./build-doxygen/" # default is .
+          # enable fail-on-warnings
+          fail-on-warnings: "TRUE"
+
+#      - name: Deploy
+#        uses: peaceiris/actions-gh-pages@v3
+#        with:
+#          github_token: ${{ secrets.GITHUB_TOKEN }}
+#          # Default Doxyfile build documentation to html directory.
+#          # Change the directory if changes in Doxyfile
+#          publish_dir: ./html
