@@ -32,7 +32,7 @@ jobs:
         uses: SteffenSeckler/doxygen-action@v2.2.0beta
         with:
           # Path to Doxyfile
-          doxyfile-path: "./build-doxygen/Doxyfile" # default is ./Doxyfile
+          doxyfile-path: "./Doxyfile" # default is ./Doxyfile
           # Working directory
           working-directory: "./build-doxygen/" # default is .
           # enable fail-on-warnings
