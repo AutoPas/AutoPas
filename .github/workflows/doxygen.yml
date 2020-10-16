@@ -29,7 +29,7 @@ jobs:
           args: -B ./build-doxygen -S ./
 
       - name: Doxygen Action
-        uses: SteffenSeckler/doxygen-action@v2.2.0beta
+        uses: SteffenSeckler/doxygen-action@v2.2.0beta2
         with:
           # Path to Doxyfile
           doxyfile-path: "./Doxyfile" # default is ./Doxyfile
@@ -37,6 +37,8 @@ jobs:
           working-directory: "./build-doxygen/" # default is .
           # enable fail-on-warnings
           fail-on-warnings: "TRUE"
+          # filter warnings from Readme file
+          warnings-filter: "README.md"
 
 #      - name: Deploy
 #        uses: peaceiris/actions-gh-pages@v3
