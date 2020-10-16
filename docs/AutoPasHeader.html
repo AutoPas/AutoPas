@@ -12,14 +12,22 @@
 <script type="text/javascript" src="$relpath^jquery.js"></script>
 <script type="text/javascript" src="$relpath^dynsections.js"></script>
 <script type="text/javascript">
-    if(!window.location.href.startsWith("file://")) {
-        // this is only done if we are on an actual webserver, where we expect to have ../autopas_onpageload.js
-        var script = document.createElement('script');
-        script.onload = function () {
-            on_page_load();
-        };
-        script.src = "$relpath^../autopas_onpageload.js";
-        document.head.appendChild(script); //or something of the likes
+    function doOnLoad() {
+        if (!window.location.href.startsWith("file://")) {
+            // this is only done if we are on an actual webserver, where we expect to have ../autopas_onpageload.js
+            var script = document.createElement('script');
+            script.onload = function () {
+                on_page_load();
+            };
+            script.src = "$relpath^../onpageload.js";
+            document.head.appendChild(script); //or something of the likes
+        } else {
+            var version_selector = document.getElementById("autopas_version_selector");
+            var option = document.createElement("option");
+            option.text = "local";
+            option.value = "local";
+            version_selector.appendChild(option);
+        }
     }
 </script>
 $treeview
@@ -28,13 +36,12 @@ $mathjax
 <link href="$relpath^$stylesheet" rel="stylesheet" type="text/css" />
 $extrastylesheet
 </head>
-<body>
+<body onload="doOnLoad()">
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 	<!--BEGIN VERSION INFO-->
 	<div id="version selector">
         <label for="autopas_version_selector">AutoPas Version:</label>
         <select id="autopas_version_selector">
-            <option>local</option>
         </select>
 	</div>
 	<!--END VERSION INFO-->
