@@ -44,6 +44,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3.7.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
           publish_dir: ./build-doxygen/html/
           destination_dir: doxygen_documentation/git-master/
           publish_branch: main
