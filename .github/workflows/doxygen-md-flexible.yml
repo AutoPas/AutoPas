@@ -20,7 +20,8 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
       - name: Run Cmake (needed to get configured Doxyfiles)
         uses: docker://autopas/autopas-build-doxygen
@@ -28,7 +29,7 @@ jobs:
           entrypoint: cmake
           args: -B ./build-doxygen -S ./
 
-      - name: generate Doxygen for md-flexible
+      - name: Generate Doxygen for md-flexible
         uses: SteffenSeckler/doxygen-action@v2.2.0beta4
         with:
           # Path to Doxyfile
@@ -42,7 +43,7 @@ jobs:
 
       - name: Deploy md-flexible doxygen documentation (only on master)
         uses: peaceiris/actions-gh-pages@v3.7.2
-        if: ${{ github.ref == 'refs/head/master' }}
+        if: github.ref == 'refs/heads/master'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
