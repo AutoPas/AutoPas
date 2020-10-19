@@ -26,7 +26,6 @@ namespace MDFlexParser::CLIParser {
  * @param argc number of command line arguments.
  * @param argv command line argument array.
  * @param config configuration where the input is stored.
- * @return
  */
 void inputFilesPresent(int argc, char **argv, MDFlexConfig &config);
 
