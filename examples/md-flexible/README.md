@@ -5,7 +5,7 @@ scenarios using AutoPas and flexibly configure all of it's options.
 
 ## Documentation
 The documentation can be found at our website:
- <https://www5.in.tum.de/AutoPas/doc_doxygen_md-flexible/master/>
+ <https://autopas.github.io/doxygen_documentation_md-flexible/git-master/index.html>
 
 Alternatively you can build the documentation on your own:
 * requirements: [Doxygen](http://www.doxygen.nl/)
@@ -52,7 +52,7 @@ only one generator can be used at a time, however when using a YAML file one
 can use as an arbitrary amount of generators. In YAML files it is also
 possible to generate multiple objects from the same generator as one
 specifies the objects directly. For a list of all possible objects and their
-descriptions see [`src/Objects`](https://www5.in.tum.de/AutoPas/doc_doxygen_md-flexible/master/dir_8e5023335c6d80afeb9fe41ac1daf95f.html).
+descriptions see [`src/Objects`](https://autopas.github.io/doxygen_documentation_md-flexible/git-master/dir_8e5023335c6d80afeb9fe41ac1daf95f.html).
 For examples how to define and configure each object see [`input/AllOptions.yaml`](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible/input/AllOptions.yaml).
 
 ### Output

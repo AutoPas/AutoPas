@@ -1,10 +1,11 @@
 # AutoPas
 AutoPas is a node-level auto-tuned particle simulation library developed
-in the context of the **TaLPas** project. [![Build Status](https://www5.in.tum.de/jenkins/mardyn/buildStatus/icon?job=AutoPas-Multibranch/master)](https://www5.in.tum.de/jenkins/mardyn/job/AutoPas-Multibranch/job/master/)
+in the context of the [**TaLPas**](http://www.talpas.de) project.
+[![Build Status](https://www5.in.tum.de/jenkins/mardyn/buildStatus/icon?job=AutoPas-Multibranch/master)](https://www5.in.tum.de/jenkins/mardyn/job/AutoPas-Multibranch/job/master/)
 
 ## Documentation
 The documentation can be found at our website:
- <https://www5.in.tum.de/AutoPas/doxygen_doc/master/>
+ <https://autopas.github.io/doxygen_documentation/git-master/>
 
 Alternatively you can build the documentation on your own:
 * requirements: [Doxygen](http://www.doxygen.nl/)
@@ -105,7 +106,7 @@ For that we provide some basic Particle classes defined
 in `src/particles/` that you can use either directly
 or you can write your own Particle class by inheriting from
 one of the provided classes.
-```C++
+```cpp
 class SPHParticle : public autopas::Particle {
 
 }
@@ -127,7 +128,7 @@ Particles saved in an AutoPas container can be one of two possible states:
 Iterators to iterate over particle are provided.
 The particle can be accesses using `iter->` (`*iter` is also possible).
 When created inside a OpenMP parallel region, work is automatically spread over all iterators.
-```C++
+```cpp
 #pragma omp parallel
 for(auto iter = autoPas.begin(); iter.isValid(); ++iter) {
   // user code:
@@ -135,7 +136,7 @@ for(auto iter = autoPas.begin(); iter.isValid(); ++iter) {
 }
 ```
 For convenience the `end()` method is also implemented for the AutoPas class.
-```C++
+```cpp
 #pragma omp parallel
 for(auto iter = autoPas.begin(); iter != autoPas.end(); ++iter) {
   // user code:
@@ -143,7 +144,7 @@ for(auto iter = autoPas.begin(); iter != autoPas.end(); ++iter) {
 }
 ```
 You might also use range-based for loops:
-```C++
+```cpp
 #pragma omp parallel
 for(auto& particle : autoPas) {
   // user code:
@@ -153,7 +154,7 @@ for(auto& particle : autoPas) {
 
 To iterate over a subset of particles, the `getRegionIterator(lowCorner, highCorner)`
 method can be used:
-```C++
+```cpp
 #pragma omp parallel
 for(auto iter = autoPas.getRegionIterator(lowCorner, highCorner); iter != autoPas.end(); ++iter) {
   // user code:
@@ -163,11 +164,12 @@ for(auto iter = autoPas.getRegionIterator(lowCorner, highCorner); iter != autoPa
 
 Both `begin()` and `getRegionIterator()` can also take the additional parameter `IteratorBehavior`,
 which indicates over which particles the iteration should be performed.
-```C++
+```cpp
 enum IteratorBehavior {
-  haloOnly,     /// iterate only over halo particles
-  ownedOnly,    /// iterate only over owned particles
-  haloAndOwned  /// iterate over both halo and owned particles
+  haloOnly,          ///< iterate only over halo particles
+  ownedOnly,         ///< iterate only over owned particles
+  haloAndOwned,      ///< iterate over both halo and owned particles
+  haloOwnedAndDummy  ///< iterate over both halo and owned particles and also dummy particles
 };
 ```
 The default parameter is `haloAndOwned`, which is also used for range-based for loops.
@@ -179,7 +181,7 @@ Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return
 One simulation loop should always consist of the following phases:
 
 1. Updating the Container:
-   ```C++
+   ```cpp
    auto [invalidParticles, updated] = autoPas.updateContainer();
    ```
    This call will potentially trigger an update of the container inside of AutoPas. The update will be performed if either
@@ -201,7 +203,7 @@ One simulation loop should always consist of the following phases:
    * Potentially send them to other mpi-processes, skip this if MPI is not needed
 
    * Add them to the containers using
-      ```C++
+      ```cpp
       autoPas.addParticle(particle)
       ```
 
@@ -211,12 +213,12 @@ One simulation loop should always consist of the following phases:
    * Identify the halo particles by use of AutoPas' iterators and send them in a similar way as the leaving particles.
 
    * Add the particles as haloParticles using
-      ```C++
+      ```cpp
       autoPas.addOrUpdateHaloParticle(haloParticle)
       ```
 
 4. Perform an iteratePairwise step.
-   ```C++
+   ```cpp
    autoPas.iteratePairwise(functor);
    ```
 
@@ -227,7 +229,7 @@ AutoPas is able to work with simulation setups using multiple functors that desc
 A good demonstration for that is the sph example found under examples/sph or examples/sph-mpi.
 There exist some things you have to be careful about when using multiple functors:
 * If you use multiple functors it is necessary that all functors support the same newton3 options. If there is one functor not supporting newton3, you have to disable newton3 support for AutoPas by calling
-  ```C++
+  ```cpp
   autoPas.setAllowedNewton3Options({false});
   ```
 
@@ -237,7 +239,7 @@ There exist some things you have to be careful about when using multiple functor
 Before inserting additional particles (e.g. through a grand-canonical thermostat ),
 you always have to enforce a containerUpdate on ALL AutoPas instances, i.e.,
 on all mpi processes, by calling
-```C++
+```cpp
 autoPas.updateContainerForced();
 ```
 This will invalidate the internal neighbor lists and containers.
