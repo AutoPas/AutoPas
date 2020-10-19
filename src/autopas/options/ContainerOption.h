@@ -27,7 +27,7 @@ class ContainerOption : public Option<ContainerOption> {
      */
     directSum,
     /**
-     * LinkedCells : Segmentation of the domain into a regular cell grid. Only interactions with particls from
+     * LinkedCells : Segmentation of the domain into a regular cell grid. Only interactions with particles from
      * neighbor cells are considered. Good data locality and vectorizability but low hit rate of particles in cutoff.
      */
     linkedCells,
@@ -53,7 +53,7 @@ class ContainerOption : public Option<ContainerOption> {
      */
     verletLists,
     /**
-     * VerletListsCells : Similar to VerletLists but Lists are assiciated with the underlying cells to achieve location
+     * VerletListsCells : Similar to VerletLists but Lists are associated with the underlying cells to achieve location
      * information. Parallelization options similar to LinkedCells.
      */
     verletListsCells,

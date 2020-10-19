@@ -44,13 +44,13 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_sliced_c02,
     /**
-     * LCC01Traversal : Every cell is interacted with all neighbors. Is not compatible with Newton3 thus embarrassingly
+     * LCC01Traversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
      * parallel. Good load balancing and no overhead.
      */
     lc_c01,
     /**
      * LCC01Traversal : Same as LCC01Traversal but SoAs are combined into a circular buffer and the domain is traversed
-     * line wise.
+     * line-wise.
      */
     lc_c01_combined_SoA,
     /**
@@ -58,8 +58,8 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c01_cuda,
     /**
-     * LCC04Traversal : Four way domain coloring using plus shaped clusters of cells that are processed with the c08
-     * base-step. Less scheduling overhead than LCC08Traversal because of fewer barriers but more coarse grained.
+     * LCC04Traversal : Four-way domain coloring using plus-shaped clusters of cells that are processed with the c08
+     * base-step. Less scheduling overhead than LCC08Traversal because of fewer barriers but more coarse-grained.
      */
     lc_c04,
     /**
@@ -72,7 +72,7 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c04_combined_SoA,
     /**
-     * LCC08Traversal : More compact form of LCC18Traversal Eight way domain coloring in minimally small interaction
+     * LCC08Traversal : More compact form of LCC18Traversal. Eight-way domain coloring in minimally small interaction
      * blocks. High degree of parallelism and good load balancing due to fine granularity.
      */
     lc_c08,
@@ -83,18 +83,18 @@ class TraversalOption : public Option<TraversalOption> {
 
     // VerletClusterCells Traversals:
     /**
-     * VCCClusterIterationCUDATraversal : CUDA Concurrent processing of all clusters avoiding data races through
+     * VCCClusterIterationCUDATraversal : CUDA. Concurrent processing of all clusters avoiding data races through
      * atomics.
      */
     vcc_cluster_iteration_cuda,
 
     // VerletClusterLists Traversals:
     /**
-     * VCLClusterIterationTraversal : Schedule ClusterTower to threads
+     * VCLClusterIterationTraversal : Schedule ClusterTower to threads.
      */
     vcl_cluster_iteration,
     /**
-     * VCLC06Traversal : Six way coloring of the 2D ClusterTower grid in the c18 base step style.
+     * VCLC06Traversal : Six-way coloring of the 2D ClusterTower grid in the c18 base step style.
      * Rather coarse but dynamically balanced.
      */
     vcl_c06,
@@ -132,7 +132,7 @@ class TraversalOption : public Option<TraversalOption> {
     vlc_sliced_balanced,
     /**
      * VLCSlicedC02Traversal : Equivalent to LCSlicedC02Traversal.
-     * 1D slicing with as many slices of minimal thickness as possible. No locks but two way coloring of slices.
+     * 1D slicing with as many slices of minimal thickness as possible. No locks but two-way coloring of slices.
      */
     vlc_sliced_c02,
 

@@ -22,7 +22,7 @@ class LoadEstimatorOption : public Option<LoadEstimatorOption> {
    */
   enum Value {
     /**
-     * No load estimator. If the Configuration supports load estimators everything is assigned the same estimation.
+     * No load estimator. If the Configuration supports load estimators, everything is assigned the same estimation.
      */
     none,
     /**
