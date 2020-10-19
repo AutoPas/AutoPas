@@ -73,8 +73,9 @@ void printHelpMessage(std::ostream &ostream, const std::string &relPathOfExecuta
   // print footer
   ostream << '\n';
   ostream << "md-flexible documentation locally available via: 'make doc_doxygen_md-flexible'\n";
+  ostream << "and online at: https://autopas.github.io/doxygen_documentation_md-flexible/git-master/\n";
   ostream << "Report bugs to: https://github.com/AutoPas/AutoPas/issues\n";
-  ostream << "Full AutoPas documentation at: https://www5.in.tum.de/AutoPas/doxygen_doc/master/\n";
+  ostream << "Full AutoPas documentation at: https://autopas.github.io/doxygen_documentation/git-master/index.html\n";
 }
 
 /**
