@@ -42,8 +42,8 @@ class VerletLists
    * Enum that specifies how the verlet lists should be build
    */
   enum BuildVerletListType {
-    VerletAoS,  /// build it using AoS
-    VerletSoA   /// build it using SoA
+    VerletAoS,  ///< build it using AoS
+    VerletSoA   ///< build it using SoA
   };
 
   /**
