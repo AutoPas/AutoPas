@@ -18,9 +18,18 @@ inline namespace options {
 class Newton3Option : public Option<Newton3Option> {
  public:
   /**
-   * Possible choices for the particle data layout. Values consistent with bool.
+   * Possible choices for the Newton3 optimization. Values consistent with bool.
    */
-  enum Value { disabled, enabled };
+  enum Value {
+    /**
+     * Calculate F_{ij} and F_{ji} individually.
+     */
+    disabled,
+    /**
+     * Use F_{ij} = -F_{ji}.
+     */
+    enabled
+  };
 
   /**
    * Constructor.
