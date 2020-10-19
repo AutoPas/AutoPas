@@ -309,31 +309,6 @@ pipeline {
                 }
             }
         }
-
-        stage("publish documentation") {
-            when { branch 'master' }
-            agent { label 'www_access' }
-            steps {
-                unstash 'doxydocs'
-                dir("build-doxygen") {
-                    sh 'touch /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
-                    sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
-                    sh 'cp -r doc_doxygen/html /import/www/wwwsccs/html/AutoPas/doxygen_doc/master'
-                }
-            }
-        }
-        stage("publish md-flexible documentation") {
-            when { branch 'master' }
-            agent { label 'www_access' }
-            steps {
-                unstash 'doxydocs_md-flexible'
-                dir("build-doxygen-md-flexible") {
-                    sh 'touch /import/www/wwwsccs/html/AutoPas/doc_doxygen_md-flexible/master || echo 0'
-                    sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doc_doxygen_md-flexible/master || echo 0'
-                    sh 'cp -r doc_doxygen_md-flexible/html /import/www/wwwsccs/html/AutoPas/doc_doxygen_md-flexible/master'
-                }
-            }
-        }
     }
     post {
         changed {
