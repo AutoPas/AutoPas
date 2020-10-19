@@ -40,7 +40,7 @@ jobs:
           # filter warnings from Readme file
           warnings-filter: "README.md"
 
-      - name: Deploy
+      - name: Deploy (only on master)
         uses: peaceiris/actions-gh-pages@v3.7.2
         if: ${{ github.ref == 'ref/head/master' }}
         with:
