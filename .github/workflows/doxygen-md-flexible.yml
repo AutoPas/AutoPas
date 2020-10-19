@@ -28,11 +28,11 @@ jobs:
           entrypoint: cmake
           args: -B ./build-doxygen -S ./
 
-      - name: generate Doxygen for AutoPas
+      - name: generate Doxygen for md-flexible
         uses: SteffenSeckler/doxygen-action@v2.2.0beta4
         with:
           # Path to Doxyfile
-          doxyfile-path: "./Doxyfile" # default is ./Doxyfile
+          doxyfile-path: "./Doxyfile_md-flexible" # default is ./Doxyfile
           # Working directory
           working-directory: "./build-doxygen/" # default is .
           # enable fail-on-warnings
@@ -40,14 +40,14 @@ jobs:
           # filter warnings from Readme file
           warnings-filter: "README.md"
 
-      - name: Deploy AutoPas doxygen documentation (only on master)
+      - name: Deploy md-flexible doxygen documentation (only on master)
         uses: peaceiris/actions-gh-pages@v3.7.2
         #if: ${{ github.ref == 'ref/head/master' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          publish_dir: ./build-doxygen/doc_doxygen/html/
-          destination_dir: doxygen_documentation/git-master/
+          publish_dir: ./build-doxygen/doc_doxygen_md-flexible/html/ # from dir
+          destination_dir: doxygen_documentation_md-flexible/git-master/ # to dir
           publish_branch: main
           external_repository: AutoPas/AutoPas.github.io
           user_name: github-actions[bot]
