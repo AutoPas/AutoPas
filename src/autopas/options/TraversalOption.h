@@ -22,40 +22,126 @@ class TraversalOption : public Option<TraversalOption> {
    */
   enum Value {
     // DirectSum Traversals:
+    /**
+     * DSSequentialTraversal : Sequential double loop over all particles.
+     */
     ds_sequential,
 
     // LinkedCell Traversals:
+    /**
+     * LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice interface.
+     * Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
+     */
     lc_sliced,
+    /**
+     * LCSlicedBalancedTraversal : Same as lc_sliced but tries to balance slice thickness according to a given
+     * LoadEstimatorOption.
+     */
     lc_sliced_balanced,
+    /**
+     * LCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
+     * coloring of slices.
+     */
     lc_sliced_c02,
+    /**
+     * LCC01Traversal : Every cell is interacted with all neighbors. Is not compatible with Newton3 thus embarrassingly
+     * parallel. Good load balancing and no overhead.
+     */
     lc_c01,
+    /**
+     * LCC01Traversal : Same as LCC01Traversal but SoAs are combined into a circular buffer and the domain is traversed
+     * line wise.
+     */
     lc_c01_combined_SoA,
+    /**
+     * LCC01CudaTraversal : CUDA version of LCC01Traversal.
+     */
     lc_c01_cuda,
+    /**
+     * LCC04Traversal : Four way domain coloring using plus shaped clusters of cells that are processed with the c08
+     * base-step. Less scheduling overhead than LCC08Traversal because of fewer barriers but more coarse grained.
+     */
     lc_c04,
+    /**
+     * LCC04HCPTraversal : Same as LCC04Traversal but with only one block shape.
+     */
     lc_c04_HCP,
+    /**
+     * LCC04CombinedSoATraversal : Combination of LCC08Traversal and the combined SoA variant of LCC01Traversal.
+     * Stripe wise processing of the domain and combination of base plate of the c08 base-steps.
+     */
     lc_c04_combined_SoA,
+    /**
+     * LCC08Traversal : More compact form of LCC18Traversal Eight way domain coloring in minimally small interaction
+     * blocks. High degree of parallelism and good load balancing due to fine granularity.
+     */
     lc_c08,
+    /**
+     * LCC18Traversal : More compact form of LCC01Traversal supporting Newton3 by only accessing forward neighbors.
+     */
     lc_c18,
 
     // VerletClusterCells Traversals:
+    /**
+     * VCCClusterIterationCUDATraversal : CUDA Concurrent processing of all clusters avoiding data races through
+     * atomics.
+     */
     vcc_cluster_iteration_cuda,
 
     // VerletClusterLists Traversals:
+    /**
+     * VCLClusterIterationTraversal : Schedule ClusterTower to threads
+     */
     vcl_cluster_iteration,
+    /**
+     * VCLC06Traversal : Six way coloring of the 2D ClusterTower grid in the c18 base step style.
+     * Rather coarse but dynamically balanced.
+     */
     vcl_c06,
+    /**
+     * VCLC01BalancedTraversal : Assign a fixed set of towers to each thread balanced by number of contained clusters.
+     * Does not support Newton3.
+     */
     vcl_c01_balanced,
 
     // VerletList Traversals:
+    /**
+     * VLListIterationTraversal : Distribute processing of neighbor lists dynamically to threads.
+     * Does not support Newton3.
+     */
     vl_list_iteration,
 
     // VerletListCells Traversals:
+    /**
+     * VLCC01Traversal : Equivalent to LCC01Traversal. Schedules all neighbor lists of one cell at once.
+     * Does not support Newton3.
+     */
     vlc_c01,
+    /**
+     * VLCC18Traversal : Equivalent to LCC18Traversal. Neighbor lists contain only forward neighbors.
+     */
     vlc_c18,
+    /**
+     * VLCSlicedTraversal : Equivalent to LCSlicedTraversal.
+     */
     vlc_sliced,
+    /**
+     * VLCSlicedBalancedTraversal : Equivalent to LCSlicedBalancedTraversal.
+     * Tries to balance slice thickness according to a given LoadEstimatorOption.
+     */
     vlc_sliced_balanced,
+    /**
+     * VLCSlicedC02Traversal : Equivalent to LCSlicedC02Traversal.
+     * 1D slicing with as many slices of minimal thickness as possible. No locks but two way coloring of slices.
+     */
     vlc_sliced_c02,
 
     // VarVerlet Traversals:
+    /**
+     * VVLAsBuildTraversal : Track which thread built what neighbor list and schedule them the same way for the pairwise
+     * iteration. Provides some kind of load balancing if the force calculation is cheap but is sensitive to hardware
+     * fluctuations.
+     */
     vvl_as_built,
   };
 
