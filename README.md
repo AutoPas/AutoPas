@@ -1,4 +1,4 @@
-# ![AutoPas](docs/graphics/AutoPasLogo_Large.png?raw=true "Title")
+# ![AutoPas](https://raw.githubusercontent.com/AutoPas/AutoPas/master/docs/graphics/AutoPasLogo_Large.png "Title")
 
 AutoPas is a node-level auto-tuned particle simulation library developed
 in the context of the [**TaLPas**](http://www.talpas.de) project.
