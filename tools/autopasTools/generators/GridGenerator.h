@@ -85,7 +85,7 @@ void GridGenerator::fillWithParticles(
     Container &container, const std::array<size_t, 3> &particlesPerDim,
     const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle,
     const std::array<double, 3> &spacing, const std::array<double, 3> &offset) {
-  size_t id = 0;
+  size_t id = defaultParticle.getID();
   for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {

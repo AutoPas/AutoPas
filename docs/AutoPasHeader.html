@@ -6,97 +6,54 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen $doxygenversion"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<!--BEGIN PROJECT_NAME--><title>$projectname: $title</title><!--END PROJECT_NAME-->
+<!--BEGIN PROJECT_NAME--><title>$projectname</title><!--END PROJECT_NAME-->
 <!--BEGIN !PROJECT_NAME--><title>$title</title><!--END !PROJECT_NAME-->
 <link href="$relpath^tabs.css" rel="stylesheet" type="text/css"/>
+<link rel="icon" href="https://raw.githubusercontent.com/AutoPas/AutoPas/master/docs/graphics/AutoPasLogo_Small.svg">
 <script type="text/javascript" src="$relpath^jquery.js"></script>
 <script type="text/javascript" src="$relpath^dynsections.js"></script>
-    <script type="text/javascript">
-        var previous;
-        function url_content(url){
-            return $.get(url);
-        }
-
-        function autoPasVersionChecker() {
-
+<script type="text/javascript">
+    function doOnLoad() {
+        if (!window.location.href.startsWith("file://")) {
+            // this is only done if we are on an actual webserver, where we expect to have ../autopas_onpageload.js
+            var script = document.createElement('script');
+            script.onload = function () {
+                on_page_load();
+            };
+            script.src = "$relpath^../onpageload.js";
+            document.head.appendChild(script); //or something of the likes
+        } else {
             var version_selector = document.getElementById("autopas_version_selector");
-
-            var url = window.location.href;
-
-
-
-            if (url.toLowerCase().includes("file")) {
-                var option = document.createElement("option");
-                option.text = "local";
-                option.value = "local";
-                version_selector.appendChild(option);
-                return;
-            }
-
-            // we assume we are on some website from here on out!
-            //var base = url.replace("/doc_doxygen/master/index.html","");
-            var indexBase = "../index.php";
-
-            url_content(indexBase).success(function(data){
-                doc_txt = data.toString();
-
-                var htmlObject = document.createElement('div');
-                htmlObject.innerHTML = doc_txt;
-                var links = htmlObject.getElementsByTagName("a");
-                for (var i = 0; i < links.length; i++) {
-                    var option = document.createElement("option");
-                    option.text = links[i].text;
-                    option.value = links[i].text;
-                    if(url.includes(links[i].text)){
-                        option.selected = "selected";
-                        previous = links[i].text;
-                    }
-                    version_selector.appendChild(option);
-                }
-            });
+            var option = document.createElement("option");
+            option.text = "local";
+            option.value = "local";
+            version_selector.appendChild(option);
         }
-
-        function autopasVersionChange(){
-            var version_selector = document.getElementById("autopas_version_selector");
-            var selected = version_selector.options[version_selector.selectedIndex].value;
-            var oldurl = window.location.href;
-            var newurl = oldurl.replace(previous, selected);
-            window.location.href = newurl;
-        }
-
-    </script>
+    }
+</script>
 $treeview
 $search
 $mathjax
 <link href="$relpath^$stylesheet" rel="stylesheet" type="text/css" />
 $extrastylesheet
 </head>
-<body onload="autoPasVersionChecker()">
+<body onload="doOnLoad()">
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 	<!--BEGIN VERSION INFO-->
-	<div id="version selctor">
-		<table cellspacing="0" cellpadding="0">
-			<tr style="height: 20px;">
-				<td>Version:</td>
-				<td>&#160;
-					<select id="autopas_version_selector" onchange="autopasVersionChange()">
-					</select>
-				</td>
-			</tr>
-		</table>
+	<div id="version selector">
+        <label for="autopas_version_selector">Version:</label>
+        <select id="autopas_version_selector">
+        </select>
 	</div>
 	<!--END VERSION INFO-->
 <!--BEGIN TITLEAREA-->
 <div id="titlearea">
-<table cellspacing="0" cellpadding="0">
+<table cellspacing="0" cellpadding="0" width="100%">
  <tbody>
  <tr style="height: 56px;">
-  <!--BEGIN PROJECT_LOGO-->
-  <td id="projectlogo"><img alt="Logo" src="$relpath^$projectlogo"/></td>
-  <!--END PROJECT_LOGO-->
   <!--BEGIN PROJECT_NAME-->
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">$projectname
+   <div id="projectname"><a href="https://autopas.github.io/"><img style="height: 56px;" alt="AutoPas" src="$relpath^$projectlogo"/></a>
    <!--BEGIN PROJECT_NUMBER-->&#160;<span id="projectnumber">$projectnumber</span><!--END PROJECT_NUMBER-->
    </div>
    <!--BEGIN PROJECT_BRIEF--><div id="projectbrief">$projectbrief</div><!--END PROJECT_BRIEF-->
@@ -114,6 +71,7 @@ $extrastylesheet
    <td>$searchbox</td>
    <!--END SEARCHENGINE-->
   <!--END DISABLE_INDEX-->
+     <td style="float:right"><div id="githublink"><a href="https://github.com/AutoPas/AutoPas"><img border="0" alt="GitHub" src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" height="56px"></a></div></td>
  </tr>
  </tbody>
 </table>

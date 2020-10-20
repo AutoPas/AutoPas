@@ -39,7 +39,7 @@ Objects:
       particle-spacing           :  1
       bottomLeftCorner           :  [1, 0, 40]
       velocity                   :  [0, 0, 0]
-      particle-type              :  1
+      particle-type              :  0
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1.79769e+308
@@ -50,7 +50,7 @@ Objects:
       particle-spacing           :  1
       bottomLeftCorner           :  [0, 0, 1]
       velocity                   :  [0, 0, 0]
-      particle-type              :  2
+      particle-type              :  0
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1.79769e+308
@@ -61,7 +61,7 @@ Objects:
       particle-spacing           :  1
       bottomLeftCorner           :  [50, 0, 0]
       velocity                   :  [0, 0, 0]
-      particle-type              :  3
+      particle-type              :  0
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1.79769e+308
@@ -72,7 +72,7 @@ Objects:
       particle-spacing           :  1
       bottomLeftCorner           :  [1, 0, 1]
       velocity                   :  [0, 0, 0]
-      particle-type              :  2
+      particle-type              :  0
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1.79769e+308
@@ -83,7 +83,7 @@ Objects:
       particle-spacing           :  1
       bottomLeftCorner           :  [0, 30, 0]
       velocity                   :  [0, 0, 0]
-      particle-type              :  3
+      particle-type              :  0
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1.79769e+308
@@ -94,7 +94,7 @@ Objects:
       bottomLeftCorner           :  [1, 1, 1]
       box-length                 :  [48, 28, 10]
       velocity                   :  [0, 0, 0]
-      particle-type              :  10
+      particle-type              :  1
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1
@@ -104,7 +104,7 @@ Objects:
       radius                     :  6
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
-      particle-type              :  20
+      particle-type              :  2
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1
