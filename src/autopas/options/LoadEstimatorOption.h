@@ -21,8 +21,17 @@ class LoadEstimatorOption : public Option<LoadEstimatorOption> {
    * Possible choices for the load estimation algorithm.
    */
   enum Value {
+    /**
+     * No load estimator. If the Configuration supports load estimators, everything is assigned the same estimation.
+     */
     none,
+    /**
+     * Number of particles per cell squared.
+     */
     squaredParticlesPerCell,
+    /**
+     * Sum of neighbor list lengths.
+     */
     neighborListLength,
   };
 
