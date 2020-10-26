@@ -2,11 +2,8 @@
  * @file WrapOpenMP.h
  * @author F. Gratl
  * @date 4/20/18
- */
-
-#pragma once
-
-/**
+ *
+ * @details
  * Provide non-OpenMP versions of the most common OpenMP function calls,
  * so that they don't have to be wrapped in ifdef-s every time.
  *
@@ -15,6 +12,10 @@
  *
  * Extend when necessary.
  */
+
+#pragma once
+
+
 
 #if defined(AUTOPAS_OPENMP)
 #include <omp.h>
