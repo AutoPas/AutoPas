@@ -16,8 +16,6 @@
 namespace autopas::internal {
 /**
  * RegionParticleIterator to iterate over all particles within a specific region
- * @todo optimize the region particle iterater. Currently we iterate over all
- * particles
  * @tparam Particle Particle type over which the iterator iterates
  * @tparam ParticleCell Cell type over which the iterator iterates
  * @tparam modifiable Defines whether the ParticleIterator is modifiable or not. If it is false, it points to a const
@@ -108,9 +106,6 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
     }
   }
 
-  /**
-   * @copydoc ParticleIteratorInterface<Particle, modifiable>::operator++()
-   */
   inline RegionParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
     do {
       ParticleIterator<Particle, ParticleCell, modifiable>::operator++();
@@ -125,15 +120,13 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
            utils::inBox(this->operator*().getR(), _startRegion, _endRegion);
   }
 
-  /// @copydoc ParticleIteratorInterfaceImpl::clone
-  /// @todo add test of clone
   inline ParticleIteratorInterfaceImpl<Particle, modifiable> *clone() const override {
     return new RegionParticleIterator<Particle, ParticleCell, modifiable>(*this);
   }
 
  private:
   /**
-   * @copydoc
+   * @copydoc ParticleIterator::next_non_empty_cell()
    * @note overrides call in ParticleIterator<Particle, ParticleCell>::operator++()
    */
   void next_non_empty_cell() override {
