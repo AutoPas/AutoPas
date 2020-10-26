@@ -450,6 +450,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * @tparam remainderIsMasked If false the full vector length is used. Otherwise the last entries are masked away
    * depending on the argument "rest".
    * @param j
+   * @param ownedStateI
+   * @param ownedStatePtr2
    * @param x1
    * @param y1
    * @param z1

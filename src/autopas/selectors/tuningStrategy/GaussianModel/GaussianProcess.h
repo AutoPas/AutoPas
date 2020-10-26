@@ -439,6 +439,8 @@ class GaussianProcess {
   /**
    * Calculates the kernel between input and all evidence.
    * @param input
+   * @param theta
+   * @param dimScale
    * @return Vector of covariances
    */
   [[nodiscard]] Eigen::VectorXd kernelVector(const Vector &input, double theta, const Eigen::VectorXd &dimScale) const {
