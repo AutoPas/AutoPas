@@ -128,40 +128,8 @@ class VerletListsCells
     bool useNewton3 = traversal->getUseNewton3();
     this->_verletBuiltNewton3 = useNewton3;
 
-    /*// Initialize a neighbor list for each cell.
-    _neighborList.clear();
-    auto &cells = this->_linkedCells.getCells();
-    size_t cellsSize = cells.size();
-    _neighborList.resize(cellsSize);
-    for (size_t cellIndex = 0; cellIndex < cellsSize; ++cellIndex) {
-      _neighborList[cellIndex].reserve(cells[cellIndex].numParticles());
-      size_t particleIndexWithinCell = 0;
-      for (auto iter = cells[cellIndex].begin(); iter.isValid(); ++iter, ++particleIndexWithinCell) {
-        Particle *particle = &*iter;
-        _neighborList[cellIndex].emplace_back(particle, std::vector<Particle *>());
-        // In a cell with N particles, reserve space for 5N neighbors.
-        // 5 is an empirically determined magic number that provides good speed.
-        _neighborList[cellIndex].back().second.reserve(cells[cellIndex].numParticles() * 5);
-        _particleToCellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
-      }
-    }*/
-
-    _neighborList.buildAoSNeighborList(this->_linkedCells, useNewton3);
-
-    typename VerletListsCellsHelpers<Particle>::VerletListGeneratorFunctor f(_neighborList.getAoSNeighborList(), _neighborList.getParticleToCellMap(),
-                                                                             this->getCutoff() + this->getSkin());
-
-    // Generate the build traversal with the traversal selector and apply the build functor with it.
-    TraversalSelector<LinkedParticleCell> traversalSelector;
-    // Argument "cluster size" does not matter here.
-    TraversalSelectorInfo traversalSelectorInfo(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
-                                                this->getInteractionLength(),
-                                                this->_linkedCells.getCellBlock().getCellLength(), 0);
-    autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-      auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::aos, n3>(
-          _buildTraversalOption, f, traversalSelectorInfo);
-      this->_linkedCells.iteratePairwise(buildTraversal.get());
-    });
+    _neighborList.buildAoSNeighborList(this->_linkedCells, useNewton3,
+                                       this->getCutoff(), this->getSkin(), this->getInteractionLength(), _buildTraversalOption);
 
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
