@@ -1,7 +1,7 @@
 PROJECT_NAME           = "@CMAKE_PROJECT_NAME@"
 PROJECT_LOGO           = @PROJECT_SOURCE_DIR@/docs/graphics/AutoPasLogo_Large.png
 PROJECT_NUMBER         = @AutoPas_VERSION@
-STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@/src
+STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doc_doxygen/
 INPUT                  = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@ \
                          @PROJECT_SOURCE_DIR@/src/ \
