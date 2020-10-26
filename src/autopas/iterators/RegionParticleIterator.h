@@ -109,7 +109,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
   }
 
   /**
-   * @copydoc ParticleIteratorInterface::operator++()
+   * @copydoc ParticleIteratorInterface<Particle, modifiable>::operator++()
    */
   inline RegionParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
     do {

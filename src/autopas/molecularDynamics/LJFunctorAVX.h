@@ -53,7 +53,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   /**
    * Internal, actual constructor.
    * @param cutoff
-   * @param dummy unused, only there to make the signature different from the public constructor.
+   * @note param dummy unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
