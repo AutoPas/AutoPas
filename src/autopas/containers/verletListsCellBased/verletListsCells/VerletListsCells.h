@@ -14,6 +14,7 @@
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -32,7 +33,7 @@ namespace autopas {
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @tparam Particle
  */
-template <class Particle, class NeighborList = typename VerletListsCellsHelpers<Particle>::NeighborListsType>
+template <class Particle, class NeighborList = VerletListsCellsNeighborList<Particle>>
 class VerletListsCells
     : public VerletListsLinkedBase<Particle, typename VerletListsCellsHelpers<Particle>::VLCCellType> {
   using ParticleCell = FullParticleCell<Particle>;
@@ -79,7 +80,7 @@ class VerletListsCells
       case LoadEstimatorOption::neighborListLength: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
-          return loadEstimators::neighborListLength<Particle>(_neighborList, cellsPerDimension, lowerCorner,
+          return loadEstimators::neighborListLength<Particle>(_neighborList.getAoSNeighborList(), cellsPerDimension, lowerCorner,
                                                               upperCorner);
         };
       }
@@ -101,7 +102,7 @@ class VerletListsCells
     }
 
     if (vTraversal) {
-      vTraversal->setVerletList(_neighborList);
+      vTraversal->setVerletList(_neighborList.getAoSNeighborList());
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
@@ -119,15 +120,15 @@ class VerletListsCells
    * @return the neighbor list of the particle
    */
   const std::vector<Particle *> &getVerletList(const Particle *particle) const {
-    const auto indices = _particleToCellMap.at(const_cast<Particle *>(particle));
-    return _neighborList.at(indices.first).at(indices.second).second;
+    const auto indices = _neighborList.getParticleToCellMapConst().at(const_cast<Particle *>(particle));
+    return _neighborList.getAoSConstAll().at(indices.first).at(indices.second).second;
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     bool useNewton3 = traversal->getUseNewton3();
     this->_verletBuiltNewton3 = useNewton3;
 
-    // Initialize a neighbor list for each cell.
+    /*// Initialize a neighbor list for each cell.
     _neighborList.clear();
     auto &cells = this->_linkedCells.getCells();
     size_t cellsSize = cells.size();
@@ -143,9 +144,11 @@ class VerletListsCells
         _neighborList[cellIndex].back().second.reserve(cells[cellIndex].numParticles() * 5);
         _particleToCellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
       }
-    }
+    }*/
 
-    typename VerletListsCellsHelpers<Particle>::VerletListGeneratorFunctor f(_neighborList, _particleToCellMap,
+    _neighborList.buildAoSNeighborList(this->_linkedCells, useNewton3);
+
+    typename VerletListsCellsHelpers<Particle>::VerletListGeneratorFunctor f(_neighborList.getAoSNeighborList(), _neighborList.getParticleToCellMap(),
                                                                              this->getCutoff() + this->getSkin());
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.
@@ -181,7 +184,7 @@ class VerletListsCells
   /**
    * Mapping of each particle to its corresponding cell and id within this cell.
    */
-  std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap;
+  //std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap;
 
   /**
    * The traversal used to build the verletlists.
