@@ -94,6 +94,7 @@ add_subdirectory(examples)
 add_subdirectory(tests)
 
 include(doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES, which is defined in examples.
+include(sphinx)
 
 # write version information
 include(CMakePackageConfigHelpers)
