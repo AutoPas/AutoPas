@@ -1,5 +1,5 @@
 /**
- * @file Cluster.h
+ * @file VerletClusterListsRebuilder.h
  * @author humig
  * @date 29.07.19
  */
