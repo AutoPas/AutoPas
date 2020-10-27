@@ -18,12 +18,11 @@
 # -- Project information -----------------------------------------------------
 
 project = 'AutoPas'
-copyright = '2020, AutoPas-Team'
+copyright = '2020, AutoPas-Team'  # pylint: disable=redefined-builtin
 author = 'AutoPas-Team'
 
 # The full version, including alpha/beta/rc tags
 release = '0.1.0'
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -44,7 +43,6 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -64,15 +62,14 @@ breathe_default_project = "AutoPas"
 # -- Exhale Config -----------------------------------------------------------
 exhale_args = {
     # These arguments are required
-    "containmentFolder":     "./api",
-    "rootFileName":          "autopas_root.rst",
-    "rootFileTitle":         "AutoPas API",
-    "doxygenStripFromPath":  "..",
+    "containmentFolder": "./api",
+    "rootFileName": "autopas_root.rst",
+    "rootFileTitle": "AutoPas API",
+    "doxygenStripFromPath": "..",
     # optional:
     "verboseBuild": False,
     # Suggested optional arguments
-    "createTreeView":        True,
+    "createTreeView": True,
     # TIP: if using the sphinx-bootstrap-theme, you need
     # "treeViewIsBootstrap": True,
 }
-
