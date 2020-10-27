@@ -120,8 +120,7 @@ class VerletListsCells
    * @return the neighbor list of the particle
    */
   const std::vector<Particle *> &getVerletList(const Particle *particle) const {
-    const auto indices = _neighborList.getParticleToCellMapConst().at(const_cast<Particle *>(particle));
-    return _neighborList.getAoSConstAll().at(indices.first).at(indices.second).second;
+    return _neighborList.getVerletList(particle);
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
@@ -145,14 +144,9 @@ class VerletListsCells
 
  private:
   /**
-   * -----Verlet lists for each particle for each cell.
+   * TODO: Verlet lists for each particle for each cell.
    */
   NeighborList _neighborList;
-
-  /**
-   * Mapping of each particle to its corresponding cell and id within this cell.
-   */
-  //std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap;
 
   /**
    * The traversal used to build the verletlists.

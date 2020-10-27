@@ -5,17 +5,22 @@
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
 
 namespace autopas
 {
 template<class Particle>
-class VerletListsCellsNeighborList
+class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle>
 {
 
   using LinkedParticleCell = typename VerletListsCellsHelpers<Particle>::VLCCellType;
 
  public:
   VerletListsCellsNeighborList() : _aosNeighborList{}, _particleToCellMap{} {}
+
+  /**
+   * TODO
+   * */
   void buildAoSNeighborList(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells, bool useNewton3,
                             double cutoff, double skin, double interactionLength, const TraversalOption buildTraversalOption)
   {
@@ -39,14 +44,23 @@ class VerletListsCellsNeighborList
 
     applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption);
   }
+  /**TODO*/
 
-  auto &getParticleToCellMapConst() const {return _particleToCellMap;}
+  const std::vector<Particle *> &getVerletList(const Particle *particle) const {
+    const auto indices = _particleToCellMap.at(const_cast<Particle *>(particle));
+    return _aosNeighborList.at(indices.first).at(indices.second).second;
+  }
 
+  /**
+   * TODO
+   * */
   typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSNeighborList() {return _aosNeighborList;}
-  const typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSConstAll() const {return _aosNeighborList;}
 
  private:
 
+  /**
+   * TODO
+   * */
   void applyBuildFunctor(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells, bool useNewton3,
                          double cutoff, double skin, double interactionLength, const TraversalOption buildTraversalOption)
   {
@@ -66,7 +80,12 @@ class VerletListsCellsNeighborList
     });
   }
 
+  /**TODO*/
   typename VerletListsCellsHelpers<Particle>::NeighborListsType _aosNeighborList;
+
+  /**
+   * Mapping of each particle to its corresponding cell and id within this cell.
+   */
   std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap;
 
 };
