@@ -15,8 +15,6 @@
 
 #pragma once
 
-
-
 #if defined(AUTOPAS_OPENMP)
 #include <omp.h>
 #else
