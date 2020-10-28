@@ -11,7 +11,7 @@ FILE_PATTERNS          = *.h \
 RECURSIVE              = YES
 USE_MDFILE_AS_MAINPAGE = @PROJECT_SOURCE_DIR@/examples/md-flexible/README.md
 HTML_HEADER            = @AUTOPAS_SOURCE_DIR@/docs/AutoPasHeader.html
-
+LAYOUT_FILE            = @AUTOPAS_SOURCE_DIR@/docs/DoxygenLayout-md-flex.xml
 
 # EXTRACT_ALL           = NO # default NO
 # EXTRACT_PRIVATE       = NO # default NO
