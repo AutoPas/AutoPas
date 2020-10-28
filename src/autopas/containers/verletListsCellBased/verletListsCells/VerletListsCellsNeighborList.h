@@ -1,3 +1,9 @@
+/**
+ * @file VerletListsCellsNeighborList.h
+ * @author tirgendetwas
+ * @date 25.10.20
+ */
+
 #pragma once
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
@@ -19,7 +25,13 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   VerletListsCellsNeighborList() : _aosNeighborList{}, _particleToCellMap{} {}
 
   /**
-   * TODO
+   * Builds AoS neighbor list from underlying linked cells object.
+   * @param linkedCells Linked Cells object used to build the neighor list.
+   * @param useNewton3 Whether Newton 3 should be used for the neighbor list.
+   * @param cutoff
+   * @param skin
+   * @param interactionLength
+   * @param buildTraversalOption Traversal option necessary for generator functor.
    * */
   void buildAoSNeighborList(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells, bool useNewton3,
                             double cutoff, double skin, double interactionLength, const TraversalOption buildTraversalOption)
@@ -44,22 +56,25 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
 
     applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption);
   }
-  /**TODO*/
 
+  /**@copy VerletListsCellsNeighborListInterface::buildAoSNeighborList() */
   const std::vector<Particle *> &getVerletList(const Particle *particle) const {
     const auto indices = _particleToCellMap.at(const_cast<Particle *>(particle));
     return _aosNeighborList.at(indices.first).at(indices.second).second;
   }
 
-  /**
-   * TODO
-   * */
   typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSNeighborList() {return _aosNeighborList;}
 
  private:
 
   /**
-   * TODO
+   * Creates and applies generator functor for the building of the neighbor list.
+   * @param linkedCells Linked Cells object used to build the neighor list.
+   * @param useNewton3 Whether Newton 3 should be used for the neighbor list.
+   * @param cutoff
+   * @param skin
+   * @param interactionLength
+   * @param buildTraversalOption Traversal option necessary for generator functor.
    * */
   void applyBuildFunctor(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells, bool useNewton3,
                          double cutoff, double skin, double interactionLength, const TraversalOption buildTraversalOption)
@@ -80,7 +95,9 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
     });
   }
 
-  /**TODO*/
+  /**
+   * Internal neighbor list structure in AoS format - Verlet lists for each particle for each cell.
+   * */
   typename VerletListsCellsHelpers<Particle>::NeighborListsType _aosNeighborList;
 
   /**

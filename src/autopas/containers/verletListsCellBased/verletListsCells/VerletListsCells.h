@@ -32,6 +32,7 @@ namespace autopas {
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @tparam Particle
+ * @tparam NeighborList The neighbor list used by this container.
  */
 template <class Particle, class NeighborList = VerletListsCellsNeighborList<Particle>>
 class VerletListsCells
@@ -144,7 +145,7 @@ class VerletListsCells
 
  private:
   /**
-   * TODO: Verlet lists for each particle for each cell.
+   * Neighbor list abstraction for neighbor list used in the container.
    */
   NeighborList _neighborList;
 

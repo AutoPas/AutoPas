@@ -1,6 +1,8 @@
-//
-// Created by TinaVl on 10/27/2020.
-//
+/**
+ * @file VerletListsCellsNeighborListInterface.h
+ * @author tirgendetwas
+ * @date 27.10.20
+ */
 
 #pragma once
 
@@ -15,14 +17,26 @@ template<class Particle>
 class VerletListsCellsNeighborListInterface
 {
  public:
-  /**TODO*/
+  /**default destructor*/
     ~VerletListsCellsNeighborListInterface() = default;
 
-  /**TODO*/
+  /**
+   * Builds AoS neighbor list from underlying linked cells object.
+   * @param linkedCells Linked Cells object used to build the neighor list.
+   * @param useNewton3 Whether Newton 3 should be used for the neighbor list.
+   * @param cutoff
+   * @param skin
+   * @param interactionLength
+   * @param buildTraversalOption Traversal option necessary for generator functor.
+   * */
   virtual void buildAoSNeighborList(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells, bool useNewton3,
                             double cutoff, double skin, double interactionLength, const TraversalOption buildTraversalOption) = 0;
 
-  /**TODO*/
+  /**
+   * Get the neighbors list of a particle.
+   * @param particle
+   * @return the neighbor list of the particle
+   */
   virtual const std::vector<Particle *> &getVerletList(const Particle *particle) const = 0;
 };
 
