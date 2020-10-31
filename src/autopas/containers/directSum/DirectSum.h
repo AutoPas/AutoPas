@@ -8,11 +8,11 @@
 #pragma once
 
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/containers/directSum/DirectSumTraversalInterface.h"
+#include "autopas/containers/directSum/traversals/DSTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -34,7 +34,7 @@ namespace autopas {
  * @tparam ParticleCell type of the cell that stores the particle
  */
 template <class Particle>
-class DirectSum : public ParticleContainer<FullParticleCell<Particle>> {
+class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> {
  public:
   /**
    *  Type of the Particle.
@@ -53,7 +53,7 @@ class DirectSum : public ParticleContainer<FullParticleCell<Particle>> {
    * @param skin
    */
   DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
-      : ParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin), _cellBorderFlagManager() {
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin), _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
 
@@ -93,7 +93,7 @@ class DirectSum : public ParticleContainer<FullParticleCell<Particle>> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<DirectSumTraversalInterface<ParticleCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<DSTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
     if (traversalInterface && cellPairTraversal) {
       cellPairTraversal->setCellsToTraverse(this->_cells);

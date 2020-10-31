@@ -12,13 +12,13 @@
 #include <vector>
 
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
-#include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/verletClusterCells/VerletClusterCellsParticleIterator.h"
-#include "autopas/containers/verletClusterCells/traversals/VerletClusterCellsTraversalInterface.h"
+#include "autopas/containers/verletClusterCells/traversals/VCCTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -35,7 +35,7 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
+class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Particle>>,
                            public internal::ParticleDeletedObserver {
  public:
   /**
@@ -52,7 +52,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    */
   VerletClusterCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
                      double skin = 0, int clusterSize = 32)
-      : ParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
+      : CellBasedParticleContainer<FullParticleCell<Particle>>(boxMin, boxMax, cutoff, skin),
         _boxMinWithHalo(utils::ArrayMath::subScalar(boxMin, cutoff + skin)),
         _boxMaxWithHalo(utils::ArrayMath::addScalar(boxMax, cutoff + skin)),
         _clusterSize(clusterSize) {
@@ -71,8 +71,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    * @param traversal to be used used
    */
   void iteratePairwise(TraversalInterface *traversal) override {
-    auto *traversalInterface =
-        dynamic_cast<VerletClusterCellsTraversalInterface<FullParticleCell<Particle>> *>(traversal);
+    auto *traversalInterface = dynamic_cast<VCCTraversalInterface<FullParticleCell<Particle>> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<FullParticleCell<Particle>> *>(traversal);
 
     if ((!traversalInterface) or (!cellPairTraversal)) {
@@ -144,8 +143,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
    * @param traversal The used traversal.
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    auto *traversalInterface =
-        dynamic_cast<VerletClusterCellsTraversalInterface<FullParticleCell<Particle>> *>(traversal);
+    auto *traversalInterface = dynamic_cast<VCCTraversalInterface<FullParticleCell<Particle>> *>(traversal);
     if (!traversalInterface) {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletClusterCells::iteratePairwise");
@@ -368,7 +366,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
   void deleteAllParticles() override {
     _isValid = ValidityState::invalid;
     std::fill(_dummyStarts.begin(), _dummyStarts.end(), 0);
-    ParticleContainer<FullParticleCell<Particle>>::deleteAllParticles();
+    CellBasedParticleContainer<FullParticleCell<Particle>>::deleteAllParticles();
   }
 
   /**
@@ -415,7 +413,7 @@ class VerletClusterCells : public ParticleContainer<FullParticleCell<Particle>>,
           if (p.isOwned()) {
             autopas::utils::ExceptionHandler::exception(
                 "VerletClusterCells::rebuildClusterStructure(): Detected particle leak: Possible reason: \n"
-                "Please ensure that you call an updateContainerForced after manually adding or removing particles! "
+                "Please ensure that you call an updateContainer(true) after manually adding or removing particles! "
                 "\nThe particle that will be lost: {}",
                 p.toString());
           } else {

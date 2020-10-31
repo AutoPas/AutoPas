@@ -103,7 +103,7 @@ class AutoPas {
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
-            _maxTuningPhasesWithoutTest, _evidenceFirstPrediction, _acquisitionFunctionOption,
+            _maxTuningPhasesWithoutTest, _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption,
             _extrapolationMethodOption)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler = std::make_unique<autopas::LogicHandler<Particle>>(*(_autoTuner.get()), _verletRebuildFrequency);
@@ -115,23 +115,14 @@ class AutoPas {
    * no longer belong into the container will be returned, the lists will be invalidated. If the internal container is
    * still valid and a rebuild of the container is not forced, this will return an empty list of particles and nothing
    * else will happen.
+   * @param forced specifies whether an update of the container is enforced.
    * @return A pair of a vector of invalid particles that do no belong in the current container and a bool that
    * specifies whether the container was updated. If the bool is false, the vector will be an empty vector. If the
    * returned bool evaluates to true, the vector can both be empty or non-empty, depending on whether particles have
    * left the container or not.
    */
-  [[nodiscard]] std::pair<std::vector<Particle>, bool> updateContainer() {
-    return _logicHandler->updateContainer(false);
-  }
-
-  /**
-   * Forces a container update.
-   * On an update, the particles are resorted into appropriate cells and will return particles that do no longer belong
-   * into the container.
-   * @return A vector of invalid particles that do no belong in the current container.
-   */
-  [[nodiscard]] std::vector<Particle> updateContainerForced() {
-    return std::get<0>(_logicHandler->updateContainer(true));
+  [[nodiscard]] std::pair<std::vector<Particle>, bool> updateContainer(bool forced = false) {
+    return _logicHandler->updateContainer(forced);
   }
 
   /**
@@ -438,11 +429,27 @@ class AutoPas {
   [[nodiscard]] unsigned int getMaxTuningPhasesWithoutTest() const { return _maxTuningPhasesWithoutTest; }
 
   /**
-   * Set the maximum number of tuning phases a configuration can not be tested.
+   * For Predictive tuning: Set the relative cutoff for configurations to be blacklisted.
+   * E.g. 2.5 means all configurations that take 2.5x the time of the optimum are blacklisted.
    * @param maxTuningPhasesWithoutTest
    */
   void setMaxTuningPhasesWithoutTest(unsigned int maxTuningPhasesWithoutTest) {
     AutoPas::_maxTuningPhasesWithoutTest = maxTuningPhasesWithoutTest;
+  }
+
+  /**
+   * For Predictive tuning: Get the relative cutoff for configurations to be blacklisted.
+   * E.g. 2.5 means all configurations that take 2.5x the time of the optimum are blacklisted.
+   * @return
+   */
+  [[nodiscard]] double getRelativeBlacklistRange() const { return _relativeBlacklistRange; }
+
+  /**
+   * Set the range of the configurations that are not going to be blacklisted.
+   * @param relativeBlacklistRange
+   */
+  void setRelativeBlacklistRange(double relativeBlacklistRange) {
+    AutoPas::_relativeBlacklistRange = relativeBlacklistRange;
   }
 
   /**
@@ -644,6 +651,11 @@ class AutoPas {
    */
   unsigned int _maxTuningPhasesWithoutTest{5};
   /**
+   * The relative cutoff for configurations to be blacklisted.
+   * E.g. 2.5 means all configurations that take 2.5x the time of the optimum are blacklisted.
+   */
+  double _relativeBlacklistRange{0};
+  /**
    * Specifies how many tests that need to have happened for a configuration until the first prediction is calculated in
    * PredictiveTuning.
    */
@@ -658,7 +670,7 @@ class AutoPas {
    * Extrapolation method used in predictiveTuning.
    * For possible extrapolation method choices see autopas/options/ExtrapolationMethodOption.
    */
-  ExtrapolationMethodOption _extrapolationMethodOption{ExtrapolationMethodOption::linePrediction};
+  ExtrapolationMethodOption _extrapolationMethodOption{ExtrapolationMethodOption::linearRegression};
 
   /**
    * Strategy option for the auto tuner.
@@ -702,8 +714,8 @@ class AutoPas {
       std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
 
   /***
-   * Load estimation algorithm to be used for efficient parallelisation (only relevant for BalancedSlicedTraversal and
-   * BalancedSlicedTraversalVerlet).
+   * Load estimation algorithm to be used for efficient parallelisation (only relevant for LCSlicedBalancedTraversal and
+   * VLCSlicedBalancedTraversal).
    */
   std::set<LoadEstimatorOption> _allowedLoadEstimators{LoadEstimatorOption::getAllOptions()};
 

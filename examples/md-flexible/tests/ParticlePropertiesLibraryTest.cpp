@@ -96,9 +96,6 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
   EXPECT_EQ(simulation.getPpl()->getMass(3), 4.0);
   EXPECT_EQ(simulation.getPpl()->get24Epsilon(3), 96.0);
   EXPECT_EQ(simulation.getPpl()->getSigmaSquare(3), 16.0);
-  ASSERT_ANY_THROW(simulation.getPpl()->get24Epsilon(10));
-  ASSERT_ANY_THROW(simulation.getPpl()->getSigmaSquare(10));
-  ASSERT_ANY_THROW(simulation.getPpl()->getMass(10));
 }
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitializationDefault) {

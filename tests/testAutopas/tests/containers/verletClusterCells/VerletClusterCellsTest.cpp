@@ -7,7 +7,7 @@
 #include "VerletClusterCellsTest.h"
 
 #include "autopas/containers/verletClusterCells/VerletClusterCells.h"
-#include "autopas/containers/verletClusterCells/traversals/VerletClusterCellsTraversal.h"
+#include "autopas/containers/verletClusterCells/traversals/VCCClusterItrationCUDATraversal.h"
 #include "testingHelpers/TouchableParticle.h"
 
 using ::testing::_;
@@ -46,7 +46,7 @@ TEST_F(VerletClusterCellsTest, testNeighborListBuild) {
                                                                verletLists.getBoxMax(), 500);
 
   MockFunctor<Particle> emptyFunctor;
-  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> dummyTraversal(
+  autopas::VCCClusterItrationCUDATraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> dummyTraversal(
       &emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
   verletLists.rebuildNeighborLists(&dummyTraversal);
 }
@@ -67,7 +67,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIterator) {
   std::vector<int> particlesBoth(500, 0);
 
   MockFunctor<Particle> emptyFunctor;
-  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
+  autopas::VCCClusterItrationCUDATraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
   verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
 
@@ -151,7 +151,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIteratorDelete) {
   std::vector<int> particlesBoth(500, 0);
 
   MockFunctor<Particle> emptyFunctor;
-  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
+  autopas::VCCClusterItrationCUDATraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
   verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
 
@@ -195,7 +195,7 @@ TEST_F(VerletClusterCellsTest, testVerletParticleLoss) {
 
   MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(AtLeast(1));
-  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
+  autopas::VerletClusterCellsTraversal<MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
 
   verletLists.rebuildNeighborLists(&verletClusterCellsTraversal);
@@ -314,7 +314,7 @@ TEST_F(VerletClusterCellsTest, testIteratePairwiseWithoutNeighborlistRebuildThro
 
   MockFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, false)).Times(0);
-  autopas::VerletClusterCellsTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
+  autopas::VCCClusterItrationCUDATraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false>
       verletClusterCellsTraversal(&emptyFunctor, verletLists.getTraversalSelectorInfo().clusterSize);
 
   EXPECT_ANY_THROW(verletLists.iteratePairwise(&verletClusterCellsTraversal));

@@ -9,6 +9,7 @@
 #include <atomic>
 
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/verletListsCellBased/VerletListTypeDefinitions.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
@@ -27,9 +28,19 @@ class VerletListHelpers {
   using NeighborListAoSType = std::unordered_map<Particle *, std::vector<Particle *>>;
 
   /**
+   * Reduced SoA Type for verlet list's linked cells only storing Particle* and position.
+   */
+  using PositionSoAArraysType = typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType;
+
+  /**
+   * Attributes for SoAs of verlet list's linked cells (only id and position needs to be stored)
+   */
+  enum AttributeNames : int { ptr, posX, posY, posZ };
+
+  /**
    * Type of the particle cell.
    */
-  using VerletListParticleCellType = FullParticleCell<Particle>;
+  using VerletListParticleCellType = typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
@@ -165,47 +176,6 @@ class VerletListHelpers {
         }
       }
     }
-
-    /**
-     * SoALoader for verlet list generator.
-     * Only loads IDs and positions
-     * @param cell
-     * @param soa
-     * @param offset
-     */
-    // TODO remove this whole function
-    // TODO remove sanity check ? maybe add test for it? how?
-    //        void SoALoader(VerletListParticleCellType &cell, SoA<Particle::SoAArraysType> &soa, size_t offset)
-    //        override {
-    //          if (offset > 0) {
-    //            utils::ExceptionHandler::exception("VerletListGeneratorFunctor: requires offset == 0");
-    //          }
-    //          soa.resizeArrays(cell.numParticles());
-    //
-    //          if (cell.numParticles() == 0) return;
-    //
-    //          auto *const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
-    //          double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
-    //          double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
-    //          double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
-    //
-    //          auto cellIter = cell.begin();
-    //          // load particles in SoAs
-    //          for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
-    //            Particle *pptr = &(*cellIter);
-    //            ptrptr[i] = pptr;
-    //            xptr[i] = cellIter->getR()[0];
-    //            yptr[i] = cellIter->getR()[1];
-    //            zptr[i] = cellIter->getR()[2];
-    //          }
-    //        }
-
-    /**
-     * Does nothing
-     * @param cell
-     * @param soa
-     */
-    //    void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t /*offset*/) override {}
 
     /**
      * @copydoc Functor::getNeededAttr()

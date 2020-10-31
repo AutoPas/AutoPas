@@ -47,6 +47,33 @@ class ParticleBase {
    */
   virtual ~ParticleBase() = default;
 
+ protected:
+  /**
+   * Particle position as 3D coordinates.
+   */
+  std::array<floatType, 3> _r;
+
+  /**
+   * Particle velocity as 3D vector.
+   */
+  std::array<floatType, 3> _v;
+
+  /**
+   * Force the particle experiences as 3D vector.
+   */
+  std::array<floatType, 3> _f;
+
+  /**
+   * Particle id.
+   */
+  idType _id;
+
+  /**
+   * Defines the state of the ownership of the particle.
+   */
+  OwnershipState _ownershipState{OwnershipState::owned};
+
+ public:
   /**
    * Equality operator for ParticleBase class.
    * @param rhs
@@ -299,32 +326,6 @@ class ParticleBase {
    */
   template <class T>
   friend void internal::markParticleAsDeleted(T &);
-
- protected:
-  /**
-   * Particle position as 3D coordinates.
-   */
-  std::array<double, 3> _r;
-
-  /**
-   * Particle velocity as 3D vector.
-   */
-  std::array<double, 3> _v;
-
-  /**
-   * Force the particle experiences as 3D vector.
-   */
-  std::array<double, 3> _f;
-
-  /**
-   * Particle id.
-   */
-  idType _id;
-
-  /**
-   * Defines the state of the ownership of the particle.
-   */
-  OwnershipState _ownershipState{OwnershipState::owned};
 };
 
 }  // namespace autopas

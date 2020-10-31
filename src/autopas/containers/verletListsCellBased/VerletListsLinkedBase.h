@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleCellHelpers.h"

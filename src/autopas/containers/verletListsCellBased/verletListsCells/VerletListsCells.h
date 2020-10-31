@@ -6,18 +6,14 @@
 
 #pragma once
 
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
-#include "autopas/containers/ParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/containers/linkedCells/traversals/C01Traversal.h"
-#include "autopas/containers/linkedCells/traversals/C08Traversal.h"
-#include "autopas/containers/linkedCells/traversals/C18Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VerletListsCellsTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -98,7 +94,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto vTraversal = dynamic_cast<autopas::VerletListsCellsTraversal<Particle> *>(traversal);
+    auto vTraversal = dynamic_cast<autopas::VLCTraversalInterface<Particle> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }

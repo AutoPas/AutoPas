@@ -21,14 +21,14 @@ class ContainerOption : public Option<ContainerOption> {
    * Possible choices for the particle container type.
    */
   enum Value {
-    directSum = 0,
-    linkedCells = 1,
-    verletLists = 2,
-    verletListsCells = 3,
-    verletClusterLists = 4,
-    varVerletListsAsBuild = 5,
-    verletClusterCells = 6,
-    referenceLinkedCells = 7,
+    directSum,
+    linkedCells,
+    verletLists,
+    verletListsCells,
+    verletClusterLists,
+    varVerletListsAsBuild,
+    verletClusterCells,
+    referenceLinkedCells,
   };
 
   /**
@@ -52,7 +52,7 @@ class ContainerOption : public Option<ContainerOption> {
    * Set of options that are very unlikely to be interesting.
    * @return
    */
-  static std::set<ContainerOption> getDiscouragedOptions() { return {Value::directSum}; }
+  static std::set<ContainerOption> getDiscouragedOptions() { return {Value::directSum, Value::verletClusterCells}; }
 
   /**
    * Provides a way to iterate over the possible choices of ContainerOption.

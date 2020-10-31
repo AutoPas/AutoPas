@@ -13,10 +13,6 @@ namespace autopas {
  */
 template <class Number>
 class NumberInterval : public NumberSet<Number> {
- private:
-  Number _min;
-  Number _max;
-
  public:
   /**
    * Default Constructor: Create a range which only contains 0
@@ -73,6 +69,11 @@ class NumberInterval : public NumberSet<Number> {
     std::vector<Number> result;
     if (n == 0) {
       return result;
+    } else if (n == 1) {
+      // if only one sample choose middle
+      result.reserve(1);
+      result.push_back((_max + _min) / 2);
+      return result;
     }
 
     result.reserve(n);
@@ -89,5 +90,34 @@ class NumberInterval : public NumberSet<Number> {
 
     return result;
   }
+
+  std::set<Number> uniformSampleSet(size_t n, Random &rng) const override {
+    std::set<Number> result;
+    if (n == 0) {
+      return result;
+    } else if (isFinite()) {
+      result.insert(_min);
+      return result;
+    } else if (n == 1) {
+      // if only one sample choose median
+      result.insert(getMedian());
+      return result;
+    }
+
+    Number distance = (_max - _min) / (n - 1);
+    for (size_t i = 0; i < (n - 1); ++i) {
+      result.insert(_min + distance * i);
+    }
+    // add max separatly, avoiding possible rounding errors
+    result.insert(_max);
+
+    return result;
+  }
+
+  Number getMedian() const override { return (_max + _min) / 2; }
+
+ private:
+  Number _min;
+  Number _max;
 };
 }  // namespace autopas

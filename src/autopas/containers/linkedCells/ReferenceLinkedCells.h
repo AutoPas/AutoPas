@@ -10,10 +10,9 @@
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
-#include "autopas/containers/ParticleContainer.h"
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/ParticleVector.h"
-#include "autopas/containers/linkedCells/traversals/LinkedCellTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -37,7 +36,7 @@ namespace autopas {
  * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
 template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
-class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Particle>, SoAArraysType> {
+class ReferenceLinkedCells : public CellBasedParticleContainer<ReferenceParticleCell<Particle>, SoAArraysType> {
  public:
   /**
    *  Type of the Particle.
@@ -58,7 +57,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
    */
   ReferenceLinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                        const double skin, const double cellSizeFactor = 1.0)
-      : ParticleContainer<ReferenceCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
+      : CellBasedParticleContainer<ReferenceCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
 
   /**
@@ -140,7 +139,7 @@ class ReferenceLinkedCells : public ParticleContainer<ReferenceParticleCell<Part
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LinkedCellTraversalInterface<ReferenceCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ReferenceCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ReferenceCell> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());

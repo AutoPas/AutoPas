@@ -17,6 +17,7 @@ class ThermostatTest : public AutoPasTestBase,
   ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>(1.)) {
     _particlePropertiesLibrary.addType(0, 1., 1., 1.);
     _particlePropertiesLibrary.addType(1, 1., 1., 2.);
+    _particlePropertiesLibrary.calculateMixingCoefficients();
   }
 
  protected:

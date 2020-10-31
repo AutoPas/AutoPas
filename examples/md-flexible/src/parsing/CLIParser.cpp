@@ -35,10 +35,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.evidenceFirstPrediction, config.functorOption, config.dontMeasureFlops, config.generatorOption,
       config.iterations, config.tuningInterval, config.logLevel, config.logFileName, config.distributionMean,
       config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal, config.relativeOptimumRange,
-      config.periodic, config.tuningPhases, config.verletClusterSize, config.verletSkinRadius, config.particleSpacing,
-      config.tuningSamples, config.traversalOptions, config.tuningStrategyOption, config.useThermostat,
-      config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy,
-      config.yamlFilename, config.distributionStdDev, zshCompletionsOption, helpOption)};
+      config.relativeBlacklistRange, config.periodic, config.tuningPhases, config.verletClusterSize,
+      config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
+      config.tuningStrategyOption, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
+      config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
+      config.globalForce, zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -224,6 +225,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.generatorOption.value = MDFlexConfig::GeneratorOption::gaussian;
         } else if (strArg.find("sp") != string::npos) {
           config.generatorOption.value = MDFlexConfig::GeneratorOption::sphere;
+        } else if (strArg.find("cl") != string::npos) {
+          config.generatorOption.value = MDFlexConfig::GeneratorOption::closestPacked;
         } else {
           cerr << "Unknown generator: " << strArg << endl;
           cerr << "Please use 'Grid' or 'Gaussian'" << endl;
@@ -351,13 +354,26 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.relativeOptimumRange)::getoptChar: {
         try {
-          config.relativeOptimumRange.value = (double)stoul(strArg);
+          config.relativeOptimumRange.value = stod(strArg);
           if (config.relativeOptimumRange.value < 1) {
             cerr << "Relative optimum range has to be greater or equal one!" << endl;
             displayHelp = true;
           }
         } catch (const exception &) {
           cerr << "Error parsing relative optimum range: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.relativeBlacklistRange)::getoptChar: {
+        try {
+          config.relativeBlacklistRange.value = stod(strArg);
+          if (config.relativeBlacklistRange.value < 1 && config.relativeBlacklistRange.value != 0) {
+            cerr << "Relative range for blacklist range has to be greater or equal one or has to be zero!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing relative range for blacklist: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -498,6 +514,19 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
+      case decltype(config.globalForce)::getoptChar: {
+        // when passing via cli global force can only be in z-direction. For fancier forces use yaml input.
+        try {
+          auto force = stod(strArg);
+          config.globalForce.value = {0, 0, force};
+        } catch (const exception &) {
+          cerr << "Error parsing global force: " << optarg << endl;
+          cerr << "Expecting one double as force along the z-axis." << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+
       default: {
         // error message handled by getopt
         displayHelp = true;
@@ -507,7 +536,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
 
   // only create objects if nothing was set by a yaml file and there was no checkpoint
   if (config.checkpointfile.value.empty() and config.cubeGaussObjects.empty() and config.cubeGridObjects.empty() and
-      config.cubeUniformObjects.empty() and config.sphereObjects.empty()) {
+      config.cubeUniformObjects.empty() and config.sphereObjects.empty() and config.cubeClosestPackedObjects.empty()) {
     // common settings for any object type:
     unsigned int typeID = 0;
     double epsilon = 1.;
@@ -543,6 +572,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         Sphere sphere(velocity, typeID, epsilon, sigma, mass, {centerOfBox, centerOfBox, centerOfBox}, centerOfBox,
                       config.particleSpacing.value);
         config.sphereObjects.push_back(sphere);
+        break;
+      }
+      case MDFlexConfig::GeneratorOption::closestPacked: {
+        CubeClosestPacked cubeClosestPacked(velocity, typeID, epsilon, sigma, mass, config.particleSpacing.value,
+                                            {config.boxLength.value, config.boxLength.value, config.boxLength.value},
+                                            bottomLeftCorner);
+        config.cubeClosestPackedObjects.push_back(cubeClosestPacked);
         break;
       }
     }

@@ -22,35 +22,20 @@
  * The parseXXXOptionsTests define a mapping of enums to strings. It is then tested if parseOptions
  * can correctly parse them individually or all at once.
  */
-
 TEST(OptionTest, parseTraversalOptionsTest) {
-  std::map<autopas::TraversalOption, std::string> mapEnumString = {
-      {autopas::TraversalOption::c01, "c01"},
-      {autopas::TraversalOption::c01Verlet, "verlec01"},
-      {autopas::TraversalOption::c01CombinedSoA, "c01-combined"},
-      {autopas::TraversalOption::c01Cuda, "cudac01"},
-      {autopas::TraversalOption::c04, "c04"},
-      {autopas::TraversalOption::c04SoA, "c04-soa"},
-      {autopas::TraversalOption::c08, "c08"},
-      {autopas::TraversalOption::c18, "c18"},
-      {autopas::TraversalOption::c18Verlet, "verletc18"},
-      {autopas::TraversalOption::directSumTraversal, "direct"},
-      {autopas::TraversalOption::sliced, "slicedv01"},
-      {autopas::TraversalOption::slicedVerlet, "verlet-sliced"},
-      {autopas::TraversalOption::varVerletTraversalAsBuild, "var-verlet-lists-as-build"},
-      {autopas::TraversalOption::verletClusterCells, "verlet-cluster-cells"},
-      {autopas::TraversalOption::verletClusters, "verlet-clusters"},
-      {autopas::TraversalOption::verletClustersColoring, "verlet-clusters-coloring"},
-      {autopas::TraversalOption::verletTraversal, "verletlists"},
-      {autopas::TraversalOption::verletClustersStatic, "verlet-cluste-static"},
-      {autopas::TraversalOption::BalancedSliced, "balancedsliced"},
-      {autopas::TraversalOption::BalancedSlicedVerlet, "balancedsliced-verlet"},
-      {autopas::TraversalOption::c04HCP, "c04HCP"},
-      {autopas::TraversalOption::cSliced, "coloured-sliced"},
-      {autopas::TraversalOption::cSlicedVerlet, "coloured-sliced-verlet"},
-  };
+  // collect all option names
+  std::map<autopas::TraversalOption, std::string> mapEnumString = autopas::TraversalOption::getOptionNames();
 
-  EXPECT_EQ(mapEnumString.size(), autopas::TraversalOption::getOptionNames().size());
+  // alter all strings
+  std::transform(mapEnumString.begin(), mapEnumString.end(), std::inserter(mapEnumString, mapEnumString.end()),
+                 [](auto &pair) {
+                   auto &[option, str] = pair;
+                   // to lower
+                   std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+                   // remove all underscores
+                   str.erase(std::remove(str.begin(), str.end(), '_'), str.end());
+                   return std::make_pair(option, str);
+                 });
 
   testParseOptionsIndividually(mapEnumString);
   testParseOptionsCombined(mapEnumString);

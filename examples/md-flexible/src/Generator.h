@@ -8,6 +8,7 @@
 
 #include <vector>
 
+#include "Objects/CubeClosestPacked.h"
 #include "Objects/CubeGauss.h"
 #include "Objects/CubeGrid.h"
 #include "Objects/CubeUniform.h"
@@ -15,6 +16,7 @@
 #include "PrintableMolecule.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/ClosestPackingGenerator.h"
 #include "autopasTools/generators/GaussianGenerator.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "autopasTools/generators/RandomGenerator.h"
@@ -56,12 +58,20 @@ class Generator {
   /**
    * Generates a sphere of particles that is specified by the given Sphere object.
    * @tparam Particle
-   * @tparam ParticleCell
    * @param autopas
    * @param object
    */
   template <class Particle>
   static void sphere(autopas::AutoPas<Particle> &autopas, const Sphere &object);
+
+  /**
+   * Generates a cube of particles that are arranged with the hexagonal closest packing.
+   * @tparam Particle
+   * @param autopas
+   * @param object
+   */
+  template <class Particle>
+  static void cubeClosestPacked(autopas::AutoPas<Particle> &autopas, const CubeClosestPacked &object);
 };
 
 template <class Particle>
@@ -104,4 +114,14 @@ void Generator::sphere(autopas::AutoPas<Particle> &autopas, const Sphere &object
     autopas.addParticle(dummyParticle);
     dummyParticle.setID(dummyParticle.getID() + 1);
   });
+}
+
+template <class Particle>
+void Generator::cubeClosestPacked(autopas::AutoPas<Particle> &autopas, const CubeClosestPacked &object) {
+  Particle dummyParticle;
+  dummyParticle.setV(object.getVelocity());
+  dummyParticle.setID(autopas.getNumberOfParticles());
+  dummyParticle.setTypeId(object.getTypeId());
+  autopasTools::generators::ClosestPackingGenerator::fillWithParticles(autopas, object.getBoxMin(), object.getBoxMax(),
+                                                                       dummyParticle, object.getParticleSpacing());
 }

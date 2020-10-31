@@ -28,9 +28,14 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setVerletSkin(skin);
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
+
+#ifdef AUTOPAS_CUDA
+  autoPas.setVerletClusterSize(32);
+#endif
   // init autopas
   autoPas.init();
 }
+
 template <typename AutoPasT>
 void checkRegionIteratorForAllParticles(AutoPasT &autoPas, autopas::IteratorBehavior behavior) {
   for (auto iter1 = autoPas.begin(behavior); iter1.isValid(); ++iter1) {
@@ -60,6 +65,7 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
       autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
 
   defaultInit(autoPas);
@@ -216,6 +222,7 @@ void testRangeBasedIterator(autopas::ContainerOption containerOption, double cel
       autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
 
   defaultInit(autoPas);
@@ -313,6 +320,7 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
       autoPasRef = apContainer;
 
   apContainer.setAllowedContainers({containerOption});
+  apContainer.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
   apContainer.setCellSizeFactor(cellSizeFactor);
 
   apContainer.setBoxMin(min);
@@ -462,6 +470,7 @@ void testRegionIteratorDeletion(autopas::ContainerOption containerOption, double
       autoPas;
 
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
 
   defaultInit(autoPas);
@@ -532,7 +541,17 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
+static inline auto getTestableContainerOptions() {
+#ifdef AUTOPAS_CUDA
+  return autopas::ContainerOption::getAllOptions();
+#else
+  auto containerOptions = autopas::ContainerOption::getAllOptions();
+  containerOptions.erase(containerOptions.find(autopas::ContainerOption::verletClusterCells));
+  return containerOptions;
+#endif
+}
+
 INSTANTIATE_TEST_SUITE_P(Generated, IteratorTest,
-                         Combine(ValuesIn(autopas::ContainerOption::getAllOptions()), Values(0.5, 1., 1.5),
-                                 Values(true, false), Values(true, false)),
+                         Combine(ValuesIn(getTestableContainerOptions()), Values(0.5, 1., 1.5), Values(true, false),
+                                 Values(true, false)),
                          IteratorTest::PrintToStringParamName());
