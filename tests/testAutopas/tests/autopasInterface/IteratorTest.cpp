@@ -36,6 +36,13 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.init();
 }
 
+/**
+ * Iterate over all particles, generate a region iterator for each particle that spans a tiny space around them and
+ * check if this region iterator finds exactly this particle.
+ * @tparam AutoPasT
+ * @param autoPas
+ * @param behavior
+ */
 template <typename AutoPasT>
 void checkRegionIteratorForAllParticles(AutoPasT &autoPas, autopas::IteratorBehavior behavior) {
   for (auto iter1 = autoPas.begin(behavior); iter1.isValid(); ++iter1) {
@@ -45,9 +52,9 @@ void checkRegionIteratorForAllParticles(AutoPasT &autoPas, autopas::IteratorBeha
 
     for (auto iter2 = autoPas.getRegionIterator(low, up, behavior); iter2.isValid(); ++iter2) {
       ++count;
-      EXPECT_EQ(&(*iter1), &(*iter2));
+      EXPECT_EQ(&(*iter1), &(*iter2)) << "Wrong particle found";
     }
-    EXPECT_EQ(count, 1u);
+    EXPECT_EQ(count, 1u) << "The following particle was not found exactly once:\n" << iter1->toString();
   }
 }
 
@@ -111,10 +118,11 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
     size_t count = 0;
     for (auto iter = autoPasRef.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
       ++count;
-      EXPECT_TRUE(iter->isOwned());
+      EXPECT_TRUE(iter->isOwned()) << "Iterator: Found a particle that is not owned while looking only for owned ones!";
     }
 
-    EXPECT_EQ(count, numParticles1dOwned * numParticles1dOwned * numParticles1dOwned);
+    EXPECT_EQ(count, numParticles1dOwned * numParticles1dOwned * numParticles1dOwned)
+        << "Iterator: Found incorrect number of owned particles!";
   }
 
   // check number of halo particles
@@ -122,11 +130,13 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
     size_t count = 0;
     for (auto iter = autoPasRef.begin(autopas::IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
       ++count;
-      EXPECT_FALSE(iter->isOwned());
+      EXPECT_FALSE(iter->isOwned())
+          << "Iterator: Found a particle that is owned while looking only for not owned ones!";
     }
 
     EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal -
-                         numParticles1dOwned * numParticles1dOwned * numParticles1dOwned);
+                         numParticles1dOwned * numParticles1dOwned * numParticles1dOwned)
+        << "Iterator: Found incorrect number of halo only particles!";
   }
 
   // check number of particles
@@ -135,7 +145,8 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
     for (auto iter = autoPasRef.begin(autopas::IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
       ++count;
     }
-    EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal);
+    EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal)
+        << "Iterator: Found incorrect number of halo + owned particles!";
   }
 
   // check number of halo particles for region iterator
@@ -144,11 +155,13 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
     for (auto iter = autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::haloOnly);
          iter.isValid(); ++iter) {
       ++count;
-      EXPECT_FALSE(iter->isOwned());
+      EXPECT_FALSE(iter->isOwned())
+          << "RegionIterator: Found a particle that is owned while looking only for not owned ones!";
     }
 
     EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal -
-                         numParticles1dOwned * numParticles1dOwned * numParticles1dOwned);
+                         numParticles1dOwned * numParticles1dOwned * numParticles1dOwned)
+        << "RegionIterator: Found incorrect number of halo only particles!";
   }
 
   // check number of particles for region iterator
@@ -158,7 +171,8 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
          iter.isValid(); ++iter) {
       ++count;
     }
-    EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal);
+    EXPECT_EQ(count, numParticles1dTotal * numParticles1dTotal * numParticles1dTotal)
+        << "RegionIterator: Found incorrect number of halo + owned particles!";
   }
 
   // check number of owned particles for region iterator
@@ -167,9 +181,12 @@ void testAdditionAndIteration(autopas::ContainerOption containerOption, double c
     for (auto iter = autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::ownedOnly);
          iter.isValid(); ++iter) {
       ++count;
+      EXPECT_TRUE(iter->isOwned())
+          << "RegionIterator: Found a particle that is not owned while looking only for owned ones!";
     }
 
-    EXPECT_EQ(count, numParticles1dOwned * numParticles1dOwned * numParticles1dOwned);
+    EXPECT_EQ(count, numParticles1dOwned * numParticles1dOwned * numParticles1dOwned)
+        << "RegionIterator: Found incorrect number of owned particles!";
   }
 
   // check all particles are in region iterator of their position, ownedOnly

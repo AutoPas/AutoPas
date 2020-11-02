@@ -9,7 +9,9 @@
 #include "TuningStrategyInterface.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
+#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/utils/WrapMPI.h"
 
 namespace autopas::TuningStrategyFactory {
 /**
@@ -27,15 +29,18 @@ namespace autopas::TuningStrategyFactory {
  * @param relativeBlacklistRange
  * @param evidenceFirstPrediction
  * @param acquisitionFunctionOption
+ * @param mpiStrategyOption
+ * @param comm Default value only used for tests
  * @param extrapolationMethodOption
  * @return Pointer to the tuning strategy object or the nullpointer if an exception was suppressed.
  */
 std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
-    autopas::TuningStrategyOption tuningStrategyOption, const std::set<autopas::ContainerOption> &allowedContainers,
-    autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<autopas::TraversalOption> &allowedTraversals,
-    const std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
-    const std::set<autopas::DataLayoutOption> &allowedDataLayouts,
-    const std::set<autopas::Newton3Option> &allowedNewton3Options, unsigned int maxEvidence, double relativeOptimum,
-    unsigned int maxTuningPhasesWithoutTest, double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
-    AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption);
+    autopas::TuningStrategyOption tuningStrategyOption, std::set<autopas::ContainerOption> &allowedContainers,
+    autopas::NumberSet<double> &allowedCellSizeFactors, std::set<autopas::TraversalOption> &allowedTraversals,
+    std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
+    std::set<autopas::DataLayoutOption> &allowedDataLayouts, std::set<autopas::Newton3Option> &allowedNewton3Options,
+    unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
+    double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
+    AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
+    MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI, AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
 }  // namespace autopas::TuningStrategyFactory

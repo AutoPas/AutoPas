@@ -21,14 +21,43 @@ class ContainerOption : public Option<ContainerOption> {
    * Possible choices for the particle container type.
    */
   enum Value {
+    /**
+     * DirectSum : O(N^2) distance check of all particles and summation of those in cutoff.
+     * Minimal overhead but bad complexity.
+     */
     directSum,
+    /**
+     * LinkedCells : Segmentation of the domain into a regular cell grid. Only interactions with particles from
+     * neighbor cells are considered. Good data locality and vectorizability but low hit rate of particles in cutoff.
+     */
     linkedCells,
-    verletLists,
-    verletListsCells,
-    verletClusterLists,
+    /**
+     * VarVerletLists interface with neighbor list type VerletNeighborListAsBuild : Same algorithm as VerletLists.
+     * Remembers which thread created the neighbor list of each particle to exploit this information to avoid data
+     * races during the parallel force calculation.
+     */
     varVerletListsAsBuild,
+    /**
+     * VerletClusterCells : Same algorithm as VerletClusterLists but CUDA implementation.
+     */
     verletClusterCells,
     referenceLinkedCells,
+    /**
+     * VerletClusterLists : Particles are grouped in clusters of fixed size. Similar to VerletLists for every cluster
+     * a list of neighbor clusters is generated. Clusters always interact with whole clusters so vectorization is
+     * possible.
+     */
+    verletClusterLists,
+    /**
+     * VerletLists : Built on top of LinkedCells, a neighbor list is generated for every particle and updated in
+     * fixed intervals. Memory access, also in SoA mode is scattered but high hit rate of particles in cutoff.
+     */
+    verletLists,
+    /**
+     * VerletListsCells : Similar to VerletLists but Lists are associated with the underlying cells to achieve location
+     * information. Parallelization options similar to LinkedCells.
+     */
+    verletListsCells,
   };
 
   /**

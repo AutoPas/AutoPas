@@ -6,18 +6,30 @@
 
 #pragma once
 
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
 #include <string>
+#include <thread>
+#include <vector>
 
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LoadEstimators.h"
+#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/selectors/Configuration.h"
+#include "autopas/utils/AutoPasConfigurationCommunicator.h"
+#include "autopas/utils/WrapMPI.h"
 #include "hclient.h"
 
 namespace autopas {
 
 /**
- * Interface to the Active Harmony tuning framework.
+ * Interface to the Active Harmony (AH) tuning framework.
+ * If a global AH server is provided and MPI is enabled, the server can be reached via the environment variables
+ * HARMONY_HOST and HARMONY_PORT.
+ * They have to be set to the host address and port of the server respectively.
  */
 class ActiveHarmony : public TuningStrategyInterface {
  public:
@@ -29,30 +41,32 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
+   * @param mpiStrategyOption
+   * @param comm
    */
-  ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
-                const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
-                const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
-                const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
-                const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-                const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions())
-      : _allowedContainerOptions(),
+  ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions,
+                const NumberSet<double> &allowedCellSizeFactors,
+                const std::set<TraversalOption> &allowedTraversalOptions,
+                const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+                const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                const std::set<Newton3Option> &allowedNewton3Options, const MPIStrategyOption mpiStrategyOption,
+                const AutoPas_MPI_Comm comm)
+      : _allowedContainerOptions(allowedContainerOptions),
         _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
         _allowedTraversalOptions(allowedTraversalOptions),
         _allowedLoadEstimatorOptions(allowedLoadEstimatorOptions),
         _allowedDataLayoutOptions(allowedDataLayoutOptions),
         _allowedNewton3Options(allowedNewton3Options),
-        _currentConfig() {
-    AutoPasLog(debug, "Reducing traversal and container options to possible combinations");
-    for (auto &traversalOption : _allowedTraversalOptions) {
-      auto compatibleContainers = compatibleTraversals::allCompatibleContainers(traversalOption);
-      if (compatibleContainers.empty() or
-          allowedContainerOptions.find(*compatibleContainers.begin()) == allowedContainerOptions.end()) {
-        _allowedTraversalOptions.erase(traversalOption);
-      } else {
-        _allowedContainerOptions.emplace(*compatibleContainers.begin());
-      }
-    }
+        _currentConfig(),
+        _mpiStrategyOption(mpiStrategyOption),
+        _comm(comm),
+        _nonLocalServer(getenv("HARMONY_HOST") != nullptr and
+                        mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+    auto cellSizeDummy = NumberSetFinite<double>{-1};
+    utils::AutoPasConfigurationCommunicator::distributeConfigurations(
+        _allowedContainerOptions, cellSizeDummy, _allowedTraversalOptions, _allowedLoadEstimatorOptions,
+        _allowedDataLayoutOptions, _allowedNewton3Options, 0, 1);
+
     AutoPasLog(debug, "Possible container options: {}",
                autopas::utils::ArrayUtils::to_string(_allowedContainerOptions));
     AutoPasLog(debug, "Possible traversal options: {}",
@@ -82,6 +96,8 @@ class ActiveHarmony : public TuningStrategyInterface {
   }
 
   inline void addEvidence(long time, size_t iteration) override;
+
+  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
   inline bool tune(bool currentInvalid) override;
 
@@ -116,6 +132,10 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   Configuration _currentConfig;
 
+  MPIStrategyOption _mpiStrategyOption;
+  AutoPas_MPI_Comm _comm;
+  bool _nonLocalServer;
+
   /**
    * Traversal times for configurations. Used to save evidence when resetting active-harmony server.
    */
@@ -138,23 +158,25 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   /**
    * Define the tuning parameter in the ActiveHarmony tuning definition as enum and set possible values.
-   * @tparam O Option class.
+   * @tparam OptionClass Option class.
    * @param hdef Pointer to ActiveHarmony tuning definition.
    * @param name Name of the tuning parameter.
    * @param options Set of possible values of the tuning parameter.
    */
-  template <class O>
-  inline void configureTuningParameter(hdef_t *hdef, const char *name, const std::set<O> options);
+  template <class OptionClass>
+  inline void configureTuningParameter(hdef_t *hdef, const char *name, const std::set<OptionClass> options);
 
   /**
    * Fetch value for enum-type tuning parameter.
-   * @tparam O Option class.
+   * @tparam OptionClass Option class.
    * @param name Name of the tuning parameter.
    * @param options Set of all allowed options.
    * @return Value for tuning parameter.
    */
-  template <class O>
-  inline O fetchTuningParameter(const char *name, const std::set<O> options);
+  template <class OptionClass>
+  inline OptionClass fetchTuningParameter(const char *name, const std::set<OptionClass> options);
+
+  inline void setupTuningParameters(int commSize, hdef_t *hdef);
 
   static constexpr int cellSizeSamples = 100;
 
@@ -170,7 +192,7 @@ void ActiveHarmony::addEvidence(long time, size_t iteration) {
     AutoPasLog(debug, "ActiveHarmony::addEvidence: Search space is {}; did not report performance",
                searchSpaceIsTrivial() ? "trivial" : "empty");
   } else {
-    auto perf = (double)time;
+    auto perf = static_cast<double>(time);
     if (ah_report(htask, &perf) != 0) {
       utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error reporting performance to server");
     }
@@ -178,9 +200,9 @@ void ActiveHarmony::addEvidence(long time, size_t iteration) {
   }
 }
 
-template <class O>
-O ActiveHarmony::fetchTuningParameter(const char *name, const std::set<O> options) {
-  O option;
+template <class OptionClass>
+OptionClass ActiveHarmony::fetchTuningParameter(const char *name, const std::set<OptionClass> options) {
+  OptionClass option;
   if (options.size() > 1) {
     option = decltype(option)::parseOptionExact(ah_get_enum(htask, name));
   } else if (options.size() == 1) {
@@ -244,7 +266,8 @@ bool ActiveHarmony::tune(bool currentInvalid) {
       utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching values from server");
     }
     fetchConfiguration();
-    if (_traversalTimes.find(_currentConfig) != _traversalTimes.end()) {  // we already know performance for this config
+    if (_traversalTimes.find(_currentConfig) != _traversalTimes.end()) {
+      // we already know the performance for this config
       addEvidence(_traversalTimes[_currentConfig], 0);
       skipConfig = true;
     }
@@ -259,6 +282,13 @@ bool ActiveHarmony::tune(bool currentInvalid) {
       fetchConfiguration();
       AutoPasLog(debug, "ActiveHarmony::tune: Selected optimal configuration {}.", _currentConfig.toString());
       return false;
+    }
+
+    if (_nonLocalServer) {
+      // When using a non-local server, it is possible that only tested configurations are fetched before the search
+      // converges.
+      // Because this is difficult to test for, the loop is simply ignored for non-local servers.
+      return true;
     }
   } while (skipConfig);
   return true;
@@ -277,8 +307,8 @@ void ActiveHarmony::removeN3Option(Newton3Option option) {
 
 const Configuration &ActiveHarmony::getCurrentConfiguration() const { return _currentConfig; }
 
-template <class O>
-void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, const std::set<O> options) {
+template <class OptionClass>
+void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, const std::set<OptionClass> options) {
   if (options.size() > 1) {                       // only parameters with more than 1 possible options should be tuned
     if (ah_def_enum(hdef, name, nullptr) != 0) {  // define parameter
       utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum \"{}\"", name);
@@ -300,6 +330,13 @@ void ActiveHarmony::reset(size_t iteration) {
 }
 
 void ActiveHarmony::resetHarmony() {
+  int rank, commSize;
+  AutoPas_MPI_Comm_size(_comm, &commSize);
+  AutoPas_MPI_Comm_rank(_comm, &rank);
+
+  if (_mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+    AutoPas_MPI_Barrier(_comm);
+  }
   // free memory
   if (htask != nullptr) {
     ah_leave(htask);
@@ -313,66 +350,49 @@ void ActiveHarmony::resetHarmony() {
   if (searchSpaceIsTrivial() or searchSpaceIsEmpty()) {
     AutoPasLog(debug, "Search space is {}; skipping harmony initialization.",
                searchSpaceIsTrivial() ? "trivial" : "empty");
+    // Barrier in case the search space is bigger for some ranks
+    if (_mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+      AutoPas_MPI_Barrier(_comm);
+    }
   } else {
     // initiate the tuning session
     hdesc = ah_alloc();
     if (hdesc == nullptr) {
-      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating Harmony descriptor.");
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating Harmony descriptor: {}", ah_error());
     }
 
     if (ah_connect(hdesc, nullptr, 0) != 0) {
-      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error connecting to Harmony session.");
-    }
-    // set up tuning parameters
-    hdef_t *hdef = ah_def_alloc();
-    if (hdef == nullptr) {
-      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating definition descriptor");
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error connecting to Harmony session: {}", ah_error());
     }
 
-    if (ah_def_name(hdef, "AutoPas") != 0) {
-      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error setting search name");
-    }
-
-    if (_allowedCellSizeFactors->isFinite()) {  // finite cell-size factors => define parameter as enum
-      if (_allowedCellSizeFactors->size() == 1) {
-        AutoPasLog(debug, "ActiveHarmony::reset: Skipping trivial parameter {}", cellSizeFactorsName);
-      } else if (_allowedCellSizeFactors->size() > 1) {
-        AutoPasLog(debug, "ActiveHarmony::reset: Finite cell-size factors; defining parameter as enum");
-        if (ah_def_enum(hdef, cellSizeFactorsName, nullptr) != 0) {
-          utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum \"{}\"",
-                                             cellSizeFactorsName);
-        }
-        for (auto cellSizeFactor : _allowedCellSizeFactors->getAll()) {
-          if (ah_def_enum_value(hdef, cellSizeFactorsName, std::to_string(cellSizeFactor).c_str()) != 0) {
-            utils::ExceptionHandler::exception(
-                "ActiveHarmony::configureTuningParameter: Error defining enum value for enum \"{}\"",
-                cellSizeFactorsName);
-          }
-        }
+    if (not _nonLocalServer or rank == 0) {
+      hdef_t *hdef = ah_def_alloc();
+      if (hdef == nullptr) {
+        utils::ExceptionHandler::exception("ActiveHarmony::reset: Error allocating definition descriptor: {}",
+                                           ah_error());
       }
-    } else {  // infinite cell-size factors => define parameter as real
-      AutoPasLog(debug, "ActiveHarmony::reset: Infinite cell-size factors; defining parameter as real");
-      if (ah_def_real(hdef, cellSizeFactorsName, _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(),
-                      (_allowedCellSizeFactors->getMax() - _allowedCellSizeFactors->getMin()) / cellSizeSamples,
-                      nullptr) != 0) {
-        utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining real \"{}\"", cellSizeFactorsName);
+      setupTuningParameters(commSize, hdef);
+      // task initialization
+      htask = ah_start(hdesc, hdef);
+      ah_def_free(hdef);
+      if (htask == nullptr) {
+        utils::ExceptionHandler::exception("ActiveHarmony::reset: Error starting task.");
       }
-    }
-    // set up other parameters
-    configureTuningParameter(hdef, traversalOptionName, _allowedTraversalOptions);
-    configureTuningParameter(hdef, dataLayoutOptionName, _allowedDataLayoutOptions);
-    configureTuningParameter(hdef, newton3OptionName, _allowedNewton3Options);
-    configureTuningParameter(hdef, loadEstimatorOptionName, _allowedLoadEstimatorOptions);
 
-    // use ActiveHarmony's implementation of the Nelder-Mead method
-    ah_def_strategy(hdef, "nm.so");
-    // set the size of the initial simplex (as portion of the total search space)
-    ah_def_cfg(hdef, "INIT_RADIUS", "0.7");
-    // task initialization
-    htask = ah_start(hdesc, hdef);
-    ah_def_free(hdef);
-    if (htask == nullptr) {
-      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error starting task.");
+      if (_mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+        AutoPas_MPI_Barrier(_comm);
+      }
+    } else {
+      // only join a session if using the divideAndConquer mpi strategy, we are not rank 0 and a server is specified.
+      if (_mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+        AutoPas_MPI_Barrier(_comm);
+      }
+
+      // Everybody else may now join the master's new Harmony search.
+      htask = ah_join(hdesc, "AutoPas");
+      if (htask == nullptr) {
+        utils::ExceptionHandler::exception("ActiveHarmony::reset: Error joining session");
+      }
     }
   }
 
@@ -396,6 +416,55 @@ bool ActiveHarmony::searchSpaceIsEmpty() const {
   return _allowedContainerOptions.empty() or
          (_allowedCellSizeFactors->isFinite() and _allowedCellSizeFactors->size() == 0) or
          _allowedTraversalOptions.empty() or _allowedDataLayoutOptions.empty() or _allowedNewton3Options.empty();
+}
+
+void ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
+  if (ah_def_name(hdef, "AutoPas") != 0) {
+    utils::ExceptionHandler::exception("ActiveHarmony::reset: Error setting search name: {}", ah_error());
+  }
+
+  if (_allowedCellSizeFactors->isFinite()) {  // finite cell-size factors => define parameter as enum
+    if (_allowedCellSizeFactors->size() == 1) {
+      AutoPasLog(debug, "ActiveHarmony::reset: Skipping trivial parameter {}", cellSizeFactorsName);
+    } else if (_allowedCellSizeFactors->size() > 1) {
+      AutoPasLog(debug, "ActiveHarmony::reset: Finite cell-size factors; defining parameter as enum");
+      if (ah_def_enum(hdef, cellSizeFactorsName, nullptr) != 0) {
+        utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum \"{}\"",
+                                           cellSizeFactorsName);
+      }
+      for (auto cellSizeFactor : _allowedCellSizeFactors->getAll()) {
+        if (ah_def_enum_value(hdef, cellSizeFactorsName, std::to_string(cellSizeFactor).c_str()) != 0) {
+          utils::ExceptionHandler::exception(
+              "ActiveHarmony::configureTuningParameter: Error defining enum value for enum \"{}\"",
+              cellSizeFactorsName);
+        }
+      }
+    }
+  } else {  // infinite cell-size factors => define parameter as real
+    AutoPasLog(debug, "ActiveHarmony::reset: Infinite cell-size factors; defining parameter as real");
+    if (ah_def_real(hdef, cellSizeFactorsName, _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(),
+                    (_allowedCellSizeFactors->getMax() - _allowedCellSizeFactors->getMin()) / cellSizeSamples,
+                    nullptr) != 0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining real \"{}\"", cellSizeFactorsName);
+    }
+  }
+  // set up other parameters
+  configureTuningParameter(hdef, traversalOptionName, _allowedTraversalOptions);
+  configureTuningParameter(hdef, dataLayoutOptionName, _allowedDataLayoutOptions);
+  configureTuningParameter(hdef, newton3OptionName, _allowedNewton3Options);
+  configureTuningParameter(hdef, loadEstimatorOptionName, _allowedLoadEstimatorOptions);
+
+  // use ActiveHarmony's implementation of the Nelder-Mead method
+  ah_def_strategy(hdef, "pro.so");
+  // set the size of the initial simplex (as portion of the total search space)
+  ah_def_cfg(hdef, "INIT_RADIUS", "0.7");
+
+  if (_mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+    // set the size of the tuning session
+    char numbuf[12];
+    snprintf(numbuf, sizeof(numbuf), "%d", commSize);
+    ah_def_cfg(hdef, "CLIENT_COUNT", numbuf);
+  }
 }
 
 }  // namespace autopas

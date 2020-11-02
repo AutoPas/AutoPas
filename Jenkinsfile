@@ -309,31 +309,6 @@ pipeline {
                 }
             }
         }
-
-        stage("publish documentation") {
-            when { branch 'master' }
-            agent { label 'www_access' }
-            steps {
-                unstash 'doxydocs'
-                dir("build-doxygen") {
-                    sh 'touch /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
-                    sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doxygen_doc/master || echo 0'
-                    sh 'cp -r doc_doxygen/html /import/www/wwwsccs/html/AutoPas/doxygen_doc/master'
-                }
-            }
-        }
-        stage("publish md-flexible documentation") {
-            when { branch 'master' }
-            agent { label 'www_access' }
-            steps {
-                unstash 'doxydocs_md-flexible'
-                dir("build-doxygen-md-flexible") {
-                    sh 'touch /import/www/wwwsccs/html/AutoPas/doc_doxygen_md-flexible/master || echo 0'
-                    sh 'rm -rf /import/www/wwwsccs/html/AutoPas/doc_doxygen_md-flexible/master || echo 0'
-                    sh 'cp -r doc_doxygen_md-flexible/html /import/www/wwwsccs/html/AutoPas/doc_doxygen_md-flexible/master'
-                }
-            }
-        }
     }
     post {
         changed {
@@ -381,11 +356,11 @@ void checkCustom() {
         // check that no file contains NULL or assert
         try {
             // if .cpp or .h files contain NULL or assert, return 2
-            sh "grep -lrE '(NULL|[^_]assert)' . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
+            sh "grep -lrE '([^_]NULL|[^_]assert)' . | grep -q '\\.cpp\\|\\.h' && exit 2 || exit 0"
         } catch (Exception e) {
             // change detected
             echo 'Usage of NULL and assert is prohibited. Affected files:'
-            sh "grep -lrE '(NULL|[^_]assert)' . | grep '\\.cpp\\|\\.h'"
+            sh "grep -lrE '([^_]NULL|[^_]assert)' . | grep '\\.cpp\\|\\.h'"
             sh "exit 1"
         }
 

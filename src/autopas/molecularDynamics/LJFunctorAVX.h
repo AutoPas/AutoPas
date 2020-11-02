@@ -53,7 +53,7 @@ class LJFunctorAVX
   /**
    * Internal, actual constructor.
    * @param cutoff
-   * @param dummy unused, only there to make the signature different from the public constructor.
+   * @note param dummy unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
@@ -449,6 +449,8 @@ class LJFunctorAVX
    * @tparam remainderIsMasked If false the full vector length is used. Otherwise the last entries are masked away
    * depending on the argument "rest".
    * @param j
+   * @param ownedStateI
+   * @param ownedStatePtr2
    * @param x1
    * @param y1
    * @param z1
@@ -503,9 +505,9 @@ class LJFunctorAVX
       }
     }
 
-    const __m256d x2 = remainderIsMasked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&x2ptr[j]);
-    const __m256d y2 = remainderIsMasked ? _mm256_maskload_pd(&y2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&y2ptr[j]);
-    const __m256d z2 = remainderIsMasked ? _mm256_maskload_pd(&z2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&z2ptr[j]);
+    const __m256d x2 = remainderIsMasked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&x2ptr[j]);
+    const __m256d y2 = remainderIsMasked ? _mm256_maskload_pd(&y2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&y2ptr[j]);
+    const __m256d z2 = remainderIsMasked ? _mm256_maskload_pd(&z2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&z2ptr[j]);
 
     const __m256d drx = _mm256_sub_pd(x1, x2);
     const __m256d dry = _mm256_sub_pd(y1, y2);
@@ -527,7 +529,7 @@ class LJFunctorAVX
     const __m256i ownedStateJ = remainderIsMasked
                                     ? _mm256_castpd_si256(_mm256_maskload_pd(
                                           reinterpret_cast<double const *>(&ownedStatePtr2[j]), _masks[rest - 1]))
-                                    : _mm256_load_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr2[j]));
+                                    : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr2[j]));
     // This requires that dummy is the first entry in OwnershipState!
     const __m256d dummyMask = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _zero, _CMP_NEQ_UQ);
     const __m256d cutoffDummyMask = _mm256_and_pd(cutoffMask, dummyMask);
@@ -562,22 +564,22 @@ class LJFunctorAVX
     // if newton 3 is used subtract fD from particle j
     if (newton3) {
       const __m256d fx2 =
-          remainderIsMasked ? _mm256_maskload_pd(&fx2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&fx2ptr[j]);
+          remainderIsMasked ? _mm256_maskload_pd(&fx2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&fx2ptr[j]);
       const __m256d fy2 =
-          remainderIsMasked ? _mm256_maskload_pd(&fy2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&fy2ptr[j]);
+          remainderIsMasked ? _mm256_maskload_pd(&fy2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&fy2ptr[j]);
       const __m256d fz2 =
-          remainderIsMasked ? _mm256_maskload_pd(&fz2ptr[j], _masks[rest - 1]) : _mm256_load_pd(&fz2ptr[j]);
+          remainderIsMasked ? _mm256_maskload_pd(&fz2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&fz2ptr[j]);
 
       const __m256d fx2new = _mm256_sub_pd(fx2, fx);
       const __m256d fy2new = _mm256_sub_pd(fy2, fy);
       const __m256d fz2new = _mm256_sub_pd(fz2, fz);
 
       remainderIsMasked ? _mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2new)
-                        : _mm256_store_pd(&fx2ptr[j], fx2new);
+                        : _mm256_storeu_pd(&fx2ptr[j], fx2new);
       remainderIsMasked ? _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2new)
-                        : _mm256_store_pd(&fy2ptr[j], fy2new);
+                        : _mm256_storeu_pd(&fy2ptr[j], fy2new);
       remainderIsMasked ? _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2new)
-                        : _mm256_store_pd(&fz2ptr[j], fz2new);
+                        : _mm256_storeu_pd(&fz2ptr[j], fz2new);
     }
 
     if (calculateGlobals) {

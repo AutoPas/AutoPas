@@ -46,23 +46,53 @@ class RandomSearch : public TuningStrategyInterface {
         _newton3Options(allowedNewton3Options),
         _cellSizeFactors(allowedCellSizeFactors.clone()),
         _currentConfig(),
+        _invalidConfigs(),
         _rng(seed),
-        _maxEvidence(maxEvidence) {
-    if (RandomSearch::searchSpaceIsEmpty()) {
+        _maxEvidence(maxEvidence),
+        _searchSpaceSizeNoCSF(0),
+        _numTestedConfigsNoCSF(0) {
+    if (searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("RandomSearch: No valid configurations could be created.");
     }
 
-    RandomSearch::tune();
+    // Allow invalid container-traversal-combinations, because so does tune().
+    for (auto container : _containerOptions) {
+      for (auto traversal : _traversalOptions) {
+        auto applicableLoadEstimators =
+            loadEstimators::getApplicableLoadEstimators(container, traversal, _loadEstimatorOptions);
+        _searchSpaceSizeNoCSF += applicableLoadEstimators.size();
+      }
+    }
+    _searchSpaceSizeNoCSF *= _dataLayoutOptions.size() * _newton3Options.size();
+
+    // if fewer than _maxEvidence configurations exist in total, search through all of them and then stop.
+    _maxEvidence = std::min(_searchSpaceSizeNoCSF, _maxEvidence);
+    tune();
   }
 
   inline const Configuration &getCurrentConfiguration() const override { return _currentConfig; }
 
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time, size_t iteration) override { _traversalTimes[_currentConfig] = time; }
+  inline void addEvidence(long time, size_t iteration) override {
+    // Count the number of valid, tested configurations to test if there are still untested configurations that could be
+    // valid.
+    // Ignore CellSizeFactors because infinite CSFs make this test difficult.
+    auto testingConfig = _currentConfig;
+    testingConfig.cellSizeFactor = 1;
+    if (_traversalTimes.find(testingConfig) == _traversalTimes.end()) {
+      ++_numTestedConfigsNoCSF;
+    }
+
+    _traversalTimes[_currentConfig] = time;
+  }
+
+  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
   inline void reset(size_t iteration) override {
     _traversalTimes.clear();
+    _invalidConfigs.clear();
+    _numTestedConfigsNoCSF = 0;
     tune();
   }
 
@@ -86,33 +116,55 @@ class RandomSearch : public TuningStrategyInterface {
 
   Configuration _currentConfig;
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
+  std::set<Configuration> _invalidConfigs;
 
   Random _rng;
   size_t _maxEvidence;
+  size_t _searchSpaceSizeNoCSF;
+  size_t _numTestedConfigsNoCSF;
 };
 
-bool RandomSearch::tune(bool) {
+bool RandomSearch::tune(bool currentInvalid) {
+  // We can overwrite the cellSizeFactor, because _currentConfig will be changed anyways.
+  if (currentInvalid) {
+    _currentConfig.cellSizeFactor = 1;
+    if (_invalidConfigs.find(_currentConfig) == _invalidConfigs.end()) {
+      ++_numTestedConfigsNoCSF;
+    }
+    _invalidConfigs.emplace(_currentConfig);
+  }
+
   if (searchSpaceIsEmpty()) {
     // no valid configuration
     _currentConfig = Configuration();
     return false;
   }
 
-  if (_traversalTimes.size() >= _maxEvidence) {
+  if (_traversalTimes.size() >= _maxEvidence or _numTestedConfigsNoCSF >= _searchSpaceSizeNoCSF) {
     // select best config
     selectOptimalConfiguration();
     return false;
   }
 
-  // select random config
-  _currentConfig.container = _rng.pickRandom(_containerOptions);
-  _currentConfig.cellSizeFactor = _cellSizeFactors->getRandom(_rng);
-  _currentConfig.traversal = _rng.pickRandom(_traversalOptions);
-  auto applicableLoadEstimators = loadEstimators::getApplicableLoadEstimators(
-      _currentConfig.container, _currentConfig.traversal, _loadEstimatorOptions);
-  _currentConfig.loadEstimator = _rng.pickRandom(applicableLoadEstimators);
-  _currentConfig.dataLayout = _rng.pickRandom(_dataLayoutOptions);
-  _currentConfig.newton3 = _rng.pickRandom(_newton3Options);
+  // needed to test if a new configuration has been found for infinite cellSizeFactors.
+  Configuration testingConfig;
+  do {
+    // select random config
+    _currentConfig.container = _rng.pickRandom(_containerOptions);
+    _currentConfig.cellSizeFactor = _cellSizeFactors->getRandom(_rng);
+    _currentConfig.traversal = _rng.pickRandom(_traversalOptions);
+    auto applicableLoadEstimators = loadEstimators::getApplicableLoadEstimators(
+        _currentConfig.container, _currentConfig.traversal, _loadEstimatorOptions);
+    _currentConfig.loadEstimator = _rng.pickRandom(applicableLoadEstimators);
+    _currentConfig.dataLayout = _rng.pickRandom(_dataLayoutOptions);
+    _currentConfig.newton3 = _rng.pickRandom(_newton3Options);
+
+    testingConfig = Configuration(_currentConfig);
+    if (not _cellSizeFactors->isFinite()) {
+      testingConfig.cellSizeFactor = 1;
+    }
+  } while (_invalidConfigs.find(testingConfig) != _invalidConfigs.end() or
+           _traversalTimes.find(_currentConfig) != _traversalTimes.end());
   return true;
 }
 
@@ -126,6 +178,7 @@ void RandomSearch::selectOptimalConfiguration() {
     _currentConfig.loadEstimator = *applicableLoadEstimators.begin();
     _currentConfig.dataLayout = *_dataLayoutOptions.begin();
     _currentConfig.newton3 = *_newton3Options.begin();
+    AutoPasLog(debug, "Selected optimal configuration {}", _currentConfig.toString());
     return;
   }
 
@@ -143,9 +196,6 @@ void RandomSearch::selectOptimalConfiguration() {
 
   _currentConfig = optimum->first;
 
-  // measurements are not needed anymore
-  _traversalTimes.clear();
-
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
 }
 
@@ -155,14 +205,14 @@ bool RandomSearch::searchSpaceIsTrivial() const {
   }
 
   // if no load estimators are specified, none is automatically added.
-  return _containerOptions.size() == 1 and (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 1) and
+  return _containerOptions.size() == 1 and (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 1) and
          _traversalOptions.size() == 1 and _loadEstimatorOptions.size() <= 1 and _dataLayoutOptions.size() == 1 and
          _newton3Options.size() == 1;
 }
 
 bool RandomSearch::searchSpaceIsEmpty() const {
-  // if one enum is empty return true
-  return _containerOptions.empty() or (_cellSizeFactors->isFinite() && _cellSizeFactors->size() == 0) or
+  // if one enum is empty return true.
+  return _containerOptions.empty() or (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or
          _traversalOptions.empty() or _dataLayoutOptions.empty() or _newton3Options.empty();
 }
 

@@ -61,7 +61,7 @@ class LJFunctor
   /**
    * Internal, actual constructor.
    * @param cutoff
-   * @param dummy unused, only there to make the signature different from the public constructor.
+   * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
       : Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(

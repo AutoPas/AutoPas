@@ -1,0 +1,55 @@
+# This is a basic workflow to help you get started with Actions
+
+name: doxygen-md-flexible
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Run Cmake (needed to get configured Doxyfiles)
+        uses: docker://autopas/autopas-build-doxygen
+        with:
+          entrypoint: cmake
+          args: -B ./build-doxygen -S ./
+
+      - name: Generate Doxygen for md-flexible
+        uses: SteffenSeckler/doxygen-action@v2.2.0beta4
+        with:
+          # Path to Doxyfile
+          doxyfile-path: "./Doxyfile_md-flexible" # default is ./Doxyfile
+          # Working directory
+          working-directory: "./build-doxygen/" # default is .
+          # enable fail-on-warnings
+          fail-on-warnings: true
+          # filter warnings from Readme file
+          warnings-filter: "README.md"
+
+      - name: Deploy md-flexible doxygen documentation (only on master)
+        uses: peaceiris/actions-gh-pages@v3.7.2
+        if: github.ref == 'refs/heads/master'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          publish_dir: ./build-doxygen/doc_doxygen_md-flexible/html/ # from dir
+          destination_dir: doxygen_documentation_md-flexible/git-master/ # to dir
+          publish_branch: main
+          external_repository: AutoPas/AutoPas.github.io
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com

@@ -81,7 +81,8 @@ bool LJFunctorAVXTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
   return ret;
 }
 
-void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool doDeleteSomeParticles) {
+void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool doDeleteSomeParticles,
+                                                           bool useUnalignedViews) {
   FMCell cell1AVX;
   FMCell cell2AVX;
 
@@ -129,9 +130,15 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
   ASSERT_TRUE(SoAParticlesEqual(cell2AVX._particleSoABuffer, cell2NoAVX._particleSoABuffer))
       << "Cells 2 not equal after loading.";
 
-  ljFunctorNoAVX.SoAFunctorPair(cell1NoAVX._particleSoABuffer, cell2NoAVX._particleSoABuffer, newton3);
-  ljFunctorAVX.SoAFunctorPair(cell1AVX._particleSoABuffer, cell2AVX._particleSoABuffer, newton3);
-
+  if (useUnalignedViews) {
+    ljFunctorNoAVX.SoAFunctorPair(cell1NoAVX._particleSoABuffer.constructView(1, cell1NoAVX.numParticles()),
+                                  cell2NoAVX._particleSoABuffer.constructView(1, cell2NoAVX.numParticles()), newton3);
+    ljFunctorAVX.SoAFunctorPair(cell1AVX._particleSoABuffer.constructView(1, cell1AVX.numParticles()),
+                                cell2AVX._particleSoABuffer.constructView(1, cell2AVX.numParticles()), newton3);
+  } else {
+    ljFunctorNoAVX.SoAFunctorPair(cell1NoAVX._particleSoABuffer, cell2NoAVX._particleSoABuffer, newton3);
+    ljFunctorAVX.SoAFunctorPair(cell1AVX._particleSoABuffer, cell2AVX._particleSoABuffer, newton3);
+  }
   ASSERT_TRUE(SoAParticlesEqual(cell1AVX._particleSoABuffer, cell1NoAVX._particleSoABuffer))
       << "Cells 1 not equal after applying functor.";
   ASSERT_TRUE(SoAParticlesEqual(cell2AVX._particleSoABuffer, cell2NoAVX._particleSoABuffer))
@@ -153,7 +160,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
   EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorNoAVX.getVirial(), tolerance) << "global virial";
 }
 
-void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles) {
+void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles,
+                                                          bool useUnalignedViews) {
   FMCell cellAVX;
 
   size_t numParticles = 7;
@@ -188,9 +196,13 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
   ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellNoAVX._particleSoABuffer))
       << "Cells not equal after loading.";
 
-  ljFunctorNoAVX.SoAFunctorSingle(cellNoAVX._particleSoABuffer, newton3);
-  ljFunctorAVX.SoAFunctorSingle(cellAVX._particleSoABuffer, newton3);
-
+  if (useUnalignedViews) {
+    ljFunctorNoAVX.SoAFunctorSingle(cellNoAVX._particleSoABuffer.constructView(1, cellNoAVX.numParticles()), newton3);
+    ljFunctorAVX.SoAFunctorSingle(cellAVX._particleSoABuffer.constructView(1, cellAVX.numParticles()), newton3);
+  } else {
+    ljFunctorNoAVX.SoAFunctorSingle(cellNoAVX._particleSoABuffer, newton3);
+    ljFunctorAVX.SoAFunctorSingle(cellAVX._particleSoABuffer, newton3);
+  }
   ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellNoAVX._particleSoABuffer))
       << "Cells not equal after applying functor.";
 
@@ -342,14 +354,24 @@ TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXVerlet) {
   testLJFunctorVSLJFunctorAVXVerlet(newton3, doDeleteSomeParticle);
 }
 
-TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCell) {
+TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCellAlignedAccess) {
   auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorAVXOneCell(newton3, doDeleteSomeParticle);
+  testLJFunctorVSLJFunctorAVXOneCell(newton3, doDeleteSomeParticle, false);
 }
 
-TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXTwoCells) {
+TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXOneCellUseUnalignedViews) {
   auto [newton3, doDeleteSomeParticle] = GetParam();
-  testLJFunctorVSLJFunctorAVXTwoCells(newton3, doDeleteSomeParticle);
+  testLJFunctorVSLJFunctorAVXOneCell(newton3, doDeleteSomeParticle, true);
+}
+
+TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXTwoCellsAlignedAccess) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorAVXTwoCells(newton3, doDeleteSomeParticle, false);
+}
+
+TEST_P(LJFunctorAVXTest, testLJFunctorVSLJFunctorAVXTwoCellsUseUnalignedViews) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorAVXTwoCells(newton3, doDeleteSomeParticle, true);
 }
 
 /**

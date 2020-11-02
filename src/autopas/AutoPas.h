@@ -12,13 +12,16 @@
 #include <type_traits>
 
 #include "autopas/LogicHandler.h"
+#include "autopas/Version.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/WrapMPI.h"
 
 namespace autopas {
 
@@ -68,6 +71,8 @@ class AutoPas {
     // The logger is normally only flushed on successful program termination.
     // This line ensures flushing when log messages of level warning or more severe are created.
     autopas::Logger::get()->flush_on(spdlog::level::warn);
+
+    AutoPasLog(info, "AutoPas Version: {}", AutoPas_VERSION);
   }
 
   ~AutoPas() {
@@ -98,15 +103,31 @@ class AutoPas {
    *
    */
   void init() {
+    if (_autopasMPICommunicator == AUTOPAS_MPI_COMM_NULL) {
+      AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_autopasMPICommunicator);
+    } else {
+      _externalMPICommunicator = true;
+    }
     _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
             _maxTuningPhasesWithoutTest, _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption,
-            _extrapolationMethodOption)),
+            _extrapolationMethodOption, _mpiStrategyOption, _autopasMPICommunicator)),
         _selectorStrategy, _tuningInterval, _numSamples);
     _logicHandler = std::make_unique<autopas::LogicHandler<Particle>>(*(_autoTuner.get()), _verletRebuildFrequency);
+  }
+
+  /**
+   * Free the AutoPas MPI communicator.
+   * To be called before MPI_Finalize.
+   * If no MPI is used just call this at the end of the program.
+   */
+  void finalize() {
+    if (not _externalMPICommunicator) {
+      AutoPas_MPI_Comm_free(&_autopasMPICommunicator);
+    }
   }
 
   /**
@@ -605,6 +626,29 @@ class AutoPas {
     _tuningStrategyOption = tuningStrategyOption;
   }
 
+  /**
+   * Setter for the mpi strategy option
+   * @param mpiStrategyOption
+   */
+  void setMPIStrategy(MPIStrategyOption mpiStrategyOption) { _mpiStrategyOption = mpiStrategyOption; }
+
+// Only define the interface for the MPI communicator if AUTOPAS_MPI=ON
+// The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_MPI
+#if defined(AUTOPAS_MPI)
+  /**
+   * Setter for the MPI communicator that AutoPas uses for potential MPI calls.
+   * If not set, MPI_COMM_WORLD will be used.
+   * @param comm: communicator (handle)
+   */
+  void setMPICommunicator(MPI_Comm comm) { _autopasMPICommunicator = comm; }
+
+  /**
+   * Getter for the AutoPas MPI communicator
+   * @return communicator
+   */
+  MPI_Comm getMPICommunicator() { return _autopasMPICommunicator; }
+#endif
+
  private:
   /**
    * Lower corner of the container.
@@ -708,6 +752,11 @@ class AutoPas {
   std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getMostOptions()};
 
   /**
+   * Whether the chosen tuning strategy will be parallelized by MPI
+   */
+  MPIStrategyOption _mpiStrategyOption{MPIStrategyOption::noMPI};
+
+  /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
    */
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors{
@@ -728,5 +777,15 @@ class AutoPas {
    * This is the AutoTuner that owns the container, ...
    */
   std::unique_ptr<autopas::AutoTuner<Particle>> _autoTuner;
+
+  /**
+   * Communicator that should be used for MPI calls inside of AutoPas
+   */
+  AutoPas_MPI_Comm _autopasMPICommunicator{AUTOPAS_MPI_COMM_NULL};
+
+  /**
+   * Stores whether the mpi communicator was provided externally or not
+   */
+  bool _externalMPICommunicator{false};
 };  // class AutoPas
 }  // namespace autopas

@@ -513,8 +513,7 @@ class GaussianCluster {
    * @param neighbourWeights list to update
    * @param means mean for each cluster
    * @param vars variance for each cluster
-   * @param stddev standard deviation for each cluster
-   * @return
+   * @param stddevs standard deviation for each cluster
    */
   void updateNeighbourWeights(GaussianModelTypes::NeighboursWeights &neighbourWeights, const std::vector<double> &means,
                               const std::vector<double> &vars, const std::vector<double> &stddevs) const {

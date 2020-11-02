@@ -51,14 +51,11 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
     }
     auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
     double dr2 = utils::ArrayMath::dot(dr, dr);
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-    {
-      ++_distanceCalculations;
+    _distanceCalculations.fetch_add(1, std::memory_order_relaxed);
 
-      if (dr2 <= _cutoffSquare) ++_kernelCalls;
-    };
+    if (dr2 <= _cutoffSquare) {
+      _kernelCalls.fetch_add(1, std::memory_order_relaxed);
+    }
   }
 
   void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
@@ -90,13 +87,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
         if (dr2 <= _cutoffSquare) ++kernelCallsAcc;
       }
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-      {
-        _distanceCalculations += distanceCalculationsAcc;
-        _kernelCalls += kernelCallsAcc;
-      }
+      _distanceCalculations.fetch_add(distanceCalculationsAcc, std::memory_order_relaxed);
+      _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
     }
   }
 
@@ -133,13 +125,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
           ++kernelCallsAcc;
         }
       }
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-      {
-        _distanceCalculations += distanceCalculationsAcc;
-        _kernelCalls += kernelCallsAcc;
-      }
+      _distanceCalculations.fetch_add(distanceCalculationsAcc, std::memory_order_relaxed);
+      _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
     }
   }
 
@@ -217,13 +204,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
           kernelCallsAcc += mask;
         }
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-        {
-          _distanceCalculations += distanceCalculationsAcc;
-          _kernelCalls += kernelCallsAcc;
-        }
+        _distanceCalculations.fetch_add(distanceCalculationsAcc, std::memory_order_relaxed);
+        _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
       }
     }
     unsigned long distanceCalculationsAcc = 0;
@@ -248,13 +230,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
         ++kernelCallsAcc;
       }
     }
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-    {
-      _distanceCalculations += distanceCalculationsAcc;
-      _kernelCalls += kernelCallsAcc;
-    }
+    _distanceCalculations.fetch_add(distanceCalculationsAcc, std::memory_order_relaxed);
+    _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
   }
 
   void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) override {
@@ -390,7 +367,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
  private:
   double _cutoffSquare;
-  unsigned long _distanceCalculations, _kernelCalls;
+  std::atomic<size_t> _distanceCalculations, _kernelCalls;
 };
 
 }  // namespace autopas

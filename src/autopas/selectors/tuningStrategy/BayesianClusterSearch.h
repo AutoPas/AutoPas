@@ -89,6 +89,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _encoder(),
         _currentConfig(),
         _invalidConfigs(),
+        _traversalTimes(),
         _rng(seed),
         _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::evidenceMatchingScaledProbabilityGM,
                          sigma, _rng),
@@ -166,7 +167,11 @@ class BayesianClusterSearch : public TuningStrategyInterface {
     _currentIteration = iteration;
     ++_currentNumEvidence;
     _currentAcquisitions.clear();
+
+    _traversalTimes[_currentConfig] = time;
   }
+
+  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
   inline void reset(size_t iteration) override {
     size_t iterationSinceLastEvidence = iteration - _currentIteration;
@@ -181,6 +186,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
     if (_firstTuningPhase) {
       _fullSearch.reset(iteration);
+      _currentConfig = _fullSearch.getCurrentConfiguration();
     } else {
       tune();
     }
@@ -226,6 +232,11 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Configurations marked invalid.
    */
   std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
+  /**
+   * Explicitly store traversal times for getEvidence().
+   * Refrain from reading the data from GaussianProcesses to maintain abstraction.
+   */
+  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
 
   Random _rng;
   /**
@@ -331,7 +342,7 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
     AutoPasLog(debug, "Tuning could not generate a valid configuration.");
   }
 
-  utils::ExceptionHandler::exception("BayesianSearch: Failed to sample an valid FeatureVector");
+  utils::ExceptionHandler::exception("BayesianClusterSearch: Failed to sample an valid FeatureVector");
   _currentConfig = FeatureVector();
   return false;
 }

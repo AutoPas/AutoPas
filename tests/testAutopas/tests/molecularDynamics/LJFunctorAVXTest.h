@@ -32,8 +32,9 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
    *
    * @param newton3
    * @param doDeleteSomeParticles
+   * @param useUnalignedViews
    */
-  void testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool doDeleteSomeParticles);
+  void testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
 
   /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
@@ -44,8 +45,9 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
    *
    * @param newton3
    * @param doDeleteSomeParticles
+   * @param useUnalignedViews
    */
-  void testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles);
+  void testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
 
   /**
    * Creates two cells, generates neighbor lists manually and then compares the SoAFunctorVerlet calls.
