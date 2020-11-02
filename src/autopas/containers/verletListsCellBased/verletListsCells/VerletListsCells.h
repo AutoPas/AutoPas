@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
@@ -148,7 +149,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                                                                              this->getCutoff() + this->getSkin());
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.
-    TraversalSelector<ParticleCell> traversalSelector;
+    TraversalSelector<FullParticleCell<Particle>> traversalSelector;
     // Argument "cluster size" does not matter here.
     TraversalSelectorInfo traversalSelectorInfo(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 this->getInteractionLength(),

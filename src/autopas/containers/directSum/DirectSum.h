@@ -36,16 +36,18 @@ namespace autopas {
 template <class Particle>
 class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> {
  public:
-  /**
-   *  Type of the Particle.
-   */
-  using ParticleType = Particle;
-  /**
-   *  Type of the ParticleCell.
-   */
+    /**
+     *  Type of the ParticleCell.
+     */
   using ParticleCell = FullParticleCell<Particle>;
 
-  /**
+    /**
+     *  Type of the Particle.
+     */
+    using ParticleType = typename CellBasedParticleContainer<ParticleCell>::ParticleType;
+
+
+    /**
    * Constructor of the DirectSum class
    * @param boxMin
    * @param boxMax

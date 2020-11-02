@@ -8,7 +8,6 @@
 
 #include <atomic>
 
-#include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletListsCellBased/VerletListTypeDefinitions.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"
@@ -102,10 +101,10 @@ class VerletListHelpers {
     void SoAFunctorSingle(SoAView<PositionSoAArraysType> soa, bool newton3) override {
       if (soa.getNumParticles() == 0) return;
 
-      auto **const __restrict__ ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
-      double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-      double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-      double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+      auto **const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
+      double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
 
       size_t numPart = soa.getNumParticles();
       for (unsigned int i = 0; i < numPart; ++i) {
@@ -143,15 +142,15 @@ class VerletListHelpers {
                         bool /*newton3*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-      auto **const __restrict__ ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
-      double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-      double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-      double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+      auto **const __restrict__ ptr1ptr = soa1.template begin<AttributeNames::ptr>();
+      double *const __restrict__ x1ptr = soa1.template begin<AttributeNames::posX>();
+      double *const __restrict__ y1ptr = soa1.template begin<AttributeNames::posY>();
+      double *const __restrict__ z1ptr = soa1.template begin<AttributeNames::posZ>();
 
-      auto **const __restrict__ ptr2ptr = soa2.template begin<Particle::AttributeNames::ptr>();
-      double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-      double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-      double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+      auto **const __restrict__ ptr2ptr = soa2.template begin<AttributeNames::ptr>();
+      double *const __restrict__ x2ptr = soa2.template begin<AttributeNames::posX>();
+      double *const __restrict__ y2ptr = soa2.template begin<AttributeNames::posY>();
+      double *const __restrict__ z2ptr = soa2.template begin<AttributeNames::posZ>();
 
       size_t numPart1 = soa1.getNumParticles();
       for (unsigned int i = 0; i < numPart1; ++i) {
@@ -180,17 +179,17 @@ class VerletListHelpers {
     /**
      * @copydoc Functor::getNeededAttr()
      */
-    constexpr static std::array<typename Particle::AttributeNames, 4> getNeededAttr() {
-      return std::array<typename Particle::AttributeNames, 4>{
-          Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
-          Particle::AttributeNames::posZ};
+    constexpr static std::array<AttributeNames, 4> getNeededAttr() {
+      return std::array<AttributeNames, 4>{
+          AttributeNames::ptr, AttributeNames::posX, AttributeNames::posY,
+          AttributeNames::posZ};
     }
 
     /**
      * @copydoc Functor::getComputedAttr()
      */
-    constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
-      return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};
+    constexpr static std::array<AttributeNames, 0> getComputedAttr() {
+      return std::array<AttributeNames, 0>{/*Nothing*/};
     }
 
    private:
@@ -205,7 +204,6 @@ class VerletListHelpers {
    * If the pair is not present in the list the neigborhood lists are invalid
    * and neighborlistsAreValid()  will return false.
    * @todo: SoA?
-   * @tparam ParticleCell
    */
   class VerletListValidityCheckerFunctor : public Functor<Particle, VerletListValidityCheckerFunctor, PositionSoAArraysType> {
    public:
