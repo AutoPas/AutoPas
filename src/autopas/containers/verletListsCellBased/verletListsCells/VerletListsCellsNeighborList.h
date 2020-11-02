@@ -31,7 +31,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   VerletListsCellsNeighborList() : _aosNeighborList{}, _particleToCellMap{} {}
 
   /**
-   * @copy VerletListsCellsNeighborListInterface::buildAoSNeighborList()
+   * @copydoc VerletListsCellsNeighborListInterface::buildAoSNeighborList()
    * */
   void buildAoSNeighborList(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells, bool useNewton3,
                             double cutoff, double skin, double interactionLength, const TraversalOption buildTraversalOption)
@@ -58,7 +58,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   }
 
   /**
-   * @copy VerletListsCellsNeighborListInterface::getVerletList()
+   * @copydoc VerletListsCellsNeighborListInterface::getVerletList()
    * */
   const std::vector<Particle *> &getVerletList(const Particle *particle) const {
     const auto indices = _particleToCellMap.at(const_cast<Particle *>(particle));
@@ -66,7 +66,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   }
 
   /**
-   * @copy VerletListsCellsNeighborListInterface::getContainerType()
+   * @copydoc VerletListsCellsNeighborListInterface::getContainerType()
    * */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
 
