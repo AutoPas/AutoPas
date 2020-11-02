@@ -81,8 +81,8 @@ class VerletListsCells
       case LoadEstimatorOption::neighborListLength: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
-          return loadEstimators::neighborListLength<Particle>(_neighborList.getAoSNeighborList(), cellsPerDimension, lowerCorner,
-                                                              upperCorner);
+          return loadEstimators::neighborListLength<Particle>(_neighborList.getAoSNeighborList(), cellsPerDimension,
+                                                              lowerCorner, upperCorner);
         };
       }
 
@@ -128,8 +128,8 @@ class VerletListsCells
     bool useNewton3 = traversal->getUseNewton3();
     this->_verletBuiltNewton3 = useNewton3;
 
-    _neighborList.buildAoSNeighborList(this->_linkedCells, useNewton3,
-                                       this->getCutoff(), this->getSkin(), this->getInteractionLength(), _buildTraversalOption);
+    _neighborList.buildAoSNeighborList(this->_linkedCells, useNewton3, this->getCutoff(), this->getSkin(),
+                                       this->getInteractionLength(), _buildTraversalOption);
 
     // the neighbor list is now valid
     this->_neighborListIsValid = true;

@@ -10,20 +10,18 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/options/TraversalOption.h"
 
-namespace autopas
-{
+namespace autopas {
 /**
  * Interface of neighbor lists to be used with VerletListsCells container.
  * @tparam Particle Type of particle to be used for the neighbor list.
  * */
-template<class Particle>
-class VerletListsCellsNeighborListInterface
-{
+template <class Particle>
+class VerletListsCellsNeighborListInterface {
  public:
   /**
    * Default destructor.
    * */
-    ~VerletListsCellsNeighborListInterface() = default;
+  ~VerletListsCellsNeighborListInterface() = default;
 
   /**
    * Builds AoS neighbor list from underlying linked cells object.
@@ -34,8 +32,9 @@ class VerletListsCellsNeighborListInterface
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
    * */
-  virtual void buildAoSNeighborList(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells, bool useNewton3,
-                            double cutoff, double skin, double interactionLength, const TraversalOption buildTraversalOption) = 0;
+  virtual void buildAoSNeighborList(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells,
+                                    bool useNewton3, double cutoff, double skin, double interactionLength,
+                                    const TraversalOption buildTraversalOption) = 0;
 
   /**
    * Get the neighbors list of a particle for this particular neighbor list and container combination.
@@ -51,4 +50,4 @@ class VerletListsCellsNeighborListInterface
   [[nodiscard]] virtual ContainerOption getContainerType() const = 0;
 };
 
-}
+}  // namespace autopas

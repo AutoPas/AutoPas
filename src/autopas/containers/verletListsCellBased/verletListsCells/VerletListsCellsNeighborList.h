@@ -13,15 +13,14 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
 
-namespace autopas
-{
+namespace autopas {
 /**
- * Neighbor list to be used with VerletListsCells container. Classic implementation of verlet lists based on linked cells.
+ * Neighbor list to be used with VerletListsCells container. Classic implementation of verlet lists based on linked
+ * cells.
  * @tparam Particle Type of particle to be used for this neighbor list.
  * */
-template<class Particle>
-class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle>
-{
+template <class Particle>
+class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle> {
   using LinkedParticleCell = typename VerletListsCellsHelpers<Particle>::VLCCellType;
 
  public:
@@ -33,9 +32,9 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   /**
    * @copydoc VerletListsCellsNeighborListInterface::buildAoSNeighborList()
    * */
-  void buildAoSNeighborList(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells, bool useNewton3,
-                            double cutoff, double skin, double interactionLength, const TraversalOption buildTraversalOption)
-  {
+  void buildAoSNeighborList(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells,
+                            bool useNewton3, double cutoff, double skin, double interactionLength,
+                            const TraversalOption buildTraversalOption) {
     // Initialize a neighbor list for each cell.
     _aosNeighborList.clear();
     auto &cells = linkedCells.getCells();
@@ -74,10 +73,9 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
    * */
-  typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSNeighborList() {return _aosNeighborList;}
+  typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSNeighborList() { return _aosNeighborList; }
 
  private:
-
   /**
    * Creates and applies generator functor for the building of the neighbor list.
    * @param linkedCells Linked Cells object used to build the neighbor list.
@@ -87,9 +85,9 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
    * */
-  void applyBuildFunctor(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells, bool useNewton3,
-                         double cutoff, double skin, double interactionLength, const TraversalOption buildTraversalOption)
-  {
+  void applyBuildFunctor(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells,
+                         bool useNewton3, double cutoff, double skin, double interactionLength,
+                         const TraversalOption buildTraversalOption) {
     typename VerletListsCellsHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborList, _particleToCellMap,
                                                                              cutoff + skin);
 
@@ -97,8 +95,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
     TraversalSelector<LinkedParticleCell> traversalSelector;
     // Argument "cluster size" does not matter here.
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
-                                                interactionLength,
-                                                linkedCells.getCellBlock().getCellLength(), 0);
+                                                interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
     autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
       auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::aos, n3>(
           buildTraversalOption, f, traversalSelectorInfo);
@@ -115,6 +112,5 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * Mapping of each particle to its corresponding cell and id within this cell.
    */
   std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap;
-
 };
-}
+}  // namespace autopas
