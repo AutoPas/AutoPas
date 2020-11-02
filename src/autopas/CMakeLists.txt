@@ -12,7 +12,7 @@ file(
     "*.cuh"
 )
 
-add_library(autopas STATIC $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC} containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h)
+add_library(autopas STATIC $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
 
 target_link_libraries(
     autopas
