@@ -44,13 +44,9 @@ class VerletListHelpers;
  * @tparam Particle the type of Particle
  * @tparam ParticleCell_t the type of ParticleCell
  */
-template <class Particle, class Impl_tTemplate>
+template <class Particle, class Impl_tTemplate, class SoAArraysType = typename Particle::SoAArraysType>
 class Functor {
  public:
-  /**
-   * Make the SoAArraysType publicly available.
-   */
-  using SoAArraysType = typename Particle::SoAArraysType;
   /**
    * Make the Implementation type template publicly available.
    */

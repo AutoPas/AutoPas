@@ -40,13 +40,13 @@ template <class Particle, class SoAArraysType = typename Particle::SoAArraysType
 class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle, SoAArraysType>, SoAArraysType> {
  public:
   /**
-   *  Type of the Particle.
-   */
-  using ParticleType = Particle;
-  /**
    *  Type of the ParticleCell.
    */
   using ParticleCell = FullParticleCell<Particle, SoAArraysType>;
+    /**
+     *  Type of the Particle.
+     */
+    using ParticleType = typename CellBasedParticleContainer<ParticleCell>::ParticleType;
 
   /**
    * Constructor of the LinkedCells class

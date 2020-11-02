@@ -45,7 +45,7 @@ class VerletListHelpers {
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
-  class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorFunctor> {
+  class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorFunctor, PositionSoAArraysType> {
    public:
     /**
      * Constructor
@@ -53,7 +53,7 @@ class VerletListHelpers {
      * @param interactionLength
      */
     VerletListGeneratorFunctor(NeighborListAoSType &verletListsAoS, double interactionLength)
-        : Functor<Particle, VerletListGeneratorFunctor>(interactionLength),
+        : Functor<Particle, VerletListGeneratorFunctor, PositionSoAArraysType>(interactionLength),
           _verletListsAoS(verletListsAoS),
           _interactionLengthSquared(interactionLength * interactionLength) {}
 
@@ -99,7 +99,7 @@ class VerletListHelpers {
      * @param soa the soa
      * @param newton3 whether to use newton 3
      */
-    void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
+    void SoAFunctorSingle(SoAView<PositionSoAArraysType> soa, bool newton3) override {
       if (soa.getNumParticles() == 0) return;
 
       auto **const __restrict__ ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
@@ -139,7 +139,7 @@ class VerletListHelpers {
      * @param soa2 soa of second cell
      * @note newton3 is ignored here, as for newton3=false SoAFunctorPair(soa2, soa1) will also be called.
      */
-    void SoAFunctorPair(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
+    void SoAFunctorPair(SoAView<PositionSoAArraysType> soa1, SoAView<PositionSoAArraysType> soa2,
                         bool /*newton3*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
@@ -207,7 +207,7 @@ class VerletListHelpers {
    * @todo: SoA?
    * @tparam ParticleCell
    */
-  class VerletListValidityCheckerFunctor : public Functor<Particle, VerletListValidityCheckerFunctor> {
+  class VerletListValidityCheckerFunctor : public Functor<Particle, VerletListValidityCheckerFunctor, PositionSoAArraysType> {
    public:
     /**
      * Constructor

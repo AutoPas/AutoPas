@@ -53,17 +53,25 @@ class ReferenceLinkedCells : public CellBasedParticleContainer<ReferenceParticle
    * @param cutoff
    * @param skin
    * @param cellSizeFactor cell size factor relative to cutoff
+   * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
   ReferenceLinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                       const double skin, const double cellSizeFactor = 1.0)
+                       const double skin, const double cellSizeFactor = 1.0,
+                       LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : CellBasedParticleContainer<ReferenceCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor) {}
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
+        _loadEstimator(loadEstimator) {}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::referenceLinkedCells; }
+
+/**
+  * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
+  */
+[[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::ReferenceParticleCell; }
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
@@ -108,6 +116,27 @@ class ReferenceLinkedCells : public CellBasedParticleContainer<ReferenceParticle
     _particleList.clearHaloParticles();
     _cellBlock.clearHaloCells();
   }
+
+/**
+ * Generates the load estimation function depending on _loadEstimator.
+ * @return load estimator function object.
+ */
+BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
+    switch (this->_loadEstimator) {
+        case LoadEstimatorOption::squaredParticlesPerCell: {
+            return [&](const std::array<unsigned long, 3> &cellsPerDimension,
+                       const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
+                return loadEstimators::squaredParticlesPerCell(this->_cells, cellsPerDimension, lowerCorner, upperCorner);
+            };
+        }
+        case LoadEstimatorOption::none: /* FALL THROUgh */
+        default: {
+            return
+                    [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
+                        const std::array<unsigned long, 3> &upperCorner) { return 1; };
+        }
+    }
+}
 
   /**
    * @copydoc ParticleContainerInterface::rebuildNeighborLists()
@@ -155,27 +184,6 @@ class ReferenceLinkedCells : public CellBasedParticleContainer<ReferenceParticle
     traversal->initTraversal();
     traversal->traverseParticlePairs();
     traversal->endTraversal();
-  }
-
-  /**
-   * Generates the load estimation function depending on _loadEstimator.
-   * @return load estimator function object.
-   */
-  BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
-    switch (this->_loadEstimator) {
-      case LoadEstimatorOption::squaredParticlesPerCell: {
-        return [&](const std::array<unsigned long, 3> &cellsPerDimension,
-                   const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
-          return loadEstimators::squaredParticlesPerCell(this->_cells, cellsPerDimension, lowerCorner, upperCorner);
-        };
-      }
-      case LoadEstimatorOption::none: /* FALL THROUgh */
-      default: {
-        return
-            [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
-                const std::array<unsigned long, 3> &upperCorner) { return 1; };
-      }
-    }
   }
 
   std::vector<ParticleType> updateContainer() override {
