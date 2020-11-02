@@ -215,7 +215,7 @@ class VerletListHelpers {
      * @param cutoff
      */
     VerletListValidityCheckerFunctor(NeighborListAoSType &verletListsAoS, double cutoff)
-        : Functor<Particle, VerletListValidityCheckerFunctor>(cutoff),
+        : Functor<Particle, VerletListValidityCheckerFunctor, PositionSoAArraysType>(cutoff),
           _verletListsAoS(verletListsAoS),
           _cutoffsquared(cutoff * cutoff),
           _valid(true) {}
