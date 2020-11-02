@@ -19,7 +19,6 @@ FILE_PATTERNS          = *.h \
 RECURSIVE              = YES
 USE_MDFILE_AS_MAINPAGE = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@
 HTML_HEADER            = @AUTOPAS_SOURCE_DIR@/docs/AutoPasHeader.html
-LAYOUT_FILE            = @AUTOPAS_SOURCE_DIR@/docs/DoxygenLayout.xml
 
 # EXTRACT_ALL           = NO # default NO
 # EXTRACT_PRIVATE       = NO # default NO
