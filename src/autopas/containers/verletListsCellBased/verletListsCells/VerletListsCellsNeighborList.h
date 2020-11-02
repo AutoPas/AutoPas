@@ -7,31 +7,31 @@
 #pragma once
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticSelectorMacros.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
 
 namespace autopas
 {
+/**
+ * Neighbor list to be used with VerletListsCells container. Classic implementation of verlet lists based on linked cells.
+ * @tparam Particle Type of particle to be used for this neighbor list.
+ * */
 template<class Particle>
 class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle>
 {
-
   using LinkedParticleCell = typename VerletListsCellsHelpers<Particle>::VLCCellType;
 
  public:
+  /**
+   * Constructor for VerletListsCellsNeighborList. Initializes private attributes.
+   * */
   VerletListsCellsNeighborList() : _aosNeighborList{}, _particleToCellMap{} {}
 
   /**
-   * Builds AoS neighbor list from underlying linked cells object.
-   * @param linkedCells Linked Cells object used to build the neighor list.
-   * @param useNewton3 Whether Newton 3 should be used for the neighbor list.
-   * @param cutoff
-   * @param skin
-   * @param interactionLength
-   * @param buildTraversalOption Traversal option necessary for generator functor.
+   * @copy VerletListsCellsNeighborListInterface::buildAoSNeighborList()
    * */
   void buildAoSNeighborList(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells, bool useNewton3,
                             double cutoff, double skin, double interactionLength, const TraversalOption buildTraversalOption)
@@ -57,23 +57,34 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
     applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption);
   }
 
-  /**@copy VerletListsCellsNeighborListInterface::buildAoSNeighborList() */
+  /**
+   * @copy VerletListsCellsNeighborListInterface::getVerletList()
+   * */
   const std::vector<Particle *> &getVerletList(const Particle *particle) const {
     const auto indices = _particleToCellMap.at(const_cast<Particle *>(particle));
     return _aosNeighborList.at(indices.first).at(indices.second).second;
   }
 
+  /**
+   * @copy VerletListsCellsNeighborListInterface::getContainerType()
+   * */
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
+
+  /**
+   * Returns the neighbor list in AoS layout.
+   * @return Neighbor list in AoS layout.
+   * */
   typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSNeighborList() {return _aosNeighborList;}
 
  private:
 
   /**
    * Creates and applies generator functor for the building of the neighbor list.
-   * @param linkedCells Linked Cells object used to build the neighor list.
+   * @param linkedCells Linked Cells object used to build the neighbor list.
    * @param useNewton3 Whether Newton 3 should be used for the neighbor list.
-   * @param cutoff
-   * @param skin
-   * @param interactionLength
+   * @param cutoff Cutoff radius.
+   * @param skin Skin of the verlet list.
+   * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
    * */
   void applyBuildFunctor(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells, bool useNewton3,

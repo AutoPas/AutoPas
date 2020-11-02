@@ -13,8 +13,8 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -63,7 +63,7 @@ class VerletListsCells
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
    */
-  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
+  [[nodiscard]] ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
   /**
    * Generates the load estimation function depending on _loadEstimator.
@@ -150,7 +150,7 @@ class VerletListsCells
   NeighborList _neighborList;
 
   /**
-   * The traversal used to build the verletlists.
+   * The traversal used to build the verlet lists.
    */
   TraversalOption _buildTraversalOption;
 
