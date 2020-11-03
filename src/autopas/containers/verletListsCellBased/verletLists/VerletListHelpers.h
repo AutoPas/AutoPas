@@ -179,17 +179,17 @@ class VerletListHelpers {
     /**
      * @copydoc Functor::getNeededAttr()
      */
-    constexpr static std::array<AttributeNames, 4> getNeededAttr() {
-      return std::array<AttributeNames, 4>{
-          AttributeNames::ptr, AttributeNames::posX, AttributeNames::posY,
-          AttributeNames::posZ};
+    constexpr static std::array<typename Particle::AttributeNames, 4> getNeededAttr() {
+      return std::array<typename Particle::AttributeNames, 4>{
+          Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+          Particle::AttributeNames::posZ};
     }
 
     /**
      * @copydoc Functor::getComputedAttr()
      */
-    constexpr static std::array<AttributeNames, 0> getComputedAttr() {
-      return std::array<AttributeNames, 0>{/*Nothing*/};
+    constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+      return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};
     }
 
    private:
