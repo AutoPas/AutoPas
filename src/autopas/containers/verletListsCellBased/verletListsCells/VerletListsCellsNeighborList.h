@@ -34,7 +34,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * */
   void buildAoSNeighborList(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells,
                             bool useNewton3, double cutoff, double skin, double interactionLength,
-                            const TraversalOption buildTraversalOption) {
+                            const TraversalOption buildTraversalOption) override {
     // Initialize a neighbor list for each cell.
     _aosNeighborList.clear();
     auto &cells = linkedCells.getCells();
@@ -59,7 +59,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   /**
    * @copydoc VerletListsCellsNeighborListInterface::getVerletList()
    * */
-  const std::vector<Particle *> &getVerletList(const Particle *particle) const {
+  const std::vector<Particle *> &getVerletList(const Particle *particle) const override {
     const auto indices = _particleToCellMap.at(const_cast<Particle *>(particle));
     return _aosNeighborList.at(indices.first).at(indices.second).second;
   }
