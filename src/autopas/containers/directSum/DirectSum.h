@@ -36,18 +36,17 @@ namespace autopas {
 template <class Particle>
 class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> {
  public:
-    /**
-     *  Type of the ParticleCell.
-     */
+  /**
+   *  Type of the ParticleCell.
+   */
   using ParticleCell = FullParticleCell<Particle>;
 
-    /**
-     *  Type of the Particle.
-     */
-    using ParticleType = typename CellBasedParticleContainer<ParticleCell>::ParticleType;
+  /**
+   *  Type of the Particle.
+   */
+  using ParticleType = typename CellBasedParticleContainer<ParticleCell>::ParticleType;
 
-
-    /**
+  /**
    * Constructor of the DirectSum class
    * @param boxMin
    * @param boxMax
@@ -93,9 +92,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     // nothing to do.
   }
 
-    CellType getParticleCellTypeEnum() override {
-      return CellType::FullParticleCell;
-  }
+  CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.

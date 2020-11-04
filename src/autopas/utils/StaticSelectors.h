@@ -29,7 +29,8 @@ namespace autopas {
  * E.g: [&](auto *container){container->doSth();}  // The * is optional here. The auto is necessary!
  */
 template <typename Particle, typename FunctionType>
-void withStaticContainerType(std::shared_ptr<CellBasedParticleContainer<Particle>> &container, FunctionType &&function) {
+void withStaticContainerType(std::shared_ptr<CellBasedParticleContainer<Particle>> &container,
+                             FunctionType &&function) {
   auto container_ptr = container.get();
   switch (container->getContainerType()) {
     case ContainerOption::directSum:

@@ -24,7 +24,6 @@ namespace autopas {
 template <class Particle>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
-
   /**
    * The structure of the SoAs is defined by the particle.
    */

@@ -24,7 +24,6 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
-
   using Particle = typename ParticleCell::ParticleType;
 
  public:

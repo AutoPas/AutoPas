@@ -100,34 +100,35 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   if (dataLayout == autopas::DataLayoutOption::soa or dataLayout == autopas::DataLayoutOption::cuda) {
     // loader and extractor will be called, we don't care how often.
-      switch (container->getParticleCellTypeEnum()) {
-          case autopas::CellType::ClusterTower:
-              [[fallthrough]];
-          case autopas::CellType::SortedCellView:
-              [[fallthrough]];
-          case autopas::CellType::IsNoCell:
-              [[fallthrough]];
-          case autopas::CellType::FullParticleCell:
-              EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<autopas::FullParticleCell<Particle> &>(_), _, _))
-                      .Times(testing::AtLeast(1))
-                      .WillRepeatedly(testing::WithArgs<0, 1>(
-                              testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
-              EXPECT_CALL(mockFunctor, SoAExtractor(::testing::Matcher<autopas::FullParticleCell<Particle> &>(_), _, _))
-                      .Times(testing::AtLeast(1));
-              break;
-          case autopas::CellType::ReferenceParticleCell:
-              EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Particle> &>(_), _, _))
-                      .Times(testing::AtLeast(1))
-                      .WillRepeatedly(testing::WithArgs<0, 1>(
-                              testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
-              EXPECT_CALL(mockFunctor, SoAExtractor(::testing::Matcher<autopas::ReferenceParticleCell<Particle> &>(_), _, _))
-                      .Times(testing::AtLeast(1));
-              break;
-          default:
-              autopas::utils::ExceptionHandler::exception(
-                      "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. CelltypeEnum: {}",
-                      container->getParticleCellTypeEnum());
-      }
+    switch (container->getParticleCellTypeEnum()) {
+      case autopas::CellType::ClusterTower:
+        [[fallthrough]];
+      case autopas::CellType::SortedCellView:
+        [[fallthrough]];
+      case autopas::CellType::IsNoCell:
+        [[fallthrough]];
+      case autopas::CellType::FullParticleCell:
+        EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<autopas::FullParticleCell<Particle> &>(_), _, _))
+            .Times(testing::AtLeast(1))
+            .WillRepeatedly(testing::WithArgs<0, 1>(
+                testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
+        EXPECT_CALL(mockFunctor, SoAExtractor(::testing::Matcher<autopas::FullParticleCell<Particle> &>(_), _, _))
+            .Times(testing::AtLeast(1));
+        break;
+      case autopas::CellType::ReferenceParticleCell:
+        EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Particle> &>(_), _, _))
+            .Times(testing::AtLeast(1))
+            .WillRepeatedly(testing::WithArgs<0, 1>(
+                testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
+        EXPECT_CALL(mockFunctor, SoAExtractor(::testing::Matcher<autopas::ReferenceParticleCell<Particle> &>(_), _, _))
+            .Times(testing::AtLeast(1));
+        break;
+      default:
+        autopas::utils::ExceptionHandler::exception(
+            "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. "
+            "CelltypeEnum: {}",
+            container->getParticleCellTypeEnum());
+    }
   }
 #if defined(AUTOPAS_CUDA)
   if (dataLayout == autopas::DataLayoutOption::cuda) {
@@ -185,34 +186,33 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
 
       // non useNewton3 variant should not happen
       EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, not useNewton3)).Times(0);
-        switch (container->getParticleCellTypeEnum()) {
-            case autopas::CellType::ClusterTower:
-                [[fallthrough]];
-            case autopas::CellType::SortedCellView:
-                [[fallthrough]];
-            case autopas::CellType::IsNoCell:
-                [[fallthrough]];
-            case autopas::CellType::FullParticleCell:
-                iterate(
-                        container,
-                        autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle>,
-                                autopas::DataLayoutOption::soa, useNewton3>(
-                                traversalOption, mockFunctor, traversalSelectorInfo),
-                        dataLayout, n3option, &mockFunctor);
-                break;
-            case autopas::CellType::ReferenceParticleCell:
-                iterate(
-                        container,
-                        autopas::TraversalSelector<RPCell>::template generateTraversal<MockFunctor<Particle>,
-                                autopas::DataLayoutOption::soa, useNewton3>(
-                                traversalOption, mockFunctor, traversalSelectorInfo),
-                        dataLayout, n3option, &mockFunctor);
-                break;
-            default:
-                autopas::utils::ExceptionHandler::exception(
-                        "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. CelltypeEnum: {}",
-                        container->getParticleCellTypeEnum());
-        }
+      switch (container->getParticleCellTypeEnum()) {
+        case autopas::CellType::ClusterTower:
+          [[fallthrough]];
+        case autopas::CellType::SortedCellView:
+          [[fallthrough]];
+        case autopas::CellType::IsNoCell:
+          [[fallthrough]];
+        case autopas::CellType::FullParticleCell:
+          iterate(container,
+                  autopas::TraversalSelector<FPCell>::template generateTraversal<
+                      MockFunctor<Particle>, autopas::DataLayoutOption::soa, useNewton3>(traversalOption, mockFunctor,
+                                                                                         traversalSelectorInfo),
+                  dataLayout, n3option, &mockFunctor);
+          break;
+        case autopas::CellType::ReferenceParticleCell:
+          iterate(container,
+                  autopas::TraversalSelector<RPCell>::template generateTraversal<
+                      MockFunctor<Particle>, autopas::DataLayoutOption::soa, useNewton3>(traversalOption, mockFunctor,
+                                                                                         traversalSelectorInfo),
+                  dataLayout, n3option, &mockFunctor);
+          break;
+        default:
+          autopas::utils::ExceptionHandler::exception(
+              "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. "
+              "CelltypeEnum: {}",
+              container->getParticleCellTypeEnum());
+      }
       break;
     }
     case autopas::DataLayoutOption::aos: {
@@ -222,34 +222,33 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
 
       // non useNewton3 variant should not happen
       EXPECT_CALL(mockFunctor, AoSFunctor(_, _, not useNewton3)).Times(0);
-        switch (container->getParticleCellTypeEnum()) {
-            case autopas::CellType::ClusterTower:
-                [[fallthrough]];
-            case autopas::CellType::SortedCellView:
-                [[fallthrough]];
-            case autopas::CellType::IsNoCell:
-                [[fallthrough]];
-            case autopas::CellType::FullParticleCell:
-                iterate(
-                        container,
-                        autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle>,
-                                autopas::DataLayoutOption::aos, useNewton3>(
-                                traversalOption, mockFunctor, traversalSelectorInfo),
-                        dataLayout, n3option, &mockFunctor);
-                break;
-            case autopas::CellType::ReferenceParticleCell:
-                iterate(
-                        container,
-                        autopas::TraversalSelector<RPCell>::template generateTraversal<MockFunctor<Particle>,
-                                autopas::DataLayoutOption::aos, useNewton3>(
-                                traversalOption, mockFunctor, traversalSelectorInfo),
-                        dataLayout, n3option, &mockFunctor);
-                break;
-            default:
-                autopas::utils::ExceptionHandler::exception(
-                        "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. CelltypeEnum: {}",
-                        container->getParticleCellTypeEnum());
-        }
+      switch (container->getParticleCellTypeEnum()) {
+        case autopas::CellType::ClusterTower:
+          [[fallthrough]];
+        case autopas::CellType::SortedCellView:
+          [[fallthrough]];
+        case autopas::CellType::IsNoCell:
+          [[fallthrough]];
+        case autopas::CellType::FullParticleCell:
+          iterate(container,
+                  autopas::TraversalSelector<FPCell>::template generateTraversal<
+                      MockFunctor<Particle>, autopas::DataLayoutOption::aos, useNewton3>(traversalOption, mockFunctor,
+                                                                                         traversalSelectorInfo),
+                  dataLayout, n3option, &mockFunctor);
+          break;
+        case autopas::CellType::ReferenceParticleCell:
+          iterate(container,
+                  autopas::TraversalSelector<RPCell>::template generateTraversal<
+                      MockFunctor<Particle>, autopas::DataLayoutOption::aos, useNewton3>(traversalOption, mockFunctor,
+                                                                                         traversalSelectorInfo),
+                  dataLayout, n3option, &mockFunctor);
+          break;
+        default:
+          autopas::utils::ExceptionHandler::exception(
+              "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. "
+              "CelltypeEnum: {}",
+              container->getParticleCellTypeEnum());
+      }
       break;
     }
     case autopas::DataLayoutOption::cuda: {
@@ -263,34 +262,33 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
 
       EXPECT_CALL(mockFunctor, CudaFunctor(_, _, not useNewton3)).Times(0);
 #endif
-        switch (container->getParticleCellTypeEnum()) {
-            case autopas::CellType::ClusterTower:
-                [[fallthrough]];
-            case autopas::CellType::SortedCellView:
-                [[fallthrough]];
-            case autopas::CellType::IsNoCell:
-                [[fallthrough]];
-            case autopas::CellType::FullParticleCell:
-                iterate(
-                        container,
-                        autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle>,
-                                autopas::DataLayoutOption::cuda, useNewton3>(
-                                traversalOption, mockFunctor, traversalSelectorInfo),
-                        dataLayout, n3option, &mockFunctor);
-                break;
-            case autopas::CellType::ReferenceParticleCell:
-                iterate(
-                        container,
-                        autopas::TraversalSelector<RPCell>::template generateTraversal<MockFunctor<Particle>,
-                                autopas::DataLayoutOption::cuda, useNewton3>(
-                                traversalOption, mockFunctor, traversalSelectorInfo),
-                        dataLayout, n3option, &mockFunctor);
-                break;
-            default:
-                autopas::utils::ExceptionHandler::exception(
-                        "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. CelltypeEnum: {}",
-                        container->getParticleCellTypeEnum());
-        }
+      switch (container->getParticleCellTypeEnum()) {
+        case autopas::CellType::ClusterTower:
+          [[fallthrough]];
+        case autopas::CellType::SortedCellView:
+          [[fallthrough]];
+        case autopas::CellType::IsNoCell:
+          [[fallthrough]];
+        case autopas::CellType::FullParticleCell:
+          iterate(container,
+                  autopas::TraversalSelector<FPCell>::template generateTraversal<
+                      MockFunctor<Particle>, autopas::DataLayoutOption::cuda, useNewton3>(traversalOption, mockFunctor,
+                                                                                          traversalSelectorInfo),
+                  dataLayout, n3option, &mockFunctor);
+          break;
+        case autopas::CellType::ReferenceParticleCell:
+          iterate(container,
+                  autopas::TraversalSelector<RPCell>::template generateTraversal<
+                      MockFunctor<Particle>, autopas::DataLayoutOption::cuda, useNewton3>(traversalOption, mockFunctor,
+                                                                                          traversalSelectorInfo),
+                  dataLayout, n3option, &mockFunctor);
+          break;
+        default:
+          autopas::utils::ExceptionHandler::exception(
+              "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. "
+              "CelltypeEnum: {}",
+              container->getParticleCellTypeEnum());
+      }
       break;
     }
     default:

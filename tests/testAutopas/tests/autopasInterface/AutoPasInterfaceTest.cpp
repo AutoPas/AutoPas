@@ -128,8 +128,7 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule> &autoPas) {
   return haloParticles;
 }
 
-size_t addEnteringParticles(autopas::AutoPas<Molecule> &autoPas,
-                            const std::vector<Molecule> &enteringParticles) {
+size_t addEnteringParticles(autopas::AutoPas<Molecule> &autoPas, const std::vector<Molecule> &enteringParticles) {
   size_t numAdded = 0;
   for (const auto &p : enteringParticles) {
     if (autopas::utils::inBox(p.getR(), autoPas.getBoxMin(), autoPas.getBoxMax())) {

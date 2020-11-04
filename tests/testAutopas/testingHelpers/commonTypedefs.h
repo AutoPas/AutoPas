@@ -42,7 +42,6 @@ using FMCell = autopas::FullParticleCell<Molecule>;
  */
 using RMCell = autopas::ReferenceParticleCell<Molecule>;
 
-
 // M prefix for mocks
 /**
  * Short for Mock Functor

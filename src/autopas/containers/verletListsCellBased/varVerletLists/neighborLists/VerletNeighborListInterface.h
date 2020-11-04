@@ -12,7 +12,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/options/TraversalOption.h"
 
-namespace autopas{
+namespace autopas {
 /**
  * Interface for neighbor lists used by VarVerletLists.
  * @tparam Particle The particle type this neighbor list uses.
@@ -36,9 +36,7 @@ class VerletNeighborListInterface {
    * @param linkedCells The linked cells to use for building the neighbor list.
    * @param useNewton3 If true, use newton 3 for the neighbor list.
    */
-  virtual void buildAoSNeighborList(
-          LinkedCells<Particle> &linkedCells,
-                  bool useNewton3) = 0;
+  virtual void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3) = 0;
 
   /**
    * Checks if the neighbor list contains all pairs that is should.

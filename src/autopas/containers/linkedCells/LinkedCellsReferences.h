@@ -7,10 +7,10 @@
 #pragma once
 
 #include "autopas/cells/ReferenceParticleCell.h"
+#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
-#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/ParticleVector.h"
 #include "autopas/iterators/ParticleIterator.h"
@@ -57,8 +57,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * By default all applicable traversals are allowed.
    */
   LinkedCellsReferences(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                       const double skin, const double cellSizeFactor = 1.0,
-                       LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
+                        const double skin, const double cellSizeFactor = 1.0,
+                        LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
@@ -68,10 +68,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCellsReferences; }
 
-/**
-  * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
-  */
-[[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::ReferenceParticleCell; }
+  /**
+   * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
+   */
+  [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::ReferenceParticleCell; }
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
@@ -117,26 +117,26 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     _cellBlock.clearHaloCells();
   }
 
-/**
- * Generates the load estimation function depending on _loadEstimator.
- * @return load estimator function object.
- */
-BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
+  /**
+   * Generates the load estimation function depending on _loadEstimator.
+   * @return load estimator function object.
+   */
+  BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
     switch (this->_loadEstimator) {
-        case LoadEstimatorOption::squaredParticlesPerCell: {
-            return [&](const std::array<unsigned long, 3> &cellsPerDimension,
-                       const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
-                return loadEstimators::squaredParticlesPerCell(this->_cells, cellsPerDimension, lowerCorner, upperCorner);
-            };
-        }
-        case LoadEstimatorOption::none: /* FALL THROUgh */
-        default: {
-            return
-                    [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
-                        const std::array<unsigned long, 3> &upperCorner) { return 1; };
-        }
+      case LoadEstimatorOption::squaredParticlesPerCell: {
+        return [&](const std::array<unsigned long, 3> &cellsPerDimension,
+                   const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
+          return loadEstimators::squaredParticlesPerCell(this->_cells, cellsPerDimension, lowerCorner, upperCorner);
+        };
+      }
+      case LoadEstimatorOption::none: /* FALL THROUgh */
+      default: {
+        return
+            [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
+                const std::array<unsigned long, 3> &upperCorner) { return 1; };
+      }
     }
-}
+  }
 
   /**
    * @copydoc ParticleContainerInterface::rebuildNeighborLists()

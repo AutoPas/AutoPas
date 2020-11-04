@@ -31,7 +31,6 @@ class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
   EmptyCudaWrapper<typename Particle::ParticleSoAFloatPrecision> emptyCudaWrapper;
 #endif
  public:
-
   /**
    * Structure of the SoAs defined by the particle.
    */

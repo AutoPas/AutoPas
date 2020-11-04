@@ -31,7 +31,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VCCClusterIterationCUDATraversal : public CellPairTraversal<ParticleCell>,
-                                        public VCCTraversalInterface<ParticleCell> {
+                                         public VCCTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:

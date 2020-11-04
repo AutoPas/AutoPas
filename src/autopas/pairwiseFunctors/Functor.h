@@ -47,7 +47,6 @@ class VerletListHelpers;
 template <class Particle, class CRTP_T>
 class Functor {
  public:
-
   /**
    * Structure of the SoAs defined by the particle.
    */

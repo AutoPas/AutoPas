@@ -152,8 +152,7 @@ void BoundaryConditions<Particle>::addHaloParticles(autopas::AutoPas<Particle> &
 }
 
 template <typename Particle>
-void BoundaryConditions<Particle>::applyPeriodic(autopas::AutoPas<Particle> &autoPas,
-                                                     bool forceUpdate) {
+void BoundaryConditions<Particle>::applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
   // 1. update Container; return value is vector of invalid == leaving particles!
   auto [invalidParticles, updated] = autoPas.updateContainer(forceUpdate);
   if (updated) {
