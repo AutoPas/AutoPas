@@ -251,19 +251,15 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        SoAFloatPrecision shift6;
-        SoAFloatPrecision sigmasquare;
-        SoAFloatPrecision epsilon24;
+        SoAFloatPrecision shift6 = _shift6;
+        SoAFloatPrecision sigmasquare = _sigmasquare;
+        SoAFloatPrecision epsilon24 = _epsilon24;
         if constexpr (useMixing) {
           sigmasquare = sigmaSquares[j];
           epsilon24 = epsilon24s[j];
           if constexpr (applyShift) {
             shift6 = shift6s[j];
           }
-        } else {
-          shift6 = _shift6;
-          sigmasquare = _sigmasquare;
-          epsilon24 = _epsilon24;
         }
 
         const auto ownedStateJ = ownedStatePtr[j];
