@@ -226,6 +226,10 @@ class LJFunctor
       }
     }
 
+    const SoAFloatPrecision const_shift6 = _shift6;
+    const SoAFloatPrecision const_sigmasquare = _sigmasquare;
+    const SoAFloatPrecision const_epsilon24 = _epsilon24;
+
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       const auto ownedStateI = ownedStatePtr[i];
       if (ownedStateI == OwnershipState::dummy) {
@@ -251,19 +255,15 @@ class LJFunctor
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
-        SoAFloatPrecision shift6;
-        SoAFloatPrecision sigmasquare;
-        SoAFloatPrecision epsilon24;
+        SoAFloatPrecision shift6 = const_shift6;
+        SoAFloatPrecision sigmasquare = const_sigmasquare;
+        SoAFloatPrecision epsilon24 = const_epsilon24;
         if constexpr (useMixing) {
           sigmasquare = sigmaSquares[j];
           epsilon24 = epsilon24s[j];
           if constexpr (applyShift) {
             shift6 = shift6s[j];
           }
-        } else {
-          shift6 = _shift6;
-          sigmasquare = _sigmasquare;
-          epsilon24 = _epsilon24;
         }
 
         const auto ownedStateJ = ownedStatePtr[j];
