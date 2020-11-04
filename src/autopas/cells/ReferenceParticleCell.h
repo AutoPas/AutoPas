@@ -22,9 +22,15 @@ namespace autopas {
  * This class handles the storage of particles in their full form.
  * @tparam Particle
  */
-template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
+template <class Particle>
 class ReferenceParticleCell : public ParticleCell<Particle> {
  public:
+
+  /**
+   * The structure of the SoAs is defined by the particle.
+   */
+  using SoAArraysType = typename Particle::SoAArraysType;
+
   /**
    * Constructs a new ReferenceParticleCell.
    */
@@ -162,13 +168,13 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   /**
    * Type of the internal iterator.
    */
-  using iterator_t = internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle, SoAArraysType>, true>;
+  using iterator_t = internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle>, true>;
 
   /**
    * Type of the internal const iterator.
    */
   using const_iterator_t =
-      internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle, SoAArraysType>, false>;
+      internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle>, false>;
 
  private:
   AutoPasLock particlesLock;
