@@ -28,6 +28,9 @@ template <class Particle, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
     : public autopas::Functor<Particle, AsBuildPairGeneratorFunctor<Particle, callCheckInstead>> {
  public:
+  /**
+   * The structure of the SoAs is defined by the particle.
+   */
   using SoAArraysType = typename Particle::SoAArraysType;
 
   /**
@@ -39,6 +42,9 @@ class AsBuildPairGeneratorFunctor
         Particle::AttributeNames::posZ};
   }
 
+  /**
+   * @copydoc Functor::getNeededAttr(std::false_type)
+   */
   constexpr static auto getNeededAttr(std::false_type) {
     return std::array<typename Particle::AttributeNames, 4>{
         Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,

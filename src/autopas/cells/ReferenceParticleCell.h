@@ -25,7 +25,6 @@ namespace autopas {
 template <class Particle>
 class ReferenceParticleCell : public ParticleCell<Particle> {
  public:
-
   /**
    * The structure of the SoAs is defined by the particle.
    */
@@ -173,8 +172,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   /**
    * Type of the internal const iterator.
    */
-  using const_iterator_t =
-      internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle>, false>;
+  using const_iterator_t = internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle>, false>;
 
  private:
   AutoPasLock particlesLock;

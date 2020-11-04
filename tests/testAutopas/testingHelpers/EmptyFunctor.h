@@ -53,7 +53,7 @@ class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
 
   /**
    * SoAFunctor for a pair of Particle.
-   * @param soa An autopas::SoAView for the Functor
+   * @param soa1 An autopas::SoAView for the Functor
    * @param soa2 A second autopas::SoAView for the Functor
    * @param newton3 A boolean to indicate whether to allow newton3
    */
