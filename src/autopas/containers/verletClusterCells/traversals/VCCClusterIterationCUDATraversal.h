@@ -1,5 +1,5 @@
 /**
- * @file VCCClusterItrationCUDATraversal.h
+ * @file VCCClusterIterationCUDATraversal.h
  * @author jspahl
  * @date 25.3.19
  */
@@ -30,7 +30,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCCClusterItrationCUDATraversal : public CellPairTraversal<ParticleCell>,
+class VCCClusterIterationCUDATraversal : public CellPairTraversal<ParticleCell>,
                                         public VCCTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
@@ -40,7 +40,7 @@ class VCCClusterItrationCUDATraversal : public CellPairTraversal<ParticleCell>,
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param clusterSize Size of the clusters.
    */
-  VCCClusterItrationCUDATraversal(PairwiseFunctor *pairwiseFunctor, const unsigned int clusterSize)
+  VCCClusterIterationCUDATraversal(PairwiseFunctor *pairwiseFunctor, const unsigned int clusterSize)
       : CellPairTraversal<ParticleCell>({1, 1, 1}), _functor(pairwiseFunctor), _clusterSize(clusterSize) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
@@ -237,7 +237,7 @@ class VCCClusterItrationCUDATraversal : public CellPairTraversal<ParticleCell>,
       utils::CudaExceptionHandler::checkErrorCode(cudaDeviceSynchronize());
     }
 #else
-    utils::ExceptionHandler::exception("VCCClusterItrationCUDATraversal was compiled without Cuda support");
+    utils::ExceptionHandler::exception("VCCClusterIterationCUDATraversal was compiled without Cuda support");
 #endif
   }
 
