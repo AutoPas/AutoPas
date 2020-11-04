@@ -59,6 +59,12 @@ class MoleculeLJ : public Particle {
       typename autopas::utils::CudaSoAType<MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/,
                                            floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
                                            size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
+#else
+  /**
+   * The type for storage arrays for Cuda.
+   * empty if compiled without Cuda Support.
+   */
+  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
 #endif
 
   /**

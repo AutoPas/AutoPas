@@ -8,7 +8,6 @@
 
 #include "AsBuildPairGeneratorFunctor.h"
 #include "C08TraversalColorChangeNotify.h"
-#include "autopas/containers/verletListsCellBased/VerletListTypeDefinitions.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/VerletNeighborListInterface.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -45,7 +44,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     // Use SoA traversal for generation and AoS traversal for validation check.
     constexpr auto dataLayout = validationMode ? DataLayoutOption::aos : DataLayoutOption::soa;
     auto traversal =
-        C08TraversalColorChangeNotify<typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType,
+        C08TraversalColorChangeNotify<FullParticleCell<Particle>,
                                       internal::AsBuildPairGeneratorFunctor<Particle, validationMode>, dataLayout,
                                       useNewton3>(_baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(),
                                                   &generatorFunctor, _baseLinkedCells->getInteractionLength(),
@@ -89,8 +88,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    * the thread and current color for each pair.
    */
   void buildAoSNeighborList(
-      LinkedCells<typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType,
-                  typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType> &linkedCells,
+      LinkedCells<Particle> &linkedCells,
       bool useNewton3) override {
     _soaListIsValid = false;
     _baseLinkedCells = &linkedCells;
@@ -314,8 +312,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * The LinkedCells object this neighbor list should use to build.
    */
-  LinkedCells<typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType,
-              typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType> *_baseLinkedCells;
+  LinkedCells<Particle> *_baseLinkedCells;
 
   /**
    * The internal SoA neighbor list. For format, see getSoANeighborList().

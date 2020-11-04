@@ -19,9 +19,8 @@ namespace autopas {
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @tparam Particle
  * @tparam LinkedParticleCells ParticleCells used by the linked cells container
- * @tparam LinkedSoAArraysType SoAArraysType used by the linked cells container
  */
-template <class Particle, class LinkedSoAArraysType = typename Particle::SoAArraysType>
+template <class Particle>
 class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
  public:
   /**
@@ -224,7 +223,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
 
  protected:
   /// internal linked cells storage, handles Particle storage and used to build verlet lists
-  LinkedCells<Particle, LinkedSoAArraysType> _linkedCells;
+  LinkedCells<Particle> _linkedCells;
 
   /// specifies if the neighbor list is currently valid
   bool _neighborListIsValid{false};

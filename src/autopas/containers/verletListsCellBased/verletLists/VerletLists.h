@@ -30,9 +30,9 @@ namespace autopas {
  * @todo deleting particles should also invalidate the verlet lists - should be implemented somehow
  */
 template <class Particle>
-class VerletLists : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::PositionSoAArraysType> {
-  using SoAArraysType = typename VerletListHelpers<Particle>::PositionSoAArraysType;
-  using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
+class VerletLists : public VerletListsLinkedBase<Particle> {
+
+  using LinkedParticleCell = FullParticleCell<Particle>;
 
  public:
   /**
@@ -56,7 +56,7 @@ class VerletLists : public VerletListsLinkedBase<Particle, typename VerletListHe
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle, SoAArraysType>(boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCompatibleTraversals(),
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCompatibleTraversals(),
                                         cellSizeFactor),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}

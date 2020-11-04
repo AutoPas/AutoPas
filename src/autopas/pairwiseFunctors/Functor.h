@@ -44,13 +44,19 @@ class VerletListHelpers;
  * @tparam Particle the type of Particle
  * @tparam ParticleCell_t the type of ParticleCell
  */
-template <class Particle, class Impl_tTemplate, class SoAArraysType = typename Particle::SoAArraysType>
+template <class Particle, class CRTP_T>
 class Functor {
  public:
+
+  /**
+   * Structure of the SoAs defined by the particle.
+   */
+  using SoAArraysType = typename Particle::SoAArraysType;
+
   /**
    * Make the Implementation type template publicly available.
    */
-  using Impl_t = Impl_tTemplate;
+  using Functor_T = CRTP_T;
   /**
    * Constructor
    * @param cutoff
@@ -101,7 +107,7 @@ class Functor {
    * @todo C++20: make this function virtual
    */
   constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
-    return Impl_t::getNeededAttr();
+    return Functor_T::getNeededAttr();
   }
 
   /**
@@ -220,7 +226,7 @@ class Functor {
 
   template <class ParticleCell>
   void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
-    SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Impl_t::getNeededAttr().size()>{});
+    SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
   }
 
   /**
@@ -233,7 +239,7 @@ class Functor {
    */
   template <typename ParticleCell>
   void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
-    SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Impl_t::getComputedAttr().size()>{});
+    SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Functor_T::getComputedAttr().size()>{});
   }
 
   /**
@@ -317,7 +323,7 @@ class Functor {
      * in the following loop.
      */
     // maybe_unused necessary because gcc doesnt understand that pointer is used later
-    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Impl_t::getNeededAttr()[I]>()...);
+    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getNeededAttr()[I]>()...);
 
     auto cellIter = cell.begin();
     // load particles in SoAs
@@ -326,10 +332,10 @@ class Functor {
        * The following statement writes the values of all attributes defined in neededAttr into the respective position
        * inside the SoA buffer. I represents the index inside neededAttr. The whole expression is folded sizeof...(I)
        * times over the comma operator. E.g. like this (std::index_sequence<I...> = 0, 1):
-       * ((std::get<0>(pointer)[i] = cellIter->template get<Impl_t::neededAttr[0]>()),
-       * (std::get<1>(pointer)[i] = cellIter->template get<Impl_t::neededAttr[1]>()))
+       * ((std::get<0>(pointer)[i] = cellIter->template get<Functor_T::neededAttr[0]>()),
+       * (std::get<1>(pointer)[i] = cellIter->template get<Functor_T::neededAttr[1]>()))
        */
-      ((std::get<I>(pointer)[i] = cellIter->template get<Impl_t::getNeededAttr()[I]>()), ...);
+      ((std::get<I>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[I]>()), ...);
     }
   }
 
@@ -350,7 +356,7 @@ class Functor {
      * in the following loop.
      */
     // maybe_unused necessary because gcc doesnt understand that pointer is used later
-    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Impl_t::getComputedAttr()[I]>()...);
+    [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getComputedAttr()[I]>()...);
 
     auto cellIter = cell.begin();
     // write values in SoAs back to particles
@@ -360,10 +366,10 @@ class Functor {
        * I represents the index inside computedAttr.
        * The whole expression is folded sizeof...(I) times over the comma operator. E.g. like this
        * (std::index_sequence<I...> = 0, 1):
-       * (cellIter->template set<Impl_t::computedAttr[0]>(std::get<0>(pointer)[i]),
-       * cellIter->template set<Impl_t::computedAttr[1]>(std::get<1>(pointer)[i]))
+       * (cellIter->template set<Functor_T::computedAttr[0]>(std::get<0>(pointer)[i]),
+       * cellIter->template set<Functor_T::computedAttr[1]>(std::get<1>(pointer)[i]))
        */
-      (cellIter->template set<Impl_t::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
+      (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
     }
   }
 

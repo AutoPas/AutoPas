@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "autopas/containers/verletListsCellBased/VerletListTypeDefinitions.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/traversals/VVLTraversalInterface.h"
 
@@ -18,11 +17,8 @@ namespace autopas {
  * @tparam NeighborList The Neighbor List this Verlet Container uses.
  */
 template <class Particle, class NeighborList>
-class VarVerletLists
-    : public VerletListsLinkedBase<Particle,
-                                   typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType> {
-  using SoAArraysType = typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType;
-  using LinkedParticleCell = typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType;
+class VarVerletLists : public VerletListsLinkedBase<Particle> {
+  using LinkedParticleCell = FullParticleCell<Particle>;
 
  public:
   /**
@@ -36,8 +32,8 @@ class VarVerletLists
    */
   VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                  const double skin, const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle, SoAArraysType>(
-            boxMin, boxMax, cutoff, skin, compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin,
+                                        compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
         _neighborList{} {}
 
   /**

@@ -60,6 +60,11 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
     _dummyStarts = {0};
   }
 
+
+  CellType getParticleCellTypeEnum() override {
+    return CellType::FullParticleCell;
+  }
+
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
    */

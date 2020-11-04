@@ -34,19 +34,19 @@ namespace autopas {
  * therefore short-range interactions only need to be calculated between
  * particles in neighboring cells.
  * @tparam Particle type of the Particle
- * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
-template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
-class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle, SoAArraysType>, SoAArraysType> {
+template <class Particle>
+class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>> {
  public:
   /**
    *  Type of the ParticleCell.
    */
-  using ParticleCell = FullParticleCell<Particle, SoAArraysType>;
-    /**
-     *  Type of the Particle.
-     */
-    using ParticleType = typename CellBasedParticleContainer<ParticleCell>::ParticleType;
+  using ParticleCell = FullParticleCell<Particle>;
+
+  /**
+   *  Type of the Particle.
+   */
+  using ParticleType = typename ParticleCell::ParticleType;
 
   /**
    * Constructor of the LinkedCells class
@@ -61,7 +61,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle,
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const double cellSizeFactor = 1.0,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
@@ -70,10 +70,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle,
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
-    /**
-     * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
-     */
-    [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
+  /**
+   * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
+   */
+  [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()

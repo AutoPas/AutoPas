@@ -1,3 +1,16 @@
+/**
+ * @file VerletNeighborListInterface.h
+ *
+ * @date 20.05.2019
+ * @author humig
+ */
+
+#pragma once
+
+#include <vector>
+
+#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/options/TraversalOption.h"
 
 namespace autopas{
 /**
@@ -24,8 +37,7 @@ class VerletNeighborListInterface {
    * @param useNewton3 If true, use newton 3 for the neighbor list.
    */
   virtual void buildAoSNeighborList(
-          LinkedCells<typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType,
-                  typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType> &linkedCells,
+          LinkedCells<Particle> &linkedCells,
                   bool useNewton3) = 0;
 
   /**

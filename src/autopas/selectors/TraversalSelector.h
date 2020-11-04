@@ -23,7 +23,7 @@
 #include "autopas/containers/linkedCells/traversals/LCSlicedBalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedC02Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
-#include "autopas/containers/verletClusterCells/traversals/VCCClusterItrationCUDATraversal.h"
+#include "autopas/containers/verletClusterCells/traversals/VCCClusterIterationCUDATraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
@@ -190,8 +190,8 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     }
     // Verlet Cluster Cells
     case TraversalOption::vcc_cluster_iteration_cuda: {
-      return std::make_unique<VCCClusterItrationCUDATraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-  &pairwiseFunctor);
+      return std::make_unique<VCCClusterIterationCUDATraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          &pairwiseFunctor, info.clusterSize);
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());

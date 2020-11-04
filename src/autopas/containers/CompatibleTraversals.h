@@ -124,7 +124,7 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     case ContainerOption::varVerletListsAsBuild: {
       return allVarVLAsBuildCompatibleTraversals();
     }
-    case ContainerOption::referenceLinkedCells: {
+    case ContainerOption::linkedCellsReferences: {
       return allRLCCompatibleTraversals();
     }
   }

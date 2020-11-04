@@ -46,7 +46,23 @@ class PrintableMolecule
       typename autopas::utils::SoAType<PrintableMolecule *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*fx*/, double /*fy*/, double /*fz*/, size_t /*typeid*/,
                                        autopas::OwnershipState /*ownershipState*/>::Type;
-
+  
+#if defined(AUTOPAS_CUDA)
+  /**
+   * The type for storage arrays for Cuda.
+   */
+  using CudaDeviceArraysType =
+      typename autopas::utils::CudaSoAType<PrintableMolecule *, size_t /*id*/, double /*x*/, double /*y*/,
+                                           double /*z*/, double /*fx*/, double /*fy*/, double /*fz*/,
+                                           size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
+#else
+  /**
+   * The type for storage arrays for Cuda.
+   * empty if compiled without Cuda Support.
+   */
+  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
+#endif
+  
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.

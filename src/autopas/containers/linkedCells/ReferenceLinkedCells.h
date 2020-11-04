@@ -35,8 +35,8 @@ namespace autopas {
  * @tparam ParticleCell type of the ParticleCells that are used to store the particles
  * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
-template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
-class ReferenceLinkedCells : public CellBasedParticleContainer<ReferenceParticleCell<Particle>, SoAArraysType> {
+template <class Particle>
+class ReferenceLinkedCells : public CellBasedParticleContainer<ReferenceParticleCell<Particle>> {
  public:
   /**
    *  Type of the Particle.
@@ -59,14 +59,14 @@ class ReferenceLinkedCells : public CellBasedParticleContainer<ReferenceParticle
   ReferenceLinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                        const double skin, const double cellSizeFactor = 1.0,
                        LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ReferenceCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
+      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
    */
-  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::referenceLinkedCells; }
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCellsReferences; }
 
 /**
   * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()

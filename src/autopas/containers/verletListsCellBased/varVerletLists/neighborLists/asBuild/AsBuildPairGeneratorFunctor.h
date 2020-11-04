@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "autopas/containers/verletListsCellBased/VerletListTypeDefinitions.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"
 
@@ -27,19 +26,35 @@ namespace internal {
  */
 template <class Particle, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
-    : public autopas::Functor<Particle,
-                              typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType> {
-  /// using declaration for soa's of verlet list's linked cells (only id and position needs to be stored)
-  using SoAArraysType = typename utils::SoAType<Particle *, double, double, double>::Type;
-
-  /// attributes for soa's of verlet list's linked cells (only id and position needs to be stored)
-  enum AttributeNames : int { ptr, posX, posY, posZ };
-
+    : public autopas::Functor<Particle, AsBuildPairGeneratorFunctor<Particle, callCheckInstead>> {
  public:
+  using SoAArraysType = typename Particle::SoAArraysType;
+
+  /**
+   * @copydoc Functor::getNeededAttr()
+   */
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 4>{
+        Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ};
+  }
+
+  constexpr static auto getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 4>{
+        Particle::AttributeNames::id, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ};
+  }
+
+  /**
+   * @copydoc Functor::getNeededAttr()
+   */
+  constexpr static auto getComputedAttr() { return std::array<typename Particle::AttributeNames, 0>{}; }
+
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+  [[nodiscard]] bool isAppropriateClusterSize(unsigned int clusterSize,
+                                              DataLayoutOption::Value dataLayout) const override {
     return false;  // this functor shouldn't be called with clusters!
   }
 
@@ -49,12 +64,11 @@ class AsBuildPairGeneratorFunctor
    * @param cutoffskin The cutoff skin to use.
    */
   AsBuildPairGeneratorFunctor(VerletNeighborListAsBuild<Particle> &neighborList, double cutoffskin)
-      : autopas::Functor<Particle,
-                         typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType>(cutoffskin),
+      : autopas::Functor<Particle, AsBuildPairGeneratorFunctor>(cutoffskin),
         _list(neighborList),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
-  bool isRelevantForTuning() override { return false; }
+  [[nodiscard]] bool isRelevantForTuning() override { return false; }
 
   /**
    * Adds the given pair to the neighbor list.
@@ -82,10 +96,10 @@ class AsBuildPairGeneratorFunctor
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
-    auto **const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
-    double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
+    auto **const __restrict__ ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
+    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
     size_t numPart = soa.getNumParticles();
     for (unsigned int i = 0; i < numPart; ++i) {
@@ -118,15 +132,15 @@ class AsBuildPairGeneratorFunctor
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    auto **const __restrict__ ptrptr1 = soa1.template begin<AttributeNames::ptr>();
-    double *const __restrict__ x1ptr = soa1.template begin<AttributeNames::posX>();
-    double *const __restrict__ y1ptr = soa1.template begin<AttributeNames::posY>();
-    double *const __restrict__ z1ptr = soa1.template begin<AttributeNames::posZ>();
+    auto **const __restrict__ ptrptr1 = soa1.template begin<Particle::AttributeNames::ptr>();
+    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
 
-    auto **const __restrict__ ptrptr2 = soa2.template begin<AttributeNames::ptr>();
-    double *const __restrict__ x2ptr = soa2.template begin<AttributeNames::posX>();
-    double *const __restrict__ y2ptr = soa2.template begin<AttributeNames::posY>();
-    double *const __restrict__ z2ptr = soa2.template begin<AttributeNames::posZ>();
+    auto **const __restrict__ ptrptr2 = soa2.template begin<Particle::AttributeNames::ptr>();
+    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
     size_t numPart1 = soa1.getNumParticles();
     for (unsigned int i = 0; i < numPart1; ++i) {
@@ -148,43 +162,6 @@ class AsBuildPairGeneratorFunctor
       }
     }
   }
-
-  /**
-   * Loads all particles of the cell into the SoA.
-   * @param cell
-   * @param soa
-   * @param offset
-   */
-  void SoALoader(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t offset) override {
-    if (offset != 0ul) {
-      utils::ExceptionHandler::exception("offset must be 0, is: {}", offset);
-    }
-    soa.resizeArrays(cell.numParticles());
-
-    if (cell.numParticles() == 0) return;
-
-    auto *const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
-    double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
-
-    auto cellIter = cell.begin();
-    // load particles in SoAs.
-    for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
-      Particle *pptr = &(*cellIter);
-      ptrptr[i] = pptr;
-      xptr[i] = cellIter->getR()[0];
-      yptr[i] = cellIter->getR()[1];
-      zptr[i] = cellIter->getR()[2];
-    }
-  }
-
-  /**
-   * Does nothing
-   * @param cell
-   * @param soa
-   */
-  void SoAExtractor(ParticleCell<Particle> &cell, SoA<SoAArraysType> &soa, size_t /*offset*/) override {}
 
  private:
   /**

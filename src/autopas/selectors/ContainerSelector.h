@@ -97,7 +97,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
                                                           containerInfo.cellSizeFactor, containerInfo.loadEstimator);
       break;
     }
-    case ContainerOption::referenceLinkedCells: {
+    case ContainerOption::linkedCellsReferences: {
       container = std::make_unique<ReferenceLinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                                    containerInfo.cellSizeFactor);
       break;

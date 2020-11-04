@@ -48,7 +48,14 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
 class LJFunctor
     : public Functor<Particle,
                      LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+  /**
+   * Structure of the SoAs defined by the particle.
+   */
   using SoAArraysType = typename Particle::SoAArraysType;
+
+  /**
+   * Precision of SoA entries.
+   */
   using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
 
  public:

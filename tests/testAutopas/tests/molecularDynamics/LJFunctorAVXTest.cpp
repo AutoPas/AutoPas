@@ -255,10 +255,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   constexpr bool calculateGlobals = true;
-  autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals>
+  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals>
       ljFunctorNoAVX(_cutoff);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctorAVX<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals>
+  autopas::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals>
       ljFunctorAVX(_cutoff);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
@@ -314,9 +314,9 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
   FMCell cellNoAVX(cellAVX);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
+  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctorAVX<Molecule, FMCell, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
+  autopas::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";

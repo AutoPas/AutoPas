@@ -356,7 +356,7 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<TouchableParticle, autopas::FullParticleCell<TouchableParticle>> eFunctor;
+    EmptyFunctor<TouchableParticle> eFunctor;
     apContainer.iteratePairwise(&eFunctor);
   }
 

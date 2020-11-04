@@ -24,17 +24,23 @@
  * Empty Functor, this functor is empty and can be used for testing purposes.
  * It returns that it is applicable for everything.
  */
-template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
-class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle, SoAArraysType>> {
+template <class Particle>
+class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
  private:
 #ifdef AUTOPAS_CUDA
   EmptyCudaWrapper<typename Particle::ParticleSoAFloatPrecision> emptyCudaWrapper;
 #endif
  public:
+
+  /**
+   * Structure of the SoAs defined by the particle.
+   */
+  using SoAArraysType = typename Particle::SoAArraysType;
+
   /**
    * Default constructor.
    */
-  EmptyFunctor() : autopas::Functor<Particle, EmptyFunctor<Particle, SoAArraysType>>(0.){};
+  EmptyFunctor() : autopas::Functor<Particle, EmptyFunctor<Particle>>(0.){};
 
   /**
    * @copydoc autopas::Functor::AoSFunctor()

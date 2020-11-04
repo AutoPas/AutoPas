@@ -38,7 +38,7 @@ void withStaticContainerType(std::shared_ptr<CellBasedParticleContainer<Particle
     case ContainerOption::linkedCells:
       function(dynamic_cast<autopas::LinkedCells<Particle> *>(container_ptr));
       return;
-    case ContainerOption::referenceLinkedCells:
+    case ContainerOption::linkedCellsReferences:
       function(dynamic_cast<autopas::ReferenceLinkedCells<Particle> *>(container_ptr));
       return;
     case ContainerOption::verletLists:

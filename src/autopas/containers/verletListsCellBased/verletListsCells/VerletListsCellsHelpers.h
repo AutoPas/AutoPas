@@ -24,8 +24,6 @@ class VerletListsCellsHelpers {
    * Cell wise verlet lists: For every cell, a vector of pairs. Each pair maps a particle to a vector of its neighbors.
    */
   using NeighborListsType = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
-  /// Verlet list storage
-  using VerletList_storage_type = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
