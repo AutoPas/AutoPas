@@ -13,7 +13,7 @@
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/containers/linkedCells/ReferenceLinkedCells.h"
+#include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/verletClusterCells/VerletClusterCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
@@ -98,7 +98,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       break;
     }
     case ContainerOption::linkedCellsReferences: {
-      container = std::make_unique<ReferenceLinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+      container = std::make_unique<LinkedCellsReferences<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                                    containerInfo.cellSizeFactor);
       break;
     }

@@ -10,7 +10,7 @@
 
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/containers/linkedCells/ReferenceLinkedCells.h"
+#include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/verletClusterCells/VerletClusterCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
@@ -39,7 +39,7 @@ void withStaticContainerType(std::shared_ptr<CellBasedParticleContainer<Particle
       function(dynamic_cast<autopas::LinkedCells<Particle> *>(container_ptr));
       return;
     case ContainerOption::linkedCellsReferences:
-      function(dynamic_cast<autopas::ReferenceLinkedCells<Particle> *>(container_ptr));
+      function(dynamic_cast<autopas::LinkedCellsReferences<Particle> *>(container_ptr));
       return;
     case ContainerOption::verletLists:
       function(dynamic_cast<autopas::VerletLists<Particle> *>(container_ptr));

@@ -32,7 +32,7 @@ class ContainerOption : public Option<ContainerOption> {
      */
     linkedCells,
     /**
-     * ReferenceLinkedCells : Same algorithm as LinkedCells but stores all particles in one big vector. Cells only
+     * LinkedCellsReferences : Same algorithm as LinkedCells but stores all particles in one big vector. Cells only
      * contain references to this vector.
      */
     linkedCellsReferences,

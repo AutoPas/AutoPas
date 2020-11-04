@@ -36,7 +36,7 @@ namespace autopas {
  * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
 template <class Particle>
-class ReferenceLinkedCells : public CellBasedParticleContainer<ReferenceParticleCell<Particle>> {
+class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticleCell<Particle>> {
  public:
   /**
    *  Type of the Particle.
@@ -56,7 +56,7 @@ class ReferenceLinkedCells : public CellBasedParticleContainer<ReferenceParticle
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
-  ReferenceLinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+  LinkedCellsReferences(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                        const double skin, const double cellSizeFactor = 1.0,
                        LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skin),
@@ -177,7 +177,7 @@ BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in ReferenceLinkedCells::iteratePairwise. TraversalID: {}",
+          "Trying to use a traversal of wrong type in LinkedCellsReferences::iteratePairwise. TraversalID: {}",
           traversal->getTraversalType());
     }
 
@@ -331,7 +331,7 @@ BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
   const internal::CellBlock3D<ReferenceCell> &getCellBlock() const { return _cellBlock; }
 
   /**
-   * Returns reference to the data of ReferenceLinkedCells
+   * Returns reference to the data of LinkedCellsReferences
    * @return the data
    */
   std::vector<ReferenceCell> &getCells() { return this->_cells; }

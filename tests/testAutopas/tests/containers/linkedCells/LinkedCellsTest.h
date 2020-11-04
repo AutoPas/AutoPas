@@ -10,7 +10,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/containers/linkedCells/ReferenceLinkedCells.h"
+#include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/particles/Particle.h"
 #include "testingHelpers/commonTypedefs.h"
 
