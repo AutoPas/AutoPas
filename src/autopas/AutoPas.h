@@ -26,11 +26,6 @@
 namespace autopas {
 
 /**
- * Instance counter to help track the number of autopas instances. Needed for correct management of the logger.
- */
-static unsigned int _instanceCounter = 0;
-
-/**
  * The AutoPas class is intended to be the main point of Interaction for the user.
  * It acts as an interface from where all features of the library can be triggered and configured.
  * @tparam Particle Class for particles
@@ -793,5 +788,10 @@ class AutoPas {
    * Stores whether the mpi communicator was provided externally or not
    */
   bool _externalMPICommunicator{false};
+
+  /**
+   * Instance counter to help track the number of autopas instances. Needed for correct management of the logger.
+   */
+  static inline unsigned int _instanceCounter = 0;
 };  // class AutoPas
 }  // namespace autopas
