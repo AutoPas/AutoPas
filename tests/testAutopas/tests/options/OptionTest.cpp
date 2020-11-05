@@ -50,7 +50,7 @@ TEST(OptionTest, parseContainerOptionsTest) {
       {autopas::ContainerOption::verletClusterLists, "vclusterlists"},
       {autopas::ContainerOption::verletLists, "verletLists"},
       {autopas::ContainerOption::verletListsCells, "verletLists-cells"},
-      {autopas::ContainerOption::linkedCellsReferences, "linkedCellsref"},
+      {autopas::ContainerOption::linkedCellsReferences, "linkedCellsreferenc"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::ContainerOption::getOptionNames().size());

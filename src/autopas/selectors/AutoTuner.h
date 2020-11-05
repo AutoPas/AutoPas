@@ -463,6 +463,10 @@ bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFu
                  conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
           ->isApplicable();
   }
+  utils::ExceptionHandler::exception("AutoTuner::configApplicable() : Unknown CellType: {}",
+                                     containerPtr->getParticleCellTypeEnum());
+  // should never happen
+  return false;
 }
 
 template <class Particle>
