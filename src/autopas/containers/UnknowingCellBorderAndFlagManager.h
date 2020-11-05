@@ -23,11 +23,10 @@ class UnknowingCellBorderAndFlagManager : public CellBorderAndFlagManager {
    * Get the static instance of this class.
    * @return one instance.
    */
-  static auto& get() {
+  static auto &get() {
     const static UnknowingCellBorderAndFlagManager unknowingCellBorderAndFlagManager;
     return unknowingCellBorderAndFlagManager;
   }
 };
-
 
 }  // namespace autopas::internal
