@@ -18,9 +18,16 @@ class UnknowingCellBorderAndFlagManager : public CellBorderAndFlagManager {
  public:
   bool cellCanContainHaloParticles(index_t index1d) const override { return true; }
   bool cellCanContainOwnedParticles(index_t index1d) const override { return true; }
+
+  /**
+   * Get the static instance of this class.
+   * @return one instance.
+   */
+  static auto& get() {
+    const static UnknowingCellBorderAndFlagManager unknowingCellBorderAndFlagManager;
+    return unknowingCellBorderAndFlagManager;
+  }
 };
 
-/// An instance of this UnknowingCellBorderAndFlagManager.
-static UnknowingCellBorderAndFlagManager unknowingCellBorderAndFlagManager;
 
 }  // namespace autopas::internal
