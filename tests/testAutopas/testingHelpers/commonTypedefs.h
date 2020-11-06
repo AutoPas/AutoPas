@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/particles/Particle.h"
 #include "mocks/MockFunctor.h"
@@ -24,11 +23,6 @@ using Particle = autopas::Particle;
 using FPCell = autopas::FullParticleCell<autopas::Particle>;
 
 /**
- * Short for a ReferenceParticle Cell with the AutoPas Particle
- */
-using RPCell = autopas::ReferenceParticleCell<autopas::Particle>;
-
-/**
  * Short for the AutoPas single center Lennard-Jones molecule
  */
 using Molecule = autopas::MoleculeLJ<>;
@@ -36,11 +30,6 @@ using Molecule = autopas::MoleculeLJ<>;
  * Short for the Full Particle Cell with the single center Lennard-Jones molecule
  */
 using FMCell = autopas::FullParticleCell<Molecule>;
-
-/**
- * Short for the Reference Particle Cell with the single center Lennard-Jones molecule
- */
-using RMCell = autopas::ReferenceParticleCell<Molecule>;
 
 // M prefix for mocks
 /**
