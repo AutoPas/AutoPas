@@ -8,7 +8,6 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
-#include "autopas/containers/linkedCells/ParticleVector.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class ParticleVectorTest : public AutoPasTestBase {

@@ -1,4 +1,3 @@
-
 /**
  * @file VVLAsBuildTraversal.h
  * @author humig

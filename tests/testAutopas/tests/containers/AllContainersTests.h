@@ -37,7 +37,5 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
     return selector.getCurrentContainer();
   }
 
- protected:
-  std::shared_ptr<autopas::ParticleContainerInterface<Particle>> _container{};
   void testUpdateContainerDeletesDummy(bool previouslyOwned);
 };

@@ -52,7 +52,7 @@ class AsBuildPairGeneratorFunctor
   }
 
   /**
-   * @copydoc Functor::getNeededAttr()
+   * @copydoc Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() { return std::array<typename Particle::AttributeNames, 0>{}; }
 

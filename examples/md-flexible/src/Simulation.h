@@ -470,7 +470,7 @@ void Simulation<Particle>::printStatistics(autopas::AutoPas<Particle> &autopas) 
     // approximation for flops of verlet list generation
     if (autopas.getContainerType() == autopas::ContainerOption::verletLists)
       flops += flopCounterFunctor.getDistanceCalculations() *
-               autopas::FlopCounterFunctor<PrintableMolecule>::numFlopsPerDistanceCalculation *
+               decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation *
                floor(iteration / _config->verletRebuildFrequency.value);
 
     cout << "GFLOPs       : " << flops * 1e-9 << endl;
