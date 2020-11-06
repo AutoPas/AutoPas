@@ -19,7 +19,6 @@
 namespace autopas {
 /**
  * Will execute the passed function body with the static container type of container.
- * Currently, either LinkedCells, VerletLists, VerletListsCells, VerletClusterLists or DirectSum.
  *
  * @tparam Particle
  * @tparam ParticleCell

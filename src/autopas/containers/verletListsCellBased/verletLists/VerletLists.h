@@ -15,7 +15,7 @@
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticSelectorMacros.h"
+#include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
 

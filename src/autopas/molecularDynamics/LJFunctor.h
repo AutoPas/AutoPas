@@ -15,7 +15,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticSelectorMacros.h"
+#include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 #if defined(AUTOPAS_CUDA)

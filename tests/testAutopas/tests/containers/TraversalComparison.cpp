@@ -10,7 +10,7 @@
 
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
-#include "autopas/utils/StaticSelectorMacroCellType.h"
+#include "autopas/utils/StaticCellTypeSelector.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopasTools/generators/RandomGenerator.h"
 

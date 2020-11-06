@@ -20,7 +20,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticSelectorMacros.h"
+#include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
 
