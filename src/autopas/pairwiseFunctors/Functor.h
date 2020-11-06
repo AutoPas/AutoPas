@@ -221,8 +221,8 @@ class Functor {
    * @param soa  Structure of arrays where the data is copied to.
    * @param offset Offset within the SoA. The data of the cell should be added
    * to the SoA with the specified offset.
+   * @tparam ParticleCell Type of the cell.
    */
-
   template <class ParticleCell>
   void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
     SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
@@ -235,6 +235,7 @@ class Functor {
    * @param soa  Structure of arrays from where the data is loaded.
    * @param offset Offset within the SoA. The data of the soa should be
    * extracted starting at offset.
+   * @tparam ParticleCell Type of the cell.
    */
   template <typename ParticleCell>
   void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
