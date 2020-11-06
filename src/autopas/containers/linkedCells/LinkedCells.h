@@ -128,7 +128,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
           return loadEstimators::squaredParticlesPerCell(this->_cells, cellsPerDimension, lowerCorner, upperCorner);
         };
       }
-      case LoadEstimatorOption::none: /* FALL THROUgh */
+      case LoadEstimatorOption::none:
+        [[fallthrough]];
       default: {
         return
             [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,

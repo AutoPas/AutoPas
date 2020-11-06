@@ -84,7 +84,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
         };
       }
 
-      case LoadEstimatorOption::none: /* FALL THROUGH */
+      case LoadEstimatorOption::none:
+        [[fallthrough]];
       default: {
         return
             [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
