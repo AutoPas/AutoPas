@@ -48,7 +48,7 @@ decltype(auto) withStaticContainerType(std::shared_ptr<CellBasedParticleContaine
     case ContainerOption::verletClusterCells:
       return function(dynamic_cast<autopas::VerletClusterCells<Particle> *>(container_ptr));
   }
-  autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticSelectorMacros.h. Type: {}",
+  autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container->getContainerType());
 }
 
