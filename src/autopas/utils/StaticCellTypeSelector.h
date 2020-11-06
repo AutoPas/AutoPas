@@ -18,8 +18,9 @@ namespace autopas::utils {
  * @tparam ParticleType The type of the particle, needed to generate a ParticleCell.
  * @tparam F The type of the functor.
  * @param cellType Enum specifying the type of the cell.
- * @param func Function that takes a ParticleCell as argument. E.g., `[&](auto particleCellDummy) {...}`. The passed cell
- * will be default constructed and should only be used to infer the type of ParticleCell using `decltype(particleCellDummy)`.
+ * @param func Function that takes a ParticleCell as argument. E.g., `[&](auto particleCellDummy) {...}`. The passed
+ * cell will be default constructed and should only be used to infer the type of ParticleCell using
+ * `decltype(particleCellDummy)`.
  * @return Returns whatever func returns.
  * @todo c++20 change to explicit template for templates.
  * @todo function calls also have to be changed to
@@ -32,7 +33,7 @@ namespace autopas::utils {
  * ```
  */
 template <typename ParticleType, typename F>
-decltype(auto) withStaticCellType(autopas::CellType cellType, F func) {
+decltype(auto) withStaticCellType(autopas::CellType cellType, F &&func) {
   switch (cellType) {
     case autopas::CellType::ClusterTower:
       [[fallthrough]];
