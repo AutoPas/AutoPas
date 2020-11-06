@@ -14,9 +14,9 @@
 class NonConstructibleParticle : public autopas::Particle {
  public:
   /**
-   * Default constructor.
+   * Default constructor is deleted.
    */
-  NonConstructibleParticle() = default;
+  NonConstructibleParticle() = delete;
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
