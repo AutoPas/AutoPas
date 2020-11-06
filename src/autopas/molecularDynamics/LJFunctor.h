@@ -529,7 +529,7 @@ class LJFunctor
   }
 
   /**
-   * @brief Functor using Cuda on SoA in device Memory
+   * Functor using Cuda on SoA in device Memory
    *
    * This Functor calculates the pair-wise interactions between particles in the device_handle on the GPU
    *
@@ -579,7 +579,7 @@ class LJFunctor
   }
 
   /**
-   * @brief Functor using Cuda on SoAs in device Memory
+   * Functor using Cuda on SoAs in device Memory
    *
    * This Functor calculates the pair-wise interactions between particles in the device_handle1 and device_handle2 on
    * the GPU

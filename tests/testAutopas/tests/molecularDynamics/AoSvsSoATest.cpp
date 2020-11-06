@@ -13,7 +13,7 @@ using namespace autopas;
 #define PARTICLES_PER_DIM 16
 
 /**
- * @brief Generates a reproducible set of particles
+ * Generates a reproducible set of particles
  * @param particles Vector where particles will be stored.
  */
 void AoSvsSoATest::generateParticles(std::vector<Molecule> *particles) {

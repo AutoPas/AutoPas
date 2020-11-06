@@ -22,12 +22,12 @@ template <class CudaSoAArraysType>
 class CudaSoA {
  public:
   /**
-   * @brief Default constructor.
+   * Default constructor.
    */
   CudaSoA() = default;
 
   /**
-   * @brief delete constructor.
+   * delete constructor.
    * @param soa CudaSoA to copy.
    */
   CudaSoA(const CudaSoA &soa) = default;

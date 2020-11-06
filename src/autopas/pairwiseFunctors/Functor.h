@@ -78,7 +78,7 @@ class Functor {
   virtual void endTraversal(bool newton3){};
 
   /**
-   * @brief Functor for arrays of structures (AoS).
+   * Functor for arrays of structures (AoS).
    *
    * This functor should calculate the forces or any other pair-wise interaction
    * between two particles.
@@ -119,7 +119,7 @@ class Functor {
   }
 
   /**
-   * @brief Functor for structure of arrays (SoA)
+   * Functor for structure of arrays (SoA)
    *
    * This functor should calculate the forces or any other pair-wise interaction
    * between all particles in an soa.
@@ -133,7 +133,7 @@ class Functor {
   }
 
   /**
-   * @brief Functor for structure of arrays (SoA) for neighbor lists
+   * Functor for structure of arrays (SoA) for neighbor lists
    *
    * This functor should calculate the forces or any other pair-wise interaction
    * between the particle in the SoA with index indexFirst and all particles with indices in the neighborList.
@@ -151,7 +151,7 @@ class Functor {
   }
 
   /**
-   * @brief Functor for structure of arrays (SoA)
+   * Functor for structure of arrays (SoA)
    *
    * This functor should calculate the forces or any other pair-wise interaction
    * between all particles of soa1 and soa2.
@@ -166,7 +166,7 @@ class Functor {
   }
 
   /**
-   * @brief Functor using Cuda on SoA in device Memory
+   * Functor using Cuda on SoA in device Memory
    *
    * This Functor calculates the pair-wise interactions between particles in the device_handle on the GPU
    *
@@ -178,7 +178,7 @@ class Functor {
   }
 
   /**
-   * @brief Functor using Cuda on SoAs in device Memory
+   * Functor using Cuda on SoAs in device Memory
    *
    * This Functor calculates the pair-wise interactions between particles in the device_handle1 and device_handle2 on
    * the GPU
@@ -193,7 +193,7 @@ class Functor {
   }
 
   /**
-   * @brief Copies the SoA data of the given cell to the Cuda device.
+   * Copies the SoA data of the given cell to the Cuda device.
    *
    * @param soa  Structure of arrays where the data is loaded.
    * @param device_handle soa in device memory where the data is copied to
@@ -204,7 +204,7 @@ class Functor {
   }
 
   /**
-   * @brief Copies the data stored on the Cuda device back to the SoA overwrites the data in the soa
+   * Copies the data stored on the Cuda device back to the SoA overwrites the data in the soa
    *
    * @param soa  Structure of arrays where the data copied to.
    * @param device_handle soa in device memory where the data is loaded from
@@ -215,7 +215,7 @@ class Functor {
   }
 
   /**
-   * @brief Copies the AoS data of the given cell in the given soa.
+   * Copies the AoS data of the given cell in the given soa.
    *
    * @param cell Cell from where the data is loaded.
    * @param soa  Structure of arrays where the data is copied to.
@@ -229,7 +229,7 @@ class Functor {
   }
 
   /**
-   * @brief Copies the data stored in the soa back into the cell.
+   * Copies the data stored in the soa back into the cell.
    *
    * @param cell Cell where the data should be stored.
    * @param soa  Structure of arrays from where the data is loaded.

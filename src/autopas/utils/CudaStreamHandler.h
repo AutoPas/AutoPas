@@ -22,7 +22,7 @@ class CudaStreamHandler {
 #if defined(AUTOPAS_CUDA)
  public:
   /**
-   * @brief creates a CudaStreamHandler object with nStreams different cuda streams
+   * Creates a CudaStreamHandler object with nStreams different cuda streams
    * @param nStreams number of streams in Handler
    */
   CudaStreamHandler(size_t nStreams) : _streams(nStreams), random_index(0) {
@@ -32,7 +32,7 @@ class CudaStreamHandler {
   }
 
   /**
-   * @brief deallocates all cuda streams
+   * Deallocates all cuda streams
    */
   virtual ~CudaStreamHandler() {
     for (auto it : _streams) {
@@ -40,19 +40,19 @@ class CudaStreamHandler {
     }
   }
   /**
-   * @brief returns cuda stream at the given index
+   * Returns cuda stream at the given index
    * @param index
    * @return corresponding cuda stream
    */
   cudaStream_t &getStream(int index) { return _streams.at(index); }
   /**
-   * @brief returns cuda stream at the hash value modulo the number of streams
+   * Returns cuda stream at the hash value modulo the number of streams
    * @param hash
    * @return corresponding cuda stream
    */
   cudaStream_t &getStreambyHash(size_t hash) { return _streams[hash % _streams.size()]; }
   /**
-   * @brief returns cuda stream at the least recently used index
+   * Returns cuda stream at the least recently used index
    * @return ranodm cuda stream
    */
   cudaStream_t &getStreamRandom() { return _streams[(++random_index) % _streams.size()]; }
@@ -63,7 +63,7 @@ class CudaStreamHandler {
 #else
  public:
   /**
-   * @brief empty Dummy default Constructor in case there is no cuda support
+   * Empty Dummy default Constructor in case there is no cuda support
    */
   CudaStreamHandler() = default;
 #endif
