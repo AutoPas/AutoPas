@@ -13,7 +13,28 @@ namespace autopas {
 /**
  * The ParticleCell Type as an Enum.
  */
-enum class CellType { FullParticleCell, ReferenceParticleCell, ClusterTower, SortedCellView, IsNoCell };
+enum class CellType {
+  /**
+   * FullParticleCell : Default cell type for almost everything.
+   */
+  FullParticleCell,
+  /**
+   * ReferenceParticleCell : Cell holding only references instead of actual particle objects.
+   */
+  ReferenceParticleCell,
+  /**
+   * ClusterTower : Tower for the 2D tower structure of VerletClusterLists.
+   */
+  ClusterTower,
+  /**
+   * SortedCellView : Holds pointers to particles sorted by their position projected along a vector.
+   */
+  SortedCellView,
+  /**
+   * Currently unused.
+   */
+  IsNoCell
+};
 
 /**
  * Class for Cells of Particles.
