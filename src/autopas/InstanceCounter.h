@@ -8,6 +8,9 @@
 
 namespace autopas {
 
+/**
+ * Class to count autopas instances.
+ */
 struct InstanceCounter {
   /**
    * Instance counter to help track the number of autopas instances. Needed for correct management of the logger.
