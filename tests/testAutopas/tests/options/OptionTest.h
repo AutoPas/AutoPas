@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include <autopas/utils/ArrayUtils.h>
 #include <gmock/gmock-matchers.h>
 
 #include "AutoPasTestBase.h"
+#include "autopas/utils/ArrayUtils.h"
 
 /**
  * Tests for all Options derived from autopas::Option.
