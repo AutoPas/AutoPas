@@ -110,7 +110,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
       functor{_cutoff};
   functor.setParticleProperties(_eps * 24, _sig * _sig);
 
-  std::unique_ptr<autopas::TraversalInterface> traversal =
+  auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
         return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
             traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);

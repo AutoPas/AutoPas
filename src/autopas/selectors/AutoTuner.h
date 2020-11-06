@@ -324,7 +324,7 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   AutoPasLog(debug, "Iterating with configuration: {} tuning: {}",
              _tuningStrategy->getCurrentConfiguration().toString(), inTuningPhase ? "true" : "false");
 
-  std::unique_ptr<TraversalInterface> traversal = autopas::utils::withStaticCellType<Particle>(
+  auto traversal = autopas::utils::withStaticCellType<Particle>(
       containerPtr->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
         return TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<PairwiseFunctor, dataLayout,
                                                                                           useNewton3>(
