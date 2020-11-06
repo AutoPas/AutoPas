@@ -54,7 +54,7 @@ class PrintableMolecule
   using CudaDeviceArraysType =
       typename autopas::utils::CudaSoAType<PrintableMolecule *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
                                            double /*fx*/, double /*fy*/, double /*fz*/, size_t /*typeid*/,
-                                           OwnershipState /*ownershipState*/>::Type;
+                                           autopas::OwnershipState /*ownershipState*/>::Type;
 #else
   /**
    * The type for storage arrays for Cuda.
