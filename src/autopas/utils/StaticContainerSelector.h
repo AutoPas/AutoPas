@@ -31,22 +31,22 @@ namespace autopas {
 template <typename Particle, typename FunctionType>
 decltype(auto) withStaticContainerType(std::shared_ptr<CellBasedParticleContainer<Particle>> &container,
                                        FunctionType &&function) {
-  auto container_ptr = container.get();
+  auto containerPtr = container.get();
   switch (container->getContainerType()) {
     case ContainerOption::directSum:
-      return function(dynamic_cast<autopas::DirectSum<Particle> *>(container_ptr));
+      return function(dynamic_cast<autopas::DirectSum<Particle> *>(containerPtr));
     case ContainerOption::linkedCells:
-      return function(dynamic_cast<autopas::LinkedCells<Particle> *>(container_ptr));
+      return function(dynamic_cast<autopas::LinkedCells<Particle> *>(containerPtr));
     case ContainerOption::linkedCellsReferences:
-      return function(dynamic_cast<autopas::LinkedCellsReferences<Particle> *>(container_ptr));
+      return function(dynamic_cast<autopas::LinkedCellsReferences<Particle> *>(containerPtr));
     case ContainerOption::verletLists:
-      return function(dynamic_cast<autopas::VerletLists<Particle> *>(container_ptr));
+      return function(dynamic_cast<autopas::VerletLists<Particle> *>(containerPtr));
     case ContainerOption::verletListsCells:
-      return function(dynamic_cast<autopas::VerletListsCells<Particle> *>(container_ptr));
+      return function(dynamic_cast<autopas::VerletListsCells<Particle> *>(containerPtr));
     case ContainerOption::verletClusterLists:
-      return function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(container_ptr));
+      return function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(containerPtr));
     case ContainerOption::verletClusterCells:
-      return function(dynamic_cast<autopas::VerletClusterCells<Particle> *>(container_ptr));
+      return function(dynamic_cast<autopas::VerletClusterCells<Particle> *>(containerPtr));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container->getContainerType());
