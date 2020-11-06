@@ -19,6 +19,7 @@
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/StaticSelectorMacroCellType.h"
 #include "autopas/utils/Timer.h"
 
 namespace autopas {
@@ -323,26 +324,12 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   AutoPasLog(debug, "Iterating with configuration: {} tuning: {}",
              _tuningStrategy->getCurrentConfiguration().toString(), inTuningPhase ? "true" : "false");
 
-  std::unique_ptr<TraversalInterface> traversal;
-  switch (containerPtr->getParticleCellTypeEnum()) {
-    case CellType::ClusterTower:
-      [[fallthrough]];
-    case CellType::SortedCellView:
-      [[fallthrough]];
-    case CellType::IsNoCell:
-      [[fallthrough]];
-    case CellType::FullParticleCell:
-      traversal = TraversalSelector<FullParticleCell<Particle>>::template generateTraversal<PairwiseFunctor, dataLayout,
-                                                                                            useNewton3>(
-          _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
-      break;
-    case CellType::ReferenceParticleCell:
-      traversal =
-          TraversalSelector<ReferenceParticleCell<Particle>>::template generateTraversal<PairwiseFunctor, dataLayout,
-                                                                                         useNewton3>(
-              _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
-      break;
-  }
+  std::unique_ptr<TraversalInterface> traversal = autopas::utils::withStaticCellType<Particle>(
+      containerPtr->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        return TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<PairwiseFunctor, dataLayout,
+                                                                                          useNewton3>(
+            _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
+      });
 
   if (not traversal->isApplicable()) {
     autopas::utils::ExceptionHandler::exception(
@@ -447,26 +434,13 @@ bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFu
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
   auto containerPtr = getContainer();
-  switch (containerPtr->getParticleCellTypeEnum()) {
-    case CellType::ClusterTower:
-      [[fallthrough]];
-    case CellType::SortedCellView:
-      [[fallthrough]];
-    case CellType::IsNoCell:
-      [[fallthrough]];
-    case CellType::FullParticleCell:
-      return TraversalSelector<FullParticleCell<Particle>>::template generateTraversal<PairwiseFunctor>(
-                 conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
-          ->isApplicable();
-    case CellType::ReferenceParticleCell:
-      return TraversalSelector<ReferenceParticleCell<Particle>>::template generateTraversal<PairwiseFunctor>(
-                 conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
-          ->isApplicable();
-  }
-  utils::ExceptionHandler::exception("AutoTuner::configApplicable() : Unknown CellType: {}",
-                                     containerPtr->getParticleCellTypeEnum());
-  // should never happen
-  return false;
+
+  return autopas::utils::withStaticCellType<Particle>(
+      containerPtr->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        return TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<PairwiseFunctor>(
+                   conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
+            ->isApplicable();
+      });
 }
 
 template <class Particle>

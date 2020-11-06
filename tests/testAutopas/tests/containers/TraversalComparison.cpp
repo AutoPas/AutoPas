@@ -10,6 +10,7 @@
 
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
+#include "autopas/utils/StaticSelectorMacroCellType.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
@@ -109,28 +110,11 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
       functor{_cutoff};
   functor.setParticleProperties(_eps * 24, _sig * _sig);
 
-  std::unique_ptr<autopas::TraversalInterface> traversal;
-  switch (container->getParticleCellTypeEnum()) {
-    case autopas::CellType::ClusterTower:
-      [[fallthrough]];
-    case autopas::CellType::SortedCellView:
-      [[fallthrough]];
-    case autopas::CellType::IsNoCell:
-      [[fallthrough]];
-    case autopas::CellType::FullParticleCell:
-      traversal = autopas::TraversalSelector<FMCell>::generateTraversal(
-          traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
-      break;
-    case autopas::CellType::ReferenceParticleCell:
-      traversal = autopas::TraversalSelector<RMCell>::generateTraversal(
-          traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
-      break;
-    default:
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. "
-          "CelltypeEnum: {}",
-          container->getParticleCellTypeEnum());
-  }
+  std::unique_ptr<autopas::TraversalInterface> traversal =
+      autopas::utils::withStaticCellType<Molecule>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
+            traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+      });
 
   if (not traversal->isApplicable()) {
     return {};
