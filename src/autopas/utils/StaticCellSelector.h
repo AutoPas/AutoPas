@@ -47,11 +47,11 @@ decltype(auto) withStaticCellType(autopas::CellType cellType, F &&func) {
     case autopas::CellType::ReferenceParticleCell:
       // todo c++20: return func.template operator()<autopas::ReferenceParticleCell<ParticleType>>();
       return func(autopas::ReferenceParticleCell<ParticleType>());
-    default:
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. "
-          "CelltypeEnum: {}",
-          cellType);
   }
+  autopas::utils::ExceptionHandler::exception(
+      "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. "
+      "CelltypeEnum: {}",
+      cellType);
+  return decltype(func(autopas::FullParticleCell<ParticleType>()))();
 }
 }  // namespace autopas::utils
