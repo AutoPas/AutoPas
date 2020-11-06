@@ -332,8 +332,8 @@ class Functor {
        * The following statement writes the values of all attributes defined in neededAttr into the respective position
        * inside the SoA buffer. I represents the index inside neededAttr. The whole expression is folded sizeof...(I)
        * times over the comma operator. E.g. like this (std::index_sequence<I...> = 0, 1):
-       * ((std::get<0>(pointer)[i] = cellIter->template get<Functor_T::neededAttr[0]>()),
-       * (std::get<1>(pointer)[i] = cellIter->template get<Functor_T::neededAttr[1]>()))
+       * ((std::get<0>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[0]>()),
+       * (std::get<1>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[1]>()))
        */
       ((std::get<I>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[I]>()), ...);
     }
@@ -366,8 +366,8 @@ class Functor {
        * I represents the index inside computedAttr.
        * The whole expression is folded sizeof...(I) times over the comma operator. E.g. like this
        * (std::index_sequence<I...> = 0, 1):
-       * (cellIter->template set<Functor_T::computedAttr[0]>(std::get<0>(pointer)[i]),
-       * cellIter->template set<Functor_T::computedAttr[1]>(std::get<1>(pointer)[i]))
+       * (cellIter->template set<Functor_T::getNeededAttr()[0]>(std::get<0>(pointer)[i]),
+       * cellIter->template set<Functor_T::getNeededAttr()[1]>(std::get<1>(pointer)[i]))
        */
       (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
     }
