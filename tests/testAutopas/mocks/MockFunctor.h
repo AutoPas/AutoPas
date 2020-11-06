@@ -7,12 +7,12 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include <testingHelpers/NonConstructibleParticle.h>
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "testingHelpers/NonConstructibleParticle.h"
 
 #if defined(AUTOPAS_CUDA)
 #include "autopas/utils/CudaSoA.h"
