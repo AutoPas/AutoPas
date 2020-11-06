@@ -19,7 +19,7 @@
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "autopas/utils/StaticCellTypeSelector.h"
+#include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/Timer.h"
 
 namespace autopas {

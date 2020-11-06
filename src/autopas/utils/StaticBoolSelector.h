@@ -1,5 +1,5 @@
 /**
- * @file StaticSelectorMacros.h
+ * @file StaticBoolSelector.h
  * @author seckler
  * @date 02.05.19
  */

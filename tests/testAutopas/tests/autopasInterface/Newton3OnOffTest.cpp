@@ -7,7 +7,7 @@
 #include "Newton3OnOffTest.h"
 
 #include "autopas/utils/Logger.h"
-#include "autopas/utils/StaticCellTypeSelector.h"
+#include "autopas/utils/StaticCellSelector.h"
 
 using ::testing::_;  // anything is ok
 using ::testing::Combine;

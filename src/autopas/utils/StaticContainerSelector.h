@@ -1,5 +1,5 @@
 /**
- * @file StaticSelectors.h
+ * @file StaticContainerSelector.h
  * @author seckler
  * @date 21.06.18
  */
