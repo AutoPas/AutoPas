@@ -51,9 +51,9 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    * @copydoc ParticleCell::addParticle()
    */
   void addParticleReference(Particle *p) {
-    particlesLock.lock();
+    _particlesLock.lock();
     _particles.push_back(p);
-    particlesLock.unlock();
+    _particlesLock.unlock();
   }
 
   SingleCellIteratorWrapper<Particle, true> begin() override {
@@ -110,7 +110,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   }
 
   void deleteByIndex(size_t index) override {
-    std::lock_guard<AutoPasLock> lock(particlesLock);
+    std::lock_guard<AutoPasLock> lock(_particlesLock);
     if (index >= numParticles()) {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
     }
@@ -175,7 +175,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   using const_iterator_t = internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle>, false>;
 
  private:
-  AutoPasLock particlesLock;
+  AutoPasLock _particlesLock;
   std::array<double, 3> _cellLength;
 };
 }  // namespace autopas
