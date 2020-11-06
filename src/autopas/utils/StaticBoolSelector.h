@@ -15,7 +15,7 @@ namespace autopas::utils {
  * @return Returns whatever func returns.
  */
 template <typename F>
-decltype(auto) withStaticBool(bool theBool, const F &&func) {
+decltype(auto) withStaticBool(bool theBool, F &&func) {
   if (theBool) {
     std::true_type t;
     return func(t);
