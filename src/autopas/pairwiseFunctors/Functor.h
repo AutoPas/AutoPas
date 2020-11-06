@@ -366,8 +366,8 @@ class Functor {
        * I represents the index inside computedAttr.
        * The whole expression is folded sizeof...(I) times over the comma operator. E.g. like this
        * (std::index_sequence<I...> = 0, 1):
-       * (cellIter->template set<Functor_T::getNeededAttr()[0]>(std::get<0>(pointer)[i]),
-       * cellIter->template set<Functor_T::getNeededAttr()[1]>(std::get<1>(pointer)[i]))
+       * (cellIter->template set<Functor_T::getComputedAttr()[0]>(std::get<0>(pointer)[i]),
+       * cellIter->template set<Functor_T::getComputedAttr()[1]>(std::get<1>(pointer)[i]))
        */
       (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
     }
