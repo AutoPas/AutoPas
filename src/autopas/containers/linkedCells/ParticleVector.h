@@ -34,16 +34,16 @@ class ParticleVector {
    */
   void markAsClean() {
     _dirty = false;
-    _dirtyIndex = particleListImp.size();
+    _dirtyIndex = _particleListImp.size();
   }
 
   /**
    * Remove all halo particles from the container and mark it as dirty.
    */
   void clearHaloParticles() {
-    particleListImp.erase(std::remove_if(particleListImp.begin(), particleListImp.end(),
-                                         [](const auto &particle) { return particle.isHalo(); }),
-                          particleListImp.end());
+    _particleListImp.erase(std::remove_if(_particleListImp.begin(), _particleListImp.end(),
+                                          [](const auto &particle) { return particle.isHalo(); }),
+                           _particleListImp.end());
     _dirty = true;
     _dirtyIndex = 0;
   }
@@ -52,9 +52,9 @@ class ParticleVector {
    * Remove all dummy particles from the container and mark it as dirty.
    */
   void deleteDummyParticles() {
-    particleListImp.erase(std::remove_if(particleListImp.begin(), particleListImp.end(),
-                                         [](const auto &particle) { return particle.isDummy(); }),
-                          particleListImp.end());
+    _particleListImp.erase(std::remove_if(_particleListImp.begin(), _particleListImp.end(),
+                                          [](const auto &particle) { return particle.isDummy(); }),
+                           _particleListImp.end());
     _dirty = true;
     _dirtyIndex = 0;
   }
@@ -64,20 +64,20 @@ class ParticleVector {
    * @param value A reference to the value to be stored
    */
   void push_back(Type &value) {
-    particleListLock.lock();
+    _particleListLock.lock();
     _dirty = true;
-    if (particleListImp.capacity() == particleListImp.size()) {
+    if (_particleListImp.capacity() == _particleListImp.size()) {
       _dirtyIndex = 0;
     }
-    particleListImp.push_back(value);
-    particleListLock.unlock();
+    _particleListImp.push_back(value);
+    _particleListLock.unlock();
   }
 
   /**
    * Get the number of Particles in the data structure.
    * @return Total number of Particles
    */
-  int totalSize() { return particleListImp.size(); }
+  int totalSize() { return _particleListImp.size(); }
 
   /**
    * Get the number of dirty Particles in the data structure.
@@ -95,12 +95,12 @@ class ParticleVector {
    * Begin of the iterator over dirty Particles
    * @return Start of the iterator
    */
-  auto beginDirty() { return particleListImp.begin() + _dirtyIndex; }
+  auto beginDirty() { return _particleListImp.begin() + _dirtyIndex; }
   /**
    * End of the iterator over dirty Particles
    * @return End of the iterator
    */
-  auto endDirty() { return particleListImp.end(); }
+  auto endDirty() { return _particleListImp.end(); }
 
  private:
   /**
@@ -111,6 +111,6 @@ class ParticleVector {
    * Index of the first out-of-date reference.
    */
   size_t _dirtyIndex{0};
-  autopas::AutoPasLock particleListLock;
-  std::vector<Type> particleListImp;
+  autopas::AutoPasLock _particleListLock;
+  std::vector<Type> _particleListImp;
 };
