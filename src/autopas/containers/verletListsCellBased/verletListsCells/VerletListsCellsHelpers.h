@@ -26,16 +26,9 @@ class VerletListsCellsHelpers {
   using NeighborListsType = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
 
   /**
-   * Type of the particle cell.
-   */
-  using VLCCellType = FullParticleCell<Particle>;
-
-  /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
-  class VerletListGeneratorFunctor : public Functor<Particle, VLCCellType> {
-    using ParticleCell = VLCCellType;
-
+  class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorFunctor> {
    public:
     /**
      * Constructor
@@ -46,7 +39,7 @@ class VerletListsCellsHelpers {
     VerletListGeneratorFunctor(NeighborListsType &neighborLists,
                                std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
                                double cutoffskin)
-        : Functor<Particle, VLCCellType>(0.),
+        : Functor<Particle, VerletListGeneratorFunctor>(0.),
           _neighborLists(neighborLists),
           _particleToCellMap(particleToCellMap),
           _cutoffskinsquared(cutoffskin * cutoffskin) {}
@@ -69,6 +62,9 @@ class VerletListsCellsHelpers {
       return false;  // this functor shouldn't be called with clusters!
     }
 
+    /**
+     * @copydoc Functor::AoSFunctor()
+     */
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       if (i.isDummy() or j.isDummy()) {
         return;

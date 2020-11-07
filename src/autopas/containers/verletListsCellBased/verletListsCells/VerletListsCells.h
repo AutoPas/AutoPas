@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
@@ -20,7 +21,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticSelectorMacros.h"
+#include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
 
@@ -34,11 +35,12 @@ namespace autopas {
  * @tparam Particle
  * @tparam NeighborList The neighbor list used by this container.
  */
+//<<<<<<< HEAD
 template <class Particle, class NeighborList = VerletListsCellsNeighborList<Particle>>
 class VerletListsCells
-    : public VerletListsLinkedBase<Particle, typename VerletListsCellsHelpers<Particle>::VLCCellType> {
+    : public VerletListsLinkedBase<Particle> {
+  using verlet_internal = VerletListsCellsHelpers<FullParticleCell<Particle>>;
   using ParticleCell = FullParticleCell<Particle>;
-  using LinkedParticleCell = typename VerletListsCellsHelpers<Particle>::VLCCellType;
 
  public:
   /**
@@ -55,8 +57,8 @@ class VerletListsCells
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                    const TraversalOption buildTraversal, const double skin = 0, const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : VerletListsLinkedBase<Particle, LinkedParticleCell>(
-            boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin,
+                                        compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _buildTraversalOption(buildTraversal),
         _loadEstimator(loadEstimator) {}
 
@@ -86,7 +88,8 @@ class VerletListsCells
         };
       }
 
-      case LoadEstimatorOption::none: /* FALL THROUGH */
+      case LoadEstimatorOption::none:
+        [[fallthrough]];
       default: {
         return
             [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,

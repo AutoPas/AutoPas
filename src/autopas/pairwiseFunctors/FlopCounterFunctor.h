@@ -22,9 +22,8 @@ namespace autopas {
  * @tparam Particle
  * @tparam ParticleCell
  */
-template <class Particle, class ParticleCell>
-class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
-                                          FlopCounterFunctor<Particle, ParticleCell>> {
+template <class Particle>
+class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>> {
  public:
   bool isRelevantForTuning() override { return false; }
 
@@ -40,9 +39,8 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ParticleCell>(double cutoffRadius)
-      : autopas::Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
-                         FlopCounterFunctor<Particle, ParticleCell>>(cutoffRadius),
+  explicit FlopCounterFunctor<Particle>(double cutoffRadius)
+      : autopas::Functor<Particle, FlopCounterFunctor<Particle>>(cutoffRadius),
         _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
@@ -60,6 +58,9 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     }
   }
 
+  /**
+   * @copydoc Functor::SoAFunctorSingle()
+   */
   void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
@@ -94,8 +95,11 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     }
   }
 
+  /**
+   * @copydoc Functor::SoAFunctorPair()
+   */
   void SoAFunctorPair(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
-                      bool /*newton3*/) override {
+                      bool newton3) override {
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
@@ -132,6 +136,9 @@ class FlopCounterFunctor : public Functor<Particle, ParticleCell, typename Parti
     }
   }
 
+  /**
+   * @copydoc Functor::SoAFunctorVerlet()
+   */
   void SoAFunctorVerlet(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {

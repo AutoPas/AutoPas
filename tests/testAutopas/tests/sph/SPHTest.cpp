@@ -9,12 +9,9 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 
-using DensityFunctorType = autopas::sph::SPHCalcDensityFunctor<autopas::sph::SPHParticle,
-                                                               autopas::FullParticleCell<autopas::sph::SPHParticle>>;
+using DensityFunctorType = autopas::sph::SPHCalcDensityFunctor<autopas::sph::SPHParticle>;
 
-using HydroForceFunctorType =
-    autopas::sph::SPHCalcHydroForceFunctor<autopas::sph::SPHParticle,
-                                           autopas::FullParticleCell<autopas::sph::SPHParticle>>;
+using HydroForceFunctorType = autopas::sph::SPHCalcHydroForceFunctor<autopas::sph::SPHParticle>;
 
 TEST_F(SPHTest, testW) {
   double value = autopas::sph::SPHKernels::W({1., 1., 1.}, 1.);
@@ -635,8 +632,8 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
 }
 
 void densityCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
-                  autopas::LinkedCells<autopas::FullParticleCell<autopas::sph::SPHParticle>> &linkedCells,
-                  size_t numMolecules, double relErrTolerance) {
+                  autopas::LinkedCells<autopas::sph::SPHParticle> &linkedCells, size_t numMolecules,
+                  double relErrTolerance) {
   std::vector<double> densityVerlet(numMolecules), densityLinked(numMolecules);
   /* get and sort by id, the */
   for (auto it = verletLists.begin(); it.isValid(); ++it) {
@@ -666,8 +663,8 @@ void hydroInit(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists) {
 }
 
 void hydroCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
-                autopas::LinkedCells<autopas::FullParticleCell<autopas::sph::SPHParticle>> &linkedCells,
-                size_t numMolecules, double relErrTolerance) {
+                autopas::LinkedCells<autopas::sph::SPHParticle> &linkedCells, size_t numMolecules,
+                double relErrTolerance) {
   std::vector<double> vsigmaxVerlet(numMolecules), vsigmaxLinked(numMolecules);
   std::vector<double> engdotVerlet(numMolecules), engdotLinked(numMolecules);
   std::vector<std::array<double, 3>> accVerlet(numMolecules), accLinked(numMolecules);
@@ -703,7 +700,7 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
   using autopas::sph::SPHParticle;
 
   autopas::VerletLists<SPHParticle> verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5);
-  autopas::LinkedCells<autopas::FullParticleCell<SPHParticle>> linkedCells({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 1.);
+  autopas::LinkedCells<autopas::sph::SPHParticle> linkedCells({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 1.);
 
   autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5,
                                                cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);

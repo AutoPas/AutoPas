@@ -11,7 +11,8 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticSelectorMacros.h"
+//#include "autopas/utils/StaticSelectorMacros.h"
+#include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
 /**
@@ -21,7 +22,6 @@ namespace autopas {
  * */
 template <class Particle>
 class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle> {
-  using LinkedParticleCell = typename VerletListsCellsHelpers<Particle>::VLCCellType;
 
  public:
   /**
@@ -32,7 +32,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   /**
    * @copydoc VerletListsCellsNeighborListInterface::buildAoSNeighborList()
    * */
-  void buildAoSNeighborList(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells,
+  void buildAoSNeighborList(LinkedCells<Particle> &linkedCells,
                             bool useNewton3, double cutoff, double skin, double interactionLength,
                             const TraversalOption buildTraversalOption) override {
     // Initialize a neighbor list for each cell.
@@ -85,14 +85,14 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
    * */
-  void applyBuildFunctor(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells,
+  void applyBuildFunctor(LinkedCells<Particle> &linkedCells,
                          bool useNewton3, double cutoff, double skin, double interactionLength,
                          const TraversalOption buildTraversalOption) {
     typename VerletListsCellsHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborList, _particleToCellMap,
                                                                              cutoff + skin);
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.
-    TraversalSelector<LinkedParticleCell> traversalSelector;
+    TraversalSelector<FullParticleCell<Particle>> traversalSelector;
     // Argument "cluster size" does not matter here.
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);

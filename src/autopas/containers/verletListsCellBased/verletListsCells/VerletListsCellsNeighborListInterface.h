@@ -32,7 +32,7 @@ class VerletListsCellsNeighborListInterface {
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
    * */
-  virtual void buildAoSNeighborList(LinkedCells<typename VerletListsCellsHelpers<Particle>::VLCCellType> &linkedCells,
+  virtual void buildAoSNeighborList(LinkedCells<Particle> &linkedCells,
                                     bool useNewton3, double cutoff, double skin, double interactionLength,
                                     const TraversalOption buildTraversalOption) = 0;
 

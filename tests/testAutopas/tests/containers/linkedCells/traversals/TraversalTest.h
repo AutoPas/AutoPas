@@ -41,13 +41,13 @@ class TraversalTest
     }
   };
 
-  class CountFunctor : public autopas::Functor<Particle, FPCell> {
+  class CountFunctor : public autopas::Functor<Particle, CountFunctor> {
    public:
     using SoAArraysType = Particle::SoAArraysType;
     using ParticleCell = FPCell;
     using floatType = double;
 
-    CountFunctor(floatType cutoff) : autopas::Functor<Particle, ParticleCell>(cutoff), _cutoffSquare(cutoff * cutoff){};
+    CountFunctor(floatType cutoff) : autopas::Functor<Particle, CountFunctor>(cutoff), _cutoffSquare(cutoff * cutoff){};
 
     bool isRelevantForTuning() override { return true; }
 

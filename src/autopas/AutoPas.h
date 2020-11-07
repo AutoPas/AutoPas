@@ -36,18 +36,13 @@ static unsigned int _instanceCounter = 0;
  * @tparam Particle Class for particles
  * @tparam ParticleCell Class for the particle cells
  */
-template <class Particle, class ParticleCell>
+template <class Particle>
 class AutoPas {
  public:
   /**
    * Particle type to be accessible after initialization.
    */
   using Particle_t = Particle;
-
-  /**
-   * Particle Cell type to be accessible after initialization.
-   */
-  using ParticleCell_t = ParticleCell;
 
   /**
    * Define the iterator_t for simple use, also from the outside.
@@ -113,7 +108,7 @@ class AutoPas {
     } else {
       _externalMPICommunicator = true;
     }
-    _autoTuner = std::make_unique<autopas::AutoTuner<Particle, ParticleCell>>(
+    _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
         _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
         std::move(TuningStrategyFactory::generateTuningStrategy(
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
@@ -121,8 +116,8 @@ class AutoPas {
             _maxTuningPhasesWithoutTest, _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption,
             _extrapolationMethodOption, _mpiStrategyOption, _autopasMPICommunicator)),
         _selectorStrategy, _tuningInterval, _numSamples);
-    _logicHandler =
-        std::make_unique<autopas::LogicHandler<Particle, ParticleCell>>(*(_autoTuner.get()), _verletRebuildFrequency);
+    _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()),
+                                                                                        _verletRebuildFrequency);
   }
 
   /**
@@ -196,7 +191,7 @@ class AutoPas {
    */
   template <class Functor>
   bool iteratePairwise(Functor *f) {
-    static_assert(not std::is_same<Functor, autopas::Functor<Particle, ParticleCell>>::value,
+    static_assert(not std::is_same<Functor, autopas::Functor<Particle, Functor>>::value,
                   "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
                   "derived type instead, e.g. by using a dynamic_cast.");
     if (f->getCutoff() > this->getCutoff()) {
@@ -777,12 +772,12 @@ class AutoPas {
   /**
    * LogicHandler of autopas.
    */
-  std::unique_ptr<autopas::LogicHandler<Particle, ParticleCell>> _logicHandler;
+  std::unique_ptr<autopas::LogicHandler<Particle>> _logicHandler;
 
   /**
    * This is the AutoTuner that owns the container, ...
    */
-  std::unique_ptr<autopas::AutoTuner<Particle, ParticleCell>> _autoTuner;
+  std::unique_ptr<autopas::AutoTuner<Particle>> _autoTuner;
 
   /**
    * Communicator that should be used for MPI calls inside of AutoPas

@@ -22,7 +22,7 @@ class CudaExceptionHandler {
 
 #if defined(AUTOPAS_CUDA)
   /**
-   * @brief checks Cuda Error Code and throws corresponding autpas exception
+   * checks Cuda Error Code and throws corresponding autpas exception
    * @param error Cuda Error Code
    */
   static void checkErrorCode(cudaError_t error) {
@@ -34,7 +34,7 @@ class CudaExceptionHandler {
   }
 
   /**
-   * @brief checks cuda Error Code of the most recent cuda call and throws corresponding autpas exception
+   * checks cuda Error Code of the most recent cuda call and throws corresponding autpas exception
    */
   static void checkLastCudaCall() {
     cudaError error = cudaGetLastError();

@@ -15,7 +15,7 @@
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticSelectorMacros.h"
+#include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
@@ -35,12 +35,12 @@ namespace autopas {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, class ParticleCell, bool applyShift = false, bool useMixing = false,
+template <class Particle, bool applyShift = false, bool useMixing = false,
           FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::SoAArraysType,
-                                    LJFunctorAVX<Particle, ParticleCell, applyShift, useMixing, useNewton3,
-                                                 calculateGlobals, relevantForTuning>> {
+class LJFunctorAVX
+    : public Functor<Particle,
+                     LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -53,13 +53,12 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   /**
    * Internal, actual constructor.
    * @param cutoff
-   * @param dummy unused, only there to make the signature different from the public constructor.
+   * @note param dummy unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
-      : Functor<Particle, ParticleCell, SoAArraysType,
-                LJFunctorAVX<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals,
-                             relevantForTuning>>(cutoff),
+      : Functor<Particle,
+                LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
         _cutoffsquare{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffsquareAoS(cutoff * cutoff),
         _upotSum{0.},
@@ -71,9 +70,9 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
     }
   }
 #else
-      : Functor<Particle, ParticleCell, SoAArraysType,
-                LJFunctorAVX<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals,
-                             relevantForTuning>>(cutoff) {
+      : Functor<Particle,
+                LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+            cutoff) {
     utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
@@ -450,6 +449,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * @tparam remainderIsMasked If false the full vector length is used. Otherwise the last entries are masked away
    * depending on the argument "rest".
    * @param j
+   * @param ownedStateI
+   * @param ownedStatePtr2
    * @param x1
    * @param y1
    * @param z1

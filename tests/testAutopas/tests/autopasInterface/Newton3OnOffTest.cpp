@@ -7,6 +7,7 @@
 #include "Newton3OnOffTest.h"
 
 #include "autopas/utils/Logger.h"
+#include "autopas/utils/StaticCellSelector.h"
 
 using ::testing::_;  // anything is ok
 using ::testing::Combine;
@@ -32,7 +33,7 @@ INSTANTIATE_TEST_SUITE_P(
           std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> ret;
 
           // container factory
-          autopas::ContainerSelector<Particle, FPCell> containerSelector({0., 0., 0.}, {10., 10., 10.}, 1.);
+          autopas::ContainerSelector<Particle> containerSelector({0., 0., 0.}, {10., 10., 10.}, 1.);
           autopas::ContainerSelectorInfo containerInfo(1., 0., 64, autopas::LoadEstimatorOption::none);
 
           // generate for all containers, even those to come
@@ -78,11 +79,11 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
   if (traversalOption == autopas::TraversalOption::lc_c04_combined_SoA and
-      not(dataLayout == autopas::DataLayoutOption::soa)) {
+      dataLayout != autopas::DataLayoutOption::soa) {
     return;
   }
 
-  autopas::ContainerSelector<Particle, FPCell> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
+  autopas::ContainerSelector<Particle> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
   autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin(), 64,
                                                autopas::LoadEstimatorOption::none);
 
@@ -100,11 +101,14 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   if (dataLayout == autopas::DataLayoutOption::soa or dataLayout == autopas::DataLayoutOption::cuda) {
     // loader and extractor will be called, we don't care how often.
-    EXPECT_CALL(mockFunctor, SoALoader(_, _, _))
-        .Times(testing::AtLeast(1))
-        .WillRepeatedly(testing::WithArgs<0, 1>(
-            testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
-    EXPECT_CALL(mockFunctor, SoAExtractor(_, _, _)).Times(testing::AtLeast(1));
+    autopas::utils::withStaticCellType<Particle>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+      EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _))
+          .Times(testing::AtLeast(1))
+          .WillRepeatedly(testing::WithArgs<0, 1>(
+              testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
+      EXPECT_CALL(mockFunctor, SoAExtractor(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _))
+          .Times(testing::AtLeast(1));
+    });
   }
 #if defined(AUTOPAS_CUDA)
   if (dataLayout == autopas::DataLayoutOption::cuda) {
@@ -162,12 +166,13 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
 
       // non useNewton3 variant should not happen
       EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, not useNewton3)).Times(0);
-      iterate(
-          container,
-          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
-                                                                         autopas::DataLayoutOption::soa, useNewton3>(
-              traversalOption, mockFunctor, traversalSelectorInfo),
-          dataLayout, n3option, &mockFunctor);
+      autopas::utils::withStaticCellType<Particle>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        iterate(container,
+                autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<
+                    MockFunctor<Particle>, autopas::DataLayoutOption::soa, useNewton3>(traversalOption, mockFunctor,
+                                                                                       traversalSelectorInfo),
+                dataLayout, n3option, &mockFunctor);
+      });
       break;
     }
     case autopas::DataLayoutOption::aos: {
@@ -177,12 +182,14 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
 
       // non useNewton3 variant should not happen
       EXPECT_CALL(mockFunctor, AoSFunctor(_, _, not useNewton3)).Times(0);
-      iterate(
-          container,
-          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
-                                                                         autopas::DataLayoutOption::aos, useNewton3>(
-              traversalOption, mockFunctor, traversalSelectorInfo),
-          dataLayout, n3option, &mockFunctor);
+
+      autopas::utils::withStaticCellType<Particle>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        iterate(container,
+                autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<
+                    MockFunctor<Particle>, autopas::DataLayoutOption::aos, useNewton3>(traversalOption, mockFunctor,
+                                                                                       traversalSelectorInfo),
+                dataLayout, n3option, &mockFunctor);
+      });
       break;
     }
     case autopas::DataLayoutOption::cuda: {
@@ -196,12 +203,13 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
 
       EXPECT_CALL(mockFunctor, CudaFunctor(_, _, not useNewton3)).Times(0);
 #endif
-      iterate(
-          container,
-          autopas::TraversalSelector<FPCell>::template generateTraversal<MockFunctor<Particle, FPCell>,
-                                                                         autopas::DataLayoutOption::cuda, useNewton3>(
-              traversalOption, mockFunctor, traversalSelectorInfo),
-          dataLayout, n3option, &mockFunctor);
+      autopas::utils::withStaticCellType<Particle>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        iterate(container,
+                autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<
+                    MockFunctor<Particle>, autopas::DataLayoutOption::cuda, useNewton3>(traversalOption, mockFunctor,
+                                                                                        traversalSelectorInfo),
+                dataLayout, n3option, &mockFunctor);
+      });
       break;
     }
     default:

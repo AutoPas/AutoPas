@@ -20,7 +20,20 @@ class DataLayoutOption : public Option<DataLayoutOption> {
   /**
    * Possible choices for the particle data layout.
    */
-  enum Value { aos, soa, cuda };
+  enum Value {
+    /**
+     * Array of structure (AoS) : Particles are stored as Objects in a vector.
+     */
+    aos,
+    /**
+     * Structure of arrays (SoA) : One Vector for each particle property.
+     */
+    soa,
+    /**
+     * CUDA in SoA style.
+     */
+    cuda,
+  };
 
   /**
    * Constructor.

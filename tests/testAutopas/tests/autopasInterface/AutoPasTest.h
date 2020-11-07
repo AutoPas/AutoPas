@@ -23,5 +23,5 @@ class AutoPasTest : public testing::Test {
  protected:
   void expectedParticles(size_t expectedOwned, size_t expectedHalo);
 
-  autopas::AutoPas<Particle, FPCell> autoPas;
+  autopas::AutoPas<Particle> autoPas;
 };

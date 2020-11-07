@@ -8,7 +8,7 @@
 
 #if defined(AUTOPAS_CUDA)
 
-#include <AutoPasTestBase.h>
+#include "AutoPasTestBase.h"
 
 class CudaDeviceVectorTest : public AutoPasTestBase {};
 

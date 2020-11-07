@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/particles/Particle.h"
 #include "mocks/MockFunctor.h"
@@ -34,4 +35,4 @@ using FMCell = autopas::FullParticleCell<Molecule>;
 /**
  * Short for Mock Functor
  */
-using MFunctor = MockFunctor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>>;
+using MFunctor = MockFunctor<autopas::Particle>;

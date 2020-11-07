@@ -21,9 +21,14 @@ namespace autopas {
  * This class handles the storage of particles in their full form.
  * @tparam Particle
  */
-template <class Particle, class SoAArraysType = typename Particle::SoAArraysType>
+template <class Particle>
 class FullParticleCell : public ParticleCell<Particle> {
  public:
+  /**
+   * The structure of the SoAs is defined by the particle.
+   */
+  using SoAArraysType = typename Particle::SoAArraysType;
+
   /**
    * Constructs a new FullParticleCell.
    */
@@ -35,7 +40,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    * Constructs a new FullParticleCell with the given cell side length.
    * @param cellLength cell side length
    */
-  FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
+  explicit FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
 
   /**
    * @copydoc ParticleCell::addParticle()
@@ -76,6 +81,11 @@ class FullParticleCell : public ParticleCell<Particle> {
    * @return the particle at position index.
    */
   Particle &at(size_t index) { return _particles.at(index); }
+
+  /**
+   * @copydoc ParticleCell::getParticleCellTypeAsEnum()
+   */
+  CellType getParticleCellTypeAsEnum() override { return CellType::FullParticleCell; }
 
   /**
    * Returns the const particle at position index. Needed by SingleCellIterator.
@@ -150,12 +160,12 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Type of the internal iterator.
    */
-  using iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>, true>;
+  using iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle>, true>;
 
   /**
    * Type of the internal const iterator.
    */
-  using const_iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle, SoAArraysType>, false>;
+  using const_iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle>, false>;
 
  private:
   AutoPasLock particlesLock;

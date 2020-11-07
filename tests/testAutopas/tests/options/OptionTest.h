@@ -9,6 +9,7 @@
 #include <gmock/gmock-matchers.h>
 
 #include "AutoPasTestBase.h"
+#include "autopas/utils/ArrayUtils.h"
 
 /**
  * Tests for all Options derived from autopas::Option.
@@ -26,7 +27,9 @@ template <class T>
 void testParseOptionsIndividually(const std::map<T, std::string> &mapOptionString) {
   for (auto &[optionEnum, optionString] : mapOptionString) {
     auto parsedOptions = T::parseOptions(optionString);
-    EXPECT_THAT(parsedOptions, ::testing::SizeIs(1));
+    EXPECT_THAT(parsedOptions, ::testing::SizeIs(1))
+        << "Option " << optionEnum.to_string()
+        << " was parsed ambiguously: " << autopas::utils::ArrayUtils::to_string(parsedOptions);
     EXPECT_EQ(*(parsedOptions.begin()), optionEnum)
         << "Option " << optionEnum.to_string() << " was not correctly parsed!";
   }
@@ -47,5 +50,7 @@ void testParseOptionsCombined(const std::map<T, std::string> &mapOptionString) {
   }
 
   auto parsedOptions = T::parseOptions(allOptionsStringStream.str());
-  EXPECT_EQ(parsedOptions.size(), mapOptionString.size()) << "Incorrect number of options parsed!";
+  EXPECT_EQ(parsedOptions.size(), mapOptionString.size())
+      << "Incorrect number of options parsed! Following options were found: "
+      << autopas::utils::ArrayUtils::to_string(parsedOptions);
 }

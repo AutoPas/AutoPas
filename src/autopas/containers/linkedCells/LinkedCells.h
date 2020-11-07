@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
@@ -32,16 +33,20 @@ namespace autopas {
  * These cells dimensions are at least as large as the given cutoff radius,
  * therefore short-range interactions only need to be calculated between
  * particles in neighboring cells.
- * @tparam ParticleCell type of the ParticleCells that are used to store the particles
- * @tparam SoAArraysType type of the SoA, needed for verlet lists
+ * @tparam Particle type of the Particle
  */
-template <class ParticleCell, class SoAArraysType = typename ParticleCell::ParticleType::SoAArraysType>
-class LinkedCells : public CellBasedParticleContainer<ParticleCell, SoAArraysType> {
+template <class Particle>
+class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>> {
  public:
+  /**
+   *  Type of the ParticleCell.
+   */
+  using ParticleCell = FullParticleCell<Particle>;
+
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename CellBasedParticleContainer<ParticleCell>::ParticleType;
+  using ParticleType = typename ParticleCell::ParticleType;
 
   /**
    * Constructor of the LinkedCells class
@@ -56,11 +61,19 @@ class LinkedCells : public CellBasedParticleContainer<ParticleCell, SoAArraysTyp
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const double cellSizeFactor = 1.0,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ParticleCell, SoAArraysType>(boxMin, boxMax, cutoff, skin),
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
+  /**
+   * @copydoc ParticleContainerInterface::getContainerType()
+   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
+
+  /**
+   * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
+   */
+  [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
@@ -93,10 +106,7 @@ class LinkedCells : public CellBasedParticleContainer<ParticleCell, SoAArraysTyp
         return true;
       }
     }
-    AutoPasLog(trace,
-               "UpdateHaloParticle was not able to update particle at "
-               "[{}, {}, {}]",
-               pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);
+    AutoPasLog(trace, "UpdateHaloParticle was not able to update particle: {}", pCopy.toString());
     return false;
   }
 
@@ -118,7 +128,8 @@ class LinkedCells : public CellBasedParticleContainer<ParticleCell, SoAArraysTyp
           return loadEstimators::squaredParticlesPerCell(this->_cells, cellsPerDimension, lowerCorner, upperCorner);
         };
       }
-      case LoadEstimatorOption::none: /* FALL THROUgh */
+      case LoadEstimatorOption::none:
+        [[fallthrough]];
       default: {
         return
             [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
@@ -201,6 +212,9 @@ class LinkedCells : public CellBasedParticleContainer<ParticleCell, SoAArraysTyp
     return invalidParticles;
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
+   */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getInteractionLength(),
                                  this->getCellBlock().getCellLength(), 0);

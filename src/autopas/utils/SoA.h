@@ -28,18 +28,18 @@ template <class SoAArraysType>
 class SoA {
  public:
   /**
-   * @brief Default constructor.
+   * Default constructor.
    */
   SoA() = default;
 
   /**
-   * @brief Copy constructor.
+   * Copy constructor.
    * @param soa SoA to copy.
    */
   SoA(const SoA &soa) = default;
 
   /**
-   * @brief Resizes all Vectors to the given length.
+   * Resizes all Vectors to the given length.
    * @param length new length.
    */
   void resizeArrays(size_t length) {
@@ -47,7 +47,7 @@ class SoA {
   }
 
   /**
-   * @brief Pushes a given value to the desired attribute array.
+   * Pushes a given value to the desired attribute array.
    * @tparam attribute Index of array to push to.
    * @param value Value to push.
    */
@@ -57,7 +57,7 @@ class SoA {
   }
 
   /**
-   * @brief Writes / updates the value of an attribute for a specific particle.
+   * Writes / updates the value of an attribute for a specific particle.
    * @tparam attribute Attribute to update.
    * @tparam ValueType type of the attribute
    * @param particleId Particle to update.
@@ -127,7 +127,7 @@ class SoA {
   }
 
   /**
-   * @brief Reads from all given attribute arrays at position `particleId`.
+   * Reads from all given attribute arrays at position `particleId`.
    * @tparam ArrayLength length of the returned array. Should be equal
    * attributes.size().
    * @tparam attributes Attributes to read from.
@@ -148,7 +148,7 @@ class SoA {
   }
 
   /**
-   * @brief Reads the value of a given attribute of a given particle.
+   * Reads the value of a given attribute of a given particle.
    * @tparam attribute Attribute to read from.
    * @param particleId Position to read from.
    * @return Attribute value.
@@ -169,14 +169,18 @@ class SoA {
   }
 
   /**
-   * @brief Returns the number of particles.
+   * Returns the number of particles.
    *
    * This function only checks the size of the first array since it is assumed
    * that the user manages the arrays responsibly.
    *
    * @return Number of particles.
    */
-  inline size_t getNumParticles() const { return soaStorage.template get<0>().size(); }
+  inline size_t getNumParticles() const {
+    size_t maxLength = 0;
+    utils::TupleUtils::for_each(soaStorage.getTuple(), [&](auto &v) { maxLength = std::max(maxLength, v.size()); });
+    return maxLength;
+  }
 
   /**
    * delete all particles in the soa
