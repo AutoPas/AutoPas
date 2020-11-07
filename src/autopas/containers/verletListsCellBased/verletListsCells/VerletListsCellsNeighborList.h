@@ -22,7 +22,6 @@ namespace autopas {
  * */
 template <class Particle>
 class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle> {
-
  public:
   /**
    * Constructor for VerletListsCellsNeighborList. Initializes private attributes.
@@ -32,9 +31,8 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   /**
    * @copydoc VerletListsCellsNeighborListInterface::buildAoSNeighborList()
    * */
-  void buildAoSNeighborList(LinkedCells<Particle> &linkedCells,
-                            bool useNewton3, double cutoff, double skin, double interactionLength,
-                            const TraversalOption buildTraversalOption) override {
+  void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
+                            double interactionLength, const TraversalOption buildTraversalOption) override {
     // Initialize a neighbor list for each cell.
     _aosNeighborList.clear();
     auto &cells = linkedCells.getCells();
@@ -85,9 +83,8 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
    * */
-  void applyBuildFunctor(LinkedCells<Particle> &linkedCells,
-                         bool useNewton3, double cutoff, double skin, double interactionLength,
-                         const TraversalOption buildTraversalOption) {
+  void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
+                         double interactionLength, const TraversalOption buildTraversalOption) {
     typename VerletListsCellsHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborList, _particleToCellMap,
                                                                              cutoff + skin);
 
