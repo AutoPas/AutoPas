@@ -53,7 +53,7 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
   /**
    * Internal, actual constructor.
    * @param cutoff
-   * @param dummy unused, only there to make the signature different from the public constructor.
+   * @note param dummy unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
@@ -450,6 +450,8 @@ class LJFunctorAVX : public Functor<Particle, ParticleCell, typename Particle::S
    * @tparam remainderIsMasked If false the full vector length is used. Otherwise the last entries are masked away
    * depending on the argument "rest".
    * @param j
+   * @param ownedStateI
+   * @param ownedStatePtr2
    * @param x1
    * @param y1
    * @param z1

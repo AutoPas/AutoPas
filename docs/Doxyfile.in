@@ -1,5 +1,5 @@
 PROJECT_NAME           = "@CMAKE_PROJECT_NAME@"
-PROJECT_LOGO           = @PROJECT_SOURCE_DIR@/docs/graphics/AutoPasLogo_Large.png
+PROJECT_LOGO           = @PROJECT_SOURCE_DIR@/docs/graphics/AutoPasLogo_Large.svg
 PROJECT_NUMBER         = @AutoPas_VERSION@
 STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@/src
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doc_doxygen/
@@ -50,3 +50,4 @@ INCLUDE_PATH           = @PROJECT_SOURCE_DIR@/src
 IMAGE_PATH             = @PROJECT_SOURCE_DIR@/docs/graphics
 TEMPLATE_RELATIONS     = YES
 HAVE_DOT               = YES
+GENERATE_XML           = YES
