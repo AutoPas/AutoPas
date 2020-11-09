@@ -103,8 +103,19 @@ class TraversalOption : public Option<TraversalOption> {
      * Does not support Newton3.
      */
     vcl_c01_balanced,
+    /**
+     * VCLSlicedTraversal : Equivalent to lc_sliced with slicing applied to the tower grid.
+     */
     vcl_sliced,
+    /**
+     * VCLSlicedBalancedTraversal : Same as vcl_sliced but tries to balance slice thickness according to a given
+     * LoadEstimatorOption.
+     */
     vcl_sliced_balanced,
+    /**
+     * VCCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
+     * coloring of slices.
+     */
     vcl_sliced_c02,
 
     // VerletList Traversals:
@@ -125,11 +136,11 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vlc_c18,
     /**
-     * VLCSlicedTraversal : Equivalent to LCSlicedTraversal.
+     * VLCSlicedTraversal : Equivalent to LCSlicedTraversal but with a c18 base-step.
      */
     vlc_sliced,
     /**
-     * VLCSlicedBalancedTraversal : Equivalent to LCSlicedBalancedTraversal.
+     * VLCSlicedBalancedTraversal : Equivalent to LCSlicedBalancedTraversal but with a c18 base-step.
      * Tries to balance slice thickness according to a given LoadEstimatorOption.
      */
     vlc_sliced_balanced,
