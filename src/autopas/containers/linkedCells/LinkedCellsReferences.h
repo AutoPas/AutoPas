@@ -78,8 +78,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    */
   void addParticleImpl(const ParticleType &p) override {
     ParticleType pCopy = p;
+    addParticleLock.lock();
     _particleList.push_back(pCopy);
     updateDirtyParticleReferences();
+    addParticleLock.unlock();
   }
 
   /**
@@ -88,8 +90,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
+    addHaloParticleLock.lock();
     _particleList.push_back(pCopy);
     updateDirtyParticleReferences();
+    addHaloParticleLock.unlock();
   }
 
   /**
@@ -352,11 +356,18 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * object to manage the block of cells.
    */
   internal::CellBlock3D<ReferenceCell> _cellBlock;
-  // ThreeDimensionalCellHandler
   /**
    * load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
+  /**
+   * Workaround for adding particles in parallel -> https://github.com/AutoPas/AutoPas/issues/555
+   */
+  AutoPasLock addParticleLock;
+  /**
+   * Workaround for adding particles in parallel -> https://github.com/AutoPas/AutoPas/issues/555
+   */
+  AutoPasLock addHaloParticleLock;
 };
 
 }  // namespace autopas
