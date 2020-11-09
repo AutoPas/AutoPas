@@ -30,8 +30,9 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                              public VLCTraversalInterface<typename ParticleCell::ParticleType> {
+class VLCSlicedC02Traversal
+    : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
+      public VLCTraversalInterface<typename ParticleCell::ParticleType> {
  public:
   /**
    * Constructor of the colored sliced traversal.
@@ -43,8 +44,8 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
    */
   explicit VLCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                  double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
-            dims, pairwiseFunctor, interactionLength, cellLength, false),
+      : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>(
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _functor(pairwiseFunctor) {}
 
   void traverseParticlePairs() override;

@@ -30,9 +30,13 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam dataLayout
  * @tparam useNewton3
+ * @tparam spaciallyForward Whether the base step only covers neigbouring cells tha are spacially forward (for example
+ * c08)
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool spaciallyForward>
+class SlicedC02BasedTraversal
+    : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward> {
  public:
   /**
    * Constructor of the colored sliced traversal.
@@ -41,13 +45,11 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairwi
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
-   * @param spaciallyForward Whether the base step only covers neigbouring cells tha are spacially forward (for example
    */
   explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                   const double interactionLength, const std::array<double, 3> &cellLength,
-                                   const bool spaciallyForward)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
-            dims, pairwiseFunctor, interactionLength, cellLength, spaciallyForward) {}
+                                   const double interactionLength, const std::array<double, 3> &cellLength)
+      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>(
+            dims, pairwiseFunctor, interactionLength, cellLength) {}
 
   /**
    * The main traversal of the colored sliced traversal.
@@ -79,9 +81,10 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairwi
   }
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool spaciallyForward>
 template <typename LoopBody>
-void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::cSlicedTraversal(
+void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>::cSlicedTraversal(
     LoopBody &&loopBody) {
   using std::array;
 
@@ -90,7 +93,7 @@ void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 
   std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
 
-  if (not this->_spaciallyForward) {
+  if (not spaciallyForward) {
     overLapps23 = {0ul, 0ul};
   }
 

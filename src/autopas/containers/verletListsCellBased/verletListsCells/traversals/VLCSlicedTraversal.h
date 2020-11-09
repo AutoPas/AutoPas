@@ -34,8 +34,9 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                           public VLCTraversalInterface<typename ParticleCell::ParticleType> {
+class VLCSlicedTraversal
+    : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
+      public VLCTraversalInterface<typename ParticleCell::ParticleType> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -47,8 +48,8 @@ class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
    */
   explicit VLCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                               double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
-            dims, pairwiseFunctor, interactionLength, cellLength, false),
+      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>(
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _functor(pairwiseFunctor) {}
 
   void traverseParticlePairs() override;

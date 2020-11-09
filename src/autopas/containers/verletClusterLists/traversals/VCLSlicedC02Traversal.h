@@ -24,8 +24,9 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                              public VCLTraversalInterface<typename ParticleCell::ParticleType> {
+class VCLSlicedC02Traversal
+    : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
+      public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
 
@@ -56,8 +57,8 @@ class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
   explicit VCLSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                  const double interactionLength, const std::array<double, 3> &cellLength,
                                  size_t clusterSize)
-      : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
-            dims, pairwiseFunctor, interactionLength, cellLength, false),
+      : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>(
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize) {}
 
