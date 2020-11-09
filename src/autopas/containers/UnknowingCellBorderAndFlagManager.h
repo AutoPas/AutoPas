@@ -24,7 +24,7 @@ class UnknowingCellBorderAndFlagManager : public CellBorderAndFlagManager {
    * @return one instance.
    */
   static auto &get() {
-    const static UnknowingCellBorderAndFlagManager unknowingCellBorderAndFlagManager;
+    const static UnknowingCellBorderAndFlagManager unknowingCellBorderAndFlagManager{};
     return unknowingCellBorderAndFlagManager;
   }
 };
