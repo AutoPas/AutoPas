@@ -200,39 +200,6 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Estimates the optimal grid side length.
-   * @param numParticles The number of particles in the container.
-   * @param boxSize The size of the domain.
-   * @return an estimated optimal grid side length.
-   */
-  [[nodiscard]] virtual double estimateOptimalGridSideLength(size_t numParticles, std::array<double, 3> boxSize) const {
-    double volume = boxSize[0] * boxSize[1] * boxSize[2];
-    if (numParticles > 0) {
-      // estimate particle density
-      double density = numParticles / volume;
-
-      return std::cbrt(_clusterSize / density);
-    } else {
-      return std::max(boxSize[0], boxSize[1]);
-    }
-  }
-
-  /**
-   * Calculates the cells per dimension in the container using the _towerSideLengthReciprocal.
-   * @param boxSize the size of the domain.
-   * @return the cells per dimension in the container.
-   */
-  [[nodiscard]] std::array<size_t, 2> calculateTowersPerDim(std::array<double, 3> boxSize) const {
-    std::array<size_t, 2> towersPerDim{};
-    for (int dimension = 0; dimension < 2; dimension++) {
-      towersPerDim[dimension] = static_cast<size_t>(std::ceil(boxSize[dimension] * _towerSideLengthReciprocal));
-      // at least one cell
-      towersPerDim[dimension] = std::max(towersPerDim[dimension], 1ul);
-    }
-    return towersPerDim;
-  }
-
-  /**
    * Sorts all passed particles in the appropriate clusters.
    *
    * @note This Function takes a 2D vector because it expects the layout from the old clusters.
