@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compiler-info:
+        compiler-config:
           - CC: gcc
             CXX: g++
             image: autopas/autopas-build-gcc
@@ -31,14 +31,15 @@ jobs:
           - CC: clang
             CXX: clang++
             image: autopas/autopas-build-archer
+            cmake_extra_args: "-DAUTOPAS_ENABLE_THREAD_SANITIZER=ON"
         #generator: [ "Unix Makefiles", "Ninja" ]
         #openmp: ["On", "Off"]
 
 
-    container: ${{ matrix.compiler-info.image }}
+    container: ${{ matrix.compiler-config.image }}
     env:
-      CC: ${{ matrix.compiler-info.CC }}
-      CXX: ${{ matrix.compiler-info.CXX }}
+      CC: ${{ matrix.compiler-config.CC }}
+      CXX: ${{ matrix.compiler-config.CXX }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -46,25 +47,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Run echo
-        run: echo  ${{ matrix.compiler-info.image }}
+      # Run cmake and create directory build
+      - name: Run Cmake
+        run: cmake -B ./build -S ./ ${{matrix.compiler-config.cmake_extra_args}}
 
-#
-#      # Run cmake and create directory build
-#      - name: Run Cmake
-#        run: cmake -B ./build -S ./
-#
-#      # Run make
-#      - name: Run make
-#        working-directory: ./build
-#        run: cmake --build . --parallel $(nproc)
-#
-#      # Run unit tests
-#      - name: Run tests
-#        working-directory: ./build
-#        run: ctest --verbose -j$(nproc)
-#
-#      # Run example tests
-#      - name: Run examples
-#        working-directory: ./build/examples
-#        run: ctest -C checkExamples --verbose -j$(nproc)
+      # Run make
+      - name: Run make
+        working-directory: ./build
+        run: cmake --build . --parallel $(nproc)
+
+      # Run unit tests
+      - name: Run tests
+        working-directory: ./build
+        run: ctest --verbose -j$(nproc)
+
+      # Run example tests
+      - name: Run examples
+        working-directory: ./build/examples
+        run: ctest -C checkExamples --verbose -j$(nproc)
