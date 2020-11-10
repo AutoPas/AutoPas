@@ -335,18 +335,12 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * The current color in the traversal during the build of the neighbor list.
    */
-  static int _currentColor;
-#if defined(AUTOPAS_OPENMP)
-#pragma omp threadprivate(_currentColor)
-#endif
+  int _currentColor{0};
 
   /**
    * Used in checkNeighborListValidity(). Set to false in the pair generating functor.
    */
   std::atomic<bool> _allPairsPresent;
 };
-
-template <class Particle>
-int VerletNeighborListAsBuild<Particle>::_currentColor = 0;
 
 }  // namespace autopas
