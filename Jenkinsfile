@@ -259,38 +259,10 @@ pipeline {
                         }
                     }
                 }
-                stage("intel") {
-                    steps {
-                        container('autopas-intel18') {
-                            dir("build-intel") {
-                                sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -DCCACHE=ON -DAUTOPAS_OPENMP=OFF ..'"
-                                sh "bash -i -c 'uid_entrypoint make -j 4 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
-                                sh "bash -i -c './tests/testAutopas/runTests'"
-                            }
-                            dir("build-intel/examples") {
-                                sh "bash -i -c 'ctest -C checkExamples -j8 --verbose'"
-                            }
-                        }
-                    }
-                }
-                stage("intel openmp") {
-                    steps {
-                        container('autopas-intel18') {
-                            dir("build-intel-ninja-openmp") {
-                                sh "bash -i -c 'which icc && CC=`which icc` CXX=`which icpc` cmake -G Ninja -DCCACHE=ON -DAUTOPAS_OPENMP=ON ..'"
-                                sh "bash -i -c 'uid_entrypoint ninja -j 4 > buildlog_intel.txt 2>&1 || (cat buildlog_intel.txt && exit 1)'"
-                                sh "bash -i -c './tests/testAutopas/runTests'"
-                            }
-                            dir("build-intel-ninja-openmp/examples") {
-                                sh "bash -i -c 'ctest -C checkExamples -j8 --verbose'"
-                            }
-                        }
-                    }
-                }
             }
             post {
                 always {
-                    recordIssues qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [clang(pattern: 'build*/buildlog_clang.txt'), intel(pattern: 'build*/buildlog_intel.txt'), gcc(pattern: 'build*/buildlog.txt')]
+                    recordIssues qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [clang(pattern: 'build*/buildlog_clang.txt'), gcc(pattern: 'build*/buildlog.txt')]
                 }
             }
         }
