@@ -115,7 +115,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
         };
       }
       case LoadEstimatorOption::none:
-        [[fallthrough]]
+        [[fallthrough]];
       default: {
         return
             [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
