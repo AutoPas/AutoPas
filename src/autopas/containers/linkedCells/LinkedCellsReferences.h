@@ -90,10 +90,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
-    addHaloParticleLock.lock();
+    addParticleLock.lock();
     _particleList.push_back(pCopy);
     updateDirtyParticleReferences();
-    addHaloParticleLock.unlock();
+    addParticleLock.unlock();
   }
 
   /**
@@ -364,10 +364,6 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * Workaround for adding particles in parallel -> https://github.com/AutoPas/AutoPas/issues/555
    */
   AutoPasLock addParticleLock;
-  /**
-   * Workaround for adding particles in parallel -> https://github.com/AutoPas/AutoPas/issues/555
-   */
-  AutoPasLock addHaloParticleLock;
 };
 
 }  // namespace autopas
