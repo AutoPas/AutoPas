@@ -11,6 +11,7 @@
 #include <set>
 #include <type_traits>
 
+#include "autopas/InstanceCounter.h"
 #include "autopas/LogicHandler.h"
 #include "autopas/Version.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
@@ -24,11 +25,6 @@
 #include "autopas/utils/WrapMPI.h"
 
 namespace autopas {
-
-/**
- * Instance counter to help track the number of autopas instances. Needed for correct management of the logger.
- */
-static unsigned int _instanceCounter = 0;
 
 /**
  * The AutoPas class is intended to be the main point of Interaction for the user.
@@ -63,7 +59,7 @@ class AutoPas {
   explicit AutoPas(std::ostream &logOutputStream = std::cout) {
     // count the number of autopas instances. This is needed to ensure that the autopas
     // logger is not unregistered while other instances are still using it.
-    _instanceCounter++;
+    InstanceCounter::count++;
     // remove potentially existing logger
     autopas::Logger::unregister();
     // initialize the Logger
@@ -76,8 +72,8 @@ class AutoPas {
   }
 
   ~AutoPas() {
-    _instanceCounter--;
-    if (_instanceCounter == 0) {
+    InstanceCounter::count--;
+    if (InstanceCounter::count == 0) {
       // remove the Logger from the registry. Do this only if we have no other autopas instances running.
       autopas::Logger::unregister();
     }
@@ -788,5 +784,6 @@ class AutoPas {
    * Stores whether the mpi communicator was provided externally or not
    */
   bool _externalMPICommunicator{false};
+
 };  // class AutoPas
 }  // namespace autopas

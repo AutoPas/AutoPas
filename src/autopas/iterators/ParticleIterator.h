@@ -30,8 +30,7 @@ template <class Particle, class ParticleCell, bool modifiable>
 class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiable> {
   using CellVecType = std::conditional_t<modifiable, std::vector<ParticleCell>, const std::vector<ParticleCell>>;
   using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
-  using CellBorderAndFlagManagerType =
-      std::conditional_t<modifiable, internal::CellBorderAndFlagManager, const internal::CellBorderAndFlagManager>;
+  using CellBorderAndFlagManagerType = const internal::CellBorderAndFlagManager;
   using ParticleVecType = std::conditional_t<modifiable, std::vector<Particle>, const std::vector<Particle>>;
 
  protected:
@@ -45,7 +44,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    * @param additionalParticleVectorToIterate Additional Particle Vector to iterate over.
    */
-  ParticleIterator(CellVecType *cont, CellBorderAndFlagManagerType *flagManager, IteratorBehavior behavior,
+  ParticleIterator(CellVecType *cont, const CellBorderAndFlagManagerType *flagManager, IteratorBehavior behavior,
                    ParticleVecType *additionalParticleVectorToIterate)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
@@ -305,7 +304,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
   /**
    * Manager providing info if cell is in halo.
    */
-  CellBorderAndFlagManagerType *_flagManager;
+  const CellBorderAndFlagManagerType *_flagManager;
 
   /**
    * The behavior of the iterator.

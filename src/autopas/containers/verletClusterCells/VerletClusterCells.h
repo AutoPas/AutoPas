@@ -339,7 +339,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
       return ParticleIteratorWrapper<Particle, false>(
           new internal::RegionParticleIterator<Particle, FullParticleCell<Particle>, false>(
               &this->_cells, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
-              &internal::unknowingCellBorderAndFlagManager, behavior));
+              &internal::UnknowingCellBorderAndFlagManager::get(), behavior));
     }
   }
 

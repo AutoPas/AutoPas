@@ -44,7 +44,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
    */
   explicit RegionParticleIterator(CellVecType *cont, std::array<double, 3> startRegion, std::array<double, 3> endRegion,
                                   std::vector<size_t> &indicesInRegion,
-                                  CellBorderAndFlagManagerType *flagManager = nullptr,
+                                  const CellBorderAndFlagManagerType *flagManager = nullptr,
                                   IteratorBehavior behavior = haloAndOwned,
                                   ParticleVecType *additionalParticleVectorToIterate = nullptr)
       : ParticleIterator<Particle, ParticleCell, modifiable>(cont, flagManager, behavior,
