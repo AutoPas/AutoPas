@@ -240,8 +240,8 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
                                                                numParticles);
 
   CollectParticlesPerThreadFunctor functor;
-  ColoringTraversalWithColorChangeNotify traversal(
-      &functor, clusterSize, [](int currentColor) { CollectParticlesPerThreadFunctor::nextColor(currentColor); });
+  ColoringTraversalWithColorChangeNotify traversal(&functor, clusterSize,
+                                                   [&functor](int currentColor) { functor.nextColor(currentColor); });
   functor.initTraversal();
   verletLists.rebuildNeighborLists(&traversal);
   verletLists.iteratePairwise(&traversal);
@@ -252,7 +252,7 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
   for (int color = 0; color < 8; color++) {
     auto &colorList = list[color];
     for (unsigned long i = 0; i < colorList.size(); i++) {
-      for (auto particlePtr : colorList[i]) {
+      for (auto *particlePtr : colorList[i]) {
         for (unsigned long j = i + 1; j < colorList.size(); j++) {
           EXPECT_TRUE(colorList[j].find(particlePtr) == colorList[j].end())
               << particlePtr->toString() << " was accessed by " << i << " and " << j;

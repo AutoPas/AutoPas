@@ -283,7 +283,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     return ParticleIteratorWrapper<Particle, true>(
         new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
             &this->_towers, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
-            &internal::unknowingCellBorderAndFlagManager, behavior));
+            &internal::UnknowingCellBorderAndFlagManager::get(), behavior));
   }
 
   /**
@@ -305,7 +305,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     return ParticleIteratorWrapper<Particle, false>(
         new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
             &this->_towers, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
-            &internal::unknowingCellBorderAndFlagManager, behavior,
+            &internal::UnknowingCellBorderAndFlagManager::get(), behavior,
             _isValid != ValidityState::invalid ? nullptr : &_particlesToAdd));
   }
 

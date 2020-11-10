@@ -63,8 +63,7 @@ class CollectParticlePairsFunctor
 class CollectParticlesPerThreadFunctor
     : public autopas::Functor<autopas::Particle, autopas::FullParticleCell<autopas::Particle>> {
  public:
-  static int _currentColor;
-#pragma omp threadprivate(_currentColor)
+  int _currentColor{};
 
   std::array<std::vector<std::set<Particle *>>, 8> _particlesPerThreadPerColor;
 
@@ -95,10 +94,8 @@ class CollectParticlesPerThreadFunctor
     return dataLayout == autopas::DataLayoutOption::aos;  // this functor supports clusters only for aos!
   }
 
-  static void nextColor(int newColor) { _currentColor = newColor; }
+  void nextColor(int newColor) { _currentColor = newColor; }
 };
-
-int CollectParticlesPerThreadFunctor::_currentColor = 0;
 
 class ColoringTraversalWithColorChangeNotify
     : public autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor, autopas::DataLayoutOption::aos, true> {

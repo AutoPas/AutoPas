@@ -139,7 +139,14 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
   {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
     for (unsigned long col = 0; col < numColors; ++col) {
-      notifyColorChange(col);
+#if defined(AUTOPAS_OPENMP)
+#pragma omp single
+#endif
+      {
+        // barrier at omp for of previous loop iteration, so fine to change it for everyone!
+        notifyColorChange(col);
+        // implicit barrier at end of function.
+      }
       std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
       std::array<unsigned long, 3> start(utils::ArrayMath::add(startWithoutOffset, offset));
 
