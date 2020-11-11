@@ -48,8 +48,9 @@ jobs:
         uses: actions/checkout@v2
 
       # Run cmake and create directory build
+      # We use `-Werror` to abort on errors.
       - name: Run Cmake
-        run: cmake -B ./build -S ./ ${{matrix.compiler-config.cmake_extra_args}}
+        run: CXXFLAGS="-Werror" cmake -B ./build -S ./ ${{matrix.compiler-config.cmake_extra_args}}
 
       # Run make
       - name: Run make
