@@ -14,14 +14,9 @@
  * This Class implements the Periodic Boudaries for an AutoPas Object
  * The implementation was taken from "AutoPasInterfaceTest.cpp"
  */
-template <typename ParticleCell>
+template <typename Particle>
 class BoundaryConditions {
  public:
-  /**
-   * Type of the Particle
-   */
-  using ParticleType = typename ParticleCell::ParticleType;
-
   /**
    * Default constructor.
    */
@@ -39,8 +34,8 @@ class BoundaryConditions {
    * @param leavingParticles
    * @return vector of particles that will enter the container.
    */
-  static std::vector<ParticleType> convertToEnteringParticles(autopas::AutoPas<ParticleType, ParticleCell> &autopas,
-                                                              const std::vector<ParticleType> &leavingParticles);
+  static std::vector<Particle> convertToEnteringParticles(autopas::AutoPas<Particle> &autopas,
+                                                          const std::vector<Particle> &leavingParticles);
 
   /**
    * Identifies and sends particles that are in the halo of neighboring AutoPas instances or the same instance (periodic
@@ -48,7 +43,7 @@ class BoundaryConditions {
    * @param autoPas
    * @return vector of particles that are already shifted for the next process.
    */
-  static std::vector<ParticleType> identifyAndSendHaloParticles(autopas::AutoPas<ParticleType, ParticleCell> &autoPas);
+  static std::vector<Particle> identifyAndSendHaloParticles(autopas::AutoPas<Particle> &autoPas);
 
   /**
    * Adds entering Particles to the Autopas Object
@@ -56,28 +51,26 @@ class BoundaryConditions {
    * @param enteringParticles
    * @return number of Particles Added
    */
-  static size_t addEnteringParticles(autopas::AutoPas<ParticleType, ParticleCell> &autoPas,
-                                     std::vector<ParticleType> &enteringParticles);
+  static size_t addEnteringParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle> &enteringParticles);
 
   /**
    * Adds Halo Particles to the AutoPas Object
    * @param autoPas
    * @param haloParticles
    */
-  static void addHaloParticles(autopas::AutoPas<ParticleType, ParticleCell> &autoPas,
-                               std::vector<ParticleType> &haloParticles);
+  static void addHaloParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle> &haloParticles);
 
   /**
    * Realizes periodic Boundaries for the simulation by handling halo particles and updating the container
    * @param autoPas
    * @param forceUpdate If the container update should be forced or left to autopas.
    */
-  static void applyPeriodic(autopas::AutoPas<ParticleType, ParticleCell> &autoPas, bool forceUpdate);
+  static void applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate);
 };
-template <typename ParticleCell>
-std::vector<typename ParticleCell::ParticleType> BoundaryConditions<ParticleCell>::convertToEnteringParticles(
-    autopas::AutoPas<ParticleType, ParticleCell> &autopas, const std::vector<ParticleType> &leavingParticles) {
-  std::vector<ParticleType> enteringParticles{leavingParticles};
+template <typename Particle>
+std::vector<Particle> BoundaryConditions<Particle>::convertToEnteringParticles(
+    autopas::AutoPas<Particle> &autopas, const std::vector<Particle> &leavingParticles) {
+  std::vector<Particle> enteringParticles{leavingParticles};
   for (auto &p : enteringParticles) {
     auto pos = p.getR();
     for (auto dim = 0; dim < 3; dim++) {
@@ -94,10 +87,9 @@ std::vector<typename ParticleCell::ParticleType> BoundaryConditions<ParticleCell
   }
   return enteringParticles;
 }
-template <typename ParticleCell>
-std::vector<typename ParticleCell::ParticleType> BoundaryConditions<ParticleCell>::identifyAndSendHaloParticles(
-    autopas::AutoPas<ParticleType, ParticleCell> &autoPas) {
-  std::vector<ParticleType> haloParticles;
+template <typename Particle>
+std::vector<Particle> BoundaryConditions<Particle>::identifyAndSendHaloParticles(autopas::AutoPas<Particle> &autoPas) {
+  std::vector<Particle> haloParticles;
 
   for (short x : {-1, 0, 1}) {
     for (short y : {-1, 0, 1}) {
@@ -139,9 +131,9 @@ std::vector<typename ParticleCell::ParticleType> BoundaryConditions<ParticleCell
   return haloParticles;
 }
 
-template <typename ParticleCell>
-size_t BoundaryConditions<ParticleCell>::addEnteringParticles(autopas::AutoPas<ParticleType, ParticleCell> &autoPas,
-                                                              std::vector<ParticleType> &enteringParticles) {
+template <typename Particle>
+size_t BoundaryConditions<Particle>::addEnteringParticles(autopas::AutoPas<Particle> &autoPas,
+                                                          std::vector<Particle> &enteringParticles) {
   size_t numAdded = 0;
   for (auto &p : enteringParticles) {
     if (autopas::utils::inBox(p.getR(), autoPas.getBoxMin(), autoPas.getBoxMax())) {
@@ -151,24 +143,23 @@ size_t BoundaryConditions<ParticleCell>::addEnteringParticles(autopas::AutoPas<P
   }
   return numAdded;
 }
-template <typename ParticleCell>
-void BoundaryConditions<ParticleCell>::addHaloParticles(autopas::AutoPas<ParticleType, ParticleCell> &autoPas,
-                                                        std::vector<ParticleType> &haloParticles) {
+template <typename Particle>
+void BoundaryConditions<Particle>::addHaloParticles(autopas::AutoPas<Particle> &autoPas,
+                                                    std::vector<Particle> &haloParticles) {
   for (auto &p : haloParticles) {
     autoPas.addOrUpdateHaloParticle(p);
   }
 }
 
-template <typename ParticleCell>
-void BoundaryConditions<ParticleCell>::applyPeriodic(autopas::AutoPas<ParticleType, ParticleCell> &autoPas,
-                                                     bool forceUpdate) {
+template <typename Particle>
+void BoundaryConditions<Particle>::applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
   // 1. update Container; return value is vector of invalid == leaving particles!
   auto [invalidParticles, updated] = autoPas.updateContainer(forceUpdate);
   if (updated) {
     // 2. leaving and entering particles
     const auto &sendLeavingParticles = invalidParticles;
     // 2b. get+add entering particles (addParticle)
-    std::vector<ParticleType> enteringParticles = convertToEnteringParticles(autoPas, sendLeavingParticles);
+    std::vector<Particle> enteringParticles = convertToEnteringParticles(autoPas, sendLeavingParticles);
     addEnteringParticles(autoPas, enteringParticles);
   }
   // 3. halo particles

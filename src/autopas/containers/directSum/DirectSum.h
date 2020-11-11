@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/CompatibleTraversals.h"
@@ -32,9 +33,14 @@ namespace autopas {
  * Use this class only if you have a very small amount of particles at hand.
  * @tparam ParticleCell type of the cell that stores the particle
  */
-template <class ParticleCell>
-class DirectSum : public CellBasedParticleContainer<ParticleCell> {
+template <class Particle>
+class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> {
  public:
+  /**
+   *  Type of the ParticleCell.
+   */
+  using ParticleCell = FullParticleCell<Particle>;
+
   /**
    *  Type of the Particle.
    */
@@ -52,6 +58,9 @@ class DirectSum : public CellBasedParticleContainer<ParticleCell> {
     this->_cells.resize(2);
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getContainerType()
+   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::directSum; }
 
   /**
@@ -82,6 +91,8 @@ class DirectSum : public CellBasedParticleContainer<ParticleCell> {
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     // nothing to do.
   }
+
+  CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
@@ -114,6 +125,9 @@ class DirectSum : public CellBasedParticleContainer<ParticleCell> {
     return invalidParticles;
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
+   */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     // direct sum technically consists of two cells (owned + halo)
     return TraversalSelectorInfo(

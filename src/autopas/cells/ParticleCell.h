@@ -11,6 +11,32 @@
 namespace autopas {
 
 /**
+ * The ParticleCell Type as an Enum.
+ */
+enum class CellType {
+  /**
+   * FullParticleCell : Default cell type for almost everything.
+   */
+  FullParticleCell,
+  /**
+   * ReferenceParticleCell : Cell holding only references instead of actual particle objects.
+   */
+  ReferenceParticleCell,
+  /**
+   * ClusterTower : Tower for the 2D tower structure of VerletClusterLists.
+   */
+  ClusterTower,
+  /**
+   * SortedCellView : Holds pointers to particles sorted by their position projected along a vector.
+   */
+  SortedCellView,
+  /**
+   * Currently unused.
+   */
+  IsNoCell
+};
+
+/**
  * Class for Cells of Particles.
  * The class handles to storage particles and provides an interface to add the
  * particles
@@ -79,6 +105,12 @@ class ParticleCell {
    * Deletes all dummy particles in this cell.
    */
   virtual void deleteDummyParticles() = 0;
+
+  /**
+   * Get the ParticleCell type as an ParticleCellTypeEnum
+   * @return The Cell type as an Enum
+   */
+  virtual CellType getParticleCellTypeAsEnum() = 0;
 
   /**
    * Deletes the index-th particle.

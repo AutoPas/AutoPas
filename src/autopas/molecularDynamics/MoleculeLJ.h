@@ -37,7 +37,7 @@ class MoleculeLJ : public Particle {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, typeId, ownershipState };
+  enum AttributeNames : int { ptr, id, posX, posY, posZ, forceX, forceY, forceZ, typeId, ownershipState };
 
   /**
    * The type for the SoA storage.
@@ -47,18 +47,24 @@ class MoleculeLJ : public Particle {
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<size_t /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
-                                       floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, size_t /*typeid*/,
-                                       OwnershipState /*ownershipState*/>::Type;
+      typename autopas::utils::SoAType<MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/,
+                                       floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
+                                       size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
 
 #if defined(AUTOPAS_CUDA)
   /**
    * The type for storage arrays for Cuda.
    */
   using CudaDeviceArraysType =
-      typename autopas::utils::CudaSoAType<size_t /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
-                                           floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, size_t /*typeid*/,
-                                           OwnershipState /*ownershipState*/>::Type;
+      typename autopas::utils::CudaSoAType<MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/,
+                                           floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
+                                           size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
+#else
+  /**
+   * The type for storage arrays for Cuda.
+   * empty if compiled without Cuda Support.
+   */
+  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
 #endif
 
   /**
@@ -68,8 +74,10 @@ class MoleculeLJ : public Particle {
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
-    if constexpr (attribute == AttributeNames::id) {
+  constexpr typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type get() {
+    if constexpr (attribute == AttributeNames::ptr) {
+      return this;
+    } else if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
@@ -99,7 +107,8 @@ class MoleculeLJ : public Particle {
    * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+  constexpr void set(
+      typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {

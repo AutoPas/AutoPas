@@ -12,8 +12,7 @@
 #include "autopasTools/generators/RandomGenerator.h"
 
 using Particle = autopas::sph::SPHParticle;
-using Cell = autopas::FullParticleCell<Particle>;
-using AutoPasContainer = autopas::AutoPas<Particle, Cell>;
+using AutoPasContainer = autopas::AutoPas<Particle>;
 
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations);
@@ -46,8 +45,8 @@ int main(int argc, char *argv[]) {
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
   double cutoff = .03;
 
-  autopas::sph::SPHCalcDensityFunctor<Particle, Cell> densfunc;
-  autopas::sph::SPHCalcHydroForceFunctor<Particle, Cell> hydrofunc;
+  autopas::sph::SPHCalcDensityFunctor<Particle> densfunc;
+  autopas::sph::SPHCalcHydroForceFunctor<Particle> hydrofunc;
 
   int numParticles;
   int numIterations;

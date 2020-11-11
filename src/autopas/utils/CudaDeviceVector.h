@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/utils/CudaExceptionHandler.h"
-#include "autopas/utils/ExceptionHandler.h"
 #if defined(AUTOPAS_CUDA)
 #include "cuda_runtime.h"
 #endif
@@ -23,12 +22,12 @@ class CudaDeviceVector {
 #if defined(AUTOPAS_CUDA)
  public:
   /**
-   * @brief Construct vector without allocating memory
+   * Construct vector without allocating memory
    */
   CudaDeviceVector() : _max_size(0), _size(0), _padToMultiple(1024) {}
 
   /**
-   * @brief Construct vector with custom maximal length and allocate the Memory on the GPU
+   * Construct vector with custom maximal length and allocate the Memory on the GPU
    * @param max size to be allocated
    */
   CudaDeviceVector(size_t max) : _max_size(max), _size(0), _padToMultiple(1024) {
@@ -36,7 +35,7 @@ class CudaDeviceVector {
   }
 
   /**
-   * @brief Copy Constructor
+   * Copy Constructor
    * @param obj other object
    */
   CudaDeviceVector(const CudaDeviceVector<T> &obj) : _max_size(obj._max_size), _size(obj._size) {
@@ -47,26 +46,26 @@ class CudaDeviceVector {
   }
 
   /**
-   * @brief Frees Memory on GPU
+   * Frees Memory on GPU
    */
   virtual ~CudaDeviceVector() {
     if (_max_size > 0) autopas::utils::CudaExceptionHandler::checkErrorCode(cudaFree(_data));
   }
 
   /**
-   * @brief return Pointer to the data in the GPU Memory
+   * return Pointer to the data in the GPU Memory
    * @return Pointer to the data in the GPU Memory
    */
   T *get() { return _data; }
 
   /**
-   * @brief return number of elemnts in the vector
+   * return number of elemnts in the vector
    * @return number of elemnts in the vector
    */
   size_t size() { return _size; }
 
   /**
-   * @brief copy data from host to this vector on the device
+   * copy data from host to this vector on the device
    * @param n number of elements
    * @param hostData Pointer to host data
    * @param stream Cuda Stream to use for the copy
@@ -84,7 +83,7 @@ class CudaDeviceVector {
   }
 
   /**
-   * @brief copy data from this vectors device Memory back to the host
+   * copy data from this vectors device Memory back to the host
    * @param n number of elements
    * @param hostData Pointer to host data
    * @param stream Cuda Stream to use for the copy
@@ -104,17 +103,17 @@ class CudaDeviceVector {
 #else
  public:
   /**
-   * @brief Dummy default constructor.
+   * Dummy default constructor.
    */
   CudaDeviceVector() {}
   /**
-   * @brief Dummy constructor.
+   * Dummy constructor.
    * @param max initial maximal vector size
    */
   CudaDeviceVector(size_t max) {}
 
   /**
-   * @brief Dummy Copy Constructor
+   * Dummy Copy Constructor
    * @param obj other object
    */
   CudaDeviceVector(const CudaDeviceVector<T> &obj) {}

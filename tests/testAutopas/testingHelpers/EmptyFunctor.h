@@ -24,18 +24,22 @@
  * Empty Functor, this functor is empty and can be used for testing purposes.
  * It returns that it is applicable for everything.
  */
-template <class Particle, class ParticleCell_t, class SoAArraysType = typename Particle::SoAArraysType>
-class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
+template <class Particle>
+class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
  private:
 #ifdef AUTOPAS_CUDA
   EmptyCudaWrapper<typename Particle::ParticleSoAFloatPrecision> emptyCudaWrapper;
 #endif
-
  public:
+  /**
+   * Structure of the SoAs defined by the particle.
+   */
+  using SoAArraysType = typename Particle::SoAArraysType;
+
   /**
    * Default constructor.
    */
-  EmptyFunctor() : autopas::Functor<Particle, ParticleCell_t>(0.){};
+  EmptyFunctor() : autopas::Functor<Particle, EmptyFunctor<Particle>>(0.){};
 
   /**
    * @copydoc autopas::Functor::AoSFunctor()
@@ -47,6 +51,12 @@ class EmptyFunctor : public autopas::Functor<Particle, ParticleCell_t> {
    */
   void SoAFunctorSingle(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {}
 
+  /**
+   * SoAFunctor for a pair of SoAs.
+   * @param soa1 An autopas::SoAView for the Functor
+   * @param soa2 A second autopas::SoAView for the Functor
+   * @param newton3 A boolean to indicate whether to allow newton3
+   */
   void SoAFunctorPair(autopas::SoAView<typename Particle::SoAArraysType> soa1,
                       autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3) override {}
 

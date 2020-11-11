@@ -32,6 +32,11 @@ class ContainerOption : public Option<ContainerOption> {
      */
     linkedCells,
     /**
+     * LinkedCellsReferences : Same algorithm as LinkedCells but stores all particles in one big vector. Cells only
+     * contain references to this vector.
+     */
+    linkedCellsReferences,
+    /**
      * VarVerletLists interface with neighbor list type VerletNeighborListAsBuild : Same algorithm as VerletLists.
      * Remembers which thread created the neighbor list of each particle to exploit this information to avoid data
      * races during the parallel force calculation.
@@ -80,7 +85,9 @@ class ContainerOption : public Option<ContainerOption> {
    * Set of options that are very unlikely to be interesting.
    * @return
    */
-  static std::set<ContainerOption> getDiscouragedOptions() { return {Value::directSum, Value::verletClusterCells}; }
+  static std::set<ContainerOption> getDiscouragedOptions() {
+    return {Value::directSum, Value::verletClusterCells, Value::linkedCellsReferences};
+  }
 
   /**
    * Provides a way to iterate over the possible choices of ContainerOption.
@@ -90,6 +97,7 @@ class ContainerOption : public Option<ContainerOption> {
     return {
         {ContainerOption::directSum, "DirectSum"},
         {ContainerOption::linkedCells, "LinkedCells"},
+        {ContainerOption::linkedCellsReferences, "LinkedCellsReferences"},
         {ContainerOption::verletLists, "VerletLists"},
         {ContainerOption::verletListsCells, "VerletListsCells"},
         {ContainerOption::verletClusterLists, "VerletClusterLists"},

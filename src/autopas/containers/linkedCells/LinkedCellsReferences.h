@@ -1,19 +1,18 @@
 /**
  * @file LinkedCells.h
- *
- * @author tchipevn
- * @date 17.02.2018
+ * @date 05.04.2020
+ * @author lunaticcoding
  */
 
 #pragma once
 
-#include "autopas/cells/FullParticleCell.h"
+#include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
-#include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
+#include "autopas/containers/linkedCells/ParticleVector.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -33,21 +32,20 @@ namespace autopas {
  * These cells dimensions are at least as large as the given cutoff radius,
  * therefore short-range interactions only need to be calculated between
  * particles in neighboring cells.
- * @tparam Particle type of the Particle
+ * @tparam ParticleCell type of the ParticleCells that are used to store the particles
+ * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
 template <class Particle>
-class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>> {
+class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticleCell<Particle>> {
  public:
-  /**
-   *  Type of the ParticleCell.
-   */
-  using ParticleCell = FullParticleCell<Particle>;
-
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename ParticleCell::ParticleType;
-
+  using ParticleType = Particle;
+  /**
+   *  Type of the ParticleCell.
+   */
+  using ReferenceCell = ReferenceParticleCell<Particle>;
   /**
    * Constructor of the LinkedCells class
    * @param boxMin
@@ -58,29 +56,32 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
-  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double skin, const double cellSizeFactor = 1.0,
-              LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin),
+  LinkedCellsReferences(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+                        const double skin, const double cellSizeFactor = 1.0,
+                        LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
+      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
    */
-  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCellsReferences; }
 
   /**
    * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
    */
-  [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
+  [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::ReferenceParticleCell; }
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
   void addParticleImpl(const ParticleType &p) override {
-    ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
-    cell.addParticle(p);
+    ParticleType pCopy = p;
+    addParticleLock.lock();
+    _particleList.push_back(pCopy);
+    updateDirtyParticleReferences();
+    addParticleLock.unlock();
   }
 
   /**
@@ -89,8 +90,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
-    ParticleCell &cell = _cellBlock.getContainingCell(pCopy.getR());
-    cell.addParticle(pCopy);
+    addParticleLock.lock();
+    _particleList.push_back(pCopy);
+    updateDirtyParticleReferences();
+    addParticleLock.unlock();
   }
 
   /**
@@ -110,10 +113,12 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     return false;
   }
 
-  void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
-
-  void rebuildNeighborLists(TraversalInterface *traversal) override {
-    // nothing to do.
+  /**
+   * @copydoc ParticleContainerInterface::deleteHaloParticles()
+   */
+  void deleteHaloParticles() override {
+    _particleList.clearHaloParticles();
+    _cellBlock.clearHaloCells();
   }
 
   /**
@@ -138,10 +143,38 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     }
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::rebuildNeighborLists()
+   */
+  void rebuildNeighborLists(TraversalInterface *traversal) override { updateDirtyParticleReferences(); }
+
+  /**
+   * Updates all the References in the cells that are out of date.
+   */
+  void updateDirtyParticleReferences() {
+    if (_particleList.isDirty()) {
+      if (_particleList.needsRebuild()) {
+        for (auto &cell : this->_cells) {
+          cell.clear();
+        }
+      }
+
+      for (auto it = _particleList.beginDirty(); it < _particleList.endDirty(); it++) {
+        if (it->isDummy()) {
+          continue;
+        }
+        ReferenceCell &cell = _cellBlock.getContainingCell(it->getR());
+        auto address = &(*it);
+        cell.addParticleReference(address);
+      }
+      _particleList.markAsClean();
+    }
+  }
+
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ReferenceCell> *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ReferenceCell> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
@@ -149,7 +182,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwise. TraversalID: {}",
+          "Trying to use a traversal of wrong type in LinkedCellsReferences::iteratePairwise. TraversalID: {}",
           traversal->getTraversalType());
     }
 
@@ -158,7 +191,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     traversal->endTraversal();
   }
 
-  [[nodiscard]] std::vector<ParticleType> updateContainer() override {
+  std::vector<ParticleType> updateContainer() override {
     this->deleteHaloParticles();
 
     std::vector<ParticleType> invalidParticles;
@@ -209,6 +242,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
                                 myInvalidNotOwnedParticles.end());
       }
     }
+    _particleList.deleteDummyParticles();
+    updateDirtyParticleReferences();
     return invalidParticles;
   }
 
@@ -220,19 +255,19 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
                                  this->getCellBlock().getCellLength(), 0);
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(
+  ParticleIteratorWrapper<ParticleType, true> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::ParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, 0, &_cellBlock, behavior));
+        new internal::ParticleIterator<ParticleType, ReferenceCell, true>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(
+  ParticleIteratorWrapper<ParticleType, false> begin(
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBlock, behavior));
+        new internal::ParticleIterator<ParticleType, ReferenceCell, false>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
+  ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
     // We increase the search region by skin, as particles can move over cell borders.
@@ -256,11 +291,11 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     }
 
     return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, lowerCorner, higherCorner,
-                                                                               cellsOfInterest, &_cellBlock, behavior));
+        new internal::RegionParticleIterator<ParticleType, ReferenceCell, true>(
+            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior));
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
+  ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     // We increase the search region by skin, as particles can move over cell borders.
@@ -284,7 +319,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     }
 
     return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
+        new internal::RegionParticleIterator<ParticleType, ReferenceCell, false>(
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior));
   }
 
@@ -292,31 +327,43 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * Get the cell block, not supposed to be used except by verlet lists
    * @return the cell block
    */
-  internal::CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
+  internal::CellBlock3D<ReferenceCell> &getCellBlock() { return _cellBlock; }
 
   /**
    * @copydoc getCellBlock()
    * @note const version
    */
-  const internal::CellBlock3D<ParticleCell> &getCellBlock() const { return _cellBlock; }
+  const internal::CellBlock3D<ReferenceCell> &getCellBlock() const { return _cellBlock; }
 
   /**
-   * Returns reference to the data of LinkedCells
+   * Returns reference to the data of LinkedCellsReferences
    * @return the data
    */
-  std::vector<ParticleCell> &getCells() { return this->_cells; }
+  std::vector<ReferenceCell> &getCells() { return this->_cells; }
+
+  /**
+   * @copydoc getCells()
+   * @note const version
+   */
+  const std::vector<ReferenceCell> &getCells() const { return this->_cells; }
 
  protected:
   /**
+   * object that stores the actual Particles and keeps track of the references.
+   */
+  ParticleVector<ParticleType> _particleList;
+  /**
    * object to manage the block of cells.
    */
-  internal::CellBlock3D<ParticleCell> _cellBlock;
-
+  internal::CellBlock3D<ReferenceCell> _cellBlock;
   /**
    * load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
-  // ThreeDimensionalCellHandler
+  /**
+   * Workaround for adding particles in parallel -> https://github.com/AutoPas/AutoPas/issues/555
+   */
+  AutoPasLock addParticleLock;
 };
 
 }  // namespace autopas

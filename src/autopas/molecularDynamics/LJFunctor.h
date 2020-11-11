@@ -15,7 +15,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticSelectorMacros.h"
+#include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 #if defined(AUTOPAS_CUDA)
@@ -35,7 +35,6 @@ namespace autopas {
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
  * @tparam Particle The type of particle.
- * @tparam ParticleCell The type of particlecell.
  * @tparam applyShift Switch for the lj potential to be truncated shifted.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
@@ -43,14 +42,20 @@ namespace autopas {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, class ParticleCell, bool applyShift = false, bool useMixing = false,
+template <class Particle, bool applyShift = false, bool useMixing = false,
           FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class LJFunctor
-    : public Functor<
-          Particle, ParticleCell, typename Particle::SoAArraysType,
-          LJFunctor<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+    : public Functor<Particle,
+                     LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+  /**
+   * Structure of the SoAs defined by the particle.
+   */
   using SoAArraysType = typename Particle::SoAArraysType;
+
+  /**
+   * Precision of SoA entries.
+   */
   using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
 
  public:
@@ -66,9 +71,7 @@ class LJFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
-      : Functor<
-            Particle, ParticleCell, SoAArraysType,
-            LJFunctor<Particle, ParticleCell, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+      : Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffsquare{cutoff * cutoff},
         _upotSum{0.},
@@ -526,7 +529,7 @@ class LJFunctor
   }
 
   /**
-   * @brief Functor using Cuda on SoA in device Memory
+   * Functor using Cuda on SoA in device Memory
    *
    * This Functor calculates the pair-wise interactions between particles in the device_handle on the GPU
    *
@@ -576,7 +579,7 @@ class LJFunctor
   }
 
   /**
-   * @brief Functor using Cuda on SoAs in device Memory
+   * Functor using Cuda on SoAs in device Memory
    *
    * This Functor calculates the pair-wise interactions between particles in the device_handle1 and device_handle2 on
    * the GPU
