@@ -29,7 +29,7 @@
  * @tparam Particle
  * @tparam ParticleCell
  */
-template <class Particle, class ParticleCell>
+template <class Particle>
 class Simulation {
  public:
   /**
@@ -51,7 +51,7 @@ class Simulation {
    * @param iteration
    * @param autopas
    */
-  void writeVTKFile(unsigned int iteration, autopas::AutoPas<Particle, ParticleCell> &autopas);
+  void writeVTKFile(unsigned int iteration, autopas::AutoPas<Particle> &autopas);
 
   /**
    * Initializes the ParticlePropertiesLibrary with properties from _config.
@@ -64,7 +64,7 @@ class Simulation {
    * @param mdFlexConfig
    * @param autopas
    */
-  void initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<Particle, ParticleCell> &autopas);
+  void initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<Particle> &autopas);
 
   /**
    * Calculates the pairwise forces in the system and measures the runtime.
@@ -72,13 +72,13 @@ class Simulation {
    * @param autopas
    */
   template <class FunctorType>
-  void calculateForces(autopas::AutoPas<Particle, ParticleCell> &autopas);
+  void calculateForces(autopas::AutoPas<Particle> &autopas);
 
   /**
    * Calculate influences from global, non pairwise forces, e.g. gravity.
    * @param autopas
    */
-  void globalForces(autopas::AutoPas<Particle, ParticleCell> &autopas);
+  void globalForces(autopas::AutoPas<Particle> &autopas);
 
   /**
    * This function processes the main simulation loop
@@ -87,7 +87,7 @@ class Simulation {
    * -collects the duration of every Calculation(Position,Force,Velocity)
    * @param autopas
    */
-  void simulate(autopas::AutoPas<Particle, ParticleCell> &autopas);
+  void simulate(autopas::AutoPas<Particle> &autopas);
 
   /**
    * Indicates if enough iterations were completed yet.
@@ -100,7 +100,7 @@ class Simulation {
    * Prints statistics like duration of calculation etc of the Simulation.
    * @param autopas
    */
-  void printStatistics(autopas::AutoPas<Particle, ParticleCell> &autopas);
+  void printStatistics(autopas::AutoPas<Particle> &autopas);
 
   /**
    * Getter for ParticlePropertiesLibrary of Simulation.
@@ -113,7 +113,7 @@ class Simulation {
    * @param autopas
    * @return double
    */
-  double calculateHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas);
+  double calculateHomogeneity(autopas::AutoPas<Particle> &autopas);
 
  private:
   using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
@@ -166,8 +166,8 @@ class Simulation {
   std::string timerToString(const std::string &name, long timeNS, size_t numberWidth = 0, long maxTime = 0);
 };
 
-template <typename Particle, typename ParticleCell>
-void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
+template <typename Particle>
+void Simulation<Particle>::initializeParticlePropertiesLibrary() {
   if (_config->epsilonMap.value.empty()) {
     throw std::runtime_error("No properties found in particle properties library!");
   }
@@ -186,9 +186,8 @@ void Simulation<Particle, ParticleCell>::initializeParticlePropertiesLibrary() {
   _particlePropertiesLibrary->calculateMixingCoefficients();
 }
 
-template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexConfig,
-                                                    autopas::AutoPas<Particle, ParticleCell> &autopas) {
+template <class Particle>
+void Simulation<Particle>::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<Particle> &autopas) {
   _timers.init.start();
 
   _config = std::make_shared<MDFlexConfig>(mdFlexConfig);
@@ -234,19 +233,19 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
 
   // initializing Objects
   for (const auto &grid : _config->cubeGridObjects) {
-    Generator::cubeGrid<Particle, ParticleCell>(autopas, grid);
+    Generator::cubeGrid<Particle>(autopas, grid);
   }
   for (const auto &cube : _config->cubeGaussObjects) {
-    Generator::cubeGauss<Particle, ParticleCell>(autopas, cube);
+    Generator::cubeGauss<Particle>(autopas, cube);
   }
   for (const auto &cube : _config->cubeUniformObjects) {
-    Generator::cubeRandom<Particle, ParticleCell>(autopas, cube);
+    Generator::cubeRandom<Particle>(autopas, cube);
   }
   for (const auto &sphere : _config->sphereObjects) {
-    Generator::sphere<Particle, ParticleCell>(autopas, sphere);
+    Generator::sphere<Particle>(autopas, sphere);
   }
   for (const auto &cube : _config->cubeClosestPackedObjects) {
-    Generator::cubeClosestPacked<Particle, ParticleCell>(autopas, cube);
+    Generator::cubeClosestPacked<Particle>(autopas, cube);
   }
 
   // initializing system to initial temperature and Brownian motion
@@ -262,9 +261,9 @@ void Simulation<Particle, ParticleCell>::initialize(const MDFlexConfig &mdFlexCo
   _timers.init.stop();
 }
 
-template <class Particle, class ParticleCell>
+template <class Particle>
 template <class FunctorType>
-void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Particle, ParticleCell> &autopas) {
+void Simulation<Particle>::calculateForces(autopas::AutoPas<Particle> &autopas) {
   _timers.forceUpdateTotal.start();
 
   // pairwise forces
@@ -300,8 +299,8 @@ void Simulation<Particle, ParticleCell>::calculateForces(autopas::AutoPas<Partic
   _timers.forceUpdateTotal.stop();
 }
 
-template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::globalForces(autopas::AutoPas<Particle, ParticleCell> &autopas) {
+template <class Particle>
+void Simulation<Particle>::globalForces(autopas::AutoPas<Particle> &autopas) {
   // skip application of zero force
   if (_config->globalForceIsZero()) {
     return;
@@ -315,8 +314,8 @@ void Simulation<Particle, ParticleCell>::globalForces(autopas::AutoPas<Particle,
   }
 }
 
-template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, ParticleCell> &autopas) {
+template <class Particle>
+void Simulation<Particle>::simulate(autopas::AutoPas<Particle> &autopas) {
   this->homogeneity = Simulation::calculateHomogeneity(autopas);
   _timers.simulate.start();
 
@@ -340,7 +339,7 @@ void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, Par
       // apply boundary conditions AFTER the position update!
       if (_config->periodic.value) {
         _timers.boundaries.start();
-        BoundaryConditions<ParticleCell>::applyPeriodic(autopas, false);
+        BoundaryConditions<Particle>::applyPeriodic(autopas, false);
         _timers.boundaries.stop();
       } else {
         throw std::runtime_error(
@@ -350,16 +349,17 @@ void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, Par
     }
     switch (this->_config->functorOption.value) {
       case MDFlexConfig::FunctorOption::lj12_6: {
-        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing>>(autopas);
+        this->calculateForces<autopas::LJFunctor<Particle, _shifting, _mixing>>(autopas);
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-        this->calculateForces<autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing,
-                                                 autopas::FunctorN3Modes::Both, /* globals */ true>>(autopas);
+        this->calculateForces<
+            autopas::LJFunctor<Particle, _shifting, _mixing, autopas::FunctorN3Modes::Both, /* globals */ true>>(
+            autopas);
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_AVX: {
-        this->calculateForces<autopas::LJFunctorAVX<Particle, ParticleCell, _shifting, _mixing>>(autopas);
+        this->calculateForces<autopas::LJFunctorAVX<Particle, _shifting, _mixing>>(autopas);
         break;
       }
     }
@@ -392,7 +392,7 @@ void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, Par
   // writes final state of the simulation
   if ((not _config->vtkFileName.value.empty())) {
     _timers.boundaries.start();
-    BoundaryConditions<ParticleCell>::applyPeriodic(autopas, true);
+    BoundaryConditions<Particle>::applyPeriodic(autopas, true);
     _timers.boundaries.stop();
     this->writeVTKFile(_config->iterations.value, autopas);
   }
@@ -400,24 +400,23 @@ void Simulation<Particle, ParticleCell>::simulate(autopas::AutoPas<Particle, Par
   _timers.simulate.stop();
 }
 
-template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Particle, ParticleCell> &autopas) {
+template <class Particle>
+void Simulation<Particle>::printStatistics(autopas::AutoPas<Particle> &autopas) {
   using namespace std;
   size_t flopsPerKernelCall = 0;
 
   switch (_config->functorOption.value) {
     case MDFlexConfig::FunctorOption ::lj12_6: {
-      flopsPerKernelCall = autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing>::getNumFlopsPerKernelCall();
+      flopsPerKernelCall = autopas::LJFunctor<Particle, _shifting, _mixing>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
-      flopsPerKernelCall = autopas::LJFunctor<Particle, ParticleCell, _shifting, _mixing, autopas::FunctorN3Modes::Both,
+      flopsPerKernelCall = autopas::LJFunctor<Particle, _shifting, _mixing, autopas::FunctorN3Modes::Both,
                                               /* globals */ true>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
-      flopsPerKernelCall =
-          autopas::LJFunctorAVX<Particle, ParticleCell, _shifting, _mixing>::getNumFlopsPerKernelCall();
+      flopsPerKernelCall = autopas::LJFunctorAVX<Particle, _shifting, _mixing>::getNumFlopsPerKernelCall();
       break;
     }
     default:
@@ -464,18 +463,15 @@ void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Partic
   cout << "Standard Deviation of Homogeneity    : " << homogeneity << endl;
 
   if (_config->dontMeasureFlops.value) {
-    autopas::FlopCounterFunctor<PrintableMolecule, autopas::FullParticleCell<PrintableMolecule>> flopCounterFunctor(
-        autopas.getCutoff());
+    autopas::FlopCounterFunctor<PrintableMolecule> flopCounterFunctor(autopas.getCutoff());
     autopas.iteratePairwise(&flopCounterFunctor);
 
     auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * iteration;
     // approximation for flops of verlet list generation
     if (autopas.getContainerType() == autopas::ContainerOption::verletLists)
-      flops +=
-          flopCounterFunctor.getDistanceCalculations() *
-          autopas::FlopCounterFunctor<PrintableMolecule,
-                                      autopas::FullParticleCell<PrintableMolecule>>::numFlopsPerDistanceCalculation *
-          floor(iteration / _config->verletRebuildFrequency.value);
+      flops += flopCounterFunctor.getDistanceCalculations() *
+               decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation *
+               floor(iteration / _config->verletRebuildFrequency.value);
 
     cout << "GFLOPs       : " << flops * 1e-9 << endl;
     cout << "GFLOPs/sec   : " << flops * 1e-9 / durationSimulateSec << endl;
@@ -483,14 +479,13 @@ void Simulation<Particle, ParticleCell>::printStatistics(autopas::AutoPas<Partic
   }
 }
 
-template <class Particle, class ParticleCell>
-const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &Simulation<Particle, ParticleCell>::getPpl() const {
+template <class Particle>
+const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &Simulation<Particle>::getPpl() const {
   return _particlePropertiesLibrary;
 }
-template <class Particle, class ParticleCell>
-
-std::string Simulation<Particle, ParticleCell>::timerToString(const std::string &name, long timeNS, size_t numberWidth,
-                                                              long maxTime) {
+template <class Particle>
+std::string Simulation<Particle>::timerToString(const std::string &name, long timeNS, size_t numberWidth,
+                                                long maxTime) {
   // only print timers that were actually used
   if (timeNS == 0) {
     return "";
@@ -505,14 +500,13 @@ std::string Simulation<Particle, ParticleCell>::timerToString(const std::string 
   ss << std::endl;
   return ss.str();
 }
-template <class Particle, class ParticleCell>
-bool Simulation<Particle, ParticleCell>::needsMoreIterations() const {
+template <class Particle>
+bool Simulation<Particle>::needsMoreIterations() const {
   return iteration < _config->iterations.value or numTuningPhasesCompleted < _config->tuningPhases.value;
 }
 
-template <class Particle, class ParticleCell>
-void Simulation<Particle, ParticleCell>::writeVTKFile(unsigned int iteration,
-                                                      autopas::AutoPas<Particle, ParticleCell> &autopas) {
+template <class Particle>
+void Simulation<Particle>::writeVTKFile(unsigned int iteration, autopas::AutoPas<Particle> &autopas) {
   _timers.vtk.start();
 
   std::string fileBaseName = _config->vtkFileName.value;
@@ -580,8 +574,8 @@ void Simulation<Particle, ParticleCell>::writeVTKFile(unsigned int iteration,
   _timers.vtk.stop();
 }
 
-template <class Particle, class ParticleCell>
-double Simulation<Particle, ParticleCell>::calculateHomogeneity(autopas::AutoPas<Particle, ParticleCell> &autopas) {
+template <class Particle>
+double Simulation<Particle>::calculateHomogeneity(autopas::AutoPas<Particle> &autopas) {
   int numberOfParticles = autopas.getNumberOfParticles();
   // approximately the resolution we want to get.
   int numberOfCells = ceil(numberOfParticles / 10.);

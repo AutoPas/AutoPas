@@ -50,7 +50,7 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
       // @TODO: extend Simple Functor for SoA
       for (auto &dataLayout :
            /*autopas::DataLayoutOption::getAllOptions()*/ {autopas::DataLayoutOption(autopas::DataLayoutOption::aos)}) {
-        autopas::AutoPas<Particle, FPCell> autoPas;
+        autopas::AutoPas<Particle> autoPas;
 
         // generates one cell per particle + 1 halo layer
         autoPas.setBoxMin(boxMin);

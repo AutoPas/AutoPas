@@ -8,8 +8,6 @@
 
 #include <atomic>
 
-#include "autopas/cells/FullParticleCell.h"
-#include "autopas/containers/verletListsCellBased/VerletListTypeDefinitions.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
@@ -28,34 +26,22 @@ class VerletListHelpers {
   using NeighborListAoSType = std::unordered_map<Particle *, std::vector<Particle *>>;
 
   /**
-   * Reduced SoA Type for verlet list's linked cells only storing Particle* and position.
-   */
-  using PositionSoAArraysType = typename VerletListTypeDefinitions<Particle>::PositionSoAArraysType;
-
-  /**
-   * Attributes for SoAs of verlet list's linked cells (only id and position needs to be stored)
-   */
-  enum AttributeNames : int { ptr, posX, posY, posZ };
-
-  /**
-   * Type of the particle cell.
-   */
-  using VerletListParticleCellType = typename VerletListTypeDefinitions<Particle>::VerletListParticleCellType;
-
-  /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
-  class VerletListGeneratorFunctor : public Functor<Particle, VerletListParticleCellType, PositionSoAArraysType> {
-    using ParticleCell_t = VerletListParticleCellType;
-
+  class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorFunctor> {
    public:
+    /**
+     * Structure of the SoAs defined by the particle.
+     */
+    using SoAArraysType = typename Particle::SoAArraysType;
+
     /**
      * Constructor
      * @param verletListsAoS
      * @param interactionLength
      */
     VerletListGeneratorFunctor(NeighborListAoSType &verletListsAoS, double interactionLength)
-        : Functor<Particle, VerletListParticleCellType, PositionSoAArraysType>(interactionLength),
+        : Functor<Particle, VerletListGeneratorFunctor>(interactionLength),
           _verletListsAoS(verletListsAoS),
           _interactionLengthSquared(interactionLength * interactionLength) {}
 
@@ -101,13 +87,13 @@ class VerletListHelpers {
      * @param soa the soa
      * @param newton3 whether to use newton 3
      */
-    void SoAFunctorSingle(SoAView<PositionSoAArraysType> soa, bool newton3) override {
+    void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
       if (soa.getNumParticles() == 0) return;
 
-      auto **const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
-      double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
-      double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
-      double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
+      auto **const __restrict__ ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
+      double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+      double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+      double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
       size_t numPart = soa.getNumParticles();
       for (unsigned int i = 0; i < numPart; ++i) {
@@ -141,19 +127,18 @@ class VerletListHelpers {
      * @param soa2 soa of second cell
      * @note newton3 is ignored here, as for newton3=false SoAFunctorPair(soa2, soa1) will also be called.
      */
-    void SoAFunctorPair(SoAView<PositionSoAArraysType> soa1, SoAView<PositionSoAArraysType> soa2,
-                        bool /*newton3*/) override {
+    void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-      auto **const __restrict__ ptr1ptr = soa1.template begin<AttributeNames::ptr>();
-      double *const __restrict__ x1ptr = soa1.template begin<AttributeNames::posX>();
-      double *const __restrict__ y1ptr = soa1.template begin<AttributeNames::posY>();
-      double *const __restrict__ z1ptr = soa1.template begin<AttributeNames::posZ>();
+      auto **const __restrict__ ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
+      double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+      double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+      double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
 
-      auto **const __restrict__ ptr2ptr = soa2.template begin<AttributeNames::ptr>();
-      double *const __restrict__ x2ptr = soa2.template begin<AttributeNames::posX>();
-      double *const __restrict__ y2ptr = soa2.template begin<AttributeNames::posY>();
-      double *const __restrict__ z2ptr = soa2.template begin<AttributeNames::posZ>();
+      auto **const __restrict__ ptr2ptr = soa2.template begin<Particle::AttributeNames::ptr>();
+      double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+      double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+      double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
       size_t numPart1 = soa1.getNumParticles();
       for (unsigned int i = 0; i < numPart1; ++i) {
@@ -180,49 +165,12 @@ class VerletListHelpers {
     }
 
     /**
-     * SoALoader for verlet list generator.
-     * Only loads IDs and positions
-     * @param cell
-     * @param soa
-     * @param offset
-     */
-    void SoALoader(ParticleCell<Particle> &cell, SoA<PositionSoAArraysType> &soa, size_t offset) override {
-      if (offset > 0) {
-        utils::ExceptionHandler::exception("VerletListGeneratorFunctor: requires offset == 0");
-      }
-      soa.resizeArrays(cell.numParticles());
-
-      if (cell.numParticles() == 0) return;
-
-      auto *const __restrict__ ptrptr = soa.template begin<AttributeNames::ptr>();
-      double *const __restrict__ xptr = soa.template begin<AttributeNames::posX>();
-      double *const __restrict__ yptr = soa.template begin<AttributeNames::posY>();
-      double *const __restrict__ zptr = soa.template begin<AttributeNames::posZ>();
-
-      auto cellIter = cell.begin();
-      // load particles in SoAs
-      for (size_t i = 0; cellIter.isValid(); ++cellIter, ++i) {
-        Particle *pptr = &(*cellIter);
-        ptrptr[i] = pptr;
-        xptr[i] = cellIter->getR()[0];
-        yptr[i] = cellIter->getR()[1];
-        zptr[i] = cellIter->getR()[2];
-      }
-    }
-
-    /**
-     * Does nothing
-     * @param cell
-     * @param soa
-     */
-    void SoAExtractor(ParticleCell<Particle> &cell, SoA<PositionSoAArraysType> &soa, size_t /*offset*/) override {}
-
-    /**
      * @copydoc Functor::getNeededAttr()
      */
     constexpr static std::array<typename Particle::AttributeNames, 4> getNeededAttr() {
-      return std::array<typename Particle::AttributeNames, 4>{AttributeNames::ptr, AttributeNames::posX,
-                                                              AttributeNames::posY, AttributeNames::posZ};
+      return std::array<typename Particle::AttributeNames, 4>{
+          Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+          Particle::AttributeNames::posZ};
     }
 
     /**
@@ -244,18 +192,21 @@ class VerletListHelpers {
    * If the pair is not present in the list the neigborhood lists are invalid
    * and neighborlistsAreValid()  will return false.
    * @todo: SoA?
-   * @tparam ParticleCell
    */
-  template <class ParticleCell>
-  class VerletListValidityCheckerFunctor : public Functor<Particle, ParticleCell, PositionSoAArraysType> {
+  class VerletListValidityCheckerFunctor : public Functor<Particle, VerletListValidityCheckerFunctor> {
    public:
+    /**
+     * Structure of the SoAs defined by the particle.
+     */
+    using SoAArraysType = typename Particle::SoAArraysType;
+
     /**
      * Constructor
      * @param verletListsAoS
      * @param cutoff
      */
     VerletListValidityCheckerFunctor(NeighborListAoSType &verletListsAoS, double cutoff)
-        : Functor<Particle, VerletListParticleCellType, PositionSoAArraysType>(cutoff),
+        : Functor<Particle, VerletListValidityCheckerFunctor>(cutoff),
           _verletListsAoS(verletListsAoS),
           _cutoffsquared(cutoff * cutoff),
           _valid(true) {}

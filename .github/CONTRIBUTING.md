@@ -122,7 +122,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * Add a new enum in `ContainerOption::Value`.
   * Add a new string representation in the `map` of `ContainerOption::getOptionNames()`.
 * Create a new set of compatible traversals in `src/autopas/containers/CompatibleTraversals.h`.
-* Create a new `case` statement in `src/autopas/utils/StaticSelectors.h`.
+* Create a new `case` statement in `src/autopas/utils/StaticContainerSelector.h`.
 * Add a case for the new container in `src/autopas/selectors/ContainerSelector.h::generateContainer()`.
 * Check that the new option is working in the md-flexible example.
 * Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseContainerOptionsTest`).

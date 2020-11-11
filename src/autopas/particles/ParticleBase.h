@@ -75,21 +75,6 @@ class ParticleBase {
 
  public:
   /**
-   * Enums used as ids for accessing and creating a dynamically sized SoA.
-   */
-  enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
-
-  /**
-   * The type for the soa storage.
-   * owned is currently used as a floatType to ease calculations within the functors.
-   */
-  using SoAArraysType =
-      typename autopas::utils::SoAType<decltype(_id), typename decltype(_r)::value_type,
-                                       typename decltype(_r)::value_type, typename decltype(_r)::value_type,
-                                       typename decltype(_f)::value_type, typename decltype(_f)::value_type,
-                                       typename decltype(_f)::value_type, decltype(_ownershipState)>::Type;
-
-  /**
    * Equality operator for ParticleBase class.
    * @param rhs
    * @return
@@ -224,6 +209,11 @@ class ParticleBase {
   void setOwnershipState(OwnershipState ownershipState) { _ownershipState = ownershipState; }
 
   /**
+   * Enums used as ids for accessing and creating a dynamically sized SoA.
+   */
+  enum AttributeNames : int { ptr, id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
+
+  /**
    * Floating Point Type used for this particle
    */
   using ParticleSoAFloatPrecision = floatType;
@@ -234,14 +224,41 @@ class ParticleBase {
   using ParticleIdType = idType;
 
   /**
+   * The type for the soa storage.
+   * owned is currently used as a floatType to ease calculations within the functors.
+   */
+  using SoAArraysType =
+      typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
+                                       floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
+                                       floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
+
+#if defined(AUTOPAS_CUDA)
+  /**
+   * The type for storage arrays for Cuda.
+   */
+  using CudaDeviceArraysType =
+      typename autopas::utils::CudaSoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
+                                           floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
+                                           floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
+#else
+  /**
+   * The type for storage arrays for Cuda.
+   * empty if compiled without Cuda Support.
+   */
+  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
+#endif
+
+  /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @return Value of the requested attribute.
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
-    if constexpr (attribute == AttributeNames::id) {
+  constexpr typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type get() {
+    if constexpr (attribute == AttributeNames::ptr) {
+      return this;
+    } else if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
@@ -269,7 +286,8 @@ class ParticleBase {
    * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+  constexpr void set(
+      typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {
@@ -290,22 +308,6 @@ class ParticleBase {
       utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
     }
   }
-
-#if defined(AUTOPAS_CUDA)
-  /**
-   * The type for storage arrays for Cuda.
-   */
-  using CudaDeviceArraysType =
-      typename autopas::utils::CudaSoAType<idType /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
-                                           floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
-                                           OwnershipState /*ownershipState*/>::Type;
-#else
-  /**
-   * The type for storage arrays for Cuda.
-   * empty if compiled without Cuda Support.
-   */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
-#endif
 
  private:
   /**

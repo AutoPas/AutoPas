@@ -7,7 +7,7 @@
 #pragma once
 
 #include <cstdlib>
-//#include <functional>
+
 #include "autopas/utils/Logger.h"
 
 namespace autopas {

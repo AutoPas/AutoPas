@@ -10,6 +10,7 @@
 #include <array>
 #include <vector>
 
+#include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
@@ -20,26 +21,26 @@
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
-
 /**
  * The ParticleContainerInterface class provides a basic interface for all Containers within AutoPas.
  * It defines method interfaces for addition and deletion of particles, accessing general container
  * properties and creating iterators.
  *
- * @tparam ParticleCell Class for particle cells.
+ * @tparam Particle Class for particle.
  */
-template <class ParticleCell>
+template <class Particle>
 class ParticleContainerInterface {
  public:
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename ParticleCell::ParticleType;
+  using ParticleType = Particle;
 
   /**
-   * Type of the ParticleCell.
+   * Get the ParticleCell type as an Enum
+   * @return The Cell type as an Enum
    */
-  using ParticleCellType = ParticleCell;
+  virtual CellType getParticleCellTypeEnum() = 0;
 
   /**
    * Default constructor
@@ -67,8 +68,8 @@ class ParticleContainerInterface {
   ParticleContainerInterface &operator=(const ParticleContainerInterface &other) = delete;
 
   /**
-   * Return a enum representing the name of the container class.
-   * @return Enum representing the container.
+   * Get the ContainerType.
+   * @return ContainerOption of the type of this container.
    */
   [[nodiscard]] virtual ContainerOption getContainerType() const = 0;
 
@@ -79,7 +80,7 @@ class ParticleContainerInterface {
    * already been performed.
    */
   template <bool checkInBox = true>
-  void addParticle(const ParticleType &p) {
+  void addParticle(const Particle &p) {
     if constexpr (not checkInBox) {
       addParticleImpl(p);
     } else {
@@ -99,7 +100,7 @@ class ParticleContainerInterface {
    * @param p The particle to be added. This particle is already checked to be inside of the bounding box.
    * @note Only call this function if the position of the particle is guaranteed to be inside of the bounding box!
    */
-  virtual void addParticleImpl(const ParticleType &p) = 0;
+  virtual void addParticleImpl(const Particle &p) = 0;
 
  public:
   /**
@@ -109,7 +110,7 @@ class ParticleContainerInterface {
    * already been performed.
    */
   template <bool checkInBox = true>
-  void addHaloParticle(const ParticleType &haloParticle) {
+  void addHaloParticle(const Particle &haloParticle) {
     if constexpr (not checkInBox) {
       addHaloParticleImpl(haloParticle);
     } else {
@@ -130,7 +131,7 @@ class ParticleContainerInterface {
    * @param haloParticle Particle to be added. This particle is already checked to be outside of the bounding box.
    * @note Only call this function if the position of the particle is guaranteed to be outside of the bounding box!
    */
-  virtual void addHaloParticleImpl(const ParticleType &haloParticle) = 0;
+  virtual void addHaloParticleImpl(const Particle &haloParticle) = 0;
 
  public:
   /**
@@ -138,7 +139,7 @@ class ParticleContainerInterface {
    * @param haloParticle Particle to be updated.
    * @return Returns true if the particle was updated, false if no particle could be found.
    */
-  virtual bool updateHaloParticle(const ParticleType &haloParticle) = 0;
+  virtual bool updateHaloParticle(const Particle &haloParticle) = 0;
 
   /**
    * Rebuilds the neighbor lists.

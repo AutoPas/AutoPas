@@ -19,7 +19,7 @@ namespace autopas {
  * This is mainly done by incorporating a global container rebuild frequency, which defines when containers and their
  * neighbor lists will be rebuild.
  */
-template <typename Particle, typename ParticleCell>
+template <typename Particle>
 class LogicHandler {
  public:
   /**
@@ -27,7 +27,7 @@ class LogicHandler {
    * @param autoTuner
    * @param rebuildFrequency
    */
-  LogicHandler(autopas::AutoTuner<Particle, ParticleCell> &autoTuner, unsigned int rebuildFrequency)
+  LogicHandler(autopas::AutoTuner<Particle> &autoTuner, unsigned int rebuildFrequency)
       : _containerRebuildFrequency{rebuildFrequency}, _autoTuner(autoTuner) {
     checkMinimalSize();
   }
@@ -234,7 +234,7 @@ class LogicHandler {
   /**
    * Reference to the AutoTuner that owns the container, ...
    */
-  autopas::AutoTuner<Particle, ParticleCell> &_autoTuner;
+  autopas::AutoTuner<Particle> &_autoTuner;
 
   /**
    * Specifies if the neighbor list is valid.

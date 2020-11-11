@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <AutoPasTestBase.h>
+#include "AutoPasTestBase.h"
 
 class OptimumSelectorTest : public AutoPasTestBase {
  public:
