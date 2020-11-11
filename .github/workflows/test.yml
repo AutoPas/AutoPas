@@ -21,25 +21,30 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compiler-config:
+        config:
           - CC: gcc
             CXX: g++
             image: autopas/autopas-build-gcc
           - CC: clang
             CXX: clang++
             image: autopas/autopas-build-clang
-          - CC: clang
-            CXX: clang++
-            image: autopas/autopas-build-archer
-            cmake_extra_args: "-DAUTOPAS_ENABLE_THREAD_SANITIZER=ON"
-        #generator: [ "Unix Makefiles", "Ninja" ]
-        #openmp: ["On", "Off"]
+        generator: [ "Unix Makefiles", "Ninja" ]
+        openmp: ["On", "Off"]
+        target: ["Release","Debug"]
+        include:
+          - config:
+              CC: clang
+              CXX: clang++
+              image: autopas/autopas-build-archer
+              #cmake_extra_args: "-DAUTOPAS_ENABLE_THREAD_SANITIZER=ON"
+            openmp: "On"
+            generator: "Ninja"
 
 
-    container: ${{ matrix.compiler-config.image }}
+    container: ${{ matrix.config.image }}
     env:
-      CC: ${{ matrix.compiler-config.CC }}
-      CXX: ${{ matrix.compiler-config.CXX }}
+      CC: ${{ matrix.config.CC }}
+      CXX: ${{ matrix.config.CXX }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -50,7 +55,7 @@ jobs:
       # Run cmake and create directory build
       # We use `-Werror` to abort on errors.
       - name: Run Cmake
-        run: CXXFLAGS="-Werror" cmake -B ./build -S ./ ${{matrix.compiler-config.cmake_extra_args}}
+        run: CXXFLAGS="-Werror" cmake -B ./build -S ./ -DCMAKE_BUILD_TYPE=${{matrix.target}} -DAUTOPAS_OPENMP=${{matrix.openmp}} ${{matrix.config.cmake_extra_args}}
 
       # Run make
       - name: Run make
