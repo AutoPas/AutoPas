@@ -59,7 +59,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Info
-        run: echo "number of identified processes = $(nproc)"
+        run: |
+          echo "number of identified processes = $(nproc)"
+          vmstat -a
+
 
       # Run cmake and create directory build
       # We use `-Werror` to abort on errors.
