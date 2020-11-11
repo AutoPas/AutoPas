@@ -58,6 +58,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Info
+        run: echo "number of identified processes = $(nproc)"
+
       # Run cmake and create directory build
       # We use `-Werror` to abort on errors.
       - name: Run Cmake
