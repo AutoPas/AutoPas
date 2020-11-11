@@ -36,9 +36,11 @@ jobs:
               CC: clang
               CXX: clang++
               image: autopas/autopas-build-archer
-              #cmake_extra_args: "-DAUTOPAS_ENABLE_THREAD_SANITIZER=ON"
+              cmake_extra_args: "-DAUTOPAS_ENABLE_THREAD_SANITIZER=ON -DAUTOPAS_USE_VECTORIZATION=OFF"
+              cxx_extra_flags: "-Wno-pass-failed"
             openmp: "On"
             generator: "Ninja"
+            target: "Release"
 
 
     container: ${{ matrix.config.image }}
@@ -55,7 +57,7 @@ jobs:
       # Run cmake and create directory build
       # We use `-Werror` to abort on errors.
       - name: Run Cmake
-        run: CXXFLAGS="-Werror" cmake -B ./build -S ./ -DCMAKE_BUILD_TYPE=${{matrix.target}} -DAUTOPAS_OPENMP=${{matrix.openmp}} ${{matrix.config.cmake_extra_args}}
+        run: CXXFLAGS="-Werror ${{matrix.config.cxx_extra_flags}}" cmake -B ./build -S ./ -DCMAKE_BUILD_TYPE=${{matrix.target}} -DAUTOPAS_OPENMP=${{matrix.openmp}} ${{matrix.config.cmake_extra_args}}
 
       # Run make
       - name: Run make
