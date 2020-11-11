@@ -309,8 +309,8 @@ void Simulation<Particle>::globalForces(autopas::AutoPas<Particle> &autopas) {
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel default(none) shared(autopas)
 #endif
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    iter->addF(_config->globalForce.value);
+  for (auto &particle : autopas) {
+    particle.addF(_config->globalForce.value);
   }
 }
 
@@ -608,8 +608,8 @@ double Simulation<Particle>::calculateHomogeneity(autopas::AutoPas<Particle> &au
   std::vector<double> allVolumes(numberOfCells, 0);
 
   // add particles accordingly to their cell to get the amount of particles in each cell
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    std::array<double, 3> particleLocation = iter->getR();
+  for (const auto &particle : autopas) {
+    std::array<double, 3> particleLocation = particle.getR();
     std::array<size_t, 3> index = {};
     for (int i = 0; i < particleLocation.size(); i++) {
       index[i] = particleLocation[i] / cellLength;
