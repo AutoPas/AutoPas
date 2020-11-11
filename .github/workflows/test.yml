@@ -60,7 +60,6 @@ jobs:
 
       - name: Info
         run: |
-          echo "number of identified processes = $(nproc)"
           vmstat -a
 
 
@@ -72,14 +71,14 @@ jobs:
       # Run make
       - name: Run make
         working-directory: ./build
-        run: cmake --build . --parallel $(nproc)
+        run: cmake --build . --parallel 1
 
       # Run unit tests
       - name: Run tests
         working-directory: ./build
-        run: ctest --verbose -j$(nproc)
+        run: ctest --verbose
 
       # Run example tests
       - name: Run examples
         working-directory: ./build/examples
-        run: ctest -C checkExamples --verbose -j$(nproc)
+        run: ctest -C checkExamples --verbose
