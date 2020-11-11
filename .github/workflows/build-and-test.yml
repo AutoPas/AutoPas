@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: test
+name: build-and-test
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -16,7 +16,7 @@ env:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  test:
+  build-and-test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     strategy:
@@ -46,7 +46,6 @@ jobs:
             target: "Release"
             asan: "Off"
 
-
     container: ${{ matrix.config.image }}
     env:
       CC: ${{ matrix.config.CC }}
@@ -57,11 +56,6 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Info
-        run: |
-          vmstat -a
-
 
       # Run cmake and create directory build
       # We use `-Werror` to abort on errors.
