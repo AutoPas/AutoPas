@@ -75,4 +75,28 @@ unsigned long neighborListLength(
   return sum;
 }
 
+template <class Particle>
+unsigned long neighborListLength(
+    const typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType &neighborLists,
+    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
+    const std::array<unsigned long, 3> &upperCorner) {
+  unsigned long sum = 0;
+  for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
+    for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
+      for (unsigned long z = lowerCorner[2]; z <= upperCorner[2]; z++) {
+        auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension);
+        unsigned long cellLoad = 0;
+        /*for (auto &list : neighborLists[cellIndex]) {
+          for(size_t neighborCellIndex = 0; neighborCellIndex < 27; neighborCellIndex++)
+          {
+            cellLoad += list[neighborCellIndex].second.size();
+          }
+        }*/
+        sum += cellLoad;
+      }
+    }
+  }
+  return sum;
+}
+
 }  // namespace autopas::loadEstimators

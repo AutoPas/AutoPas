@@ -16,6 +16,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/PairwiseVerletNeighborList.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -35,8 +36,7 @@ namespace autopas {
  * @tparam Particle
  * @tparam NeighborList The neighbor list used by this container.
  */
-//<<<<<<< HEAD
-template <class Particle, class NeighborList = VerletListsCellsNeighborList<Particle>>
+template <class Particle, class NeighborList = PairwiseVerletNeighborList<Particle>>
 class VerletListsCells : public VerletListsLinkedBase<Particle> {
   using verlet_internal = VerletListsCellsHelpers<FullParticleCell<Particle>>;
   using ParticleCell = FullParticleCell<Particle>;

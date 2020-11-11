@@ -29,12 +29,15 @@ class VLCTraversalInterface {
    * Shorthand for VerletListsCellsHelpers<Particle>::NeighborListsType.
    */
   using NeighborListsType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
+  using PairwiseNeighborListsType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
 
   /**
    * Sets the verlet list for the traversal to iterate over.
    * @param verlet The verlet list to iterate over.
    */
-  virtual void setVerletList(NeighborListsType &verlet) { _verletList = &verlet; }
+  //virtual void setVerletList(NeighborListsType &verlet) { _verletList = &verlet; }
+
+  virtual void setVerletList(PairwiseNeighborListsType &verlet) { _verletList = &verlet; }
 
  protected:
   /**
@@ -56,10 +59,24 @@ class VLCTraversalInterface {
     }
   }
 
+  template <class PairwiseFunctor, bool useNewton3>
+  void processCellLists(PairwiseNeighborListsType &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
+    for(size_t neighborCellIndex = 0; neighborCellIndex < 27; neighborCellIndex++)
+    {
+      for (auto &[particlePtr, neighbors] : neighborLists[cellIndex][neighborCellIndex]) {
+        Particle &particle = *particlePtr;
+        for (auto neighborPtr : neighbors) {
+          Particle &neighbor = *neighborPtr;
+          pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
+        }
+      }
+    }
+  }
+
   /**
    * The verlet list to iterate over.
    */
-  NeighborListsType *_verletList;
+  PairwiseNeighborListsType *_verletList;
 };
 
 }  // namespace autopas
