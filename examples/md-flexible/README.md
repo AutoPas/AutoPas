@@ -30,6 +30,12 @@ For all available arguments and options see:
  examples/md-flexible/md-flexible --help
 ```
 
+The Falling Drop example simulation can be started with:
+```bash
+ cd examples/md-flexible
+ ./md-flexible --yaml-filename fallingDrop.yaml
+```
+
 ### Input
 
 MD-Flexible accepts input via command line arguments and YAML files.
