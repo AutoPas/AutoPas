@@ -17,7 +17,7 @@
 // all ParticleVelocities = {0.,0.,0.}
 
 TEST_F(GeneratorsTest, GridFillwithBoxMin) {
-  auto autoPas = autopas::AutoPas<Molecule, FMCell>(std::cout);
+  auto autoPas = autopas::AutoPas<Molecule>(std::cout);
   std::array<double, 3> boxmin = {5., 5., 5.};
   std::array<double, 3> boxmax = {10., 10., 10.};
   autoPas.setBoxMax(boxmax);
@@ -35,7 +35,7 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
 }
 
 TEST_F(GeneratorsTest, MultipleObjectGeneration) {
-  auto autoPas = autopas::AutoPas<Molecule, FMCell>(std::cout);
+  auto autoPas = autopas::AutoPas<Molecule>(std::cout);
   MDFlexConfig config;
   config.yamlFilename.value = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
   MDFlexParser::YamlParser::parseYamlFile(config);

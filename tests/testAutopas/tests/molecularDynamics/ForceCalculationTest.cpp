@@ -13,7 +13,7 @@
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
                                   std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
-  autopas::AutoPas<Molecule, FMCell> autoPas;
+  autopas::AutoPas<Molecule> autoPas;
   std::array<double, 3> boxMin = {0., 0., 0.};
   std::array<double, 3> boxMax = {3., 3., 3.};
 
@@ -31,7 +31,7 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
                                                              {particleSpacing, particleSpacing, particleSpacing});
 
-  autopas::LJFunctor<Molecule, FMCell> functor(cutoff);
+  autopas::LJFunctor<Molecule> functor(cutoff);
   functor.setParticleProperties(24, 1);
 
   autoPas.iteratePairwise(&functor);

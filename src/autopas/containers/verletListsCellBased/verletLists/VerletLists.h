@@ -15,7 +15,7 @@
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticSelectorMacros.h"
+#include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
 
@@ -30,12 +30,8 @@ namespace autopas {
  * @todo deleting particles should also invalidate the verlet lists - should be implemented somehow
  */
 template <class Particle>
-class VerletLists
-    : public VerletListsLinkedBase<Particle, typename VerletListHelpers<Particle>::VerletListParticleCellType,
-                                   typename VerletListHelpers<Particle>::PositionSoAArraysType> {
-  using ParticleCell = FullParticleCell<Particle>;
-  using SoAArraysType = typename VerletListHelpers<Particle>::PositionSoAArraysType;
-  using LinkedParticleCell = typename VerletListHelpers<Particle>::VerletListParticleCellType;
+class VerletLists : public VerletListsLinkedBase<Particle> {
+  using LinkedParticleCell = FullParticleCell<Particle>;
 
  public:
   /**
@@ -59,8 +55,8 @@ class VerletLists
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle, LinkedParticleCell, SoAArraysType>(
-            boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCompatibleTraversals(),
+                                        cellSizeFactor),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
 

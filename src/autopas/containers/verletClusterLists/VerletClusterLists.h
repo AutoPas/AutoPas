@@ -35,8 +35,7 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Particle>>,
-                           public internal::ParticleDeletedObserver {
+class VerletClusterLists : public ParticleContainerInterface<Particle>, public internal::ParticleDeletedObserver {
  public:
   /**
    * Defines a cluster range used in the static cluster-thread-partition.
@@ -70,7 +69,7 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
                      size_t clusterSize, LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
-      : ParticleContainerInterface<FullParticleCell<Particle>>(),
+      : ParticleContainerInterface<Particle>(),
         _clusterSize{clusterSize},
         _numClusters{0},
         _numTowersPerInteractionLength{0},
@@ -84,6 +83,11 @@ class VerletClusterLists : public ParticleContainerInterface<FullParticleCell<Pa
     // always have at least one tower.
     _towers.push_back(internal::ClusterTower<Particle>(_clusterSize));
   }
+
+  /**
+   * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
+   */
+  CellType getParticleCellTypeEnum() override { return CellType::ClusterTower; };
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()

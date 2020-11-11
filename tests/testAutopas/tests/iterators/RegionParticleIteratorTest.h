@@ -16,7 +16,7 @@
 
 class RegionParticleIteratorTest : public AutoPasTestBase {
  public:
-  using LCTouch = autopas::LinkedCells<autopas::FullParticleCell<TouchableParticle>>;
+  using LCTouch = autopas::LinkedCells<TouchableParticle>;
 
   RegionParticleIteratorTest()
       : _boxMin{0., 0., 0.}, _boxMax{5., 5., 5.}, _regionMin{1., 1., 1.}, _regionMax{3., 3., 3.}, _cutoff{.9} {}

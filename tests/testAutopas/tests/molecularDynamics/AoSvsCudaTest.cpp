@@ -16,7 +16,7 @@ using namespace autopas;
 constexpr size_t PARTICLES_PER_DIM = 16;
 
 /**
- * @brief Generates a reproducible set of particles
+ * Generates a reproducible set of particles
  * @param particles Vector where particles will be stored.
  */
 void AoSvsCudaTest::generateParticles(std::vector<Molecule> *particles, bool withDeletions) {
@@ -52,7 +52,7 @@ TEST_P(AoSvsCudaTest, testAoSvsCuda) {
   auto particlesSoA = particlesAoS;
   double epsilon = 1.0;
   double sigma = 1.0;
-  LJFunctor<Molecule, FMCell> ljFunctor(PARTICLES_PER_DIM * 10);
+  LJFunctor<Molecule> ljFunctor(PARTICLES_PER_DIM * 10);
   ljFunctor.setParticleProperties(epsilon * 24.0, sigma * sigma);
 
   // AoS

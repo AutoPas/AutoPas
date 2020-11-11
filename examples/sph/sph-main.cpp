@@ -13,8 +13,7 @@
 #include "autopas/utils/ArrayUtils.h"
 
 using Particle = autopas::sph::SPHParticle;
-using Cell = autopas::FullParticleCell<Particle>;
-using AutoPasContainer = autopas::AutoPas<Particle, Cell>;
+using AutoPasContainer = autopas::AutoPas<Particle>;
 
 void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
   // Place SPH particles
@@ -203,8 +202,8 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
 
 void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   // declare the used functors
-  autopas::sph::SPHCalcDensityFunctor<Particle, Cell> densityFunctor;
-  autopas::sph::SPHCalcHydroForceFunctor<Particle, Cell> hydroForceFunctor;
+  autopas::sph::SPHCalcDensityFunctor<Particle> densityFunctor;
+  autopas::sph::SPHCalcHydroForceFunctor<Particle> hydroForceFunctor;
 
   std::cout << "\nhaloupdate\n" << std::endl;
 

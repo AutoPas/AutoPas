@@ -10,6 +10,7 @@
 
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
+#include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
@@ -99,12 +100,12 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     size_t numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift,
     DeletionPosition particleDeletionPosition) {
   // Construct container
-  autopas::ContainerSelector<Molecule, FMCell> selector{_boxMin, boxMax, _cutoff};
+  autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
   constexpr double skin = _cutoff * 0.1;
   selector.selectContainer(
       containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, 32, autopas::LoadEstimatorOption::none});
   auto container = selector.getCurrentContainer();
-  autopas::LJFunctor<Molecule, FMCell, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+  autopas::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
                      globals /*calculateGlobals*/>
       functor{_cutoff};
   functor.setParticleProperties(_eps * 24, _sig * _sig);
@@ -117,8 +118,12 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
       *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container->getCutoff(),
       numHaloMolecules);
 
-  auto traversal = autopas::TraversalSelector<FMCell>::generateTraversal(
-      traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+  auto traversal =
+      autopas::utils::withStaticCellType<Molecule>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
+            traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+      });
+
   if (not traversal->isApplicable()) {
     return {};
   }

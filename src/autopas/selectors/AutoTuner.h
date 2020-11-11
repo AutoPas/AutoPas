@@ -19,6 +19,7 @@
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/Timer.h"
 
 namespace autopas {
@@ -32,7 +33,7 @@ namespace autopas {
  * @tparam Particle
  * @tparam ParticleCell
  */
-template <class Particle, class ParticleCell>
+template <class Particle>
 class AutoTuner {
  public:
   /**
@@ -81,7 +82,7 @@ class AutoTuner {
    * Getter for the current container.
    * @return Smart pointer to the current container.
    */
-  std::shared_ptr<autopas::ParticleContainerInterface<ParticleCell>> getContainer() {
+  std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer() {
     return _containerSelector.getCurrentContainer();
   }
 
@@ -89,7 +90,7 @@ class AutoTuner {
    * Getter for the current container.
    * @return Smart pointer to the current container.
    */
-  std::shared_ptr<const autopas::ParticleContainerInterface<ParticleCell>> getContainer() const {
+  std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> getContainer() const {
     return _containerSelector.getCurrentContainer();
   }
 
@@ -202,7 +203,7 @@ class AutoTuner {
    * _iteration - Counter of the iterations.
    */
   unsigned int _tuningInterval, _iterationsSinceTuning, _iteration;
-  ContainerSelector<Particle, ParticleCell> _containerSelector;
+  ContainerSelector<Particle> _containerSelector;
   double _verletSkin;
   unsigned int _verletClusterSize;
 
@@ -217,16 +218,16 @@ class AutoTuner {
   std::vector<size_t> _samples;
 };
 
-template <class Particle, class ParticleCell>
-void AutoTuner<Particle, ParticleCell>::selectCurrentContainer() {
+template <class Particle>
+void AutoTuner<Particle>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
   _containerSelector.selectContainer(
       conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
 }
 
-template <class Particle, class ParticleCell>
+template <class Particle>
 template <class PairwiseFunctor>
-bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild) {
+bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild) {
   bool isTuning = false;
   // tune if :
   // - more than one config exists
@@ -316,15 +317,19 @@ bool AutoTuner<Particle, ParticleCell>::iteratePairwise(PairwiseFunctor *f, bool
   return isTuning;
 }
 
-template <class Particle, class ParticleCell>
+template <class Particle>
 template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
-void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild) {
+void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild) {
   auto containerPtr = getContainer();
   AutoPasLog(debug, "Iterating with configuration: {} tuning: {}",
              _tuningStrategy->getCurrentConfiguration().toString(), inTuningPhase ? "true" : "false");
 
-  auto traversal = TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, dataLayout, useNewton3>(
-      _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
+  auto traversal = autopas::utils::withStaticCellType<Particle>(
+      containerPtr->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        return TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<PairwiseFunctor, dataLayout,
+                                                                                          useNewton3>(
+            _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
+      });
 
   if (not traversal->isApplicable()) {
     autopas::utils::ExceptionHandler::exception(
@@ -363,9 +368,9 @@ void AutoTuner<Particle, ParticleCell>::iteratePairwiseTemplateHelper(PairwiseFu
   }
 }
 
-template <class Particle, class ParticleCell>
+template <class Particle>
 template <class PairwiseFunctor>
-bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
+bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   bool stillTuning = true;
 
   // need more samples; keep current config
@@ -415,9 +420,9 @@ bool AutoTuner<Particle, ParticleCell>::tune(PairwiseFunctor &pairwiseFunctor) {
   return stillTuning;
 }
 
-template <class Particle, class ParticleCell>
+template <class Particle>
 template <class PairwiseFunctor>
-bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
+bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
   auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container);
   if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
     // container and traversal mismatch
@@ -428,13 +433,18 @@ bool AutoTuner<Particle, ParticleCell>::configApplicable(const Configuration &co
       conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
-  return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor>(
-             conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
-      ->isApplicable();
+  auto containerPtr = getContainer();
+
+  return autopas::utils::withStaticCellType<Particle>(
+      containerPtr->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        return TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<PairwiseFunctor>(
+                   conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
+            ->isApplicable();
+      });
 }
 
-template <class Particle, class ParticleCell>
-autopas::Configuration AutoTuner<Particle, ParticleCell>::getCurrentConfig() const {
+template <class Particle>
+autopas::Configuration AutoTuner<Particle>::getCurrentConfig() const {
   return _tuningStrategy->getCurrentConfiguration();
 }
 }  // namespace autopas

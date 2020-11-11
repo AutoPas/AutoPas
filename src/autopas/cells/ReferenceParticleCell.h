@@ -1,7 +1,7 @@
 /**
- * @file FullParticleCell.h
- * @date 18.01.2018
- * @author seckler
+ * @file ReferenceParticleCell.h
+ * @date 05.04.2020
+ * @author lunaticcoding
  */
 
 #pragma once
@@ -11,6 +11,7 @@
 
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -22,7 +23,7 @@ namespace autopas {
  * @tparam Particle
  */
 template <class Particle>
-class FullParticleCell : public ParticleCell<Particle> {
+class ReferenceParticleCell : public ParticleCell<Particle> {
  public:
   /**
    * The structure of the SoAs is defined by the particle.
@@ -30,25 +31,29 @@ class FullParticleCell : public ParticleCell<Particle> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
   /**
-   * Constructs a new FullParticleCell.
+   * Constructs a new ReferenceParticleCell.
    */
-  FullParticleCell()
+  ReferenceParticleCell()
       : _cellLength({std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
                      std::numeric_limits<double>::max()}) {}
 
   /**
-   * Constructs a new FullParticleCell with the given cell side length.
+   * Constructs a new ReferenceParticleCell with the given cell side length.
    * @param cellLength cell side length
    */
-  explicit FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
+  explicit ReferenceParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
+
+  void addParticle(const Particle &p) override {
+    autopas::utils::ExceptionHandler::exception("Should use addParticleReference instead");
+  }
 
   /**
    * @copydoc ParticleCell::addParticle()
    */
-  void addParticle(const Particle &p) override {
-    particlesLock.lock();
+  void addParticleReference(Particle *p) {
+    _particlesLock.lock();
     _particles.push_back(p);
-    particlesLock.unlock();
+    _particlesLock.unlock();
   }
 
   SingleCellIteratorWrapper<Particle, true> begin() override {
@@ -59,56 +64,58 @@ class FullParticleCell : public ParticleCell<Particle> {
     return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
-  unsigned long numParticles() const override { return _particles.size(); }
+  [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
 
   /**
    * Returns a reference to the element at position n in the cell.
    * @param n Position of an element in the container
    * @return Reference to the element
    */
-  Particle &operator[](size_t n) { return _particles[n]; }
+  Particle &operator[](size_t n) { return *(_particles[n]); }
+
+  /**
+   * @copydoc ParticleCell::getParticleCellTypeAsEnum()
+   */
+  CellType getParticleCellTypeAsEnum() override { return CellType::ReferenceParticleCell; }
 
   /**
    * Returns a const reference to the element at position n in the cell.
    * @param n Position of an element in the container
    * @return Reference to the element
    */
-  const Particle &operator[](size_t n) const { return _particles[n]; }
+  const Particle &operator[](size_t n) const { return *(_particles[n]); }
 
   /**
    * Returns the particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  Particle &at(size_t index) { return _particles.at(index); }
-
-  /**
-   * @copydoc ParticleCell::getParticleCellTypeAsEnum()
-   */
-  CellType getParticleCellTypeAsEnum() override { return CellType::FullParticleCell; }
+  [[nodiscard]] Particle &at(size_t index) { return *(_particles.at(index)); }
 
   /**
    * Returns the const particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  const Particle &at(size_t index) const { return _particles.at(index); }
+  [[nodiscard]] const Particle &at(size_t index) const { return *(_particles.at(index)); }
 
-  bool isNotEmpty() const override { return numParticles() > 0; }
+  [[nodiscard]] bool isNotEmpty() const override { return numParticles() > 0; }
 
   void clear() override { _particles.clear(); }
 
   void deleteDummyParticles() override {
     _particles.erase(
-        std::remove_if(_particles.begin(), _particles.end(), [](const auto &particle) { return particle.isDummy(); }),
+        std::remove_if(_particles.begin(), _particles.end(), [](const auto &particle) { return particle->isDummy(); }),
         _particles.end());
   }
 
   void deleteByIndex(size_t index) override {
-    std::lock_guard<AutoPasLock> lock(particlesLock);
+    std::lock_guard<AutoPasLock> lock(_particlesLock);
     if (index >= numParticles()) {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
     }
+
+    _particles[index]->setOwnershipState(OwnershipState::dummy);
 
     if (index < numParticles() - 1) {
       std::swap(_particles[index], _particles[numParticles() - 1]);
@@ -118,14 +125,14 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   void setCellLength(std::array<double, 3> &cellLength) override { _cellLength = cellLength; }
 
-  std::array<double, 3> getCellLength() const override { return _cellLength; }
+  [[nodiscard]] std::array<double, 3> getCellLength() const override { return _cellLength; }
 
   /**
    * Resizes the container so that it contains n elements.
    * @param n New container size
    * @param toInsert Particle to insert. This is needed to allow for non-default-constructible particles.
    */
-  void resize(size_t n, const Particle &toInsert) { _particles.resize(n, toInsert); }
+  void resize(size_t n, const Particle &toInsert) { _particles.resize(n, std::unique_ptr<Particle>(toInsert)); }
 
   /**
    * Sort the particles in the cell by a dimension.
@@ -133,7 +140,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   void sortByDim(const size_t dim) {
     std::sort(_particles.begin(), _particles.end(),
-              [dim](const Particle &a, const Particle &b) -> bool { return a.getR()[dim] < b.getR()[dim]; });
+              [dim](const auto *a, const auto *b) -> bool { return a->getR()[dim] < b->getR()[dim]; });
   }
 
   /**
@@ -145,7 +152,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Storage of the molecules of the cell.
    */
-  std::vector<Particle> _particles;
+  std::vector<Particle *> _particles;
 
   /**
    * SoA buffer of this cell.
@@ -160,15 +167,15 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Type of the internal iterator.
    */
-  using iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle>, true>;
+  using iterator_t = internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle>, true>;
 
   /**
    * Type of the internal const iterator.
    */
-  using const_iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle>, false>;
+  using const_iterator_t = internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle>, false>;
 
  private:
-  AutoPasLock particlesLock;
+  AutoPasLock _particlesLock;
   std::array<double, 3> _cellLength;
 };
 }  // namespace autopas

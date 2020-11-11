@@ -74,6 +74,10 @@ class SlicedBalancedBasedTraversal
       upperCorner[2]--;
       lowerCorner[maxDimension] = x;
       upperCorner[maxDimension] = x;
+      if (not this->_loadEstimator) {
+        autopas::utils::ExceptionHandler::exception(
+            "AutoPas internal error: SlicedBalancedBasedTraversal's _loadEstimator is null.");
+      }
       auto load = this->_loadEstimator(this->_cellsPerDimension, lowerCorner, upperCorner);
       loads[x] = load;
     }

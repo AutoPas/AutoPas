@@ -22,24 +22,26 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const double verletSkin = 0;
   const unsigned int verletClusterSize = 64;
   const unsigned int maxSamples = 2;
-  autopas::LJFunctor<Molecule, FMCell> functor(cutoff);
+  autopas::LJFunctor<Molecule> functor(cutoff);
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
       autopas::ContainerOption::getAllOptions(), std::set<double>({cellSizeFactor}),
       autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
       autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
-  autopas::AutoTuner<Molecule, FMCell> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
-                                                 std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs,
-                                                 100, maxSamples);
+  autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
+                                         std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs, 100,
+                                         maxSamples);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
   auto prevConfig = autopas::Configuration();
 
-  // total number of possible configurations * number of samples + last iteration after tuning
+  std::map<autopas::ContainerOption, size_t> configsPerContainer;
+
   // number of configs manually counted:
   //
   // Direct Sum:            ds_sequential               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  configsPerContainer[autopas::ContainerOption::directSum] = 4;
   // LinkedCells:           lc_c08                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        lc_sliced                   (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        lc_sliced_balanced          (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
@@ -50,43 +52,50 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        lc_c04                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        lc_c04_combined_SoA         (SoA, newton3 <=> noNewton3)                         = 2
   //                        lc_c04_HCP                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  configsPerContainer[autopas::ContainerOption::linkedCells] = 37;
+  // same as linked Cells but load estimator stuff is currently missing
+  configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
+      configsPerContainer[autopas::ContainerOption::linkedCells] - 4;
   // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                             = 2
+  configsPerContainer[autopas::ContainerOption::verletLists] = 2;
   // VerletListsCells:      vlc_sliced                  (AoS, newton3 <=> noNewton3)                         = 2
   //                        vlc_sliced_balanced         (AoS, newton3 <=> noNewton3, 3 heuristics)           = 6
   //                        vlc_sliced_colored          (AoS, newton3 <=> noNewton3)                         = 2
   //                        vlc_c18                     (AoS, newton3 <=> noNewton3)                         = 2
   //                        vlc_c01                     (AoS, noNewton3)                                     = 1
+  configsPerContainer[autopas::ContainerOption::verletListsCells] = 13;
   // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                             = 2
   //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3)                             = 2
   //                        vcl_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        vcl_sliced_c02              (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        vcl_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
+  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 24;
   // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                                                                                                    --------
-  //                                                                                                          84
+  configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
+
+  // check that there is an entry for every container. Except VCC because they are only relevant for CUDA...
+  ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size() - 1);
+
   // Additional with cuda
+  // VerletClusterCells:    vcc_cluster_iteration       (Cuda, newton3 <=> noNewton3)                        = 2
   // Direct Sum:            ds_sequential               (Cuda, newton3 <=> noNewton3)                        = 2
   // LinkedCells:           lc_c01_cuda                 (Cuda, newton3 <=> noNewton3)                        = 2
-  // VerletClusterCells:    vcc_cluster_iteration       (Cuda, newton3 <=> noNewton3)                        = 2
-  //                                                                                                    --------
-  //                                                                                                          90
+  constexpr size_t CUDAconfigs = 6;
   //
   // currently disabled:
-  // NORMAL:
-  //                                                                                                    --------
-  // TOTAL:                                                                                                   90
-  //
   // CUDA:
-  // LCC01CudaTraversal for enabled N3, see #420                                                                -1
+  // LCC01CudaTraversal for enabled N3, see #420                                                              -1
   //                                                                                                    --------
-  // TOTAL:                                                                                                   89
 
-#ifndef AUTOPAS_CUDA
-  const size_t expectedNumberOfIterations = 84 * maxSamples + 1;
-#else
-  const size_t expectedNumberOfIterations = 89 * maxSamples + 1;
+  size_t numberOfConfigs = std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
+                                           [](auto acc, auto &pair) { return acc + pair.second; });
+#ifdef AUTOPAS_CUDA
+  // only add cuda configs if compiling with cuda
+  numberOfConfigs += CUDAconfigs;
 #endif
+  // total number of possible configurations * number of samples + last iteration after tuning
+  const size_t expectedNumberOfIterations = numberOfConfigs * maxSamples + 1;
 
   int collectedSamples = 0;
   int iterations = 0;
@@ -137,12 +146,12 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
-  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
-                                                 autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
+  autopas::AutoTuner<Particle> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+                                         autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
-  MockFunctor<Particle, FPCell> functor;
+  MockFunctor<Particle> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -189,12 +198,12 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
-  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
-                                                 autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
+  autopas::AutoTuner<Particle> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+                                         autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
-  MockFunctor<Particle, FPCell> functor;
+  MockFunctor<Particle> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
@@ -229,12 +238,12 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
-  autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
-                                                 autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
+  autopas::AutoTuner<Particle> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+                                         autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
-  MockFunctor<Particle, FPCell> functor;
+  MockFunctor<Particle> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -266,8 +275,8 @@ TEST_F(AutoTunerTest, testNoConfig) {
   auto exp1 = []() {
     std::set<autopas::Configuration> configsList = {};
     auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-    autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
-                                                   autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
+    autopas::AutoTuner<Particle> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+                                           autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
   };
 
   EXPECT_THROW(exp1(), autopas::utils::ExceptionHandler::AutoPasException) << "Constructor with given configs";
@@ -281,8 +290,8 @@ TEST_F(AutoTunerTest, testNoConfig) {
     std::set<autopas::DataLayoutOption> dl = {};
     std::set<autopas::Newton3Option> n3 = {};
     auto tuningStrategy = std::make_unique<autopas::FullSearch>(co, csf, tr, le, dl, n3);
-    autopas::AutoTuner<Particle, FPCell> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
-                                                   autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
+    autopas::AutoTuner<Particle> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+                                           autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
   };
 
   EXPECT_THROW(exp2(), autopas::utils::ExceptionHandler::AutoPasException) << "Constructor which generates configs";
@@ -299,8 +308,8 @@ TEST_F(AutoTunerTest, testOneConfig) {
   auto configsList = {conf};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   size_t maxSamples = 3;
-  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
-                                             autopas::SelectorStrategyOption::fastestAbs, 1000, maxSamples);
+  autopas::AutoTuner<Particle> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+                                     autopas::SelectorStrategyOption::fastestAbs, 1000, maxSamples);
 
   EXPECT_EQ(conf, tuner.getCurrentConfig());
 
@@ -336,8 +345,8 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
 
   auto configsList = {confNoN3, confN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
-                                             autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
+  autopas::AutoTuner<Particle> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+                                     autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
   EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
 
@@ -370,8 +379,8 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
 
   auto configsList = {confN3, confNoN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Particle, FPCell> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
-                                             autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
+  autopas::AutoTuner<Particle> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+                                     autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 

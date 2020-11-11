@@ -24,8 +24,8 @@ namespace autopas {
  * methods to iterate over its particles.
  * @tparam ParticleCell Class for the particle cells
  */
-template <class ParticleCell, class SoAArraysType = typename ParticleCell::ParticleType::SoAArraysType>
-class CellBasedParticleContainer : public ParticleContainerInterface<ParticleCell> {
+template <class ParticleCell>
+class CellBasedParticleContainer : public ParticleContainerInterface<typename ParticleCell::ParticleType> {
  public:
   /**
    * Constructor of CellBasedParticleContainer
