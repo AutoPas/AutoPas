@@ -25,7 +25,7 @@ cd build
 cmake ..
 make
 ```
-if you want to use another compiler, specify it at the first CMake call, e.g.:
+if you want to use a specific compiler, specify it at the first CMake call, e.g.:
 ```bash
 mkdir build
 cd build
@@ -51,8 +51,8 @@ make
 ```
 
 AutoPas relies on a small number of dependencies. By default AutoPas looks for
-installed versions of those libraries but it can also be forces to (selecively)
-use bundled versions. To make use of this feature call `cmake` with:
+installed versions of those libraries but it can also be forced to (selectively)
+use bundled versions. To make use of this feature, call `cmake` with:
 ```bash
 cmake -D spdlog_ForceBundled=ON    # replace spdlog by the lib you want to force
 ```
@@ -79,7 +79,7 @@ There are multiple possibilities. In order of recommendation:
    ```bash
    make test
    ```
-3. Directly launching the test executable
+3. Directly launching the test executable:
    ```bash
    tests/testAutopas/runTests
    ```
@@ -89,7 +89,9 @@ There are multiple possibilities. In order of recommendation:
    ```
  
 ### Debugging Tests
+Many IDEs (e.g., CLion) have integrated support for googletest and you can debug the tests directly within the IDE.
 
+If you prefer `gdb`:
 1. Find out the command to start your desired test with `-N` aka. `--show-only`:
    ```bash
    ctest -R 'Array.*testAdd' -N
@@ -100,10 +102,10 @@ There are multiple possibilities. In order of recommendation:
    ```
 
 ## Examples
-As AutoPas is only a library it is not able to run simulations by itself.
+As AutoPas is only a library, it is not able to run simulations by itself.
 We have, however, included a few example proxy applications in the **examples** directory.
 The examples include:
-* [md-flexible](examples/md-flexible): Molecular dynamics simulations with 1 centered Lennard-Jones particles.
+* [md-flexible](examples/md-flexible): Molecular dynamics simulations with single centered Lennard-Jones particles.
 * Smoothed particle hydrodynamics simulations
 
 ## Using AutoPas
@@ -113,12 +115,12 @@ Steps to using AutoPas in your particle simulation program:
 First you will need to define a particle class which will be passed to AutoPas as template Argument.
 For that we provide some basic Particle classes defined in `src/autopas/molecularDynamics` or `src/autopas/sph` 
 that you can use either directly or you can write your own Particle class by inheriting from one of the provided
-classes.
+classes or from `autopas::Particle`.
 
 Important parts to implement:
 * `enum AttributeNames`
 * Definition of a matching `SoAArraysType`
-* getter and setter connecting the `AttributeNames` and actual members.
+* Getter and setter connecting the `AttributeNames` and actual members.
 
 ### Custom Functors
 Once you have defined your particle you can start with the functor class.
@@ -127,7 +129,7 @@ Once you have defined your particle you can start with the functor class.
 Importatnt parts to implement:
 * Actual force calculations: `AoSFunctor()` and all Versions of `SoAFunctor*()` 
 * Newton3 characteristics of the force: `allowsNewton3()` and `allowsNonNewton3()`
-* In and output variables of the force calculation via: `getComputedAttr()` and `getNeededAttr()`
+* Input and output variables of the force calculation via: `getComputedAttr()` and `getNeededAttr()`
 
 #### Usage
 Each functor is applied to AutoPas via:
@@ -236,7 +238,7 @@ There exist some things you have to be careful about when using multiple functor
   autoPas.setAllowedNewton3Options({false});
   ```
 * If you have `n` functors within one iteration and update the particle position only at the end or start of the iteration, the rebuildFrequency and the samplingRate have to be a multiple of `n`.
-* Functors must be marked as (not) relevant for tuning by specifying `Functor::isRelevantForTuning()`. Functors marked as relevant should have a near identical performance profile otherwise the sampling of configurations will be distorted. It is probably for the best to only mark the most expensive functor as relevant.
+* Functors must be marked as (not) relevant for tuning by specifying `Functor::isRelevantForTuning()`. Functors marked as relevant should have a near-identical performance profile otherwise the sampling of configurations will be distorted. It is recommended, to only mark the most expensive functor as relevant.
 
 ## Developing AutoPas
 Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
