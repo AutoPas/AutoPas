@@ -68,36 +68,36 @@ framework and exposes tests to ctest, the CMake test driver.
 There are multiple possibilities. In order of recommendation:
 
 1. Using `ctest`:
-    ```bash
-    ctest # add --verbose for more details on the tests
-    ```
-    To only run specific tests use arguments like `-R` (run tests matching regex) and `-E` (exclude tests matching regex)
-    ```
-    ctest -R 'Array.*testAdd' -E 'Double'
-    ```
+   ```bash
+   ctest # add --verbose for more details on the tests
+   ```
+   To only run specific tests use arguments like `-R` (run tests matching regex) and `-E` (exclude tests matching regex)
+   ```bash
+   ctest -R 'Array.*testAdd' -E 'Double'
+   ```
 2. Using the `make` target:
-    ```bash
-    make test
-    ```
+   ```bash
+   make test
+   ```
 3. Directly launching the test executable
-    ```bash
-    tests/testAutopas/runTests
-    ```
-    To only run specific tests use arguments
-    ```bash
-    tests/testAutopas/runTests --gtest_filter=ArrayMathTest.testAdd*
-    ```
+   ```bash
+   tests/testAutopas/runTests
+   ```
+   To only run specific tests use arguments
+   ```bash
+   tests/testAutopas/runTests --gtest_filter=ArrayMathTest.testAdd*
+   ```
  
 ### Debugging Tests
 
 1. Find out the command to start your desired test with `-N` aka. `--show-only`:
-    ```bash
-    ctest -R 'Array.*testAdd' -N
-    ```
+   ```bash
+   ctest -R 'Array.*testAdd' -N
+   ```
 2. Start the test with `gdb`
-    ```bash
-    gdb --args ${TestCommand}
-    ```
+   ```bash
+   gdb --args ${TestCommand}
+   ```
 
 ## Examples
 As AutoPas is only a library it is not able to run simulations by itself.
@@ -117,9 +117,8 @@ classes.
 
 Important parts to implement:
 * `enum AttributeNames`
-*  Definition of a matching `SoAArraysType`
+* Definition of a matching `SoAArraysType`
 * getter and setter connecting the `AttributeNames` and actual members.
-
 
 ### Custom Functors
 Once you have defined your particle you can start with the functor class.
@@ -198,11 +197,8 @@ One simulation loop should always consist of the following phases:
 
 2. Handling the leaving particles
    * This step can be skipped if `updated` was false. If you use multiple MPI instances, you have to ensure that all instances rebuild during the same time step. This is guaranteed if the sampling frequency is the same as (or a multiple of) the rebuild frequency.
-   
    * Apply boundary conditions on them
-
    * Potentially send them to other mpi-processes, skip this if MPI is not needed
-
    * Add them to the containers using
       ```cpp
       autoPas.addParticle(particle)
@@ -210,9 +206,7 @@ One simulation loop should always consist of the following phases:
 
 3. Handle halo particles:
    * This step always has to be performed, even if `updated` was false.
-   
    * Identify the halo particles by use of AutoPas' iterators and send them in a similar way as the leaving particles.
-
    * Add the particles as haloParticles using
       ```cpp
       autoPas.addOrUpdateHaloParticle(haloParticle)
@@ -222,7 +216,6 @@ One simulation loop should always consist of the following phases:
    ```cpp
    autoPas.iteratePairwise(functor);
    ```
-
 
 ### Inserting additional particles
 Before inserting additional particles (e.g. through a grand-canonical thermostat ),
@@ -242,9 +235,7 @@ There exist some things you have to be careful about when using multiple functor
   ```cpp
   autoPas.setAllowedNewton3Options({false});
   ```
-
 * If you have `n` functors within one iteration and update the particle position only at the end or start of the iteration, the rebuildFrequency and the samplingRate have to be a multiple of `n`.
-
 * Functors must be marked as (not) relevant for tuning by specifying `Functor::isRelevantForTuning()`. Functors marked as relevant should have a near identical performance profile otherwise the sampling of configurations will be distorted. It is probably for the best to only mark the most expensive functor as relevant.
 
 ## Developing AutoPas
