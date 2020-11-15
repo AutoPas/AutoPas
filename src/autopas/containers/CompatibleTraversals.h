@@ -96,6 +96,16 @@ static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
 }
 
 /**
+ * TODO
+ */
+static const std::set<TraversalOption> &allPairwiseCompatibleTraversals() {
+  static const std::set<TraversalOption> s{TraversalOption::pairwise_vlc_sliced, TraversalOption::pairwise_vlc_c18,
+                                            TraversalOption::pairwise_vlc_c01, TraversalOption::pairwise_vlc_sliced_c02,
+                                            TraversalOption::pairwise_vlc_sliced_balanced};
+  return s;
+}
+
+/**
  * Lists all traversal options applicable for the given container.
  * @param containerOption ContainerOption
  * @return set of all applicable traversal options.
@@ -125,6 +135,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     }
     case ContainerOption::linkedCellsReferences: {
       return allRLCCompatibleTraversals();
+    }
+    case ContainerOption::pairwiseVerletLists: {
+      return allPairwiseCompatibleTraversals();
     }
   }
 

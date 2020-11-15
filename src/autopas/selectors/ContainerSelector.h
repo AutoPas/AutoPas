@@ -128,6 +128,13 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
+
+    case ContainerOption::pairwiseVerletLists: {
+      container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::lc_c08,
+                                                               containerInfo.verletSkin, containerInfo.cellSizeFactor,
+                                                               containerInfo.loadEstimator);
+      break;
+    }
     default: {
       utils::ExceptionHandler::exception("ContainerSelector: Container type {} is not a known type!",
                                          containerChoice.to_string());

@@ -62,6 +62,10 @@ class ContainerOption : public Option<ContainerOption> {
      * information. Parallelization options similar to LinkedCells.
      */
     verletListsCells,
+    /**
+     * TODO
+     */
+    pairwiseVerletLists,
   };
 
   /**
@@ -103,6 +107,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::verletClusterLists, "VerletClusterLists"},
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::verletClusterCells, "VerletClusterCells"},
+        {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
     };
   };
 

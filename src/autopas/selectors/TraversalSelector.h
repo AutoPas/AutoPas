@@ -193,6 +193,28 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       return std::make_unique<VCCClusterIterationCUDATraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor, info.clusterSize);
     }
+
+      // Pairwise TODO
+    case TraversalOption::pairwise_vlc_sliced: {
+      return std::make_unique<VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
+    case TraversalOption::pairwise_vlc_sliced_c02: {
+      return std::make_unique<VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
+    case TraversalOption::pairwise_vlc_sliced_balanced: {
+      return std::make_unique<VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
+    case TraversalOption::pairwise_vlc_c01: {
+      return std::make_unique<VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
+    case TraversalOption::pairwise_vlc_c18: {
+      return std::make_unique<VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());
   return std::unique_ptr<TraversalInterface>(nullptr);
