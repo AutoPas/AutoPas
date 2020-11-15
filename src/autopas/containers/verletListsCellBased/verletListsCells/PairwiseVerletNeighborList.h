@@ -71,9 +71,9 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
     // Argument "cluster size" does not matter here.
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
-    autopas::utils::withStaticBool(false, [&](auto n3) {
+    autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
       auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::aos, n3>(
-          TraversalOption::lc_c01, f, traversalSelectorInfo); ///is it the correct traversal and is this how it works?
+          TraversalOption::lc_c08, f, traversalSelectorInfo); ///is it the correct traversal and is this how it works?
       linkedCells.iteratePairwise(buildTraversal.get());
     });
   }
