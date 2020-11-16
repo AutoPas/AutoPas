@@ -8,6 +8,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/StaticBoolSelector.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 
 namespace autopas
 {
@@ -17,13 +18,18 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
  public:
   PairwiseVerletNeighborList(): _aosNeighborList{}, _particleToCellMap{}, _globalToLocalIndex{}{}
 
-  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pairwiseVerletLists; }
 
   const std::vector<Particle *> &getVerletList(const Particle *particle) const override {
     return std::vector<Particle*>();
   }
 
   typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType &getAoSNeighborList() { return _aosNeighborList; }
+
+  auto doCast(TraversalInterface *traversal)
+  {
+    return dynamic_cast<autopas::VLCTraversalInterface<Particle, typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType> *>(traversal);
+  }
 
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells,
                             bool useNewton3, double cutoff, double skin, double interactionLength,

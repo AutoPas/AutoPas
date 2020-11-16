@@ -108,7 +108,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       break;
     }
     case ContainerOption::verletListsCells: {
-      container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::lc_c08,
+      container = std::make_unique<VerletListsCells<Particle, VerletListsCellsNeighborList<Particle>>>(_boxMin, _boxMax, _cutoff, TraversalOption::lc_c08,
                                                                containerInfo.verletSkin, containerInfo.cellSizeFactor,
                                                                containerInfo.loadEstimator);
       break;
@@ -130,7 +130,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     }
 
     case ContainerOption::pairwiseVerletLists: {
-      container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::lc_c08,
+      container = std::make_unique<VerletListsCells<Particle, PairwiseVerletNeighborList<Particle>>>(_boxMin, _boxMax, _cutoff, TraversalOption::lc_c08,
                                                                containerInfo.verletSkin, containerInfo.cellSizeFactor,
                                                                containerInfo.loadEstimator);
       break;

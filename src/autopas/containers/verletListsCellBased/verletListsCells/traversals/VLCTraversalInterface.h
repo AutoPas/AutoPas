@@ -22,7 +22,7 @@ namespace autopas {
  *
  * The container only accepts traversals in its iteratePairwise() method that implement this interface.
  */
-template <class Particle>
+template <class Particle, class NeighborList>
 class VLCTraversalInterface {
  public:
   /**
@@ -37,7 +37,7 @@ class VLCTraversalInterface {
    */
   //virtual void setVerletList(NeighborListsType &verlet) { _verletList = &verlet; }
 
-  virtual void setVerletList(PairwiseNeighborListsType &verlet) { _verletList = &verlet; }
+  virtual void setVerletList(NeighborList &verlet) { _verletList = &verlet; }
 
  protected:
   /**
@@ -76,7 +76,7 @@ class VLCTraversalInterface {
   /**
    * The verlet list to iterate over.
    */
-  PairwiseNeighborListsType *_verletList;
+  NeighborList *_verletList;
 };
 
 }  // namespace autopas

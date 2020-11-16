@@ -240,11 +240,11 @@ class TraversalOption : public Option<TraversalOption> {
 
 
         // PairwiseVerlet Traversals: TODO
-        {TraversalOption::pairwise_vlc_sliced, "vlc_sliced"},
-        {TraversalOption::pairwise_vlc_sliced_c02, "vlc_sliced_c02"},
-        {TraversalOption::pairwise_vlc_c18, "vlc_c18"},
-        {TraversalOption::pairwise_vlc_c01, "vlc_c01"},
-        {TraversalOption::pairwise_vlc_sliced_balanced, "vlc_sliced_balanced"},
+        {TraversalOption::pairwise_vlc_sliced, "pairwise_vlc_sliced"},
+        {TraversalOption::pairwise_vlc_sliced_c02, "pairwise_vlc_sliced_c02"},
+        {TraversalOption::pairwise_vlc_c18, "pairwise_vlc_c18"},
+        {TraversalOption::pairwise_vlc_c01, "pairwise_vlc_c01"},
+        {TraversalOption::pairwise_vlc_sliced_balanced, "pairwise_vlc_sliced_balanced"},
 
     };
   };

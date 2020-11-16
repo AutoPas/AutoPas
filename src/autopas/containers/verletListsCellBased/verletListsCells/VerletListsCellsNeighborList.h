@@ -6,13 +6,10 @@
 
 #pragma once
 
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
-#include "autopas/options/TraversalOption.h"
 #include "autopas/selectors/TraversalSelector.h"
-#include "autopas/utils/ArrayMath.h"
-//#include "autopas/utils/StaticSelectorMacros.h"
 #include "autopas/utils/StaticBoolSelector.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 
 namespace autopas {
 /**
@@ -21,12 +18,18 @@ namespace autopas {
  * @tparam Particle Type of particle to be used for this neighbor list.
  * */
 template <class Particle>
-class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle> {
+class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle>
+{
  public:
   /**
    * Constructor for VerletListsCellsNeighborList. Initializes private attributes.
    * */
   VerletListsCellsNeighborList() : _aosNeighborList{}, _particleToCellMap{} {}
+
+  /**
+   * @copydoc VerletListsCellsNeighborListInterface::getContainerType()
+   * */
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
 
   /**
    * @copydoc VerletListsCellsNeighborListInterface::buildAoSNeighborList()
@@ -63,15 +66,15 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   }
 
   /**
-   * @copydoc VerletListsCellsNeighborListInterface::getContainerType()
-   * */
-  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
-
-  /**
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
    * */
   typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSNeighborList() { return _aosNeighborList; }
+
+  auto doCast(TraversalInterface *traversal)
+  {
+    return dynamic_cast<autopas::VLCTraversalInterface<Particle, typename VerletListsCellsHelpers<Particle>::NeighborListsType> *>(traversal);
+  }
 
  private:
   /**

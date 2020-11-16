@@ -26,9 +26,9 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList>
 class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                        public VLCTraversalInterface<typename ParticleCell::ParticleType> {
+                        public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
  public:
   /**
    * Constructor of the lc_c18 traversal.
@@ -58,8 +58,8 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, 
   PairwiseFunctor *_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList>
+inline void VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList>::traverseParticlePairs() {
   this->template c18Traversal</*allCells*/ true>([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);

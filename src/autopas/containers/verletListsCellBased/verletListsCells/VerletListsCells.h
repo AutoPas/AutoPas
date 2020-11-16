@@ -15,8 +15,8 @@
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/PairwiseVerletNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -36,7 +36,7 @@ namespace autopas {
  * @tparam Particle
  * @tparam NeighborList The neighbor list used by this container.
  */
-template <class Particle, class NeighborList = PairwiseVerletNeighborList<Particle>>
+template <class Particle, class NeighborList>
 class VerletListsCells : public VerletListsLinkedBase<Particle> {
   using verlet_internal = VerletListsCellsHelpers<FullParticleCell<Particle>>;
   using ParticleCell = FullParticleCell<Particle>;
@@ -99,7 +99,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto vTraversal = dynamic_cast<autopas::VLCTraversalInterface<Particle> *>(traversal);
+    //auto vTraversal = dynamic_cast<autopas::VLCTraversalInterface<Particle> *>(traversal);
+    auto vTraversal = _neighborList.doCast(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
