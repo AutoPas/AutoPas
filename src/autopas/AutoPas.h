@@ -102,7 +102,8 @@ class AutoPas {
     if (_numSamples % _verletRebuildFrequency != 0) {
       AutoPasLog(warn,
                  "Number of samples ({}) is not a multiple of the rebuild frequency ({}). This can lead to problems "
-                 "when multiple AutoPas instances interact (e.g. via MPI).");
+                 "when multiple AutoPas instances interact (e.g. via MPI).",
+                 _numSamples, _verletRebuildFrequency);
     }
 
     if (_autopasMPICommunicator == AUTOPAS_MPI_COMM_NULL) {
