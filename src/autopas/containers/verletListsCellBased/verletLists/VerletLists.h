@@ -38,8 +38,14 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * Enum that specifies how the verlet lists should be build
    */
   enum BuildVerletListType {
-    VerletAoS,  ///< build it using AoS
-    VerletSoA   ///< build it using SoA
+    /**
+     * Build it using AoS
+     */
+    VerletAoS,
+    /**
+     * Build it using AoS
+     */
+    VerletSoA,
   };
 
   /**
