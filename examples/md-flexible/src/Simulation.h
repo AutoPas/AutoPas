@@ -522,52 +522,53 @@ void Simulation<Particle>::writeVTKFile(unsigned int iteration, autopas::AutoPas
     throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + strstr.str() + "\"");
   }
 
-  vtkFile << "# vtk DataFile Version 2.0" << std::endl;
-  vtkFile << "Timestep" << std::endl;
-  vtkFile << "ASCII" << std::endl;
+  vtkFile << "# vtk DataFile Version 2.0\n"
+          << "Timestep\n"
+          << "ASCII\n";
 
   // print positions
-  vtkFile << "DATASET STRUCTURED_GRID" << std::endl;
-  vtkFile << "DIMENSIONS 1 1 1" << std::endl;
-  vtkFile << "POINTS " << numParticles << " double" << std::endl;
+  vtkFile << "DATASET STRUCTURED_GRID\n"
+          << "DIMENSIONS 1 1 1\n"
+          << "POINTS " << numParticles << " double\n";
+
   for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     auto pos = iter->getR();
-    vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
+    vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
   }
-  vtkFile << std::endl;
+  vtkFile << "\n";
 
-  vtkFile << "POINT_DATA " << numParticles << std::endl;
+  vtkFile << "POINT_DATA " << numParticles << "\n";
   // print velocities
-  vtkFile << "VECTORS velocities double" << std::endl;
+  vtkFile << "VECTORS velocities double\n";
   for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     auto v = iter->getV();
-    vtkFile << v[0] << " " << v[1] << " " << v[2] << std::endl;
+    vtkFile << v[0] << " " << v[1] << " " << v[2] << "\n";
   }
-  vtkFile << std::endl;
+  vtkFile << "\n";
 
   // print Forces
-  vtkFile << "VECTORS forces double" << std::endl;
+  vtkFile << "VECTORS forces double\n";
   for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     auto f = iter->getF();
-    vtkFile << f[0] << " " << f[1] << " " << f[2] << std::endl;
+    vtkFile << f[0] << " " << f[1] << " " << f[2] << "\n";
   }
-  vtkFile << std::endl;
+  vtkFile << "\n";
 
   // print TypeIDs
-  vtkFile << "SCALARS typeIds int" << std::endl;
-  vtkFile << "LOOKUP_TABLE default" << std::endl;
+  vtkFile << "SCALARS typeIds int\n";
+  vtkFile << "LOOKUP_TABLE default\n";
   for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-    vtkFile << iter->getTypeId() << std::endl;
+    vtkFile << iter->getTypeId() << "\n";
   }
-  vtkFile << std::endl;
+  vtkFile << "\n";
 
   // print TypeIDs
-  vtkFile << "SCALARS particleIds int" << std::endl;
-  vtkFile << "LOOKUP_TABLE default" << std::endl;
+  vtkFile << "SCALARS particleIds int\n";
+  vtkFile << "LOOKUP_TABLE default\n";
   for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-    vtkFile << iter->getID() << std::endl;
+    vtkFile << iter->getID() << "\n";
   }
-  vtkFile << std::endl;
+  vtkFile << "\n";
 
   vtkFile.close();
 
