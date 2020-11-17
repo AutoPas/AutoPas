@@ -86,12 +86,12 @@ unsigned long neighborListLength(
       for (unsigned long z = lowerCorner[2]; z <= upperCorner[2]; z++) {
         auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension);
         unsigned long cellLoad = 0;
-        /*for (auto &list : neighborLists[cellIndex]) {
-          for(size_t neighborCellIndex = 0; neighborCellIndex < 27; neighborCellIndex++)
+        for (auto &list : neighborLists[cellIndex]) {
+          for(size_t index = 0; index < list.size(); index++)
           {
-            cellLoad += list[neighborCellIndex].second.size();
+            cellLoad += list[index].second.size();
           }
-        }*/
+        }
         sum += cellLoad;
       }
     }

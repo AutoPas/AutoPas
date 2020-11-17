@@ -102,6 +102,7 @@ class VerletListsCellsHelpers {
    */
   class PairwiseVerletListGeneratorFunctor : public Functor<Particle, PairwiseVerletListGeneratorFunctor> {
    public:
+
     /**
      * Constructor
      * @param neighborLists a verletlist for each cell
@@ -171,6 +172,7 @@ class VerletListsCellsHelpers {
      */
     PairwiseNeighborListsType &_neighborLists;
     std::unordered_map<Particle *, std::pair<size_t, size_t>> &_particleToCellMap;
+    //vector of cell1s, for each of theme a map from global cell2 index to
     std::vector<std::unordered_map<size_t, size_t>> _globalToLocalIndex;
     double _cutoffskinsquared;
   };
