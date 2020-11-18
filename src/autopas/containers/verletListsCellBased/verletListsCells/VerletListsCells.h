@@ -14,6 +14,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
@@ -32,8 +33,9 @@ namespace autopas {
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @tparam Particle
+ * @tparam NeighborList The neighbor list used by this container.
  */
-template <class Particle>
+template <class Particle, class NeighborList = VerletListsCellsNeighborList<Particle>>
 class VerletListsCells : public VerletListsLinkedBase<Particle> {
   using verlet_internal = VerletListsCellsHelpers<FullParticleCell<Particle>>;
   using ParticleCell = FullParticleCell<Particle>;
@@ -61,7 +63,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
    */
-  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
+  [[nodiscard]] ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
   /**
    * Generates the load estimation function depending on _loadEstimator.
@@ -79,8 +81,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
       case LoadEstimatorOption::neighborListLength: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
-          return loadEstimators::neighborListLength<Particle>(_neighborLists, cellsPerDimension, lowerCorner,
-                                                              upperCorner);
+          return loadEstimators::neighborListLength<Particle>(_neighborList.getAoSNeighborList(), cellsPerDimension,
+                                                              lowerCorner, upperCorner);
         };
       }
 
@@ -102,7 +104,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     }
 
     if (vTraversal) {
-      vTraversal->setVerletList(_neighborLists);
+      vTraversal->setVerletList(_neighborList.getAoSNeighborList());
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
@@ -120,46 +122,15 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @return the neighbor list of the particle
    */
   const std::vector<Particle *> &getVerletList(const Particle *particle) const {
-    const auto indices = _particleToCellMap.at(const_cast<Particle *>(particle));
-    return _neighborLists.at(indices.first).at(indices.second).second;
+    return _neighborList.getVerletList(particle);
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     bool useNewton3 = traversal->getUseNewton3();
     this->_verletBuiltNewton3 = useNewton3;
 
-    // Initialize a neighbor list for each cell.
-    _neighborLists.clear();
-    auto &cells = this->_linkedCells.getCells();
-    size_t cellsSize = cells.size();
-    _neighborLists.resize(cellsSize);
-    for (size_t cellIndex = 0; cellIndex < cellsSize; ++cellIndex) {
-      _neighborLists[cellIndex].reserve(cells[cellIndex].numParticles());
-      size_t particleIndexWithinCell = 0;
-      for (auto iter = cells[cellIndex].begin(); iter.isValid(); ++iter, ++particleIndexWithinCell) {
-        Particle *particle = &*iter;
-        _neighborLists[cellIndex].emplace_back(particle, std::vector<Particle *>());
-        // In a cell with N particles, reserve space for 5N neighbors.
-        // 5 is an empirically determined magic number that provides good speed.
-        _neighborLists[cellIndex].back().second.reserve(cells[cellIndex].numParticles() * 5);
-        _particleToCellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
-      }
-    }
-
-    typename VerletListsCellsHelpers<Particle>::VerletListGeneratorFunctor f(_neighborLists, _particleToCellMap,
-                                                                             this->getCutoff() + this->getSkin());
-
-    // Generate the build traversal with the traversal selector and apply the build functor with it.
-    TraversalSelector<FullParticleCell<Particle>> traversalSelector;
-    // Argument "cluster size" does not matter here.
-    TraversalSelectorInfo traversalSelectorInfo(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
-                                                this->getInteractionLength(),
-                                                this->_linkedCells.getCellBlock().getCellLength(), 0);
-    autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-      auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::aos, n3>(
-          _buildTraversalOption, f, traversalSelectorInfo);
-      this->_linkedCells.iteratePairwise(buildTraversal.get());
-    });
+    _neighborList.buildAoSNeighborList(this->_linkedCells, useNewton3, this->getCutoff(), this->getSkin(),
+                                       this->getInteractionLength(), _buildTraversalOption);
 
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
@@ -175,17 +146,12 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
  private:
   /**
-   * Verlet lists for each particle for each cell.
+   * Neighbor list abstraction for neighbor list used in the container.
    */
-  typename VerletListsCellsHelpers<Particle>::NeighborListsType _neighborLists;
+  NeighborList _neighborList;
 
   /**
-   * Mapping of each particle to its corresponding cell and id within this cell.
-   */
-  std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap;
-
-  /**
-   * The traversal used to build the verletlists.
+   * The traversal used to build the verlet lists.
    */
   TraversalOption _buildTraversalOption;
 
