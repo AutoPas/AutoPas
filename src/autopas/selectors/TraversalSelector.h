@@ -155,23 +155,23 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     }
     // Verlet List Cells
     case TraversalOption::vlc_sliced: {
-      return std::make_unique<VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::NeighborListsType>>(
+      return std::make_unique<VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::NeighborListsType, false>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::vlc_sliced_c02: {
-      return std::make_unique<VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::NeighborListsType>>(
+      return std::make_unique<VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::NeighborListsType, false>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::vlc_sliced_balanced: {
-      return std::make_unique<VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::NeighborListsType>>(
+      return std::make_unique<VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::NeighborListsType, false>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::vlc_c01: {
-      return std::make_unique<VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::NeighborListsType>>(
+      return std::make_unique<VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::NeighborListsType, false>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::vlc_c18: {
-      return std::make_unique<VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::NeighborListsType>>(
+      return std::make_unique<VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::NeighborListsType, false>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     // Verlet Cluster Lists
@@ -196,23 +196,23 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
 
       // Pairwise TODO
     case TraversalOption::pairwise_vlc_sliced: {
-      return std::make_unique<VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType>>(
+      return std::make_unique<VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType, true>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::pairwise_vlc_sliced_c02: {
-      return std::make_unique<VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType>>(
+      return std::make_unique<VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType, true>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::pairwise_vlc_sliced_balanced: {
-      return std::make_unique<VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType>>(
+      return std::make_unique<VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType, true>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::pairwise_vlc_c01: {
-      return std::make_unique<VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType>>(
+      return std::make_unique<VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType, true>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::pairwise_vlc_c18: {
-      return std::make_unique<VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType>>(
+      return std::make_unique<VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType, true>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
   }

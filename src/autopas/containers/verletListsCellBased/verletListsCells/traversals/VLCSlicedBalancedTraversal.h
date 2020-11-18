@@ -31,7 +31,7 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, bool pairwise>
 class VLCSlicedBalancedTraversal
     : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
       public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
@@ -56,7 +56,8 @@ class VLCSlicedBalancedTraversal
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlc_sliced_balanced; }
+  [[nodiscard]] TraversalOption getTraversalType() const override
+  { return (pairwise) ? TraversalOption::pairwise_vlc_sliced_balanced : TraversalOption::vlc_sliced_balanced; }
 
   [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 
@@ -64,8 +65,8 @@ class VLCSlicedBalancedTraversal
   PairwiseFunctor *_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList>
-inline void VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, bool pairwise>
+inline void VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList, pairwise>::traverseParticlePairs() {
   this->template slicedTraversal</*allCells*/ true>([&](unsigned long x, unsigned long y, unsigned long z) {
     auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);

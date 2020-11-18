@@ -70,6 +70,9 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
 
+  //TODO
+  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 13;
+
   // check that there is an entry for every container. Except VCC because they are only relevant for CUDA...
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size() - 1);
 

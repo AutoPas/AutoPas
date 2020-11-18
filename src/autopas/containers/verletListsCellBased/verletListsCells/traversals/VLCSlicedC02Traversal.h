@@ -29,7 +29,7 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, bool pairwise>
 class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                               public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
  public:
@@ -53,7 +53,8 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlc_sliced_c02; }
+  [[nodiscard]] TraversalOption getTraversalType() const override
+  { return (pairwise) ? TraversalOption::pairwise_vlc_sliced_c02 : TraversalOption::vlc_sliced_c02; }
 
   [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 
@@ -61,8 +62,8 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
   PairwiseFunctor *_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList>
-inline void VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, bool pairwise>
+inline void VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList, pairwise>::traverseParticlePairs() {
   this->template cSlicedTraversal</*allCells*/ true>([&](unsigned long x, unsigned long y, unsigned long z) {
     auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);

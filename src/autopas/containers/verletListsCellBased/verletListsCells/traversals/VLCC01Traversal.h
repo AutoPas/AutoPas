@@ -23,7 +23,7 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, bool pairwise>
 class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                         public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
  public:
@@ -43,7 +43,10 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
 
   void traverseParticlePairs() override;
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlc_c01; }
+  [[nodiscard]] TraversalOption getTraversalType() const override
+  {
+    return (pairwise) ? TraversalOption::pairwise_vlc_c01 : TraversalOption::vlc_c01;
+  }
 
   [[nodiscard]] bool isApplicable() const override {
     return (not useNewton3) and (dataLayout == DataLayoutOption::aos);
@@ -57,8 +60,8 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
   PairwiseFunctor *_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList>
-inline void VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, bool pairwise>
+inline void VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList, pairwise>::traverseParticlePairs() {
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);

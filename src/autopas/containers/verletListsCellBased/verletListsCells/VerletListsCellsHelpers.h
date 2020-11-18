@@ -29,7 +29,6 @@ class VerletListsCellsHelpers {
    * Pairwise verlet lists: For every cell and for each of its neighboring cells a pair of particle and a vector of its potential partners is stored.
    */
   using PairwiseNeighborListsType = std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>;
-
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
@@ -152,7 +151,6 @@ class VerletListsCellsHelpers {
         // specific cell and each cell is only accessed by one thread at a time
         // (ensured by traversals)
         // also the list is not allowed to be resized!
-
         auto &[cellIndex, particleIndex] = _particleToCellMap[&i];
         auto &[cellIndexNeighbor, particleIndexNeighbor] = _particleToCellMap[&j];
         auto iter = _globalToLocalIndex[cellIndex].find(cellIndexNeighbor);
