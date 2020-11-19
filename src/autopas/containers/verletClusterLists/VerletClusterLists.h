@@ -13,11 +13,13 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
+#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
@@ -63,9 +65,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param cutoff The cutoff radius of the interaction.
    * @param skin The skin radius.
    * @param clusterSize Number of particles per cluster.
+   * @param loadEstimator load estimation algorithm for balanced traversals.
    */
   VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
-                     size_t clusterSize)
+                     size_t clusterSize, LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
       : ParticleContainerInterface<Particle>(),
         _clusterSize{clusterSize},
         _numClusters{0},
@@ -75,7 +78,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         _haloBoxMin{utils::ArrayMath::subScalar(boxMin, cutoff + skin)},
         _haloBoxMax{utils::ArrayMath::addScalar(boxMax, cutoff + skin)},
         _cutoff{cutoff},
-        _skin{skin} {
+        _skin{skin},
+        _loadEstimator(loadEstimator) {
     // always have at least one tower.
     _towers.push_back(internal::ClusterTower<Particle>(_clusterSize));
   }
@@ -89,6 +93,40 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @copydoc ParticleContainerInterface::getContainerType()
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
+
+  /**
+   * Generates the load estimation function depending on _loadEstimator.
+   * @return load estimator function object.
+   */
+  BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
+    switch (this->_loadEstimator) {
+      case LoadEstimatorOption::neighborListLength: {
+        return [&](const std::array<unsigned long, 3> &cellsPerDimension,
+                   const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
+          // the neighborListLength function defined for verletListsCells in not compatible with this container.
+          unsigned long sum = 0;
+          for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
+            for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
+              unsigned long cellLoad = 0;
+              auto &tower = getTowerAtCoordinates(x, y);
+              for (auto &cluster : tower.getClusters()) {
+                cellLoad += cluster.getNeighbors().size();
+              }
+              sum += cellLoad;
+            }
+          }
+          return sum;
+        };
+      }
+      case LoadEstimatorOption::none:
+        [[fallthrough]];
+      default: {
+        return
+            [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
+                const std::array<unsigned long, 3> &upperCorner) { return 1; };
+      }
+    }
+  }
 
   /**
    * @copydoc ParticleContainerInterface::iteratePairwise()
@@ -107,6 +145,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletClusterLists::iteratePairwise. TraversalID: {}",
           traversal->getTraversalType());
+    }
+    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
+      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
 
     traversal->initTraversal();
@@ -214,9 +255,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
    */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
-    std::array<double, 3> towerSize = {_towerSideLength, _towerSideLength,
+    auto boxSizeWithHalo = utils::ArrayMath::sub(this->getHaloBoxMax(), this->getHaloBoxMin());
+    auto towerSideLength = internal::VerletClusterListsRebuilder<Particle>::estimateOptimalGridSideLength(
+        this->getNumParticles(), boxSizeWithHalo, _clusterSize);
+    auto towersPerDim =
+        internal::VerletClusterListsRebuilder<Particle>::calculateTowersPerDim(boxSizeWithHalo, 1.0 / towerSideLength);
+    std::array<double, 3> towerSize = {towerSideLength, towerSideLength,
+
                                        this->getHaloBoxMax()[2] - this->getHaloBoxMin()[2]};
-    std::array<unsigned long, 3> towerDimensions = {_towersPerDim[0], _towersPerDim[1], 1};
+    std::array<unsigned long, 3> towerDimensions = {towersPerDim[0], towersPerDim[1], 1};
     return TraversalSelectorInfo(towerDimensions, this->getInteractionLength(), towerSize, _clusterSize);
   }
 
@@ -700,6 +747,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
  private:
+  /**
+   * load estimation algorithm for balanced traversals.
+   */
+  autopas::LoadEstimatorOption _loadEstimator;
+
   /**
    * Helper function for the region iterators to determine bounds and towers to iterate over.
    * @param lowerCorner

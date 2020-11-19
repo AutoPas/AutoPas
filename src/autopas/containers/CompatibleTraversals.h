@@ -53,7 +53,8 @@ static const std::set<TraversalOption> &allRLCCompatibleTraversals() { return al
  */
 static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::vcl_cluster_iteration, TraversalOption::vcl_c06,
-                                           TraversalOption::vcl_c01_balanced};
+                                           TraversalOption::vcl_c01_balanced,      TraversalOption::vcl_sliced,
+                                           TraversalOption::vcl_sliced_balanced,   TraversalOption::vcl_sliced_c02};
   return s;
 }
 

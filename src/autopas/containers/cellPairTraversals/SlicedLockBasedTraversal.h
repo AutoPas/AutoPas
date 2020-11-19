@@ -27,9 +27,13 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam dataLayout
  * @tparam useNewton3
+ * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
+ * c08)
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool spaciallyForward>
+class SlicedLockBasedTraversal
+    : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -41,8 +45,8 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairw
    */
   explicit SlicedLockBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                     const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                    interactionLength, cellLength) {}
+      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>(
+            dims, pairwiseFunctor, interactionLength, cellLength) {}
 
  protected:
   /**
@@ -55,20 +59,15 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairw
    *
    * @copydetails C01BasedTraversal::c01Traversal()
    *
-   * @tparam allCells Defines whether or not to iterate over all cells with the loop body given as argument. By default
-   * (allCells=false) it will not iterate over all cells and instead skip the last few cells, because they will be
-   * covered by the base step. If you plan to use the default base step of the traversal on this function, use
-   * allCells=false, if you plan to just iterate over all cells, e.g., to iterate over verlet lists saved within the
-   * cells, use allCells=true. For the sliced step if allCells is false, iteration will not occur over the last layer of
-   * cells (for _overlap=1) (in x, y and z direction).
    */
-  template <bool allCells = false, typename LoopBody>
+  template <typename LoopBody>
   inline void slicedTraversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-template <bool allCells, typename LoopBody>
-void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::slicedTraversal(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool spaciallyForward>
+template <typename LoopBody>
+void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>::slicedTraversal(
     LoopBody &&loopBody) {
   using std::array;
 
@@ -78,9 +77,9 @@ void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
 
   // 0) check if applicable
   std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
-  if (allCells) {
+
+  if (not spaciallyForward) {
     overLapps23 = {0ul, 0ul};
-    this->_sliceThickness.back() += this->_overlapLongestAxis;
   }
 
   std::vector<utils::Timer> timers;
@@ -152,10 +151,6 @@ void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
       }
     }
     threadTimes[slice] = timers[slice].stop();
-  }
-
-  if (allCells) {
-    this->_sliceThickness.back() -= this->_overlapLongestAxis;
   }
 
   std::string timesStr;

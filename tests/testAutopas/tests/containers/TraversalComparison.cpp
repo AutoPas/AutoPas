@@ -110,6 +110,14 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
       functor{_cutoff};
   functor.setParticleProperties(_eps * 24, _sig * _sig);
 
+  autopasTools::generators::RandomGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
+                                                               container->getBoxMin(), container->getBoxMax(),
+                                                               numMolecules);
+
+  autopasTools::generators::RandomGenerator::fillWithHaloParticles(
+      *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container->getCutoff(),
+      numHaloMolecules);
+
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
         return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
@@ -119,14 +127,6 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   if (not traversal->isApplicable()) {
     return {};
   }
-
-  autopasTools::generators::RandomGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
-                                                               container->getBoxMin(), container->getBoxMax(),
-                                                               numMolecules);
-
-  autopasTools::generators::RandomGenerator::fillWithHaloParticles(
-      *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container->getCutoff(),
-      numHaloMolecules);
 
   if (particleDeletionPosition & DeletionPosition::beforeLists) {
     markSomeParticlesAsDeleted(container, numMolecules + numHaloMolecules, 19);

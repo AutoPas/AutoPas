@@ -87,11 +87,11 @@ class VerletClusterListsRebuilder {
 
     auto boxSizeWithHalo = utils::ArrayMath::sub(_haloBoxMax, _haloBoxMin);
 
-    _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSizeWithHalo);
+    _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSizeWithHalo, _clusterSize);
     _towerSideLengthReciprocal = 1 / _towerSideLength;
     _interactionLengthInTowers = static_cast<int>(std::ceil(_interactionLength * _towerSideLengthReciprocal));
 
-    _towersPerDim = calculateTowersPerDim(boxSizeWithHalo);
+    _towersPerDim = calculateTowersPerDim(boxSizeWithHalo, _towerSideLengthReciprocal);
     size_t numTowers = _towersPerDim[0] * _towersPerDim[1];
 
     // resize to number of towers. Cannot use resize since towers are not default constructable.
@@ -135,6 +135,42 @@ class VerletClusterListsRebuilder {
       _towers[index].fillUpWithDummyParticles(startDummiesX + index * dummyParticleDistance, dummyParticleDistance);
     }
   }
+  /**
+   * Estimates the optimal grid side length.
+   * @param numParticles The number of particles in the container.
+   * @param boxSize The size of the domain.
+   * @param clusterSize the number of particles per cluster.
+   * @return an estimated optimal grid side length.
+   */
+  [[nodiscard]] static double estimateOptimalGridSideLength(size_t numParticles, std::array<double, 3> boxSize,
+                                                            size_t clusterSize) {
+    double volume = boxSize[0] * boxSize[1] * boxSize[2];
+    if (numParticles > 0) {
+      // estimate particle density
+      double density = numParticles / volume;
+
+      return std::cbrt(clusterSize / density);
+    } else {
+      return std::max(boxSize[0], boxSize[1]);
+    }
+  }
+
+  /**
+   * Calculates the cells per dimension in the container using the _towerSideLengthReciprocal.
+   * @param boxSize the size of the domain.
+   * @param towerSideLengthReciprocal 1.0 / towerSidelength.
+   * @return the cells per dimension in the container.
+   */
+  [[nodiscard]] static std::array<size_t, 2> calculateTowersPerDim(std::array<double, 3> boxSize,
+                                                                   double towerSideLengthReciprocal) {
+    std::array<size_t, 2> towersPerDim{};
+    for (int d = 0; d < 2; d++) {
+      towersPerDim[d] = static_cast<size_t>(std::ceil(boxSize[d] * towerSideLengthReciprocal));
+      // at least one cell
+      towersPerDim[d] = std::max(towersPerDim[d], 1ul);
+    }
+    return towersPerDim;
+  }
 
   /**
    * Removes previously saved neighbors from clusters and sets the positions of the dummy particles to inside of the
@@ -161,39 +197,6 @@ class VerletClusterListsRebuilder {
       _towers[towerIndex].clear();
     }
     return invalidParticles;
-  }
-
-  /**
-   * Estimates the optimal grid side length.
-   * @param numParticles The number of particles in the container.
-   * @param boxSize The size of the domain.
-   * @return an estimated optimal grid side length.
-   */
-  [[nodiscard]] virtual double estimateOptimalGridSideLength(size_t numParticles, std::array<double, 3> boxSize) const {
-    double volume = boxSize[0] * boxSize[1] * boxSize[2];
-    if (numParticles > 0) {
-      // estimate particle density
-      double density = numParticles / volume;
-
-      return std::cbrt(_clusterSize / density);
-    } else {
-      return std::max(boxSize[0], boxSize[1]);
-    }
-  }
-
-  /**
-   * Calculates the cells per dimension in the container using the _towerSideLengthReciprocal.
-   * @param boxSize the size of the domain.
-   * @return the cells per dimension in the container.
-   */
-  [[nodiscard]] std::array<size_t, 2> calculateTowersPerDim(std::array<double, 3> boxSize) const {
-    std::array<size_t, 2> towersPerDim{};
-    for (int dimension = 0; dimension < 2; dimension++) {
-      towersPerDim[dimension] = static_cast<size_t>(std::ceil(boxSize[dimension] * _towerSideLengthReciprocal));
-      // at least one cell
-      towersPerDim[dimension] = std::max(towersPerDim[dimension], 1ul);
-    }
-    return towersPerDim;
   }
 
   /**

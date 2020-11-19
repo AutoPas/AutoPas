@@ -27,6 +27,9 @@
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLSlicedBalancedTraversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLSlicedC02Traversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLSlicedTraversal.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/traversals/VVLAsBuildTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC01Traversal.h"
@@ -183,6 +186,18 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       return std::make_unique<
           VCLC01BalancedTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor, info.clusterSize);
+    }
+    case TraversalOption::vcl_sliced: {
+      return std::make_unique<VCLSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength, info.clusterSize);
+    }
+    case TraversalOption::vcl_sliced_c02: {
+      return std::make_unique<VCLSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength, info.clusterSize);
+    }
+    case TraversalOption::vcl_sliced_balanced: {
+      return std::make_unique<VCLSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength, info.clusterSize);
     }
     case TraversalOption::vcl_c06: {
       return std::make_unique<VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(&pairwiseFunctor,
