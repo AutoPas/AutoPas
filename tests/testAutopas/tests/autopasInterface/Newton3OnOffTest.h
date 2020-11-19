@@ -31,12 +31,12 @@ class Newton3OnOffTest
 
   std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }
 
-  std::array<double, 3> getBoxMax() const { return {3.0, 3.0, 3.0}; }
+  std::array<double, 3> getBoxMax() const { return {10.0, 10.0, 10.0}; }
 
   double getCutoff() const { return 1.0; }
   double getCellSizeFactor() const { return 1.0; }
   double getVerletSkin() const { return 0.0; }
-  unsigned int getClusterSize() const { return 64; }
+  unsigned int getClusterSize() const { return 4; }
 
   void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                          autopas::DataLayoutOption dataLayout);
