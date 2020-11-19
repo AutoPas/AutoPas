@@ -19,59 +19,70 @@ TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
   auto [containerTraversalTuple, dataLayoutOption] = GetParam();
   auto [containerOption, traversalOption] = containerTraversalTuple;
 
+  // skip combinations that are for now not applicable
+  if ((traversalOption == autopas::TraversalOption::vlc_c18 or
+       traversalOption == autopas::TraversalOption::vlc_sliced or
+       traversalOption == autopas::TraversalOption::vlc_sliced_balanced or
+       traversalOption == autopas::TraversalOption::vlc_sliced_c02) and
+      dataLayoutOption == autopas::DataLayoutOption::soa) {
+    auto skipMessage = "Traveral " + traversalOption.to_string() + " is not applicable with SoA";
+    GTEST_SKIP_(skipMessage.c_str());
+  }
+
   countFunctorCalls(containerOption, traversalOption, dataLayoutOption);
 }
 
 // Generate Unittests for all Container / Traversal / Datalayout combinations
 INSTANTIATE_TEST_SUITE_P(
     Generated, Newton3OnOffTest,
-    Combine(
-        ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> {
-          // needed because CellBlock3D (called when building containers) logs always
-          autopas::Logger::create();
+    Combine(ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> {
+              // needed because CellBlock3D (called when building containers) logs always
+              autopas::Logger::create();
 
-          std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> ret;
+              std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption>> ret;
 
-          // container factory
-          autopas::ContainerSelector<Particle> containerSelector({0., 0., 0.}, {10., 10., 10.}, 1.);
-          autopas::ContainerSelectorInfo containerInfo(1., 0., 64, autopas::LoadEstimatorOption::none);
+              // container factory
+              autopas::ContainerSelector<Particle> containerSelector({0., 0., 0.}, {10., 10., 10.}, 1.);
+              autopas::ContainerSelectorInfo containerInfo(1., 0., 64, autopas::LoadEstimatorOption::none);
 
-          // generate for all containers, even those to come
-          for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
-            // skip containers that do not work with both newton modes
-            // @TODO: let verlet lists support Newton 3
-            if (containerOption == autopas::ContainerOption::verletLists or
-                containerOption == autopas::ContainerOption::verletListsCells or
-                containerOption == autopas::ContainerOption::verletClusterLists or
-                containerOption == autopas::ContainerOption::varVerletListsAsBuild or
-                containerOption == autopas::ContainerOption::verletClusterCells) {
-              continue;
-            }
+              // generate for all containers, even those to come
+              for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
+                // skip containers that do not work with both newton modes
+                // @TODO: let verlet lists support Newton 3
+                if (containerOption == autopas::ContainerOption::verletLists or
+                    containerOption == autopas::ContainerOption::varVerletListsAsBuild or
+                    containerOption == autopas::ContainerOption::verletClusterCells) {
+                  continue;
+                }
 
-            containerSelector.selectContainer(containerOption, containerInfo);
+                containerSelector.selectContainer(containerOption, containerInfo);
 
-            auto container = containerSelector.getCurrentContainer();
+                auto container = containerSelector.getCurrentContainer();
 
-            for (auto traversalOption : container->getAllTraversals()) {
-              if (traversalOption == autopas::TraversalOption::lc_c01 or
-                  traversalOption ==
-                      autopas::TraversalOption::lc_c01_combined_SoA /*and autopas::autopas_get_max_threads() > 1*/) {
-                continue;
+                for (auto traversalOption : container->getAllTraversals()) {
+                  // exclude traversals that do not support Newton3
+                  if (traversalOption == autopas::TraversalOption::lc_c01 or
+                      traversalOption ==
+                          autopas::TraversalOption::lc_c01_combined_SoA /*and autopas::autopas_get_max_threads() > 1*/
+                      or traversalOption == autopas::TraversalOption::vlc_c01 or
+                      traversalOption == autopas::TraversalOption::vcl_cluster_iteration or
+                      traversalOption == autopas::TraversalOption::vcl_c01_balanced) {
+                    continue;
+                  }
+                  if (traversalOption == autopas::TraversalOption::lc_c01_cuda) {
+                    // Traversal provides no AoS and SoA Traversal
+                    continue;
+                  }
+
+                  ret.emplace_back(containerOption, traversalOption);
+                }
               }
-              if (traversalOption == autopas::TraversalOption::lc_c01_cuda) {
-                // Traversal provides no AoS and SoA Traversal
-                continue;
-              }
 
-              ret.emplace_back(containerOption, traversalOption);
-            }
-          }
+              autopas::Logger::unregister();
 
-          autopas::Logger::unregister();
-
-          return ret;
-        }()),
-        ValuesIn(autopas::DataLayoutOption::getAllOptions())),
+              return ret;
+            }()),
+            ValuesIn(autopas::DataLayoutOption::getAllOptions())),
     Newton3OnOffTest::PrintToStringParamName());
 
 // Count number of Functor calls with and without newton 3 and compare
@@ -137,6 +148,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 template <class ParticleFunctor, class Container, class Traversal>
 void Newton3OnOffTest::iterate(Container container, Traversal traversal, autopas::DataLayoutOption dataLayout,
                                autopas::Newton3Option newton3, ParticleFunctor *f) {
+  container->rebuildNeighborLists(traversal.get());
   container->iteratePairwise(traversal.get());
 }
 
