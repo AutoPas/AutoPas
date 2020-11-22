@@ -36,6 +36,7 @@ namespace autopas {
  * @tparam Particle
  * @tparam NeighborList The neighbor list used by this container.
  */
+
 template <class Particle, class NeighborList>
 class VerletListsCells : public VerletListsLinkedBase<Particle> {
   using verlet_internal = VerletListsCellsHelpers<FullParticleCell<Particle>>;

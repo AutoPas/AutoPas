@@ -9,8 +9,9 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/AutoPas.h"
-#include "autopas/sph/autopassph.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -21,7 +22,7 @@
 class Newton3OnOffTest
     : public AutoPasTestBase,
       public ::testing::WithParamInterface<
-          std::tuple<std::tuple<autopas::ContainerOption, autopas::TraversalOption>, autopas::DataLayoutOption>> {
+          std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption>> {
  public:
   Newton3OnOffTest() : mockFunctor() {}
 
@@ -31,19 +32,18 @@ class Newton3OnOffTest
 
   std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }
 
-  std::array<double, 3> getBoxMax() const { return {3.0, 3.0, 3.0}; }
+  std::array<double, 3> getBoxMax() const { return {10.0, 10.0, 10.0}; }
 
-  double getCutoff() const { return 1.0; }
-  double getCellSizeFactor() const { return 1.0; }
-  double getVerletSkin() const { return 0.0; }
-  unsigned int getClusterSize() const { return 64; }
+  static double getCutoff() { return 1.0; }
+  static double getCellSizeFactor() { return 1.0; }
+  static double getVerletSkin() { return 0.0; }
+  static int getClusterSize() { return 4; }
 
   void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                          autopas::DataLayoutOption dataLayout);
 
-  template <class ParticleFunctor, class Container, class Traversal>
-  void iterate(Container container, Traversal traversal, autopas::DataLayoutOption dataLayout,
-               autopas::Newton3Option newton3, ParticleFunctor *f);
+  template <class Container, class Traversal>
+  void iterate(Container container, Traversal traversal);
 
   MockFunctor<Particle> mockFunctor;
 
@@ -65,8 +65,7 @@ class Newton3OnOffTest
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       auto inputTuple = static_cast<ParamType>(info.param);
 
-      auto [containerTraversalTuple, dataLayoutOption] = inputTuple;
-      auto [containerOption, traversalOption] = containerTraversalTuple;
+      auto [containerOption, traversalOption, dataLayoutOption] = inputTuple;
 
       auto retStr =
           containerOption.to_string() + "_" + traversalOption.to_string() + "_" + dataLayoutOption.to_string();

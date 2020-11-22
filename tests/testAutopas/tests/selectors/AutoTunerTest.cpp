@@ -9,13 +9,14 @@
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopasTools/generators/GridGenerator.h"
 
 using ::testing::_;
 
 TEST_F(AutoTunerTest, testAllConfigurations) {
-  std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 42};
+  std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {2, 4, 2};
   // adaptive domain size so sliced is always applicable.
-  bBoxMax[2] = autopas::autopas_get_max_threads() * 2;
+  // bBoxMax[1] = autopas::autopas_get_max_threads() * 2;
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
@@ -66,12 +67,15 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                             = 2
   //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3)                             = 2
-  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 8;
+  //                        vcl_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vcl_sliced_c02              (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vcl_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
+  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 24;
   // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
 
   //TODO
-  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 13;
+  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 9;
 
   // check that there is an entry for every container. Except VCC because they are only relevant for CUDA...
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size() - 1);
@@ -103,6 +107,14 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
     if (collectedSamples == maxSamples) {
       collectedSamples = 0;
       doRebuild = true;
+      // add particles, so VerletClusterLists uses more than one tower.
+      autoTuner.getContainer().get()->deleteAllParticles();
+      const std::array<size_t, 3> particlesPerDim = {8, 16, 8};
+      const std::array<double, 3> spacing = {0.25, 0.25, 0.25};
+      const std::array<double, 3> offset = {0.125, 0.125, 0.125};
+      auto defaultParticle = Molecule();
+      autopasTools::generators::GridGenerator::fillWithParticles(*(autoTuner.getContainer().get()), particlesPerDim,
+                                                                 defaultParticle, spacing, offset);
     }
     stillTuning = autoTuner.iteratePairwise(&functor, doRebuild);
     doRebuild = false;

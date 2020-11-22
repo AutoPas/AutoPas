@@ -8,6 +8,7 @@
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
 #include "autopas/selectors/TraversalSelector.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 
@@ -61,8 +62,8 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * @copydoc VerletListsCellsNeighborListInterface::getVerletList()
    * */
   const std::vector<Particle *> &getVerletList(const Particle *particle) const override {
-    const auto indices = _particleToCellMap.at(const_cast<Particle *>(particle));
-    return _aosNeighborList.at(indices.first).at(indices.second).second;
+    const auto [cellIndex, particleIndexInCell] = _particleToCellMap.at(const_cast<Particle *>(particle));
+    return _aosNeighborList.at(cellIndex).at(particleIndexInCell).second;
   }
 
   /**

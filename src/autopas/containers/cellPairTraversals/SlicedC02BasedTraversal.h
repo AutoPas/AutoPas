@@ -30,9 +30,13 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam dataLayout
  * @tparam useNewton3
+ * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
+ * c08)
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool spaciallyForward>
+class SlicedC02BasedTraversal
+    : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward> {
  public:
   /**
    * Constructor of the colored sliced traversal.
@@ -44,8 +48,8 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairwi
    */
   explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                    const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                    interactionLength, cellLength) {}
+      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>(
+            dims, pairwiseFunctor, interactionLength, cellLength) {}
 
   /**
    * The main traversal of the colored sliced traversal.
@@ -53,13 +57,8 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairwi
    *
    * @copydetails C01BasedTraversal::c01Traversal()
    *
-   * @tparam allCells Defines whether or not to iterate over all cells with the loop body given as argument.
-   * If set to false, loopBody will not be applied to the last layer of cells (times overlap) in each dimension.
-   * This is sufficient for base steps that only cover spacially forward neighbors, like c08.
-   * For base steps that only cover index-forward neighbors like c18, it is necessary to also apply the base
-   * step to the last cells, because it calculates interactions with cells spacially behind the base cell.
    */
-  template <bool allCells = false, typename LoopBody>
+  template <typename LoopBody>
   inline void cSlicedTraversal(LoopBody &&loopBody);
 
   /**
@@ -82,9 +81,10 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairwi
   }
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-template <bool allCells, typename LoopBody>
-void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::cSlicedTraversal(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool spaciallyForward>
+template <typename LoopBody>
+void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>::cSlicedTraversal(
     LoopBody &&loopBody) {
   using std::array;
 
@@ -92,9 +92,9 @@ void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
   // check if applicable
 
   std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
-  if (allCells) {
+
+  if (not spaciallyForward) {
     overLapps23 = {0ul, 0ul};
-    this->_sliceThickness.back() += this->_overlapLongestAxis;
   }
 
   for (size_t offset = 0; offset < 2; offset++) {
@@ -123,9 +123,6 @@ void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
         }
       }
     }
-  }
-  if (allCells) {
-    this->_sliceThickness.back() -= this->_overlapLongestAxis;
   }
 }
 

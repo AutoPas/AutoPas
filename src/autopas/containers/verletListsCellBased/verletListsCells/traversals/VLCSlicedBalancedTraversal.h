@@ -32,9 +32,9 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, bool pairwise>
-class VLCSlicedBalancedTraversal
-    : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-      public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
+                                   public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+
  public:
   /**
    * Constructor of the balanced sliced traversal.
@@ -46,7 +46,7 @@ class VLCSlicedBalancedTraversal
    */
   explicit VLCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                       double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
+      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>(
             dims, pairwiseFunctor, interactionLength, cellLength),
         _functor(pairwiseFunctor) {}
 
@@ -67,7 +67,7 @@ class VLCSlicedBalancedTraversal
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, bool pairwise>
 inline void VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList, pairwise>::traverseParticlePairs() {
-  this->template slicedTraversal</*allCells*/ true>([&](unsigned long x, unsigned long y, unsigned long z) {
+  this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
   });

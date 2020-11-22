@@ -103,6 +103,20 @@ class TraversalOption : public Option<TraversalOption> {
      * Does not support Newton3.
      */
     vcl_c01_balanced,
+    /**
+     * VCLSlicedTraversal : Equivalent to lc_sliced with slicing applied to the tower grid.
+     */
+    vcl_sliced,
+    /**
+     * VCLSlicedBalancedTraversal : Same as vcl_sliced but tries to balance slice thickness according to a given
+     * LoadEstimatorOption.
+     */
+    vcl_sliced_balanced,
+    /**
+     * VCCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
+     * coloring of slices.
+     */
+    vcl_sliced_c02,
 
     // VerletList Traversals:
     /**
@@ -122,11 +136,11 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vlc_c18,
     /**
-     * VLCSlicedTraversal : Equivalent to LCSlicedTraversal.
+     * VLCSlicedTraversal : Equivalent to LCSlicedTraversal but with a c18 base-step.
      */
     vlc_sliced,
     /**
-     * VLCSlicedBalancedTraversal : Equivalent to LCSlicedBalancedTraversal.
+     * VLCSlicedBalancedTraversal : Equivalent to LCSlicedBalancedTraversal but with a c18 base-step.
      * Tries to balance slice thickness according to a given LoadEstimatorOption.
      */
     vlc_sliced_balanced,
@@ -224,6 +238,9 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::vcl_cluster_iteration, "vcl_cluster_iteration"},
         {TraversalOption::vcl_c06, "vcl_c06"},
         {TraversalOption::vcl_c01_balanced, "vcl_c01_balanced"},
+        {TraversalOption::vcl_sliced, "vcl_sliced"},
+        {TraversalOption::vcl_sliced_c02, "vcl_sliced_c02"},
+        {TraversalOption::vcl_sliced_balanced, "vcl_sliced_balanced"},
 
         // VerletList Traversals:
         {TraversalOption::vl_list_iteration, "vl_list_iteration"},
@@ -238,14 +255,12 @@ class TraversalOption : public Option<TraversalOption> {
         // VarVerlet Traversals:
         {TraversalOption::vvl_as_built, "vvl_as_built"},
 
-
         // PairwiseVerlet Traversals: TODO
         {TraversalOption::pairwise_vlc_sliced, "pairwise_vlc_sliced"},
         {TraversalOption::pairwise_vlc_sliced_c02, "pairwise_vlc_sliced_c02"},
         {TraversalOption::pairwise_vlc_c18, "pairwise_vlc_c18"},
         {TraversalOption::pairwise_vlc_c01, "pairwise_vlc_c01"},
         {TraversalOption::pairwise_vlc_sliced_balanced, "pairwise_vlc_sliced_balanced"},
-
     };
   };
 
