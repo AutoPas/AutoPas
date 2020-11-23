@@ -40,7 +40,7 @@ class VerletListsCellsNeighborListInterface {
    * @param particle
    * @return the neighbor list of the particle
    */
-  virtual const std::vector<Particle *> &getVerletList(const Particle *particle) const = 0;
+  virtual const size_t &getNumberOfPartners(const Particle *particle) const = 0;
 
   /**
    * Returns the container type of this neighbor list and the container it belongs to.

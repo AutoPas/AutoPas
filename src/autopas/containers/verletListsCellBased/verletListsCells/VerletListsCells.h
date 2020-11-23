@@ -124,8 +124,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param particle
    * @return the neighbor list of the particle
    */
-  const std::vector<Particle *> &getVerletList(const Particle *particle) const {
-    return _neighborList.getVerletList(particle);
+  const size_t &getNumberOfPartners(const Particle *particle) const {
+    return _neighborList.getNumberOfPartners(particle);
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {

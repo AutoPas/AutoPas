@@ -38,10 +38,10 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor) {
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
 
   EXPECT_EQ(list.size(), 2);
-  int partners = 0;
+  size_t partners = 0;
 
   for (auto &pl : list) {
-    partners += verletLists.getVerletList(pl).size();
+    partners += verletLists.getNumberOfPartners(pl);
   }
   EXPECT_EQ(partners, 1);
 }

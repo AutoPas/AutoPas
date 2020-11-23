@@ -20,8 +20,16 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pairwiseVerletLists; }
 
-  const std::vector<Particle *> &getVerletList(const Particle *particle) const override {
-    return std::vector<Particle*>();
+  const size_t &getNumberOfPartners(const Particle *particle) const override {
+    size_t localSize = 0;
+    const auto [firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle));
+    for(size_t secondCellIndex = 0; secondCellIndex < 27; secondCellIndex++)
+    {
+      localSize+=_aosNeighborList[firstCellIndex][secondCellIndex][particleInCellIndex].second.size();
+    }
+    //auto toReturnSize = std::make_unique<size_t>(localSize);
+    //auto ret = *(toReturnSize);
+    return localSize;
   }
 
   typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType &getAoSNeighborList() { return _aosNeighborList; }
