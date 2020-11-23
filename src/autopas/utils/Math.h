@@ -17,6 +17,25 @@ namespace autopas::utils::Math {
 const double normalScale = 1. / std::sqrt(2 * M_PI);
 
 /**
+ * No-overhead power function with exponent known at compile time.
+ * @tparam exponent
+ * @tparam T
+ * @param base
+ * @return
+ */
+template <size_t exponent, class T>
+T pow(T base) {
+  if (exponent == 0) {
+    return 1;
+  }
+  // the compiler should unroll this loop
+  for (size_t i = 0; i < exponent - 1; ++i) {
+    base *= base;
+  }
+  return base;
+}
+
+/**
  * Probability density function PDF of the standard normal distribution.
  * @param x
  * @return PDF(x)
