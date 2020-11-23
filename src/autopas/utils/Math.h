@@ -28,11 +28,13 @@ T pow(T base) {
   if (exponent == 0) {
     return 1;
   }
+
+  T res = base;
   // the compiler should unroll this loop
   for (size_t i = 0; i < exponent - 1; ++i) {
-    base *= base;
+    res *= base;
   }
-  return base;
+  return res;
 }
 
 /**
