@@ -10,6 +10,7 @@
 #include <memory>
 #include <set>
 
+#include "Smoothing.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
@@ -25,10 +26,15 @@
 namespace autopas {
 
 /**
- * Automated tuner for optimal iteration performance.
+ * Calls to the iteratePairwise() method are passed through this class for two reasons:
+ * 1. Measuring time of the iteration.
+ * 2. Selecting an appropriate configuration for the pairwise iteration.
  *
- * This class offers an interface to the iteratePairwise method.
- * Internally it chooses the best container, traversal etc for the current simulation.
+ * The tuner can be in one of two states, depending on whether it currently should look for a new optimum,
+ * which is called a tuning phase. During a tuning phase,for each Configuration multiple measurements can be taken,
+ * which are called samples. To reduce noise, the samples for one configuration are then condensed to one value for
+ * the current tuning phase, called evidence. These evidence are handed on to a tuningStrategy, which selects a) what
+ * Configuration to test next and b) which configuration is the best in this tuning phase.
  *
  * @tparam Particle
  * @tparam ParticleCell
@@ -141,6 +147,8 @@ class AutoTuner {
    */
   template <class PairwiseFunctor>
   void addTimeMeasurement(PairwiseFunctor &pairwiseFunctor, long time) {
+    const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
+
     if (pairwiseFunctor.isRelevantForTuning()) {
       if (_samples.size() < _maxSamples) {
         AutoPasLog(trace, "Adding sample.");
@@ -148,16 +156,21 @@ class AutoTuner {
         // if this was the last sample:
         if (_samples.size() == _maxSamples) {
           auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
-          _tuningStrategy->addEvidence(reducedValue, _iteration);
+
+          _evidences[currentConfig].emplace_back(_iteration, reducedValue);
+          auto smoothedValue = Smoothing::smoothLastPoint(_evidences[currentConfig], .25);
+
+          _tuningStrategy->addEvidence(smoothedValue, _iteration);
 
           // print config, times and reduced value
           if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
             std::ostringstream ss;
             // print config
-            ss << _tuningStrategy->getCurrentConfiguration().toString() << " : ";
+            ss << currentConfig.toString() << " : ";
             // print all timings
             ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
-            ss << " Reduced value: " << reducedValue;
+            ss << " Reduced value: " << reducedValue;  // TODO: remove this. Should not break performance testing tool.
+            ss << " Smoothed value: " << smoothedValue;
             AutoPasLog(debug, "Collected times for  {}", ss.str());
           }
         }
@@ -200,10 +213,25 @@ class AutoTuner {
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
 
   /**
-   * _iteration - Counter of the iterations.
+   * Counter for the simulation iteration.
    */
-  unsigned int _tuningInterval, _iterationsSinceTuning, _iteration;
+  size_t _iteration;
+
+  /**
+   * Counter for the number of times a tuning phase was started.
+   */
+  size_t _tuningInterval;
+
+  /**
+   * Number of iterations since the end of the last tuning phase.
+   */
+  size_t _iterationsSinceTuning;
+
+  /**
+   * Object holding the actual particle container and having the ability to change it.
+   */
   ContainerSelector<Particle> _containerSelector;
+
   double _verletSkin;
   unsigned int _verletClusterSize;
 
@@ -211,11 +239,19 @@ class AutoTuner {
    * How many times each configuration should be tested.
    */
   const size_t _maxSamples;
+
   /**
-   * How many times this configurations has already been tested.
-   * Initialize with max value to start tuning at start of simulation.
+   * Raw time samples of the current configuration from which one evidence will be produced.
+   *
+   * @note Initialized with size of _maxSamples to start tuning at start of simulation.
    */
   std::vector<size_t> _samples;
+
+  /**
+   * For each configuration the collection of all evidence (smoothed values) collected so far and in which iteration.
+   * Configuration -> vector< iteration, time >
+   */
+  std::map<Configuration, std::vector<std::pair<size_t, size_t>>> _evidences;
 };
 
 template <class Particle>
