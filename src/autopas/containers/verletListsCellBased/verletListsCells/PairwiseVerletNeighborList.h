@@ -15,8 +15,10 @@ namespace autopas
 template <class Particle>
 class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<Particle>
 {
+  using SoAPairOfParticleAndList = std::pair<size_t, std::vector<size_t, autopas::AlignedAllocator<size_t>>>;
+
  public:
-  PairwiseVerletNeighborList(): _aosNeighborList{}, _particleToCellMap{}, _globalToLocalIndex{}{}
+  PairwiseVerletNeighborList(): _aosNeighborList{}, _particleToCellMap{}, _globalToLocalIndex{}, _soaNeighborList{} {}
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pairwiseVerletLists; }
 
@@ -68,7 +70,44 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
     }
 
     applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption);
+    generateSoAFromAoS(linkedCells);
+  }
 
+  void generateSoAFromAoS(LinkedCells<Particle> &linkedCells)
+  {
+    _soaNeighborList.clear();
+
+    std::unordered_map<Particle*, size_t> _particleToIndex;
+    _particleToIndex.reserve(linkedCells.getNumParticles());
+    size_t i = 0;
+    for (auto iter = linkedCells.begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++i) {
+      _particleToIndex[&(*iter)] = i;
+    }
+
+    auto &cells = linkedCells.getCells();
+    size_t cellsSize = cells.size();
+    _soaNeighborList.resize(cellsSize);
+
+    for(size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
+      _soaNeighborList[firstCellIndex].resize(27);  // every cell has max 26 neighbors
+
+      for (size_t secondCellIndex = 0; secondCellIndex < 27; ++secondCellIndex) {
+        _soaNeighborList[firstCellIndex][secondCellIndex].reserve(cells[firstCellIndex].numParticles());
+        size_t particleIndexCurrentCell = 0;
+
+        for (auto particleIter = cells[firstCellIndex].begin(); particleIter.isValid(); ++particleIter) {
+          Particle *currentParticle = &*particleIter;
+          size_t currentIndex = _particleToIndex.at(currentParticle);
+
+          _soaNeighborList[firstCellIndex][secondCellIndex].emplace_back(std::make_pair(currentIndex, std::vector<size_t, autopas::AlignedAllocator<size_t>>()));
+
+          for(size_t neighbor = 0; neighbor < _aosNeighborList[firstCellIndex][secondCellIndex][currentIndex].second.size(); neighbor++)
+          {
+            _soaNeighborList[firstCellIndex][secondCellIndex][currentIndex].second.emplace_back(_particleToIndex.at(_aosNeighborList[firstCellIndex][secondCellIndex][currentIndex].second[neighbor]));
+          }
+        }
+      }
+    }
   }
 
 
@@ -86,7 +125,7 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
     autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-      auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::aos, n3>(
+      auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::soa, n3>( ///beware soa
           TraversalOption::lc_c08, f, traversalSelectorInfo); ///is it the correct traversal and is this how it works?
       linkedCells.iteratePairwise(buildTraversal.get());
     });
@@ -101,5 +140,10 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
    */
   std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap;
   std::vector<std::unordered_map<size_t, size_t>> _globalToLocalIndex;
+
+  std::vector<std::vector<std::vector<SoAPairOfParticleAndList>>> _soaNeighborList;
+  SoA<typename Particle::SoAArraysType> _soa;
+
+  //LinkedCells<Particle> _internalLinkedCells;
 };
 }

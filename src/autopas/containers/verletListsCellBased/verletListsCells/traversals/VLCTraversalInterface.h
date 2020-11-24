@@ -49,7 +49,7 @@ class VLCTraversalInterface {
    * @param pairwiseFunctor
    */
   template <class PairwiseFunctor, bool useNewton3>
-  void processCellLists(NeighborListsType &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
+  void processCellLists(NeighborListsType &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout) {
     for (auto &[particlePtr, neighbors] : neighborLists[cellIndex]) {
       Particle &particle = *particlePtr;
       for (auto neighborPtr : neighbors) {
@@ -60,16 +60,24 @@ class VLCTraversalInterface {
   }
 
   template <class PairwiseFunctor, bool useNewton3>
-  void processCellLists(PairwiseNeighborListsType &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
-    for(size_t neighborCellIndex = 0; neighborCellIndex < 27; neighborCellIndex++)
+  void processCellLists(PairwiseNeighborListsType &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout) {
+    if(dataLayout == DataLayoutOption::Value::aos)
     {
-      for (auto &[particlePtr, neighbors] : neighborLists[cellIndex][neighborCellIndex]) {
-        Particle &particle = *particlePtr;
-        for (auto neighborPtr : neighbors) {
-          Particle &neighbor = *neighborPtr;
-          pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
+      for(size_t neighborCellIndex = 0; neighborCellIndex < 27; neighborCellIndex++)
+      {
+        for (auto &[particlePtr, neighbors] : neighborLists[cellIndex][neighborCellIndex]) {
+          Particle &particle = *particlePtr;
+          for (auto neighborPtr : neighbors) {
+            Particle &neighbor = *neighborPtr;
+            pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
+          }
         }
       }
+    }
+
+    else if (dataLayout == DataLayoutOption::Value::soa)
+    {
+
     }
   }
 
