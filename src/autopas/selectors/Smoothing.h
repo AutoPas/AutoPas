@@ -9,7 +9,7 @@
 #include <tuple>
 #include <vector>
 
-namespace autopas::Smoothing {
+namespace autopas::smoothing {
 
 /**
  * Calculates the smoothed y value for the last point in the given points according to the LOESS algorithm.
@@ -22,4 +22,4 @@ namespace autopas::Smoothing {
  */
 size_t smoothLastPoint(const std::vector<std::pair<size_t, size_t>> &points, double span);
 
-}  // namespace autopas::Smoothing
+}  // namespace autopas::smoothing

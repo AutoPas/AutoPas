@@ -26,6 +26,11 @@ namespace internal {}
 namespace memoryProfiler {}
 
 /**
+ * Algorithms for creating a smooth function through a series of points.
+ */
+namespace smoothing {}
+
+/**
  * In this namespace all functionality of the Smoothed Particle Hydrodynamics module of autopas is present.
  * This mainly includes kernels and particles.
  */

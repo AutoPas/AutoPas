@@ -158,7 +158,7 @@ class AutoTuner {
           auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
 
           _evidences[currentConfig].emplace_back(_iteration, reducedValue);
-          auto smoothedValue = Smoothing::smoothLastPoint(_evidences[currentConfig], .25);
+          auto smoothedValue = smoothing::smoothLastPoint(_evidences[currentConfig], .25);
 
           _tuningStrategy->addEvidence(smoothedValue, _iteration);
 
