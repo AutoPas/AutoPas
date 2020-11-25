@@ -14,5 +14,6 @@
 #include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
+#include "tests/containers/verletListsCellBased/verletLists/VerletListsTest.h"
 
-class PairwiseVerletListsTest : public AutoPasTestBase {};
+class PairwiseVerletListsTest : public AutoPasTestBase, public ::testing::WithParamInterface<double> {};
