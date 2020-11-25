@@ -35,8 +35,6 @@ class VLCTraversalInterface {
    * Sets the verlet list for the traversal to iterate over.
    * @param verlet The verlet list to iterate over.
    */
-  //virtual void setVerletList(NeighborListsType &verlet) { _verletList = &verlet; }
-
   virtual void setVerletList(NeighborList &verlet) { _verletList = &verlet; }
 
  protected:

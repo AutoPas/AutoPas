@@ -22,7 +22,7 @@ TEST_F(PairwiseVerletListsTest, testTwoParticles)
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, false>
+  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, 1>
       traversal(verletLists.getCellsPerDimension(), &emptyFunctor, verletLists.getInteractionLength(), verletLists.getCellLength());
 
   verletLists.rebuildNeighborLists(&traversal);
@@ -60,7 +60,7 @@ TEST_F(PairwiseVerletListsTest, testThreeParticlesOneFar)
   Particle p3(r3, {0., 0., 0.}, 1);
   verletLists.addParticle(p3);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, false>
+  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, 1>
       traversal(verletLists.getCellsPerDimension(), &emptyFunctorOther, verletLists.getInteractionLength(), verletLists.getCellLength());
 
   verletLists.rebuildNeighborLists(&traversal);
@@ -103,7 +103,7 @@ TEST_F(PairwiseVerletListsTest, testThreeParticlesClose)
   Particle p3(r3, {0., 0., 0.}, 1);
   verletLists.addParticle(p3);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, false>
+  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, 1>
       traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(), verletLists.getCellLength());
 
   verletLists.rebuildNeighborLists(&traversal);
@@ -145,7 +145,7 @@ TEST_F(PairwiseVerletListsTest, testOneParticle)
   Particle p3(r3, {0., 0., 0.}, 1);
   verletLists.addParticle(p3);*/
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, false>
+  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, 1>
       traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(), verletLists.getCellLength());
 
   verletLists.rebuildNeighborLists(&traversal);
@@ -184,7 +184,7 @@ TEST_F(PairwiseVerletListsTest, testTwoParticles2)
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, false>
+  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, 1>
       traversal(verletLists.getCellsPerDimension(), &emptyFunctor, verletLists.getInteractionLength(), verletLists.getCellLength());
 
   verletLists.rebuildNeighborLists(&traversal);
@@ -222,7 +222,7 @@ TEST_F(PairwiseVerletListsTest, testThreeParticlesOneFar2)
   Particle p3(r3, {0., 0., 0.}, 1);
   verletLists.addParticle(p3);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, false>
+  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, 1>
       traversal(verletLists.getCellsPerDimension(), &emptyFunctorOther, verletLists.getInteractionLength(), verletLists.getCellLength());
 
   verletLists.rebuildNeighborLists(&traversal);
@@ -265,7 +265,7 @@ TEST_F(PairwiseVerletListsTest, testThreeParticlesClose2)
   Particle p3(r3, {0., 0., 0.}, 1);
   verletLists.addParticle(p3);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, false>
+  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, 1>
       traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(), verletLists.getCellLength());
 
   verletLists.rebuildNeighborLists(&traversal);
@@ -307,7 +307,7 @@ TEST_F(PairwiseVerletListsTest, testOneParticle2)
   Particle p3(r3, {0., 0., 0.}, 1);
   verletLists.addParticle(p3);*/
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, false>
+  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType, 1>
       traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(), verletLists.getCellLength());
 
   verletLists.rebuildNeighborLists(&traversal);

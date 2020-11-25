@@ -31,7 +31,7 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, bool pairwise>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, int typeOfList>
 class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
                                    public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
 
@@ -57,7 +57,13 @@ class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override
-  { return (pairwise) ? TraversalOption::vlp_sliced_balanced : TraversalOption::vlc_sliced_balanced; }
+  {
+    switch(typeOfList){
+      case 0: return TraversalOption::vlc_sliced_balanced;
+      case 1: return TraversalOption::vlp_sliced_balanced;
+      default: return TraversalOption::vlc_sliced_balanced;
+    }
+  }
 
   [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 
@@ -65,8 +71,8 @@ class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
   PairwiseFunctor *_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, bool pairwise>
-inline void VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList, pairwise>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, int typeOfList>
+inline void VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList, typeOfList>::traverseParticlePairs() {
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
