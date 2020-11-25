@@ -6,11 +6,11 @@
 
 #pragma once
 
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticBoolSelector.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 
 namespace autopas {
 /**
@@ -73,6 +73,9 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * */
   typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSNeighborList() { return _aosNeighborList; }
 
+  /**
+   * Casts TraversalInterface to VLCTraversalInterface with the correct type of neighbor list.
+   * */
   auto doCast(TraversalInterface *traversal)
   {
     return dynamic_cast<autopas::VLCTraversalInterface<Particle, typename VerletListsCellsHelpers<Particle>::NeighborListsType> *>(traversal);

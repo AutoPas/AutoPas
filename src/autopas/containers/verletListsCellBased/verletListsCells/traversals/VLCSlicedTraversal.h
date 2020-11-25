@@ -63,7 +63,7 @@ class VLCSlicedTraversal
 
   [[nodiscard]] TraversalOption getTraversalType() const override
   {
-    return (pairwise) ? TraversalOption::pairwise_vlc_sliced : TraversalOption::vlc_sliced;
+    return (pairwise) ? TraversalOption::vlp_sliced : TraversalOption::vlc_sliced;
   }
 
   [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }

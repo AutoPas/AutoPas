@@ -47,7 +47,7 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, 
   void traverseParticlePairs() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override
-  { return (pairwise) ? TraversalOption::pairwise_vlc_c18 : TraversalOption::vlc_c18; };
+  { return (pairwise) ? TraversalOption::vlp_c18 : TraversalOption::vlc_c18; };
 
   [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 

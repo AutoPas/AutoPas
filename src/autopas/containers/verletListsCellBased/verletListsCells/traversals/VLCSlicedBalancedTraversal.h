@@ -57,7 +57,7 @@ class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override
-  { return (pairwise) ? TraversalOption::pairwise_vlc_sliced_balanced : TraversalOption::vlc_sliced_balanced; }
+  { return (pairwise) ? TraversalOption::vlp_sliced_balanced : TraversalOption::vlc_sliced_balanced; }
 
   [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 

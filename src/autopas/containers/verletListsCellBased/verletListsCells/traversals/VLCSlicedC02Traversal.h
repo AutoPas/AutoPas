@@ -55,7 +55,7 @@ class VLCSlicedC02Traversal
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override
-  { return (pairwise) ? TraversalOption::pairwise_vlc_sliced_c02 : TraversalOption::vlc_sliced_c02; }
+  { return (pairwise) ? TraversalOption::vlp_sliced_c02 : TraversalOption::vlc_sliced_c02; }
 
   [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 

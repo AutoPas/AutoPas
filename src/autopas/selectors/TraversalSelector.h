@@ -209,24 +209,24 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
           &pairwiseFunctor, info.clusterSize);
     }
 
-      // Pairwise TODO
-    case TraversalOption::pairwise_vlc_sliced: {
+      // Pairwise Verlet Lists
+    case TraversalOption::vlp_sliced: {
       return std::make_unique<VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType, true>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
-    case TraversalOption::pairwise_vlc_sliced_c02: {
+    case TraversalOption::vlp_sliced_c02: {
       return std::make_unique<VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType, true>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
-    case TraversalOption::pairwise_vlc_sliced_balanced: {
+    case TraversalOption::vlp_sliced_balanced: {
       return std::make_unique<VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType, true>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
-    case TraversalOption::pairwise_vlc_c01: {
+    case TraversalOption::vlp_c01: {
       return std::make_unique<VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType, true>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
-    case TraversalOption::pairwise_vlc_c18: {
+    case TraversalOption::vlp_c18: {
       return std::make_unique<VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::PairwiseNeighborListsType, true>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }

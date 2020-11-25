@@ -100,7 +100,6 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    //auto vTraversal = dynamic_cast<autopas::VLCTraversalInterface<Particle> *>(traversal);
     auto vTraversal = _neighborList.doCast(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
@@ -120,9 +119,9 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   }
 
   /**
-   * Get the neighbors list of a particle.
+   * Gets the number of neighbors over all neighbor lists that belong to this particle.
    * @param particle
-   * @return the neighbor list of the particle
+   * @return the size of the neighbor list(s) of this particle
    */
   const size_t &getNumberOfPartners(const Particle *particle) const {
     return _neighborList.getNumberOfPartners(particle);

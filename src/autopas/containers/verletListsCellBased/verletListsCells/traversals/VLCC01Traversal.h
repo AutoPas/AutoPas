@@ -45,7 +45,7 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
 
   [[nodiscard]] TraversalOption getTraversalType() const override
   {
-    return (pairwise) ? TraversalOption::pairwise_vlc_c01 : TraversalOption::vlc_c01;
+    return (pairwise) ? TraversalOption::vlp_c01 : TraversalOption::vlc_c01;
   }
 
   [[nodiscard]] bool isApplicable() const override {

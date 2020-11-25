@@ -26,9 +26,11 @@ class VerletListsCellsHelpers {
   using NeighborListsType = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
 
   /**
-   * Pairwise verlet lists: For every cell and for each of its neighboring cells a pair of particle and a vector of its potential partners is stored.
+   * Pairwise verlet lists: For every cell (cell1) and for each of its neighboring cells (cell2) a vector of pairs (a pair for each particle).
+   * The pairs consist of a particle from cell1 and a vector of its (potential) partners from cell2.
    */
   using PairwiseNeighborListsType = std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>;
+
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */
@@ -96,6 +98,7 @@ class VerletListsCellsHelpers {
     double _cutoffskinsquared;
   };
 
+
   /**
    * This functor generates pairwise verlet lists (a verlet list attached to every pair of neighboring cells).
    */
@@ -106,6 +109,7 @@ class VerletListsCellsHelpers {
      * Constructor
      * @param neighborLists a verletlist for each cell
      * @param particleToCellMap used to get the verletlist of a particle
+     * @param globalToLocalIndex TODO
      * @param cutoffskin cutoff + skin
      */
     PairwiseVerletListGeneratorFunctor(PairwiseNeighborListsType &neighborLists,
@@ -151,8 +155,11 @@ class VerletListsCellsHelpers {
         // specific cell and each cell is only accessed by one thread at a time
         // (ensured by traversals)
         // also the list is not allowed to be resized!
+
         auto &[cellIndex, particleIndex] = _particleToCellMap[&i];
         auto &[cellIndexNeighbor, particleIndexNeighbor] = _particleToCellMap[&j];
+
+        //if cell1 hasn't interacted with cell2 yet and there is no mapping from global to relative index for cell2, add one
         auto iter = _globalToLocalIndex[cellIndex].find(cellIndexNeighbor);
         if(iter == _globalToLocalIndex[cellIndex].end())
         {
@@ -165,12 +172,17 @@ class VerletListsCellsHelpers {
 
    private:
     /**
-     * For every cell and for every neghiboring cell of that cell, a vector of pairs.
-     * Each pair maps a particle to a vector of its neighbors.
-     */
+     * Pairwise verlet lists: For every cell (cell1) and for each of its neighboring cells (cell2) a vector of pairs (a pair for each particle).
+     * The pairs consist of a particle from cell1 and a vector of its (potential) partners from cell2.
+    */
     PairwiseNeighborListsType &_neighborLists;
+    /**
+   * Mapping of each particle to its corresponding cell and id within this cell.
+   */
     std::unordered_map<Particle *, std::pair<size_t, size_t>> &_particleToCellMap;
-    //vector of cell1s, for each of theme a map from global cell2 index to
+    /**
+   * For each cell1: a mapping of the "absolute" index of cell2 (in the base linked cells structure) to its "relative" index (0 to 26) in cell1's neighbors.
+   */
     std::vector<std::unordered_map<size_t, size_t>> _globalToLocalIndex;
     double _cutoffskinsquared;
   };
