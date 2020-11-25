@@ -31,7 +31,7 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
   /**
    * @copydoc VerletListsCellsNeighborListInterface::getVerletList()
    * */
-  const size_t &getNumberOfPartners(const Particle *particle) const override {
+  const size_t getNumberOfPartners(const Particle *particle) const override {
     size_t localSize = 0;
     const auto [firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle));
     for(size_t secondCellIndex = 0; secondCellIndex < 27; secondCellIndex++)

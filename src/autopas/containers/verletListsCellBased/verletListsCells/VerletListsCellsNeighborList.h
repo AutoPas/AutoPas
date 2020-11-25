@@ -61,7 +61,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   /**
    * @copydoc VerletListsCellsNeighborListInterface::getVerletList()
    * */
-  const size_t &getNumberOfPartners(const Particle *particle) const override {
+  const size_t getNumberOfPartners(const Particle *particle) const override {
     const auto [cellIndex, particleIndexInCell] = _particleToCellMap.at(const_cast<Particle *>(particle));
     size_t listSize = _aosNeighborList.at(cellIndex).at(particleIndexInCell).second.size();
     return listSize;
