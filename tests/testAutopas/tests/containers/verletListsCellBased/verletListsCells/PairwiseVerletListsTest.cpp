@@ -1,5 +1,5 @@
 /**
- * @file PairwiseVerletListsTest.h
+ * @file PairwiseVerletListsTest.cpp
  * @author tirgendetwas
  * @date 22.11.20
  */
