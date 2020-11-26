@@ -29,9 +29,11 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  * @tparam NeighborList type of the neighbor list
- * @tparam typeOfList also indicates the type of neighbor list, currently only used for getTraversalType (0 for VLC, 1 for pairwise)
+ * @tparam typeOfList also indicates the type of neighbor list, currently only used for getTraversalType (0 for VLC, 1
+ * for pairwise)
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, int typeOfList>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          class NeighborList, int typeOfList>
 class VLCSlicedC02Traversal
     : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
       public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
@@ -56,12 +58,14 @@ class VLCSlicedC02Traversal
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override
-  {
-    switch(typeOfList){
-      case 0: return TraversalOption::vlc_sliced_c02;
-      case 1: return TraversalOption::vlp_sliced_c02;
-      default: return TraversalOption::vlc_sliced_c02;
+  [[nodiscard]] TraversalOption getTraversalType() const override {
+    switch (typeOfList) {
+      case 0:
+        return TraversalOption::vlc_sliced_c02;
+      case 1:
+        return TraversalOption::vlp_sliced_c02;
+      default:
+        return TraversalOption::vlc_sliced_c02;
     }
   }
 
@@ -71,11 +75,14 @@ class VLCSlicedC02Traversal
   PairwiseFunctor *_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, int typeOfList>
-inline void VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList, typeOfList>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          class NeighborList, int typeOfList>
+inline void VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
+                                  typeOfList>::traverseParticlePairs() {
   this->cSlicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    this->template processCellLists<PairwiseFunctor, useNewton3, NeighborList>(*(this->_verletList), baseIndex, _functor);
+    this->template processCellLists<PairwiseFunctor, useNewton3, NeighborList>(*(this->_verletList), baseIndex,
+                                                                               _functor);
   });
 }
 

@@ -47,7 +47,6 @@ class VerletListsCellsNeighborListInterface {
    * @return ContainerOption for this neighbor list and the container it belongs to.
    */
   [[nodiscard]] virtual ContainerOption getContainerType() const = 0;
-
 };
 
 }  // namespace autopas

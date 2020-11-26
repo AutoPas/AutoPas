@@ -87,8 +87,7 @@ unsigned long neighborListLength(
         auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension);
         unsigned long cellLoad = 0;
         for (auto &list : neighborLists[cellIndex]) {
-          for(size_t index = 0; index < list.size(); index++)
-          {
+          for (size_t index = 0; index < list.size(); index++) {
             cellLoad += list[index].second.size();
           }
         }

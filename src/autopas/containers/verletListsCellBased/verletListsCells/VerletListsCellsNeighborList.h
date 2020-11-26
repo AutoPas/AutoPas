@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticBoolSelector.h"
@@ -19,8 +19,7 @@ namespace autopas {
  * @tparam Particle Type of particle to be used for this neighbor list.
  * */
 template <class Particle>
-class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle>
-{
+class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle> {
  public:
   /**
    * Constructor for VerletListsCellsNeighborList. Initializes private attributes.
@@ -76,9 +75,10 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   /**
    * Casts TraversalInterface to VLCTraversalInterface with the correct type of neighbor list.
    * */
-  auto doCast(TraversalInterface *traversal)
-  {
-    return dynamic_cast<autopas::VLCTraversalInterface<Particle, typename VerletListsCellsHelpers<Particle>::NeighborListsType> *>(traversal);
+  auto doCast(TraversalInterface *traversal) {
+    return dynamic_cast<
+        autopas::VLCTraversalInterface<Particle, typename VerletListsCellsHelpers<Particle>::NeighborListsType> *>(
+        traversal);
   }
 
  private:
