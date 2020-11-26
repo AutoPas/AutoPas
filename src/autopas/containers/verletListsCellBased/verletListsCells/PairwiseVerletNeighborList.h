@@ -29,12 +29,13 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pairwiseVerletLists; }
 
   /**
-   * @copydoc VerletListsCellsNeighborListInterface::getVerletList()
+   * @copydoc VerletListsCellsNeighborListInterface::getNumberOfPartners()
    * */
   const size_t getNumberOfPartners(const Particle *particle) const override {
     size_t localSize = 0;
     const auto [firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle));
-    for(size_t secondCellIndex = 0; secondCellIndex < 27; secondCellIndex++)
+    size_t numberOfCellsToInteract = 27;
+    for(size_t secondCellIndex = 0; secondCellIndex < numberOfCellsToInteract; secondCellIndex++)
     {
       localSize+=_aosNeighborList[firstCellIndex][secondCellIndex][particleInCellIndex].second.size();
     }
@@ -124,7 +125,7 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
     autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
       auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::aos, n3>(
-          TraversalOption::lc_c08, f, traversalSelectorInfo); ///TODO
+          buildTraversalOption, f, traversalSelectorInfo);
       linkedCells.iteratePairwise(buildTraversal.get());
     });
   }

@@ -28,6 +28,8 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam useSoA
  * @tparam useNewton3
+ * @tparam NeighborList type of the neighbor list
+ * @tparam typeOfList also indicates the type of neighbor list, currently only used for getTraversalType (0 for VLC, 1 for pairwise)
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, int typeOfList>
 class VLCSlicedC02Traversal
@@ -73,7 +75,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 inline void VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList, typeOfList>::traverseParticlePairs() {
   this->cSlicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
+    this->template processCellLists<PairwiseFunctor, useNewton3, NeighborList>(*(this->_verletList), baseIndex, _functor);
   });
 }
 

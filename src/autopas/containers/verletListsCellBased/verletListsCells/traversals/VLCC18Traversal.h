@@ -25,6 +25,8 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam dataLayout
  * @tparam useNewton3
+ * @tparam NeighborList type of the neighbor list
+ * @tparam typeOfList also indicates the type of neighbor list, currently only used for getTraversalType (0 for VLC, 1 for pairwise)
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, class NeighborList, int typeOfList>
 class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
@@ -69,7 +71,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 inline void VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList, typeOfList>::traverseParticlePairs() {
   this->template c18Traversal</*allCells*/ true>([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
+    this->template processCellLists<PairwiseFunctor, useNewton3, NeighborList>(*(this->_verletList), baseIndex, _functor);
   });
 }
 

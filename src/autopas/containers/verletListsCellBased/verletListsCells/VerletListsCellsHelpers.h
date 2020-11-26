@@ -109,7 +109,7 @@ class VerletListsCellsHelpers {
      * Constructor
      * @param neighborLists a verletlist for each cell
      * @param particleToCellMap used to get the verletlist of a particle
-     * @param globalToLocalIndex TODO
+     * @param globalToLocalIndex mapping global index of cell2 to "local" index according to cell1's interactions
      * @param cutoffskin cutoff + skin
      */
     PairwiseVerletListGeneratorFunctor(PairwiseNeighborListsType &neighborLists,

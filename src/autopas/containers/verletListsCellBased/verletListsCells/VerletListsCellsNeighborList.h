@@ -59,7 +59,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   }
 
   /**
-   * @copydoc VerletListsCellsNeighborListInterface::getVerletList()
+   * @copydoc VerletListsCellsNeighborListInterface::getNumberOfPartners()
    * */
   const size_t getNumberOfPartners(const Particle *particle) const override {
     const auto [cellIndex, particleIndexInCell] = _particleToCellMap.at(const_cast<Particle *>(particle));
