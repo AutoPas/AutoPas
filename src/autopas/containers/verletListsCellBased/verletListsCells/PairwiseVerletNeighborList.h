@@ -11,6 +11,12 @@
 #include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
+/**
+ * Neighbor list to be used with VerletListsCells container.
+ * Pairwise verlet lists iterates through each pair of neighboring cells
+ * and generates a neighbor list for each particle from cell1, which consists of its (potential) partners from cell2.
+ * @tparam Particle Type of particle to be used for this neighbor list.
+ * */
 template <class Particle>
 class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<Particle> {
  public:
@@ -49,7 +55,11 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
 
   /**
    * Casts TraversalInterface to VLCTraversalInterface with the correct type of neighbor list.
+   * @param traversal to b e casted to VLC traversal
+   * @return resulting VLC traversal
    * */
+  // this will not be necessary when I pass the neighbor list class to VLCTraversalInterface insead of the list's
+  // internal structure
   auto doCast(TraversalInterface *traversal) {
     return dynamic_cast<autopas::VLCTraversalInterface<
         Particle, typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType> *>(traversal);

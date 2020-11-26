@@ -74,7 +74,11 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
 
   /**
    * Casts TraversalInterface to VLCTraversalInterface with the correct type of neighbor list.
+   * @param traversal to b e casted to VLC traversal
+   * @return resulting VLC traversal
    * */
+  // this will not be necessary when I pass the neighbor list class to VLCTraversalInterface insead of the list's
+  // internal structure
   auto doCast(TraversalInterface *traversal) {
     return dynamic_cast<
         autopas::VLCTraversalInterface<Particle, typename VerletListsCellsHelpers<Particle>::NeighborListsType> *>(

@@ -29,6 +29,9 @@ class VLCTraversalInterface {
    * Shorthand for VerletListsCellsHelpers<Particle>::NeighborListsType.
    */
   using NeighborListsType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
+  /**
+   * Shorthand for VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType.
+   */
   using PairwiseNeighborListsType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
 
   /**

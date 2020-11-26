@@ -83,8 +83,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
       case LoadEstimatorOption::neighborListLength: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
-          return loadEstimators::neighborListLength<Particle>(_neighborList.getAoSNeighborList(), cellsPerDimension,
-                                                              lowerCorner, upperCorner);
+          return loadEstimators::neighborListLength<Particle, NeighborList>(_neighborList, cellsPerDimension,
+                                                                            lowerCorner, upperCorner);
         };
       }
 

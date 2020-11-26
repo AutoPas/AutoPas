@@ -97,7 +97,8 @@ static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
 }
 
 /**
- * TODO
+ * Lists all traversal options applicable for the Pairwise Verlet Lists container.
+ * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::vlp_sliced, TraversalOption::vlp_c18,
