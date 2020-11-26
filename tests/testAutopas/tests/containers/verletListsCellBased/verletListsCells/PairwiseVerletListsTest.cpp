@@ -1,3 +1,8 @@
+/**
+ * @file PairwiseVerletListsTest.h
+ * @author tirgendetwas
+ * @date 22.11.20
+ */
 #include "PairwiseVerletListsTest.h"
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
