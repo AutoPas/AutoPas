@@ -7,10 +7,10 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/PairwiseVerletNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/PairwiseVerletNeighborList.h"
 
 namespace autopas {
 
@@ -79,8 +79,7 @@ inline void VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
                             typeOfList>::traverseParticlePairs() {
   this->template c18Traversal</*allCells*/ true>([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex,
-                                                                               _functor);
+    this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
   });
 }
 

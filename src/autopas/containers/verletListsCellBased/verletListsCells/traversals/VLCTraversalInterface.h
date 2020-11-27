@@ -29,7 +29,6 @@ class PairwiseVerletNeighborList;
 template <class Particle, class NeighborList>
 class VLCTraversalInterface {
  public:
-
   /**
    * Sets the verlet list for the traversal to iterate over.
    * @param verlet The verlet list to iterate over.

@@ -100,7 +100,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, NeighborList>*>(traversal);
+    auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, NeighborList> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
