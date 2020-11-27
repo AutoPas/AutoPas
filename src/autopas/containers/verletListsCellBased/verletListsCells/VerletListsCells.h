@@ -100,13 +100,13 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto vTraversal = _neighborList.doCast(traversal);
+    auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, NeighborList>*>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
 
     if (vTraversal) {
-      vTraversal->setVerletList(_neighborList.getAoSNeighborList());
+      vTraversal->setVerletList(_neighborList);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",

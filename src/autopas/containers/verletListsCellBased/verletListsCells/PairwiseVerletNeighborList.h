@@ -40,8 +40,6 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
     for (size_t secondCellIndex = 0; secondCellIndex < numberOfCellsToInteract; secondCellIndex++) {
       localSize += _aosNeighborList[firstCellIndex][secondCellIndex][particleInCellIndex].second.size();
     }
-    // auto toReturnSize = std::make_unique<size_t>(localSize);
-    // auto ret = *(toReturnSize);
     return localSize;
   }
 
@@ -51,18 +49,6 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
    * */
   typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType &getAoSNeighborList() {
     return _aosNeighborList;
-  }
-
-  /**
-   * Casts TraversalInterface to VLCTraversalInterface with the correct type of neighbor list.
-   * @param traversal to b e casted to VLC traversal
-   * @return resulting VLC traversal
-   * */
-  // this will not be necessary when I pass the neighbor list class to VLCTraversalInterface insead of the list's
-  // internal structure
-  auto doCast(TraversalInterface *traversal) {
-    return dynamic_cast<autopas::VLCTraversalInterface<
-        Particle, typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType> *>(traversal);
   }
 
   /**

@@ -10,9 +10,13 @@
 #include <utility>
 #include <vector>
 
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-
 namespace autopas {
+
+template <class Particle>
+class VerletListsCellsNeighborList;
+
+template <class Particle>
+class PairwiseVerletNeighborList;
 
 /**
  * This class provides the Traversal Interface for the verlet lists cells container.
@@ -25,14 +29,6 @@ namespace autopas {
 template <class Particle, class NeighborList>
 class VLCTraversalInterface {
  public:
-  /**
-   * Shorthand for VerletListsCellsHelpers<Particle>::NeighborListsType.
-   */
-  using NeighborListsType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
-  /**
-   * Shorthand for VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType.
-   */
-  using PairwiseNeighborListsType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
 
   /**
    * Sets the verlet list for the traversal to iterate over.
@@ -49,8 +45,8 @@ class VLCTraversalInterface {
    * @param cellIndex
    * @param pairwiseFunctor
    */
-  template <class PairwiseFunctor, bool useNewton3, class NL>
-  void processCellLists(NL &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
+  template <class PairwiseFunctor, bool useNewton3>
+  void processCellLists(NeighborList &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
     processCellListsImpl<PairwiseFunctor, useNewton3>(neighborLists, cellIndex, pairwiseFunctor);
   }
 
@@ -61,9 +57,10 @@ class VLCTraversalInterface {
 
  private:
   template <class PairwiseFunctor, bool useNewton3>
-  void processCellListsImpl(NeighborListsType &neighborLists, unsigned long cellIndex,
+  void processCellListsImpl(VerletListsCellsNeighborList<Particle> &neighborList, unsigned long cellIndex,
                             PairwiseFunctor *pairwiseFunctor) {
-    for (auto &[particlePtr, neighbors] : neighborLists[cellIndex]) {
+    auto internalList = neighborList.getAoSNeighborList();
+    for (auto &[particlePtr, neighbors] : internalList[cellIndex]) {
       Particle &particle = *particlePtr;
       for (auto neighborPtr : neighbors) {
         Particle &neighbor = *neighborPtr;
@@ -73,11 +70,12 @@ class VLCTraversalInterface {
   }
 
   template <class PairwiseFunctor, bool useNewton3>
-  void processCellListsImpl(PairwiseNeighborListsType &neighborLists, unsigned long cellIndex,
+  void processCellListsImpl(PairwiseVerletNeighborList<Particle> &neighborList, unsigned long cellIndex,
                             PairwiseFunctor *pairwiseFunctor) {
+    auto internalList = neighborList.getAoSNeighborList();
     size_t numberOfCellToInteract = 27;
     for (size_t neighborCellIndex = 0; neighborCellIndex < numberOfCellToInteract; neighborCellIndex++) {
-      for (auto &[particlePtr, neighbors] : neighborLists[cellIndex][neighborCellIndex]) {
+      for (auto &[particlePtr, neighbors] : internalList[cellIndex][neighborCellIndex]) {
         Particle &particle = *particlePtr;
         for (auto neighborPtr : neighbors) {
           Particle &neighbor = *neighborPtr;
