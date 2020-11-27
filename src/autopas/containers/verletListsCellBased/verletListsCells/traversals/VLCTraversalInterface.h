@@ -40,7 +40,7 @@ class VLCTraversalInterface {
    * Iterate over all neighbor lists list of a given cell.
    * @tparam PairwiseFunctor
    * @tparam useNewton3
-   * @param neighborLists Vector of neighbor lists. One for each particle in the cell.
+   * @param neighborLists A suitable neighbor list.
    * @param cellIndex
    * @param pairwiseFunctor
    */
@@ -55,6 +55,7 @@ class VLCTraversalInterface {
   NeighborList *_verletList;
 
  private:
+  /** Processing of the VerletListsCellsNeighborList type of neighbor list (neighbor list for every cell).*/
   template <class PairwiseFunctor, bool useNewton3>
   void processCellListsImpl(VerletListsCellsNeighborList<Particle> &neighborList, unsigned long cellIndex,
                             PairwiseFunctor *pairwiseFunctor) {
@@ -68,6 +69,7 @@ class VLCTraversalInterface {
     }
   }
 
+  /** Processing of the pairwise Verlet type of neighbor list (neighbor list for every pair of neighboring cells).*/
   template <class PairwiseFunctor, bool useNewton3>
   void processCellListsImpl(PairwiseVerletNeighborList<Particle> &neighborList, unsigned long cellIndex,
                             PairwiseFunctor *pairwiseFunctor) {

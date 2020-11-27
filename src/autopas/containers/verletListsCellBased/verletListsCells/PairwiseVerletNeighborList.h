@@ -7,10 +7,11 @@
 #pragma once
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
-#include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
+template <class ParticleCell>
+class TraversalSelector;
 /**
  * Neighbor list to be used with VerletListsCells container.
  * Pairwise verlet lists iterates through each pair of neighboring cells
