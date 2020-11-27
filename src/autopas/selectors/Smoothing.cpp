@@ -32,7 +32,7 @@ std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<s
 
   double sumOfWeights = 0.0;
 
-  // compute all weiths that can be assumed to be non-zero
+  // compute all weighs that can be assumed to be non-zero
   for (size_t j = 0; j < weights.size(); ++j) {
     auto xj = points[j + firstIndex].first;
     // residual = |xi - xj|
@@ -116,7 +116,7 @@ double calculateYFitSimple(const std::vector<std::pair<size_t, size_t>> &points,
   return yFittedI;
 }
 
-size_t autopas::Smoothing::smoothLastPoint(const std::vector<std::pair<size_t, size_t>> &points, double span) {
+size_t autopas::smoothing::smoothLastPoint(const std::vector<std::pair<size_t, size_t>> &points, double span) {
   if (span <= 0 or span > 1.0) {
     throw std::runtime_error("span should be 0 < span <= 1");
   }
