@@ -21,7 +21,10 @@ class TraversalSelector;
 template <class Particle>
 class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<Particle> {
  public:
-  using listType = std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>;
+  /**
+   * Type of the data structure used to save the neighbor lists.
+   * */
+  using listType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
   /**
    * Constructor for PairwiseVerletNeighborList. Initializes private attributes.
    * */

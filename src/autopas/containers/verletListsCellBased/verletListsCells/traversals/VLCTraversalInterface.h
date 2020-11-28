@@ -54,9 +54,12 @@ class VLCTraversalInterface {
   }
 
   /**
-   * The verlet list to iterate over.
+   * The neighbor list class which contains the verlet list to iterate over.
    */
   NeighborList *_verletList;
+  /**
+   * The verlet list to iterate over.
+   */
   typename NeighborList::listType internalList;
 
  private:
