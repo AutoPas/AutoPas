@@ -98,12 +98,13 @@ template <class Particle, class NeighborList>
 unsigned long neighborListLength(NeighborList &neighborLists, const std::array<unsigned long, 3> &cellsPerDimension,
                                  const std::array<unsigned long, 3> &lowerCorner,
                                  const std::array<unsigned long, 3> &upperCorner) {
+  auto internalList = neighborLists.getAoSNeighborList();
   unsigned long sum = 0;
   for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
     for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
       for (unsigned long z = lowerCorner[2]; z <= upperCorner[2]; z++) {
         auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension);
-        sum += neighborListLengthImpl<Particle>(neighborLists.getAoSNeighborList(), cellIndex);
+        sum += neighborListLengthImpl<Particle>(internalList, cellIndex);
       }
     }
   }

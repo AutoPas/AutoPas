@@ -80,11 +80,11 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
           _aosNeighborList[firstCellIndex][secondCellIndex].emplace_back(
               std::make_pair(currentParticle, std::vector<Particle *>()));
 
-          // In a cell with N particles, reserve space for 5N neighbors.
-          // 5 is an empirically determined magic number that provides good speed.
+          // magic number 5 doesn't make sense here anymore
+          // how much should we actually reserve?
           _aosNeighborList[firstCellIndex][secondCellIndex].back().second.reserve(cells[firstCellIndex].numParticles() *
-                                                                                  5);
-
+                                                                                  5 / 27);
+          std::cout << "cell BIG " << cells[firstCellIndex].numParticles() * 5 << std::endl;
           // add pair of cell's index and particle's index in the cell
           _particleToCellMap[currentParticle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
           particleIndexCurrentCell++;
