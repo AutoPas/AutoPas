@@ -84,7 +84,6 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
           // how much should we actually reserve?
           _aosNeighborList[firstCellIndex][secondCellIndex].back().second.reserve(cells[firstCellIndex].numParticles() *
                                                                                   5 / 27);
-          std::cout << "cell BIG " << cells[firstCellIndex].numParticles() * 5 << std::endl;
           // add pair of cell's index and particle's index in the cell
           _particleToCellMap[currentParticle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
           particleIndexCurrentCell++;
