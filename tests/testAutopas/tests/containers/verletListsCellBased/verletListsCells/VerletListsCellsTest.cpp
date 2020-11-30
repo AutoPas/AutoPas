@@ -6,9 +6,9 @@
 #include "VerletListsCellsTest.h"
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -18,8 +18,8 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletListsCells<Particle, autopas::VerletListsCellsNeighborList<Particle>> verletLists(min, max, cutoff, autopas::TraversalOption::lc_c18, skin,
-                                                  cellSizefactor);
+  autopas::VerletListsCells<Particle, autopas::VerletListsCellsNeighborList<Particle>> verletLists(
+      min, max, cutoff, autopas::TraversalOption::lc_c18, skin, cellSizefactor);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -28,8 +28,10 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor) {
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true, typename autopas::VerletListsCellsHelpers<Particle>::NeighborListsType, false> traversal(
-      verletLists.getCellsPerDimension(), &functor, verletLists.getInteractionLength(), verletLists.getCellLength());
+  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
+                           autopas::VerletListsCellsNeighborList<Particle>, 0>
+      traversal(verletLists.getCellsPerDimension(), &functor, verletLists.getInteractionLength(),
+                verletLists.getCellLength());
 
   verletLists.rebuildNeighborLists(&traversal);
   verletLists.iteratePairwise(&traversal);

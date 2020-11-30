@@ -74,7 +74,11 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
 
-  //TODO
+  // PairwiseVerletLists:   vlp_sliced                  (AoS, newton3 <=> noNewton3)                         = 2
+  //                        vlp_sliced_balanced         (AoS, newton3 <=> noNewton3)                         = 2
+  //                        vlp_sliced_colored          (AoS, newton3 <=> noNewton3)                         = 2
+  //                        vlp_c18                     (AoS, newton3 <=> noNewton3)                         = 2
+  //                        vlp_c01                     (AoS, noNewton3)                                     = 1
   configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 9;
 
   // check that there is an entry for every container. Except VCC because they are only relevant for CUDA...

@@ -46,6 +46,46 @@ unsigned long squaredParticlesPerCell(const std::vector<ParticleCell> &cells,
 }
 
 /**
+ * Helper function for calculating the neighbor list length for the Verlet lists cells neighbor list.
+ *
+ * @param neighborLists
+ * @param cellIndex the index of the current cell being processed
+ * @return estimated load for current cell
+ */
+template <class Particle>
+unsigned long neighborListLengthImpl(
+    const typename autopas::VerletListsCellsHelpers<Particle>::NeighborListsType &neighborLists,
+    unsigned long cellIndex) {
+  unsigned long cellLoad = 0;
+  for (auto &list : neighborLists[cellIndex]) {
+    cellLoad += list.second.size();
+  }
+
+  return cellLoad;
+}
+
+/**
+ * Helper function for calculating the neighbor list length for pairwise Verlet lists.
+ *
+ * @param neighborLists
+ * @param cellIndex the index of the current cell being processed
+ * @return estimated load for current cell
+ */
+template <class Particle>
+unsigned long neighborListLengthImpl(
+    const typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType &neighborLists,
+    unsigned long cellIndex) {
+  unsigned long cellLoad = 0;
+  for (auto &list : neighborLists[cellIndex]) {
+    for (size_t index = 0; index < list.size(); index++) {
+      cellLoad += list[index].second.size();
+    }
+  }
+
+  return cellLoad;
+}
+
+/**
  * Sums up the lengths of the verlet neighbor lists of all particles within region.
  *
  * @param neighborLists
@@ -54,45 +94,17 @@ unsigned long squaredParticlesPerCell(const std::vector<ParticleCell> &cells,
  * @param upperCorner upper boundary indices for region
  * @return estimated load for given region
  */
-template <class Particle>
-unsigned long neighborListLength(
-    const typename autopas::VerletListsCellsHelpers<Particle>::NeighborListsType &neighborLists,
-    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
-    const std::array<unsigned long, 3> &upperCorner) {
+template <class Particle, class NeighborList>
+unsigned long neighborListLength(NeighborList &neighborLists, const std::array<unsigned long, 3> &cellsPerDimension,
+                                 const std::array<unsigned long, 3> &lowerCorner,
+                                 const std::array<unsigned long, 3> &upperCorner) {
+  auto internalList = neighborLists.getAoSNeighborList();
   unsigned long sum = 0;
   for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
     for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
       for (unsigned long z = lowerCorner[2]; z <= upperCorner[2]; z++) {
         auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension);
-        unsigned long cellLoad = 0;
-        for (auto &list : neighborLists[cellIndex]) {
-          cellLoad += list.second.size();
-        }
-        sum += cellLoad;
-      }
-    }
-  }
-  return sum;
-}
-
-template <class Particle>
-unsigned long neighborListLength(
-    const typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType &neighborLists,
-    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
-    const std::array<unsigned long, 3> &upperCorner) {
-  unsigned long sum = 0;
-  for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
-    for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
-      for (unsigned long z = lowerCorner[2]; z <= upperCorner[2]; z++) {
-        auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension);
-        unsigned long cellLoad = 0;
-        for (auto &list : neighborLists[cellIndex]) {
-          for(size_t index = 0; index < list.size(); index++)
-          {
-            cellLoad += list[index].second.size();
-          }
-        }
-        sum += cellLoad;
+        sum += neighborListLengthImpl<Particle>(internalList, cellIndex);
       }
     }
   }

@@ -7,21 +7,25 @@
 #pragma once
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
-#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticBoolSelector.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 
 namespace autopas {
+template <class ParticleCell>
+class TraversalSelector;
 /**
  * Neighbor list to be used with VerletListsCells container. Classic implementation of verlet lists based on linked
  * cells.
  * @tparam Particle Type of particle to be used for this neighbor list.
  * */
 template <class Particle>
-class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle>
-{
+class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle> {
  public:
+  /**
+   * Type of the data structure used to save the neighbor lists.
+   * */
+  using listType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
   /**
    * Constructor for VerletListsCellsNeighborList. Initializes private attributes.
    * */
@@ -59,9 +63,9 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   }
 
   /**
-   * @copydoc VerletListsCellsNeighborListInterface::getVerletList()
+   * @copydoc VerletListsCellsNeighborListInterface::getNumberOfPartners()
    * */
-  const size_t &getNumberOfPartners(const Particle *particle) const override {
+  const size_t getNumberOfPartners(const Particle *particle) const override {
     const auto [cellIndex, particleIndexInCell] = _particleToCellMap.at(const_cast<Particle *>(particle));
     size_t listSize = _aosNeighborList.at(cellIndex).at(particleIndexInCell).second.size();
     return listSize;
@@ -72,11 +76,6 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * @return Neighbor list in AoS layout.
    * */
   typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSNeighborList() { return _aosNeighborList; }
-
-  auto doCast(TraversalInterface *traversal)
-  {
-    return dynamic_cast<autopas::VLCTraversalInterface<Particle, typename VerletListsCellsHelpers<Particle>::NeighborListsType> *>(traversal);
-  }
 
  private:
   /**

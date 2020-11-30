@@ -36,18 +36,17 @@ class VerletListsCellsNeighborListInterface {
                                     double interactionLength, const TraversalOption buildTraversalOption) = 0;
 
   /**
-   * Get the neighbors list of a particle for this particular neighbor list and container combination.
+   * Gets the number of neighbors over all neighbor lists that belong to this particle.
    * @param particle
-   * @return the neighbor list of the particle
+   * @return the size of the neighbor list(s) of this particle
    */
-  virtual const size_t &getNumberOfPartners(const Particle *particle) const = 0;
+  virtual const size_t getNumberOfPartners(const Particle *particle) const = 0;
 
   /**
    * Returns the container type of this neighbor list and the container it belongs to.
    * @return ContainerOption for this neighbor list and the container it belongs to.
    */
   [[nodiscard]] virtual ContainerOption getContainerType() const = 0;
-
 };
 
 }  // namespace autopas

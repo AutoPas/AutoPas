@@ -97,12 +97,13 @@ static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
 }
 
 /**
- * TODO
+ * Lists all traversal options applicable for the Pairwise Verlet Lists container.
+ * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allPairwiseCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::pairwise_vlc_sliced, TraversalOption::pairwise_vlc_c18,
-                                            TraversalOption::pairwise_vlc_c01, TraversalOption::pairwise_vlc_sliced_c02,
-                                            TraversalOption::pairwise_vlc_sliced_balanced};
+static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
+  static const std::set<TraversalOption> s{TraversalOption::vlp_sliced, TraversalOption::vlp_c18,
+                                           TraversalOption::vlp_c01, TraversalOption::vlp_sliced_c02,
+                                           TraversalOption::vlp_sliced_balanced};
   return s;
 }
 
@@ -138,7 +139,7 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
       return allRLCCompatibleTraversals();
     }
     case ContainerOption::pairwiseVerletLists: {
-      return allPairwiseCompatibleTraversals();
+      return allVLPCompatibleTraversals();
     }
   }
 

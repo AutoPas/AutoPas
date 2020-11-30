@@ -13,9 +13,9 @@
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/PairwiseVerletNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/PairwiseVerletNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
@@ -83,8 +83,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
       case LoadEstimatorOption::neighborListLength: {
         return [&](const std::array<unsigned long, 3> &cellsPerDimension,
                    const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
-          return loadEstimators::neighborListLength<Particle>(_neighborList.getAoSNeighborList(), cellsPerDimension,
-                                                              lowerCorner, upperCorner);
+          return loadEstimators::neighborListLength<Particle, NeighborList>(_neighborList, cellsPerDimension,
+                                                                            lowerCorner, upperCorner);
         };
       }
 
@@ -100,14 +100,13 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    //auto vTraversal = dynamic_cast<autopas::VLCTraversalInterface<Particle> *>(traversal);
-    auto vTraversal = _neighborList.doCast(traversal);
+    auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, NeighborList> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
 
     if (vTraversal) {
-      vTraversal->setVerletList(_neighborList.getAoSNeighborList());
+      vTraversal->setVerletList(_neighborList);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
@@ -120,11 +119,11 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   }
 
   /**
-   * Get the neighbors list of a particle.
+   * Gets the number of neighbors over all neighbor lists that belong to this particle.
    * @param particle
-   * @return the neighbor list of the particle
+   * @return the size of the neighbor list(s) of this particle
    */
-  const size_t &getNumberOfPartners(const Particle *particle) const {
+  const size_t getNumberOfPartners(const Particle *particle) const {
     return _neighborList.getNumberOfPartners(particle);
   }
 

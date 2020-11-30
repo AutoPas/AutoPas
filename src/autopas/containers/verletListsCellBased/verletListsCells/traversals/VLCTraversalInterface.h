@@ -10,9 +10,13 @@
 #include <utility>
 #include <vector>
 
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-
 namespace autopas {
+
+template <class Particle>
+class VerletListsCellsNeighborList;
+
+template <class Particle>
+class PairwiseVerletNeighborList;
 
 /**
  * This class provides the Traversal Interface for the verlet lists cells container.
@@ -26,46 +30,65 @@ template <class Particle, class NeighborList>
 class VLCTraversalInterface {
  public:
   /**
-   * Shorthand for VerletListsCellsHelpers<Particle>::NeighborListsType.
-   */
-  using NeighborListsType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
-  using PairwiseNeighborListsType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
-
-  /**
    * Sets the verlet list for the traversal to iterate over.
    * @param verlet The verlet list to iterate over.
    */
-  //virtual void setVerletList(NeighborListsType &verlet) { _verletList = &verlet; }
-
-  virtual void setVerletList(NeighborList &verlet) { _verletList = &verlet; }
+  virtual void setVerletList(NeighborList &verlet) {
+    _verletList = &verlet;
+    internalList = _verletList->getAoSNeighborList();  // only this->verletList is being passed to processCellLists so
+                                                       // internalList should be safe to use below
+  }
 
  protected:
   /**
    * Iterate over all neighbor lists list of a given cell.
    * @tparam PairwiseFunctor
    * @tparam useNewton3
-   * @param neighborLists Vector of neighbor lists. One for each particle in the cell.
+   * @param neighborLists A suitable neighbor list.
    * @param cellIndex
    * @param pairwiseFunctor
    */
   template <class PairwiseFunctor, bool useNewton3>
-  void processCellLists(NeighborListsType &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout) {
-    for (auto &[particlePtr, neighbors] : neighborLists[cellIndex]) {
-      Particle &particle = *particlePtr;
-      for (auto neighborPtr : neighbors) {
-        Particle &neighbor = *neighborPtr;
-        pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
+  void processCellLists(NeighborList &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout) {
+    processCellListsImpl<PairwiseFunctor, useNewton3>(neighborLists, cellIndex, pairwiseFunctor, dataLayout);
+  }
+
+  /**
+   * The neighbor list class which contains the verlet list to iterate over.
+   */
+  NeighborList *_verletList;
+  /**
+   * The verlet list to iterate over.
+   */
+  typename NeighborList::listType internalList;
+
+ private:
+  /** Processing of the VerletListsCellsNeighborList type of neighbor list (neighbor list for every cell).*/
+  template <class PairwiseFunctor, bool useNewton3>
+  void processCellListsImpl(VerletListsCellsNeighborList<Particle> &neighborList, unsigned long cellIndex,
+                            PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout) {
+
+    if(dataLayout == DataLayoutOption::Value::aos)
+    {
+      for (auto &[particlePtr, neighbors] : internalList[cellIndex]) {
+        Particle &particle = *particlePtr;
+        for (auto neighborPtr : neighbors) {
+          Particle &neighbor = *neighborPtr;
+          pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
+        }
       }
     }
   }
 
+  /** Processing of the pairwise Verlet type of neighbor list (neighbor list for every pair of neighboring cells).*/
   template <class PairwiseFunctor, bool useNewton3>
-  void processCellLists(PairwiseNeighborListsType &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout) {
+  void processCellListsImpl(PairwiseVerletNeighborList<Particle> &neighborList, unsigned long cellIndex,
+                            PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout) {
     if(dataLayout == DataLayoutOption::Value::aos)
     {
-      for(size_t neighborCellIndex = 0; neighborCellIndex < 27; neighborCellIndex++)
-      {
-        for (auto &[particlePtr, neighbors] : neighborLists[cellIndex][neighborCellIndex]) {
+      size_t numberOfCellToInteract = 27;
+      for (size_t neighborCellIndex = 0; neighborCellIndex < numberOfCellToInteract; neighborCellIndex++) {
+        for (auto &[particlePtr, neighbors] : internalList[cellIndex][neighborCellIndex]) {
           Particle &particle = *particlePtr;
           for (auto neighborPtr : neighbors) {
             Particle &neighbor = *neighborPtr;
@@ -80,11 +103,6 @@ class VLCTraversalInterface {
 
     }
   }
-
-  /**
-   * The verlet list to iterate over.
-   */
-  NeighborList *_verletList;
 };
 
 }  // namespace autopas

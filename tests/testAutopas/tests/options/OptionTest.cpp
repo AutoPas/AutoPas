@@ -51,8 +51,7 @@ TEST(OptionTest, parseContainerOptionsTest) {
       {autopas::ContainerOption::verletLists, "verletLists"},
       {autopas::ContainerOption::verletListsCells, "verletLists-cells"},
       {autopas::ContainerOption::linkedCellsReferences, "linkedCellsreferenc"},
-      {autopas::ContainerOption::pairwiseVerletLists, "pairwiseVerlet"}
-  };
+      {autopas::ContainerOption::pairwiseVerletLists, "pairwiseVerlet"}};
 
   EXPECT_EQ(mapEnumString.size(), autopas::ContainerOption::getOptionNames().size());
 
