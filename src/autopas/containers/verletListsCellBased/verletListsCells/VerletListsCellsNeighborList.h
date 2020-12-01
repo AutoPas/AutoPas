@@ -26,10 +26,17 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * Type of the data structure used to save the neighbor lists.
    * */
   using listType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
+
+  //TODO
+  using SoAPairOfParticleAndList = std::pair<size_t, std::vector<size_t, autopas::AlignedAllocator<size_t>>>;
+
+  //TODO
+  using soaListType = typename std::vector<std::vector<SoAPairOfParticleAndList>>;
+
   /**
    * Constructor for VerletListsCellsNeighborList. Initializes private attributes.
    * */
-  VerletListsCellsNeighborList() : _aosNeighborList{}, _particleToCellMap{} {}
+  VerletListsCellsNeighborList() : _aosNeighborList{}, _particleToCellMap{}, _soaNeighborList(), _soa{} {}
 
   /**
    * @copydoc VerletListsCellsNeighborListInterface::getContainerType()
@@ -77,6 +84,18 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * */
   typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSNeighborList() { return _aosNeighborList; }
 
+  auto &getSoANeighborList() {return _soaNeighborList; }
+
+  template <class TFunctor>
+  auto *loadSoA(TFunctor *f) {
+    _soa.clear();
+    return &_soa;
+  }
+
+  template <class TFunctor>
+  void extractSoA(TFunctor *f) {
+  }
+
  private:
   /**
    * Creates and applies generator functor for the building of the neighbor list.
@@ -113,5 +132,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * Mapping of each particle to its corresponding cell and id within this cell.
    */
   std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap;
+  SoA<typename Particle::SoAArraysType> _soa;
+  soaListType _soaNeighborList;
 };
 }  // namespace autopas
