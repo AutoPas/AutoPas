@@ -29,7 +29,7 @@ namespace autopas {
  * for pairwise)
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList, int typeOfList>
+          class NeighborList, TraversalOption::Value typeOfList>
 class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                         public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
  public:
@@ -50,14 +50,7 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
   void traverseParticlePairs() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
-    switch (typeOfList) {
-      case 0:
-        return TraversalOption::vlc_c01;
-      case 1:
-        return TraversalOption::vlp_c01;
-      default:
-        return TraversalOption::vlc_c01;
-    }
+    return typeOfList;
   }
 
   [[nodiscard]] bool isApplicable() const override {
@@ -73,7 +66,7 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList, int typeOfList>
+          class NeighborList, TraversalOption::Value typeOfList>
 inline void VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
                             typeOfList>::traverseParticlePairs() {
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) {

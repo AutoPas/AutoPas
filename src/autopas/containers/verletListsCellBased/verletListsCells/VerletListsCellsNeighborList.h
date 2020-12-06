@@ -7,9 +7,9 @@
 #pragma once
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticBoolSelector.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListGeneratorFunctor.h"
 
 namespace autopas {
 template <class ParticleCell>
@@ -67,8 +67,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * */
   const size_t getNumberOfPartners(const Particle *particle) const override {
     const auto [cellIndex, particleIndexInCell] = _particleToCellMap.at(const_cast<Particle *>(particle));
-    size_t listSize = _aosNeighborList.at(cellIndex).at(particleIndexInCell).second.size();
-    return listSize;
+    return _aosNeighborList.at(cellIndex).at(particleIndexInCell).second.size();
   }
 
   /**
@@ -89,7 +88,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * */
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                          double interactionLength, const TraversalOption buildTraversalOption) {
-    typename VerletListsCellsHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborList, _particleToCellMap,
+    VerletListGeneratorFunctor f(_aosNeighborList, _particleToCellMap,
                                                                              cutoff + skin);
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.

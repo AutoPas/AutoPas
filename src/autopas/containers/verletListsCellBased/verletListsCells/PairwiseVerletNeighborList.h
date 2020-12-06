@@ -6,8 +6,8 @@
 
 #pragma once
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/StaticBoolSelector.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/PairwiseVerletListGeneratorFunctor.h"
 
 namespace autopas {
 template <class ParticleCell>
@@ -39,13 +39,12 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
    * @copydoc VerletListsCellsNeighborListInterface::getNumberOfPartners()
    * */
   const size_t getNumberOfPartners(const Particle *particle) const override {
-    size_t localSize = 0;
-    const auto [firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle));
-    size_t numberOfCellsToInteract = 27;
-    for (size_t secondCellIndex = 0; secondCellIndex < numberOfCellsToInteract; secondCellIndex++) {
-      localSize += _aosNeighborList[firstCellIndex][secondCellIndex][particleInCellIndex].second.size();
+    size_t listSize = 0;
+    const auto &[firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle));
+    for (size_t secondCellIndex = 0; secondCellIndex < _aosNeighborList[firstCellIndex].size(); secondCellIndex++) {
+      listSize += _aosNeighborList[firstCellIndex][secondCellIndex][particleInCellIndex].second.size();
     }
-    return localSize;
+    return listSize;
   }
 
   /**
@@ -106,7 +105,7 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
    * */
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                          double interactionLength, const TraversalOption buildTraversalOption) {
-    typename VerletListsCellsHelpers<Particle>::PairwiseVerletListGeneratorFunctor f(
+    PairwiseVerletListGeneratorFunctor<Particle> f(
         _aosNeighborList, _particleToCellMap, _globalToLocalIndex, cutoff + skin);
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.

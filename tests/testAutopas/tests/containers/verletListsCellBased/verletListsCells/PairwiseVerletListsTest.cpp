@@ -28,7 +28,7 @@ TEST_P(PairwiseVerletListsTest, testTwoParticles) {
   verletLists.addParticle(p2);
 
   autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
-                           autopas::PairwiseVerletNeighborList<Particle>, 1>
+                           autopas::PairwiseVerletNeighborList<Particle>, autopas::TraversalOption::vlp_c18>
       traversal(verletLists.getCellsPerDimension(), &emptyFunctor, verletLists.getInteractionLength(),
                 verletLists.getCellLength());
 
@@ -68,7 +68,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
   verletLists.addParticle(p3);
 
   autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
-                           autopas::PairwiseVerletNeighborList<Particle>, 1>
+                           autopas::PairwiseVerletNeighborList<Particle>, autopas::TraversalOption::vlp_c18>
       traversal(verletLists.getCellsPerDimension(), &emptyFunctorOther, verletLists.getInteractionLength(),
                 verletLists.getCellLength());
 
@@ -111,7 +111,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
   verletLists.addParticle(p3);
 
   autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
-                           autopas::PairwiseVerletNeighborList<Particle>, 1>
+                           autopas::PairwiseVerletNeighborList<Particle>, autopas::TraversalOption::vlp_c18>
       traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(),
                 verletLists.getCellLength());
 
@@ -148,7 +148,7 @@ TEST_P(PairwiseVerletListsTest, testOneParticle) {
   verletLists.addParticle(p);
 
   autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
-                           autopas::PairwiseVerletNeighborList<Particle>, 1>
+                           autopas::PairwiseVerletNeighborList<Particle>, autopas::TraversalOption::vlp_c18>
       traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(),
                 verletLists.getCellLength());
 
