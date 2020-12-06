@@ -88,7 +88,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * */
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                          double interactionLength, const TraversalOption buildTraversalOption) {
-    VerletListGeneratorFunctor f(_aosNeighborList, _particleToCellMap, cutoff + skin);
+    VerletListGeneratorFunctor<Particle> f(_aosNeighborList, _particleToCellMap, cutoff + skin);
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.
     TraversalSelector<FullParticleCell<Particle>> traversalSelector;
