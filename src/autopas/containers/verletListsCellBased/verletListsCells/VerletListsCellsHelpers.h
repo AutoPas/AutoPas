@@ -31,7 +31,7 @@ class VerletListsCellsHelpers {
    * cell2.
    */
   using PairwiseNeighborListsType =
-  std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>;
+      std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>;
 
 };  // class VerletListsCellsHelpers
 }  // namespace autopas

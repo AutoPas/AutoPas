@@ -49,9 +49,7 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
 
   void traverseParticlePairs() override;
 
-  [[nodiscard]] TraversalOption getTraversalType() const override {
-    return typeOfList;
-  }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return typeOfList; }
 
   [[nodiscard]] bool isApplicable() const override {
     return (not useNewton3) and (dataLayout == DataLayoutOption::aos);

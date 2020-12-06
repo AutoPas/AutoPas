@@ -6,10 +6,10 @@
 
 #pragma once
 
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListGeneratorFunctor.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticBoolSelector.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListGeneratorFunctor.h"
 
 namespace autopas {
 template <class ParticleCell>
@@ -88,8 +88,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * */
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                          double interactionLength, const TraversalOption buildTraversalOption) {
-    VerletListGeneratorFunctor f(_aosNeighborList, _particleToCellMap,
-                                                                             cutoff + skin);
+    VerletListGeneratorFunctor f(_aosNeighborList, _particleToCellMap, cutoff + skin);
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.
     TraversalSelector<FullParticleCell<Particle>> traversalSelector;

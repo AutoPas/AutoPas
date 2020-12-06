@@ -4,20 +4,18 @@
  * @date 05.12.2020
  */
 
-#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/pairwiseFunctors/Functor.h"
 
 #pragma once
 
-namespace autopas
-{
+namespace autopas {
 
 template <class Particle>
 /**
-* This functor generates pairwise verlet lists (a verlet list attached to every pair of neighboring cells).
-*/
+ * This functor generates pairwise verlet lists (a verlet list attached to every pair of neighboring cells).
+ */
 class PairwiseVerletListGeneratorFunctor : public Functor<Particle, PairwiseVerletListGeneratorFunctor<Particle>> {
-
   using PairwiseNeighborListsType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
 
  public:
@@ -105,4 +103,4 @@ class PairwiseVerletListGeneratorFunctor : public Functor<Particle, PairwiseVerl
   double _cutoffskinsquared;
 };
 
-}
+}  // namespace autopas

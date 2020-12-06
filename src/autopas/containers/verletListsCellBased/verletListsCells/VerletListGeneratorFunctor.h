@@ -3,20 +3,18 @@
  * @author tirgendetwas
  * @date 05.12.2020
  */
-#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/pairwiseFunctors/Functor.h"
 
 #pragma once
 
-namespace autopas
-{
+namespace autopas {
 
 template <class Particle>
 /**
-   * This functor can generate verlet lists using the typical pairwise traversal.
-   */
+ * This functor can generate verlet lists using the typical pairwise traversal.
+ */
 class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorFunctor<Particle>> {
-
   using NeighborListsType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
 
  public:
@@ -28,11 +26,11 @@ class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorF
    */
   VerletListGeneratorFunctor(NeighborListsType &neighborLists,
                              std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
-  double cutoffskin)
-  : Functor<Particle, VerletListGeneratorFunctor>(0.),
-  _neighborLists(neighborLists),
-  _particleToCellMap(particleToCellMap),
-  _cutoffskinsquared(cutoffskin * cutoffskin) {}
+                             double cutoffskin)
+      : Functor<Particle, VerletListGeneratorFunctor>(0.),
+        _neighborLists(neighborLists),
+        _particleToCellMap(particleToCellMap),
+        _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
   bool isRelevantForTuning() override { return false; }
 
@@ -82,4 +80,4 @@ class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorF
   double _cutoffskinsquared;
 };
 
-}
+}  // namespace autopas

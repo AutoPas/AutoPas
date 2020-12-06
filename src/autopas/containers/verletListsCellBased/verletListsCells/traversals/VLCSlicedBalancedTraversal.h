@@ -62,9 +62,7 @@ class VLCSlicedBalancedTraversal
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override {
-    return typeOfList;
-  }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return typeOfList; }
 
   [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
 

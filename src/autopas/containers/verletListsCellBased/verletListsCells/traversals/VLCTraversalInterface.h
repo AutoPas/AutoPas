@@ -35,8 +35,9 @@ class VLCTraversalInterface {
    */
   virtual void setVerletList(NeighborList &verlet) {
     _verletList = &verlet;
-    //internalList = _verletList->getAoSNeighborList();  // only this->verletList is being passed to processCellLists so
-                                                       // internalList should be safe to use below
+    // internalList = _verletList->getAoSNeighborList();  // only this->verletList is being passed to processCellLists
+    // so
+    // internalList should be safe to use below
   }
 
  protected:
@@ -60,7 +61,7 @@ class VLCTraversalInterface {
   /**
    * The verlet list to iterate over.
    */
-  //typename NeighborList::listType internalList;
+  // typename NeighborList::listType internalList;
 
  private:
   /** Processing of the VerletListsCellsNeighborList type of neighbor list (neighbor list for every cell).*/
