@@ -30,11 +30,12 @@ namespace autopas {
  * 1. Measuring time of the iteration.
  * 2. Selecting an appropriate configuration for the pairwise iteration.
  *
- * The tuner can be in one of two states, depending on whether it currently should look for a new optimum,
- * which is called a tuning phase. During a tuning phase,for each Configuration multiple measurements can be taken,
+ * The tuner can be in one of two states. If it currently should look for a new optimum, it is in the 
+ * so-called tuning phase. During a tuning phase, for each Configuration, multiple measurements can be taken,
  * which are called samples. To reduce noise, the samples for one configuration are then condensed to one value for
- * the current tuning phase, called evidence. These evidence are handed on to a tuningStrategy, which selects a) what
+ * the current tuning phase, called evidence. The evidences are handed on to a tuningStrategy, which selects a) what
  * Configuration to test next and b) which configuration is the best in this tuning phase.
+ * If it should not look for a new optimum it is not in a tuning phase.
  *
  * @tparam Particle
  * @tparam ParticleCell

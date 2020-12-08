@@ -29,8 +29,8 @@ std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<s
 
   const auto &xi = points[i].first;
 
-  // define thresholds for shortcuts: if residuals are beyond these values the
-  // are assumed to be 0 respectively 1
+  // Define thresholds for shortcuts: If residuals are beyond these values, they
+  // are assumed to be 0, respectively 1.
   auto maxDistFromIntervalEdgeHigh = maxDistFromIntervalEdge * .999;
   auto maxDistFromIntervalEdgeLow = maxDistFromIntervalEdge * .001;
 
@@ -75,7 +75,7 @@ std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<s
 /**
  * Calculates the smoothed y-value of the last point in the vector.
  * The fitted value is the sum of projections of the y-values of the neighbors in the chosen interval.
- * Each porjection is the sum of the respective weight and the residuals proportion of the weighted sum of squared
+ * Each projection is the sum of the respective weight and the proportion of the residuals of the weighted sum of squared
  * residuals.
  *
  * @param points
