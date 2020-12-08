@@ -22,13 +22,13 @@
 std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<std::pair<size_t, size_t>> &points,
                                                              size_t pointsPerEstimation,
                                                              size_t maxDistFromIntervalEdge) {
-  // since we will only smooth the last point there is no outer loop and i shall be fixed
-  const size_t i = points.size() - 1;
-  const size_t firstIndex = i - pointsPerEstimation + 1;
+  // since we will only smooth the last point there is no outer loop and indexToFit shall be fixed
+  const size_t indexToFit = points.size() - 1;
+  const size_t firstIndex = indexToFit - pointsPerEstimation + 1;
   // initialize all weights with 0
   std::vector<double> weights(pointsPerEstimation);
 
-  const auto &xi = points[i].first;
+  const auto &xi = points[indexToFit].first;
 
   // Define thresholds for shortcuts: If residuals are beyond these values, they
   // are assumed to be 0, respectively 1.
@@ -86,9 +86,9 @@ std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<s
  */
 double calculateYFitSimple(const std::vector<std::pair<size_t, size_t>> &points, size_t pointsPerEstimation,
                            const std::vector<double> &weights) {
-  // since we will only smooth the last point there is no outer loop and i shall be fixed
-  const size_t i = points.size() - 1;
-  const size_t firstIndex = i - pointsPerEstimation + 1;
+  // since we will only smooth the last point there is no outer loop and indexToFit shall be fixed
+  const size_t indexToFit = points.size() - 1;
+  const size_t firstIndex = indexToFit - pointsPerEstimation + 1;
   std::vector<double> projections = weights;
 
   // weighted center of x
@@ -107,21 +107,21 @@ double calculateYFitSimple(const std::vector<std::pair<size_t, size_t>> &points,
   // threshold whether points are not too clumped up
   size_t pointsRange = points.back().first - points.front().first;
   if (weightedDistFromCenterXSquare > 1e-6 * pointsRange * pointsRange) {
-    // here i is always at the end of the interval
-    auto distIToCenter = deviations.back();
-    double distDivSqDev = distIToCenter / weightedDistFromCenterXSquare;
+    // here indexToFit is always at the end of the interval
+    auto distIndexToCenter = deviations.back();
+    double distDivSqDev = distIndexToCenter / weightedDistFromCenterXSquare;
 
     for (size_t j = 0; j < weights.size(); ++j) {
       projections[j] = weights[j] * (1. + distDivSqDev * deviations[j]);
     }
   }
 
-  double yFittedI = 0.;
+  double yFitted = 0.;
   for (size_t j = 0; j < projections.size(); ++j) {
-    yFittedI += projections[j] * points[j + firstIndex].second;
+    yFitted += projections[j] * points[j + firstIndex].second;
   }
 
-  return yFittedI;
+  return yFitted;
 }
 
 size_t autopas::smoothing::smoothLastPoint(const std::vector<std::pair<size_t, size_t>> &points,
@@ -141,13 +141,13 @@ size_t autopas::smoothing::smoothLastPoint(const std::vector<std::pair<size_t, s
   // do not try to use more points than there are.
   pointsPerEstimation = std::min(pointsPerEstimation, points.size());
 
-  // since we will only smooth the last point there is no outer loop and i shall be fixed
-  size_t i = points.size() - 1;
+  // since we will only smooth the last point there is no outer loop and indexToFit shall be fixed
+  size_t indexToFit = points.size() - 1;
   // find neighborhood
-  const auto firstIndex = i - pointsPerEstimation + 1;
+  const auto firstIndex = indexToFit - pointsPerEstimation + 1;
 
   // maxDistFromIntervalEdge = max(xi - xFirst, xLast - xi)
-  auto maxDistFromIntervalEdge = std::max(points[i].first - points[firstIndex].first, 0ul);
+  auto maxDistFromIntervalEdge = std::max(points[indexToFit].first - points[firstIndex].first, 0ul);
 
   // Calculate weights
   auto [weights, fitOk] = calculateWeightsSimple(points, pointsPerEstimation, maxDistFromIntervalEdge);
@@ -156,6 +156,6 @@ size_t autopas::smoothing::smoothLastPoint(const std::vector<std::pair<size_t, s
   if (fitOk) {
     return std::round(calculateYFitSimple(points, pointsPerEstimation, weights));
   } else {
-    return points[i].second;
+    return points[indexToFit].second;
   }
 }
