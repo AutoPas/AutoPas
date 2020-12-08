@@ -122,11 +122,13 @@ double calculateYFitSimple(const std::vector<std::pair<size_t, size_t>> &points,
   return yFittedI;
 }
 
-size_t autopas::smoothing::smoothLastPoint(const std::vector<std::pair<size_t, size_t>> &points, double span) {
-  if (span <= 0 or span > 1.0) {
-    throw std::runtime_error("span should be 0 < span <= 1");
+size_t autopas::smoothing::smoothLastPoint(const std::vector<std::pair<size_t, size_t>> &points,
+                                           size_t pointsPerEstimation) {
+  // if one or no points are used for smoothing do nothing
+  if (pointsPerEstimation <= 2) {
+    return points.back().second;
   }
-
+  // if there are not enough points to smooth do nothing
   if (points.size() < 2) {
     if (points.size() == 1) {
       return points[0].second;
@@ -134,8 +136,8 @@ size_t autopas::smoothing::smoothLastPoint(const std::vector<std::pair<size_t, s
     return 0;
   }
 
-  // pick at least two points and not more than total number of points
-  size_t pointsPerEstimation = std::max(static_cast<size_t>(span * points.size()), 2ul);
+  // do not try to use more points than there are.
+  pointsPerEstimation = std::min(pointsPerEstimation, points.size());
 
   // only fit last point
   size_t i = points.size() - 1;

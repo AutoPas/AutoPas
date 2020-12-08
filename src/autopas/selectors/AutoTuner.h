@@ -158,7 +158,7 @@ class AutoTuner {
           auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
 
           _evidences[currentConfig].emplace_back(_iteration, reducedValue);
-          auto smoothedValue = smoothing::smoothLastPoint(_evidences[currentConfig], .25);
+          auto smoothedValue = smoothing::smoothLastPoint(_evidences[currentConfig], 5);
 
           _tuningStrategy->addEvidence(smoothedValue, _iteration);
 
@@ -169,7 +169,7 @@ class AutoTuner {
             ss << currentConfig.toString() << " : ";
             // print all timings
             ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
-            ss << " Reduced value: " << reducedValue;  // TODO: remove this. Should not break performance testing tool.
+            // ss << " Reduced value: " << reducedValue;  // This line is only for plotting purposes
             ss << " Smoothed value: " << smoothedValue;
             AutoPasLog(debug, "Collected times for  {}", ss.str());
           }

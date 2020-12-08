@@ -20,6 +20,6 @@ namespace autopas::smoothing {
  * @param span Fractions of points that shall be taken into account for the smoothing.
  * @return
  */
-size_t smoothLastPoint(const std::vector<std::pair<size_t, size_t>> &points, double span);
+size_t smoothLastPoint(const std::vector<std::pair<size_t, size_t>> &points, size_t pointsPerEstimation);
 
 }  // namespace autopas::smoothing
