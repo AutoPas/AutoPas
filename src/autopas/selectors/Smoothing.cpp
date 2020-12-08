@@ -9,11 +9,15 @@
 #include "autopas/utils/Math.h"
 
 /**
- * TODO
- * @param points
- * @param pointsPerEstimation
- * @param maxDistFromIntervalEdge
- * @return
+ * Calculates the weights for the k-neighbors of the last point in the vector using the tri-cube function.
+ * If the sum of weights is <= 0 all neighbors are at the same x coordinate as the point and smoothing will not change
+ * the point. This case is indicated by the bool in the return tuple.
+ *
+ * @param points Sorted collection of observations.
+ * @param pointsPerEstimation Number of neighbors to consider for smoothing.
+ * @param maxDistFromIntervalEdge Largest distance between the point that shall be fitted and its neighbors.
+ * @return Tuple of a vector containing the weights for the neighbors
+ * and a bool indicating whether fitting is unnecessary.
  */
 std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<std::pair<size_t, size_t>> &points,
                                                              size_t pointsPerEstimation,
@@ -56,6 +60,7 @@ std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<s
   }
 
   bool fitIsOk = true;
+  // if all residuals were 0 fitting is not necessary
   if (sumOfWeights <= .0) {
     fitIsOk = false;
   } else {
@@ -68,43 +73,44 @@ std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<s
 }
 
 /**
- * TODO
+ * Calculates the smoothed y-value of the last point in the vector.
+ * The fitted value is the sum of projections of the y-values of the neighbors in the chosen interval.
+ * Each porjection is the sum of the respective weight and the residuals proportion of the weighted sum of squared
+ * residuals.
+ *
  * @param points
  * @param pointsPerEstimation
- * @param maxDistFromIntervalEdge
  * @param weights
  * @return
  */
 double calculateYFitSimple(const std::vector<std::pair<size_t, size_t>> &points, size_t pointsPerEstimation,
-                           const size_t maxDistFromIntervalEdge, const std::vector<double> &weights) {
+                           const std::vector<double> &weights) {
   const size_t i = points.size() - 1;
   const size_t firstIndex = i - pointsPerEstimation + 1;
   std::vector<double> projections = weights;
 
-  if (maxDistFromIntervalEdge > 0) {
-    // weighted center of x
-    // TODO: make this a size_t ?
-    double sumWeightedX = 0.;
+  // weighted center of x
+  double sumWeightedX = 0.;
+  for (size_t j = 0; j < weights.size(); ++j) {
+    sumWeightedX += weights[j] * points[j + firstIndex].first;
+  }
+
+  double weightedDistFromCenterXSquare = 0.;
+  std::vector<size_t> deviations(weights.size());
+  for (size_t j = 0; j < weights.size(); ++j) {
+    deviations[j] = points[j + firstIndex].first - sumWeightedX;
+    weightedDistFromCenterXSquare += weights[j] * deviations[j] * deviations[j];
+  }
+
+  // threshold whether points are not too clumped up
+  size_t pointsRange = points.back().first - points.front().first;
+  if (weightedDistFromCenterXSquare > 1e-6 * pointsRange * pointsRange) {
+    // here i is always at the end of the interval
+    auto distIToCenter = deviations.back();
+    double distDivSqDev = distIToCenter / weightedDistFromCenterXSquare;
+
     for (size_t j = 0; j < weights.size(); ++j) {
-      sumWeightedX += weights[j] * points[j + firstIndex].first;
-    }
-
-    double weightedDistFromCenterXSquare = 0.;
-    for (size_t j = 0; j < weights.size(); ++j) {
-      auto deviation = points[j + firstIndex].first - sumWeightedX;
-      weightedDistFromCenterXSquare += weights[j] * deviation * deviation;
-    }
-
-    // threshold whether points are not too clumped up
-    size_t pointsRange = points.back().first - points.front().first;
-    if (weightedDistFromCenterXSquare > 1e-6 * pointsRange * pointsRange) {
-      double distIToCenter = points[i].first - sumWeightedX;
-      double distDivSqDev = distIToCenter / weightedDistFromCenterXSquare;
-
-      for (size_t j = 0; j < weights.size(); ++j) {
-        double deviation = points[j + firstIndex].first - sumWeightedX;
-        projections[j] = weights[j] * (1. + distDivSqDev * deviation);
-      }
+      projections[j] = weights[j] * (1. + distDivSqDev * deviations[j]);
     }
   }
 
@@ -144,7 +150,7 @@ size_t autopas::smoothing::smoothLastPoint(const std::vector<std::pair<size_t, s
 
   // either apply fit or take original datapoint
   if (fitOk) {
-    return std::round(calculateYFitSimple(points, pointsPerEstimation, maxDistFromIntervalEdge, weights));
+    return std::round(calculateYFitSimple(points, pointsPerEstimation, weights));
   } else {
     return points[i].second;
   }

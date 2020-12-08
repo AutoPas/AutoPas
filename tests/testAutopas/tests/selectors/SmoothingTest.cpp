@@ -19,7 +19,6 @@ TEST(SmoothingTest, lowessLastPoint) {
   }
 
   // YS values with F = .25, NSTEPS = 0, DELTA = 0.0
-  std::cout << "THE TEST" << std::endl;
   {
     auto out = autopas::smoothing::smoothLastPoint(obs, .25);
     // out should be an integer (or long)
