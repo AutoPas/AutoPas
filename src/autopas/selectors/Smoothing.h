@@ -17,7 +17,7 @@ namespace autopas::smoothing {
  * @note This function operates with unsigned values and does not protect against under-/overflow!
  *
  * @param points
- * @param span Fractions of points that shall be taken into account for the smoothing.
+ * @param pointsPerEstimation Number of points to take into account for smoothing.
  * @return
  */
 size_t smoothLastPoint(const std::vector<std::pair<size_t, size_t>> &points, size_t pointsPerEstimation);

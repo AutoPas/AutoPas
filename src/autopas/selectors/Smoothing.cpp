@@ -75,8 +75,8 @@ std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<s
 /**
  * Calculates the smoothed y-value of the last point in the vector.
  * The fitted value is the sum of projections of the y-values of the neighbors in the chosen interval.
- * Each projection is the sum of the respective weight and the proportion of the residuals of the weighted sum of squared
- * residuals.
+ * Each projection is the sum of the respective weight and the proportion of the residuals of the weighted sum of
+ * squared residuals.
  *
  * @param points
  * @param pointsPerEstimation

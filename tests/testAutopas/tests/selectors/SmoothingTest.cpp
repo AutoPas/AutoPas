@@ -21,7 +21,6 @@ TEST(SmoothingTest, lowessLastPoint) {
   // YS values with F = .25, NSTEPS = 0, DELTA = 0.0
   {
     auto out = autopas::smoothing::smoothLastPoint(obs, (.25 * obs.size()));
-    // out should be an integer (or long)
     EXPECT_EQ(out, 6);
   }
 }
