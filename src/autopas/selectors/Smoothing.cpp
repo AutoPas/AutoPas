@@ -22,6 +22,7 @@
 std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<std::pair<size_t, size_t>> &points,
                                                              size_t pointsPerEstimation,
                                                              size_t maxDistFromIntervalEdge) {
+  // since we will only smooth the last point there is no outer loop and i shall be fixed
   const size_t i = points.size() - 1;
   const size_t firstIndex = i - pointsPerEstimation + 1;
   // initialize all weights with 0
@@ -85,6 +86,7 @@ std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<s
  */
 double calculateYFitSimple(const std::vector<std::pair<size_t, size_t>> &points, size_t pointsPerEstimation,
                            const std::vector<double> &weights) {
+  // since we will only smooth the last point there is no outer loop and i shall be fixed
   const size_t i = points.size() - 1;
   const size_t firstIndex = i - pointsPerEstimation + 1;
   std::vector<double> projections = weights;
@@ -139,7 +141,7 @@ size_t autopas::smoothing::smoothLastPoint(const std::vector<std::pair<size_t, s
   // do not try to use more points than there are.
   pointsPerEstimation = std::min(pointsPerEstimation, points.size());
 
-  // only fit last point
+  // since we will only smooth the last point there is no outer loop and i shall be fixed
   size_t i = points.size() - 1;
   // find neighborhood
   const auto firstIndex = i - pointsPerEstimation + 1;
