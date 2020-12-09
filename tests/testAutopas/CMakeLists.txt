@@ -13,7 +13,7 @@ if (AUTOPAS_ENABLE_CUDA)
     )
 endif ()
 
-option(AUTOPAS_USE_TEST_GLOB "Testing: Use one cpp file that includes all other cpp files. Reduces the amount of needed template instantiations." ON)
+option(AUTOPAS_USE_TEST_GLOB "Testing: Use one cpp file that includes all other cpp files. Reduces the amount of needed template instantiations." OFF)
 
 if(AUTOPAS_USE_TEST_GLOB)
     set(NEW_LIST ${MY_SRC})
