@@ -90,6 +90,7 @@ More details can be found [here](../libs/fake-dlclose/README.md).
 ### Namespaces
 * Code in folder `src` should belong to namespace `autopas`.
 * Classes which shouldn't be used externally should belong to namespace `internal`.
+* Each test should use its own namespace. This allows the tests to be included in one big `.cpp` file, which reduces compilation time.  
 
 ### Logging
 AutoPas has its own logger based on [spdlog](https://github.com/gabime/spdlog) which can be used after the initialization of an AutoPas object via:
