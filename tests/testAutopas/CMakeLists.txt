@@ -13,7 +13,19 @@ if (AUTOPAS_ENABLE_CUDA)
     )
 endif ()
 
-add_executable(runTests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
+option(AUTOPAS_USE_TEST_GLOB "Testing: Use one cpp file that includes all other cpp files. Reduces the amount of needed template instantiations." ON)
+
+if(AUTOPAS_USE_TEST_GLOB)
+    set(NEW_LIST ${MY_SRC})
+    list(TRANSFORM NEW_LIST PREPEND "#include \"")
+    list(TRANSFORM NEW_LIST APPEND "\"\n")
+    set(AUTOPAS_TEST_FILES ${CMAKE_CURRENT_BINARY_DIR}/test_glob.cpp)
+    file(WRITE ${AUTOPAS_TEST_FILES} ${NEW_LIST})
+else()
+    set(AUTOPAS_TEST_FILES ${MY_SRC})
+endif()
+
+add_executable(runTests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${AUTOPAS_TEST_FILES})
 
 target_compile_definitions(runTests PRIVATE)
 
