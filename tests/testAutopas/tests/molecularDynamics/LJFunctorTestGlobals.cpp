@@ -6,6 +6,8 @@
 
 #include "LJFunctorTestGlobals.h"
 
+namespace LJFunctorTestGlobals {
+
 TYPED_TEST_SUITE_P(LJFunctorTestGlobals);
 
 template <class FuncType>
@@ -348,10 +350,12 @@ REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestGlobals, testAoSFunctorGlobals, testAoS
                             testSoAFunctorGlobalsOwn, testSoAFunctorGlobalsPair, testSoAFunctorGlobalsVerlet,
                             testFunctorGlobalsThrowBad);
 
-using MyTypes = ::testing::Types<LJFunShiftNoMixGlob
+using MyTypes = ::testing::Types<LJFunctorTest::LJFunShiftNoMixGlob
 #ifdef __AVX__
                                  ,
-                                 LJFunAVXShiftNoMixGlob
+                                 LJFunctorTest::LJFunAVXShiftNoMixGlob
 #endif
                                  >;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestGlobals, MyTypes);
+
+}  // end namespace LJFunctorTestGlobals

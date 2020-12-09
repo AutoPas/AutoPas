@@ -11,6 +11,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/selectors/FeatureVectorEncoder.h"
 
+namespace FeatureVectorTest {
+
 class FeatureVectorTest : public AutoPasTestBase {
  public:
   FeatureVectorTest();
@@ -19,3 +21,5 @@ class FeatureVectorTest : public AutoPasTestBase {
   std::vector<autopas::DataLayoutOption> allDataLayouts;
   std::vector<autopas::Newton3Option> allNewton3;
 };
+
+} // end namespace FeatureVectorTest

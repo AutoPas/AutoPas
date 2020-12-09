@@ -9,6 +9,8 @@
 #include "AutoPasTestBase.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace FlopCounterTest {
+
 class FlopCounterTest : public AutoPasTestBase {
  public:
   FlopCounterTest() = default;
@@ -17,3 +19,5 @@ class FlopCounterTest : public AutoPasTestBase {
 
   void test(autopas::DataLayoutOption dataLayoutOption);
 };
+
+} // end namespace FlopCounterTest

@@ -10,7 +10,11 @@
 #include "AutoPasTestBase.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace ParticleVectorTest {
+
 class ParticleVectorTest : public AutoPasTestBase {
  public:
   ParticleVectorTest();
 };
+
+} // end namespace ParticleVectorTest

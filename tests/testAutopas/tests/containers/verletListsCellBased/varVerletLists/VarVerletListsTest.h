@@ -15,4 +15,7 @@
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace VarVerletListsTest {
+
 class VarVerletListsTest : public AutoPasTestBase {};
+} // end namespace VarVerletListsTest

@@ -11,6 +11,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/utils/ArrayUtils.h"
 
+namespace OptionTest {
+
 /**
  * Tests for all Options derived from autopas::Option.
  * @tparam T Template needed for Type-Parameterized Tests
@@ -54,3 +56,5 @@ void testParseOptionsCombined(const std::map<T, std::string> &mapOptionString) {
       << "Incorrect number of options parsed! Following options were found: "
       << autopas::utils::ArrayUtils::to_string(parsedOptions);
 }
+
+} // end namespace OptionTest

@@ -11,6 +11,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
 
+namespace TuningStrategyTest {
+
 class TuningStrategyTest : public AutoPasTestBase, public ::testing::WithParamInterface<autopas::TuningStrategyOption> {
  public:
   struct PrintToStringParamName {
@@ -23,3 +25,5 @@ class TuningStrategyTest : public AutoPasTestBase, public ::testing::WithParamIn
     }
   };
 };
+
+} // end namespace TuningStrategyTest

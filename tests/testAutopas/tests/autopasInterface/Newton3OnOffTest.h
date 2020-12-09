@@ -16,6 +16,8 @@
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace Newton3OnOffTest {
+
 /**
  * Test to check if newton3 and non-newton3 work as expected
  */
@@ -75,3 +77,5 @@ class Newton3OnOffTest
     }
   };
 };
+
+} // end namespace Newton3OnOffTest

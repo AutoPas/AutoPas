@@ -11,4 +11,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/selectors/tuningStrategy/ActiveHarmony.h"
 
+namespace ActiveHarmonyTest {
+
 class ActiveHarmonyTest : public AutoPasTestBase {};
+
+} // end namespace ActiveHarmonyTest

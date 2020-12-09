@@ -6,6 +6,8 @@
 
 #include "StringUtilsTest.h"
 
+namespace StringUtilsTest {
+
 TEST(StringUtilsTest, parseDoublesTest) {
   auto parsedOptions = autopas::utils::StringUtils::parseDoubles("1.,1.5, 2,3.00,2e1");
 
@@ -26,3 +28,5 @@ TEST(StringUtilsTest, parseNumberIntervalTest) {
   EXPECT_EQ(numberInterval->getMin(), 1.);
   EXPECT_EQ(numberInterval->getMax(), 2e1);
 }
+
+} // end namespace StringUtilsTest

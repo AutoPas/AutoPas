@@ -10,6 +10,8 @@
 #include "testingHelpers/NonConstructibleParticle.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace DifferentParticlesTest {
+
 /**
  * Tests if AutoPas still compiles with a Particle that implements the normal interface, BUT no constructor.
  */
@@ -23,3 +25,4 @@ TEST_F(DifferentParticlesTest, testNonConstructibleParticle) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(false));
   autoPas.iteratePairwise(&functor);
 }
+} // end namespace DifferentParticlesTest

@@ -12,6 +12,8 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace ParticleIteratorTest {
+
 class ParticleIteratorTest : public AutoPasTestBase {
  public:
   ParticleIteratorTest() : _currentIndex(0ul) {}
@@ -38,3 +40,5 @@ class ParticleIteratorTest : public AutoPasTestBase {
   std::vector<Molecule> _vecOfMolecules;
   unsigned long _currentIndex;
 };
+
+} // end namespace ParticleIteratorTest

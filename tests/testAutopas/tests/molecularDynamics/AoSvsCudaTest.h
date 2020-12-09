@@ -15,6 +15,8 @@
 #include "AutoPasTestBase.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace AoSvsCudaTest {
+
 using TestingTuple = std::tuple<bool /*withDeletions*/>;
 
 class AoSvsCudaTest : public AutoPasTestBase, public ::testing::WithParamInterface<TestingTuple> {
@@ -22,4 +24,6 @@ class AoSvsCudaTest : public AutoPasTestBase, public ::testing::WithParamInterfa
   void generateParticles(std::vector<Molecule> *particles, bool withDeletions);
 };
 
+} // end namespace AoSvsCudaTest
 #endif  // AUTOPAS_CUDA
+

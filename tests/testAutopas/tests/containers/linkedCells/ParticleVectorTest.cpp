@@ -11,6 +11,8 @@
 
 #include "autopas/containers/linkedCells/ParticleVector.h"
 
+namespace ParticleVectorTest {
+
 ParticleVectorTest::ParticleVectorTest() = default;
 
 TEST_F(ParticleVectorTest, testdirtySizeAfterMarkAsClean) {
@@ -68,3 +70,5 @@ TEST_F(ParticleVectorTest, testDirtySizeAfterImplicitResize) {
   EXPECT_EQ(particleVector.totalSize(), 9);
   EXPECT_EQ(particleVector.dirtySize(), 9);
 }
+
+} // end namespace ParticleVectorTest

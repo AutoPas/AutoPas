@@ -12,4 +12,8 @@
 #include "autopas/particles/Particle.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace DirectSumContainerTest {
+
 class DirectSumContainerTest : public AutoPasTestBase {};
+
+} // end namespace DirectSumContainerTest

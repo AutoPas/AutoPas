@@ -6,6 +6,8 @@
 
 #include "PredictiveTuningTest.h"
 
+namespace PredictiveTuningTest {
+
 autopas::PredictiveTuning PredictiveTuningTest::getPredictiveTuning(
     unsigned int testsUntilFirstPrediction, autopas::ExtrapolationMethodOption extrapolationMethodOption,
     double blacklistRange, const std::set<autopas::TraversalOption> &allowedTraversalOptions) {
@@ -277,3 +279,5 @@ TEST_F(PredictiveTuningTest, testBlacklist) {
 
   EXPECT_EQ(bestConfiguration, predictiveTuning.getCurrentConfiguration());
 }
+
+} // end namespace PredictiveTuningTest

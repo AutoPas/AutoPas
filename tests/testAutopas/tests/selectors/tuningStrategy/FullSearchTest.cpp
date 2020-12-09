@@ -9,6 +9,8 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
+namespace FullSearchTest {
+
 TEST_F(FullSearchTest, testSearchSpaceEmpty) {
   autopas::FullSearch fullSearch({});
   EXPECT_TRUE(fullSearch.searchSpaceIsEmpty());
@@ -51,3 +53,5 @@ TEST_F(FullSearchTest, testTune) {
   fullSearch.tune();
   EXPECT_EQ(optimalConfig, fullSearch.getCurrentConfiguration());
 }
+
+} // end namespace FullSearchTest

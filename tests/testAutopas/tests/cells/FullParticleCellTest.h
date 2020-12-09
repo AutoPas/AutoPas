@@ -8,4 +8,7 @@
 
 #include <gtest/gtest.h>
 
+namespace FullParticleCellTest {
+
 class FullParticleCellTest : public testing::Test {};
+} // end namespace FullParticleCellTest

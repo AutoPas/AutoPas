@@ -12,13 +12,14 @@
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
+namespace LJFunctorTestGlobals {
 template <class FuncType>
-class LJFunctorTestGlobals : public LJFunctorTest {
+class LJFunctorTestGlobals : public LJFunctorTest::LJFunctorTest {
  public:
   LJFunctorTestGlobals() : LJFunctorTest() {}
 
-  static void testAoSGlobals(where_type where, bool newton3);
-  static void testSoAGlobals(where_type where, bool newton3, InteractionType interactionType,
+  static void testAoSGlobals(LJFunctorTest::where_type where, bool newton3);
+  static void testSoAGlobals(LJFunctorTest::where_type where, bool newton3, LJFunctorTest::InteractionType interactionType,
                              size_t additionalParticlesToVerletNumber, uint64_t numParticleReplicas);
 
   constexpr static double cutoff{1.};
@@ -29,3 +30,5 @@ class LJFunctorTestGlobals : public LJFunctorTest {
   constexpr static double expectedEnergy{529783.50857210846};
   constexpr static double absDelta{1e-7};
 };
+
+} // end namespace LJFunctorTestGlobals

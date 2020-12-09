@@ -10,6 +10,8 @@
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace AutoPasInterfaceTest {
+
 constexpr double cutoff = 1.1;
 constexpr double skin = 0.2;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
@@ -554,3 +556,5 @@ static inline auto getTestableContainerOptions() {
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface2ContainersTest,
                          Combine(ValuesIn(getTestableContainerOptions()), ValuesIn(getTestableContainerOptions())),
                          AutoPasInterface2ContainersTest::PrintToStringParamName());
+
+} // end namespace AutoPasInterfaceTest

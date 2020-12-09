@@ -9,6 +9,8 @@
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace C01TraversalTest {
+
 // Place to implement special test cases, which only apply to C01 Traversal
 
 TEST_F(C01TraversalTest, testIsApplicable) {
@@ -35,3 +37,4 @@ TEST_F(C01TraversalTest, testIsApplicable) {
       dims, &functor, 1., {1., 1., 1.});
   EXPECT_EQ(c01T_N3on_combineSoA.isApplicable(), false);
 }
+} // end namespace C01TraversalTest

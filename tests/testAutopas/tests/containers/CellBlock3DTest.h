@@ -12,6 +12,8 @@
 #include "autopas/containers/CellBlock3D.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace CellBlock3DTest {
+
 class CellBlock3DTest : public AutoPasTestBase {
  public:
   CellBlock3DTest()
@@ -36,3 +38,5 @@ class CellBlock3DTest : public AutoPasTestBase {
   autopas::internal::CellBlock3D<FMCell> _cells_1x1x1, _cells_1x1x1_cs2, _cells_2x2x2, _cells_2x2x2_cs05, _cells_3x3x3,
       _cells_11x4x4_nonZeroBoxMin, _cells_19x19x19;
 };
+
+} // end namespace CellBlock3DTest

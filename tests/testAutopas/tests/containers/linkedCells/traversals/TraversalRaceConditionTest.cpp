@@ -10,6 +10,8 @@
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
 
+namespace TraversalRaceConditionTest {
+
 /**
  * Idea: create mesh of particles and iterate with the SimpleFunctor.
  * All non-border particles should have F=0 at the end.
@@ -88,3 +90,5 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
     }
   }
 }
+
+} // end namespace TraversalRaceConditionTest

@@ -9,6 +9,8 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "autopasTools/generators/GridGenerator.h"
 
+namespace CellBlock3DTest {
+
 void testIndex(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::array<double, 3> &start,
                std::array<double, 3> &dr, std::array<int, 3> &numParts) {
   auto mesh = CellBlock3DTest::getMesh(start, dr, numParts);
@@ -158,3 +160,5 @@ TEST_F(CellBlock3DTest, testClearHaloParticles) {
   EXPECT_EQ(getNumberOfParticlesInBox(_cells_11x4x4_nonZeroBoxMin, _vec4), 11 * 4 * 4);
   EXPECT_EQ(getNumberOfParticlesInBox(_cells_19x19x19, _vec19), 19 * 19 * 19);
 }
+
+} // end namespace CellBlock3DTest

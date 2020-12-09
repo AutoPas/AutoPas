@@ -8,6 +8,8 @@
 
 #include "autopas/selectors/OptimumSelector.h"
 
+namespace OptimumSelectorTest {
+
 TEST(OptimumSelectorTest, min) {
   std::vector<unsigned long> vals = {5, 6, 3, 1, 7};
 
@@ -31,3 +33,5 @@ TEST(OptimumSelectorTest, median) {
 
   EXPECT_EQ(5, median);
 }
+
+} // end namespace OptimumSelectorTest

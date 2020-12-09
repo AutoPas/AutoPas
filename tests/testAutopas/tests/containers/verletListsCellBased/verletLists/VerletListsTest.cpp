@@ -10,6 +10,8 @@
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 
+namespace VerletListsTest {
+
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Each;
@@ -346,3 +348,4 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, VerletListsTest, Values(1.0, 2.0), VerletListsTest::PrintToStringParamName());
+} // end namespace VerletListsTest

@@ -10,4 +10,8 @@
 
 #include "AutoPasTestBase.h"
 
+namespace VerletClusterTowerTest {
+
 class VerletClusterTowerTest : public AutoPasTestBase {};
+
+} // end namespace VerletClusterTowerTest

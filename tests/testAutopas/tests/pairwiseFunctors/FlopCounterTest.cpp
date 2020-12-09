@@ -9,6 +9,8 @@
 #include "autopas/AutoPas.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 
+namespace FlopCounterTest {
+
 /**
  * Generates a square of four particles, iterates over it with the FlopCounter and checks its values
  * @param dataLayoutOption
@@ -180,3 +182,5 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
     }
   }
 }
+
+} // end namespace FlopCounterTest

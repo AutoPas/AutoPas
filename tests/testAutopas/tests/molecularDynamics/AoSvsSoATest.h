@@ -14,7 +14,11 @@
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace AoSvsSoATest {
+
 class AoSvsSoATest : public AutoPasTestBase {
  public:
   void generateParticles(std::vector<Molecule> *particles);
 };
+
+} // end namespace AoSvsSoATest

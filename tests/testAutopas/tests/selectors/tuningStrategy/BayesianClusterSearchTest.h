@@ -11,4 +11,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/selectors/tuningStrategy/BayesianClusterSearch.h"
 
+namespace BayesianClusterSearchTest {
+
 class BayesianClusterSearchTest : public AutoPasTestBase {};
+
+} // end namespace BayesianClusterSearchTest

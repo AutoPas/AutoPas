@@ -17,6 +17,8 @@
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace TraversalTest {
+
 /**
  * Test to check if all traversals consider all particles within cutoff
  */
@@ -86,3 +88,5 @@ class TraversalTest
     floatType _cutoffSquare;
   };
 };
+
+} // end namespace TraversalTest

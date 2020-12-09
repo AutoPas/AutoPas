@@ -9,6 +9,8 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 
+namespace SPHTest {
+
 using DensityFunctorType = autopas::sph::SPHCalcDensityFunctor<autopas::sph::SPHParticle>;
 
 using HydroForceFunctorType = autopas::sph::SPHCalcHydroForceFunctor<autopas::sph::SPHParticle>;
@@ -760,3 +762,4 @@ INSTANTIATE_TEST_SUITE_P(Generated, SPHTest,
                                                               autopas::DataLayoutOption::soa),
                                             ::testing::Values(SPHFunctorType::density, SPHFunctorType::hydro)),
                          SPHTest::PrintToStringParamName());
+} // end namespace SPHTest

@@ -12,6 +12,8 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/NumberSetFinite.h"
 
+namespace NumberSetTest {
+
 using namespace autopas;
 
 TEST(NumberSetTest, testFiniteSet) {
@@ -148,3 +150,5 @@ TEST(NumberSetTest, testStringRepresentation) {
   NumberSetFinite<double> fSet({1., 2., 3.});
   EXPECT_EQ("[1, 2, 3]", fSet.to_string());
 }
+
+} // end namespace NumberSetTest

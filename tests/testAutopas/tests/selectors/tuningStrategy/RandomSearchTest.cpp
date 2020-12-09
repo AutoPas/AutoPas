@@ -8,3 +8,7 @@
 
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
+
+namespace RandomSearchTest {
+
+} // end namespace RandomSearchTest

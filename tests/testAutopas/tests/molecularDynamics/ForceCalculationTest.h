@@ -13,6 +13,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/options/DataLayoutOption.h"
 
+namespace ForceCalculationTest {
+
 class ForceCalculationTest : public AutoPasTestBase {
  public:
   ForceCalculationTest() = default;
@@ -33,3 +35,5 @@ class ForceCalculationTest : public AutoPasTestBase {
   void testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
               std::array<std::array<double, 3>, 4> expectedForces, double tolerance);
 };
+
+} // end namespace ForceCalculationTest

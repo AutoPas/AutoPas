@@ -11,6 +11,8 @@
 #include "testingHelpers/TouchableParticle.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace IteratorTest {
+
 constexpr double cutoff = 1.;
 constexpr double skin = 0.2;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
@@ -572,3 +574,5 @@ INSTANTIATE_TEST_SUITE_P(Generated, IteratorTest,
                          Combine(ValuesIn(getTestableContainerOptions()), Values(0.5, 1., 1.5), Values(true, false),
                                  Values(true, false)),
                          IteratorTest::PrintToStringParamName());
+
+} // end namespace IteratorTest

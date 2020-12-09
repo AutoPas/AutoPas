@@ -14,6 +14,8 @@
 #include "autopas/AutoPas.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace TraversalRaceConditionTest {
+
 class TraversalRaceConditionTest : public AutoPasTestBase {
  public:
   TraversalRaceConditionTest() = default;
@@ -75,3 +77,5 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
     const double _cutoffSquare;
   };
 };
+
+} // end namespace TraversalRaceConditionTest

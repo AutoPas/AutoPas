@@ -8,9 +8,11 @@
 
 #include "autopas/molecularDynamics/LJFunctor.h"
 
+namespace AoSvsSoATest {
+
 using namespace autopas;
 
-#define PARTICLES_PER_DIM 16
+constexpr size_t PARTICLES_PER_DIM = 16;
 
 /**
  * Generates a reproducible set of particles
@@ -83,3 +85,4 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
     ASSERT_NEAR(particlesAoS[i].getF()[2], cell._particles[i].getF()[2], 1.0e-13);
   }
 }
+} // end namespace AoSvsSoATest

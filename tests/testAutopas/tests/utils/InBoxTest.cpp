@@ -8,6 +8,8 @@
 
 #include "autopas/utils/inBox.h"
 
+namespace InBoxTest {
+
 TEST(InBoxTest, testInBox) {
   std::array<double, 3> lowCorner{1. / 3., 0., 2. / 3.};
   std::array<double, 3> highCorner{2. / 3., 2. / 3., 1.};
@@ -41,3 +43,4 @@ TEST(InBoxTest, testNotInBox) {
     }
   }
 }
+} // end namespace InBoxTest

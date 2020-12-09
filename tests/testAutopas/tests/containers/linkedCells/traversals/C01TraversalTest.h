@@ -8,9 +8,13 @@
 
 #include "AutoPasTestBase.h"
 
+namespace C01TraversalTest {
+
 class C01TraversalTest : public AutoPasTestBase {
  public:
   C01TraversalTest() = default;
 
   ~C01TraversalTest() override = default;
 };
+
+} // end namespace C01TraversalTest

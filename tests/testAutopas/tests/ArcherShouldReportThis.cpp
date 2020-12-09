@@ -6,7 +6,9 @@
 
 #include <gtest/gtest.h>
 
-#define N 100
+namespace ArcherShouldReportThis {
+
+constexpr size_t N = 100;
 
 // this test is here just to test if archer is working.
 // and is thus currently disabled.
@@ -25,3 +27,4 @@ TEST(DISABLED_ArcherShouldReportThis, test) {
   std::cout << "a[80]" << a[80] << std::endl;
 }
 #endif
+} // end namespace ArcherShouldReportThis

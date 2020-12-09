@@ -15,6 +15,8 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
 
+namespace GaussianClusterTest {
+
 class GaussianClusterTest : public AutoPasTestBase {
  protected:
   /**
@@ -112,3 +114,5 @@ class GaussianClusterTest : public AutoPasTestBase {
   static void printEvidence(const Eigen::VectorXi &vecDiscrete, const Eigen::VectorXd &vecContinuous, double out,
                             size_t evidenceNum);
 };
+
+} // end namespace GaussianClusterTest

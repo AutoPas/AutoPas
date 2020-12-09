@@ -6,6 +6,8 @@
 
 #include "LoggerTest.h"
 
+namespace LoggerTest {
+
 void LoggerTest::SetUp() { autopas::Logger::create(stream); }
 
 void LoggerTest::TearDown() { autopas::Logger::unregister(); }
@@ -50,3 +52,4 @@ TEST_F(LoggerTest, LogLevelTestDisabled) {
   EXPECT_EQ(testLevel(autopas::Logger::LogLevel::critical, false), 0);
   EXPECT_EQ(testLevel(autopas::Logger::LogLevel::off, false), 0);
 }
+} // end namespace LoggerTest

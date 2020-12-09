@@ -10,4 +10,8 @@
 
 #include "AutoPasTestBase.h"
 
+namespace SortedCellViewTest {
+
 class SortedCellViewTest : public AutoPasTestBase {};
+
+} // end namespace SortedCellViewTest

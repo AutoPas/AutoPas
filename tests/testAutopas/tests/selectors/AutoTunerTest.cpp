@@ -11,6 +11,8 @@
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopasTools/generators/GridGenerator.h"
 
+namespace AutoTunerTest {
+
 using ::testing::_;
 
 TEST_F(AutoTunerTest, testAllConfigurations) {
@@ -392,3 +394,5 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   bool doRebuild = true;
   EXPECT_THROW(tuner.iteratePairwise(&functor, doRebuild), autopas::utils::ExceptionHandler::AutoPasException);
 }
+
+} // end namespace AutoTunerTest

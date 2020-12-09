@@ -14,6 +14,8 @@
 #include "autopas/sph/autopassph.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
+namespace SPHTest {
+
 enum SPHFunctorType { density, hydro };
 
 class SPHTest : public AutoPasTestBase,
@@ -37,3 +39,5 @@ class SPHTest : public AutoPasTestBase,
     }
   };
 };
+
+} // end namespace SPHTest

@@ -10,6 +10,8 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 
+namespace RegionParticleIteratorTest {
+
 using namespace autopas;
 
 /********************************** Linked Cells Tests **********************************/
@@ -634,3 +636,5 @@ void RegionParticleIteratorTest::checkTouches(LCTouch &lcContainer, std::array<d
   }
   EXPECT_GE(numTouches, 0) << "No Particles were checked!";
 }
+
+} // end namespace RegionParticleIteratorTest

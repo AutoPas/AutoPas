@@ -8,9 +8,13 @@
 
 #include "AutoPasTestBase.h"
 
+namespace SlicedTraversalTest {
+
 class SlicedTraversalTest : public AutoPasTestBase {
  public:
   SlicedTraversalTest() = default;
 
   ~SlicedTraversalTest() override = default;
 };
+
+} // end namespace SlicedTraversalTest

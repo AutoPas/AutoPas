@@ -10,6 +10,8 @@
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace LoadEstimatorTest {
+
 // using ::testing::_;
 
 TEST(LoadEstimatorTest, testEqualDistributionSquaredParticlesPerCell) {
@@ -61,3 +63,5 @@ TEST(LoadEstimatorTest, testIncreasingDensitySquaredParticlesPerCell) {
     EXPECT_EQ(load, expectedLoad);
   }
 }
+
+} // end namespace LoadEstimatorTest

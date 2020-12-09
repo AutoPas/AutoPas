@@ -9,6 +9,8 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
+namespace BayesianClusterSearchTest {
+
 TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
   size_t maxEvidence = 4;
   autopas::BayesianClusterSearch bayesClusterSearch(
@@ -220,3 +222,5 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
   long bestTime = dummyTimeFun2(best2);
   EXPECT_NEAR(predictionTime, bestTime, timePerDistanceSquared * 0.25);
 }
+
+} // end namespace BayesianClusterSearchTest

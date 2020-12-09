@@ -11,6 +11,8 @@
 #include "autopas/utils/SoA.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace LJFunctorCudaTest {
+
 class LJFunctorCudaTest : public AutoPasTestBase,
                           public ::testing::WithParamInterface<
                               std::tuple<bool /*newton3 */, bool /*calculateGlobals*/, bool /*withDeletions*/,
@@ -83,4 +85,6 @@ class LJFunctorCudaTest : public AutoPasTestBase,
   const std::array<double, 3> _highCorner;
 };
 
+} // end namespace LJFunctorCudaTest
 #endif  // AUTOPAS_CUDA
+

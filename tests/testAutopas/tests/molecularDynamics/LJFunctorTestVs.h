@@ -13,8 +13,10 @@
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
+namespace LJFunctorTestVs {
+
 template <class FuncType>
-class LJFunctorTestVs : public LJFunctorTest {
+class LJFunctorTestVs : public LJFunctorTest::LJFunctorTest {
  public:
   LJFunctorTestVs() : LJFunctorTest() {}
 
@@ -22,3 +24,5 @@ class LJFunctorTestVs : public LJFunctorTest {
   constexpr static double epsilon{1.};
   constexpr static double sigma{1.};
 };
+
+} // end namespace LJFunctorTestVs

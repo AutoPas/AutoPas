@@ -1,5 +1,5 @@
 /**
- * @file TestsAllContainers.h
+ * @file AllContainersTests.h
  * @author humig
  * @date 08.07.2019
  */
@@ -9,6 +9,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "testingHelpers/commonTypedefs.h"
+
+namespace AllContainersTests {
 
 using ParamType = autopas::ContainerOption;
 
@@ -39,3 +41,5 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
 
   void testUpdateContainerDeletesDummy(bool previouslyOwned);
 };
+
+} // end namespace AllContainersTests

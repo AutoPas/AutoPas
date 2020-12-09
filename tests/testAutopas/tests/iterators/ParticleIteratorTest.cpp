@@ -12,6 +12,8 @@
 #include "autopas/iterators/ParticleIterator.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace ParticleIteratorTest {
+
 using namespace autopas;
 using namespace autopas::internal;
 
@@ -253,3 +255,4 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorVerletLists) {
 
   testContainerIteratorBehavior(verletLists, mol, haloMol);
 }
+} // end namespace ParticleIteratorTest

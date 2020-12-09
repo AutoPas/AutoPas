@@ -15,6 +15,8 @@
 #include "autopas/options/TuningStrategyOption.h"
 #include "tests/utils/StringUtilsTest.h"
 
+namespace OptionTest {
+
 // parseOptions tests
 // these tests shall not (yet :) be generated since we here want to pass strings that do not match exactly.
 
@@ -159,3 +161,5 @@ using OptionTypes = ::testing::Types<autopas::AcquisitionFunctionOption, autopas
                                      autopas::DataLayoutOption, autopas::Newton3Option, autopas::SelectorStrategyOption,
                                      autopas::TraversalOption, autopas::TuningStrategyOption>;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, OptionTest, OptionTypes);
+
+} // end namespace OptionTest

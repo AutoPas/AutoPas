@@ -11,4 +11,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/selectors/tuningStrategy/RandomSearch.h"
 
+namespace RandomSearchTest {
+
 class RandomSearchTest : public AutoPasTestBase {};
+
+} // end namespace RandomSearchTest

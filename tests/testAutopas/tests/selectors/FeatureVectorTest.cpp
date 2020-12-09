@@ -12,6 +12,8 @@
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
 
+namespace FeatureVectorTest {
+
 using namespace autopas;
 
 FeatureVectorTest::FeatureVectorTest() {
@@ -247,3 +249,5 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
     }
   }
 }
+
+} // end namespace FeatureVectorTest

@@ -6,6 +6,8 @@
 
 #include "LJFunctorTestVs.h"
 
+namespace LJFunctorTestVs {
+
 TYPED_TEST_SUITE_P(LJFunctorTestVs);
 
 TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
@@ -95,16 +97,17 @@ REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA, testSetP
  */
 using MyTypes = ::testing::Types<
     // LJFunctor<mixing> VS LJFunctor<not mixing>
-    std::tuple<LJFunShiftMixGlob, LJFunShiftNoMixGlob>
+    std::tuple<LJFunctorTest::LJFunShiftMixGlob, LJFunctorTest::LJFunShiftNoMixGlob>
 #ifdef __AVX__
     ,
     // LJFunctorAVX<mixing> VS LJFunctorAVX<not mixing>
-    std::tuple<LJFunAVXShiftMixGlob, LJFunAVXShiftNoMixGlob>,
+    std::tuple<LJFunctorTest::LJFunAVXShiftMixGlob, LJFunctorTest::LJFunAVXShiftNoMixGlob>,
     // LJFunctor<mixing> VS LJFunctorAVX<not mixing>
-    std::tuple<LJFunShiftMixGlob, LJFunAVXShiftNoMixGlob>,
+    std::tuple<LJFunctorTest::LJFunShiftMixGlob, LJFunctorTest::LJFunAVXShiftNoMixGlob>,
     // LJFunctorAVX<mixing> VS LJFunctor<not mixing>
-    std::tuple<LJFunAVXShiftMixGlob, LJFunShiftNoMixGlob>
+    std::tuple<LJFunctorTest::LJFunAVXShiftMixGlob, LJFunctorTest::LJFunShiftNoMixGlob>
 #endif
     >;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestVs, MyTypes);
+} // end namespace LJFunctorTestVs

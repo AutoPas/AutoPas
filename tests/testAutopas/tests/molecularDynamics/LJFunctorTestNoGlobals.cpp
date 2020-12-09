@@ -6,6 +6,8 @@
 
 #include "LJFunctorTestNoGlobals.h"
 
+namespace LJFunctorTestNoGlobals {
+
 TYPED_TEST_SUITE_P(LJFunctorTestNoGlobals);
 
 TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
@@ -255,12 +257,14 @@ struct Newton3True : public TypeWrapper<FuncType, true> {};
 template <class FuncType>
 struct Newton3False : public TypeWrapper<FuncType, false> {};
 
-using MyTypes = ::testing::Types<Newton3True<LJFunShiftMixNoGlob>, Newton3False<LJFunShiftMixNoGlob>,
-                                 Newton3True<LJFunShiftNoMixNoGlob>, Newton3False<LJFunShiftNoMixNoGlob>
+using MyTypes = ::testing::Types<Newton3True<LJFunctorTest::LJFunShiftMixNoGlob>, Newton3False<LJFunctorTest::LJFunShiftMixNoGlob>,
+                                 Newton3True<LJFunctorTest::LJFunShiftNoMixNoGlob>, Newton3False<LJFunctorTest::LJFunShiftNoMixNoGlob>
 #ifdef __AVX__
                                  ,
-                                 Newton3True<LJFunAVXShiftMixNoGlob>, Newton3False<LJFunAVXShiftMixNoGlob>,
-                                 Newton3True<LJFunAVXShiftNoMixNoGlob>, Newton3False<LJFunAVXShiftNoMixNoGlob>
+                                 Newton3True<LJFunctorTest::LJFunAVXShiftMixNoGlob>, Newton3False<LJFunctorTest::LJFunAVXShiftMixNoGlob>,
+                                 Newton3True<LJFunctorTest::LJFunAVXShiftNoMixNoGlob>, Newton3False<LJFunctorTest::LJFunAVXShiftNoMixNoGlob>
 #endif
                                  >;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestNoGlobals, MyTypes);
+
+} // end namespace LJFunctorTestNoGlobals

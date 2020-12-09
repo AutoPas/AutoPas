@@ -16,6 +16,8 @@
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace VerletListsTest {
+
 class VerletListsTest : public AutoPasTestBase, public ::testing::WithParamInterface<double> {
  public:
   struct PrintToStringParamName {
@@ -26,3 +28,5 @@ class VerletListsTest : public AutoPasTestBase, public ::testing::WithParamInter
     }
   };
 };
+
+} // end namespace VerletListsTest

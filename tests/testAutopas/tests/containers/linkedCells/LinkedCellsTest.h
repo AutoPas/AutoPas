@@ -14,6 +14,8 @@
 #include "autopas/particles/Particle.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace LinkedCellsTest {
+
 template <class LinkedCellsType>
 class LinkedCellsTest : public AutoPasTestBase {
  public:
@@ -22,3 +24,5 @@ class LinkedCellsTest : public AutoPasTestBase {
  protected:
   LinkedCellsType _linkedCells;
 };
+
+} // end namespace LinkedCellsTest

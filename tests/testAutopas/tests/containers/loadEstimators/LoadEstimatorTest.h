@@ -8,4 +8,8 @@
 
 #include "AutoPasTestBase.h"
 
+namespace LoadEstimatorTest {
+
 class LoadEstimatorTest : public AutoPasTestBase {};
+
+} // end namespace LoadEstimatorTest

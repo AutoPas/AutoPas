@@ -9,6 +9,8 @@
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
+namespace DSSequentialTraversalTest {
+
 using ::testing::_;
 using ::testing::AtLeast;
 
@@ -93,3 +95,5 @@ TEST_F(DSSequentialTraversalTest, testTraversalCuda) {
 }
 
 #endif
+
+} // end namespace DSSequentialTraversalTest

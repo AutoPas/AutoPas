@@ -8,6 +8,8 @@
 
 #include <gtest/gtest.h>
 
+namespace SingleCellIteratorTest {
+
 using namespace autopas;
 
 void SingleCellIteratorTest::SetUp() {
@@ -37,3 +39,5 @@ TEST_F(SingleCellIteratorTest, testFullParticleCell) {
     ASSERT_EQ(iter->getID(), _vecOfMolecules[i].getID());
   }
 }
+
+} // end namespace SingleCellIteratorTest

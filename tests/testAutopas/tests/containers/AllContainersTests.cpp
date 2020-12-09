@@ -1,5 +1,5 @@
 /**
- * @file TestsAllContainers.cpp
+ * @file AllContainersTests.cpp
  * @author humig
  * @date 08.07.2019
  */
@@ -7,6 +7,8 @@
 #include "AllContainersTests.h"
 
 #include <gtest/gtest.h>
+
+namespace AllContainersTests {
 
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests, testing::ValuesIn(autopas::ContainerOption::getAllOptions()),
                          AllContainersTests::getParamToStringFunction());
@@ -161,3 +163,4 @@ void AllContainersTests::testUpdateContainerDeletesDummy(bool previouslyOwned) {
 TEST_P(AllContainersTests, testUpdateContainerDeletesPreviouslyOwnedDummy) { testUpdateContainerDeletesDummy(true); }
 
 TEST_P(AllContainersTests, testUpdateContainerDeletesPreviouslyHaloDummy) { testUpdateContainerDeletesDummy(false); }
+} // end namespace AllContainersTests

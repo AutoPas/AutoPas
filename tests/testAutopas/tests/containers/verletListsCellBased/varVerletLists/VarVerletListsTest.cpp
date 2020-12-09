@@ -13,6 +13,8 @@
 #include "autopas/containers/verletListsCellBased/varVerletLists/traversals/VVLAsBuildTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 
+namespace VarVerletListsTest {
+
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Each;
@@ -293,3 +295,5 @@ TEST_F(VarVerletListsTest, testUpdateHaloParticle) {
   verletLists.addHaloParticle(p5);
   EXPECT_TRUE(verletLists.updateHaloParticle(p5));
 }
+
+} // end namespace VarVerletListsTest

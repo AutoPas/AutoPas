@@ -12,8 +12,10 @@
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
+namespace LJFunctorTestNoGlobals {
+
 template <class FuncType>
-class LJFunctorTestNoGlobals : public LJFunctorTest {
+class LJFunctorTestNoGlobals : public LJFunctorTest::LJFunctorTest {
  public:
   LJFunctorTestNoGlobals() : LJFunctorTest() {}
 
@@ -30,3 +32,5 @@ class LJFunctorTestNoGlobals : public LJFunctorTest {
 
   constexpr static double absDelta{1e-7};
 };
+
+} // end namespace LJFunctorTestNoGlobals

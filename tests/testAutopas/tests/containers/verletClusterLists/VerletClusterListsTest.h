@@ -17,6 +17,8 @@
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace VerletClusterListsTest {
+
 class VerletClusterListsTest : public AutoPasTestBase {};
 
 class CollectParticlePairsFunctor : public autopas::Functor<autopas::Particle, CollectParticlePairsFunctor> {
@@ -110,3 +112,4 @@ class ColoringTraversalWithColorChangeNotify
   std::function<void(int)> _whenColorChanges;
 };
 #endif
+} // end namespace VerletClusterListsTest

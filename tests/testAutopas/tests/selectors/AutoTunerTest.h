@@ -13,6 +13,8 @@
 #include "autopas/selectors/AutoTuner.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace AutoTunerTest {
+
 class AutoTunerTest : public AutoPasTestBase {
  public:
   AutoTunerTest() = default;
@@ -33,3 +35,5 @@ class AutoTunerTest : public AutoPasTestBase {
   void testFastest(autopas::SelectorStrategyOption strategy, mapConfigTime configAndTimes,
                    autopas::Configuration expectedBest, mapConfigTime ignoredConfigAndTimes = {});
 };
+
+} // end namespace AutoTunerTest

@@ -6,6 +6,8 @@
 
 #include "DirectSumContainerTest.h"
 
+namespace DirectSumContainerTest {
+
 TEST_F(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
   autopas::DirectSum<autopas::Particle> directSum({0., 0., 0.}, {10., 10., 10.}, 1., 0.);
   int id = 1;
@@ -51,3 +53,4 @@ TEST_F(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
     EXPECT_EQ(movedIDs.count(particle.getID()), 1);
   }
 }
+} // end namespace DirectSumContainerTest

@@ -6,6 +6,8 @@
 
 #include "TraversalSelectorTest.h"
 
+namespace TraversalSelectorTest {
+
 using ::testing::Return;
 
 /**
@@ -28,3 +30,5 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
         << "Is the domain size large enough for the processors' thread count?";
   }
 }
+
+} // end namespace TraversalSelectorTest

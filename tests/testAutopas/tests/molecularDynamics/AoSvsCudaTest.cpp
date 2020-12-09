@@ -11,6 +11,8 @@
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace AoSvsCudaTest {
+
 using namespace autopas;
 
 constexpr size_t PARTICLES_PER_DIM = 16;
@@ -115,4 +117,5 @@ static auto toString = [](const auto &info) {
 
 INSTANTIATE_TEST_SUITE_P(Generated, AoSvsCudaTest, ::testing::Combine(::testing::Bool()), toString);
 
+} // end namespace AoSvsCudaTest
 #endif  // AUTOPAS_CUDA

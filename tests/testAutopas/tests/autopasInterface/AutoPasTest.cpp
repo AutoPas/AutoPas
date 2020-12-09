@@ -8,6 +8,8 @@
 
 #include "testingHelpers/commonTypedefs.h"
 
+namespace AutoPasTest {
+
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Return;
@@ -248,3 +250,4 @@ TEST_F(AutoPasTest, getNumParticlesIteratorTest) {
     expectedParticles(numParticles, 0);
   }
 }
+} // end namespace AutoPasTest

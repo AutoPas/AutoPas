@@ -10,6 +10,8 @@
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
 
+namespace VerletClusterListsTest {
+
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Invoke;
@@ -263,3 +265,4 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
 }
 
 #endif  // AUTOPAS_OPENMP
+} // end namespace VerletClusterListsTest

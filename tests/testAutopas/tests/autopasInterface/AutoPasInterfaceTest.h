@@ -12,6 +12,8 @@
 
 #include "autopas/AutoPas.h"
 
+namespace AutoPasInterfaceTest {
+
 using testingTuple =
     std::tuple<std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::LoadEstimatorOption>,
                autopas::DataLayoutOption, autopas::Newton3Option, double /*cell size factor*/>;
@@ -52,3 +54,5 @@ class AutoPasInterface2ContainersTest
     }
   };
 };
+
+} // end namespace AutoPasInterfaceTest

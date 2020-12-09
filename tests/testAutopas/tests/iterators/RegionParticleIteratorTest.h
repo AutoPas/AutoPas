@@ -14,6 +14,8 @@
 #include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/TouchableParticle.h"
 
+namespace RegionParticleIteratorTest {
+
 class RegionParticleIteratorTest : public AutoPasTestBase {
  public:
   using LCTouch = autopas::LinkedCells<TouchableParticle>;
@@ -50,3 +52,5 @@ class RegionParticleIteratorTest : public AutoPasTestBase {
 
   double _cutoff;
 };
+
+} // end namespace RegionParticleIteratorTest

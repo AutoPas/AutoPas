@@ -14,8 +14,12 @@
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace TraversalSelectorTest {
+
 class TraversalSelectorTest : public AutoPasTestBase {
  public:
   TraversalSelectorTest() = default;
   ~TraversalSelectorTest() override = default;
 };
+
+} // end namespace TraversalSelectorTest

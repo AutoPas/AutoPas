@@ -13,6 +13,8 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
+namespace LJFunctorCudaTest {
+
 template <class Particle>
 bool LJFunctorCudaTest::SoAParticlesEqual(autopas::SoA<typename Particle::SoAArraysType> &soa1,
                                           autopas::SoA<typename Particle::SoAArraysType> &soa2) {
@@ -266,4 +268,6 @@ INSTANTIATE_TEST_SUITE_P(
                        ::testing::ValuesIn({0, 1, 4, 16, 31, 32, 33, 55, 64, 65}) /* numParticlesSecondCell */),
     toString);
 
+} // end namespace LJFunctorCudaTest
 #endif  // AUTOPAS_CUDA
+

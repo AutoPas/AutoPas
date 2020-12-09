@@ -12,6 +12,8 @@
 
 #include "autopas/utils/CudaDeviceVector.h"
 
+namespace CudaDeviceVectorTest {
+
 TEST_F(CudaDeviceVectorTest, CopyTest) {
   std::vector<int> source = {1, -2, 3, -4, 5, -6, 7};
   autopas::utils::CudaDeviceVector<int> test_vector;
@@ -25,4 +27,5 @@ TEST_F(CudaDeviceVectorTest, CopyTest) {
   }
 }
 
+}  // end namespace CudaDeviceVectorTest
 #endif

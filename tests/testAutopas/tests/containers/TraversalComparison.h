@@ -18,6 +18,8 @@
 #include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace TraversalComparison {
+
 enum DeletionPosition {
   // We have chosen the values explicitly, s.t., this enum can be used using bit manipulation, i.e., beforeAndAfterLists
   // enables both bits for beforeLists and afterLists.
@@ -76,3 +78,5 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static inline std::map<mykey_t, std::vector<std::array<double, 3>>> _forcesReference{};
   static inline std::map<mykey_t, Globals> _globalValuesReference{};
 };
+
+} // end namespace TraversalComparison

@@ -11,6 +11,8 @@
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace SlicedTraversalTest {
+
 using ::testing::_;
 
 void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
@@ -79,3 +81,5 @@ TEST_F(SlicedTraversalTest, testIsApplicableOkOnlyOneDim) {
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
 }
+
+} // end namespace SlicedTraversalTest

@@ -9,6 +9,8 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
+namespace TuningStrategyTest {
+
 /**
  * Generating a TuningStrategy without a valid configuration is expected to throw
  */
@@ -115,3 +117,5 @@ TEST_P(TuningStrategyTest, testRemoveN3OptionRemoveSome) {
 INSTANTIATE_TEST_SUITE_P(Generated, TuningStrategyTest,
                          testing::ValuesIn(autopas::TuningStrategyOption::getAllOptions()),
                          TuningStrategyTest::PrintToStringParamName());
+
+} // end namespace TuningStrategyTest

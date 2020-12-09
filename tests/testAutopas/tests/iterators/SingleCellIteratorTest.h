@@ -11,6 +11,8 @@
 #include "AutoPasTestBase.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace SingleCellIteratorTest {
+
 class SingleCellIteratorTest : public AutoPasTestBase {
  public:
   SingleCellIteratorTest() = default;
@@ -33,3 +35,5 @@ class SingleCellIteratorTest : public AutoPasTestBase {
   // for each unit test.
   std::vector<Molecule> _vecOfMolecules;
 };
+
+} // end namespace SingleCellIteratorTest

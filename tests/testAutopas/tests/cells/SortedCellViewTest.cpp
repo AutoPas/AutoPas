@@ -10,6 +10,8 @@
 #include "autopas/cells/SortedCellView.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace SortedCellViewTest {
+
 TEST_F(SortedCellViewTest, testParticleAccess) {
   auto fpc = autopas::FullParticleCell<Particle>();
   Particle p1 = Particle();
@@ -55,3 +57,4 @@ TEST_F(SortedCellViewTest, testParticleSorting) {
     }
   }
 }
+} // end namespace SortedCellViewTest

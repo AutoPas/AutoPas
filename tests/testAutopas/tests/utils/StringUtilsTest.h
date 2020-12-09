@@ -13,4 +13,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/utils/StringUtils.h"
 
+namespace StringUtilsTest {
+
 class StringUtilsTest : public AutoPasTestBase {};
+
+} // end namespace StringUtilsTest

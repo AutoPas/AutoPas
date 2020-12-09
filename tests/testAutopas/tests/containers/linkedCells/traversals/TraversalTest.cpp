@@ -14,6 +14,8 @@
 #include "autopas/selectors/TraversalSelectorInfo.h"
 #include "testingHelpers/NumThreadGuard.h"
 
+namespace TraversalTest {
+
 using ::testing::_;  // anything is ok
 using ::testing::Bool;
 using ::testing::Combine;
@@ -183,3 +185,5 @@ INSTANTIATE_TEST_SUITE_P(
       return res;
     }()),
     TraversalTest::PrintToStringParamName());
+
+} // end namespace TraversalTest

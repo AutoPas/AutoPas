@@ -9,6 +9,8 @@
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace VerletClusterTowerTest {
+
 template <class Particle>
 using ClusterTower = autopas::internal::ClusterTower<Particle>;
 
@@ -111,3 +113,4 @@ TEST_F(VerletClusterTowerTest, testIterator) {
     IDs.push_back(particle.getID());
   }
 }
+} // end namespace VerletClusterTowerTest

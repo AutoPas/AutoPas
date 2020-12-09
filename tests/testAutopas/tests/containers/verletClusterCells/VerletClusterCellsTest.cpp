@@ -10,6 +10,8 @@
 #include "autopas/containers/verletClusterCells/traversals/VCCClusterIterationCUDATraversal.h"
 #include "testingHelpers/TouchableParticle.h"
 
+namespace VerletClusterCellsTest {
+
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Invoke;
@@ -326,3 +328,4 @@ TEST_F(VerletClusterCellsTest, testVerletListRegionIterator) {
           << iter->getR()[2] << ")" << std::endl;
   }
 }
+} // end namespace VerletClusterCellsTest

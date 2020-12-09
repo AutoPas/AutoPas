@@ -8,8 +8,12 @@
 
 #include "AutoPasTestBase.h"
 
+namespace OptimumSelectorTest {
+
 class OptimumSelectorTest : public AutoPasTestBase {
  public:
   OptimumSelectorTest() = default;
   ~OptimumSelectorTest() = default;
 };
+
+} // end namespace OptimumSelectorTest

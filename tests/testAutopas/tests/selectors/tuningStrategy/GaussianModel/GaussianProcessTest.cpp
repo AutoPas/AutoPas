@@ -6,6 +6,8 @@
 
 #include "GaussianProcessTest.h"
 
+namespace GaussianProcessTest {
+
 using namespace autopas;
 
 TEST_F(GaussianProcessTest, wrongDimension) {
@@ -264,3 +266,5 @@ void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::Numb
     std::cout << "\033[0m" << std::endl;
   }
 }
+
+} // end namespace GaussianProcessTest

@@ -15,6 +15,8 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
 
+namespace GaussianProcessTest {
+
 class GaussianProcessTest : public AutoPasTestBase {
  protected:
   /**
@@ -87,3 +89,5 @@ class GaussianProcessTest : public AutoPasTestBase {
                        const autopas::NumberSet<double> &domainY, const autopas::GaussianProcess &gp,
                        autopas::AcquisitionFunctionOption af, double colorFactor);
 };
+
+} // end namespace GaussianProcessTest

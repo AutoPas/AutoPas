@@ -12,6 +12,8 @@
 #include "autopas/utils/SoA.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace LJFunctorAVXTest {
+
 using LJFunctorAVXTestingTuple = std::tuple<bool /*newton3*/, bool /*doDeleteSomeParticles*/>;
 
 class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInterface<LJFunctorAVXTestingTuple> {
@@ -98,3 +100,5 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
   const std::array<double, 3> _highCorner{6., 6., 6.};
 };
 #endif  // __AVX__
+
+} // end namespace LJFunctorAVXTest

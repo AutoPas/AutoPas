@@ -8,6 +8,8 @@
 
 #include "autopas/particles/Particle.h"
 
+namespace myMoleculeTest {
+
 using namespace autopas;
 
 class MyMolecule : public Particle {
@@ -49,3 +51,5 @@ TEST(myMoleculeTest, testConstructorAndGetters) {
   ASSERT_EQ(id, m.getID());
   ASSERT_EQ(myvar, m.getMyvar());
 }
+
+} // end namespace myMoleculeTest

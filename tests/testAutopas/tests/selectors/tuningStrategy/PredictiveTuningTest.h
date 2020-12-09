@@ -13,6 +13,8 @@
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/selectors/tuningStrategy/PredictiveTuning.h"
 
+namespace PredictiveTuningTest {
+
 class PredictiveTuningTest : public AutoPasTestBase {
  protected:
   /**
@@ -73,3 +75,5 @@ class PredictiveTuningTest : public AutoPasTestBase {
   static constexpr unsigned int maxTuningIterationsWithoutTest{5};
   static constexpr unsigned int evidenceFirstPrediction{2};
 };
+
+} // end namespace PredictiveTuningTest

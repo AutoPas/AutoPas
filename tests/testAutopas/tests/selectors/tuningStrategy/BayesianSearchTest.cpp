@@ -9,6 +9,8 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
+namespace BayesianSearchTest {
+
 TEST_F(BayesianSearchTest, testMaxEvidence) {
   size_t maxEvidence = 4;
   autopas::BayesianSearch bayesSearch(
@@ -56,3 +58,5 @@ TEST_F(BayesianSearchTest, testFindBest) {
   autopas::FeatureVector prediction(bayesSearch.getCurrentConfiguration());
   EXPECT_EQ(prediction, best);
 }
+
+} // end namespace BayesianSearchTest

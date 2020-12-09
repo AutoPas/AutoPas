@@ -13,6 +13,8 @@
 
 #include "AutoPasTestBase.h"
 
+namespace LoggerTest {
+
 class LoggerTest : public AutoPasTestBase {
  public:
   void SetUp() override;
@@ -40,3 +42,4 @@ class ScopedRedirect {
   std::ostream &mOriginal;
   std::ostream &mRedirect;
 };
+} // end namespace LoggerTest

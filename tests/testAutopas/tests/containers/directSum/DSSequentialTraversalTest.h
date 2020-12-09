@@ -9,7 +9,11 @@
 #include "AutoPasTestBase.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace DSSequentialTraversalTest {
+
 class DSSequentialTraversalTest : public AutoPasTestBase {
  public:
   void testTraversal(bool useSoA);
 };
+
+} // end namespace DSSequentialTraversalTest

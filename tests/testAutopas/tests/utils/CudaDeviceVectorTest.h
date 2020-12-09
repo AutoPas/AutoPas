@@ -10,6 +10,10 @@
 
 #include "AutoPasTestBase.h"
 
+namespace CudaDeviceVectorTest {
+
 class CudaDeviceVectorTest : public AutoPasTestBase {};
 
+} // end namespace CudaDeviceVectorTest
 #endif
+

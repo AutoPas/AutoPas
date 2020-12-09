@@ -12,6 +12,8 @@
 
 #include "autopas/AutoPas.h"
 
+namespace IteratorTest {
+
 using testingTuple = std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*testConstIterators*/,
                                 bool /*priorForceCalc*/>;
 
@@ -36,3 +38,4 @@ class IteratorTest : public testing::Test, public ::testing::WithParamInterface<
   static void testOpenMPIterators(autopas::ContainerOption containerOption, double cellSizeFactor,
                                   autopas::IteratorBehavior behavior, bool testRegionIterators, bool priorForceCalc);
 };
+} // end namespace IteratorTest

@@ -6,6 +6,8 @@
 
 #include "ContainerSelectorTest.h"
 
+namespace ContainerSelectorTest {
+
 using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
@@ -132,3 +134,5 @@ INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
                          Combine(ValuesIn(autopas::ContainerOption::getAllOptions()),
                                  ValuesIn(autopas::ContainerOption::getAllOptions())),
                          ContainerSelectorTest::PrintToStringParamName());
+
+} // end namespace ContainerSelectorTest

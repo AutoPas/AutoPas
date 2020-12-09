@@ -6,6 +6,8 @@
 
 #include "GaussianClusterTest.h"
 
+namespace GaussianClusterTest {
+
 using namespace autopas;
 
 TEST_F(GaussianClusterTest, wrongDimension) {
@@ -147,3 +149,5 @@ void GaussianClusterTest::printEvidence(const Eigen::VectorXi &vecDiscrete, cons
   std::cout << "Evidence " << evidenceNum << ": " << vecDiscrete[0] << "," << vecContinuous[0] << ","
             << vecContinuous[1] << " -> " << out << std::endl;
 }
+
+} // end namespace GaussianClusterTest

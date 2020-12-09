@@ -8,6 +8,8 @@
 
 #include "testingHelpers/commonTypedefs.h"
 
+namespace FullParticleCellTest {
+
 TEST_F(FullParticleCellTest, testRangeBasedLoop) {
   autopas::FullParticleCell<Particle> cell({1., 1., 1.});
 
@@ -28,3 +30,4 @@ TEST_F(FullParticleCellTest, testRangeBasedLoop) {
     ASSERT_EQ(iter->getF(), comparison);
   }
 }
+} // end namespace FullParticleCellTest

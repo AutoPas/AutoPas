@@ -8,6 +8,8 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
 
+namespace VerletListsCellsTest {
+
 using ::testing::_;
 using ::testing::AtLeast;
 
@@ -55,3 +57,4 @@ TEST_F(VerletListsCellsTest, testVerletListBuild) {
 
   applyFunctor(emptyFunctor_cs2, 2.0);
 }
+} // end namespace VerletListsCellsTest

@@ -11,4 +11,8 @@
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/SoAType.h"
 
+namespace SoATest {
+
 class SoATest : public AutoPasTestBase {};
+
+} // end namespace SoATest

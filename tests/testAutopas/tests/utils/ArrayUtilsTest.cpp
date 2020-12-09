@@ -8,6 +8,8 @@
 
 #include "autopas/utils/ArrayUtils.h"
 
+namespace ArrayUtilsTest {
+
 using namespace autopas;
 
 TEST(ArrayUtilsTest, teststatic_cast_array) {
@@ -40,3 +42,5 @@ TEST(ArrayUtilsTest, testto_string) {
   EXPECT_EQ("[1, 2, 3]", utils::ArrayUtils::to_string(bStringContainer));
   EXPECT_EQ("1x2x3", utils::ArrayUtils::to_string(bStringContainer, "x", {"", ""}));
 }
+
+} // end namespace ArrayUtilsTest

@@ -6,6 +6,8 @@
 
 #include "SoATest.h"
 
+namespace SoATest {
+
 TEST_F(SoATest, testInitialization) { autopas::SoA<autopas::Particle::SoAArraysType> soa; }
 
 TEST_F(SoATest, SoATypeTest) {
@@ -356,3 +358,4 @@ TEST_F(SoATest, SoATestComplicatedAccess) {
   EXPECT_EQ(res[1], 8.);
   EXPECT_EQ(res[2], 9.);
 }
+} // end namespace SoATest

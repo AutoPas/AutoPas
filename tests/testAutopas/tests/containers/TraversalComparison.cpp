@@ -14,6 +14,8 @@
 #include "autopas/utils/StringUtils.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
+namespace TraversalComparison {
+
 /**
  * Generates a random 3d shift with the given magnitude. The shift is uniformly distributed on a sphere with radius
  * magnitude.
@@ -306,3 +308,5 @@ auto TraversalComparison::getTestParams() {
 
 INSTANTIATE_TEST_SUITE_P(Generated, TraversalComparison, ::testing::ValuesIn(TraversalComparison::getTestParams()),
                          toString);
+
+} // end namespace TraversalComparison

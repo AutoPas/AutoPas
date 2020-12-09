@@ -11,6 +11,8 @@
 #include "autopas/utils/Logger.h"
 #include "autopas/utils/StaticCellSelector.h"
 
+namespace Newton3OnOffTest {
+
 using ::testing::_;
 using ::testing::Combine;
 using ::testing::Return;
@@ -215,3 +217,5 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
 
   return std::make_pair(callsSC.load(), callsPair.load());
 }
+
+} // end namespace Newton3OnOffTest

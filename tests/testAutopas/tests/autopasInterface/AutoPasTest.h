@@ -11,6 +11,8 @@
 #include "autopas/AutoPas.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace AutoPasTest {
+
 class AutoPasTest : public testing::Test {
  public:
   AutoPasTest() {
@@ -25,3 +27,5 @@ class AutoPasTest : public testing::Test {
 
   autopas::AutoPas<Particle> autoPas;
 };
+
+} // end namespace AutoPasTest

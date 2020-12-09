@@ -11,8 +11,12 @@
 #include "AutoPasTestBase.h"
 #include "autopas/utils/ExceptionHandler.h"
 
+namespace ExceptionHandlerTest {
+
 class ExceptionHandlerTest : public AutoPasTestBase {
   void SetUp() override;
 
   void TearDown() override;
 };
+
+} // end namespace ExceptionHandlerTest

@@ -11,4 +11,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 
+namespace FullSearchTest {
+
 class FullSearchTest : public AutoPasTestBase {};
+
+} // end namespace FullSearchTest

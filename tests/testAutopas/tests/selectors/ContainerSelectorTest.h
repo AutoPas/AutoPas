@@ -12,6 +12,8 @@
 #include "autopas/selectors/ContainerSelector.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace ContainerSelectorTest {
+
 class ContainerSelectorTest
     : public AutoPasTestBase,
       public ::testing::WithParamInterface<std::tuple<autopas::ContainerOption, autopas::ContainerOption>> {
@@ -31,3 +33,5 @@ class ContainerSelectorTest
     }
   };
 };
+
+} // end namespace ContainerSelectorTest

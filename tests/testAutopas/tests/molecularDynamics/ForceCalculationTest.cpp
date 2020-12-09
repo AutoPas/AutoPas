@@ -11,6 +11,8 @@
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
+namespace ForceCalculationTest {
+
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
                                   std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
   autopas::AutoPas<Molecule> autoPas;
@@ -83,3 +85,4 @@ TEST_F(ForceCalculationTest, testLJwithF0SoA) {
 
   testLJ(spacing, cutoff, autopas::DataLayoutOption::soa, expectedForces, tolerance);
 }
+} // end namespace ForceCalculationTest

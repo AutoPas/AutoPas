@@ -14,6 +14,8 @@
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
+namespace LJFunctorAVXTest {
+
 template <class SoAType>
 bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
   EXPECT_GT(soa1.getNumParticles(), 0);
@@ -391,3 +393,5 @@ INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorAVXTest, ::testing::Combine(::testi
                          toString);
 
 #endif  // __AVX__
+
+} // end namespace LJFunctorAVXTest

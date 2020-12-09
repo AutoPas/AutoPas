@@ -8,6 +8,8 @@
 
 #include <gmock/gmock-generated-matchers.h>
 
+namespace LinkedCellsTest {
+
 TYPED_TEST_SUITE_P(LinkedCellsTest);
 
 TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
@@ -126,3 +128,5 @@ REGISTER_TYPED_TEST_SUITE_P(LinkedCellsTest, testUpdateContainer, testUpdateCont
 
 using MyTypes = ::testing::Types<autopas::LinkedCells<Particle>, autopas::LinkedCellsReferences<Particle>>;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LinkedCellsTest, MyTypes);
+
+} // end namespace LinkedCellsTest

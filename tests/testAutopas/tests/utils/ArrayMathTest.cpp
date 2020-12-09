@@ -8,6 +8,8 @@
 
 #include "autopas/utils/ArrayMath.h"
 
+namespace ArrayMathTest {
+
 using namespace autopas;
 
 TEST(ArrayMathTest, testAddInt) {
@@ -113,3 +115,5 @@ TEST(ArrayMathTest, testNormalizeNullVector) {
     ASSERT_TRUE(std::isnan(result[d]));
   }
 }
+
+} // end namespace ArrayMathTest
