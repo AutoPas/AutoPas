@@ -43,4 +43,4 @@ TEST(ArrayUtilsTest, testto_string) {
   EXPECT_EQ("1x2x3", utils::ArrayUtils::to_string(bStringContainer, "x", {"", ""}));
 }
 
-} // end namespace ArrayUtilsTest
+}  // end namespace ArrayUtilsTest

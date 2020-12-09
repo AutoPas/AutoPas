@@ -25,4 +25,4 @@ class LJFunctorTestVs : public LJFunctorTest::LJFunctorTest {
   constexpr static double sigma{1.};
 };
 
-} // end namespace LJFunctorTestVs
+}  // end namespace LJFunctorTestVs

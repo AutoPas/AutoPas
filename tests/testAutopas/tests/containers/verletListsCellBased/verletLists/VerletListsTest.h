@@ -29,4 +29,4 @@ class VerletListsTest : public AutoPasTestBase, public ::testing::WithParamInter
   };
 };
 
-} // end namespace VerletListsTest
+}  // end namespace VerletListsTest

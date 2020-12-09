@@ -25,4 +25,4 @@ class LinkedCellsTest : public AutoPasTestBase {
   LinkedCellsType _linkedCells;
 };
 
-} // end namespace LinkedCellsTest
+}  // end namespace LinkedCellsTest

@@ -395,4 +395,4 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   EXPECT_THROW(tuner.iteratePairwise(&functor, doRebuild), autopas::utils::ExceptionHandler::AutoPasException);
 }
 
-} // end namespace AutoTunerTest
+}  // end namespace AutoTunerTest

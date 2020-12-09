@@ -15,4 +15,4 @@ namespace RandomSearchTest {
 
 class RandomSearchTest : public AutoPasTestBase {};
 
-} // end namespace RandomSearchTest
+}  // end namespace RandomSearchTest

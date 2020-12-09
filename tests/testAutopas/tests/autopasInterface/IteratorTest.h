@@ -38,4 +38,4 @@ class IteratorTest : public testing::Test, public ::testing::WithParamInterface<
   static void testOpenMPIterators(autopas::ContainerOption containerOption, double cellSizeFactor,
                                   autopas::IteratorBehavior behavior, bool testRegionIterators, bool priorForceCalc);
 };
-} // end namespace IteratorTest
+}  // end namespace IteratorTest

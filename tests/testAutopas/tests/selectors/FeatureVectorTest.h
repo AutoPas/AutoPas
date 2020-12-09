@@ -22,4 +22,4 @@ class FeatureVectorTest : public AutoPasTestBase {
   std::vector<autopas::Newton3Option> allNewton3;
 };
 
-} // end namespace FeatureVectorTest
+}  // end namespace FeatureVectorTest

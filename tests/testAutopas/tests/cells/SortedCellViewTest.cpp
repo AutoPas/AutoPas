@@ -57,4 +57,4 @@ TEST_F(SortedCellViewTest, testParticleSorting) {
     }
   }
 }
-} // end namespace SortedCellViewTest
+}  // end namespace SortedCellViewTest

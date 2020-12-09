@@ -218,4 +218,4 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
   return std::make_pair(callsSC.load(), callsPair.load());
 }
 
-} // end namespace Newton3OnOffTest
+}  // end namespace Newton3OnOffTest

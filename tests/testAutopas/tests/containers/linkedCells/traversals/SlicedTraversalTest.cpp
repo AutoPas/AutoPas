@@ -82,4 +82,4 @@ TEST_F(SlicedTraversalTest, testIsApplicableOkOnlyOneDim) {
   EXPECT_TRUE(slicedTraversal.isApplicable());
 }
 
-} // end namespace SlicedTraversalTest
+}  // end namespace SlicedTraversalTest

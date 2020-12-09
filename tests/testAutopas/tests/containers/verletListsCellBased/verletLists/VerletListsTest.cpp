@@ -348,4 +348,4 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, VerletListsTest, Values(1.0, 2.0), VerletListsTest::PrintToStringParamName());
-} // end namespace VerletListsTest
+}  // end namespace VerletListsTest

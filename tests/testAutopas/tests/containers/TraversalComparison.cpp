@@ -309,4 +309,4 @@ auto TraversalComparison::getTestParams() {
 INSTANTIATE_TEST_SUITE_P(Generated, TraversalComparison, ::testing::ValuesIn(TraversalComparison::getTestParams()),
                          toString);
 
-} // end namespace TraversalComparison
+}  // end namespace TraversalComparison

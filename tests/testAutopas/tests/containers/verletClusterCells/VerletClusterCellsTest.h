@@ -18,4 +18,4 @@ namespace VerletClusterCellsTest {
 
 class VerletClusterCellsTest : public AutoPasTestBase {};
 
-} // end namespace VerletClusterCellsTest
+}  // end namespace VerletClusterCellsTest

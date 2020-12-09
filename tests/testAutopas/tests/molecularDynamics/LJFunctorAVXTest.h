@@ -101,4 +101,4 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
 };
 #endif  // __AVX__
 
-} // end namespace LJFunctorAVXTest
+}  // end namespace LJFunctorAVXTest

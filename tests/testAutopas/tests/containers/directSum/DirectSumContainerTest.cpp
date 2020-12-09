@@ -53,4 +53,4 @@ TEST_F(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
     EXPECT_EQ(movedIDs.count(particle.getID()), 1);
   }
 }
-} // end namespace DirectSumContainerTest
+}  // end namespace DirectSumContainerTest

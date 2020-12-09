@@ -78,4 +78,4 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
   };
 };
 
-} // end namespace TraversalRaceConditionTest
+}  // end namespace TraversalRaceConditionTest

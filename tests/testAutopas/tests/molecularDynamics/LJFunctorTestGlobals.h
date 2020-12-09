@@ -19,8 +19,9 @@ class LJFunctorTestGlobals : public LJFunctorTest::LJFunctorTest {
   LJFunctorTestGlobals() : LJFunctorTest() {}
 
   static void testAoSGlobals(LJFunctorTest::where_type where, bool newton3);
-  static void testSoAGlobals(LJFunctorTest::where_type where, bool newton3, LJFunctorTest::InteractionType interactionType,
-                             size_t additionalParticlesToVerletNumber, uint64_t numParticleReplicas);
+  static void testSoAGlobals(LJFunctorTest::where_type where, bool newton3,
+                             LJFunctorTest::InteractionType interactionType, size_t additionalParticlesToVerletNumber,
+                             uint64_t numParticleReplicas);
 
   constexpr static double cutoff{1.};
   constexpr static double epsilon{1.};
@@ -31,4 +32,4 @@ class LJFunctorTestGlobals : public LJFunctorTest::LJFunctorTest {
   constexpr static double absDelta{1e-7};
 };
 
-} // end namespace LJFunctorTestGlobals
+}  // end namespace LJFunctorTestGlobals

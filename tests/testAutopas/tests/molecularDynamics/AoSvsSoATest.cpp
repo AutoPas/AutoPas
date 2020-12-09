@@ -85,4 +85,4 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
     ASSERT_NEAR(particlesAoS[i].getF()[2], cell._particles[i].getF()[2], 1.0e-13);
   }
 }
-} // end namespace AoSvsSoATest
+}  // end namespace AoSvsSoATest

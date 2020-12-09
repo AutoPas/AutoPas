@@ -33,4 +33,4 @@ class LJFunctorTestNoGlobals : public LJFunctorTest::LJFunctorTest {
   constexpr static double absDelta{1e-7};
 };
 
-} // end namespace LJFunctorTestNoGlobals
+}  // end namespace LJFunctorTestNoGlobals

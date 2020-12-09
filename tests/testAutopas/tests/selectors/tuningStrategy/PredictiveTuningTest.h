@@ -76,4 +76,4 @@ class PredictiveTuningTest : public AutoPasTestBase {
   static constexpr unsigned int evidenceFirstPrediction{2};
 };
 
-} // end namespace PredictiveTuningTest
+}  // end namespace PredictiveTuningTest

@@ -15,4 +15,4 @@ namespace ActiveHarmonyTest {
 
 class ActiveHarmonyTest : public AutoPasTestBase {};
 
-} // end namespace ActiveHarmonyTest
+}  // end namespace ActiveHarmonyTest

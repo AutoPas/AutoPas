@@ -55,4 +55,4 @@ class AutoPasInterface2ContainersTest
   };
 };
 
-} // end namespace AutoPasInterfaceTest
+}  // end namespace AutoPasInterfaceTest

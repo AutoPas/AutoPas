@@ -17,4 +17,4 @@ class C08TraversalTest : public AutoPasTestBase {
   ~C08TraversalTest() override = default;
 };
 
-} // end namespace C08TraversalTest
+}  // end namespace C08TraversalTest

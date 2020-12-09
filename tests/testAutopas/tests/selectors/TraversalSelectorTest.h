@@ -22,4 +22,4 @@ class TraversalSelectorTest : public AutoPasTestBase {
   ~TraversalSelectorTest() override = default;
 };
 
-} // end namespace TraversalSelectorTest
+}  // end namespace TraversalSelectorTest

@@ -17,4 +17,4 @@ class ParticleVectorTest : public AutoPasTestBase {
   ParticleVectorTest();
 };
 
-} // end namespace ParticleVectorTest
+}  // end namespace ParticleVectorTest

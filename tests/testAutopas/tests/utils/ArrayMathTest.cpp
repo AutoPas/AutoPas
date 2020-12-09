@@ -116,4 +116,4 @@ TEST(ArrayMathTest, testNormalizeNullVector) {
   }
 }
 
-} // end namespace ArrayMathTest
+}  // end namespace ArrayMathTest

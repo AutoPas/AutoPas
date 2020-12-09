@@ -14,6 +14,5 @@ namespace CudaDeviceVectorTest {
 
 class CudaDeviceVectorTest : public AutoPasTestBase {};
 
-} // end namespace CudaDeviceVectorTest
+}  // end namespace CudaDeviceVectorTest
 #endif
-

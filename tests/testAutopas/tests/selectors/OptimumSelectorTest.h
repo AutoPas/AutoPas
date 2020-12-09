@@ -16,4 +16,4 @@ class OptimumSelectorTest : public AutoPasTestBase {
   ~OptimumSelectorTest() = default;
 };
 
-} // end namespace OptimumSelectorTest
+}  // end namespace OptimumSelectorTest

@@ -79,4 +79,4 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static inline std::map<mykey_t, Globals> _globalValuesReference{};
 };
 
-} // end namespace TraversalComparison
+}  // end namespace TraversalComparison

@@ -328,4 +328,4 @@ TEST_F(VerletClusterCellsTest, testVerletListRegionIterator) {
           << iter->getR()[2] << ")" << std::endl;
   }
 }
-} // end namespace VerletClusterCellsTest
+}  // end namespace VerletClusterCellsTest

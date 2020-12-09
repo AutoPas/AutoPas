@@ -96,4 +96,4 @@ TEST_F(DSSequentialTraversalTest, testTraversalCuda) {
 
 #endif
 
-} // end namespace DSSequentialTraversalTest
+}  // end namespace DSSequentialTraversalTest

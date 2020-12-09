@@ -59,4 +59,4 @@ TEST_F(BayesianSearchTest, testFindBest) {
   EXPECT_EQ(prediction, best);
 }
 
-} // end namespace BayesianSearchTest
+}  // end namespace BayesianSearchTest

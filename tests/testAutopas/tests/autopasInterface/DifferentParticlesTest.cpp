@@ -25,4 +25,4 @@ TEST_F(DifferentParticlesTest, testNonConstructibleParticle) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(false));
   autoPas.iteratePairwise(&functor);
 }
-} // end namespace DifferentParticlesTest
+}  // end namespace DifferentParticlesTest

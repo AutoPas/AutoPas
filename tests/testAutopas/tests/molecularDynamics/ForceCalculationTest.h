@@ -36,4 +36,4 @@ class ForceCalculationTest : public AutoPasTestBase {
               std::array<std::array<double, 3>, 4> expectedForces, double tolerance);
 };
 
-} // end namespace ForceCalculationTest
+}  // end namespace ForceCalculationTest

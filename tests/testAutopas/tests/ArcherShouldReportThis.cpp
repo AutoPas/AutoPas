@@ -27,4 +27,4 @@ TEST(DISABLED_ArcherShouldReportThis, test) {
   std::cout << "a[80]" << a[80] << std::endl;
 }
 #endif
-} // end namespace ArcherShouldReportThis
+}  // end namespace ArcherShouldReportThis

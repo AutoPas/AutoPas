@@ -250,4 +250,4 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
   }
 }
 
-} // end namespace FeatureVectorTest
+}  // end namespace FeatureVectorTest

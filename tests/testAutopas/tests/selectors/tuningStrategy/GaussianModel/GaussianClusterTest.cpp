@@ -150,4 +150,4 @@ void GaussianClusterTest::printEvidence(const Eigen::VectorXi &vecDiscrete, cons
             << vecContinuous[1] << " -> " << out << std::endl;
 }
 
-} // end namespace GaussianClusterTest
+}  // end namespace GaussianClusterTest

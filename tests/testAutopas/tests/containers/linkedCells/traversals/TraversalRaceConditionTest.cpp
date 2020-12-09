@@ -91,4 +91,4 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
   }
 }
 
-} // end namespace TraversalRaceConditionTest
+}  // end namespace TraversalRaceConditionTest

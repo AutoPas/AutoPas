@@ -28,4 +28,4 @@ class AutoPasTest : public testing::Test {
   autopas::AutoPas<Particle> autoPas;
 };
 
-} // end namespace AutoPasTest
+}  // end namespace AutoPasTest

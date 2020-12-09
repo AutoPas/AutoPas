@@ -42,4 +42,4 @@ class ScopedRedirect {
   std::ostream &mOriginal;
   std::ostream &mRedirect;
 };
-} // end namespace LoggerTest
+}  // end namespace LoggerTest

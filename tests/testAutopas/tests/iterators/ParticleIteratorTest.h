@@ -41,4 +41,4 @@ class ParticleIteratorTest : public AutoPasTestBase {
   unsigned long _currentIndex;
 };
 
-} // end namespace ParticleIteratorTest
+}  // end namespace ParticleIteratorTest

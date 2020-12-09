@@ -163,4 +163,4 @@ void AllContainersTests::testUpdateContainerDeletesDummy(bool previouslyOwned) {
 TEST_P(AllContainersTests, testUpdateContainerDeletesPreviouslyOwnedDummy) { testUpdateContainerDeletesDummy(true); }
 
 TEST_P(AllContainersTests, testUpdateContainerDeletesPreviouslyHaloDummy) { testUpdateContainerDeletesDummy(false); }
-} // end namespace AllContainersTests
+}  // end namespace AllContainersTests

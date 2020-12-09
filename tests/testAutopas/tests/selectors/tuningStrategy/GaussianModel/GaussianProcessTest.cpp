@@ -267,4 +267,4 @@ void GaussianProcessTest::printMap(int xChunks, int yChunks, const autopas::Numb
   }
 }
 
-} // end namespace GaussianProcessTest
+}  // end namespace GaussianProcessTest

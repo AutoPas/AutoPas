@@ -57,4 +57,4 @@ TEST_F(VerletListsCellsTest, testVerletListBuild) {
 
   applyFunctor(emptyFunctor_cs2, 2.0);
 }
-} // end namespace VerletListsCellsTest
+}  // end namespace VerletListsCellsTest

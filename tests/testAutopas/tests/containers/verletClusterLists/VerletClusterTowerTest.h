@@ -14,4 +14,4 @@ namespace VerletClusterTowerTest {
 
 class VerletClusterTowerTest : public AutoPasTestBase {};
 
-} // end namespace VerletClusterTowerTest
+}  // end namespace VerletClusterTowerTest

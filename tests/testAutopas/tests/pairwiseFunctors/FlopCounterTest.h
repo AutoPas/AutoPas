@@ -20,4 +20,4 @@ class FlopCounterTest : public AutoPasTestBase {
   void test(autopas::DataLayoutOption dataLayoutOption);
 };
 
-} // end namespace FlopCounterTest
+}  // end namespace FlopCounterTest

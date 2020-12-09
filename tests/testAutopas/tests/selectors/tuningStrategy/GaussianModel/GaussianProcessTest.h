@@ -90,4 +90,4 @@ class GaussianProcessTest : public AutoPasTestBase {
                        autopas::AcquisitionFunctionOption af, double colorFactor);
 };
 
-} // end namespace GaussianProcessTest
+}  // end namespace GaussianProcessTest

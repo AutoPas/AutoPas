@@ -39,4 +39,4 @@ class CellBlock3DTest : public AutoPasTestBase {
       _cells_11x4x4_nonZeroBoxMin, _cells_19x19x19;
 };
 
-} // end namespace CellBlock3DTest
+}  // end namespace CellBlock3DTest

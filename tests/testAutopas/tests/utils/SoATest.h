@@ -15,4 +15,4 @@ namespace SoATest {
 
 class SoATest : public AutoPasTestBase {};
 
-} // end namespace SoATest
+}  // end namespace SoATest

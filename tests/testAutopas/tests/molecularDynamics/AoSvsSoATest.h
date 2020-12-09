@@ -21,4 +21,4 @@ class AoSvsSoATest : public AutoPasTestBase {
   void generateParticles(std::vector<Molecule> *particles);
 };
 
-} // end namespace AoSvsSoATest
+}  // end namespace AoSvsSoATest

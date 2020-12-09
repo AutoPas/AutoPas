@@ -40,4 +40,4 @@ class SPHTest : public AutoPasTestBase,
   };
 };
 
-} // end namespace SPHTest
+}  // end namespace SPHTest

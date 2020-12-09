@@ -29,4 +29,4 @@ TEST(StringUtilsTest, parseNumberIntervalTest) {
   EXPECT_EQ(numberInterval->getMax(), 2e1);
 }
 
-} // end namespace StringUtilsTest
+}  // end namespace StringUtilsTest

@@ -265,4 +265,4 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
 }
 
 #endif  // AUTOPAS_OPENMP
-} // end namespace VerletClusterListsTest
+}  // end namespace VerletClusterListsTest

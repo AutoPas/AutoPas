@@ -78,4 +78,4 @@ class Newton3OnOffTest
   };
 };
 
-} // end namespace Newton3OnOffTest
+}  // end namespace Newton3OnOffTest

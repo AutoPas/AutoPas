@@ -103,7 +103,6 @@ TEST_F(ExceptionHandlerTest, TestTryRethrow) {
 
 #include <omp.h>
 
-
 TEST_F(ExceptionHandlerTest, TestThreadSafe) {
   if (omp_get_max_threads() > 1) {
 #pragma omp parallel
@@ -140,4 +139,4 @@ TEST_F(ExceptionHandlerTest, TestThreadSafe) {
   }
 }
 #endif
-} // end namespace ExceptionHandlerTest
+}  // end namespace ExceptionHandlerTest

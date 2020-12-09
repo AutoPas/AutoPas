@@ -162,4 +162,4 @@ using OptionTypes = ::testing::Types<autopas::AcquisitionFunctionOption, autopas
                                      autopas::TraversalOption, autopas::TuningStrategyOption>;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, OptionTest, OptionTypes);
 
-} // end namespace OptionTest
+}  // end namespace OptionTest

@@ -43,4 +43,4 @@ TEST(InBoxTest, testNotInBox) {
     }
   }
 }
-} // end namespace InBoxTest
+}  // end namespace InBoxTest

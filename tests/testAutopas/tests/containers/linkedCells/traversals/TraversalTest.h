@@ -89,4 +89,4 @@ class TraversalTest
   };
 };
 
-} // end namespace TraversalTest
+}  // end namespace TraversalTest

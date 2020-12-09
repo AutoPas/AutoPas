@@ -12,4 +12,4 @@ namespace LoadEstimatorTest {
 
 class LoadEstimatorTest : public AutoPasTestBase {};
 
-} // end namespace LoadEstimatorTest
+}  // end namespace LoadEstimatorTest

@@ -557,4 +557,4 @@ INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface2ContainersTest,
                          Combine(ValuesIn(getTestableContainerOptions()), ValuesIn(getTestableContainerOptions())),
                          AutoPasInterface2ContainersTest::PrintToStringParamName());
 
-} // end namespace AutoPasInterfaceTest
+}  // end namespace AutoPasInterfaceTest

@@ -14,4 +14,4 @@ namespace SortedCellViewTest {
 
 class SortedCellViewTest : public AutoPasTestBase {};
 
-} // end namespace SortedCellViewTest
+}  // end namespace SortedCellViewTest

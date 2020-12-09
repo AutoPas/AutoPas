@@ -57,4 +57,4 @@ void testParseOptionsCombined(const std::map<T, std::string> &mapOptionString) {
       << autopas::utils::ArrayUtils::to_string(parsedOptions);
 }
 
-} // end namespace OptionTest
+}  // end namespace OptionTest

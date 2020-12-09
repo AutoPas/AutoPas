@@ -10,4 +10,4 @@ namespace C18TraversalTest {
 
 // Place to implement special test cases, which only apply to C18 Traversal
 
-} // end namespace C18TraversalTest
+}  // end namespace C18TraversalTest

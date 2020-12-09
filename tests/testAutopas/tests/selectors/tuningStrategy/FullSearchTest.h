@@ -15,4 +15,4 @@ namespace FullSearchTest {
 
 class FullSearchTest : public AutoPasTestBase {};
 
-} // end namespace FullSearchTest
+}  // end namespace FullSearchTest

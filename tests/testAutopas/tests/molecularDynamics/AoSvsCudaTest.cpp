@@ -117,5 +117,5 @@ static auto toString = [](const auto &info) {
 
 INSTANTIATE_TEST_SUITE_P(Generated, AoSvsCudaTest, ::testing::Combine(::testing::Bool()), toString);
 
-} // end namespace AoSvsCudaTest
+}  // end namespace AoSvsCudaTest
 #endif  // AUTOPAS_CUDA

@@ -113,4 +113,4 @@ TEST_F(VerletClusterTowerTest, testIterator) {
     IDs.push_back(particle.getID());
   }
 }
-} // end namespace VerletClusterTowerTest
+}  // end namespace VerletClusterTowerTest

@@ -30,4 +30,4 @@ TEST_F(FullParticleCellTest, testRangeBasedLoop) {
     ASSERT_EQ(iter->getF(), comparison);
   }
 }
-} // end namespace FullParticleCellTest
+}  // end namespace FullParticleCellTest

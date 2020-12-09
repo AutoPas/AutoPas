@@ -24,6 +24,5 @@ class AoSvsCudaTest : public AutoPasTestBase, public ::testing::WithParamInterfa
   void generateParticles(std::vector<Molecule> *particles, bool withDeletions);
 };
 
-} // end namespace AoSvsCudaTest
+}  // end namespace AoSvsCudaTest
 #endif  // AUTOPAS_CUDA
-

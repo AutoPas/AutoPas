@@ -186,4 +186,4 @@ INSTANTIATE_TEST_SUITE_P(
     }()),
     TraversalTest::PrintToStringParamName());
 
-} // end namespace TraversalTest
+}  // end namespace TraversalTest

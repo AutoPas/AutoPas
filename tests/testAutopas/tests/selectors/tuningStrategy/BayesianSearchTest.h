@@ -15,4 +15,4 @@ namespace BayesianSearchTest {
 
 class BayesianSearchTest : public AutoPasTestBase {};
 
-} // end namespace BayesianSearchTest
+}  // end namespace BayesianSearchTest

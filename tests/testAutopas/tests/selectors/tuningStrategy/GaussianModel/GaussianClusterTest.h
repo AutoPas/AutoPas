@@ -115,4 +115,4 @@ class GaussianClusterTest : public AutoPasTestBase {
                             size_t evidenceNum);
 };
 
-} // end namespace GaussianClusterTest
+}  // end namespace GaussianClusterTest

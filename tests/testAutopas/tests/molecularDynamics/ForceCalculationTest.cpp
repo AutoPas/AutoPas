@@ -85,4 +85,4 @@ TEST_F(ForceCalculationTest, testLJwithF0SoA) {
 
   testLJ(spacing, cutoff, autopas::DataLayoutOption::soa, expectedForces, tolerance);
 }
-} // end namespace ForceCalculationTest
+}  // end namespace ForceCalculationTest

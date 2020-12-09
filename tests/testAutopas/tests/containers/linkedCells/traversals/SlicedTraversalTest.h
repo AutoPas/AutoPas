@@ -17,4 +17,4 @@ class SlicedTraversalTest : public AutoPasTestBase {
   ~SlicedTraversalTest() override = default;
 };
 
-} // end namespace SlicedTraversalTest
+}  // end namespace SlicedTraversalTest

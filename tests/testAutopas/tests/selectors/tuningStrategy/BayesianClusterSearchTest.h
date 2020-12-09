@@ -15,4 +15,4 @@ namespace BayesianClusterSearchTest {
 
 class BayesianClusterSearchTest : public AutoPasTestBase {};
 
-} // end namespace BayesianClusterSearchTest
+}  // end namespace BayesianClusterSearchTest

@@ -183,4 +183,4 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
   }
 }
 
-} // end namespace FlopCounterTest
+}  // end namespace FlopCounterTest

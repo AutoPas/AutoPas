@@ -36,4 +36,4 @@ class SingleCellIteratorTest : public AutoPasTestBase {
   std::vector<Molecule> _vecOfMolecules;
 };
 
-} // end namespace SingleCellIteratorTest
+}  // end namespace SingleCellIteratorTest

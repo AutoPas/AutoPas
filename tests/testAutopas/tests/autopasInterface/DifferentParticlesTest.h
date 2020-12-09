@@ -12,4 +12,4 @@ namespace DifferentParticlesTest {
 
 class DifferentParticlesTest : public testing::Test {};
 
-} // end namespace DifferentParticlesTest
+}  // end namespace DifferentParticlesTest

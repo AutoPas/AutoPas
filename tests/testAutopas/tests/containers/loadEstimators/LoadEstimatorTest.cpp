@@ -64,4 +64,4 @@ TEST(LoadEstimatorTest, testIncreasingDensitySquaredParticlesPerCell) {
   }
 }
 
-} // end namespace LoadEstimatorTest
+}  // end namespace LoadEstimatorTest

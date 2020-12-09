@@ -42,4 +42,4 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
   void testUpdateContainerDeletesDummy(bool previouslyOwned);
 };
 
-} // end namespace AllContainersTests
+}  // end namespace AllContainersTests

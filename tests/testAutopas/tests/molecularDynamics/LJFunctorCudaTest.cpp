@@ -268,6 +268,5 @@ INSTANTIATE_TEST_SUITE_P(
                        ::testing::ValuesIn({0, 1, 4, 16, 31, 32, 33, 55, 64, 65}) /* numParticlesSecondCell */),
     toString);
 
-} // end namespace LJFunctorCudaTest
+}  // end namespace LJFunctorCudaTest
 #endif  // AUTOPAS_CUDA
-

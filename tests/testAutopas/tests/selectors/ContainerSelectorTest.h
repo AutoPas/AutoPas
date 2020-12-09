@@ -34,4 +34,4 @@ class ContainerSelectorTest
   };
 };
 
-} // end namespace ContainerSelectorTest
+}  // end namespace ContainerSelectorTest

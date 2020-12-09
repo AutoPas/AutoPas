@@ -19,4 +19,4 @@ class ExceptionHandlerTest : public AutoPasTestBase {
   void TearDown() override;
 };
 
-} // end namespace ExceptionHandlerTest
+}  // end namespace ExceptionHandlerTest

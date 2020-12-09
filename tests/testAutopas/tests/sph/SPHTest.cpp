@@ -762,4 +762,4 @@ INSTANTIATE_TEST_SUITE_P(Generated, SPHTest,
                                                               autopas::DataLayoutOption::soa),
                                             ::testing::Values(SPHFunctorType::density, SPHFunctorType::hydro)),
                          SPHTest::PrintToStringParamName());
-} // end namespace SPHTest
+}  // end namespace SPHTest

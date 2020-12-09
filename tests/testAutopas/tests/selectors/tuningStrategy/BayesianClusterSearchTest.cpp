@@ -223,4 +223,4 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
   EXPECT_NEAR(predictionTime, bestTime, timePerDistanceSquared * 0.25);
 }
 
-} // end namespace BayesianClusterSearchTest
+}  // end namespace BayesianClusterSearchTest

@@ -19,4 +19,4 @@ namespace VerletListsCellsTest {
 
 class VerletListsCellsTest : public AutoPasTestBase {};
 
-} // end namespace VerletListsCellsTest
+}  // end namespace VerletListsCellsTest

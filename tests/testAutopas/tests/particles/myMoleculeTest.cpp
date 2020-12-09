@@ -52,4 +52,4 @@ TEST(myMoleculeTest, testConstructorAndGetters) {
   ASSERT_EQ(myvar, m.getMyvar());
 }
 
-} // end namespace myMoleculeTest
+}  // end namespace myMoleculeTest

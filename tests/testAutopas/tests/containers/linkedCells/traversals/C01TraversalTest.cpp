@@ -37,4 +37,4 @@ TEST_F(C01TraversalTest, testIsApplicable) {
       dims, &functor, 1., {1., 1., 1.});
   EXPECT_EQ(c01T_N3on_combineSoA.isApplicable(), false);
 }
-} // end namespace C01TraversalTest
+}  // end namespace C01TraversalTest

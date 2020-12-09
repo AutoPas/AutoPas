@@ -16,4 +16,4 @@ namespace DirectSumContainerTest {
 
 class DirectSumContainerTest : public AutoPasTestBase {};
 
-} // end namespace DirectSumContainerTest
+}  // end namespace DirectSumContainerTest

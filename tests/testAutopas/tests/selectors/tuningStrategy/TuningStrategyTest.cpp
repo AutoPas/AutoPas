@@ -118,4 +118,4 @@ INSTANTIATE_TEST_SUITE_P(Generated, TuningStrategyTest,
                          testing::ValuesIn(autopas::TuningStrategyOption::getAllOptions()),
                          TuningStrategyTest::PrintToStringParamName());
 
-} // end namespace TuningStrategyTest
+}  // end namespace TuningStrategyTest

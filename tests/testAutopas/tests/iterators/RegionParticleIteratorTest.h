@@ -53,4 +53,4 @@ class RegionParticleIteratorTest : public AutoPasTestBase {
   double _cutoff;
 };
 
-} // end namespace RegionParticleIteratorTest
+}  // end namespace RegionParticleIteratorTest

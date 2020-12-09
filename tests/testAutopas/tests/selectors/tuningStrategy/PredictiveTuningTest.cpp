@@ -280,4 +280,4 @@ TEST_F(PredictiveTuningTest, testBlacklist) {
   EXPECT_EQ(bestConfiguration, predictiveTuning.getCurrentConfiguration());
 }
 
-} // end namespace PredictiveTuningTest
+}  // end namespace PredictiveTuningTest

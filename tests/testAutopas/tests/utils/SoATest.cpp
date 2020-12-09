@@ -358,4 +358,4 @@ TEST_F(SoATest, SoATestComplicatedAccess) {
   EXPECT_EQ(res[1], 8.);
   EXPECT_EQ(res[2], 9.);
 }
-} // end namespace SoATest
+}  // end namespace SoATest

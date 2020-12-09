@@ -54,4 +54,4 @@ TEST_F(FullSearchTest, testTune) {
   EXPECT_EQ(optimalConfig, fullSearch.getCurrentConfiguration());
 }
 
-} // end namespace FullSearchTest
+}  // end namespace FullSearchTest

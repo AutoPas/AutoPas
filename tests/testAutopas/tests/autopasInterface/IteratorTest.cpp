@@ -575,4 +575,4 @@ INSTANTIATE_TEST_SUITE_P(Generated, IteratorTest,
                                  Values(true, false)),
                          IteratorTest::PrintToStringParamName());
 
-} // end namespace IteratorTest
+}  // end namespace IteratorTest

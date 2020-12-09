@@ -17,4 +17,4 @@ namespace StringUtilsTest {
 
 class StringUtilsTest : public AutoPasTestBase {};
 
-} // end namespace StringUtilsTest
+}  // end namespace StringUtilsTest

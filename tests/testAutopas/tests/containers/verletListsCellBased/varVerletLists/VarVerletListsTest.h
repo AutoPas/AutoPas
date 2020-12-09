@@ -18,4 +18,4 @@
 namespace VarVerletListsTest {
 
 class VarVerletListsTest : public AutoPasTestBase {};
-} // end namespace VarVerletListsTest
+}  // end namespace VarVerletListsTest

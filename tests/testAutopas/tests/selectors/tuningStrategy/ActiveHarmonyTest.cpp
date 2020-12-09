@@ -9,6 +9,4 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 
-namespace ActiveHarmonyTest {
-
-} // end namespace ActiveHarmonyTest
+namespace ActiveHarmonyTest {}  // end namespace ActiveHarmonyTest

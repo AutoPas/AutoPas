@@ -135,4 +135,4 @@ INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
                                  ValuesIn(autopas::ContainerOption::getAllOptions())),
                          ContainerSelectorTest::PrintToStringParamName());
 
-} // end namespace ContainerSelectorTest
+}  // end namespace ContainerSelectorTest

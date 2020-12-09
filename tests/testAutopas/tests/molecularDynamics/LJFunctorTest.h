@@ -77,4 +77,4 @@ struct LJFunAVXShiftMixGlob : public LJFunAVXMol<true, true, true> {
 struct LJFunAVXShiftNoMixGlob : public LJFunAVXMol<true, false, true> {
   using LJFunAVXMol<true, false, true>::LJFunctorAVX;
 };
-} // end namespace LJFunctorTest
+}  // end namespace LJFunctorTest

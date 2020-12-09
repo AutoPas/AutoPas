@@ -151,4 +151,4 @@ TEST(NumberSetTest, testStringRepresentation) {
   EXPECT_EQ("[1, 2, 3]", fSet.to_string());
 }
 
-} // end namespace NumberSetTest
+}  // end namespace NumberSetTest

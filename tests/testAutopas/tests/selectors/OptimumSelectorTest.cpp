@@ -34,4 +34,4 @@ TEST(OptimumSelectorTest, median) {
   EXPECT_EQ(5, median);
 }
 
-} // end namespace OptimumSelectorTest
+}  // end namespace OptimumSelectorTest

@@ -26,4 +26,4 @@ class TuningStrategyTest : public AutoPasTestBase, public ::testing::WithParamIn
   };
 };
 
-} // end namespace TuningStrategyTest
+}  // end namespace TuningStrategyTest

@@ -110,4 +110,4 @@ using MyTypes = ::testing::Types<
     >;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestVs, MyTypes);
-} // end namespace LJFunctorTestVs
+}  // end namespace LJFunctorTestVs

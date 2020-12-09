@@ -28,4 +28,4 @@ TEST(DISABLED_TimerTest, testTimer) {
   // time should be close to 50ms
   ASSERT_NEAR(time, .05, .03);
 }
-} // end namespace TimerTest
+}  // end namespace TimerTest

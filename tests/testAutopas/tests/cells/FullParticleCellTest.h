@@ -11,4 +11,4 @@
 namespace FullParticleCellTest {
 
 class FullParticleCellTest : public testing::Test {};
-} // end namespace FullParticleCellTest
+}  // end namespace FullParticleCellTest

@@ -16,4 +16,4 @@ class DSSequentialTraversalTest : public AutoPasTestBase {
   void testTraversal(bool useSoA);
 };
 
-} // end namespace DSSequentialTraversalTest
+}  // end namespace DSSequentialTraversalTest

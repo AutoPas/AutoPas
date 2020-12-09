@@ -71,4 +71,4 @@ TEST_F(ParticleVectorTest, testDirtySizeAfterImplicitResize) {
   EXPECT_EQ(particleVector.dirtySize(), 9);
 }
 
-} // end namespace ParticleVectorTest
+}  // end namespace ParticleVectorTest

@@ -36,4 +36,4 @@ class AutoTunerTest : public AutoPasTestBase {
                    autopas::Configuration expectedBest, mapConfigTime ignoredConfigAndTimes = {});
 };
 
-} // end namespace AutoTunerTest
+}  // end namespace AutoTunerTest

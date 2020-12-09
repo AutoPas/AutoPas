@@ -112,4 +112,4 @@ class ColoringTraversalWithColorChangeNotify
   std::function<void(int)> _whenColorChanges;
 };
 #endif
-} // end namespace VerletClusterListsTest
+}  // end namespace VerletClusterListsTest

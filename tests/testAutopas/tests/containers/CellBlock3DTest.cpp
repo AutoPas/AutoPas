@@ -161,4 +161,4 @@ TEST_F(CellBlock3DTest, testClearHaloParticles) {
   EXPECT_EQ(getNumberOfParticlesInBox(_cells_19x19x19, _vec19), 19 * 19 * 19);
 }
 
-} // end namespace CellBlock3DTest
+}  // end namespace CellBlock3DTest

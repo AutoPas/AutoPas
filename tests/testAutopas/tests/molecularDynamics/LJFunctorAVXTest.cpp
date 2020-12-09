@@ -394,4 +394,4 @@ INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorAVXTest, ::testing::Combine(::testi
 
 #endif  // __AVX__
 
-} // end namespace LJFunctorAVXTest
+}  // end namespace LJFunctorAVXTest

@@ -250,4 +250,4 @@ TEST_F(AutoPasTest, getNumParticlesIteratorTest) {
     expectedParticles(numParticles, 0);
   }
 }
-} // end namespace AutoPasTest
+}  // end namespace AutoPasTest

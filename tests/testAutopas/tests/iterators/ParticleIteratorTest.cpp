@@ -255,4 +255,4 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorVerletLists) {
 
   testContainerIteratorBehavior(verletLists, mol, haloMol);
 }
-} // end namespace ParticleIteratorTest
+}  // end namespace ParticleIteratorTest

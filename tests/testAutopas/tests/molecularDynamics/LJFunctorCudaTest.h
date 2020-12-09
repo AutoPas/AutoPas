@@ -85,6 +85,5 @@ class LJFunctorCudaTest : public AutoPasTestBase,
   const std::array<double, 3> _highCorner;
 };
 
-} // end namespace LJFunctorCudaTest
+}  // end namespace LJFunctorCudaTest
 #endif  // AUTOPAS_CUDA
-

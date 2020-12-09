@@ -40,4 +40,4 @@ TEST_F(SingleCellIteratorTest, testFullParticleCell) {
   }
 }
 
-} // end namespace SingleCellIteratorTest
+}  // end namespace SingleCellIteratorTest

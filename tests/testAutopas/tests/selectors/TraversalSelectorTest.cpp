@@ -31,4 +31,4 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
   }
 }
 
-} // end namespace TraversalSelectorTest
+}  // end namespace TraversalSelectorTest

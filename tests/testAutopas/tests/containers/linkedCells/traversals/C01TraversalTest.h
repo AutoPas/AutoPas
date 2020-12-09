@@ -17,4 +17,4 @@ class C01TraversalTest : public AutoPasTestBase {
   ~C01TraversalTest() override = default;
 };
 
-} // end namespace C01TraversalTest
+}  // end namespace C01TraversalTest

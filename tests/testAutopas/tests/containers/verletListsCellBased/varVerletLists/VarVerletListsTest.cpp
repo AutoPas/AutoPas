@@ -296,4 +296,4 @@ TEST_F(VarVerletListsTest, testUpdateHaloParticle) {
   EXPECT_TRUE(verletLists.updateHaloParticle(p5));
 }
 
-} // end namespace VarVerletListsTest
+}  // end namespace VarVerletListsTest
