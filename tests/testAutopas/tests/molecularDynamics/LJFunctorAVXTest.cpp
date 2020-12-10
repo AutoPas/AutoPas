@@ -392,6 +392,5 @@ static auto toString = [](const auto &info) {
 INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorAVXTest, ::testing::Combine(::testing::Bool(), ::testing::Bool()),
                          toString);
 
-#endif  // __AVX__
-
 }  // end namespace LJFunctorAVXTest
+#endif  // __AVX__

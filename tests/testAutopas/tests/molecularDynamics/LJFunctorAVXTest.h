@@ -99,6 +99,6 @@ class LJFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInte
   const std::array<double, 3> _lowCorner{0., 0., 0.};
   const std::array<double, 3> _highCorner{6., 6., 6.};
 };
-#endif  // __AVX__
 
 }  // end namespace LJFunctorAVXTest
+#endif  // __AVX__
