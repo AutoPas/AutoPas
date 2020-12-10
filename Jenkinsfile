@@ -104,7 +104,7 @@ pipeline {
                     steps {
                         container('cuda-10') {
                             dir("build-cuda") {
-                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=On -DAUTOPAS_ENABLE_CUDA=ON -DCCACHE=ON .."
+                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=ON -DAUTOPAS_ENABLE_CUDA=ON -DCCACHE=ON .."
                                 sh "entrypoint.sh make -j 4 > buildlog-cuda.txt 2>&1 || (cat buildlog-cuda.txt && exit 1)"
                                 sh "./tests/testAutopas/runTests"
                             }
@@ -124,7 +124,7 @@ pipeline {
                     steps {
                         container('cuda-10') {
                             dir("build-cuda") {
-                                sh "CC=clang CXX=clang++ cmake -DAUTOPAS_USE_TEST_GLOB=On -DCCACHE=ON -DAUTOPAS_ENABLE_CUDA=ON .."
+                                sh "CC=clang CXX=clang++ cmake -DAUTOPAS_USE_TEST_GLOB=ON -DCCACHE=ON -DAUTOPAS_ENABLE_CUDA=ON .."
                                 sh "entrypoint.sh make -j 4 > buildlog-cuda-clang.txt 2>&1 || (cat buildlog-cuda-clang.txt && exit 1)"
                                 sh "./tests/testAutopas/runTests"
                                 // cuda variants of valgrind:
@@ -149,7 +149,7 @@ pipeline {
                     steps {
                         container('autopas-gcc7-cmake-make') {
                             dir("build") {
-                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=On -DCCACHE=ON .."
+                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=ON -DCCACHE=ON .."
                                 sh "entrypoint.sh make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                                 sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
                             }
@@ -163,7 +163,7 @@ pipeline {
                     steps {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-openmp") {
-                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=On -DCCACHE=ON -DAUTOPAS_OPENMP=ON .."
+                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=ON -DCCACHE=ON -DAUTOPAS_OPENMP=ON .."
                                 sh "entrypoint.sh make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
@@ -177,7 +177,7 @@ pipeline {
                     steps {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-openmp-address-sanitizer") {
-                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=On -DCCACHE=ON -DAUTOPAS_OPENMP=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=ON -DCCACHE=ON -DAUTOPAS_OPENMP=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "entrypoint.sh make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
@@ -188,7 +188,7 @@ pipeline {
                     steps {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer") {
-                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=On -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "entrypoint.sh make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
@@ -199,7 +199,7 @@ pipeline {
                     steps {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer-release") {
-                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=On -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "entrypoint.sh make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
@@ -210,7 +210,7 @@ pipeline {
                     steps {
                         container('autopas-clang6-cmake-ninja-make') {
                             dir("build-clang-ninja-openmp") {
-                                sh "CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_USE_TEST_GLOB=On -DCCACHE=ON -DAUTOPAS_OPENMP=ON .."
+                                sh "CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_USE_TEST_GLOB=ON -DCCACHE=ON -DAUTOPAS_OPENMP=ON .."
                                 sh "entrypoint.sh ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
@@ -224,7 +224,7 @@ pipeline {
                     steps {
                         container('autopas-clang6-cmake-ninja-make') {
                             dir("build-clang-ninja-addresssanitizer-debug") {
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_USE_TEST_GLOB=On -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_USE_TEST_GLOB=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "entrypoint.sh ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
@@ -235,7 +235,7 @@ pipeline {
                     steps {
                         container('autopas-clang6-cmake-ninja-make') {
                             dir("build-clang-ninja-addresssanitizer-release") {
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_USE_TEST_GLOB=On -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_USE_TEST_GLOB=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "entrypoint.sh ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
@@ -249,7 +249,7 @@ pipeline {
                     steps {
                         container('autopas-llvm-archer') {
                             dir("build-archer") {
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_USE_TEST_GLOB=On -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON -DAUTOPAS_OPENMP=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_USE_VECTORIZATION=OFF .."
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_USE_TEST_GLOB=ON -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON -DAUTOPAS_OPENMP=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_USE_VECTORIZATION=OFF .."
                                 sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && entrypoint.sh ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)'
                                 sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest --verbose -j8'
                             }
@@ -274,7 +274,7 @@ pipeline {
                 // generate coverage
                 dir("coverage") {
                     container('autopas-build-code-coverage') {
-                        sh "cmake -DAUTOPAS_USE_TEST_GLOB=On -DAUTOPAS_CODE_COVERAGE=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug .."
+                        sh "cmake -DAUTOPAS_USE_TEST_GLOB=ON -DAUTOPAS_CODE_COVERAGE=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug .."
                         sh "entrypoint.sh make AutoPas_cobertura -j 4"
                     }
                     cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
