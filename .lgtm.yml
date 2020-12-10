@@ -13,7 +13,7 @@ extraction:
       - cd cmake-*/
       - mkdir build
       - cd build
-      - cmake -DCMAKE_INSTALL_PREFIX:PATH=~/.local/ -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_USE_TEST_GLOB=On ..
+      - cmake -DCMAKE_INSTALL_PREFIX:PATH=~/.local/ -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_USE_TEST_GLOB=ON ..
       - make install
       - ls ~/.local/bin
       - export PATH=~/.local/bin:$PATH
