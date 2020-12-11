@@ -188,7 +188,8 @@ pipeline {
                     steps {
                         container('autopas-gcc7-cmake-make') {
                             dir("build-addresssanitizer") {
-                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
+                                // -DAUTOPAS_USE_TEST_GLOB=ON fails with internal compiler error...
+                                sh "cmake -DAUTOPAS_USE_TEST_GLOB=OFF -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "entrypoint.sh make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
@@ -249,7 +250,8 @@ pipeline {
                     steps {
                         container('autopas-llvm-archer') {
                             dir("build-archer") {
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_USE_TEST_GLOB=ON -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON -DAUTOPAS_OPENMP=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_USE_VECTORIZATION=OFF .."
+                                // -DAUTOPAS_USE_TEST_GLOB=ON fails with internal compiler error...
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_USE_TEST_GLOB=OFF -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON -DAUTOPAS_OPENMP=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_USE_VECTORIZATION=OFF .."
                                 sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && entrypoint.sh ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)'
                                 sh 'export TSAN_OPTIONS="ignore_noninstrumented_modules=1" && ctest --verbose -j8'
                             }
