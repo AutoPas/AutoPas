@@ -10,13 +10,10 @@
 #include <utility>
 #include <vector>
 
+#include "autopas/containers/verletListsCellBased/verletListsCells/PairwiseVerletNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
+
 namespace autopas {
-
-template <class Particle>
-class VerletListsCellsNeighborList;
-
-template <class Particle>
-class PairwiseVerletNeighborList;
 
 /**
  * This class provides the Traversal Interface for the verlet lists cells container.
@@ -33,12 +30,7 @@ class VLCTraversalInterface {
    * Sets the verlet list for the traversal to iterate over.
    * @param verlet The verlet list to iterate over.
    */
-  virtual void setVerletList(NeighborList &verlet) {
-    _verletList = &verlet;
-    // internalList = _verletList->getAoSNeighborList();  // only this->verletList is being passed to processCellLists
-    // so
-    // internalList should be safe to use below
-  }
+  virtual void setVerletList(NeighborList &verlet) { _verletList = &verlet; }
 
  protected:
   /**
@@ -55,16 +47,18 @@ class VLCTraversalInterface {
   }
 
   /**
-   * The neighbor list class which contains the verlet list to iterate over.
-   */
-  NeighborList *_verletList;
-  /**
    * The verlet list to iterate over.
    */
-  // typename NeighborList::listType internalList;
+  NeighborList *_verletList;
 
  private:
-  /** Processing of the VerletListsCellsNeighborList type of neighbor list (neighbor list for every cell).*/
+  /** Processing of the VerletListsCellsNeighborList type of neighbor list (neighbor list for every cell).
+   * @tparam PairwiseFunctor
+   * @tparam useNewton3
+   * @param neighborList
+   * @param cellIndex
+   * @param pairwiseFunctor
+   */
   template <class PairwiseFunctor, bool useNewton3>
   void processCellListsImpl(VerletListsCellsNeighborList<Particle> &neighborList, unsigned long cellIndex,
                             PairwiseFunctor *pairwiseFunctor) {
@@ -78,13 +72,19 @@ class VLCTraversalInterface {
     }
   }
 
-  /** Processing of the pairwise Verlet type of neighbor list (neighbor list for every pair of neighboring cells).*/
+  /** Processing of the pairwise Verlet type of neighbor list (neighbor list for every pair of neighboring cells).
+   * @tparam PairwiseFunctor
+   * @tparam useNewton3
+   * @param neighborList
+   * @param cellIndex
+   * @param pairwiseFunctor
+   */
   template <class PairwiseFunctor, bool useNewton3>
   void processCellListsImpl(PairwiseVerletNeighborList<Particle> &neighborList, unsigned long cellIndex,
                             PairwiseFunctor *pairwiseFunctor) {
     auto &internalList = neighborList.getAoSNeighborList();
-    for (size_t neighborCellIndex = 0; neighborCellIndex < internalList[cellIndex].size(); neighborCellIndex++) {
-      for (auto &[particlePtr, neighbors] : internalList[cellIndex][neighborCellIndex]) {
+    for (auto &cellPair : internalList[cellIndex]) {
+      for (auto &[particlePtr, neighbors] : cellPair) {
         Particle &particle = *particlePtr;
         for (auto neighborPtr : neighbors) {
           Particle &neighbor = *neighborPtr;

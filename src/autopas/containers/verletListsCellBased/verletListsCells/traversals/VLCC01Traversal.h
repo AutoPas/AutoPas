@@ -7,8 +7,6 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/C01BasedTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/PairwiseVerletNeighborList.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -29,9 +27,12 @@ namespace autopas {
  * for pairwise)
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList, TraversalOption::Value typeOfList>
+          class NeighborList,
+          typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
 class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                         public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+  using VLCTypeOfList = typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList;
+
  public:
   /**
    * Constructor of the c01 traversal.
@@ -49,7 +50,14 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
 
   void traverseParticlePairs() override;
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return typeOfList; }
+  [[nodiscard]] TraversalOption getTraversalType() const override {
+    switch (typeOfList) {
+      case (VLCTypeOfList::vlc):
+        return TraversalOption::vlc_c01;
+      case (VLCTypeOfList::vlp):
+        return TraversalOption::vlp_c01;
+    }
+  }
 
   [[nodiscard]] bool isApplicable() const override {
     return (not useNewton3) and (dataLayout == DataLayoutOption::aos);
@@ -64,7 +72,8 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList, TraversalOption::Value typeOfList>
+          class NeighborList,
+          typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
 inline void VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
                             typeOfList>::traverseParticlePairs() {
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) {

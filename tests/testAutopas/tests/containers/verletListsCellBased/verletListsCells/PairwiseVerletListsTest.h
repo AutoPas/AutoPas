@@ -16,4 +16,22 @@
 #include "testingHelpers/commonTypedefs.h"
 #include "tests/containers/verletListsCellBased/verletLists/VerletListsTest.h"
 
-class PairwiseVerletListsTest : public AutoPasTestBase, public ::testing::WithParamInterface<double> {};
+class PairwiseVerletListsTest : public AutoPasTestBase, public ::testing::WithParamInterface<std::pair<double, bool>> {
+ public:
+  struct PrintToStringParamName {
+    template <class ParamType>
+    std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
+      auto pairParams = static_cast<ParamType>(info.param);
+      return "CellSizeFactor_" + std::to_string((int)pairParams.first) + "_useNewton3_" +
+             boolToString(pairParams.second);
+    }
+
+    std::string boolToString(bool n3) const {
+      if (n3 == true) {
+        return "true";
+      } else {
+        return "false";
+      }
+    }
+  };
+};

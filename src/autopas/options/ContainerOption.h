@@ -63,7 +63,8 @@ class ContainerOption : public Option<ContainerOption> {
      */
     verletListsCells,
     /**
-     * TODO
+     * PairwiseVerletLists : Also similar to VerletLists but the lists are associated to each pair of neighboring cells.
+     * ...? (improve data locality and cache efficiency?)
      */
     pairwiseVerletLists,
   };

@@ -29,7 +29,8 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor) {
   verletLists.addParticle(p2);
 
   autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
-                           autopas::VerletListsCellsNeighborList<Particle>, autopas::TraversalOption::vlc_c18>
+                           autopas::VerletListsCellsNeighborList<Particle>,
+                           autopas::VerletListsCellsHelpers<Particle>::VLCTypeOfList::vlc>
       traversal(verletLists.getCellsPerDimension(), &functor, verletLists.getInteractionLength(),
                 verletLists.getCellLength());
 

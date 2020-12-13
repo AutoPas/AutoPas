@@ -10,6 +10,12 @@
 #include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
+
+/**
+ * TraversalSelector is used for the construction of the list in the applyBuildFunctor method.
+ * Forward declaration necessary to avoid circle of includes:
+ * TraversalSelector includes all VLC traversals include VLCTraversalInterface includes PairwiseVerletNeighborList
+ */
 template <class ParticleCell>
 class TraversalSelector;
 /**
@@ -41,8 +47,8 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
   const size_t getNumberOfPartners(const Particle *particle) const override {
     size_t listSize = 0;
     const auto &[firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle));
-    for (size_t secondCellIndex = 0; secondCellIndex < _aosNeighborList[firstCellIndex].size(); secondCellIndex++) {
-      listSize += _aosNeighborList[firstCellIndex][secondCellIndex][particleInCellIndex].second.size();
+    for (auto &cellPair : _aosNeighborList[firstCellIndex]) {
+      listSize += cellPair[particleInCellIndex].second.size();
     }
     return listSize;
   }
