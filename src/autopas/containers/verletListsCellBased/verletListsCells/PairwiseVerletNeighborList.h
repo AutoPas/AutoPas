@@ -101,11 +101,7 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
       }
     }
 
-    applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption);
-
-    //TODO
-    generateSoAFromAoS(linkedCells);
-    //applyBuildFunctorSoA(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption);
+    applyBuildFunctorSoA(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption);
   }
 
   void generateSoAFromAoS(LinkedCells<Particle> &linkedCells)
@@ -202,6 +198,8 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
     typename VerletListsCellsHelpers<Particle>::PairwiseVerletListGeneratorFunctor f(
         _aosNeighborList, _particleToCellMap, _globalToLocalIndex, cutoff + skin);
 
+    //this->loadSoA(f);
+
     // Generate the build traversal with the traversal selector and apply the build functor with it.
     TraversalSelector<FullParticleCell<Particle>> traversalSelector;
     // Argument "cluster size" does not matter here.
@@ -212,6 +210,8 @@ class PairwiseVerletNeighborList : public VerletListsCellsNeighborListInterface<
           buildTraversalOption, f, traversalSelectorInfo);
       linkedCells.iteratePairwise(buildTraversal.get());
     });
+
+    //this->extractSoA(f);
   }
 
   /**

@@ -134,6 +134,11 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     _neighborList.buildAoSNeighborList(this->_linkedCells, useNewton3, this->getCutoff(), this->getSkin(),
                                        this->getInteractionLength(), _buildTraversalOption);
 
+    if(traversal->getDataLayout() == DataLayoutOption::soa)
+    {
+      _neighborList.generateSoAFromAoS(this->_linkedCells);
+    }
+
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
   }

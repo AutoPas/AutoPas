@@ -50,6 +50,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
                             double interactionLength, const TraversalOption buildTraversalOption) override {
     // Initialize a neighbor list for each cell.
     _aosNeighborList.clear();
+	_internalLinkedCells = &linkedCells;
     auto &cells = linkedCells.getCells();
     size_t cellsSize = cells.size();
     _aosNeighborList.resize(cellsSize);
@@ -89,11 +90,58 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   template <class TFunctor>
   auto *loadSoA(TFunctor *f) {
     _soa.clear();
+    size_t offset = 0;
+    size_t index = 0;
+    for (auto &cell : _internalLinkedCells->getCells()) {
+      f->SoALoader(cell, _soa, offset);
+      offset += cell.numParticles();
+      index++;
+    }
     return &_soa;
   }
 
   template <class TFunctor>
   void extractSoA(TFunctor *f) {
+    size_t offset = 0;
+    for (auto &cell : _internalLinkedCells->getCells()) {
+      f->SoAExtractor(cell, _soa, offset);
+      offset += cell.numParticles();
+    }
+  }
+
+  void generateSoAFromAoS(LinkedCells<Particle> &linkedCells)
+  {
+    _soaNeighborList.clear();
+
+    std::unordered_map<Particle*, size_t> _particleToIndex;
+    _particleToIndex.reserve(linkedCells.getNumParticles());
+    size_t i = 0;
+    for (auto iter = linkedCells.begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++i) {
+      _particleToIndex[&(*iter)] = i;
+    }
+
+    auto &cells = linkedCells.getCells();
+    size_t cellsSize = cells.size();
+    _soaNeighborList.resize(cellsSize);
+
+    for(size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
+      _soaNeighborList[firstCellIndex].reserve(cells[firstCellIndex].numParticles());
+      size_t particleIndexCurrentCell = 0;
+
+      for (auto particleIter = cells[firstCellIndex].begin(); particleIter.isValid(); ++particleIter) {
+        Particle *currentParticle = &*particleIter;
+        size_t currentIndex = _particleToIndex.at(currentParticle);
+
+        _soaNeighborList[firstCellIndex].emplace_back(std::make_pair(currentIndex, std::vector<size_t, autopas::AlignedAllocator<size_t>>()));
+
+        for(size_t neighbor = 0; neighbor < _aosNeighborList[firstCellIndex][particleIndexCurrentCell].second.size(); neighbor++)
+        {
+          _soaNeighborList[firstCellIndex][particleIndexCurrentCell].second.emplace_back
+              (_particleToIndex.at(_aosNeighborList[firstCellIndex][particleIndexCurrentCell].second[neighbor]));
+        }
+        particleIndexCurrentCell++;
+      }
+    }
   }
 
  private:
@@ -134,5 +182,6 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap;
   SoA<typename Particle::SoAArraysType> _soa;
   soaListType _soaNeighborList;
+  LinkedCells<Particle>* _internalLinkedCells;
 };
 }  // namespace autopas

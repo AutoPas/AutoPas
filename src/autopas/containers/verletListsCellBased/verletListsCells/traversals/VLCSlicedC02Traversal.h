@@ -71,7 +71,7 @@ class VLCSlicedC02Traversal
     }
   }
 
-  [[nodiscard]] bool isApplicable() const override { return true; }
+  [[nodiscard]] bool isApplicable() const override { return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa); }
 
  private:
   PairwiseFunctor *_functor;
@@ -81,12 +81,20 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
           class NeighborList, int typeOfList>
 inline void VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
                                   typeOfList>::traverseParticlePairs() {
-  this->setupLoadSoA(_functor);
+  if(dataLayout == DataLayoutOption::soa)
+  {
+    this->setupLoadSoA(_functor);
+  }
+
   this->cSlicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor, dataLayout);
   });
-  this->setupExtractSoA(_functor);
+
+  if(dataLayout == DataLayoutOption::soa)
+  {
+    this->setupExtractSoA(_functor);
+  }
 }
 
 }  // namespace autopas
