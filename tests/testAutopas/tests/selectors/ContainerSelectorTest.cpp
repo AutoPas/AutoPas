@@ -36,16 +36,25 @@ TEST_P(ContainerSelectorTest, testResize) {
   containerSelector.getCurrentContainer();
   ASSERT_EQ(containerSelector.getCurrentContainer()->getNumParticles(), 0) << "Container was not initialized empty!";
 
-  addParticlesMinMidMax(containerSelector.getCurrentContainer());
-  ASSERT_EQ(containerSelector.getCurrentContainer()->getNumParticles(), 3)
+  // add three purposely placed particles
+  auto expectedParticles = addParticlesMinMidMax(containerSelector.getCurrentContainer());
+  ASSERT_EQ(containerSelector.getCurrentContainer()->getNumParticles(), expectedParticles.size())
       << "Container did not receive all particles!";
 
   auto boxMinNew = autopas::utils::ArrayMath::add(bBoxMin, {.5, .5, .5});
   auto boxMaxNew = autopas::utils::ArrayMath::add(bBoxMax, {1, 1, 1});
 
   containerSelector.resizeBox(boxMinNew, boxMaxNew);
-  ASSERT_EQ(containerSelector.getCurrentContainer()->getNumParticles(), 3)
-      << "Container did not receive all particles!";
+  ASSERT_EQ(containerSelector.getCurrentContainer()->getNumParticles(), expectedParticles.size())
+      << "Container does not contain all particles after resize!";
+
+  std::vector<Particle> particlesAfterResize;
+  particlesAfterResize.reserve(containerSelector.getCurrentContainer()->getNumParticles());
+  for (auto &p : *containerSelector.getCurrentContainer()) {
+    particlesAfterResize.push_back(p);
+  }
+
+  EXPECT_THAT(particlesAfterResize, ::testing::UnorderedElementsAreArray(expectedParticles));
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
