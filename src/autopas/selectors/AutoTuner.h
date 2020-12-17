@@ -91,7 +91,6 @@ class AutoTuner {
    * @param boxMax
    */
   void resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
-    // TODO: add sanity checks here?
     _containerSelector.resizeBox(boxMin, boxMax);
   }
 

@@ -100,6 +100,23 @@ template <class T, std::size_t SIZE>
 }
 
 /**
+ * Multiplies two array's element wise and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a
+ * @param b
+ * @return element-wise multiplication of a and b
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> div(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  std::array<T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = a[d] / b[d];
+  }
+  return result;
+}
+
+/**
  * Adds a scalar s to each element of array a and returns the result.
  * @tparam T floating point type
  * @tparam SIZE size of the array a
