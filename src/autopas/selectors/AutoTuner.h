@@ -86,6 +86,16 @@ class AutoTuner {
   }
 
   /**
+   * Pass values to the towards the actual container.
+   * @param boxMin
+   * @param boxMax
+   */
+  void resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+    // TODO: add sanity checks here?
+    _containerSelector.resizeBox(boxMin, boxMax);
+  }
+
+  /**
    * Getter for the current container.
    * @return Smart pointer to the current container.
    */

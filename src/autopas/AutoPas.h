@@ -124,6 +124,17 @@ class AutoPas {
   }
 
   /**
+   * Resizes the bounding box of the AutoPas object.
+   * @param boxMin
+   * @param boxMax
+   */
+  void resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+    _boxMin = boxMin;
+    _boxMax = boxMax;
+    _logicHandler->resizeBox(boxMin, boxMax);
+  }
+
+  /**
    * Free the AutoPas MPI communicator.
    * To be called before MPI_Finalize.
    * If no MPI is used just call this at the end of the program.

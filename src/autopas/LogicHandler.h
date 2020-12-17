@@ -53,6 +53,17 @@ class LogicHandler {
   }
 
   /**
+   * Pass values to the towards the actual container.
+   * @param boxMin
+   * @param boxMax
+   */
+  void resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+    // TODO: add sanity checks here?
+    // TODO: add warning when box size changes too drastically?
+    _autoTuner->resizeBox(boxMin, boxMax);
+  }
+
+  /**
    * @copydoc AutoPas::addParticle()
    */
   void addParticle(const Particle &p) {
