@@ -305,13 +305,13 @@ class AutoPas {
    * Set coordinates of the lower corner of the domain.
    * @param boxMin
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) { AutoPas::_boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) { _boxMin = boxMin; }
 
   /**
    * Set coordinates of the upper corner of the domain.
    * @param boxMax
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) { AutoPas::_boxMax = boxMax; }
+  void setBoxMax(const std::array<double, 3> &boxMax) { _boxMax = boxMax; }
 
   /**
    * Get cutoff radius.

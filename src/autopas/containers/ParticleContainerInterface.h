@@ -75,9 +75,9 @@ class ParticleContainerInterface {
 
   /**
    * Adds a particle to the container.
-   * @param p The particle to be added.
    * @tparam checkInBox Specifies whether a boundary check should be performed. Only disable this if the check has
    * already been performed.
+   * @param p The particle to be added.
    */
   template <bool checkInBox = true>
   void addParticle(const Particle &p) {
