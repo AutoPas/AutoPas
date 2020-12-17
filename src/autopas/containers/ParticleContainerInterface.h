@@ -87,8 +87,12 @@ class ParticleContainerInterface {
       if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
         addParticleImpl(p);
       } else {
-        utils::ExceptionHandler::exception("Trying to add a particle that is not in the bounding box.\n" +
-                                           p.toString());
+        std::stringstream error;
+        error << "Trying to add a particle that is not in the bounding box.\n"
+              << "Box Min " << autopas::utils::ArrayUtils::to_string(this->getBoxMin()) << "\n"
+              << "Box Max " << autopas::utils::ArrayUtils::to_string(this->getBoxMax()) << "\n"
+              << p.toString();
+        utils::ExceptionHandler::exception(error.str());
       }
     }
   };
