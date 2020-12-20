@@ -1,5 +1,5 @@
 /**
- * @file PairwiseVerletListGeneratorFunctor.h
+ * @file VLCCellPairGeneratorFunctor.h
  * @author tirgendetwas
  * @date 05.12.2020
  */
@@ -15,7 +15,7 @@ template <class Particle>
 /**
  * This functor generates pairwise verlet lists (a verlet list attached to every pair of neighboring cells).
  */
-class PairwiseVerletListGeneratorFunctor : public Functor<Particle, PairwiseVerletListGeneratorFunctor<Particle>> {
+class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGeneratorFunctor<Particle>> {
   using PairwiseNeighborListsType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
 
  public:
@@ -26,11 +26,10 @@ class PairwiseVerletListGeneratorFunctor : public Functor<Particle, PairwiseVerl
    * @param globalToLocalIndex mapping global index of cell2 to "local" index according to cell1's interactions
    * @param cutoffskin cutoff + skin
    */
-  PairwiseVerletListGeneratorFunctor(PairwiseNeighborListsType &neighborLists,
-                                     std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
-                                     std::vector<std::unordered_map<size_t, size_t>> globalToLocalIndex,
-                                     double cutoffskin)
-      : Functor<Particle, PairwiseVerletListGeneratorFunctor>(0.),
+  VLCCellPairGeneratorFunctor(PairwiseNeighborListsType &neighborLists,
+                              std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
+                              std::vector<std::unordered_map<size_t, size_t>> &globalToLocalIndex, double cutoffskin)
+      : Functor<Particle, VLCCellPairGeneratorFunctor>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
         _globalToLocalIndex(globalToLocalIndex),
@@ -40,13 +39,13 @@ class PairwiseVerletListGeneratorFunctor : public Functor<Particle, PairwiseVerl
 
   bool allowsNewton3() override {
     utils::ExceptionHandler::exception(
-        "VerletListGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
+        "VLCAllCellsGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
     return true;
   }
 
   bool allowsNonNewton3() override {
     utils::ExceptionHandler::exception(
-        "VerletListGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+        "VLCAllCellsGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
     return true;
   }
 
@@ -97,9 +96,9 @@ class PairwiseVerletListGeneratorFunctor : public Functor<Particle, PairwiseVerl
   std::unordered_map<Particle *, std::pair<size_t, size_t>> &_particleToCellMap;
   /**
    * For each cell1: a mapping of the "absolute" index of cell2 (in the base linked cells structure) to its "relative"
-   * index (0 to 26) in cell1's neighbors.
+   * index in cell1's neighbors.
    */
-  std::vector<std::unordered_map<size_t, size_t>> _globalToLocalIndex;
+  std::vector<std::unordered_map<size_t, size_t>> &_globalToLocalIndex;
   double _cutoffskinsquared;
 };
 

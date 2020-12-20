@@ -54,7 +54,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin,
                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _buildTraversalOption(buildTraversal),
-        _loadEstimator(loadEstimator) {}
+        _loadEstimator(loadEstimator),
+        _csf(cellSizeFactor) {}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
@@ -126,7 +127,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     this->_verletBuiltNewton3 = useNewton3;
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, useNewton3, this->getCutoff(), this->getSkin(),
-                                       this->getInteractionLength(), _buildTraversalOption);
+                                       this->getInteractionLength(), _buildTraversalOption, _csf);
 
     // the neighbor list is now valid
     this->_neighborListIsValid = true;
@@ -155,6 +156,9 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * Load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
+
+  /** Cell size factor to give to neighbor list. */
+  const double _csf;
 };
 
 }  // namespace autopas

@@ -1,5 +1,5 @@
 /**
- * @file VerletListGeneratorFunctor.h
+ * @file VLCAllCellsGeneratorFunctor.h
  * @author tirgendetwas
  * @date 05.12.2020
  */
@@ -14,7 +14,7 @@ template <class Particle>
 /**
  * This functor can generate verlet lists using the typical pairwise traversal.
  */
-class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorFunctor<Particle>> {
+class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGeneratorFunctor<Particle>> {
   using NeighborListsType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
 
  public:
@@ -24,10 +24,10 @@ class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorF
    * @param particleToCellMap used to get the verletlist of a particle
    * @param cutoffskin cutoff + skin
    */
-  VerletListGeneratorFunctor(NeighborListsType &neighborLists,
-                             std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
-                             double cutoffskin)
-      : Functor<Particle, VerletListGeneratorFunctor>(0.),
+  VLCAllCellsGeneratorFunctor(NeighborListsType &neighborLists,
+                              std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
+                              double cutoffskin)
+      : Functor<Particle, VLCAllCellsGeneratorFunctor>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
@@ -36,13 +36,13 @@ class VerletListGeneratorFunctor : public Functor<Particle, VerletListGeneratorF
 
   bool allowsNewton3() override {
     utils::ExceptionHandler::exception(
-        "VerletListGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
+        "VLCAllCellsGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
     return true;
   }
 
   bool allowsNonNewton3() override {
     utils::ExceptionHandler::exception(
-        "VerletListGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+        "VLCAllCellsGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
     return true;
   }
 

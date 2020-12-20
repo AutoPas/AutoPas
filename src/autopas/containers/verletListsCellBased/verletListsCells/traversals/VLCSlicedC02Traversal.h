@@ -30,8 +30,7 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  * @tparam NeighborList type of the neighbor list
- * @tparam typeOfList also indicates the type of neighbor list, currently only used for getTraversalType (0 for VLC, 1
- * for pairwise)
+ * @tparam typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
           class NeighborList,
