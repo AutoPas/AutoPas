@@ -54,8 +54,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin,
                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _buildTraversalOption(buildTraversal),
-        _loadEstimator(loadEstimator),
-        _csf(cellSizeFactor) {}
+        _loadEstimator(loadEstimator) {}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
@@ -127,7 +126,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     this->_verletBuiltNewton3 = useNewton3;
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, useNewton3, this->getCutoff(), this->getSkin(),
-                                       this->getInteractionLength(), _buildTraversalOption, _csf);
+                                       this->getInteractionLength(), _buildTraversalOption);
 
     // the neighbor list is now valid
     this->_neighborListIsValid = true;

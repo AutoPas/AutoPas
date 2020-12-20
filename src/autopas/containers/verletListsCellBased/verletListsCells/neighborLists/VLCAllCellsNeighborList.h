@@ -46,8 +46,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
    * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
    * */
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
-                            double interactionLength, const TraversalOption buildTraversalOption,
-                            const double csf) override {
+                            double interactionLength, const TraversalOption buildTraversalOption) override {
     // Initialize a neighbor list for each cell.
     _aosNeighborList.clear();
     auto &cells = linkedCells.getCells();
