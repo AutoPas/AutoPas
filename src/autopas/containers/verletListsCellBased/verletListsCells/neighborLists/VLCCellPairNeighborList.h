@@ -31,10 +31,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
    * Type of the data structure used to save the neighbor lists.
    * */
   using listType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
-  /**
-   * Constructor for VLCCellPairNeighborList. Initializes private attributes.
-   * */
-  VLCCellPairNeighborList() : _aosNeighborList{}, _particleToCellMap{}, _globalToLocalIndex{} {}
 
   /**
    * @copydoc VLCNeighborListInterface::getContainerType()
@@ -150,17 +146,20 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * Internal neighbor list structure in AoS format - Verlet lists for each particle for each cell.
    */
-  typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType _aosNeighborList;
+  typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType _aosNeighborList =
+      std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>();
 
   /**
    * Mapping of each particle to its corresponding cell and id within this cell.
    */
-  std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap;
+  std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap =
+      std::unordered_map<Particle *, std::pair<size_t, size_t>>();
 
   /**
    * For each cell1: a mapping of the "absolute" index of cell2 (in the base linked cells structure) to its "relative"
    * index in cell1's neighbors.
    */
-  std::vector<std::unordered_map<size_t, size_t>> _globalToLocalIndex;
+  std::vector<std::unordered_map<size_t, size_t>> _globalToLocalIndex =
+      std::vector<std::unordered_map<size_t, size_t>>();
 };
 }  // namespace autopas
