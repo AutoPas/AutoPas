@@ -31,11 +31,9 @@ class VLCNeighborListInterface {
    * @param skin Skin of the verlet list.
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
-   * @param cellSizeFactor
    * */
   virtual void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
-                                    double interactionLength, const TraversalOption buildTraversalOption,
-                                    const double csf) = 0;
+                                    double interactionLength, const TraversalOption buildTraversalOption) = 0;
 
   /**
    * Gets the number of neighbors over all neighbor lists that belong to this particle.

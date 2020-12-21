@@ -155,9 +155,6 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * Load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
-
-  /** Cell size factor to give to neighbor list. */
-  const double _csf;
 };
 
 }  // namespace autopas
