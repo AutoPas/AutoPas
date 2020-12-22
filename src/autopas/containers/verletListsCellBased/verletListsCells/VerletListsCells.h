@@ -8,21 +8,15 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
-#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/PairwiseVerletNeighborList.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/selectors/TraversalSelector.h"
-#include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
 

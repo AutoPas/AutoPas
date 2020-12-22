@@ -1,5 +1,5 @@
 /**
- * @file VerletListsCellsNeighborListInterface.h
+ * @file VLCNeighborListInterface.h
  * @author tirgendetwas
  * @date 27.10.20
  */
@@ -16,12 +16,12 @@ namespace autopas {
  * @tparam Particle Type of particle to be used for the neighbor list.
  * */
 template <class Particle>
-class VerletListsCellsNeighborListInterface {
+class VLCNeighborListInterface {
  public:
   /**
    * Default destructor.
    * */
-  ~VerletListsCellsNeighborListInterface() = default;
+  ~VLCNeighborListInterface() = default;
 
   /**
    * Builds AoS neighbor list from underlying linked cells object.

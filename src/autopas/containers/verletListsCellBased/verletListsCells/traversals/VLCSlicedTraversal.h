@@ -10,9 +10,7 @@
 #include <algorithm>
 
 #include "autopas/containers/cellPairTraversals/SlicedLockBasedTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/PairwiseVerletNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -36,15 +34,17 @@ namespace autopas {
  * @tparam useSoA
  * @tparam useNewton3
  * @tparam NeighborList type of the neighbor list
- * @tparam typeOfList also indicates the type of neighbor list, currently only used for getTraversalType (0 for VLC, 1
- * for pairwise)
+ * @tparam typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
  */
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList, int typeOfList>
+          class NeighborList,
+          typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
 class VLCSlicedTraversal
     : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
       public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+  using VLCTypeOfList = typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList;
+
  public:
   /**
    * Constructor of the sliced traversal.
@@ -68,12 +68,10 @@ class VLCSlicedTraversal
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
     switch (typeOfList) {
-      case 0:
+      case (VLCTypeOfList::vlc):
         return TraversalOption::vlc_sliced;
-      case 1:
+      case (VLCTypeOfList::vlp):
         return TraversalOption::vlp_sliced;
-      default:
-        return TraversalOption::vlc_sliced;
     }
   }
 
@@ -84,7 +82,8 @@ class VLCSlicedTraversal
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList, int typeOfList>
+          class NeighborList,
+          typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
 inline void VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
                                typeOfList>::traverseParticlePairs() {
   if(dataLayout == DataLayoutOption::soa)

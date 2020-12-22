@@ -7,7 +7,7 @@
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
 
 using ::testing::_;
@@ -18,7 +18,7 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  autopas::VerletListsCells<Particle, autopas::VerletListsCellsNeighborList<Particle>> verletLists(
+  autopas::VerletListsCells<Particle, autopas::VLCAllCellsNeighborList<Particle>> verletLists(
       min, max, cutoff, autopas::TraversalOption::lc_c18, skin, cellSizefactor);
 
   std::array<double, 3> r = {2, 2, 2};
@@ -29,7 +29,8 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor) {
   verletLists.addParticle(p2);
 
   autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
-                           autopas::VerletListsCellsNeighborList<Particle>, 0>
+                           autopas::VLCAllCellsNeighborList<Particle>,
+                           autopas::VerletListsCellsHelpers<Particle>::VLCTypeOfList::vlc>
       traversal(verletLists.getCellsPerDimension(), &functor, verletLists.getInteractionLength(),
                 verletLists.getCellLength());
 

@@ -7,8 +7,7 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/PairwiseVerletNeighborList.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -28,13 +27,15 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  * @tparam NeighborList type of the neighbor list
- * @tparam typeOfList also indicates the type of neighbor list, currently only used for getTraversalType (0 for VLC, 1
- * for pairwise)
+ * @tparam typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList, int typeOfList>
+          class NeighborList,
+          typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
 class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                         public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+  using VLCTypeOfList = typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList;
+
  public:
   /**
    * Constructor of the lc_c18 traversal.
@@ -54,12 +55,10 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, 
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
     switch (typeOfList) {
-      case 0:
+      case (VLCTypeOfList::vlc):
         return TraversalOption::vlc_c18;
-      case 1:
+      case (VLCTypeOfList::vlp):
         return TraversalOption::vlp_c18;
-      default:
-        return TraversalOption::vlc_c18;
     }
   }
 
@@ -74,7 +73,8 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, 
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList, int typeOfList>
+          class NeighborList,
+          typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
 inline void VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
                             typeOfList>::traverseParticlePairs() {
   if(dataLayout == DataLayoutOption::soa)
