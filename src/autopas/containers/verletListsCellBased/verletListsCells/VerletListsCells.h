@@ -12,6 +12,7 @@
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
@@ -47,14 +48,18 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param buildTraversal the traversal used to build the verletlists
    * @param cellSizeFactor cell size factor relative to cutoff
    * @param loadEstimator load estimation algorithm for balanced traversals
+   * @param buildType
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                    const TraversalOption buildTraversal, const double skin = 0, const double cellSizeFactor = 1.0,
-                   const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
+                   const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
+                   typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType =
+                       VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild)
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin,
                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _buildTraversalOption(buildTraversal),
-        _loadEstimator(loadEstimator) {}
+        _loadEstimator(loadEstimator),
+        _buildType(buildType) {}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
@@ -126,10 +131,9 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     this->_verletBuiltNewton3 = useNewton3;
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, useNewton3, this->getCutoff(), this->getSkin(),
-                                       this->getInteractionLength(), _buildTraversalOption);
+                                       this->getInteractionLength(), _buildTraversalOption, _buildType);
 
-    if(traversal->getDataLayout() == DataLayoutOption::soa)
-    {
+    if (traversal->getDataLayout() == DataLayoutOption::soa) {
       _neighborList.generateSoAFromAoS(this->_linkedCells);
     }
 
@@ -160,6 +164,11 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * Load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
+
+  /**
+   * TODO
+   */
+  typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value _buildType;
 };
 
 }  // namespace autopas

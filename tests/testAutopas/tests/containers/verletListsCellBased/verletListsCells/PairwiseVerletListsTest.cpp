@@ -22,12 +22,14 @@ TEST_P(PairwiseVerletListsTest, testTwoParticles) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  auto paramPair = GetParam();
-  double cellSizeFactor = paramPair.first;
-  bool useNewton3 = paramPair.second;
+  auto params = GetParam();
+  double cellSizeFactor = std::get<0>(params);
+  bool useNewton3 = std::get<1>(params);
+  auto buildType = std::get<2>(params);
+  const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, useNewton3)).Times(AtLeast(1));
   autopas::VerletListsCells<Particle, autopas::VLCCellPairNeighborList<Particle>> verletLists(
-      min, max, cutoff, autopas::TraversalOption::lc_c18, skin, cellSizeFactor);
+      min, max, cutoff, autopas::TraversalOption::lc_c18, skin, cellSizeFactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -87,14 +89,16 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
   double skin = 0.2;
-  auto paramPair = GetParam();
-  double cellSizeFactor = paramPair.first;
-  bool useNewton3 = paramPair.second;
+  auto params = GetParam();
+  double cellSizeFactor = std::get<0>(params);
+  bool useNewton3 = std::get<1>(params);
+  auto buildType = std::get<2>(params);
+  const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
 
   EXPECT_CALL(emptyFunctorOther, AoSFunctor(_, _, useNewton3)).Times(AtLeast(1));
 
   autopas::VerletListsCells<Particle, autopas::VLCCellPairNeighborList<Particle>> verletLists(
-      min, max, cutoff, autopas::TraversalOption::lc_c18, skin, cellSizeFactor);
+      min, max, cutoff, autopas::TraversalOption::lc_c18, skin, cellSizeFactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2.5, 2.5, 2.5};
   Particle p(r, {0., 0., 0.}, 0);
@@ -158,12 +162,15 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
   double skin = 0.2;
-  auto paramPair = GetParam();
-  double cellSizeFactor = paramPair.first;
-  bool useNewton3 = paramPair.second;
+  auto params = GetParam();
+  double cellSizeFactor = std::get<0>(params);
+  bool useNewton3 = std::get<1>(params);
+  auto buildType = std::get<2>(params);
+  const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
+
   EXPECT_CALL(mock, AoSFunctor(_, _, useNewton3)).Times(AtLeast(1));
   autopas::VerletListsCells<Particle, autopas::VLCCellPairNeighborList<Particle>> verletLists(
-      min, max, cutoff, autopas::TraversalOption::lc_c18, skin, cellSizeFactor);
+      min, max, cutoff, autopas::TraversalOption::lc_c18, skin, cellSizeFactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2.5, 2.5, 2.5};
   Particle p(r, {0., 0., 0.}, 0);
@@ -228,11 +235,13 @@ TEST_P(PairwiseVerletListsTest, testOneParticle) {
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
   double skin = 0.2;
-  auto paramPair = GetParam();
-  double cellSizeFactor = paramPair.first;
-  bool useNewton3 = paramPair.second;
+  auto params = GetParam();
+  double cellSizeFactor = std::get<0>(params);
+  bool useNewton3 = std::get<1>(params);
+  auto buildType = std::get<2>(params);
+  const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   autopas::VerletListsCells<Particle, autopas::VLCCellPairNeighborList<Particle>> verletLists(
-      min, max, cutoff, autopas::TraversalOption::lc_c18, skin, cellSizeFactor);
+      min, max, cutoff, autopas::TraversalOption::lc_c18, skin, cellSizeFactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2.5, 2.5, 2.5};
   Particle p(r, {0., 0., 0.}, 0);
@@ -274,7 +283,96 @@ TEST_P(PairwiseVerletListsTest, testOneParticle) {
   EXPECT_EQ(partners, 0);
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, PairwiseVerletListsTest,
-                         Values(std::make_pair(1.0, true), std::make_pair(2.0, true), std::make_pair(1.0, false),
-                                std::make_pair(2.0, false)),
-                         PairwiseVerletListsTest::PrintToStringParamName());
+/**
+ * Fills an AoS and an SoA list with particles, executes one iteration
+ * and compares the positions of each pair of corresponding particles.
+ * */
+TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
+  const double cutoff = 2.;
+  auto params = GetParam();
+  double cellSizeFactor = std::get<0>(params);
+  bool useNewton3 = std::get<1>(params);
+
+  // changing type from Particle to Molecule
+  auto oldBuildType = std::get<2>(params);
+  auto buildType = autopas::VerletListsCellsHelpers<Molecule>::VLCBuildType::aosBuild;
+  if (oldBuildType == autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild) {
+    buildType = autopas::VerletListsCellsHelpers<Molecule>::VLCBuildType::soaBuild;
+  }
+
+  const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
+  std::array<double, 3> min = {0, 0, 0};
+  std::array<double, 3> max = {10, 10, 10};
+  autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists1(
+      min, max, cutoff, autopas::TraversalOption::lc_c18, 0.3, cellSizeFactor, loadEstimator, buildType);
+  autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists2(
+      min, max, cutoff, autopas::TraversalOption::lc_c18, 0.3, cellSizeFactor, loadEstimator, buildType);
+
+  Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
+  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),
+                                                               verletLists1.getBoxMax(), 100);
+  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
+                                                               verletLists2.getBoxMax(), 100);
+  autopas::LJFunctor<Molecule> ljFunctor(cutoff);
+  ljFunctor.setParticleProperties(1., 1.);
+
+  if (useNewton3 == false) {
+    autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, false,
+                             autopas::VLCCellPairNeighborList<Molecule>,
+                             autopas::VerletListsCellsHelpers<Molecule>::VLCTypeOfList::vlp>
+        verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
+                         verletLists1.getCellLength());
+    autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, false,
+                             autopas::VLCCellPairNeighborList<Molecule>,
+                             autopas::VerletListsCellsHelpers<Molecule>::VLCTypeOfList::vlp>
+        soaTraversal(verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
+                     verletLists2.getCellLength());
+
+    verletLists1.rebuildNeighborLists(&verletTraversal1);
+    verletLists2.rebuildNeighborLists(&soaTraversal);
+    verletLists1.iteratePairwise(&verletTraversal1);
+    verletLists2.iteratePairwise(&soaTraversal);
+  }
+
+  if (useNewton3 == true) {
+    autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, true,
+                             autopas::VLCCellPairNeighborList<Molecule>,
+                             autopas::VerletListsCellsHelpers<Molecule>::VLCTypeOfList::vlp>
+        verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
+                         verletLists1.getCellLength());
+    autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, true,
+                             autopas::VLCCellPairNeighborList<Molecule>,
+                             autopas::VerletListsCellsHelpers<Molecule>::VLCTypeOfList::vlp>
+        soaTraversal(verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
+                     verletLists2.getCellLength());
+
+    verletLists1.rebuildNeighborLists(&verletTraversal1);
+    verletLists2.rebuildNeighborLists(&soaTraversal);
+    verletLists1.iteratePairwise(&verletTraversal1);
+    verletLists2.iteratePairwise(&soaTraversal);
+  }
+
+  auto iter1 = verletLists1.begin();
+  auto iter2 = verletLists2.begin();
+
+  for (; iter1.isValid() && iter2.isValid(); ++iter1, ++iter2) {
+    for (unsigned int dim = 0; dim < 3; dim++) {
+      ASSERT_NEAR(iter1->getR()[dim], iter2->getR()[dim], fabs(iter1->getR()[dim] * 1e-7));
+      EXPECT_NEAR(iter1->getF()[dim], iter2->getF()[dim], fabs(iter1->getF()[dim] * 1e-7));
+    }
+  }
+  EXPECT_FALSE(iter1.isValid());
+  EXPECT_FALSE(iter2.isValid());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Generated, PairwiseVerletListsTest,
+    Values(std::make_tuple(1.0, true, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild),
+           std::make_tuple(2.0, true, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild),
+           std::make_tuple(1.0, false, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild),
+           std::make_tuple(2.0, false, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild),
+           std::make_tuple(1.0, true, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild),
+           std::make_tuple(2.0, true, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild),
+           std::make_tuple(1.0, false, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild),
+           std::make_tuple(2.0, false, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild)),
+    PairwiseVerletListsTest::PrintToStringParamName());

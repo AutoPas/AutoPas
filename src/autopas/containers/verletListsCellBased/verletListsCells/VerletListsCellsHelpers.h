@@ -40,11 +40,27 @@ class VerletListsCellsHelpers {
   class VLCTypeOfList {
    public:
     /**
-     * Enum value indicating he type of neighbor list.
+     * Enum value indicating the type of neighbor list.
      */
     enum Value {
       vlc,
       vlp,
+    };
+  };
+
+  /**
+   * Indicates which build functor should be used for the generation of the neighbor list.
+   * To be passed to the generator functors in the neighbor lists.
+   */
+  class VLCBuildType {
+   public:
+    /**
+     * Enum value indicating whether the AoS functor or the SoA functors will be used to generate
+     * the neighbor list.
+     */
+    enum Value {
+      soaBuild,
+      aosBuild,
     };
   };
 

@@ -75,9 +75,8 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
           typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
 inline void VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
                             typeOfList>::traverseParticlePairs() {
-  if(dataLayout == DataLayoutOption::soa)
-  {
-    this->setupLoadSoA(_functor);
+  if (dataLayout == DataLayoutOption::soa) {
+    this->setupLoadSoA(_functor, *(this->_verletList));
   }
 
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
@@ -85,9 +84,8 @@ inline void VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
     this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor, dataLayout);
   });
 
-  if(dataLayout == DataLayoutOption::soa)
-  {
-    this->setupExtractSoA(_functor);
+  if (dataLayout == DataLayoutOption::soa) {
+    this->setupExtractSoA(_functor, *(this->_verletList));
   }
 }
 

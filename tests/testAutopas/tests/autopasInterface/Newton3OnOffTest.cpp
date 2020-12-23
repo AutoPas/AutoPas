@@ -121,8 +121,17 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
     // within one cell no N3 optimization
     EXPECT_EQ(callsNewton3SC, callsNonNewton3SC) << "for containeroption: " << containerOption;
   }
-  // should be called exactly two times
-  EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "for containeroption: " << containerOption;
+
+  if (dataLayout == autopas::DataLayoutOption::soa &&
+      (containerOption == autopas::ContainerOption::pairwiseVerletLists ||
+       containerOption == autopas::ContainerOption::verletListsCells)) {
+    // SoAFunctorVerlet gets called the same number of times, the difference is reflected in the content of the neighbor
+    // lists
+    EXPECT_EQ(callsNewton3Pair, callsNonNewton3Pair) << "for containeroption: " << containerOption;
+  } else {
+    // should be called exactly two times
+    EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "for containeroption: " << containerOption;
+  }
 
   if (::testing::Test::HasFailure()) {
     std::cerr << "Failures for Container: " << containerOption.to_string()
@@ -151,7 +160,9 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
   switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // some containers actually use different SoA functor calls so expect them instead of the regular ones
-      if (container->getContainerType() == autopas::ContainerOption::varVerletListsAsBuild) {
+      if (container->getContainerType() == autopas::ContainerOption::varVerletListsAsBuild ||
+          container->getContainerType() == autopas::ContainerOption::pairwiseVerletLists ||
+          container->getContainerType() == autopas::ContainerOption::verletListsCells) {
         EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, useNewton3))
             .Times(testing::AtLeast(1))
             .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsPair++; }));

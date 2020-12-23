@@ -85,10 +85,8 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
   }
 
   /**
- * SoAFunctor for verlet list generation. (single cell version)
- * @param soa the soa
- * @param newton3 whether to use newton 3
- */
+   * @copydoc Functor::SoAFunctorSingle()
+   */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
@@ -97,23 +95,22 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
     double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    //index of cell1 is particleToCellMap of ptr1ptr, same for 2
-    auto cell1 = _particleToCellMap.at(ptrptr[0]).first;
+    // index of cell1 is particleToCellMap of ptr1ptr, same for 2
+    auto cell = _particleToCellMap.at(ptrptr[0]).first;
 
-    auto iter = _globalToLocalIndex[cell1].find(cell1);
-    if(iter == _globalToLocalIndex[cell1].end())
-    {
-      _globalToLocalIndex[cell1].insert({cell1, _globalToLocalIndex[cell1].size()});
+    auto iter = _globalToLocalIndex[cell].find(cell);
+    if (iter == _globalToLocalIndex[cell].end()) {
+      _globalToLocalIndex[cell].insert({cell, _globalToLocalIndex[cell].size()});
     }
-    auto localCell2Index = _globalToLocalIndex[cell1].at(cell1);
+    auto localCell2Index = _globalToLocalIndex[cell].at(cell);
 
-    auto &currentList = _neighborLists[cell1][localCell2Index];
+    auto &currentList = _neighborLists[cell][localCell2Index];
 
-
+    // iterating over particle indices and accessing currentList at index i works
+    // because the particles are iterated in the same order they are loaded in
+    // which is the same order they were initialized when building the aosNeighborList
     size_t numPart = soa.getNumParticles();
-    //std::cout << "numPart " << numPart << std::endl;
     for (unsigned int i = 0; i < numPart; ++i) {
-
       for (unsigned int j = i + 1; j < numPart; ++j) {
         const double drx = xptr[i] - xptr[j];
         const double dry = yptr[i] - yptr[j];
@@ -137,10 +134,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
   }
 
   /**
-   * SoAFunctor for the verlet list generation. (two cell version)
-   * @param soa1 soa of first cell
-   * @param soa2 soa of second cell
-   * @note newton3 is ignored here, as for newton3=false SoAFunctorPair(soa2, soa1) will also be called.
+   * @copydoc Functor::SoAFunctorPair()
    */
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
@@ -155,26 +149,24 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
     double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
     double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    //index of cell1 is particleToCellMap of ptr1ptr, same for 2
+    // index of cell1 is particleToCellMap of ptr1ptr, same for 2
     size_t cell1 = _particleToCellMap.at(ptr1ptr[0]).first;
     size_t cell2 = _particleToCellMap.at(ptr2ptr[0]).first;
 
     auto iter = _globalToLocalIndex[cell1].find(cell2);
-    if(iter == _globalToLocalIndex[cell1].end())
-    {
+    if (iter == _globalToLocalIndex[cell1].end()) {
       _globalToLocalIndex[cell1].insert({cell2, _globalToLocalIndex[cell1].size()});
     }
     auto localCell2Index = _globalToLocalIndex[cell1].at(cell2);
 
     auto &currentList = _neighborLists[cell1][localCell2Index];
 
+    // iterating over particle indices and accessing currentList at index i works
+    // because the particles are iterated in the same order they are loaded in
+    // which is the same order they were initialized when building the aosNeighborList
     size_t numPart1 = soa1.getNumParticles();
-    //std::cout << "numPart1 pair " << numPart1 << std::endl;
-    //iterate through particles in cell1
     for (unsigned int i = 0; i < numPart1; ++i) {
       size_t numPart2 = soa2.getNumParticles();
-      //std::cout << "numPart2 pair " << numPart2 << std::endl;
-      //iterate through particles in cell2
       for (unsigned int j = 0; j < numPart2; ++j) {
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
@@ -188,15 +180,15 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
 
         if (dr2 < _cutoffskinsquared) {
           currentList[i].second.push_back(ptr2ptr[j]);
-          //is i really the index of the particle?
+          // is i really the index of the particle?
         }
       }
     }
   }
 
   /**
- * @copydoc Functor::getNeededAttr()
- */
+   * @copydoc Functor::getNeededAttr()
+   */
   constexpr static auto getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 4>{
         Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
