@@ -29,7 +29,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
   VLCCellPairGeneratorFunctor(PairwiseNeighborListsType &neighborLists,
                               std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
                               std::vector<std::unordered_map<size_t, size_t>> &globalToLocalIndex, double cutoffskin)
-      : Functor<Particle, VLCCellPairGeneratorFunctor>(0.),
+      : Functor<Particle, VLCCellPairGeneratorFunctor<Particle>>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
         _globalToLocalIndex(globalToLocalIndex),

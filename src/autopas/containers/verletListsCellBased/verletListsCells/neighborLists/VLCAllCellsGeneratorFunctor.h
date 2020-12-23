@@ -27,7 +27,7 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
   VLCAllCellsGeneratorFunctor(NeighborListsType &neighborLists,
                               std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
                               double cutoffskin)
-      : Functor<Particle, VLCAllCellsGeneratorFunctor>(0.),
+      : Functor<Particle, VLCAllCellsGeneratorFunctor<Particle>>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
