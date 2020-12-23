@@ -144,7 +144,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   }
 
   /**
-   * Internal neighbor list structure in AoS format - Verlet lists for each particle for each cell.
+   * Internal neighbor list structure in AoS format - Verlet lists for each particle for each pair of cells.
    */
   typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType _aosNeighborList =
       std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>();
