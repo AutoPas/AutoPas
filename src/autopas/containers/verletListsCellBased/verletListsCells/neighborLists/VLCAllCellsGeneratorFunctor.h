@@ -116,7 +116,14 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
   }
 
   /**
-   * @copydoc Functor::SoAFunctorPair()
+   * Functor for structure of arrays (SoA)
+   *
+   * This functor should calculate the forces or any other pair-wise interaction
+   * between all particles of soa1 and soa2.
+   * This should include a cutoff check if needed!
+   *
+   * @param soa1 First structure of arrays.
+   * @param soa2 Second structure of arrays.
    */
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;

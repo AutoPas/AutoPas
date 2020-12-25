@@ -40,6 +40,7 @@ class VLCTraversalInterface {
    * @param neighborLists A suitable neighbor list.
    * @param cellIndex
    * @param pairwiseFunctor
+   * @param dataLayout
    */
   template <class PairwiseFunctor, bool useNewton3>
   void processCellLists(NeighborList &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor,

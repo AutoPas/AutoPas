@@ -35,7 +35,7 @@ class VLCNeighborListInterface {
    * */
   virtual void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                                     double interactionLength, const TraversalOption buildTraversalOption,
-                                    typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value) = 0;
+                                    typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) = 0;
 
   /**
    * Gets the number of neighbors over all neighbor lists that belong to this particle.

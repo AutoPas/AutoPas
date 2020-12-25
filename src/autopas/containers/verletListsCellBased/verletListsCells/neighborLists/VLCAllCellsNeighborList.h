@@ -2,6 +2,11 @@
  * @file VLCAllCellsNeighborList.h
  * @author tirgendetwas
  * @date 25.10.20
+ *
+ * originally from
+ * @file VerletListsCells.h
+ * @author nguyen
+ * @date 30.08.18
  */
 
 #pragma once
