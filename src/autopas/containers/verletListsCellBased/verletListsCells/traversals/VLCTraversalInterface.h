@@ -90,6 +90,7 @@ class VLCTraversalInterface {
    * @param neighborList
    * @param cellIndex
    * @param pairwiseFunctor
+   * @param dataLayout
    */
   template <class PairwiseFunctor, bool useNewton3>
   void processCellListsImpl(VLCAllCellsNeighborList<Particle> &neighborList, unsigned long cellIndex,
@@ -119,6 +120,7 @@ class VLCTraversalInterface {
    * @param neighborList
    * @param cellIndex
    * @param pairwiseFunctor
+   * @param dataLayout
    */
   template <class PairwiseFunctor, bool useNewton3>
   void processCellListsImpl(VLCCellPairNeighborList<Particle> &neighborList, unsigned long cellIndex,
