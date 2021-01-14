@@ -30,7 +30,7 @@ jobs:
           args: -B ./build-doxygen -S ./
 
       - name: Generate Doxygen for AutoPas
-        uses: SteffenSeckler/doxygen-action@v2.2.0beta5
+        uses: SteffenSeckler/doxygen-action@v2.2.0beta6
         with:
           # Path to Doxyfile
           doxyfile-path: "./Doxyfile" # default is ./Doxyfile

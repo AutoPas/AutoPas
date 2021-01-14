@@ -30,7 +30,7 @@ jobs:
           args: -B ./build-doxygen -S ./
 
       - name: Generate Doxygen for md-flexible
-        uses: SteffenSeckler/doxygen-action@v2.2.0beta5
+        uses: SteffenSeckler/doxygen-action@v2.2.0beta6
         with:
           # Path to Doxyfile
           doxyfile-path: "./Doxyfile_md-flexible" # default is ./Doxyfile
