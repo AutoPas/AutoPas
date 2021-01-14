@@ -128,10 +128,10 @@ class AutoPas {
    * @param boxMin
    * @param boxMax
    */
-  void resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+  std::vector<Particle> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
     _boxMin = boxMin;
     _boxMax = boxMax;
-    _logicHandler->resizeBox(boxMin, boxMax);
+    return _logicHandler->resizeBox(boxMin, boxMax);
   }
 
   /**

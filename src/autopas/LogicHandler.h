@@ -56,8 +56,9 @@ class LogicHandler {
    * Pass values to the actual container.
    * @param boxMin
    * @param boxMax
+   * @return Vector of particles that are outside the box after the resize.
    */
-  void resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+  std::vector<Particle> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
     const auto &oldMin = _autoTuner.getContainer()->getBoxMin();
     const auto &oldMax = _autoTuner.getContainer()->getBoxMax();
 
@@ -83,11 +84,32 @@ class LogicHandler {
                    "Size old box : {}\n"
                    "Size new box : {}\n"
                    "Relative diff: {}",
-                   i, utils::ArrayUtils::to_string(oldLength), utils::ArrayUtils::to_string(newLength), relDiffLength);
+                   i, utils::ArrayUtils::to_string(oldLength), utils::ArrayUtils::to_string(newLength),
+                   utils::ArrayUtils::to_string(relDiffLength));
       }
     }
 
-    _autoTuner->resizeBox(boxMin, boxMax);
+    // check all particles
+    std::vector<Particle> particlesNowOutside;
+    for (auto pIter = _autoTuner.getContainer()->begin(); pIter.isValid(); ++pIter) {
+      // assert only owned ones are present
+      if (not pIter->isOwned()) {
+        utils::ExceptionHandler::exception(
+            "LogicHandler::resizeBox() encountered non owned particle. "
+            "When calling resizeBox() these should be already delete. "
+            "This could be solved by calling updateContainer() before resizeBox().");
+      }
+      // owned particles that are now outside are removed from the container and returned
+      if (not utils::inBox(pIter->getR(), boxMin, boxMax)) {
+        particlesNowOutside.push_back(*pIter);
+        deleteParticle(pIter);
+      }
+    }
+
+    // actually resize the container
+    _autoTuner.resizeBox(boxMin, boxMax);
+
+    return particlesNowOutside;
   }
 
   /**

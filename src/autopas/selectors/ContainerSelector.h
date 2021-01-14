@@ -62,15 +62,6 @@ class ContainerSelector {
     _boxMin = boxMin;
     _boxMax = boxMax;
 
-    // depening on their position convert particles to the corresponding ownership state
-    for (auto &p : *_currentContainer) {
-      if (utils::inBox(p.getR(), _boxMin, _boxMax)) {
-        p.setOwnershipState(OwnershipState::owned);
-      } else {
-        p.setOwnershipState(OwnershipState::halo);
-      }
-    }
-
     _currentContainer = std::move(generateContainer(_currentContainer->getContainerType(), _currentInfo));
   }
 
