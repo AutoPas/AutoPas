@@ -92,7 +92,7 @@ class LogicHandler {
     // check all particles
     std::vector<Particle> particlesNowOutside;
     for (auto pIter = _autoTuner.getContainer()->begin(); pIter.isValid(); ++pIter) {
-      // assert only owned ones are present
+      // make sure only owned ones are present
       if (not pIter->isOwned()) {
         utils::ExceptionHandler::exception(
             "LogicHandler::resizeBox() encountered non owned particle. "
