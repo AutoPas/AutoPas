@@ -53,7 +53,7 @@ class LogicHandler {
   }
 
   /**
-   * Pass values to the towards the actual container.
+   * Pass values to the actual container.
    * @param boxMin
    * @param boxMax
    */
@@ -78,8 +78,8 @@ class LogicHandler {
       // warning threshold is set arbitrary and up for change if needed
       if (relDiffLength[i] > 1.3 or relDiffLength[i] < 0.7) {
         AutoPasLog(warn,
-                   "LogicHandler.resize(): Domain size changed drastically in dimesion {}! Gathered AutoTuning "
-                   "information might by not applicable anymore!\n"
+                   "LogicHandler.resize(): Domain size changed drastically in dimension {}! Gathered AutoTuning "
+                   "information might not be applicable anymore!\n"
                    "Size old box : {}\n"
                    "Size new box : {}\n"
                    "Relative diff: {}",

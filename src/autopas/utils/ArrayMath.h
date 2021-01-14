@@ -100,12 +100,12 @@ template <class T, std::size_t SIZE>
 }
 
 /**
- * Multiplies two array's element wise and returns the result.
+ * Divides two array's element-wise and returns the result.
  * @tparam T floating point type
  * @tparam SIZE size of the arrays
  * @param a
  * @param b
- * @return element-wise multiplication of a and b
+ * @return element-wise quotient of a and b
  */
 template <class T, std::size_t SIZE>
 [[nodiscard]] constexpr std::array<T, SIZE> div(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
