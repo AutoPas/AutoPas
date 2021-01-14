@@ -127,6 +127,7 @@ class AutoPas {
    * Resizes the bounding box of the AutoPas object.
    * @param boxMin
    * @param boxMax
+   * @return Vector of particles that are outside the box after the resize.
    */
   std::vector<Particle> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
     _boxMin = boxMin;
