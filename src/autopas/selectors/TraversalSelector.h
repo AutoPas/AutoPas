@@ -39,6 +39,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedBalancedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedC02Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairC08Traversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
@@ -260,6 +261,12 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
           VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
                           VLCCellPairNeighborList<typename ParticleCell::ParticleType>,
                           VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::vlp>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
+
+    case TraversalOption::vlp_c08: {
+      return std::make_unique<
+          VLCCellPairC08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
   }

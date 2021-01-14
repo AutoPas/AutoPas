@@ -12,6 +12,7 @@
 #include "autopas/containers/cellPairTraversals/SlicedC02BasedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairTraversalInterface.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -37,7 +38,8 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
           typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
 class VLCSlicedC02Traversal
     : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
-      public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+      public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>,
+      public VLCCellPairTraversalInterface<typename ParticleCell::ParticleType> {
   using VLCTypeOfList = typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList;
 
  public:

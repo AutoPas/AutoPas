@@ -18,6 +18,9 @@ namespace autopas {
  */
 template <class ParticleCell>
 class TraversalSelector;
+
+template <class Particle>
+class VLCCellPairTraversalInterface;
 /**
  * Neighbor list to be used with VerletListsCells container.
  * Pairwise verlet lists iterates through each pair of neighboring cells
@@ -66,6 +69,11 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
    * */
   typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType &getAoSNeighborList() {
     return _aosNeighborList;
+  }
+
+  auto &getGlobalToLocalMap()
+  {
+    return _globalToLocalIndex;
   }
 
   /**
@@ -178,6 +186,24 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
           particleIndexInCurrentCell++;
         }
       }
+    }
+  }
+
+  typename VerletListsCellsHelpers<Particle>::VLCTypeOfList::Value getTypeOfList()
+  {
+    return VerletListsCellsHelpers<Particle>::VLCTypeOfList::vlp;
+  }
+
+  void setUpTraversal(TraversalInterface *traversal)
+  {
+    auto vTraversal = dynamic_cast<VLCCellPairTraversalInterface<Particle> *>(traversal);
+
+    if (vTraversal) {
+      vTraversal->setVerletList(*this);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
+          traversal->getTraversalType());
     }
   }
 

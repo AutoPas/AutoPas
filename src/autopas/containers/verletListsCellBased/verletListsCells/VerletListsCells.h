@@ -99,17 +99,9 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, NeighborList> *>(traversal);
+    _neighborList.setUpTraversal(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
-    }
-
-    if (vTraversal) {
-      vTraversal->setVerletList(_neighborList);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
-          traversal->getTraversalType());
     }
 
     traversal->initTraversal();
@@ -131,7 +123,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     this->_verletBuiltNewton3 = useNewton3;
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, useNewton3, this->getCutoff(), this->getSkin(),
-                                       this->getInteractionLength(), _buildTraversalOption, _buildType);
+                                       this->getInteractionLength(), TraversalOption::lc_c18, _buildType);
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {
       _neighborList.generateSoAFromAoS(this->_linkedCells);

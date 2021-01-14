@@ -25,6 +25,10 @@ namespace autopas {
  */
 template <class ParticleCell>
 class TraversalSelector;
+
+template <class Particle, class NeighborList>
+class VLCTraversalInterface;
+
 /**
  * Neighbor list to be used with VerletListsCells container. Classic implementation of verlet lists based on linked
  * cells.
@@ -145,6 +149,23 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     }
   }
 
+  typename VerletListsCellsHelpers<Particle>::VLCTypeOfList::Value getTypeOfList()
+  {
+    return VerletListsCellsHelpers<Particle>::VLCTypeOfList::vlc;
+  }
+
+  void setUpTraversal(TraversalInterface *traversal)
+  {
+    auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, VLCAllCellsNeighborList<Particle>> *>(traversal);
+
+    if (vTraversal) {
+      vTraversal->setVerletList(*this);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
+          traversal->getTraversalType());
+    }
+  }
  private:
   /**
    * @copydoc VLCNeighborListInterface::applyBuildFunctor()

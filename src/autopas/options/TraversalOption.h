@@ -182,6 +182,11 @@ class TraversalOption : public Option<TraversalOption> {
      * 1D slicing with as many slices of minimal thickness as possible. No locks but two-way coloring of slices.
      */
     vlp_sliced_c02,
+
+    /**
+     * TODO
+     */
+     vlp_c08,
   };
 
   /**
@@ -261,6 +266,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::vlp_c18, "vlp_c18"},
         {TraversalOption::vlp_c01, "vlp_c01"},
         {TraversalOption::vlp_sliced_balanced, "vlp_sliced_balanced"},
+        {TraversalOption::vlp_c08, "vlp_c08"},
     };
   };
 
