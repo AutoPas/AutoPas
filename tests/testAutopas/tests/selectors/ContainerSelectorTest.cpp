@@ -26,37 +26,6 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   }
 }
 
-TEST_P(ContainerSelectorTest, testResize) {
-  autopas::ContainerSelector<Particle> containerSelector(bBoxMin, bBoxMax, cutoff);
-  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, 4, autopas::LoadEstimatorOption::none);
-
-  const auto &containerOp = GetParam();
-  containerSelector.selectContainer(containerOp, containerInfo);
-
-  containerSelector.getCurrentContainer();
-  ASSERT_EQ(containerSelector.getCurrentContainer()->getNumParticles(), 0) << "Container was not initialized empty!";
-
-  // add three purposely placed particles
-  auto expectedParticles = addParticlesMinMidMax(containerSelector.getCurrentContainer());
-  ASSERT_EQ(containerSelector.getCurrentContainer()->getNumParticles(), expectedParticles.size())
-      << "Container did not receive all particles!";
-
-  auto boxMinNew = autopas::utils::ArrayMath::add(bBoxMin, {.5, .5, .5});
-  auto boxMaxNew = autopas::utils::ArrayMath::add(bBoxMax, {1, 1, 1});
-
-  containerSelector.resizeBox(boxMinNew, boxMaxNew);
-  ASSERT_EQ(containerSelector.getCurrentContainer()->getNumParticles(), expectedParticles.size())
-      << "Container does not contain all particles after resize!";
-
-  std::vector<Particle> particlesAfterResize;
-  particlesAfterResize.reserve(containerSelector.getCurrentContainer()->getNumParticles());
-  for (auto &p : *containerSelector.getCurrentContainer()) {
-    particlesAfterResize.push_back(p);
-  }
-
-  EXPECT_THAT(particlesAfterResize, ::testing::UnorderedElementsAreArray(expectedParticles));
-}
-
 INSTANTIATE_TEST_SUITE_P(Generated, ContainerSelectorTest,
                          ::testing::ValuesIn(autopas::ContainerOption::getAllOptions()),
                          ContainerSelectorTest::oneParamToString());
