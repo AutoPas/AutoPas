@@ -15,25 +15,10 @@
 namespace autopas {
 
 /**
- * Namespace to handle mathematical operations of std::array.
- */
-namespace utils::ArrayMath {}
-
-/**
- * In this namespace some helper functions for std::array can be found.
- */
-namespace utils::ArrayUtils {}
-
-/**
- * In this namespace some helper functions for std::tuple can be found.
- */
-namespace utils::TupleUtils {}
-
-/**
  * This namespace is used for implementation specifics.
  * If you are a developer of AutoPas you might want to take a look inside here.
  */
-namespace internal {}  // namespace internal
+namespace internal {}
 
 /**
  * This namespace is used for memory profiling functions.
@@ -41,10 +26,15 @@ namespace internal {}  // namespace internal
 namespace memoryProfiler {}
 
 /**
+ * Algorithms for creating a smooth function through a series of points.
+ */
+namespace smoothing {}
+
+/**
  * In this namespace all functionality of the Smoothed Particle Hydrodynamics module of autopas is present.
  * This mainly includes kernels and particles.
  */
-namespace sph {}  // namespace sph
+namespace sph {}
 
 /**
  * In this namespace some helper classes and functions can be found used inside of AutoPas.
@@ -54,21 +44,36 @@ namespace sph {}  // namespace sph
 namespace utils {
 
 /**
+ * Namespace to handle mathematical operations of std::array.
+ */
+namespace ArrayMath {}
+
+/**
+ * In this namespace some helper functions for std::array can be found.
+ */
+namespace ArrayUtils {}
+
+/**
  * Some functions to parse enums from (input-) strings.
  */
-namespace StringUtils {}  // namespace StringUtils
+namespace StringUtils {}
 
 /**
  * Namespace to handle the conversion between one dimensional and three dimensional indices.
  * The running index is x.
  */
-namespace ThreeDimensionalMapping {}  // namespace ThreeDimensionalMapping
+namespace ThreeDimensionalMapping {}
+
+/**
+ * In this namespace some helper functions for std::tuple can be found.
+ */
+namespace TupleUtils {}
 
 }  // namespace utils
 
 /**
  * Namespace that contains the explicitly defined options of AutoPas.
  */
-namespace options {}  // namespace options
+namespace options {}
 
 }  // namespace autopas
