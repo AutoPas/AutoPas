@@ -53,6 +53,71 @@ class LogicHandler {
   }
 
   /**
+   * Pass values to the actual container.
+   * @param boxMin
+   * @param boxMax
+   * @return Vector of particles that are outside the box after the resize.
+   */
+  std::vector<Particle> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+    const auto &oldMin = _autoTuner.getContainer()->getBoxMin();
+    const auto &oldMax = _autoTuner.getContainer()->getBoxMax();
+
+    // if nothing changed do nothing
+    if (oldMin == boxMin and oldMax == boxMax) {
+      return {};
+    }
+
+    // sanity check that new size is actually positive
+    for (size_t i = 0; i < boxMin.size(); ++i) {
+      if (boxMin[i] >= boxMax[i]) {
+        utils::ExceptionHandler::exception(
+            "New box size in dimension {} is not positive!\nboxMin[{}] = {}\nboxMax[{}] = {}", i, i, boxMin[i], i,
+            boxMax[i]);
+      }
+    }
+
+    // warn if domain changes too drastically
+    const auto newLength = utils::ArrayMath::sub(boxMax, boxMin);
+    const auto oldLength = utils::ArrayMath::sub(oldMax, oldMin);
+    const auto relDiffLength = utils::ArrayMath::div(newLength, oldLength);
+    for (size_t i = 0; i < newLength.size(); ++i) {
+      // warning threshold is set arbitrary and up for change if needed
+      if (relDiffLength[i] > 1.3 or relDiffLength[i] < 0.7) {
+        AutoPasLog(warn,
+                   "LogicHandler.resize(): Domain size changed drastically in dimension {}! Gathered AutoTuning "
+                   "information might not be applicable anymore!\n"
+                   "Size old box : {}\n"
+                   "Size new box : {}\n"
+                   "Relative diff: {}",
+                   i, utils::ArrayUtils::to_string(oldLength), utils::ArrayUtils::to_string(newLength),
+                   utils::ArrayUtils::to_string(relDiffLength));
+      }
+    }
+
+    // check all particles
+    std::vector<Particle> particlesNowOutside;
+    for (auto pIter = _autoTuner.getContainer()->begin(); pIter.isValid(); ++pIter) {
+      // make sure only owned ones are present
+      if (not pIter->isOwned()) {
+        utils::ExceptionHandler::exception(
+            "LogicHandler::resizeBox() encountered non owned particle. "
+            "When calling resizeBox() these should be already deleted. "
+            "This could be solved by calling updateContainer() before resizeBox().");
+      }
+      // owned particles that are now outside are removed from the container and returned
+      if (not utils::inBox(pIter->getR(), boxMin, boxMax)) {
+        particlesNowOutside.push_back(*pIter);
+        deleteParticle(pIter);
+      }
+    }
+
+    // actually resize the container
+    _autoTuner.resizeBox(boxMin, boxMax);
+
+    return particlesNowOutside;
+  }
+
+  /**
    * @copydoc AutoPas::addParticle()
    */
   void addParticle(const Particle &p) {

@@ -124,6 +124,18 @@ class AutoPas {
   }
 
   /**
+   * Resizes the bounding box of the AutoPas object.
+   * @param boxMin
+   * @param boxMax
+   * @return Vector of particles that are outside the box after the resize.
+   */
+  std::vector<Particle> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+    _boxMin = boxMin;
+    _boxMax = boxMax;
+    return _logicHandler->resizeBox(boxMin, boxMax);
+  }
+
+  /**
    * Free the AutoPas MPI communicator.
    * To be called before MPI_Finalize.
    * If no MPI is used just call this at the end of the program.
@@ -305,13 +317,13 @@ class AutoPas {
    * Set coordinates of the lower corner of the domain.
    * @param boxMin
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) { AutoPas::_boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) { _boxMin = boxMin; }
 
   /**
    * Set coordinates of the upper corner of the domain.
    * @param boxMax
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) { AutoPas::_boxMax = boxMax; }
+  void setBoxMax(const std::array<double, 3> &boxMax) { _boxMax = boxMax; }
 
   /**
    * Get cutoff radius.

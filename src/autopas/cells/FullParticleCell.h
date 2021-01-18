@@ -59,7 +59,7 @@ class FullParticleCell : public ParticleCell<Particle> {
     return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
-  unsigned long numParticles() const override { return _particles.size(); }
+  [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
 
   /**
    * Returns a reference to the element at position n in the cell.
@@ -94,7 +94,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   const Particle &at(size_t index) const { return _particles.at(index); }
 
-  bool isNotEmpty() const override { return numParticles() > 0; }
+  [[nodiscard]] bool isNotEmpty() const override { return numParticles() > 0; }
 
   void clear() override { _particles.clear(); }
 
@@ -118,7 +118,7 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   void setCellLength(std::array<double, 3> &cellLength) override { _cellLength = cellLength; }
 
-  std::array<double, 3> getCellLength() const override { return _cellLength; }
+  [[nodiscard]] std::array<double, 3> getCellLength() const override { return _cellLength; }
 
   /**
    * Resizes the container so that it contains n elements.
