@@ -62,6 +62,11 @@ class LogicHandler {
     const auto &oldMin = _autoTuner.getContainer()->getBoxMin();
     const auto &oldMax = _autoTuner.getContainer()->getBoxMax();
 
+    // if nothing changed do nothing
+    if (oldMin == boxMin and oldMax == boxMax) {
+      return {};
+    }
+
     // sanity check that new size is actually positive
     for (size_t i = 0; i < boxMin.size(); ++i) {
       if (boxMin[i] >= boxMax[i]) {
