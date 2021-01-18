@@ -181,13 +181,7 @@ class ClusterTower : public ParticleCell<Particle> {
    * Returns the number of particles in the tower that are not dummies.
    * @return the number of particles in the tower that are not dummies.
    */
-  [[nodiscard]] size_t getNumActualParticles() const {
-    // This can actually fail in some tests. Also can't do max() because these are size_t
-    if (_particlesStorage.numParticles() < _numDummyParticles) {
-      return 0;
-    }
-    return _particlesStorage.numParticles() - _numDummyParticles;
-  }
+  [[nodiscard]] size_t getNumActualParticles() const { return _particlesStorage.numParticles() - _numDummyParticles; }
 
   /**
    * Returns the number of clusters in the tower.
