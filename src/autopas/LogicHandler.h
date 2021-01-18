@@ -101,7 +101,7 @@ class LogicHandler {
       if (not pIter->isOwned()) {
         utils::ExceptionHandler::exception(
             "LogicHandler::resizeBox() encountered non owned particle. "
-            "When calling resizeBox() these should be already delete. "
+            "When calling resizeBox() these should be already deleted. "
             "This could be solved by calling updateContainer() before resizeBox().");
       }
       // owned particles that are now outside are removed from the container and returned
