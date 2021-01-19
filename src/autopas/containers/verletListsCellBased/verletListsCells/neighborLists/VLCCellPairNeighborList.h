@@ -201,9 +201,17 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     if (vTraversal) {
       vTraversal->setVerletList(*this);
     } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
-          traversal->getTraversalType());
+      auto traversal2 = dynamic_cast<VLCTraversalInterface<Particle, VLCCellPairNeighborList<Particle>>*>(traversal);
+      if(traversal2)
+      {
+        traversal2->setVerletList(*this);
+      }
+      else
+      {
+        autopas::utils::ExceptionHandler::exception(
+            "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
+            traversal->getTraversalType());
+      }
     }
   }
 

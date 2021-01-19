@@ -43,8 +43,8 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
           typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
 class VLCSlicedTraversal
     : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
-      public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>,
-      public VLCCellPairTraversalInterface<typename ParticleCell::ParticleType> {
+      public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>
+{
   using VLCTypeOfList = typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList;
 
  public:

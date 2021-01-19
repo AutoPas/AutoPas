@@ -143,7 +143,10 @@ class VLCTraversalInterface {
       // iterate over soa and call soaFunctorVerlet for each of the neighbor lists
       for (auto &cellPair : _soaList[cellIndex]) {
         for (auto &[particleIndex, neighbors] : cellPair) {
-          pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);
+          if(!neighbors.empty())
+          {
+            pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);
+          }
         }
       }
     }

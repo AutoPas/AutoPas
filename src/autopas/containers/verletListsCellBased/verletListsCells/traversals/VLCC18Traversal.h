@@ -34,8 +34,8 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
           class NeighborList,
           typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
 class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                        public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>,
-                        public VLCCellPairTraversalInterface<typename ParticleCell::ParticleType>{
+                        public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>
+{
   using VLCTypeOfList = typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList;
 
  public:

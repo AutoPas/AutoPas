@@ -79,7 +79,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
   //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
   //                        vlp_c01                     (AoS <=> SoA, noNewton3)                                     = 2
-  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 18;
+  //                        vlp_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
+  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 22;
 
   // check that there is an entry for every container. Except VCC because they are only relevant for CUDA...
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size() - 1);
