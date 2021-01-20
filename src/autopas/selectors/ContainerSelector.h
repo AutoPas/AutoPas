@@ -54,6 +54,18 @@ class ContainerSelector {
   void selectContainer(ContainerOption containerOption, ContainerSelectorInfo containerInfo);
 
   /**
+   * Set new  boundaries, convert the container and reevaluate particle ownership.
+   * @param boxMin
+   * @param boxMax
+   */
+  void resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+    _boxMin = boxMin;
+    _boxMax = boxMax;
+
+    _currentContainer = std::move(generateContainer(_currentContainer->getContainerType(), _currentInfo));
+  }
+
+  /**
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
    * @return Smartpointer to the optimal container.
    */
@@ -75,7 +87,7 @@ class ContainerSelector {
   std::unique_ptr<autopas::ParticleContainerInterface<Particle>> generateContainer(ContainerOption containerChoice,
                                                                                    ContainerSelectorInfo containerInfo);
 
-  const std::array<double, 3> _boxMin, _boxMax;
+  std::array<double, 3> _boxMin, _boxMax;
   const double _cutoff;
   std::shared_ptr<autopas::ParticleContainerInterface<Particle>> _currentContainer;
   ContainerSelectorInfo _currentInfo;
@@ -173,7 +185,7 @@ std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> ContainerSe
 template <class Particle>
 void ContainerSelector<Particle>::selectContainer(ContainerOption containerOption,
                                                   ContainerSelectorInfo containerInfo) {
-  // if we already have this container do nothing.
+  // Only do something if we have no container, a new type is required, or the info changed
   if (_currentContainer == nullptr or _currentContainer->getContainerType() != containerOption or
       _currentInfo != containerInfo) {
     _currentContainer = std::move(generateContainer(containerOption, containerInfo));

@@ -1,7 +1,7 @@
 /**
- * @file ContainerSelectorTest.h
+ * @file ContainerSelectorTestFromTo.h
  * @author F. Gratl
- * @date 22.06.18
+ * @date 14.12.2020
  */
 
 #pragma once
@@ -12,19 +12,19 @@
 #include "autopas/selectors/ContainerSelector.h"
 #include "testingHelpers/commonTypedefs.h"
 
-namespace ContainerSelectorTest {
-
-class ContainerSelectorTest : public AutoPasTestBase, public ::testing::WithParamInterface<autopas::ContainerOption> {
+class ContainerSelectorTestFromTo
+    : public AutoPasTestBase,
+      public ::testing::WithParamInterface<std::tuple<autopas::ContainerOption, autopas::ContainerOption>> {
  public:
-  ContainerSelectorTest() = default;
-  ~ContainerSelectorTest() override = default;
+  ContainerSelectorTestFromTo() = default;
+  ~ContainerSelectorTestFromTo() override = default;
 
-  struct oneParamToString {
+  struct twoParamToString {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       // tuple of ContainerOption
-      const auto &option = static_cast<ParamType>(info.param);
-      return option.to_string();
+      const auto &[from, to] = static_cast<ParamType>(info.param);
+      return "from" + from.to_string() + "To" + to.to_string();
     }
   };
 
@@ -34,5 +34,3 @@ class ContainerSelectorTest : public AutoPasTestBase, public ::testing::WithPara
   const double cellSizeFactor = 1;
   const double verletSkin = 0.1;
 };
-
-}  // end namespace ContainerSelectorTest

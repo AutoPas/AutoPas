@@ -142,7 +142,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * Get immutable vector of cells.
    * @return immutable reference to _cells
    */
-  const std::vector<ParticleCell> &getCells() const { return _cells; }
+  [[nodiscard]] const std::vector<ParticleCell> &getCells() const { return _cells; }
 
  protected:
   /**
