@@ -82,19 +82,19 @@ class ParticleCell {
    * Allows range-based for loops.
    * @return false
    */
-  constexpr bool end() const { return false; }
+  [[nodiscard]] constexpr bool end() const { return false; }
 
   /**
    * Get the number of particles stored in this cell.
    * @return number of particles stored in this cell
    */
-  virtual unsigned long numParticles() const = 0;
+  [[nodiscard]] virtual unsigned long numParticles() const = 0;
 
   /**
    * Check if the cell is not empty.
    * @return true if at least one particle is stored in this cell
    */
-  virtual bool isNotEmpty() const = 0;
+  [[nodiscard]] virtual bool isNotEmpty() const = 0;
 
   /**
    * Deletes all particles in this cell.
@@ -128,7 +128,7 @@ class ParticleCell {
    * Get the side lengths of this cell.
    * @return cell side length
    */
-  virtual std::array<double, 3> getCellLength() const = 0;
+  [[nodiscard]] virtual std::array<double, 3> getCellLength() const = 0;
 };
 
 }  // namespace autopas
