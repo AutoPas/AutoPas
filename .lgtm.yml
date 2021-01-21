@@ -9,6 +9,7 @@ extraction:
         - libssl-dev
     after_prepare:    # Customizable step used by all languages.
       # installs cmake!
+      - cmake --version
       - wget -O cmake.tar.gz https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz
       - tar zxf cmake.tar.gz
       - cd cmake-*/
@@ -21,7 +22,7 @@ extraction:
       - cmake --version
     configure:
       command:
-      - mkdir build
-      - cd build
+      - mkdir _lgtm_build_dir
+      - cd _lgtm_build_dir
       # uses AUTOPAS_USE_TEST_GLOB to speed up compilation.
       - cmake -DAUTOPAS_USE_TEST_GLOB=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-fpermissive .. 
