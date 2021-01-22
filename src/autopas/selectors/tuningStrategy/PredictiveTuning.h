@@ -64,7 +64,6 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
                    unsigned int testsUntilFirstPrediction, ExtrapolationMethodOption extrapolationMethodOption)
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                           allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options),
-        _notTestedYet(_searchSpace),
         _relativeOptimumRange(relativeOptimum),
         _maxTuningPhasesWithoutTest(maxTuningIterationsWithoutTest),
         _relativeBlacklistRange(relativeRangeForBlacklist),
@@ -85,7 +84,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
    */
   explicit PredictiveTuning(std::set<Configuration> allowedConfigurations)
-      : SetSearchSpaceBasedTuningStrategy(std::move(allowedConfigurations)), _notTestedYet(_searchSpace) {}
+      : SetSearchSpaceBasedTuningStrategy(std::move(allowedConfigurations)) {}
 
   inline void addEvidence(long time, size_t iteration) override {
     _traversalTimesStorage[*_currentConfig].emplace_back(iteration, time);
@@ -156,7 +155,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    */
   inline void reselectOptimalSearchSpace();
   /**
-   * Selects configurations that go on the testing black list.
+   * Purge configurations from the search space based on their performance in this tuning phase compared to the optimum.
    */
   inline void blacklistBadConfigurations();
   /**
@@ -194,10 +193,6 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * Contains the configurations that are not marked invalid in the current tuning phase.
    */
   std::set<Configuration> _validSearchSpace{};
-  /**
-   * Contains the configurations that have not been tested yet.
-   */
-  std::set<Configuration> _notTestedYet{};
   /**
    * Stores the the last tuning phase in which configuration was tested.
    */
@@ -648,7 +643,7 @@ void PredictiveTuning::selectOptimalConfiguration() {
   }
 
   // if a blacklist range is set blacklist the really bad stuff
-  if (_relativeBlacklistRange != 0 and not _notTestedYet.empty()) {
+  if (_relativeBlacklistRange != 0) {
     blacklistBadConfigurations();
   }
 
@@ -658,14 +653,13 @@ void PredictiveTuning::selectOptimalConfiguration() {
 void PredictiveTuning::blacklistBadConfigurations() {
   const auto optimumTime = _traversalTimesStorage[getCurrentConfiguration()].back().second;
   const auto blacklistThreshold = _relativeBlacklistRange * optimumTime;
-  for (auto configurationIter = _notTestedYet.begin(); configurationIter != _notTestedYet.end();) {
-    if (_lastTest[*configurationIter] == _tuningPhaseCounter) {
-      if (_traversalTimesStorage[*configurationIter].back().second > blacklistThreshold) {
-        _searchSpace.erase(*configurationIter);
-        _traversalTimesStorage.erase(*configurationIter);
-        _lastTest.erase(*configurationIter);
-      }
-      configurationIter = _notTestedYet.erase(configurationIter);
+  for (auto configurationIter = _searchSpace.begin(); configurationIter != _searchSpace.end();) {
+    // blacklist if the configuration was tested in this phase and is above the threshold
+    if (_lastTest[*configurationIter] == _tuningPhaseCounter and
+        _traversalTimesStorage[*configurationIter].back().second > blacklistThreshold) {
+      _traversalTimesStorage.erase(*configurationIter);
+      _lastTest.erase(*configurationIter);
+      configurationIter = _searchSpace.erase(configurationIter);
     } else {
       configurationIter++;
     }
