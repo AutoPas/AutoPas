@@ -150,6 +150,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   inline void newtonPolynomial();
   /**
    * Selects a new search space based on previous observations.
+   * This method needs only to be called if everything in the previous _optimalSearchSpace was invalid.
    * Invalid configurations are discarded and
    * Creates a new optimalSearchSpace if every configuration in the previous one was invalid.
    */
@@ -501,7 +502,8 @@ void PredictiveTuning::logPrediction(const Configuration &configuration) {
 }
 
 void PredictiveTuning::reselectOptimalSearchSpace() {
-  // This is placed here, because there are no unnecessary removals
+  // since this function is called only when the whole _optimalSearchSpace is invalid
+  // mark all of it as invalid and remove it from the predictions
   for (const auto &configuration : _optimalSearchSpace) {
     _configurationPredictions.erase(configuration);
     _validSearchSpace.erase(configuration);
@@ -509,6 +511,7 @@ void PredictiveTuning::reselectOptimalSearchSpace() {
 
   _optimalSearchSpace.clear();
 
+  // shortcut if only one valid configuration is left
   if (_validSearchSpace.size() == 1) {
     _optimalSearchSpace = _validSearchSpace;
     _currentConfig = _optimalSearchSpace.begin();
@@ -521,7 +524,7 @@ void PredictiveTuning::reselectOptimalSearchSpace() {
         "PredictiveTuning::reselectOptimalSearchSpace() : No valid configuration could be found");
   }
 
-  // optimumIter: first = config ; second = runTime
+  // get optimum of remaining predictions
   const auto &[optimalConfig, optimalRuntime] = *getOptimum(_configurationPredictions);
 
   // abort if optimum is invalid
@@ -530,9 +533,8 @@ void PredictiveTuning::reselectOptimalSearchSpace() {
         "PredictiveTuning::reselectOptimalSearchSpace() : No valid optimal configuration could be found");
   }
 
-  _optimalSearchSpace.emplace(optimalConfig);
-
   // rebuild _optimalSearchSpace from valid configurations that have similar performance as the optimum
+  _optimalSearchSpace.emplace(optimalConfig);
   const auto absoluteOptimumRange = _relativeOptimumRange * optimalRuntime;
   for (const auto &configuration : _validSearchSpace) {
     // Adds configurations that are within the _relativeOptimumRange
