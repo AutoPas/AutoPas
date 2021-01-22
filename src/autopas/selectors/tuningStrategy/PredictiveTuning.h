@@ -160,9 +160,11 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    */
   inline void blacklistBadConfigurations();
   /**
-   * Creates output of the configuration and the prediction.
+   * Print all predictions of the given set to the debug logger.
    */
-  inline void logPrediction(const Configuration &configuration);
+  inline void logAllPredictions(const std::set<Configuration> &configurations);
+
+  constexpr static size_t _predictionErrorValue = std::numeric_limits<size_t>::max();
 
   /**
    * For each configuration stores how long it took in which iteration.
@@ -294,6 +296,8 @@ void PredictiveTuning::calculatePredictions() {
       break;
     }
   }
+  // if logger is not at least on debug level this does nothing
+  logAllPredictions(_searchSpace);
 }
 
 void PredictiveTuning::linePrediction() {
@@ -306,7 +310,6 @@ void PredictiveTuning::linePrediction() {
 
       // gradient * delta + last point
       _configurationPredictions[configuration] = functionParams[0] * delta + functionParams[1];
-      logPrediction(configuration);
     } else
         // if there is enough evidence calculate new prediction function
         if (const auto &traversalValues = _traversalTimesStorage[configuration];
@@ -322,12 +325,10 @@ void PredictiveTuning::linePrediction() {
       functionParams.clear();
       functionParams.emplace_back(gradient);
       functionParams.emplace_back(traversal1Time);
-      logPrediction(configuration);
     } else {
       // When a configuration was not yet tested twice.
       _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
       _tooLongNotTestedSearchSpace.emplace(configuration);
-      AutoPasLog(debug, "No traversal time prediction for {}", configuration.toString());
     }
   }
 }
@@ -341,7 +342,6 @@ void PredictiveTuning::linearRegression() {
       // if configuration was not tested in last tuning phase reuse prediction function.
       // gradient * iteration + y-intercept
       _configurationPredictions[configuration] = functionParams[0] * _firstIterationOfTuningPhase + functionParams[1];
-      logPrediction(configuration);
     } else if (const auto &traversalValues = _traversalTimesStorage[configuration];
                traversalValues.size() >= _evidenceFirstPrediction) {
       size_t iterationMultTime = 0, iterationSum = 0, iterationSquareSum = 0, timeSum = 0;
@@ -374,12 +374,10 @@ void PredictiveTuning::linearRegression() {
       functionParams.emplace_back(gradient);
       functionParams.emplace_back(yIntercept);
 
-      logPrediction(configuration);
     } else {
       // When a configuration was not yet tested twice.
       _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
       _tooLongNotTestedSearchSpace.emplace(configuration);
-      AutoPasLog(debug, "No traversal time prediction for {}", configuration.toString());
     }
   }
 }
@@ -411,12 +409,10 @@ void PredictiveTuning::lagrangePolynomial() {
         prediction += numerator * pointITime / denominator;
       }
       _configurationPredictions[configuration] = prediction;
-      logPrediction(configuration);
     } else {
       // When a configuration was not yet tested twice.
       _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
       _tooLongNotTestedSearchSpace.emplace(configuration);
-      AutoPasLog(debug, "No traversal time prediction for {}", configuration.toString());
     }
   }
 }
@@ -439,7 +435,6 @@ void PredictiveTuning::newtonPolynomial() {
         prediction += interimValue;
       }
       _configurationPredictions[configuration] = prediction;
-      logPrediction(configuration);
     } else if (const auto &traversalValues = _traversalTimesStorage[configuration];
                traversalValues.size() >= _evidenceFirstPrediction) {
       std::vector<std::vector<double>> interimCalculation(_evidenceFirstPrediction);
@@ -478,26 +473,22 @@ void PredictiveTuning::newtonPolynomial() {
       }
 
       _configurationPredictions[configuration] = prediction;
-      logPrediction(configuration);
       functionParams = coefficients;
     } else {
       // When a configuration was not yet tested twice.
-      _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
+      _configurationPredictions[configuration] = _predictionErrorValue;
       _tooLongNotTestedSearchSpace.emplace(configuration);
-      AutoPasLog(debug, "No traversal time prediction for {}", configuration.toString());
     }
   }
 }
 
-void PredictiveTuning::logPrediction(const Configuration &configuration) {
-  // print config, prediction
+void PredictiveTuning::logAllPredictions(const std::set<Configuration> &configurations) {
   if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-    std::ostringstream ss;
-    // print config
-    ss << configuration.toString() << " : ";
-    // print prediction
-    ss << _configurationPredictions[configuration];
-    AutoPasLog(debug, "Traversal time prediction for {}", ss.str());
+    for (const auto &configuration : configurations) {
+      auto prediction = _configurationPredictions[configuration];
+      AutoPasLog(debug, "Prediction for {} : {}", configuration.toString(),
+                 prediction == _predictionErrorValue ? std::to_string(prediction) : "none");
+    }
   }
 }
 
@@ -590,63 +581,58 @@ bool PredictiveTuning::tune(bool currentInvalid) {
 void PredictiveTuning::selectOptimalConfiguration() {
   if (_optimalSearchSpace.size() == 1) {
     _currentConfig = _optimalSearchSpace.begin();
-    AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
-    return;
-  }
-  if (_searchSpace.size() == 1) {
+  } else if (_searchSpace.size() == 1) {
     _currentConfig = _searchSpace.begin();
-    AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
-    return;
-  }
-
-  // select the tested traversal times for the current tuning phase
-  std::unordered_map<Configuration, size_t, ConfigHash> traversalTimes{};
-  // as long as there is too few evidence there is no optimal search space
-  if (_optimalSearchSpace.empty()) {
-    traversalTimes.reserve(_searchSpace.size());
-    for (const auto &configuration : _searchSpace) {
-      // check if this config was tests in the current phase
-      if (_lastTest[configuration] == _tuningPhaseCounter) {
-        traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
-      }
-    }
   } else {
-    traversalTimes.reserve(_optimalSearchSpace.size() + _tooLongNotTestedSearchSpace.size());
-    for (const auto &configuration : _optimalSearchSpace) {
-      if (_lastTest[configuration] == _tuningPhaseCounter) {
-        traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
+    // select the tested traversal times for the current tuning phase
+    std::unordered_map<Configuration, size_t, ConfigHash> traversalTimes{};
+    // as long as there is too few evidence there is no optimal search space
+    if (_optimalSearchSpace.empty()) {
+      traversalTimes.reserve(_searchSpace.size());
+      for (const auto &configuration : _searchSpace) {
+        // check if this config was tests in the current phase
+        if (_lastTest[configuration] == _tuningPhaseCounter) {
+          traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
+        }
+      }
+    } else {
+      traversalTimes.reserve(_optimalSearchSpace.size() + _tooLongNotTestedSearchSpace.size());
+      for (const auto &configuration : _optimalSearchSpace) {
+        if (_lastTest[configuration] == _tuningPhaseCounter) {
+          traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
+        }
+      }
+      for (const auto &configuration : _tooLongNotTestedSearchSpace) {
+        if (_lastTest[configuration] == _tuningPhaseCounter) {
+          traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
+        }
       }
     }
-    for (const auto &configuration : _tooLongNotTestedSearchSpace) {
-      if (_lastTest[configuration] == _tuningPhaseCounter) {
-        traversalTimes[configuration] = _traversalTimesStorage[configuration].back().second;
-      }
+
+    // Time measure strategy
+    if (traversalTimes.empty()) {
+      utils::ExceptionHandler::exception(
+          "PredictiveTuning::selectOptimalConfiguration() : Trying to determine fastest configuration without any "
+          "measurements! "
+          "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
     }
-  }
 
-  // Time measure strategy
-  if (traversalTimes.empty()) {
-    utils::ExceptionHandler::exception(
-        "PredictiveTuning::selectOptimalConfiguration() : Trying to determine fastest configuration without any "
-        "measurements! "
-        "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
-  }
+    const auto &[optimalConfig, _] = *getOptimum(traversalTimes);
 
-  const auto &[optimalConfig, _] = *getOptimum(traversalTimes);
+    _currentConfig = _searchSpace.find(optimalConfig);
 
-  _currentConfig = _searchSpace.find(optimalConfig);
+    // sanity check
+    if (_currentConfig == _searchSpace.end() or _currentConfig == _optimalSearchSpace.end() or
+        _currentConfig == _tooLongNotTestedSearchSpace.end()) {
+      autopas::utils::ExceptionHandler::exception(
+          "PredictiveTuning::selectOptimalConfiguration() : Optimal configuration not found in any set of "
+          "configurations!");
+    }
 
-  // sanity check
-  if (_currentConfig == _searchSpace.end() or _currentConfig == _optimalSearchSpace.end() or
-      _currentConfig == _tooLongNotTestedSearchSpace.end()) {
-    autopas::utils::ExceptionHandler::exception(
-        "PredictiveTuning::selectOptimalConfiguration() : Optimal configuration not found in any set of "
-        "configurations!");
-  }
-
-  // if a blacklist range is set blacklist the really bad stuff
-  if (_relativeBlacklistRange != 0) {
-    blacklistBadConfigurations();
+    // if a blacklist range is set blacklist the really bad stuff
+    if (_relativeBlacklistRange != 0) {
+      blacklistBadConfigurations();
+    }
   }
 
   AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
