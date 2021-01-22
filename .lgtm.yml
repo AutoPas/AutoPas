@@ -28,4 +28,5 @@ extraction:
       - cmake -DAUTOPAS_USE_TEST_GLOB=ON -DCMAKE_VERBOSE_MAKEFILE=ON -DBUILD_DOCS=OFF -DCATKIN_ENABLE_TESTING=OFF -DBUILD_DOCUMENTATION=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-fpermissive ..
     index:
       build_command:
+        - cd _lgtm_build_dir
         - make -j2
