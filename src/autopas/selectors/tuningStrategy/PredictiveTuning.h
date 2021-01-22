@@ -484,6 +484,7 @@ void PredictiveTuning::newtonPolynomial() {
 
 void PredictiveTuning::logAllPredictions(const std::set<Configuration> &configurations) {
   if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+    AutoPasLog(debug, "Predictions for tuning phase {}", _tuningPhaseCounter);
     for (const auto &configuration : configurations) {
       auto prediction = _configurationPredictions[configuration];
       AutoPasLog(debug, "Prediction for {} : {}", configuration.toString(),
