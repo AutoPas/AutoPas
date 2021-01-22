@@ -23,23 +23,23 @@ class TraversalSelector;
  * Pairwise verlet lists iterates through each pair of neighboring cells
  * and generates a neighbor list for each particle from cell1, which consists of its (potential) partners from cell2.
  * @tparam Particle Type of particle to be used for this neighbor list.
- * */
+ */
 template <class Particle>
 class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
  public:
   /**
    * Type of the data structure used to save the neighbor lists.
-   * */
+   */
   using listType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
 
   /**
    * @copydoc VLCNeighborListInterface::getContainerType()
-   * */
+   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pairwiseVerletLists; }
 
   /**
    * @copydoc VLCNeighborListInterface::getNumberOfPartners()
-   * */
+   */
   const size_t getNumberOfPartners(const Particle *particle) const override {
     size_t listSize = 0;
     const auto &[firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle));
@@ -52,14 +52,14 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
-   * */
+   */
   typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType &getAoSNeighborList() {
     return _aosNeighborList;
   }
 
   /**
    * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
-   * */
+   */
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                             double interactionLength, const TraversalOption buildTraversalOption) override {
     _aosNeighborList.clear();
@@ -126,7 +126,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
    * @param skin Skin of the verlet list.
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
-   * */
+   */
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                          double interactionLength, const TraversalOption buildTraversalOption) {
     VLCCellPairGeneratorFunctor<Particle> f(_aosNeighborList, _particleToCellMap, _globalToLocalIndex, cutoff + skin);

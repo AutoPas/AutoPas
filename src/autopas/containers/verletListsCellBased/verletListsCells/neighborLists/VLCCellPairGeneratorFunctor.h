@@ -11,10 +11,11 @@
 
 namespace autopas {
 
-template <class Particle>
 /**
  * This functor generates pairwise verlet lists (a verlet list attached to every pair of neighboring cells).
  */
+template <class Particle>
+
 class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGeneratorFunctor<Particle>> {
   using PairwiseNeighborListsType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
 

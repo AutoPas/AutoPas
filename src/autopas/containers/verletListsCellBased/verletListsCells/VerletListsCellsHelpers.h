@@ -33,20 +33,5 @@ class VerletListsCellsHelpers {
   using PairwiseNeighborListsType =
       std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>;
 
-  /**
-   * Indicates which type of neighbor list the VLC container is using.
-   * To be passed to the VLC traversals in TraversalSelector.
-   */
-  class VLCTypeOfList {
-   public:
-    /**
-     * Enum value indicating he type of neighbor list.
-     */
-    enum Value {
-      vlc,
-      vlp,
-    };
-  };
-
 };  // class VerletListsCellsHelpers
 }  // namespace autopas
