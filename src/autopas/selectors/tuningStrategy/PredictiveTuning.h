@@ -304,30 +304,29 @@ void PredictiveTuning::calculatePredictions() {
 
 void PredictiveTuning::linePrediction() {
   for (const auto &configuration : _searchSpace) {
+    auto &functionParams = _configurationPredictionFunctionParams[configuration];
     // if configuration was not tested in last tuning phase reuse prediction function.
-    // checks is _configurationPredictionFunction has a linear function saved and only then it can reuse it
-    if (_lastTest[configuration] != (_tuningPhaseCounter - 1) and
-        _configurationPredictionFunction[configuration].size() == 2) {
+    // checks is _configurationPredictionFunctionParams has a linear function saved and only then it can reuse it
+    if (_lastTest[configuration] != (_tuningPhaseCounter - 1) and functionParams.size() == 2) {
       const auto delta = _iterationBeginTuningPhase - _traversalTimesStorage[configuration].back().first;
 
       // gradient * delta + last point
-      _configurationPredictions[configuration] = _configurationPredictionFunction[configuration][0] * delta +
-                                                 _configurationPredictionFunction[configuration][1];
-      predictionOutput(configuration);
-    } else if (_traversalTimesStorage[configuration].size() >= _evidenceFirstPrediction) {
-      const auto &vector = _traversalTimesStorage[configuration];
-      const auto &[traversal1Iteration, traversal1Time] = vector[vector.size() - 1];
-      const auto &[traversal2Iteration, traversal2Time] = vector[vector.size() - 2];
+      _configurationPredictions[configuration] = functionParams[0] * delta + functionParams[1];
+      logPrediction(configuration);
+    } else if (const auto &traversalValues = _traversalTimesStorage[configuration];
+               traversalValues.size() >= _evidenceFirstPrediction) {
+      const auto &[traversal1Iteration, traversal1Time] = traversalValues[traversalValues.size() - 1];
+      const auto &[traversal2Iteration, traversal2Time] = traversalValues[traversalValues.size() - 2];
 
       const auto gradient = (traversal1Time - traversal2Time) / (traversal1Iteration - traversal2Iteration);
       const auto delta = _iterationBeginTuningPhase - traversal1Iteration;
 
       // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
       _configurationPredictions[configuration] = traversal1Time + gradient * delta;
-      _configurationPredictionFunction[configuration].clear();
-      _configurationPredictionFunction[configuration].emplace_back(gradient);
-      _configurationPredictionFunction[configuration].emplace_back(traversal1Time);
-      predictionOutput(configuration);
+      functionParams.clear();
+      functionParams.emplace_back(gradient);
+      functionParams.emplace_back(traversal1Time);
+      logPrediction(configuration);
     } else {
       // When a configuration was not yet tested twice.
       _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
@@ -339,22 +338,20 @@ void PredictiveTuning::linePrediction() {
 
 void PredictiveTuning::linearRegression() {
   for (const auto &configuration : _searchSpace) {
+    auto &functionParams = _configurationPredictionFunctionParams[configuration];
     // if configuration was not tested in last tuning phase reuse prediction function.
-    // checks is _configurationPredictionFunction has a linear function saved and only then it can reuse it
-    if ((_lastTest[configuration] != (_tuningPhaseCounter - 1)) and
-        _configurationPredictionFunction[configuration].size() == 2) {
+    // checks is _configurationPredictionFunctionParams has a linear function saved and only then it can reuse it
+    if ((_lastTest[configuration] != (_tuningPhaseCounter - 1)) and functionParams.size() == 2) {
       // if configuration was not tested in last tuning phase reuse prediction function.
       // gradient * iteration + y-intercept
-      _configurationPredictions[configuration] =
-          _configurationPredictionFunction[configuration][0] * _iterationBeginTuningPhase +
-          _configurationPredictionFunction[configuration][1];
-      predictionOutput(configuration);
-    } else if (_traversalTimesStorage[configuration].size() >= _evidenceFirstPrediction) {
+      _configurationPredictions[configuration] = functionParams[0] * _iterationBeginTuningPhase + functionParams[1];
+      logPrediction(configuration);
+    } else if (const auto &traversalValues = _traversalTimesStorage[configuration];
+               traversalValues.size() >= _evidenceFirstPrediction) {
       size_t iterationMultTime = 0, iterationSum = 0, iterationSquareSum = 0, timeSum = 0;
 
-      for (auto i = _traversalTimesStorage[configuration].size() - _evidenceFirstPrediction;
-           i < _traversalTimesStorage[configuration].size(); i++) {
-        const auto &[iteration, time] = _traversalTimesStorage[configuration][i];
+      for (auto i = traversalValues.size() - _evidenceFirstPrediction; i < traversalValues.size(); i++) {
+        const auto &[iteration, time] = traversalValues[i];
         iterationMultTime += iteration * time;
         iterationSum += iteration;
         iterationSquareSum += iteration * iteration;
@@ -377,11 +374,11 @@ void PredictiveTuning::linearRegression() {
       const auto yIntercept = timeMeanValue - gradient * iterationMeanValue;
 
       _configurationPredictions[configuration] = gradient * _iterationBeginTuningPhase + yIntercept;
-      _configurationPredictionFunction[configuration].clear();
-      _configurationPredictionFunction[configuration].emplace_back(gradient);
-      _configurationPredictionFunction[configuration].emplace_back(yIntercept);
+      functionParams.clear();
+      functionParams.emplace_back(gradient);
+      functionParams.emplace_back(yIntercept);
 
-      predictionOutput(configuration);
+      logPrediction(configuration);
     } else {
       // When a configuration was not yet tested twice.
       _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
@@ -393,21 +390,20 @@ void PredictiveTuning::linearRegression() {
 
 void PredictiveTuning::lagrangePolynomial() {
   for (const auto &configuration : _searchSpace) {
-    if (_traversalTimesStorage[configuration].size() >= _evidenceFirstPrediction) {
-      const auto lengthTTS = _traversalTimesStorage[configuration].size() - 1;
+    const auto &traversalValues = _traversalTimesStorage[configuration];
+    if (traversalValues.size() >= _evidenceFirstPrediction) {
+      const auto lengthTTS = traversalValues.size() - 1;
       long prediction = 0;
       // calculates lagrange basis functions L_i and multiplies it with the tested time of p_i
       for (unsigned int i = 0; i < _evidenceFirstPrediction; i++) {
         long numerator = 1;
         long denominator = 1;
-        const auto &[pointIIteration, pointITime] = _traversalTimesStorage[configuration][lengthTTS - i];
+        const auto &[pointIIteration, pointITime] = traversalValues[lengthTTS - i];
         for (unsigned int j = 0; j < _evidenceFirstPrediction; j++) {
           if (i != j) {
             // cast unsigned to signed because this difference can be negative
-            numerator *= static_cast<long>(_iterationBeginTuningPhase) -
-                         _traversalTimesStorage[configuration][lengthTTS - j].first;
-            denominator *=
-                static_cast<long>(pointIIteration) - _traversalTimesStorage[configuration][lengthTTS - j].first;
+            numerator *= static_cast<long>(_iterationBeginTuningPhase) - traversalValues[lengthTTS - j].first;
+            denominator *= static_cast<long>(pointIIteration) - traversalValues[lengthTTS - j].first;
             // TODO: Look if this is sufficient or if there is a better solution
             // Should only be needed when the denominator overflows and therefore gets set to zero
             if (denominator == 0) {
@@ -419,7 +415,7 @@ void PredictiveTuning::lagrangePolynomial() {
         prediction += numerator * pointITime / denominator;
       }
       _configurationPredictions[configuration] = prediction;
-      predictionOutput(configuration);
+      logPrediction(configuration);
     } else {
       // When a configuration was not yet tested twice.
       _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
@@ -431,47 +427,48 @@ void PredictiveTuning::lagrangePolynomial() {
 
 void PredictiveTuning::newtonPolynomial() {
   for (const auto &configuration : _searchSpace) {
+    auto &functionParams = _configurationPredictionFunctionParams[configuration];
     // if configuration was not tested in last tuning phase reuse prediction function.
-    if ((_lastTest[configuration] != (_tuningPhaseCounter - 1)) and
-        _configurationPredictionFunction[configuration].size() == _evidenceFirstPrediction) {
-      auto lengthTTS = _traversalTimesStorage[configuration].size() - 1;
+    if ((_lastTest[configuration] != (_tuningPhaseCounter - 1)) and functionParams.size() == _evidenceFirstPrediction) {
+      const auto &traversalValues = _traversalTimesStorage[configuration];
+      auto lengthTTS = traversalValues.size() - 1;
       long prediction = 0;
       for (unsigned int i = 0; i < _evidenceFirstPrediction; i++) {
-        auto interimValue = _configurationPredictionFunction[configuration][i];
+        auto interimValue = functionParams[i];
         for (unsigned int j = 0; j < i; j++) {
-          // cast to double, because _configurationPredictionFunction contains doubles
+          // cast to double, because _configurationPredictionFunctionParams contains doubles
           interimValue *= static_cast<double>(_iterationBeginTuningPhase) -
-                          _traversalTimesStorage[configuration][lengthTTS - _evidenceFirstPrediction + j].first;
+                          traversalValues[lengthTTS - _evidenceFirstPrediction + j].first;
         }
         prediction += interimValue;
       }
       _configurationPredictions[configuration] = prediction;
-      predictionOutput(configuration);
-    } else if (_traversalTimesStorage[configuration].size() >= _evidenceFirstPrediction) {
-      std::vector<std::vector<double>> interimCalculation;
-      std::vector<unsigned long> iterationValues;
-      std::vector<double> coefficients;
-      const auto lengthTTS = _traversalTimesStorage[configuration].size();
+      logPrediction(configuration);
+    } else if (const auto &traversalValues = _traversalTimesStorage[configuration];
+               traversalValues.size() >= _evidenceFirstPrediction) {
+      std::vector<std::vector<double>> interimCalculation(_evidenceFirstPrediction);
+      std::vector<size_t> iterationValues(_evidenceFirstPrediction);
+      std::vector<double> coefficients(_evidenceFirstPrediction);
+      const auto lengthTTS = traversalValues.size();
       auto lengthIthColumn = _evidenceFirstPrediction;
 
       // calculates a column of the newton interpolation
       for (unsigned int i = 0; i < _evidenceFirstPrediction; i++) {
-        std::vector<double> ithColumn;
+        std::vector<double> ithColumn(lengthIthColumn);
         for (unsigned int j = 0; j < lengthIthColumn; j++) {
           if (i == 0) {
-            ithColumn.emplace_back(
-                _traversalTimesStorage[configuration][lengthTTS - _evidenceFirstPrediction + j].second);
-            iterationValues.emplace_back(
-                _traversalTimesStorage[configuration][lengthTTS - _evidenceFirstPrediction + j].first);
+            auto &[iteration, runTime] = traversalValues[lengthTTS - _evidenceFirstPrediction + j];
+            ithColumn[j] = runTime;
+            iterationValues[j] = iteration;
           } else {
             // cast integer to decimal because this division contains small numbers which would cause precision lose
-            ithColumn.emplace_back((interimCalculation[i - 1][j + 1] - interimCalculation[i - 1][j]) /
-                                   static_cast<double>(iterationValues[j + i] - iterationValues[j]));
+            ithColumn[j] = (interimCalculation[i - 1][j + 1] - interimCalculation[i - 1][j]) /
+                           static_cast<double>(iterationValues[j + i] - iterationValues[j]);
           }
         }
-        interimCalculation.emplace_back(ithColumn);
-        coefficients.emplace_back(ithColumn[0]);
-        lengthIthColumn--;
+        interimCalculation[i] = ithColumn;
+        coefficients[i] = ithColumn.front();
+        --lengthIthColumn;
       }
 
       size_t prediction = 0;
@@ -485,8 +482,8 @@ void PredictiveTuning::newtonPolynomial() {
       }
 
       _configurationPredictions[configuration] = prediction;
-      predictionOutput(configuration);
-      _configurationPredictionFunction[configuration] = coefficients;
+      logPrediction(configuration);
+      functionParams = coefficients;
     } else {
       // When a configuration was not yet tested twice.
       _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
@@ -496,7 +493,7 @@ void PredictiveTuning::newtonPolynomial() {
   }
 }
 
-void PredictiveTuning::predictionOutput(const Configuration configuration) {
+void PredictiveTuning::logPrediction(const Configuration &configuration) {
   // print config, prediction
   if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
     std::ostringstream ss;
