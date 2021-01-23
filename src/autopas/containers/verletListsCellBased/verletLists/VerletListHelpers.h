@@ -49,13 +49,13 @@ class VerletListHelpers {
 
     bool allowsNewton3() override {
       utils::ExceptionHandler::exception(
-          "VerletListGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
+          "VLCAllCellsGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
       return true;
     }
 
     bool allowsNonNewton3() override {
       utils::ExceptionHandler::exception(
-          "VerletListGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+          "VLCAllCellsGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
       return true;
     }
 
@@ -215,13 +215,13 @@ class VerletListHelpers {
 
     bool allowsNewton3() override {
       utils::ExceptionHandler::exception(
-          "VerletListGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
+          "VLCAllCellsGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
       return true;
     }
 
     bool allowsNonNewton3() override {
       utils::ExceptionHandler::exception(
-          "VerletListGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+          "VLCAllCellsGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
       return true;
     }
 
