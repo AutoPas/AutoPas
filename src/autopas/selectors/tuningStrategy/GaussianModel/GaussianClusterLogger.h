@@ -17,6 +17,9 @@ namespace autopas {
  * Used to print out the clusters of GaussianClusters.
  * The resulting graph represents each cluster as a node and the weight between clusters as edges.
  * The graph is printed as two csv-files.
+ *
+ * By default logging the data is disabled. It can be enabled by setting the cmake variable AUTOPAS_Log_GaussianCluster
+ * to ON.
  */
 class GaussianClusterLogger {
   const std::string node_start_marker = "GaussianCluster Graph: Nodes";
@@ -30,25 +33,11 @@ class GaussianClusterLogger {
 
  public:
   /**
-   * Options how to output the graphs.
-   */
-  enum OutputType { none, trace, file };
-
-  /**
-   * Constructor. Use output file if log level debug or lower.
-   * @param vecToStringFun
-   */
-  explicit GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun)
-      : GaussianClusterLogger(std::move(vecToStringFun),
-                              autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug ? OutputType::file
-                                                                                                  : OutputType::none) {}
-
-  /**
    * Constructor
    * @param vecToStringFun function to convert vectors to readable string
    * @param outputType
    */
-  GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun, OutputType outputType);
+  GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun);
 
   /**
    * Change the used function to convert from vector to string.
@@ -81,14 +70,6 @@ class GaussianClusterLogger {
    */
   void reset();
 
-  /**
-   * Checks if logger can skip calculations.
-   * @return
-   */
-  bool generatesNoOutput() const;
-
-  OutputType _outputType;
-
   std::string _outputFileName;
 
   /**
@@ -103,7 +84,7 @@ class GaussianClusterLogger {
   /**
    * Continuous samples already added to the graph.
    */
-  std::vector<GaussianModelTypes::VectorContinuous> _currentContinuous;
+  std::vector<GaussianModelTypes::VectorContinuous> _currentContinuous{};
 
   /**
    * Function to convert vectors to strings.

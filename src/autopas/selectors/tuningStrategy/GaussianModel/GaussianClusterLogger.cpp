@@ -13,37 +13,28 @@
 
 namespace autopas {
 
-GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun,
-                                             GaussianClusterLogger::OutputType outputType)
-    : _outputType(outputType),
-      _nodeStream(streamMode),
-      _edgeStream(streamMode),
-      _vecToStringFun(std::move(vecToStringFun)) {
-  if (generatesNoOutput()) {
-    return;
-  }
-
+GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun)
+    : _nodeStream(streamMode), _edgeStream(streamMode), _vecToStringFun(std::move(vecToStringFun)) {
+#ifdef AUTOPAS_Log_GaussianCluster
   _outputFileName = "gaussianCluster_graph_" + utils::Timer::getDateStamp() + ".out";
 
   reset();
+#endif
 }
 
 void GaussianClusterLogger::setVectorToStringFun(const GaussianModelTypes::VectorToStringFun &fun) {
   _vecToStringFun = fun;
 }
 
-bool GaussianClusterLogger::generatesNoOutput() const {
-  return (_outputType == OutputType::none or
-          (_outputType == OutputType::trace and autopas::Logger::get()->level() > autopas::Logger::LogLevel::trace));
-}
-
 void GaussianClusterLogger::reset() {
+#ifdef AUTOPAS_Log_GaussianCluster
   _nodeStream.str(node_start_marker);
   _nodeStream << std::endl << "Label,mean,var,numEvidence" << std::endl;
   _edgeStream.str(edge_start_marker);
   _edgeStream << std::endl << "Source,Target,Weight" << std::endl;
 
   _currentContinuous.clear();
+#endif
 }
 
 void GaussianClusterLogger::add(const std::vector<GaussianProcess> &clusters,
@@ -51,10 +42,7 @@ void GaussianClusterLogger::add(const std::vector<GaussianProcess> &clusters,
                                 const GaussianModelTypes::VectorContinuous &currentContinuous,
                                 const std::vector<double> &means, const std::vector<double> &vars,
                                 const GaussianModelTypes::NeighboursWeights &neighbourWeights) {
-  if (generatesNoOutput()) {
-    return;
-  }
-
+#ifdef AUTOPAS_Log_GaussianCluster
   // skip continuous values already added
   if (std::find(_currentContinuous.begin(), _currentContinuous.end(), currentContinuous) != _currentContinuous.end()) {
     return;
@@ -79,32 +67,21 @@ void GaussianClusterLogger::add(const std::vector<GaussianProcess> &clusters,
       }
     }
   }
+#endif
 }
 
 void GaussianClusterLogger::flush() {
-  if (generatesNoOutput()) {
-    return;
+#ifdef AUTOPAS_Log_GaussianCluster
+  std::ofstream outputFile(_outputFileName, std::ofstream::out | std::ofstream::app);
+  if (outputFile.is_open()) {
+    outputFile << _nodeStream.str();
+    outputFile << _edgeStream.str();
+    outputFile << end_marker << std::endl;
+  } else {
+    AutoPasLog(error, "Output file {} is not open for writing!", _outputFileName);
   }
-
-  switch (_outputType) {
-    case OutputType::trace:
-      AutoPasLog(trace, _nodeStream.str());
-      AutoPasLog(trace, _edgeStream.str());
-      AutoPasLog(trace, end_marker);
-      break;
-    case OutputType::file: {
-      std::ofstream outputFile(_outputFileName, std::ofstream::out | std::ofstream::app);
-      if (outputFile.is_open()) {
-        outputFile << _nodeStream.str();
-        outputFile << _edgeStream.str();
-        outputFile << end_marker << std::endl;
-      }
-      outputFile.close();
-    } break;
-    case OutputType::none:
-      utils::ExceptionHandler::exception("GaussianClusterLogger.end: Unexpected output type {}", _outputType);
-      break;
-  }
+  outputFile.close();
   reset();
+#endif
 }
 }  // namespace autopas
