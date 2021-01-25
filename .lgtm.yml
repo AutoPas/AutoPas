@@ -29,4 +29,4 @@ extraction:
     index:
       build_command:
         - cd _lgtm_build_dir
-        - make -j 1
+        - make -j 4
