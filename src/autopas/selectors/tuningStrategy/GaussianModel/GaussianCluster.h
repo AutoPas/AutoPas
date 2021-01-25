@@ -243,7 +243,7 @@ class GaussianCluster {
       }
     }
 
-    _logger->end();
+    _logger->flush();
 
     return acquisitions;
   }
@@ -268,7 +268,7 @@ class GaussianCluster {
       _logger->add(_clusters, _discreteVectorMap, continuousSample, means, vars, neighbourWeights);
     }
 
-    _logger->end();
+    _logger->flush();
   }
   /**
    * Change the used function to convert from vector to string.

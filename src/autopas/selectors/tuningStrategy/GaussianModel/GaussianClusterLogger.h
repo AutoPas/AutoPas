@@ -71,9 +71,9 @@ class GaussianClusterLogger {
            const std::vector<double> &vars, const GaussianModelTypes::NeighboursWeights &neighbourWeights);
 
   /**
-   * Output graph stream accumulated from add() since last call of end().
+   * Dump all data accumulated by add() to the sink of this logger and clear all buffers.
    */
-  void end();
+  void flush();
 
  private:
   /**

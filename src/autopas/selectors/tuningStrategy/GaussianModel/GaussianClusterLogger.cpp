@@ -23,7 +23,7 @@ GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringF
     return;
   }
 
-  _outputFileName = "gaussian_graph_" + utils::Timer::getDateStamp() + ".out";
+  _outputFileName = "gaussianCluster_graph_" + utils::Timer::getDateStamp() + ".out";
 
   reset();
 }
@@ -81,7 +81,7 @@ void GaussianClusterLogger::add(const std::vector<GaussianProcess> &clusters,
   }
 }
 
-void GaussianClusterLogger::end() {
+void GaussianClusterLogger::flush() {
   if (generatesNoOutput()) {
     return;
   }
