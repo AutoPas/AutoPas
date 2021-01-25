@@ -45,19 +45,17 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
    * @param skin the skin radius
-   * @param buildTraversal the traversal used to build the verletlists
    * @param cellSizeFactor cell size factor relative to cutoff
    * @param loadEstimator load estimation algorithm for balanced traversals
    * @param buildType
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                   const TraversalOption buildTraversal, const double skin = 0, const double cellSizeFactor = 1.0,
+                   const double skin = 0, const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
                    typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType =
                        VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild)
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin,
                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
-        _buildTraversalOption(buildTraversal),
         _loadEstimator(loadEstimator),
         _buildType(buildType) {}
 
@@ -146,11 +144,6 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * Neighbor list abstraction for neighbor list used in the container.
    */
   NeighborList _neighborList;
-
-  /**
-   * The traversal used to build the verlet lists.
-   */
-  TraversalOption _buildTraversalOption;
 
   /**
    * Load estimation algorithm for balanced traversals.
