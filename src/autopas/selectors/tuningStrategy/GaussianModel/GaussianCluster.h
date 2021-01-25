@@ -9,7 +9,6 @@
 #include <Eigen/Core>
 #include <utility>
 
-#include "GaussianClusterLogger.h"
 #include "GaussianProcess.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -17,6 +16,7 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/logging/GaussianClusterLogger.h"
 
 namespace autopas {
 

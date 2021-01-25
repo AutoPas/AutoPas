@@ -10,7 +10,7 @@
 
 #include <fstream>
 
-#include "Logger.h"
+#include "utils/logging/Logger.h"
 
 size_t autopas::memoryProfiler::currentMemoryUsage() {
   std::ifstream statusFile(statusFileName);

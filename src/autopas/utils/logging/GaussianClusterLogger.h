@@ -8,8 +8,8 @@
 
 #include <unordered_set>
 
-#include "GaussianModelTypes.h"
-#include "GaussianProcess.h"
+#include "selectors/tuningStrategy/GaussianModel/GaussianModelTypes.h"
+#include "selectors/tuningStrategy/GaussianModel/GaussianProcess.h"
 
 namespace autopas {
 

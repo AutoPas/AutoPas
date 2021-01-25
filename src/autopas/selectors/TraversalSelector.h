@@ -44,9 +44,9 @@
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/Logger.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/TrivialHash.h"
+#include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
 

@@ -9,7 +9,7 @@
 
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/selectors/AutoTuner.h"
-#include "autopas/utils/Logger.h"
+#include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {

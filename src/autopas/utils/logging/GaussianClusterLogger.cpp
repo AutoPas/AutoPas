@@ -8,8 +8,8 @@
 
 #include <fstream>
 
-#include "autopas/utils/Logger.h"
 #include "utils/Timer.h"
+#include "utils/logging/Logger.h"
 
 namespace autopas {
 
