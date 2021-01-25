@@ -7,11 +7,9 @@
 #include "GaussianClusterLogger.h"
 
 #include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <sstream>
 
 #include "autopas/utils/Logger.h"
+#include "utils/Timer.h"
 
 namespace autopas {
 
@@ -25,11 +23,7 @@ GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringF
     return;
   }
 
-  auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-  std::ostringstream nowStrStr;
-  tm unused;
-  nowStrStr << std::put_time(localtime_r(&now, &unused), "%Y-%m-%d_%H-%M-%S");
-  _outputFileName = "gaussian_graph_" + nowStrStr.str() + ".out";
+  _outputFileName = "gaussian_graph_" + utils::Timer::getDateStamp() + ".out";
 
   reset();
 }
@@ -55,7 +49,7 @@ void GaussianClusterLogger::reset() {
 void GaussianClusterLogger::add(const std::vector<GaussianProcess> &clusters,
                                 const std::vector<GaussianModelTypes::VectorDiscrete> &discreteVectorMap,
                                 const GaussianModelTypes::VectorContinuous &currentContinuous,
-                                std::vector<double> means, std::vector<double> vars,
+                                const std::vector<double> &means, const std::vector<double> &vars,
                                 const GaussianModelTypes::NeighboursWeights &neighbourWeights) {
   if (generatesNoOutput()) {
     return;

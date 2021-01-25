@@ -67,8 +67,8 @@ class GaussianClusterLogger {
    */
   void add(const std::vector<GaussianProcess> &clusters,
            const std::vector<GaussianModelTypes::VectorDiscrete> &discreteVectorMap,
-           const GaussianModelTypes::VectorContinuous &currentContinous, std::vector<double> means,
-           std::vector<double> vars, const GaussianModelTypes::NeighboursWeights &neighbourWeights);
+           const GaussianModelTypes::VectorContinuous &currentContinous, const std::vector<double> &means,
+           const std::vector<double> &vars, const GaussianModelTypes::NeighboursWeights &neighbourWeights);
 
   /**
    * Output graph stream accumulated from add() since last call of end().
