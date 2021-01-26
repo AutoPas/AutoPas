@@ -625,8 +625,6 @@ void PredictiveTuning::selectOptimalConfiguration() {
       blacklistBadConfigurations();
     }
   }
-
-  AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
 }
 
 void PredictiveTuning::blacklistBadConfigurations() {

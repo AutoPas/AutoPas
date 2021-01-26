@@ -313,7 +313,6 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
   if (_currentNumEvidence >= _maxEvidence) {
     // select best config of current tuning phase
     _currentConfig = _currentOptimalConfig;
-    AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
 
     return false;
   }

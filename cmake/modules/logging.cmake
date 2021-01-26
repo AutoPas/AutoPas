@@ -7,9 +7,7 @@ if (AUTOPAS_VERBOSE_LOGGING)
 endif ()
 
 # option for colored log messages.
-option(
-        AUTOPAS_COLORED_LOGGING "Print colored logging messages (only applies to cout and cerr)." OFF
-)
+option(AUTOPAS_COLORED_LOGGING "Print colored logging messages (only applies to cout and cerr)." OFF)
 if (AUTOPAS_COLORED_LOGGING)
     target_compile_definitions(autopas PUBLIC AUTOPAS_COLORED_CONSOLE_LOGGING)
     message(STATUS "Colored log messages enabled.")
@@ -33,5 +31,19 @@ endif ()
 option(AUTOPAS_Log_Iterations "Generate a csv tracking the performance of iteratePairwise calls." OFF)
 if (AUTOPAS_Log_Iterations OR AUTOPAS_Log_All)
     target_compile_definitions(autopas PUBLIC AUTOPAS_Log_Iterations)
-    message(STATUS "PredictionsLogger enabled.")
+    message(STATUS "IterationLogger enabled.")
+endif ()
+
+# option for TuningResultLogger
+option(AUTOPAS_Log_TuningResults "Generate a csv tracking the decisions of the auto tuner." OFF)
+if (AUTOPAS_Log_TuningResults OR AUTOPAS_Log_All)
+    target_compile_definitions(autopas PUBLIC AUTOPAS_Log_TuningResults)
+    message(STATUS "TuningResultLogger enabled.")
+endif ()
+
+# option for TuningDataLogger
+option(AUTOPAS_Log_TuningData "Generate a csv tracking data collected by the auto tuner." OFF)
+if (AUTOPAS_Log_TuningData OR AUTOPAS_Log_All)
+    target_compile_definitions(autopas PUBLIC AUTOPAS_Log_TuningData)
+    message(STATUS "TuningDataLogger enabled.")
 endif ()
