@@ -8,6 +8,8 @@ extraction:
         - cmake
         - libssl-dev
     after_prepare:    # Customizable step used by all languages.
+      # installs cmake!
+      - cmake --version
       - wget -O cmake.tar.gz https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz
       - tar zxf cmake.tar.gz
       - cd cmake-*/
@@ -16,5 +18,15 @@ extraction:
       - cmake -DCMAKE_INSTALL_PREFIX:PATH=~/.local/ -DCMAKE_BUILD_TYPE=Release ..
       - make install
       - ls ~/.local/bin
-      - export PATH=~/.local/bin:$PATH
+      - export PATH=~/.local/bin:$PATH   # env variables are propagated, so this is visible in the configure step!
       - cmake --version
+    configure:
+      command:
+        - mkdir -p _lgtm_build_dir
+        - cd _lgtm_build_dir
+        # uses AUTOPAS_USE_TEST_GLOB to speed up compilation.
+        - CC=clang CXX=clang++ cmake -DAUTOPAS_BUILD_TESTS=OFF -DAUTOPAS_USE_TEST_GLOB=OFF -DCMAKE_VERBOSE_MAKEFILE=ON -DBUILD_DOCS=OFF -DCATKIN_ENABLE_TESTING=OFF -DBUILD_DOCUMENTATION=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-fpermissive ..
+#    index:
+#      build_command:
+#        - cd _lgtm_build_dir
+#        - make -j 2
