@@ -22,6 +22,7 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/logging/IterationLogger.h"
 
 namespace autopas {
 
@@ -262,6 +263,8 @@ class AutoTuner {
    * Configuration -> vector< iteration, time >
    */
   std::map<Configuration, std::vector<std::pair<size_t, size_t>>> _evidences;
+
+  IterationLogger iterationLogger;
 };
 
 template <class Particle>
@@ -390,6 +393,7 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
 
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
+  autopas::utils::Timer timerIteratePairwise;
   timerTotal.start();
 
   f->initTraversal();
@@ -398,19 +402,27 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
     containerPtr->rebuildNeighborLists(traversal.get());
     timerRebuild.stop();
   }
+  timerIteratePairwise.start();
   containerPtr->iteratePairwise(traversal.get());
+  timerIteratePairwise.stop();
   f->endTraversal(useNewton3);
+
+  timerTotal.stop();
 
   if (doListRebuild) {
     AutoPasLog(debug, "rebuildNeighborLists took {} nanoseconds", timerRebuild.getTotalTime());
   }
+  // TODO: Fix misleading output
+  // actually this is the time for iteratePairwise + init/endTraversal + rebuildNeighborLists
+  // this containing all of this has legacy reasons so that old plot scripts work
+  AutoPasLog(debug, "IteratePairwise took {} nanoseconds", timerTotal.getTotalTime());
 
-  auto runtimeTotal = timerTotal.stop();
-  AutoPasLog(debug, "IteratePairwise took {} nanoseconds", runtimeTotal);
+  iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
+                               timerRebuild.getTotalTime(), timerTotal.getTotalTime());
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
-    addTimeMeasurement(*f, runtimeTotal);
+    addTimeMeasurement(*f, timerTotal.getTotalTime());
   }
 }
 
@@ -461,6 +473,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   }
   tuningTimer.stop();
   AutoPasLog(debug, "Tuning took {} ns.", tuningTimer.getTotalTime());
+  iterationLogger.logTimeTuning(tuningTimer.getTotalTime());
 
   selectCurrentContainer();
   return stillTuning;
