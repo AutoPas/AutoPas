@@ -21,3 +21,12 @@ if (AUTOPAS_Log_GaussianCluster)
     target_compile_definitions(autopas PUBLIC AUTOPAS_Log_GaussianCluster)
     message(STATUS "GaussianClusterLogger enabled.")
 endif ()
+
+
+# option for PredictionsLogger
+option(AUTOPAS_Log_Predictions "Generate a csv file about the predictive tuning strategy that can be used for plotting." OFF)
+set(AUTOPAS_Log_Predictions ON)
+if (AUTOPAS_Log_Predictions)
+    target_compile_definitions(autopas PUBLIC AUTOPAS_Log_Predictions)
+    message(STATUS "PredictionsLogger enabled.")
+endif ()

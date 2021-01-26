@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/utils/logging/PredictionLogger.h>
+
 #include <limits>
 #include <set>
 #include <utility>
@@ -159,10 +161,6 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * Purge configurations from the search space based on their performance in this tuning phase compared to the optimum.
    */
   inline void blacklistBadConfigurations();
-  /**
-   * Print all predictions of the given set to the debug logger.
-   */
-  inline void logAllPredictions(const std::set<Configuration> &configurations);
 
   constexpr static size_t _predictionErrorValue = std::numeric_limits<size_t>::max();
 
@@ -237,6 +235,8 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * this is also the degree of the polynomial.
    */
   unsigned int _evidenceFirstPrediction{3};
+
+  PredictionLogger predictionLogger;
 };
 
 void PredictiveTuning::selectOptimalSearchSpace() {
@@ -296,8 +296,9 @@ void PredictiveTuning::calculatePredictions() {
       break;
     }
   }
-  // if logger is not at least on debug level this does nothing
-  logAllPredictions(_searchSpace);
+  // if AutoPas is compiled without -DAUTOPAS_Log_Predictions this does nothing
+  predictionLogger.logAllPredictions(_searchSpace, _configurationPredictions, _predictionErrorValue,
+                                     _tuningPhaseCounter);
 }
 
 void PredictiveTuning::linePrediction() {
@@ -478,17 +479,6 @@ void PredictiveTuning::newtonPolynomial() {
       // When a configuration was not yet tested twice.
       _configurationPredictions[configuration] = _predictionErrorValue;
       _tooLongNotTestedSearchSpace.emplace(configuration);
-    }
-  }
-}
-
-void PredictiveTuning::logAllPredictions(const std::set<Configuration> &configurations) {
-  if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-    AutoPasLog(debug, "Predictions for tuning phase {}", _tuningPhaseCounter);
-    for (const auto &configuration : configurations) {
-      auto prediction = _configurationPredictions[configuration];
-      AutoPasLog(debug, "Prediction for {} : {}", configuration.toString(),
-                 prediction == _predictionErrorValue ? std::to_string(prediction) : "none");
     }
   }
 }
