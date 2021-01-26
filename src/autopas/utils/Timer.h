@@ -54,7 +54,9 @@ class Timer {
     auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::ostringstream nowStrStr;
     tm unused;
-    return std::put_time(localtime_r(&now, &unused), format.c_str())._M_fmt;
+    std::stringstream ss;
+    ss << std::put_time(localtime_r(&now, &unused), format.c_str());
+    return ss.str();
   }
 
  private:
