@@ -14,18 +14,32 @@
 
 namespace autopas {
 
+/**
+ * Helper to log prediction data of PredictiveTuning to a csv file for easier analysis.
+ *
+ * It uses an asynchronous spd logger to write a csv file named "predictions_<dateStamp>.csv".
+ *
+ * By default logging the data is disabled. It can be enabled by setting the cmake variable AUTOPAS_Log_Predictions
+ * to ON.
+ */
 class PredictionLogger {
  public:
+  /**
+   * Constructor initializes the logger and sets the output file name.
+   */
   PredictionLogger();
 
+  /**
+   * Destructor drops the logger from the spd registry.
+   */
   ~PredictionLogger();
 
   /**
    * Print all predictions of the given set of configurations to the logger.
    * @param configurations
-   * @param _configurationPredictions
-   * @param _predictionErrorValue
-   * @param _tuningPhaseCounter
+   * @param configurationPredictions
+   * @param predictionErrorValue
+   * @param tuningPhaseCounter
    */
   void logAllPredictions(const std::set<Configuration> &configurations,
                          const std::unordered_map<Configuration, size_t, ConfigHash> &configurationPredictions,
