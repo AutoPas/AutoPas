@@ -13,6 +13,7 @@ autopas::PredictionLogger::PredictionLogger() {
   auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(loggerName(), outputFileName);
   // set the pattern to the message only
   logger->set_pattern("%v");
+  spdlog::get(loggerName())->info("Tuning phase,{},Prediction", Configuration().csvHeader());
 #endif
 }
 
@@ -23,7 +24,6 @@ void autopas::PredictionLogger::logAllPredictions(
     const std::unordered_map<Configuration, size_t, ConfigHash> &configurationPredictions, size_t predictionErrorValue,
     size_t tuningPhaseCounter) {
 #ifdef AUTOPAS_Log_Predictions
-  spdlog::get(loggerName())->info("Tuning phase,{},Prediction", configurations.begin()->csvHeader());
   for (const auto &configuration : configurations) {
     auto prediction = configurationPredictions.at(configuration);
     spdlog::get(loggerName())
