@@ -6,6 +6,7 @@ option(
 
 # do nothing if nothing should be done
 if (NOT AUTOPAS_BUILD_TESTS)
+    message(STATUS "AUTOPAS_BUILD_TESTS is disabled. Not building tests.")
     return()
 endif ()
 
