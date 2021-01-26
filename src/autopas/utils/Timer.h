@@ -48,6 +48,7 @@ class Timer {
 
   /**
    * Create a date stamp for the current moment with the given format.
+   * @param format Date stamp format.
    * @return String representation of the current date in the given format.
    */
   static std::string getDateStamp(const std::string &format = "%Y-%m-%d_%H-%M-%S") {
