@@ -6,14 +6,16 @@
 
 #include "PredictionLogger.h"
 
+#include "autopas/utils/Timer.h"
+
 autopas::PredictionLogger::PredictionLogger() {
 #ifdef AUTOPAS_Log_Predictions
-  auto outputFileName("predictions_" + utils::Timer::getDateStamp() + ".csv");
+  auto outputFileName("AutoPas_predictions_" + utils::Timer::getDateStamp() + ".csv");
   // create and register the logger
   auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(loggerName(), outputFileName);
   // set the pattern to the message only
   logger->set_pattern("%v");
-  spdlog::get(loggerName())->info("Tuning phase,{},Prediction", Configuration().csvHeader());
+  logger->info("Tuning phase,{},Prediction", Configuration().csvHeader());
 #endif
 }
 

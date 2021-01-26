@@ -8,16 +8,14 @@
 
 #include <spdlog/async.h>
 
-#include "selectors/Configuration.h"
-#include "utils/Timer.h"
-#include "utils/logging/Logger.h"
+#include "autopas/selectors/Configuration.h"
 
 namespace autopas {
 
 /**
  * Helper to log prediction data of PredictiveTuning to a csv file for easier analysis.
  *
- * It uses an asynchronous spd logger to write a csv file named "predictions_<dateStamp>.csv".
+ * It uses an asynchronous spd logger to write a csv file named "AutoPas_predictions_<dateStamp>.csv".
  *
  * By default logging the data is disabled. It can be enabled by setting the cmake variable AUTOPAS_Log_Predictions
  * to ON.
