@@ -35,7 +35,6 @@ class GaussianClusterLogger {
   /**
    * Constructor
    * @param vecToStringFun function to convert vectors to readable string
-   * @param outputType
    */
   GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun);
 
@@ -49,14 +48,14 @@ class GaussianClusterLogger {
    * Add nodes and edges for given continuous sample.
    * @param clusters all clusters
    * @param discreteVectorMap map to convert index to vector
-   * @param currentContinous continuous sample
+   * @param currentContinuous continuous sample
    * @param means predicted mean for each cluster
    * @param vars predicted variance for each cluster
    * @param neighbourWeights neighbours for each cluster
    */
   void add(const std::vector<GaussianProcess> &clusters,
            const std::vector<GaussianModelTypes::VectorDiscrete> &discreteVectorMap,
-           const GaussianModelTypes::VectorContinuous &currentContinous, const std::vector<double> &means,
+           const GaussianModelTypes::VectorContinuous &currentContinuous, const std::vector<double> &means,
            const std::vector<double> &vars, const GaussianModelTypes::NeighboursWeights &neighbourWeights);
 
   /**
