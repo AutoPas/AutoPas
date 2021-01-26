@@ -17,7 +17,11 @@ autopas::PredictionLogger::PredictionLogger() {
 #endif
 }
 
-autopas::PredictionLogger::~PredictionLogger() { spdlog::drop(loggerName()); }
+autopas::PredictionLogger::~PredictionLogger() {
+#ifdef AUTOPAS_Log_Predictions
+  spdlog::drop(loggerName());
+#endif
+}
 
 void autopas::PredictionLogger::logAllPredictions(
     const std::set<Configuration> &configurations,
