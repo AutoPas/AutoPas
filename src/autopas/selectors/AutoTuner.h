@@ -6,9 +6,6 @@
 
 #pragma once
 
-#include <autopas/utils/logging/TuningDataLogger.h>
-#include <autopas/utils/logging/TuningResultLogger.h>
-
 #include <array>
 #include <memory>
 #include <set>
@@ -26,6 +23,8 @@
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/IterationLogger.h"
+#include "autopas/utils/logging/TuningDataLogger.h"
+#include "autopas/utils/logging/TuningResultLogger.h"
 
 namespace autopas {
 

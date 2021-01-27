@@ -57,13 +57,13 @@ class Configuration {
 
   /**
    * Generate a csv header containing all keys from the toString() method.
-   * @return
+   * @return Contains the header.
    */
   [[nodiscard]] std::string csvHeader() const { return csvRepresentation(true); }
 
   /**
    * Generate a csv representation containing all values from the toString() method.
-   * @return
+   * @return String representing the current configuration.
    */
   [[nodiscard]] std::string csvLine() const { return csvRepresentation(false); }
 
