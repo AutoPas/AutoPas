@@ -59,13 +59,13 @@ class Configuration {
    * Generate a csv header containing all keys from the toString() method.
    * @return Contains the header.
    */
-  [[nodiscard]] std::string csvHeader() const { return csvRepresentation(true); }
+  [[nodiscard]] std::string getCSVHeader() const { return getCSVRepresentation(true); }
 
   /**
    * Generate a csv representation containing all values from the toString() method.
    * @return String representing the current configuration.
    */
-  [[nodiscard]] std::string csvLine() const { return csvRepresentation(false); }
+  [[nodiscard]] std::string getCSVLine() const { return getCSVRepresentation(false); }
 
   /**
    * Returns whether the configuration has been initialized with valid values or as an invalid one.
@@ -109,7 +109,7 @@ class Configuration {
    * @param returnHeaderOnly Switch to return the header or content.
    * @return
    */
-  [[nodiscard]] std::string csvRepresentation(bool returnHeaderOnly) const {
+  [[nodiscard]] std::string getCSVRepresentation(bool returnHeaderOnly) const {
     auto rgx = returnHeaderOnly ?
                                 // match any sequence before a colon and drop any spaces, comma or brackets before it
                    std::regex("[{, ]+([^:]+):[^,]*")
