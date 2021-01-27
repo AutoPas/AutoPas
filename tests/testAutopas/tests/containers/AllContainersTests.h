@@ -1,5 +1,5 @@
 /**
- * @file TestsAllContainers.h
+ * @file AllContainersTests.h
  * @author humig
  * @date 08.07.2019
  */

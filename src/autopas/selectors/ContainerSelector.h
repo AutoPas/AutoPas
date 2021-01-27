@@ -120,9 +120,9 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       break;
     }
     case ContainerOption::verletListsCells: {
-      container = std::make_unique<VerletListsCells<Particle>>(_boxMin, _boxMax, _cutoff, TraversalOption::lc_c08,
-                                                               containerInfo.verletSkin, containerInfo.cellSizeFactor,
-                                                               containerInfo.loadEstimator);
+      container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
+          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
+          containerInfo.loadEstimator);
       break;
     }
     case ContainerOption::verletClusterLists: {
@@ -139,6 +139,13 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     case ContainerOption::varVerletListsAsBuild: {
       container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+      break;
+    }
+
+    case ContainerOption::pairwiseVerletLists: {
+      container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
+          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
+          containerInfo.loadEstimator);
       break;
     }
     default: {

@@ -157,6 +157,31 @@ class TraversalOption : public Option<TraversalOption> {
      * fluctuations.
      */
     vvl_as_built,
+
+    // PairwiseVerletLists Traversals - same traversals as VLC but with a new name for the pairwise container
+    /**
+     * VLCC01Traversal : Equivalent to LCC01Traversal. Schedules all neighbor lists of one cell at once.
+     * Does not support Newton3.
+     */
+    vlp_c01,
+    /**
+     * VLCC18Traversal : Equivalent to LCC18Traversal. Neighbor lists contain only forward neighbors.
+     */
+    vlp_c18,
+    /**
+     * VLCSlicedTraversal : Equivalent to LCSlicedTraversal.
+     */
+    vlp_sliced,
+    /**
+     * VLCSlicedBalancedTraversal : Equivalent to LCSlicedBalancedTraversal.
+     * Tries to balance slice thickness according to a given LoadEstimatorOption.
+     */
+    vlp_sliced_balanced,
+    /**
+     * VLCSlicedC02Traversal : Equivalent to LCSlicedC02Traversal.
+     * 1D slicing with as many slices of minimal thickness as possible. No locks but two-way coloring of slices.
+     */
+    vlp_sliced_c02,
   };
 
   /**
@@ -229,6 +254,13 @@ class TraversalOption : public Option<TraversalOption> {
 
         // VarVerlet Traversals:
         {TraversalOption::vvl_as_built, "vvl_as_built"},
+
+        // PairwiseVerlet Traversals:
+        {TraversalOption::vlp_sliced, "vlp_sliced"},
+        {TraversalOption::vlp_sliced_c02, "vlp_sliced_c02"},
+        {TraversalOption::vlp_c18, "vlp_c18"},
+        {TraversalOption::vlp_c01, "vlp_c01"},
+        {TraversalOption::vlp_sliced_balanced, "vlp_sliced_balanced"},
     };
   };
 

@@ -1,5 +1,5 @@
 /**
- * @file VerletListsCellsNeighborListInterface.h
+ * @file VLCNeighborListInterface.h
  * @author tirgendetwas
  * @date 27.10.20
  */
@@ -14,14 +14,14 @@ namespace autopas {
 /**
  * Interface of neighbor lists to be used with VerletListsCells container.
  * @tparam Particle Type of particle to be used for the neighbor list.
- * */
+ */
 template <class Particle>
-class VerletListsCellsNeighborListInterface {
+class VLCNeighborListInterface {
  public:
   /**
    * Default destructor.
-   * */
-  ~VerletListsCellsNeighborListInterface() = default;
+   */
+  ~VLCNeighborListInterface() = default;
 
   /**
    * Builds AoS neighbor list from underlying linked cells object.
@@ -31,16 +31,16 @@ class VerletListsCellsNeighborListInterface {
    * @param skin Skin of the verlet list.
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
-   * */
+   */
   virtual void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                                     double interactionLength, const TraversalOption buildTraversalOption) = 0;
 
   /**
-   * Get the neighbors list of a particle for this particular neighbor list and container combination.
+   * Gets the number of neighbors over all neighbor lists that belong to this particle.
    * @param particle
-   * @return the neighbor list of the particle
+   * @return the size of the neighbor list(s) of this particle
    */
-  virtual const std::vector<Particle *> &getVerletList(const Particle *particle) const = 0;
+  virtual const size_t getNumberOfPartners(const Particle *particle) const = 0;
 
   /**
    * Returns the container type of this neighbor list and the container it belongs to.

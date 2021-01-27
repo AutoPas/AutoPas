@@ -1,5 +1,5 @@
 /**
- * @file TestsAllContainers.cpp
+ * @file AllContainersTests.cpp
  * @author humig
  * @date 08.07.2019
  */

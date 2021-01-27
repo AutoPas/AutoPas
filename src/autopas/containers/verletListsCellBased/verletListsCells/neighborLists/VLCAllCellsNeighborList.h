@@ -1,35 +1,55 @@
 /**
- * @file VerletListsCellsNeighborList.h
+ * @file VLCAllCellsNeighborList.h
  * @author tirgendetwas
  * @date 25.10.20
+ *
+ * originally from
+ * @file VerletListsCells.h
+ * @author nguyen
+ * @date 30.08.18
  */
 
 #pragma once
 
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsNeighborListInterface.h"
-#include "autopas/options/TraversalOption.h"
-#include "autopas/selectors/TraversalSelector.h"
+#include "VLCAllCellsGeneratorFunctor.h"
+#include "VLCNeighborListInterface.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
+
+/**
+ * TraversalSelector is used for the construction of the list in the applyBuildFunctor method.
+ * Forward declaration necessary to avoid circle of includes:
+ * TraversalSelector includes all VLC traversals include VLCTraversalInterface includes VLCAllCellsNeighborList
+ */
+template <class ParticleCell>
+class TraversalSelector;
 /**
  * Neighbor list to be used with VerletListsCells container. Classic implementation of verlet lists based on linked
  * cells.
  * @tparam Particle Type of particle to be used for this neighbor list.
- * */
+ */
 template <class Particle>
-class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterface<Particle> {
+class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
  public:
   /**
-   * Constructor for VerletListsCellsNeighborList. Initializes private attributes.
-   * */
-  VerletListsCellsNeighborList() : _aosNeighborList{}, _particleToCellMap{} {}
+   * Type of the data structure used to save the neighbor lists.
+   */
+  using listType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
+  /**
+   * Constructor for VLCAllCellsNeighborList. Initializes private attributes.
+   */
+  VLCAllCellsNeighborList() : _aosNeighborList{}, _particleToCellMap{} {}
 
   /**
-   * @copydoc VerletListsCellsNeighborListInterface::buildAoSNeighborList()
-   * */
+   * @copydoc VLCNeighborListInterface::getContainerType()
+   */
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
+
+  /**
+   * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
+   */
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                             double interactionLength, const TraversalOption buildTraversalOption) override {
     // Initialize a neighbor list for each cell.
@@ -54,22 +74,17 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
   }
 
   /**
-   * @copydoc VerletListsCellsNeighborListInterface::getVerletList()
-   * */
-  const std::vector<Particle *> &getVerletList(const Particle *particle) const override {
-    const auto [cellIndex, particleIndexInCell] = _particleToCellMap.at(const_cast<Particle *>(particle));
-    return _aosNeighborList.at(cellIndex).at(particleIndexInCell).second;
+   * @copydoc VLCNeighborListInterface::getNumberOfPartners()
+   */
+  const size_t getNumberOfPartners(const Particle *particle) const override {
+    const auto &[cellIndex, particleIndexInCell] = _particleToCellMap.at(const_cast<Particle *>(particle));
+    return _aosNeighborList.at(cellIndex).at(particleIndexInCell).second.size();
   }
-
-  /**
-   * @copydoc VerletListsCellsNeighborListInterface::getContainerType()
-   * */
-  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
 
   /**
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
-   * */
+   */
   typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSNeighborList() { return _aosNeighborList; }
 
  private:
@@ -81,11 +96,10 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
    * @param skin Skin of the verlet list.
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
-   * */
+   */
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                          double interactionLength, const TraversalOption buildTraversalOption) {
-    typename VerletListsCellsHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborList, _particleToCellMap,
-                                                                             cutoff + skin);
+    VLCAllCellsGeneratorFunctor<Particle> f(_aosNeighborList, _particleToCellMap, cutoff + skin);
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.
     TraversalSelector<FullParticleCell<Particle>> traversalSelector;
@@ -101,7 +115,7 @@ class VerletListsCellsNeighborList : public VerletListsCellsNeighborListInterfac
 
   /**
    * Internal neighbor list structure in AoS format - Verlet lists for each particle for each cell.
-   * */
+   */
   typename VerletListsCellsHelpers<Particle>::NeighborListsType _aosNeighborList;
 
   /**

@@ -1,3 +1,8 @@
+if (NOT AUTOPAS_BUILD_TESTS)
+    message(STATUS "AUTOPAS_BUILD_TESTS is disabled. Not building MDFlex tests!")
+    return()
+endif ()
+
 file(
     GLOB_RECURSE
     MDFlexTest_SRC
