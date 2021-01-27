@@ -195,7 +195,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    */
   std::set<Configuration> _validSearchSpace{};
   /**
-   * Stores the the last tuning phase in which configuration was tested.
+   * Stores the last tuning phase in which configuration was tested.
    */
   std::unordered_map<Configuration, size_t, ConfigHash> _lastTest{};
   /**
