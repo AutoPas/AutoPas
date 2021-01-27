@@ -18,7 +18,7 @@ namespace autopas {
  * The resulting graph represents each cluster as a node and the weight between clusters as edges.
  * The graph is printed as two csv-files.
  *
- * By default logging the data is disabled. It can be enabled by setting the cmake variable AUTOPAS_Log_GaussianCluster
+ * By default logging the data is disabled. It can be enabled by setting the cmake variable AUTOPAS_LOG_GAUSSIANCLUSTER
  * to ON.
  */
 class GaussianClusterLogger {

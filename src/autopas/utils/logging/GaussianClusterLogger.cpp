@@ -15,7 +15,7 @@ namespace autopas {
 
 GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun)
     : _nodeStream(streamMode), _edgeStream(streamMode), _vecToStringFun(std::move(vecToStringFun)) {
-#ifdef AUTOPAS_Log_GaussianCluster
+#ifdef AUTOPAS_LOG_GAUSSIANCLUSTER
   _outputFileName = "gaussianCluster_graph_" + utils::Timer::getDateStamp() + ".out";
 
   reset();
@@ -27,7 +27,7 @@ void GaussianClusterLogger::setVectorToStringFun(const GaussianModelTypes::Vecto
 }
 
 void GaussianClusterLogger::reset() {
-#ifdef AUTOPAS_Log_GaussianCluster
+#ifdef AUTOPAS_LOG_GAUSSIANCLUSTER
   _nodeStream.str(node_start_marker);
   _nodeStream << std::endl << "Label,mean,var,numEvidence" << std::endl;
   _edgeStream.str(edge_start_marker);
@@ -42,7 +42,7 @@ void GaussianClusterLogger::add(const std::vector<GaussianProcess> &clusters,
                                 const GaussianModelTypes::VectorContinuous &currentContinuous,
                                 const std::vector<double> &means, const std::vector<double> &vars,
                                 const GaussianModelTypes::NeighboursWeights &neighbourWeights) {
-#ifdef AUTOPAS_Log_GaussianCluster
+#ifdef AUTOPAS_LOG_GAUSSIANCLUSTER
   // skip continuous values already added
   if (std::find(_currentContinuous.begin(), _currentContinuous.end(), currentContinuous) != _currentContinuous.end()) {
     return;
@@ -71,7 +71,7 @@ void GaussianClusterLogger::add(const std::vector<GaussianProcess> &clusters,
 }
 
 void GaussianClusterLogger::flush() {
-#ifdef AUTOPAS_Log_GaussianCluster
+#ifdef AUTOPAS_LOG_GAUSSIANCLUSTER
   std::ofstream outputFile(_outputFileName, std::ofstream::out | std::ofstream::app);
   if (outputFile.is_open()) {
     outputFile << _nodeStream.str();

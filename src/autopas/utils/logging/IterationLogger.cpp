@@ -9,7 +9,7 @@
 #include "utils/Timer.h"
 
 autopas::IterationLogger::IterationLogger() {
-#ifdef AUTOPAS_Log_Iterations
+#ifdef AUTOPAS_LOG_ITERATIONS
   auto outputFileName("AutoPas_iterationPerformance_" + utils::Timer::getDateStamp() + ".csv");
   // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
   // create and register a non-asychronous logger to write the header
@@ -32,13 +32,13 @@ autopas::IterationLogger::IterationLogger() {
 }
 
 autopas::IterationLogger::~IterationLogger() {
-#ifdef AUTOPAS_Log_Iterations
+#ifdef AUTOPAS_LOG_ITERATIONS
   spdlog::drop(loggerName());
 #endif
 }
 
 void autopas::IterationLogger::logTimeTuning(long timeTuning) {
-#ifdef AUTOPAS_Log_Iterations
+#ifdef AUTOPAS_LOG_ITERATIONS
   bufferTimeTuning = timeTuning;
 #endif
 }
@@ -46,7 +46,7 @@ void autopas::IterationLogger::logTimeTuning(long timeTuning) {
 void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
                                             bool inTuningPhase, long timeIteratePairwise, long timeRebuildNeighborLists,
                                             long timeWholeIteration) {
-#ifdef AUTOPAS_Log_Iterations
+#ifdef AUTOPAS_LOG_ITERATIONS
   spdlog::get(loggerName())
       ->info("{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false", configuration.getCSVLine(),
              timeIteratePairwise, timeRebuildNeighborLists, timeWholeIteration, bufferTimeTuning);

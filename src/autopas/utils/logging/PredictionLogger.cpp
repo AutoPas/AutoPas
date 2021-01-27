@@ -9,7 +9,7 @@
 #include "autopas/utils/Timer.h"
 
 autopas::PredictionLogger::PredictionLogger() {
-#ifdef AUTOPAS_Log_Predictions
+#ifdef AUTOPAS_LOG_PREDICTIONS
   auto outputFileName("AutoPas_predictions_" + utils::Timer::getDateStamp() + ".csv");
   // create and register the logger
   auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(loggerName(), outputFileName);
@@ -20,7 +20,7 @@ autopas::PredictionLogger::PredictionLogger() {
 }
 
 autopas::PredictionLogger::~PredictionLogger() {
-#ifdef AUTOPAS_Log_Predictions
+#ifdef AUTOPAS_LOG_PREDICTIONS
   spdlog::drop(loggerName());
 #endif
 }
@@ -29,7 +29,7 @@ void autopas::PredictionLogger::logAllPredictions(
     const std::set<Configuration> &configurations,
     const std::unordered_map<Configuration, size_t, ConfigHash> &configurationPredictions, size_t predictionErrorValue,
     size_t tuningPhaseCounter) {
-#ifdef AUTOPAS_Log_Predictions
+#ifdef AUTOPAS_LOG_PREDICTIONS
   for (const auto &configuration : configurations) {
     auto prediction = configurationPredictions.at(configuration);
     spdlog::get(loggerName())

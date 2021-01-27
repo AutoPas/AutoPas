@@ -296,7 +296,7 @@ void PredictiveTuning::calculatePredictions() {
       break;
     }
   }
-  // if AutoPas is compiled without -DAUTOPAS_Log_Predictions this does nothing
+  // if AutoPas is compiled without -DAUTOPAS_LOG_PREDICTIONS this does nothing
   predictionLogger.logAllPredictions(_searchSpace, _configurationPredictions, _predictionErrorValue,
                                      _tuningPhaseCounter);
 }

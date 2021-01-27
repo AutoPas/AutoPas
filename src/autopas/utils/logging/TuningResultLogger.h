@@ -17,7 +17,7 @@ namespace autopas {
  *
  * It uses an asynchronous spd logger to write a csv file named "AutoPas_iterationPerformance_<dateStamp>.csv".
  *
- * By default logging the data is disabled. It can be enabled by setting the cmake variable AUTOPAS_Log_TuningResults
+ * By default logging the data is disabled. It can be enabled by setting the cmake variable AUTOPAS_LOG_TUNINGRESULTS
  * to ON.
  */
 class TuningResultLogger {

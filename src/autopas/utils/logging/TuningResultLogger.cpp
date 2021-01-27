@@ -9,7 +9,7 @@
 #include "utils/Timer.h"
 
 autopas::TuningResultLogger::TuningResultLogger() {
-#ifdef AUTOPAS_Log_TuningResults
+#ifdef AUTOPAS_LOG_TUNINGRESULTS
   auto outputFileName("AutoPas_tuningResults_" + utils::Timer::getDateStamp() + ".csv");
   // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
   // create and register a non-asychronous logger to write the header
@@ -30,14 +30,14 @@ autopas::TuningResultLogger::TuningResultLogger() {
 }
 
 autopas::TuningResultLogger::~TuningResultLogger() {
-#ifdef AUTOPAS_Log_TuningResults
+#ifdef AUTOPAS_LOG_TUNINGRESULTS
   spdlog::drop(loggerName());
 #endif
 }
 
 void autopas::TuningResultLogger::logTuningResult(const autopas::Configuration &configuration, size_t iteration,
                                                   long timeTuning) {
-#ifdef AUTOPAS_Log_TuningResults
+#ifdef AUTOPAS_LOG_TUNINGRESULTS
   spdlog::get(loggerName())->info("{},{},{}", iteration, configuration.getCSVLine(), timeTuning);
 #endif
 }
