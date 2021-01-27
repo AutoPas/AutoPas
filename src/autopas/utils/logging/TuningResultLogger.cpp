@@ -18,7 +18,7 @@ autopas::TuningResultLogger::TuningResultLogger() {
   // set the pattern to the message only
   headerLogger->set_pattern("%v");
   // print csv header
-  headerLogger->info("Date,Iteration,{},tuning[ns]", Configuration().csvHeader());
+  headerLogger->info("Date,Iteration,{},tuning[ns]", Configuration().getCSVHeader());
   spdlog::drop(headerLoggerName);
   // End of workaround
 
@@ -38,6 +38,6 @@ autopas::TuningResultLogger::~TuningResultLogger() {
 void autopas::TuningResultLogger::logTuningResult(const autopas::Configuration &configuration, size_t iteration,
                                                   long timeTuning) {
 #ifdef AUTOPAS_Log_TuningResults
-  spdlog::get(loggerName())->info("{},{},{}", iteration, configuration.csvLine(), timeTuning);
+  spdlog::get(loggerName())->info("{},{},{}", iteration, configuration.getCSVLine(), timeTuning);
 #endif
 }

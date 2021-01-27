@@ -22,7 +22,7 @@ autopas::TuningDataLogger::TuningDataLogger(size_t numSamples) {
     samplesHeader << ",sample" << i;
   }
   // print csv header
-  headerLogger->info("Date,Iteration,{}{},Reduced,Smoothed", Configuration().csvHeader(), samplesHeader.str());
+  headerLogger->info("Date,Iteration,{}{},Reduced,Smoothed", Configuration().getCSVHeader(), samplesHeader.str());
   spdlog::drop(headerLoggerName);
   // End of workaround
 
@@ -44,7 +44,7 @@ void autopas::TuningDataLogger::logTuningData(const autopas::Configuration &conf
                                               size_t smoothedVale) {
 #ifdef AUTOPAS_Log_TuningData
   spdlog::get(loggerName())
-      ->info("{},{},{},{},{}", iteration, configuration.csvLine(), utils::ArrayUtils::to_string(samples, ",", {"", ""}),
+      ->info("{},{},{},{},{}", iteration, configuration.getCSVLine(), utils::ArrayUtils::to_string(samples, ",", {"", ""}),
              reducedValue, smoothedVale);
 #endif
 }

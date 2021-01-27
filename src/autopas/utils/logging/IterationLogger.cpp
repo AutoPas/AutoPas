@@ -20,7 +20,7 @@ autopas::IterationLogger::IterationLogger() {
   // print csv header
   headerLogger->info(
       "Date,Iteration,inTuningPhase,{},iteratePairwise[ns],rebuildNeighborLists[ns],wholeIteration[ns],tuning[ns]",
-      Configuration().csvHeader());
+      Configuration().getCSVHeader());
   spdlog::drop(headerLoggerName);
   // End of workaround
 
@@ -48,7 +48,7 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                                             long timeWholeIteration) {
 #ifdef AUTOPAS_Log_Iterations
   spdlog::get(loggerName())
-      ->info("{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false", configuration.csvLine(),
+      ->info("{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false", configuration.getCSVLine(),
              timeIteratePairwise, timeRebuildNeighborLists, timeWholeIteration, bufferTimeTuning);
 
   // reset buffer
