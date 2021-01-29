@@ -158,7 +158,7 @@ inline void LCC01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNew
   auto it = nonHaloCells.begin();
   for (uint64_t z = 1; z < end_z; ++z) {
     for (uint64_t y = 1; y < end_y; ++y) {
-      std::iota(it, it + length_x, utils::ThreeDimensionalMapping::threeToOneD(1ul, y, z, this->_cellsPerDimension));
+      std::iota(it, it + length_x, utils::ThreeDimensionalMapping::threeToOneD(1ull, y, z, this->_cellsPerDimension));
       it += length_x;
     }
   }

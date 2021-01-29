@@ -1,5 +1,6 @@
 IF (MSVC)
     message(STATUS "MSVC detected, disabling active harmony support.")
+
     return()
 ENDIF()
 

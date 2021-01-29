@@ -12,6 +12,6 @@ namespace autopas::utils::Math {
  * PI
  * @todo c++20: replace with std::numbers::pi, see https://en.cppreference.com/w/cpp/numeric/constants
  */
-double getPI() { return std::atan(1.) / 4; };
+double getPI();
 
 }  // namespace autopas::utils::Math

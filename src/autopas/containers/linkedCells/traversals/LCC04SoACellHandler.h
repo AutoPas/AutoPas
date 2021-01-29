@@ -334,7 +334,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 
   _baseOffsets.resize(ov1);
 
-  std::array<uint64_t, 3> overlap_1 = utils::ArrayMath::addScalar(_overlap, 1ul);
+  std::array<uint64_t, 3> overlap_1 = utils::ArrayMath::addScalar(_overlap, 1ull);
 
   std::vector<uint64_t> cellOffsets;
   cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
@@ -346,7 +346,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 
   for (uint64_t x = 0ul; x <= _overlap[0]; ++x) {
     for (uint64_t y = 0ul; y <= _overlap[1]; ++y) {
-      _baseOffsets[x].push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, 0ul, cellsPerDimension));
+      _baseOffsets[x].push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, 0ull, cellsPerDimension));
       for (uint64_t z = 0ul; z <= _overlap[2]; ++z) {
         cellOffsets.push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension));
       }

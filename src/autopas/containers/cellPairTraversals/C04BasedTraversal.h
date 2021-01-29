@@ -55,7 +55,7 @@ template <typename LoopBody>
 inline void C04BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::c04Traversal(
     LoopBody &&loopBody) {
   const auto end = utils::ArrayMath::sub(this->_cellsPerDimension, this->_overlap);
-  auto stride = utils::ArrayMath::addScalar(this->_overlap, 1ul);
+  auto stride = utils::ArrayMath::addScalar(this->_overlap, 1ull);
   stride[0] = 1;
   this->cTraversal(std::forward<LoopBody>(loopBody), end, stride);
 }

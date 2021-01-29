@@ -17,14 +17,15 @@ add_library(autopas STATIC $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC}
 target_link_libraries(
     autopas
     PUBLIC
-        rt # required for Time.h
+        $<$<NOT:$<BOOL:${MSVC}>>:rt> # required for Time.h, but not on msvc
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_MPI}>:MPI::MPI_CXX>
     PRIVATE
         # harmony and Eigen3 are only needed privately when building AutoPas.
-        harmony Eigen3
+        #harmony
+        Eigen3
 )
 
 # Ompstuff needs to be here because OpenMP.cmake needs to run before this file to create to OpenMP

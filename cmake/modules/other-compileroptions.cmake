@@ -30,8 +30,13 @@ if(MSVC)
             precise>
             # MSVC:
             # /permissive- for specifiers "and" and "or" (the ones replacing &&, resp. ||)
+            /permissive-
             # /EHsc to be able to build spdlog
-            /permissive- /EHsc
+            /EHsc
+            # /experimental:newLambdaProcessor needed for some lambda expressions.
+            /experimental:newLambdaProcessor
+            # Needed to compile (big files)
+            /bigobj
             PRIVATE
             # no warnings for intel because it's mainly spam, but we disable one, because of a compiler
             # bug:
