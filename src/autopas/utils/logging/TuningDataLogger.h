@@ -26,7 +26,7 @@ class TuningDataLogger {
    * Constructor initializes the logger and sets the output file name.
    * @param numSamples Number of samples that are taken per configuration.
    */
-  explicit TuningDataLogger(size_t numSamples);
+  explicit TuningDataLogger(size_t numSamples, const std::string &outputSuffix = "");
 
   /**
    * Destructor drops the logger from the spd registry.

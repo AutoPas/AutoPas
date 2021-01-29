@@ -25,7 +25,7 @@ class PredictionLogger {
   /**
    * Constructor initializes the logger and sets the output file name.
    */
-  PredictionLogger();
+  explicit PredictionLogger(const std::string &outputSuffix = "");
 
   /**
    * Destructor drops the logger from the spd registry.

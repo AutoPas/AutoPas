@@ -25,7 +25,7 @@ class IterationLogger {
   /**
    * Constructor initializes the logger and sets the output file name.
    */
-  IterationLogger();
+  explicit IterationLogger(const std::string &outputSuffix = "");
 
   /**
    * Destructor drops the logger from the spd registry.

@@ -25,7 +25,7 @@ class TuningResultLogger {
   /**
    * Constructor initializes the logger and sets the output file name.
    */
-  TuningResultLogger();
+  explicit TuningResultLogger(const std::string &outputSuffix = "");
 
   /**
    * Destructor drops the logger from the spd registry.

@@ -8,9 +8,9 @@
 
 #include "autopas/utils/Timer.h"
 
-autopas::PredictionLogger::PredictionLogger() {
+autopas::PredictionLogger::PredictionLogger(const std::string &outputSuffix) {
 #ifdef AUTOPAS_LOG_PREDICTIONS
-  auto outputFileName("AutoPas_predictions_" + utils::Timer::getDateStamp() + ".csv");
+  auto outputFileName("AutoPas_predictions_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
   // create and register the logger
   auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(loggerName(), outputFileName);
   // set the pattern to the message only

@@ -60,7 +60,8 @@ class AutoTuner {
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
-            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples)
+            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
+            const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
@@ -71,7 +72,9 @@ class AutoTuner {
         _maxSamples(maxSamples),
         _samples(maxSamples),
         _iteration(0),
-        _tuningDataLogger(maxSamples) {
+        _iterationLogger(outputSuffix),
+        _tuningResultLogger(outputSuffix),
+        _tuningDataLogger(maxSamples, outputSuffix) {
     if (_tuningStrategy->searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
     }

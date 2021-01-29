@@ -8,9 +8,9 @@
 
 #include "utils/Timer.h"
 
-autopas::TuningResultLogger::TuningResultLogger() {
+autopas::TuningResultLogger::TuningResultLogger(const std::string &outputSuffix) {
 #ifdef AUTOPAS_LOG_TUNINGRESULTS
-  auto outputFileName("AutoPas_tuningResults_" + utils::Timer::getDateStamp() + ".csv");
+  auto outputFileName("AutoPas_tuningResults_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
   // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
   // create and register a non-asychronous logger to write the header
   auto headerLoggerName = loggerName() + "header";

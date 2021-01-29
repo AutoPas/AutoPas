@@ -9,8 +9,9 @@
 #include <Eigen/Core>
 #include <utility>
 
-#include "GaussianProcess.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
+#include "autopas/selectors/tuningStrategy/GaussianModel/GaussianModelTypes.h"
+#include "autopas/selectors/tuningStrategy/GaussianModel/GaussianProcess.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
@@ -63,7 +64,8 @@ class GaussianCluster {
    * @param vectorToString function to convert vectors to a readable string
    */
   GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims, WeightFunction weightFun, double sigma,
-                  Random &rngRef, const GaussianModelTypes::VectorToStringFun &vectorToString = defaultVecToString)
+                  Random &rngRef, const GaussianModelTypes::VectorToStringFun &vectorToString = defaultVecToString,
+                  const std::string &outputSuffix = "")
       : _dimRestriction(dimRestriction),
         _continuousDims(continuousDims),
         _clusters(),
@@ -73,7 +75,7 @@ class GaussianCluster {
         _numEvidence(0),
         _sigma(sigma),
         _rng(rngRef),
-        _logger(std::make_unique<GaussianClusterLogger>(vectorToString)) {
+        _logger(std::make_unique<GaussianClusterLogger>(vectorToString, outputSuffix)) {
     initClusters();
   }
 

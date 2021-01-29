@@ -13,10 +13,11 @@
 
 namespace autopas {
 
-GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun)
+GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun,
+                                             const std::string &outputSuffix)
     : _nodeStream(streamMode), _edgeStream(streamMode), _vecToStringFun(std::move(vecToStringFun)) {
 #ifdef AUTOPAS_LOG_GAUSSIANCLUSTER
-  _outputFileName = "gaussianCluster_graph_" + utils::Timer::getDateStamp() + ".out";
+  _outputFileName = "gaussianCluster_graph_" + outputSuffix + utils::Timer::getDateStamp() + ".out";
 
   reset();
 #endif

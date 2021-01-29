@@ -8,9 +8,9 @@
 
 #include "utils/Timer.h"
 
-autopas::IterationLogger::IterationLogger() {
+autopas::IterationLogger::IterationLogger(const std::string &outputSuffix) {
 #ifdef AUTOPAS_LOG_ITERATIONS
-  auto outputFileName("AutoPas_iterationPerformance_" + utils::Timer::getDateStamp() + ".csv");
+  auto outputFileName("AutoPas_iterationPerformance_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
   // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
   // create and register a non-asychronous logger to write the header
   auto headerLoggerName = loggerName() + "header";

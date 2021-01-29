@@ -8,9 +8,9 @@
 
 #include "utils/Timer.h"
 
-autopas::TuningDataLogger::TuningDataLogger(size_t numSamples) {
+autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string &outputSuffix) {
 #ifdef AUTOPAS_LOG_TUNINGDATA
-  auto outputFileName("AutoPas_tuningData_" + utils::Timer::getDateStamp() + ".csv");
+  auto outputFileName("AutoPas_tuningData_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
   // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
   // create and register a non-asychronous logger to write the header
   auto headerLoggerName = loggerName() + "header";
@@ -44,7 +44,7 @@ void autopas::TuningDataLogger::logTuningData(const autopas::Configuration &conf
                                               size_t smoothedVale) {
 #ifdef AUTOPAS_LOG_TUNINGDATA
   spdlog::get(loggerName())
-      ->info("{},{},{},{},{}", iteration, configuration.getCSVLine(), utils::ArrayUtils::to_string(samples, ",", {"", ""}),
-             reducedValue, smoothedVale);
+      ->info("{},{},{},{},{}", iteration, configuration.getCSVLine(),
+             utils::ArrayUtils::to_string(samples, ",", {"", ""}), reducedValue, smoothedVale);
 #endif
 }

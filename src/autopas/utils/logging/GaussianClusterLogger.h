@@ -8,8 +8,8 @@
 
 #include <unordered_set>
 
-#include "selectors/tuningStrategy/GaussianModel/GaussianModelTypes.h"
-#include "selectors/tuningStrategy/GaussianModel/GaussianProcess.h"
+#include "autopas/selectors/tuningStrategy/GaussianModel/GaussianModelTypes.h"
+#include "autopas/selectors/tuningStrategy/GaussianModel/GaussianProcess.h"
 
 namespace autopas {
 
@@ -36,7 +36,8 @@ class GaussianClusterLogger {
    * Constructor
    * @param vecToStringFun function to convert vectors to readable string
    */
-  GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun);
+  explicit GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun,
+                                 const std::string &outputSuffix = "");
 
   /**
    * Change the used function to convert from vector to string.
