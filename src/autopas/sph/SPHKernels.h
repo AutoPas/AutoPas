@@ -11,7 +11,6 @@
 #include <cmath>
 
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/Constants.h"
 
 namespace autopas {
 namespace sph {
@@ -19,8 +18,7 @@ namespace sph {
  * class to define a kernel function for SPH simulations
  */
 class SPHKernels {
-  /// @todo c++20: make constexpr, once getPI is constexpr.
-  static inline const double pi{autopas::utils::Math::getPI()};
+  static inline const double pi = M_PI;
   static constexpr double kernelSupportRadius = 2.5;
   // const double C_CFL = 0.3;
  public:

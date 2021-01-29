@@ -37,7 +37,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
     overlap[d] = std::ceil(cutoff / 1.0);
   }
   const auto cellsPerDim =
-      autopas::utils::ArrayMath::add(edgeLength, autopas::utils::ArrayMath::mulScalar(overlap, 2ul));
+      autopas::utils::ArrayMath::add(edgeLength, autopas::utils::ArrayMath::mulScalar(overlap, 2ull));
   NumThreadGuard numThreadGuard(4);
   // clustersize is 32 if traversal has something like cluster in it, otherwise 0.
   unsigned int clusterSize = traversalOption.to_string().find("luster") != std::string::npos ? 32 : 0;

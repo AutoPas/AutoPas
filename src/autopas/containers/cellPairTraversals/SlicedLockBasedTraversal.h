@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <numeric>
+
 #include "autopas/containers/cellPairTraversals/SlicedBasedTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/Timer.h"

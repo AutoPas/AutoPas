@@ -9,14 +9,13 @@
 #include <Eigen/Core>
 #include <cmath>
 
-#include "Constants.h"
 
 namespace autopas::utils::Math {
 
 /**
  * Factor of PDF of standard normal distribution.
  */
-const double normalScale = 1. / std::sqrt(2 * getPI());
+const double normalScale = 1. / std::sqrt(2 * M_PI);
 
 /**
  * No-overhead power function with exponent known at compile time.

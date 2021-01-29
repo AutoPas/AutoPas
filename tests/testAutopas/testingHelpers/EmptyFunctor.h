@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <glob.h>
 #if defined(AUTOPAS_CUDA)
 #include "cuda_runtime.h"
 #endif
