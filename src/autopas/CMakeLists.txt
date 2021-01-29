@@ -24,7 +24,7 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_MPI}>:MPI::MPI_CXX>
     PRIVATE
         # harmony and Eigen3 are only needed privately when building AutoPas.
-        #harmony
+        $<$<NOT:$<BOOL:${MSVC}>>:harmony>
         Eigen3
 )
 
