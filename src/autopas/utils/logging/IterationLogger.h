@@ -24,6 +24,7 @@ class IterationLogger {
  public:
   /**
    * Constructor initializes the logger and sets the output file name.
+   * @param outputSuffix Suffix for all output files produced by this class.
    */
   explicit IterationLogger(const std::string &outputSuffix = "");
 

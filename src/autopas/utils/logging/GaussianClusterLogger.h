@@ -35,6 +35,7 @@ class GaussianClusterLogger {
   /**
    * Constructor
    * @param vecToStringFun function to convert vectors to readable string
+   * @param outputSuffix Suffix for all output files produced by this class.
    */
   explicit GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun,
                                  const std::string &outputSuffix = "");

@@ -62,6 +62,7 @@ class GaussianCluster {
    * @param sigma fixed noise
    * @param rngRef reference to random number generator
    * @param vectorToString function to convert vectors to a readable string
+   * @param outputSuffix Suffix for all output files produced by this class.
    */
   GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims, WeightFunction weightFun, double sigma,
                   Random &rngRef, const GaussianModelTypes::VectorToStringFun &vectorToString = defaultVecToString,

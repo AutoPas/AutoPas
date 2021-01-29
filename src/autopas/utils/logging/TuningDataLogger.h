@@ -25,6 +25,7 @@ class TuningDataLogger {
   /**
    * Constructor initializes the logger and sets the output file name.
    * @param numSamples Number of samples that are taken per configuration.
+   * @param outputSuffix Suffix for all output files produced by this class.
    */
   explicit TuningDataLogger(size_t numSamples, const std::string &outputSuffix = "");
 
