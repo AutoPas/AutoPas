@@ -123,7 +123,7 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
   const uint64_t ov1_squared = ov1 * ov1;
   //////////////////////////////
 
-  std::array<uint64_t, 3> overlap_1 = utils::ArrayMath::addScalar(_overlap, 1ul);
+  std::array<uint64_t, 3> overlap_1 = utils::ArrayMath::addScalar(_overlap, 1ull);
 
   std::vector<uint64_t> cellOffsets;
   cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
