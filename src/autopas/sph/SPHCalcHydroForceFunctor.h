@@ -114,25 +114,25 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
-    double *const __restrict__ densityptr = soa.template begin<Particle::AttributeNames::density>();
-    double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr = soa.template begin<Particle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr = soa.template begin<Particle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr = soa.template begin<Particle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr = soa.template begin<Particle::AttributeNames::engDot>();
+    double *const __restrict massptr = soa.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict densityptr = soa.template begin<Particle::AttributeNames::density>();
+    double *const __restrict smthptr = soa.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict soundSpeedptr = soa.template begin<Particle::AttributeNames::soundSpeed>();
+    double *const __restrict pressureptr = soa.template begin<Particle::AttributeNames::pressure>();
+    double *const __restrict vsigmaxptr = soa.template begin<Particle::AttributeNames::vsigmax>();
+    double *const __restrict engDotptr = soa.template begin<Particle::AttributeNames::engDot>();
 
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr = soa.template begin<Particle::AttributeNames::velX>();
-    double *const __restrict__ velYptr = soa.template begin<Particle::AttributeNames::velY>();
-    double *const __restrict__ velZptr = soa.template begin<Particle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr = soa.template begin<Particle::AttributeNames::accX>();
-    double *const __restrict__ accYptr = soa.template begin<Particle::AttributeNames::accY>();
-    double *const __restrict__ accZptr = soa.template begin<Particle::AttributeNames::accZ>();
+    double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict velXptr = soa.template begin<Particle::AttributeNames::velX>();
+    double *const __restrict velYptr = soa.template begin<Particle::AttributeNames::velY>();
+    double *const __restrict velZptr = soa.template begin<Particle::AttributeNames::velZ>();
+    double *const __restrict accXptr = soa.template begin<Particle::AttributeNames::accX>();
+    double *const __restrict accYptr = soa.template begin<Particle::AttributeNames::accY>();
+    double *const __restrict accZptr = soa.template begin<Particle::AttributeNames::accZ>();
 
-    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     for (unsigned int indexFirst = 0; indexFirst < soa.getNumParticles(); ++indexFirst) {
       // checks whether particle i is owned.
@@ -231,44 +231,44 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    double *const __restrict__ massptr1 = soa1.template begin<Particle::AttributeNames::mass>();
-    double *const __restrict__ densityptr1 = soa1.template begin<Particle::AttributeNames::density>();
-    double *const __restrict__ smthptr1 = soa1.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr1 = soa1.template begin<Particle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr1 = soa1.template begin<Particle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr1 = soa1.template begin<Particle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr1 = soa1.template begin<Particle::AttributeNames::engDot>();
+    double *const __restrict massptr1 = soa1.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict densityptr1 = soa1.template begin<Particle::AttributeNames::density>();
+    double *const __restrict smthptr1 = soa1.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict soundSpeedptr1 = soa1.template begin<Particle::AttributeNames::soundSpeed>();
+    double *const __restrict pressureptr1 = soa1.template begin<Particle::AttributeNames::pressure>();
+    double *const __restrict vsigmaxptr1 = soa1.template begin<Particle::AttributeNames::vsigmax>();
+    double *const __restrict engDotptr1 = soa1.template begin<Particle::AttributeNames::engDot>();
 
-    double *const __restrict__ xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr1 = soa1.template begin<Particle::AttributeNames::velX>();
-    double *const __restrict__ velYptr1 = soa1.template begin<Particle::AttributeNames::velY>();
-    double *const __restrict__ velZptr1 = soa1.template begin<Particle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr1 = soa1.template begin<Particle::AttributeNames::accX>();
-    double *const __restrict__ accYptr1 = soa1.template begin<Particle::AttributeNames::accY>();
-    double *const __restrict__ accZptr1 = soa1.template begin<Particle::AttributeNames::accZ>();
+    double *const __restrict xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict velXptr1 = soa1.template begin<Particle::AttributeNames::velX>();
+    double *const __restrict velYptr1 = soa1.template begin<Particle::AttributeNames::velY>();
+    double *const __restrict velZptr1 = soa1.template begin<Particle::AttributeNames::velZ>();
+    double *const __restrict accXptr1 = soa1.template begin<Particle::AttributeNames::accX>();
+    double *const __restrict accYptr1 = soa1.template begin<Particle::AttributeNames::accY>();
+    double *const __restrict accZptr1 = soa1.template begin<Particle::AttributeNames::accZ>();
 
-    double *const __restrict__ massptr2 = soa2.template begin<Particle::AttributeNames::mass>();
-    double *const __restrict__ densityptr2 = soa2.template begin<Particle::AttributeNames::density>();
-    double *const __restrict__ smthptr2 = soa2.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr2 = soa2.template begin<Particle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr2 = soa2.template begin<Particle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr2 = soa2.template begin<Particle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr2 = soa2.template begin<Particle::AttributeNames::engDot>();
+    double *const __restrict massptr2 = soa2.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict densityptr2 = soa2.template begin<Particle::AttributeNames::density>();
+    double *const __restrict smthptr2 = soa2.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict soundSpeedptr2 = soa2.template begin<Particle::AttributeNames::soundSpeed>();
+    double *const __restrict pressureptr2 = soa2.template begin<Particle::AttributeNames::pressure>();
+    double *const __restrict vsigmaxptr2 = soa2.template begin<Particle::AttributeNames::vsigmax>();
+    double *const __restrict engDotptr2 = soa2.template begin<Particle::AttributeNames::engDot>();
 
-    double *const __restrict__ xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr2 = soa2.template begin<Particle::AttributeNames::velX>();
-    double *const __restrict__ velYptr2 = soa2.template begin<Particle::AttributeNames::velY>();
-    double *const __restrict__ velZptr2 = soa2.template begin<Particle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr2 = soa2.template begin<Particle::AttributeNames::accX>();
-    double *const __restrict__ accYptr2 = soa2.template begin<Particle::AttributeNames::accY>();
-    double *const __restrict__ accZptr2 = soa2.template begin<Particle::AttributeNames::accZ>();
+    double *const __restrict xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict velXptr2 = soa2.template begin<Particle::AttributeNames::velX>();
+    double *const __restrict velYptr2 = soa2.template begin<Particle::AttributeNames::velY>();
+    double *const __restrict velZptr2 = soa2.template begin<Particle::AttributeNames::velZ>();
+    double *const __restrict accXptr2 = soa2.template begin<Particle::AttributeNames::accX>();
+    double *const __restrict accYptr2 = soa2.template begin<Particle::AttributeNames::accY>();
+    double *const __restrict accZptr2 = soa2.template begin<Particle::AttributeNames::accZ>();
 
-    const auto *const __restrict__ ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
-    const auto *const __restrict__ ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
 
     for (unsigned int indexFirst = 0; indexFirst < soa1.getNumParticles(); ++indexFirst) {
       // checks whether particle i is owned.
@@ -373,30 +373,30 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
                         bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
-    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     // checks whether particle i is owned.
     if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
       return;
     }
 
-    double *const __restrict__ massptr = soa.template begin<Particle::AttributeNames::mass>();
-    double *const __restrict__ densityptr = soa.template begin<Particle::AttributeNames::density>();
-    double *const __restrict__ smthptr = soa.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict__ soundSpeedptr = soa.template begin<Particle::AttributeNames::soundSpeed>();
-    double *const __restrict__ pressureptr = soa.template begin<Particle::AttributeNames::pressure>();
-    double *const __restrict__ vsigmaxptr = soa.template begin<Particle::AttributeNames::vsigmax>();
-    double *const __restrict__ engDotptr = soa.template begin<Particle::AttributeNames::engDot>();
+    double *const __restrict massptr = soa.template begin<Particle::AttributeNames::mass>();
+    double *const __restrict densityptr = soa.template begin<Particle::AttributeNames::density>();
+    double *const __restrict smthptr = soa.template begin<Particle::AttributeNames::smth>();
+    double *const __restrict soundSpeedptr = soa.template begin<Particle::AttributeNames::soundSpeed>();
+    double *const __restrict pressureptr = soa.template begin<Particle::AttributeNames::pressure>();
+    double *const __restrict vsigmaxptr = soa.template begin<Particle::AttributeNames::vsigmax>();
+    double *const __restrict engDotptr = soa.template begin<Particle::AttributeNames::engDot>();
 
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict__ velXptr = soa.template begin<Particle::AttributeNames::velX>();
-    double *const __restrict__ velYptr = soa.template begin<Particle::AttributeNames::velY>();
-    double *const __restrict__ velZptr = soa.template begin<Particle::AttributeNames::velZ>();
-    double *const __restrict__ accXptr = soa.template begin<Particle::AttributeNames::accX>();
-    double *const __restrict__ accYptr = soa.template begin<Particle::AttributeNames::accY>();
-    double *const __restrict__ accZptr = soa.template begin<Particle::AttributeNames::accZ>();
+    double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict velXptr = soa.template begin<Particle::AttributeNames::velX>();
+    double *const __restrict velYptr = soa.template begin<Particle::AttributeNames::velY>();
+    double *const __restrict velZptr = soa.template begin<Particle::AttributeNames::velZ>();
+    double *const __restrict accXptr = soa.template begin<Particle::AttributeNames::accX>();
+    double *const __restrict accYptr = soa.template begin<Particle::AttributeNames::accY>();
+    double *const __restrict accZptr = soa.template begin<Particle::AttributeNames::accZ>();
 
     double localvsigmax = 0.;
     double localengdotsum = 0.;

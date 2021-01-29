@@ -9,13 +9,9 @@
 #include <Eigen/Core>
 #include <cmath>
 
-namespace autopas::utils::Math {
+#include "Constants.h"
 
-/**
- * PI
- * @todo c++20: replace with std::numbers::pi, see https://en.cppreference.com/w/cpp/numeric/constants
- */
-double getPI() { return std::atan(1.) / 4; };
+namespace autopas::utils::Math {
 
 /**
  * Factor of PDF of standard normal distribution.
