@@ -324,7 +324,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
     const double diff = _boxMax[d] - _boxMin[d];
     auto cellsPerDim = static_cast<index_t>(std::floor(diff / (_interactionLength * cellSizeFactor)));
     // at least one central cell
-    cellsPerDim = std::max(cellsPerDim, 1ul);
+    cellsPerDim = std::max(cellsPerDim, 1ull);
 
     _cellsPerDimensionWithHalo[d] = cellsPerDim + 2 * _cellsPerInteractionLength;
 
