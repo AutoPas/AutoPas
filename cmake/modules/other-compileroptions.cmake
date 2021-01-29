@@ -15,32 +15,59 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.17)
     target_compile_features(autopas PUBLIC cxx_std_17)
 endif ()
 
-target_compile_options(
-    autopas
-    PUBLIC
-        # Needed to vectorize sqrt()
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fno-math-errno
-        # fast math for better vectorization
-        $<$<AND:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-ffast-math>
-        # Clang: set OpenMP version to 4.5
-        $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fopenmp-version=45>
-        # INTEL: per default fast math is on. Disable via fp-model precise
-        $<$<AND:$<NOT:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fp-model
-        precise>
-        # Warnings:
-    PRIVATE
-        # no warnings for intel because it's mainly spam, but we disable one, because of a compiler
-        # bug:
-        # https://software.intel.com/en-us/forums/intel-c-compiler/topic/814098
-        $<$<CXX_COMPILER_ID:Intel>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-wd13212>
-        $<$<CXX_COMPILER_ID:GNU>:
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wsuggest-override
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wall
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wno-unused-variable
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wno-unused-function
-        >
-        $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wall>
-        # @TODO clean up code with -Weffc++
-)
+if(MSVC)
+    target_compile_options(
+            autopas
+            PUBLIC
+            # Needed to vectorize sqrt()
+            #$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fno-math-errno
+            # fast math for better vectorization
+            #$<$<AND:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-ffast-math>
+            # Clang: set OpenMP version to 4.5
+            $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fopenmp-version=45>
+            # INTEL: per default fast math is on. Disable via fp-model precise
+            $<$<AND:$<NOT:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fp-model
+            precise>
+            # MSVC:
+            # /permissive- for specifiers "and" and "or" (the ones replacing &&, resp. ||)
+            # /EHsc to be able to build spdlog
+            /permissive- /EHsc
+            PRIVATE
+            # no warnings for intel because it's mainly spam, but we disable one, because of a compiler
+            # bug:
+            # https://software.intel.com/en-us/forums/intel-c-compiler/topic/814098
+            $<$<CXX_COMPILER_ID:Intel>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-wd13212>
+            $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wall>
+            # @TODO clean up code with -Weffc++
+    )
 
-message(STATUS "fno-math-errno set. This is needed to vectorize, e.g., sqrt().")
+    message(STATUS "fno-math-errno set. This is needed to vectorize, e.g., sqrt().")
+else()
+    target_compile_options(
+        autopas
+        PUBLIC
+            # Needed to vectorize sqrt()
+            $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fno-math-errno
+            # fast math for better vectorization
+            $<$<AND:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-ffast-math>
+            # Clang: set OpenMP version to 4.5
+            $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fopenmp-version=45>
+            # INTEL: per default fast math is on. Disable via fp-model precise
+            $<$<AND:$<NOT:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fp-model precise>
+        PRIVATE
+            # no warnings for intel because it's mainly spam, but we disable one, because of a compiler
+            # bug:
+            # https://software.intel.com/en-us/forums/intel-c-compiler/topic/814098
+            $<$<CXX_COMPILER_ID:Intel>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-wd13212>
+            $<$<CXX_COMPILER_ID:GNU>:
+            $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wsuggest-override
+            $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wall
+            $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wno-unused-variable
+            $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wno-unused-function
+            >
+            $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wall>
+            # @TODO clean up code with -Weffc++
+    )
+
+    message(STATUS "fno-math-errno set. This is needed to vectorize, e.g., sqrt().")
+endif()

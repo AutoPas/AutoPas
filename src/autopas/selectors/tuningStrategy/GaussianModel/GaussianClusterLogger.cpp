@@ -25,12 +25,7 @@ GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringF
     return;
   }
 
-  auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-  std::ostringstream nowStrStr;
-  tm unused;
-  nowStrStr << std::put_time(localtime_r(&now, &unused), "%Y-%m-%d_%H-%M-%S");
-  _outputFileName = "gaussian_graph_" + nowStrStr.str() + ".out";
-
+  _outputFileName = "gaussian_graph_" + autopas::Logger::getCurrentTimeStr() + ".out";
   reset();
 }
 

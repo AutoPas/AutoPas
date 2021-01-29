@@ -14,11 +14,11 @@ namespace autopas {
 /**
  * Particle with all variables in 32 bit precision
  */
-using ParticleFP32 = ParticleBase<float, unsigned long>;
+using ParticleFP32 = ParticleBase<float, uint64_t>;
 /**
  * Particle with all variables in 64 bit precision
  */
-using ParticleFP64 = ParticleBase<double, unsigned long>;
+using ParticleFP64 = ParticleBase<double, uint64_t>;
 /**
  * Alias for Particle with all variables in 64 bit precision
  */

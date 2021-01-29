@@ -12,9 +12,15 @@
 namespace autopas::utils::Math {
 
 /**
+ * PI
+ * @todo c++20: replace with std::numbers::pi, see https://en.cppreference.com/w/cpp/numeric/constants
+ */
+double getPI() { return std::atan(1.) / 4; };
+
+/**
  * Factor of PDF of standard normal distribution.
  */
-const double normalScale = 1. / std::sqrt(2 * M_PI);
+const double normalScale = 1. / std::sqrt(2 * getPI());
 
 /**
  * No-overhead power function with exponent known at compile time.

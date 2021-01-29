@@ -9,7 +9,7 @@
 namespace autopas::utils::Math {
 
 double normalPDF(double x) {
-  const double factor = 1. / std::sqrt(2 * M_PI);
+  const double factor = 1. / std::sqrt(2 * getPI());
   return factor * std::exp(-x * x / 2.);
 }
 

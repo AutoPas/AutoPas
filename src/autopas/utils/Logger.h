@@ -11,7 +11,9 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 
 #ifdef AUTOPAS_VERBOSE_LOG
 /**
@@ -104,5 +106,19 @@ class Logger {
    * @return Pointer to logger.
    */
   static auto get() { return spdlog::get(loggerName()); }
+
+  static std::string getCurrentTimeStr() {
+    auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::ostringstream nowStrStr;
+    tm local;
+#ifndef _MSC_VER
+    localtime_r(&now, &local);
+#else
+    // msvc uses non-standard order and does not (yet) provide localtime_r...
+    localtime_s(&local, &now);
+#endif
+    nowStrStr << std::put_time(&local, "%Y-%m-%d_%H-%M-%S");
+    return nowStrStr.str();
+  }
 };  // class Logger
 }  // namespace autopas

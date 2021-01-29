@@ -147,7 +147,7 @@ size_t autopas::smoothing::smoothLastPoint(const std::vector<std::pair<size_t, s
   const auto firstIndex = indexToFit - pointsPerEstimation + 1;
 
   // maxDistFromIntervalEdge = max(xi - xFirst, xLast - xi)
-  auto maxDistFromIntervalEdge = std::max(points[indexToFit].first - points[firstIndex].first, 0ul);
+  auto maxDistFromIntervalEdge = std::max(points[indexToFit].first - points[firstIndex].first, 0ull);
 
   // Calculate weights
   auto [weights, fitOk] = calculateWeightsSimple(points, pointsPerEstimation, maxDistFromIntervalEdge);

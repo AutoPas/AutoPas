@@ -6,7 +6,9 @@
 
 #include "TuningStrategyFactory.h"
 
+#ifdef AUTOPAS_ENABLE_ACTIVE_HARMONY
 #include "ActiveHarmony.h"
+#endif
 #include "BayesianClusterSearch.h"
 #include "BayesianSearch.h"
 #include "FullSearch.h"
@@ -116,8 +118,9 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     case TuningStrategyOption::activeHarmony: {
+#ifdef AUTOPAS_ENABLE_ACTIVE_HARMONY
       // If a AH-server is provided, but MPI is disallowed, we have to ignore the server.
-      if (getenv("HARMONY_HOST") != nullptr and mpiStrategyOption == MPIStrategyOption::noMPI) {
+      if (std::getenv("HARMONY_HOST") != nullptr and mpiStrategyOption == MPIStrategyOption::noMPI) {
         unsetenv("HARMONY_HOST");
         AutoPasLog(warn,
                    "HARMONY_HOST is set to a value, but the MPI strategy option is set to noMPI. "
@@ -126,6 +129,10 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       tuningStrategy = std::make_unique<ActiveHarmony>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
                                                        allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
                                                        mpiStrategyOption, comm);
+#else
+      autopas::utils::ExceptionHandler::exception(
+          "ActiveHarmony support is not enabled, but the ActiveHarmony tuning strategy is requested.");
+#endif
       break;
     }
 

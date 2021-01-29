@@ -1,3 +1,8 @@
+IF (MSVC)
+    message(STATUS "MSVC detected, disabling active harmony support.")
+    return()
+ENDIF()
+
 message(STATUS "harmony - using bundled version")
 
 # Enable ExternalProject CMake module
@@ -55,5 +60,8 @@ target_include_directories(
 
 # Set macro needed to set environment variable for ActiveHarmony
 target_compile_definitions(
-    harmony INTERFACE HARMONY_HOME="HARMONY_HOME=${CMAKE_CURRENT_BINARY_DIR}/harmony/include"
+    harmony
+        INTERFACE
+        HARMONY_HOME="HARMONY_HOME=${CMAKE_CURRENT_BINARY_DIR}/harmony/include"
+        AUTOPAS_ENABLE_ACTIVE_HARMONY
 )
