@@ -17,7 +17,7 @@ class ColorChangeObserver {
    * Gets called when the color changes during the observed traversal.
    * @param newColor The new color that the traversal handles now.
    */
-  virtual void receiveColorChange(unsigned long newColor) = 0;
+  virtual void receiveColorChange(uint64_t newColor) = 0;
 };
 
 }  // namespace autopas

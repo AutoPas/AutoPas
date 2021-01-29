@@ -38,9 +38,9 @@ class LCC08CellHandler {
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
-  explicit LCC08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
+  explicit LCC08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<uint64_t, 3> cellsPerDimension,
                             const double interactionLength, const std::array<double, 3> &cellLength,
-                            const std::array<unsigned long, 3> &overlap)
+                            const std::array<uint64_t, 3> &overlap)
       : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
         _cellPairOffsets{},
         _interactionLength(interactionLength),
@@ -55,7 +55,7 @@ class LCC08CellHandler {
    * @param cells vector of all cells.
    * @param baseIndex Index respective to which box is constructed.
    */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
+  void processBaseCell(std::vector<ParticleCell> &cells, uint64_t baseIndex);
 
  private:
   /**
@@ -64,7 +64,7 @@ class LCC08CellHandler {
    * docs/C08TraversalScheme.py
    * @param cellsPerDimension
    */
-  void computeOffsets(std::array<unsigned long, 3> cellsPerDimension);
+  void computeOffsets(std::array<uint64_t, 3> cellsPerDimension);
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
@@ -76,7 +76,7 @@ class LCC08CellHandler {
    * Pair sets for processBaseCell().
    * Values are: offset of first cell, offset of second cell, sorting direction.
    */
-  std::vector<std::tuple<unsigned long, unsigned long, std::array<double, 3>>> _cellPairOffsets;
+  std::vector<std::tuple<uint64_t, uint64_t, std::array<double, 3>>> _cellPairOffsets;
 
   /**
    * Interaction length (cutoff + skin).
@@ -91,15 +91,15 @@ class LCC08CellHandler {
   /**
    * Overlap of interacting cells. Array allows asymmetric cell sizes.
    */
-  const std::array<unsigned long, 3> _overlap;
+  const std::array<uint64_t, 3> _overlap;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
-    std::vector<ParticleCell> &cells, unsigned long baseIndex) {
+    std::vector<ParticleCell> &cells, uint64_t baseIndex) {
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
-    const unsigned long cellIndex1 = baseIndex + offset1;
-    const unsigned long cellIndex2 = baseIndex + offset2;
+    const uint64_t cellIndex1 = baseIndex + offset1;
+    const uint64_t cellIndex2 = baseIndex + offset2;
 
     ParticleCell &cell1 = cells[cellIndex1];
     ParticleCell &cell2 = cells[cellIndex2];
@@ -114,18 +114,18 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets(
-    std::array<unsigned long, 3> cellsPerDimension) {
+    std::array<uint64_t, 3> cellsPerDimension) {
   using std::make_pair;
 
   //////////////////////////////
   // @TODO: Replace following lines with vector to support asymmetric cells
-  const unsigned long ov1 = _overlap[0] + 1;
-  const unsigned long ov1_squared = ov1 * ov1;
+  const uint64_t ov1 = _overlap[0] + 1;
+  const uint64_t ov1_squared = ov1 * ov1;
   //////////////////////////////
 
-  std::array<unsigned long, 3> overlap_1 = utils::ArrayMath::addScalar(_overlap, 1ul);
+  std::array<uint64_t, 3> overlap_1 = utils::ArrayMath::addScalar(_overlap, 1ul);
 
-  std::vector<unsigned long> cellOffsets;
+  std::vector<uint64_t> cellOffsets;
   cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
 
   _cellPairOffsets.clear();
@@ -136,17 +136,17 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
   const double zero = 0.0;
   const double one = 1.0;
 
-  for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
-    for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
-      for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
+  for (uint64_t x = 0ul; x <= _overlap[0]; ++x) {
+    for (uint64_t y = 0ul; y <= _overlap[1]; ++y) {
+      for (uint64_t z = 0ul; z <= _overlap[2]; ++z) {
         cellOffsets.push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension));
       }
     }
   }
-  for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
-    for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
-      for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
-        const unsigned long offset = cellOffsets[ov1_squared * x + ov1 * y];
+  for (uint64_t x = 0ul; x <= _overlap[0]; ++x) {
+    for (uint64_t y = 0ul; y <= _overlap[1]; ++y) {
+      for (uint64_t z = 0ul; z <= _overlap[2]; ++z) {
+        const uint64_t offset = cellOffsets[ov1_squared * x + ov1 * y];
         // origin
         {
           // check whether cell is within interaction length

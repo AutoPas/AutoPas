@@ -46,7 +46,7 @@ class VLCSlicedC02Traversal
    * @param cellLength length of the underlying cells
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit VLCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit VLCSlicedC02Traversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                  double interactionLength, const std::array<double, 3> &cellLength)
       : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>(
             dims, pairwiseFunctor, interactionLength, cellLength),
@@ -77,7 +77,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
           class NeighborList, ContainerOption::Value typeOfList>
 inline void VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
                                   typeOfList>::traverseParticlePairs() {
-  this->cSlicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
+  this->cSlicedTraversal([&](uint64_t x, uint64_t y, uint64_t z) {
     auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
   });

@@ -128,8 +128,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
     switch (this->_loadEstimator) {
       case LoadEstimatorOption::squaredParticlesPerCell: {
-        return [&](const std::array<unsigned long, 3> &cellsPerDimension,
-                   const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
+        return [&](const std::array<uint64_t, 3> &cellsPerDimension,
+                   const std::array<uint64_t, 3> &lowerCorner, const std::array<uint64_t, 3> &upperCorner) {
           return loadEstimators::squaredParticlesPerCell(this->_cells, cellsPerDimension, lowerCorner, upperCorner);
         };
       }
@@ -137,8 +137,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         [[fallthrough]];
       default: {
         return
-            [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
-                const std::array<unsigned long, 3> &upperCorner) { return 1; };
+            [&](const std::array<uint64_t, 3> &cellsPerDimension, const std::array<uint64_t, 3> &lowerCorner,
+                const std::array<uint64_t, 3> &upperCorner) { return 1; };
       }
     }
   }

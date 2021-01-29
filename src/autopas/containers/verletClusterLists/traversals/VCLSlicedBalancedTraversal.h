@@ -33,7 +33,7 @@ class VCLSlicedBalancedTraversal
   PairwiseFunctor *_functor;
   internal::VCLClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;
 
-  void processBaseStep(unsigned long x, unsigned long y) {
+  void processBaseStep(uint64_t x, uint64_t y) {
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
     auto &currentTower = clusterList.getTowerAtCoordinates(x, y);
     for (auto &cluster : currentTower.getClusters()) {
@@ -54,7 +54,7 @@ class VCLSlicedBalancedTraversal
    * @param cellLength cell length.
    * @param clusterSize the number of particles per cluster.
    */
-  explicit VCLSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit VCLSlicedBalancedTraversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                       const double interactionLength, const std::array<double, 3> &cellLength,
                                       size_t clusterSize)
       : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>(
@@ -81,7 +81,7 @@ class VCLSlicedBalancedTraversal
   }
 
   void traverseParticlePairs() override {
-    this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) { processBaseStep(x, y); });
+    this->slicedTraversal([&](uint64_t x, uint64_t y, uint64_t z) { processBaseStep(x, y); });
   }
 };
 }  // namespace autopas

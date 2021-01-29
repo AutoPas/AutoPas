@@ -25,14 +25,14 @@ class TraversalSelectorInfo {
    * @param cellLength cell length.
    * @param clusterSize The size of a cluster (set this to 0 if not applicable).
    */
-  explicit TraversalSelectorInfo(const std::array<unsigned long, 3> &dims, const double interactionLength,
+  explicit TraversalSelectorInfo(const std::array<uint64_t, 3> &dims, const double interactionLength,
                                  const std::array<double, 3> &cellLength, const unsigned int clusterSize)
       : dims(dims), interactionLength(interactionLength), cellLength(cellLength), clusterSize{clusterSize} {}
 
   /**
    * Array with the dimension lengths of the domain
    */
-  const std::array<unsigned long, 3> dims;
+  const std::array<uint64_t, 3> dims;
 
   /**
    * Interaction length

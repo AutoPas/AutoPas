@@ -32,7 +32,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   autopasTools::generators::GridGenerator::fillWithParticles(linkedCells, edgeLength);
   ASSERT_EQ(linkedCells.getNumParticles(), edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
-  std::array<unsigned long, 3> overlap = {};
+  std::array<uint64_t, 3> overlap = {};
   for (unsigned int d = 0; d < 3; d++) {
     overlap[d] = std::ceil(cutoff / 1.0);
   }
@@ -54,7 +54,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
         traversalOption, functor, tsi);
   }
 
-  unsigned long cellId = 0;
+  uint64_t cellId = 0;
 
   const auto boxMax = autopas::utils::ArrayMath::sub(edgeLength, overlap);
 

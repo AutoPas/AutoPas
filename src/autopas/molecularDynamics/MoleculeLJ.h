@@ -28,8 +28,8 @@ class MoleculeLJ : public Particle {
    * @param moleculeId Id of the molecule.
    * @param typeId TypeId of the molecule.
    */
-  explicit MoleculeLJ(std::array<floatType, 3> pos, std::array<floatType, 3> v, unsigned long moleculeId,
-                      unsigned long typeId = 0)
+  explicit MoleculeLJ(std::array<floatType, 3> pos, std::array<floatType, 3> v, uint64_t moleculeId,
+                      uint64_t typeId = 0)
       : Particle(pos, v, moleculeId), _typeId(typeId) {}
 
   ~MoleculeLJ() override = default;

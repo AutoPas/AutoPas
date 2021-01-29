@@ -13,8 +13,8 @@ using namespace autopas;
 TEST(ArrayUtilsTest, teststatic_cast_array) {
   {
     std::array<long, 3> in({1l, 2l, 3l});
-    auto out = utils::ArrayUtils::static_cast_array<unsigned long>(in);
-    static_assert(std::is_same<decltype(out), std::array<unsigned long, 3>>::value, "Type mismatch");
+    auto out = utils::ArrayUtils::static_cast_array<uint64_t>(in);
+    static_assert(std::is_same<decltype(out), std::array<uint64_t, 3>>::value, "Type mismatch");
   }
 
   {

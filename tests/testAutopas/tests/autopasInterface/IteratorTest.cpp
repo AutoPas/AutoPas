@@ -512,21 +512,21 @@ void testRegionIteratorDeletion(autopas::ContainerOption containerOption, double
     autoPas.iteratePairwise(&eFunctor);
   }
 
-  std::set<unsigned long> beforeParticles;
+  std::set<uint64_t> beforeParticles;
   for (auto &particle : autoPasRef) {
     beforeParticles.insert(particle.getID());
   }
   ASSERT_EQ(beforeParticles.size(), numParticles);
 
   // delete some particles
-  std::set<unsigned long> deletedParticles;
+  std::set<uint64_t> deletedParticles;
   for (auto it = autoPas.getRegionIterator({0., 0., 3.}, {10., 10., 4.5}); it != autoPas.end(); ++it) {
     deletedParticles.insert(it->getID());
     autoPas.deleteParticle(it);
   }
 
   // calculate the particles that should still be there.
-  std::set<unsigned long> shouldBeParticles;
+  std::set<uint64_t> shouldBeParticles;
   for (auto id : beforeParticles) {
     if (deletedParticles.find(id) == deletedParticles.end()) {
       // Has not been deleted!
@@ -535,7 +535,7 @@ void testRegionIteratorDeletion(autopas::ContainerOption containerOption, double
   }
 
   // check whether they are still there.
-  std::vector<unsigned long> afterParticles;
+  std::vector<uint64_t> afterParticles;
   for (auto &particle : autoPasRef) {
     EXPECT_NE(shouldBeParticles.find(particle.getID()), shouldBeParticles.end()) << "id:" << particle.getID();
     afterParticles.push_back(particle.getID());

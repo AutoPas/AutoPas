@@ -21,7 +21,7 @@ void ParticleIteratorTest::SetUp() {
     for (auto &a : arr) {
       a = static_cast<double>(i);
     }
-    Molecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), 0);
+    Molecule m(arr, {0., 0., 0.}, static_cast<uint64_t>(i), 0);
     _vecOfMolecules.push_back(m);
   }
 

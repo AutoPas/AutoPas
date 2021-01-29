@@ -12,7 +12,7 @@
 // Place to implement special test cases, which only apply to C01 Traversal
 
 TEST_F(C01TraversalTest, testIsApplicable) {
-  const std::array<unsigned long, 3> dims({1ul, 1ul, 1ul});
+  const std::array<uint64_t, 3> dims({1ul, 1ul, 1ul});
   MFunctor functor;
 
   autopas::LCC01Traversal<FPCell, MFunctor, autopas::DataLayoutOption::soa, false, false> c01T_N3off(dims, &functor, 1.,

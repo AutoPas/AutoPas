@@ -9,7 +9,7 @@
 #include "autopas/selectors/OptimumSelector.h"
 
 TEST(OptimumSelectorTest, min) {
-  std::vector<unsigned long> vals = {5, 6, 3, 1, 7};
+  std::vector<uint64_t> vals = {5, 6, 3, 1, 7};
 
   auto min = autopas::OptimumSelector::optimumValue(vals, autopas::SelectorStrategyOption::fastestAbs);
 
@@ -17,7 +17,7 @@ TEST(OptimumSelectorTest, min) {
 }
 
 TEST(OptimumSelectorTest, mean) {
-  std::vector<unsigned long> vals = {5, 6, 3, 1, 7};
+  std::vector<uint64_t> vals = {5, 6, 3, 1, 7};
 
   auto mean = autopas::OptimumSelector::optimumValue(vals, autopas::SelectorStrategyOption::fastestMean);
 
@@ -25,7 +25,7 @@ TEST(OptimumSelectorTest, mean) {
 }
 
 TEST(OptimumSelectorTest, median) {
-  std::vector<unsigned long> vals = {5, 6, 3, 1, 7};
+  std::vector<uint64_t> vals = {5, 6, 3, 1, 7};
 
   auto median = autopas::OptimumSelector::optimumValue(vals, autopas::SelectorStrategyOption::fastestMedian);
 

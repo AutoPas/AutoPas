@@ -34,7 +34,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit CBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit CBasedTraversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                            const double interactionLength, const std::array<double, 3> &cellLength)
       : CellPairTraversal<ParticleCell>(dims),
         _interactionLength(interactionLength),
@@ -94,16 +94,16 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param offset initial offset (in cells) in which cell to start the traversal.
    */
   template <typename LoopBody>
-  inline void cTraversal(LoopBody &&loopBody, const std::array<unsigned long, 3> &end,
-                         const std::array<unsigned long, 3> &stride,
-                         const std::array<unsigned long, 3> &offset = {0ul, 0ul, 0ul});
+  inline void cTraversal(LoopBody &&loopBody, const std::array<uint64_t, 3> &end,
+                         const std::array<uint64_t, 3> &stride,
+                         const std::array<uint64_t, 3> &offset = {0ul, 0ul, 0ul});
 
   /**
    * This method is called when the color during the traversal has changed.
    *
    * @param newColor The new current color.
    */
-  virtual void notifyColorChange(unsigned long newColor){};
+  virtual void notifyColorChange(uint64_t newColor){};
 
   /**
    * Interaction length (cutoff + skin).
@@ -118,7 +118,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * overlap of interacting cells. Array allows asymmetric cell sizes.
    */
-  std::array<unsigned long, 3> _overlap;
+  std::array<uint64_t, 3> _overlap;
 
  private:
   /**
@@ -131,14 +131,14 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
           int collapseDepth>
 template <typename LoopBody>
 inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::cTraversal(
-    LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
-    const std::array<unsigned long, 3> &offset) {
+    LoopBody &&loopBody, const std::array<uint64_t, 3> &end, const std::array<uint64_t, 3> &stride,
+    const std::array<uint64_t, 3> &offset) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif
   {
-    const unsigned long numColors = stride[0] * stride[1] * stride[2];
-    for (unsigned long col = 0; col < numColors; ++col) {
+    const uint64_t numColors = stride[0] * stride[1] * stride[2];
+    for (uint64_t col = 0; col < numColors; ++col) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp single
 #endif
@@ -147,20 +147,20 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
         notifyColorChange(col);
         // implicit barrier at end of function.
       }
-      std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
-      std::array<unsigned long, 3> start(utils::ArrayMath::add(startWithoutOffset, offset));
+      std::array<uint64_t, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
+      std::array<uint64_t, 3> start(utils::ArrayMath::add(startWithoutOffset, offset));
 
       // intel compiler demands following:
-      const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
-      const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
-      const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
+      const uint64_t start_x = start[0], start_y = start[1], start_z = start[2];
+      const uint64_t end_x = end[0], end_y = end[1], end_z = end[2];
+      const uint64_t stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
       if (collapseDepth == 2) {
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(2)
 #endif
-        for (unsigned long z = start_z; z < end_z; z += stride_z) {
-          for (unsigned long y = start_y; y < end_y; y += stride_y) {
-            for (unsigned long x = start_x; x < end_x; x += stride_x) {
+        for (uint64_t z = start_z; z < end_z; z += stride_z) {
+          for (uint64_t y = start_y; y < end_y; y += stride_y) {
+            for (uint64_t x = start_x; x < end_x; x += stride_x) {
               // Don't exchange order of execution (x must be last!), it would break other code
               loopBody(x, y, z);
             }
@@ -170,9 +170,9 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
 #if defined(AUTOPAS_OPENMP)
 #pragma omp for schedule(dynamic, 1) collapse(3)
 #endif
-        for (unsigned long z = start_z; z < end_z; z += stride_z) {
-          for (unsigned long y = start_y; y < end_y; y += stride_y) {
-            for (unsigned long x = start_x; x < end_x; x += stride_x) {
+        for (uint64_t z = start_z; z < end_z; z += stride_z) {
+          for (uint64_t y = start_y; y < end_y; y += stride_y) {
+            for (uint64_t x = start_x; x < end_x; x += stride_x) {
               // Don't exchange order of execution (x must be last!), it would break other code
               loopBody(x, y, z);
             }

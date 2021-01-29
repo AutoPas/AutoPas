@@ -69,8 +69,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
     double *const __restrict z1ptr = soa.template begin<Particle::AttributeNames::posZ>();
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
-      unsigned long distanceCalculationsAcc = 0;
-      unsigned long kernelCallsAcc = 0;
+      uint64_t distanceCalculationsAcc = 0;
+      uint64_t kernelCallsAcc = 0;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
@@ -108,8 +108,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
     double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
-      unsigned long distanceCalculationsAcc = 0;
-      unsigned long kernelCallsAcc = 0;
+      uint64_t distanceCalculationsAcc = 0;
+      uint64_t kernelCallsAcc = 0;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
@@ -181,8 +181,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
       }
       // loop over the verlet list from 0 to x*vecsize
       for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
-        unsigned long distanceCalculationsAcc = 0;
-        unsigned long kernelCallsAcc = 0;
+        uint64_t distanceCalculationsAcc = 0;
+        uint64_t kernelCallsAcc = 0;
         // in each iteration we calculate the interactions of particle i with
         // vecsize particles in the neighborlist of particle i starting at
         // particle joff
@@ -209,7 +209,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
           const double dr2 = drx2 + dry2 + drz2;
 
-          const unsigned long mask = (dr2 <= _cutoffSquare) ? 1 : 0;
+          const uint64_t mask = (dr2 <= _cutoffSquare) ? 1 : 0;
 
           kernelCallsAcc += mask;
         }
@@ -217,8 +217,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
         _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
       }
     }
-    unsigned long distanceCalculationsAcc = 0;
-    unsigned long kernelCallsAcc = 0;
+    uint64_t distanceCalculationsAcc = 0;
+    uint64_t kernelCallsAcc = 0;
     // this loop goes over the remainder and uses no optimizations
     for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
       size_t j = neighborList[jNeighIndex];
@@ -349,7 +349,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
    * @param numFlopsPerKernelCall
    * @return
    */
-  double getFlops(unsigned long numFlopsPerKernelCall) const {
+  double getFlops(uint64_t numFlopsPerKernelCall) const {
     const double distFlops = numFlopsPerDistanceCalculation * static_cast<double>(_distanceCalculations);
     const double kernFlops = numFlopsPerKernelCall * static_cast<double>(_kernelCalls);
     return distFlops + kernFlops;
@@ -359,14 +359,14 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
    * get the number of calculated distance operations
    * @return
    */
-  unsigned long getDistanceCalculations() const { return _distanceCalculations; }
+  uint64_t getDistanceCalculations() const { return _distanceCalculations; }
 
   /**
    * get the number of kernel calls, i.e. the number of pairs of particles with
    * a distance not larger than the cutoff
    * @return
    */
-  unsigned long getKernelCalls() const { return _kernelCalls; }
+  uint64_t getKernelCalls() const { return _kernelCalls; }
 
   /**
    * number of flops for one distance calculation.

@@ -159,7 +159,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   /**
    * @copydoc ColorChangeObserver::receiveColorChange()
    */
-  void receiveColorChange(unsigned long newColor) override { _currentColor = newColor; }
+  void receiveColorChange(uint64_t newColor) override { _currentColor = newColor; }
 
   /**
    * @see getSoANeighborList()

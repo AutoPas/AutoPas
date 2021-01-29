@@ -24,7 +24,7 @@ class Sphere : public Object {
    * @param radius
    * @param particleSpacing
    */
-  Sphere(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
+  Sphere(const std::array<double, 3> &velocity, uint64_t typeId, double epsilon, double sigma, double mass,
          const std::array<double, 3> &center, int radius, double particleSpacing)
       : Object(velocity, typeId, epsilon, sigma, mass),
         center(center),

@@ -22,8 +22,8 @@ class BalancedTraversal {
    * Type signature for load estimators.
    */
   using EstimatorFunction =
-      std::function<unsigned long(const std::array<unsigned long, 3> &, const std::array<unsigned long, 3> &,
-                                  const std::array<unsigned long, 3> &)>;
+      std::function<uint64_t(const std::array<uint64_t, 3> &, const std::array<uint64_t, 3> &,
+                                  const std::array<uint64_t, 3> &)>;
 
   /**
    * Setter for load estimation algorithm.

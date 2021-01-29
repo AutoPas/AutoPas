@@ -68,15 +68,15 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
     switch (this->_loadEstimator) {
       case LoadEstimatorOption::squaredParticlesPerCell: {
-        return [&](const std::array<unsigned long, 3> &cellsPerDimension,
-                   const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
+        return [&](const std::array<uint64_t, 3> &cellsPerDimension,
+                   const std::array<uint64_t, 3> &lowerCorner, const std::array<uint64_t, 3> &upperCorner) {
           return loadEstimators::squaredParticlesPerCell((this->_linkedCells).getCells(), cellsPerDimension,
                                                          lowerCorner, upperCorner);
         };
       }
       case LoadEstimatorOption::neighborListLength: {
-        return [&](const std::array<unsigned long, 3> &cellsPerDimension,
-                   const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
+        return [&](const std::array<uint64_t, 3> &cellsPerDimension,
+                   const std::array<uint64_t, 3> &lowerCorner, const std::array<uint64_t, 3> &upperCorner) {
           return loadEstimators::neighborListLength<Particle, NeighborList>(_neighborList, cellsPerDimension,
                                                                             lowerCorner, upperCorner);
         };
@@ -86,8 +86,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
         [[fallthrough]];
       default: {
         return
-            [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
-                const std::array<unsigned long, 3> &upperCorner) { return 1; };
+            [&](const std::array<uint64_t, 3> &cellsPerDimension, const std::array<uint64_t, 3> &lowerCorner,
+                const std::array<uint64_t, 3> &upperCorner) { return 1; };
       }
     }
   }

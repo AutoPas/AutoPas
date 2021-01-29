@@ -87,7 +87,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
       }
     }
   }
-  std::set<unsigned long> movedIDs;
+  std::set<uint64_t> movedIDs;
   // we move particles that are close to the boundary to outside of the container and remember the id's we moved
   for (auto iter = this->_linkedCells.begin(); iter.isValid(); ++iter) {
     for (unsigned short dim = 0; dim < 3; ++dim) {

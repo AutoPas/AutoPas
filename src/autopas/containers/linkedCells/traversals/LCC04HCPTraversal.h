@@ -39,7 +39,7 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
    */
-  LCC04HCPTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  LCC04HCPTraversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                     const double interactionLength, const std::array<double, 3> &cellLength)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
@@ -97,7 +97,7 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::p
 
       // skip cells outside radius
       if (isIn) {
-        const unsigned long ulIndex = threeToOneD(index, signedDims);
+        const uint64_t ulIndex = threeToOneD(index, signedDims);
         _cellHandler.processBaseCell(cells, ulIndex);
       }
     }

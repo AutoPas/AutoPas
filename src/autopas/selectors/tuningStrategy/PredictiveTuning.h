@@ -449,7 +449,7 @@ void PredictiveTuning::newtonPolynomial() {
       predictionOutput(configuration);
     } else if (_traversalTimesStorage[configuration].size() >= _evidenceFirstPrediction) {
       std::vector<std::vector<double>> interimCalculation;
-      std::vector<unsigned long> iterationValues;
+      std::vector<uint64_t> iterationValues;
       std::vector<double> coefficients;
       const auto lengthTTS = _traversalTimesStorage[configuration].size();
       auto lengthIthColumn = _evidenceFirstPrediction;

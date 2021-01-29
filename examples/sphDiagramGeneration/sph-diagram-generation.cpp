@@ -25,7 +25,7 @@ void addParticles(AutoPasContainer &sph_system, int numParticles) {
   std::array<double, 3> boxMin(sph_system.getBoxMin()), boxMax(sph_system.getBoxMax());
 
   for (int i = 0; i < numParticles; ++i) {
-    auto id = static_cast<unsigned long>(i);
+    auto id = static_cast<uint64_t>(i);
     Particle particle(autopasTools::generators::RandomGenerator::randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75,
                       0.012, 0.);
     sph_system.addParticle(particle);

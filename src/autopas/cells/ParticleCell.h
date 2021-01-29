@@ -88,7 +88,7 @@ class ParticleCell {
    * Get the number of particles stored in this cell.
    * @return number of particles stored in this cell
    */
-  [[nodiscard]] virtual unsigned long numParticles() const = 0;
+  [[nodiscard]] virtual uint64_t numParticles() const = 0;
 
   /**
    * Check if the cell is not empty.

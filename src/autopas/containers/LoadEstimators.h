@@ -28,14 +28,14 @@ namespace autopas::loadEstimators {
  * @return estimated load for given region
  */
 template <class ParticleCell>
-unsigned long squaredParticlesPerCell(const std::vector<ParticleCell> &cells,
-                                      const std::array<unsigned long, 3> &cellsPerDimension,
-                                      const std::array<unsigned long, 3> &lowerCorner,
-                                      const std::array<unsigned long, 3> &upperCorner) {
-  unsigned long sum = 0;
-  for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
-    for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
-      for (unsigned long z = lowerCorner[2]; z <= upperCorner[2]; z++) {
+uint64_t squaredParticlesPerCell(const std::vector<ParticleCell> &cells,
+                                      const std::array<uint64_t, 3> &cellsPerDimension,
+                                      const std::array<uint64_t, 3> &lowerCorner,
+                                      const std::array<uint64_t, 3> &upperCorner) {
+  uint64_t sum = 0;
+  for (uint64_t x = lowerCorner[0]; x <= upperCorner[0]; x++) {
+    for (uint64_t y = lowerCorner[1]; y <= upperCorner[1]; y++) {
+      for (uint64_t z = lowerCorner[2]; z <= upperCorner[2]; z++) {
         auto load =
             cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension)].numParticles();
         sum += load * load;
@@ -53,10 +53,10 @@ unsigned long squaredParticlesPerCell(const std::vector<ParticleCell> &cells,
  * @return estimated load for current cell
  */
 template <class Particle>
-unsigned long neighborListLengthImpl(
+uint64_t neighborListLengthImpl(
     const typename autopas::VerletListsCellsHelpers<Particle>::NeighborListsType &neighborLists,
-    unsigned long cellIndex) {
-  unsigned long cellLoad = 0;
+    uint64_t cellIndex) {
+  uint64_t cellLoad = 0;
   for (auto &list : neighborLists[cellIndex]) {
     cellLoad += list.second.size();
   }
@@ -72,10 +72,10 @@ unsigned long neighborListLengthImpl(
  * @return estimated load for current cell
  */
 template <class Particle>
-unsigned long neighborListLengthImpl(
+uint64_t neighborListLengthImpl(
     const typename autopas::VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType &neighborLists,
-    unsigned long cellIndex) {
-  unsigned long cellLoad = 0;
+    uint64_t cellIndex) {
+  uint64_t cellLoad = 0;
   for (auto &list : neighborLists[cellIndex]) {
     for (size_t index = 0; index < list.size(); index++) {
       cellLoad += list[index].second.size();
@@ -95,14 +95,14 @@ unsigned long neighborListLengthImpl(
  * @return estimated load for given region
  */
 template <class Particle, class NeighborList>
-unsigned long neighborListLength(NeighborList &neighborLists, const std::array<unsigned long, 3> &cellsPerDimension,
-                                 const std::array<unsigned long, 3> &lowerCorner,
-                                 const std::array<unsigned long, 3> &upperCorner) {
+uint64_t neighborListLength(NeighborList &neighborLists, const std::array<uint64_t, 3> &cellsPerDimension,
+                                 const std::array<uint64_t, 3> &lowerCorner,
+                                 const std::array<uint64_t, 3> &upperCorner) {
   auto internalList = neighborLists.getAoSNeighborList();
-  unsigned long sum = 0;
-  for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
-    for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
-      for (unsigned long z = lowerCorner[2]; z <= upperCorner[2]; z++) {
+  uint64_t sum = 0;
+  for (uint64_t x = lowerCorner[0]; x <= upperCorner[0]; x++) {
+    for (uint64_t y = lowerCorner[1]; y <= upperCorner[1]; y++) {
+      for (uint64_t z = lowerCorner[2]; z <= upperCorner[2]; z++) {
         auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension);
         sum += neighborListLengthImpl<Particle>(internalList, cellIndex);
       }

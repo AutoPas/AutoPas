@@ -30,7 +30,7 @@ class PrintableMolecule
    * @param moleculeId Molecule ID
    * @param typeId Molecule Type ID
    */
-  PrintableMolecule(std::array<double, 3> pos, std::array<double, 3> v, unsigned long moleculeId,
+  PrintableMolecule(std::array<double, 3> pos, std::array<double, 3> v, uint64_t moleculeId,
                     unsigned int typeId = 0)
       : autopas::MoleculeLJ<>(pos, v, moleculeId, typeId) {}
 

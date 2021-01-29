@@ -277,7 +277,7 @@ class AutoPas {
    * @param behavior Tells this function to report the number of halo, owned or all particles.
    * @return the number of particles in this container.
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::ownedOnly) const {
+  [[nodiscard]] uint64_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::ownedOnly) const {
     switch (behavior) {
       case IteratorBehavior::ownedOnly: {
         return _logicHandler->getNumParticlesOwned();
@@ -299,7 +299,7 @@ class AutoPas {
    * Returns the type of the currently used container.
    * @return The type of the used container is returned.
    */
-  [[nodiscard]] unsigned long getContainerType() const { return _autoTuner->getContainer()->getContainerType(); }
+  [[nodiscard]] uint64_t getContainerType() const { return _autoTuner->getContainer()->getContainerType(); }
 
   /**
    * Get the lower corner of the container.

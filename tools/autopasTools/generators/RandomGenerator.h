@@ -62,7 +62,7 @@ class RandomGenerator {
   template <class Container, class Particle>
   static void fillWithParticles(Container &container, const Particle &defaultParticle,
                                 const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                unsigned long numParticles = 100ul, unsigned int seed = 42);
+                                uint64_t numParticles = 100ul, unsigned int seed = 42);
 
   /**
    * Fills the halo of a container (also AutoPas object) with randomly uniformly distributed particles.
@@ -79,7 +79,7 @@ class RandomGenerator {
    */
   template <class Container, class Particle, class HaloAddFunction>
   static void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
-                                    unsigned long numParticles, const HaloAddFunction &haloAddFunction,
+                                    uint64_t numParticles, const HaloAddFunction &haloAddFunction,
                                     unsigned int seed = 42);
 
   /**
@@ -95,7 +95,7 @@ class RandomGenerator {
    */
   template <class Container, class Particle>
   static void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
-                                    unsigned long numParticles, unsigned int seed = 42) {
+                                    uint64_t numParticles, unsigned int seed = 42) {
     fillWithHaloParticles(container, defaultParticle, haloWidth, numParticles,
                           detail<Container, Particle>::addHaloParticleF, seed);
   }
@@ -104,10 +104,10 @@ class RandomGenerator {
 template <class Container, class Particle>
 void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
                                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                        unsigned long numParticles, unsigned int seed) {
+                                        uint64_t numParticles, unsigned int seed) {
   srand(seed);  // fixed seedpoint
 
-  for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
+  for (uint64_t i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     Particle particle(defaultParticle);
     particle.setR(randomPosition(boxMin, boxMax));
     particle.setID(i);
@@ -117,7 +117,7 @@ void RandomGenerator::fillWithParticles(Container &container, const Particle &de
 
 template <class Container, class Particle, class HaloAddFunction>
 void RandomGenerator::fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
-                                            unsigned long numParticles, const HaloAddFunction &haloAddFunction,
+                                            uint64_t numParticles, const HaloAddFunction &haloAddFunction,
                                             unsigned int seed) {
   srand(seed);  // fixed seedpoint
 
@@ -130,7 +130,7 @@ void RandomGenerator::fillWithHaloParticles(Container &container, const Particle
     haloBoxMax[i] += haloWidth * .99;
   }
 
-  for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
+  for (uint64_t i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     auto pos = randomPosition(haloBoxMin, haloBoxMax);
     // we only want to add particles not in the actual box
     while (autopas::utils::inBox(pos, container.getBoxMin(), container.getBoxMax())) {

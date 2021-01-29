@@ -80,7 +80,7 @@ class TraversalTest
     }
 
     // countFunc isn't a real function. It's just a declaration which is used to count the number of interactions.
-    MOCK_METHOD1(countFunc, void(unsigned long id));
+    MOCK_METHOD1(countFunc, void(uint64_t id));
 
    private:
     floatType _cutoffSquare;

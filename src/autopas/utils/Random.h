@@ -24,7 +24,7 @@ class Random : public std::mt19937 {
    * Constructor
    * @param seed
    */
-  explicit Random(unsigned long seed = std::random_device()()) : std::mt19937(seed) {}
+  explicit Random(uint64_t seed = std::random_device()()) : std::mt19937(seed) {}
 
   /**
    * Class should not be copied constructed

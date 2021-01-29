@@ -43,7 +43,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
-  explicit LCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit LCC18Traversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                           const double interactionLength, const std::array<double, 3> &cellLength)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
@@ -61,7 +61,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
    * @param y Y-index of base cell.
    * @param z Z-index of base cell.
    */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+  void processBaseCell(std::vector<ParticleCell> &cells, uint64_t x, uint64_t y, uint64_t z);
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c18; }
 
@@ -92,7 +92,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
    * The vectors (aka std::array<double,3>) describe the imaginative line connecting the center of the base cell and the
    * center of the cell defined by the offset. It is used for sorting.
    */
-  using offsetArray_t = std::vector<std::pair<unsigned long, std::array<double, 3>>>;
+  using offsetArray_t = std::vector<std::pair<uint64_t, std::array<double, 3>>>;
 
   /**
    * Pairs for processBaseCell(). overlap[0] x overlap[1] offsetArray_t for each special case in x and y direction.
@@ -105,7 +105,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
    * @param dim current dimension
    * @return Index for the _cellOffsets Array.
    */
-  unsigned long getIndex(const unsigned long pos, const unsigned int dim) const;
+  uint64_t getIndex(const uint64_t pos, const unsigned int dim) const;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
@@ -150,9 +150,9 @@ inline void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-unsigned long LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::getIndex(
-    const unsigned long pos, const unsigned int dim) const {
-  unsigned long index;
+uint64_t LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::getIndex(
+    const uint64_t pos, const unsigned int dim) const {
+  uint64_t index;
   if (pos < this->_overlap[dim]) {
     index = pos;
   } else if (pos < this->_cellsPerDimension[dim] - this->_overlap[dim]) {
@@ -165,16 +165,16 @@ unsigned long LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
-    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
-  const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+    std::vector<ParticleCell> &cells, uint64_t x, uint64_t y, uint64_t z) {
+  const uint64_t baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
 
-  const unsigned long xArray = getIndex(x, 0);
-  const unsigned long yArray = getIndex(y, 1);
+  const uint64_t xArray = getIndex(x, 0);
+  const uint64_t yArray = getIndex(y, 1);
 
   ParticleCell &baseCell = cells[baseIndex];
   offsetArray_t &offsets = this->_cellOffsets[yArray][xArray];
   for (auto const &[offset, r] : offsets) {
-    unsigned long otherIndex = baseIndex + offset;
+    uint64_t otherIndex = baseIndex + offset;
     ParticleCell &otherCell = cells[otherIndex];
 
     if (baseIndex == otherIndex) {
@@ -188,7 +188,7 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proc
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
-  this->c18Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
+  this->c18Traversal([&](uint64_t x, uint64_t y, uint64_t z) { this->processBaseCell(cells, x, y, z); });
 }
 
 }  // namespace autopas

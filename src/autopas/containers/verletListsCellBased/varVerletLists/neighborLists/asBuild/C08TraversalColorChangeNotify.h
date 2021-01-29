@@ -28,7 +28,7 @@ class C08TraversalColorChangeNotify : public LCC08Traversal<ParticleCell, Pairwi
    * @param cellLength cell length.
    * @param observer The observer to notify when a color change happens during the traversal.
    */
-  C08TraversalColorChangeNotify(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  C08TraversalColorChangeNotify(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 const double interactionLength, const std::array<double, 3> &cellLength,
                                 ColorChangeObserver *observer)
       : LCC08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, interactionLength,
@@ -40,7 +40,7 @@ class C08TraversalColorChangeNotify : public LCC08Traversal<ParticleCell, Pairwi
    * Notifies the observer.
    * @param newColor The new color to notify the observer about.
    */
-  void notifyColorChange(unsigned long newColor) override {
+  void notifyColorChange(uint64_t newColor) override {
     if (_observer) _observer->receiveColorChange(newColor);
   }
 

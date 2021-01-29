@@ -167,7 +167,7 @@ void MDFlexConfig::calcSimulationBox() {
   }
 }
 
-void MDFlexConfig::addParticleType(unsigned long typeId, double epsilon, double sigma, double mass) {
+void MDFlexConfig::addParticleType(uint64_t typeId, double epsilon, double sigma, double mass) {
   // check if type id is already existing and if there no error in input
   if (epsilonMap.value.count(typeId) == 1) {
     // check if type is already added

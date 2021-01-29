@@ -67,7 +67,7 @@ class SPHKernels {
    * returns the flops for one full calculation of the kernel
    * @return flops for one full calculation of the kernel
    */
-  static unsigned long getFlopsW();
+  static uint64_t getFlopsW();
 
   /**
    * gradient of the kernel function W

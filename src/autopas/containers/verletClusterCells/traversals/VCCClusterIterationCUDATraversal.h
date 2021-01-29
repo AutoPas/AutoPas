@@ -77,7 +77,7 @@ class VCCClusterIterationCUDATraversal : public CellPairTraversal<ParticleCell>,
     _neighborMatrix = neighborMatrix;
   }
 
-  void rebuildVerlet(const std::array<unsigned long, 3> &dims, std::vector<ParticleCell> &cells,
+  void rebuildVerlet(const std::array<uint64_t, 3> &dims, std::vector<ParticleCell> &cells,
                      std::vector<std::vector<std::array<double, 6>>> &boundingBoxes, int interactionCellRadius,
                      double distance) override {
     this->_cellsPerDimension = dims;
@@ -94,7 +94,7 @@ class VCCClusterIterationCUDATraversal : public CellPairTraversal<ParticleCell>,
           for (int y = -interactionCellRadius; y <= interactionCellRadius; ++y) {
             if (0 <= (pos[1] + y) and (pos[1] + y) < this->_cellsPerDimension[1]) {
               // current neighbor cell
-              auto other = utils::ThreeDimensionalMapping::threeToOneD(pos[0] + x, pos[1] + y, (unsigned long)0,
+              auto other = utils::ThreeDimensionalMapping::threeToOneD(pos[0] + x, pos[1] + y, (uint64_t)0,
                                                                        this->_cellsPerDimension);
               // only one way interaction when using newton3
               if (useNewton3 and other > i) {

@@ -41,7 +41,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit SlicedBasedTraversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 const double interactionLength, const std::array<double, 3> &cellLength)
       : CellPairTraversal<ParticleCell>(dims),
         _overlap{},
@@ -68,7 +68,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * Sets up the slice thicknesses to create as many slices as possible while respecting minSliceThickness.
    * @param minSliceThickness
    */
-  virtual void initSliceThickness(unsigned long minSliceThickness) {
+  virtual void initSliceThickness(uint64_t minSliceThickness) {
     auto numSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
     _sliceThickness.clear();
 
@@ -120,7 +120,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * Resets the cell structure of the traversal.
    * @param dims
    */
-  void init(const std::array<unsigned long, 3> &dims);
+  void init(const std::array<uint64_t, 3> &dims);
 
   /**
    * Load Data Layouts required for this Traversal if cells have been set through setCellsToTraverse().
@@ -140,7 +140,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * Overlap of interacting cells. Array allows asymmetric cell sizes.
    */
-  std::array<unsigned long, 3> _overlap;
+  std::array<uint64_t, 3> _overlap;
 
   /**
    * Store ids of dimensions ordered by number of cells per dimensions.
@@ -150,12 +150,12 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * Overlap of interacting cells along the longest axis.
    */
-  unsigned long _overlapLongestAxis;
+  uint64_t _overlapLongestAxis;
 
   /**
    * The number of cells per slice in the dimension that was sliced.
    */
-  std::vector<unsigned long> _sliceThickness;
+  std::vector<uint64_t> _sliceThickness;
 
  private:
   /**
@@ -177,7 +177,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
           bool spaciallyForward>
 inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>::init(
-    const std::array<unsigned long, 3> &dims) {
+    const std::array<uint64_t, 3> &dims) {
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
     if (not spaciallyForward) {

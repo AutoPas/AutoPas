@@ -46,7 +46,7 @@ class LCSlicedBalancedTraversal
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit LCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit LCSlicedBalancedTraversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                      const double interactionLength, const std::array<double, 3> &cellLength)
       : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>(
             dims, pairwiseFunctor, interactionLength, cellLength),
@@ -67,7 +67,7 @@ class LCSlicedBalancedTraversal
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
-  this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
+  this->slicedTraversal([&](uint64_t x, uint64_t y, uint64_t z) {
     auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     _cellHandler.processBaseCell(cells, id);
   });

@@ -213,7 +213,7 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Mol
 }
 
 template <typename Functor>
-void doAssertions(autopas::AutoPas<Molecule> &autoPas, Functor *functor, unsigned long numParticlesExpected) {
+void doAssertions(autopas::AutoPas<Molecule> &autoPas, Functor *functor, uint64_t numParticlesExpected) {
   std::vector<Molecule> molecules(numParticlesExpected);
   size_t numParticles = 0;
   for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
@@ -351,7 +351,7 @@ void testHaloCalculation(testingTuple options) {
 
   // create particle pairs with distance .5
   double distance = .5;
-  unsigned long id = 0;
+  uint64_t id = 0;
   for (int x_diff : {-1, 0, 1}) {
     for (int y_diff : {-1, 0, 1}) {
       //    for (int y_diff : {0}) {

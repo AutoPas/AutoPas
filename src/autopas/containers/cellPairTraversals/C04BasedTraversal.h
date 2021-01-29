@@ -35,7 +35,7 @@ class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
    */
-  explicit C04BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit C04BasedTraversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                              const double interactionLength, const std::array<double, 3> &cellLength)
       : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>(
             dims, pairwiseFunctor, interactionLength, cellLength) {}

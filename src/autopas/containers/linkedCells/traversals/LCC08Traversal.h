@@ -38,7 +38,7 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, d
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit LCC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit LCC08Traversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                           const double interactionLength, const std::array<double, 3> &cellLength)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
@@ -65,8 +65,8 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, d
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
-  this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
-    unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+  this->c08Traversal([&](uint64_t x, uint64_t y, uint64_t z) {
+    uint64_t baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     _cellHandler.processBaseCell(cells, baseIndex);
   });
 }

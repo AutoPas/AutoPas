@@ -38,7 +38,7 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
    * @param cellLength length of the underlying cells
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    */
-  explicit VLCC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit VLCC01Traversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                            double interactionLength, const std::array<double, 3> &cellLength)
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
@@ -71,8 +71,8 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
           class NeighborList, ContainerOption::Value typeOfList>
 inline void VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
                             typeOfList>::traverseParticlePairs() {
-  this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
-    unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+  this->c01Traversal([&](uint64_t x, uint64_t y, uint64_t z) {
+    uint64_t baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor);
   });
 }

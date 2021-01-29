@@ -43,7 +43,7 @@ class SlicedLockBasedTraversal
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit SlicedLockBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit SlicedLockBasedTraversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                     const double interactionLength, const std::array<double, 3> &cellLength)
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>(
             dims, pairwiseFunctor, interactionLength, cellLength) {}
@@ -100,31 +100,31 @@ void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
 #endif
   for (size_t slice = 0; slice < numSlices; ++slice) {
     timers[slice].start();
-    array<unsigned long, 3> myStartArray{0, 0, 0};
+    array<uint64_t, 3> myStartArray{0, 0, 0};
     for (size_t i = 0; i < slice; ++i) {
       myStartArray[this->_dimsPerLength[0]] += this->_sliceThickness[i];
     }
 
     // all but the first slice need to lock their starting layers.
-    const unsigned long lockBaseIndex = (slice - 1) * this->_overlapLongestAxis;
+    const uint64_t lockBaseIndex = (slice - 1) * this->_overlapLongestAxis;
     if (slice > 0) {
-      for (unsigned long i = 0ul; i < this->_overlapLongestAxis; i++) {
+      for (uint64_t i = 0ul; i < this->_overlapLongestAxis; i++) {
         locks[lockBaseIndex + i].lock();
       }
     }
     const auto lastLayer = myStartArray[this->_dimsPerLength[0]] + this->_sliceThickness[slice];
-    for (unsigned long sliceOffset = 0ul; sliceOffset < this->_sliceThickness[slice]; ++sliceOffset) {
+    for (uint64_t sliceOffset = 0ul; sliceOffset < this->_sliceThickness[slice]; ++sliceOffset) {
       const auto dimSlice = myStartArray[this->_dimsPerLength[0]] + sliceOffset;
       // at the last layers request lock for the starting layer of the next
       // slice. Does not apply for the last slice.
       if (slice != numSlices - 1 and dimSlice >= lastLayer - this->_overlapLongestAxis) {
         locks[((slice + 1) * this->_overlapLongestAxis) - (lastLayer - dimSlice)].lock();
       }
-      for (unsigned long dimMedium = 0; dimMedium < this->_cellsPerDimension[this->_dimsPerLength[1]] - overLapps23[0];
+      for (uint64_t dimMedium = 0; dimMedium < this->_cellsPerDimension[this->_dimsPerLength[1]] - overLapps23[0];
            ++dimMedium) {
-        for (unsigned long dimShort = 0; dimShort < this->_cellsPerDimension[this->_dimsPerLength[2]] - overLapps23[1];
+        for (uint64_t dimShort = 0; dimShort < this->_cellsPerDimension[this->_dimsPerLength[2]] - overLapps23[1];
              ++dimShort) {
-          array<unsigned long, 3> idArray = {};
+          array<uint64_t, 3> idArray = {};
           idArray[this->_dimsPerLength[0]] = dimSlice;
           idArray[this->_dimsPerLength[1]] = dimMedium;
           idArray[this->_dimsPerLength[2]] = dimShort;
@@ -139,7 +139,7 @@ void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
         // this should never be the case if slice thicknesses are set up properly; thickness should always be
         // greater than the overlap along the longest axis, or the slices won't be processed in parallel.
         if (dimSlice == lastLayer - 1) {
-          for (unsigned long i = sliceOffset + 1; i < this->_overlapLongestAxis; ++i) {
+          for (uint64_t i = sliceOffset + 1; i < this->_overlapLongestAxis; ++i) {
             locks[lockBaseIndex + i].unlock();
           }
         }

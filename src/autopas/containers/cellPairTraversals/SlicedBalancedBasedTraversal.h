@@ -38,7 +38,7 @@ class SlicedBalancedBasedTraversal
    * Constructor of the balanced sliced traversal.
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
-  explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit SlicedBalancedBasedTraversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                         const double interactionLength, const std::array<double, 3> &cellLength)
       : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>(
             dims, pairwiseFunctor, interactionLength, cellLength) {
@@ -50,7 +50,7 @@ class SlicedBalancedBasedTraversal
    * Calculates slice thickness according to estimates loads
    * @param minSliceThickness
    */
-  void initSliceThickness(unsigned long minSliceThickness) override {
+  void initSliceThickness(uint64_t minSliceThickness) override {
     // make thicknesses are empty
     this->_sliceThickness.clear();
 
@@ -58,7 +58,7 @@ class SlicedBalancedBasedTraversal
     auto maxDimension = this->_dimsPerLength[0];
     auto maxDimensionLength = this->_cellsPerDimension[this->_dimsPerLength[0]];
 
-    std::vector<unsigned long> loads;
+    std::vector<uint64_t> loads;
     utils::Timer timer;
     timer.start();
     loads.resize(maxDimensionLength);
@@ -66,8 +66,8 @@ class SlicedBalancedBasedTraversal
 #pragma omp parallel for schedule(static, 1)
 #endif
     for (auto x = 0; x < maxDimensionLength; x++) {
-      std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
-      std::array<unsigned long, 3> upperCorner = this->_cellsPerDimension;
+      std::array<uint64_t, 3> lowerCorner = {0, 0, 0};
+      std::array<uint64_t, 3> upperCorner = this->_cellsPerDimension;
       // upper corner is inclusive, so subtract 1 from each coordinate
       upperCorner[0]--;
       upperCorner[1]--;
@@ -106,7 +106,7 @@ class SlicedBalancedBasedTraversal
           auto load1 = loads[totalThickness + thickness - 1] - lastLoad;
           auto load2 = loads[totalThickness + thickness] - lastLoad;
           // if (abs(avg-load1) < abs(avg-load2))
-          // doing this manually as we are using unsigned longs and would have to cast otherwise
+          // doing this manually as we are using uint64_ts and would have to cast otherwise
           if (((avg > load1) ? (avg - load1) : (load1 - avg)) < ((avg > load2) ? (avg - load2) : (load2 - avg))) {
             break;
           }

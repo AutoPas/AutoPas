@@ -8,8 +8,8 @@
 #include <algorithm>
 #include <cmath>
 
-unsigned long autopas::sph::SPHKernels::getFlopsW() {
-  unsigned long flops = 0;
+uint64_t autopas::sph::SPHKernels::getFlopsW() {
+  uint64_t flops = 0;
   flops += 1;      // calculating H
   flops += 5;      // dot product for s
   flops += 1 + 1;  // s (except dot product)

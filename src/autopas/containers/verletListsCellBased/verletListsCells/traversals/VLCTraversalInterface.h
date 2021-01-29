@@ -42,7 +42,7 @@ class VLCTraversalInterface {
    * @param pairwiseFunctor
    */
   template <class PairwiseFunctor, bool useNewton3>
-  void processCellLists(NeighborList &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
+  void processCellLists(NeighborList &neighborLists, uint64_t cellIndex, PairwiseFunctor *pairwiseFunctor) {
     processCellListsImpl<PairwiseFunctor, useNewton3>(neighborLists, cellIndex, pairwiseFunctor);
   }
 
@@ -60,7 +60,7 @@ class VLCTraversalInterface {
    * @param pairwiseFunctor
    */
   template <class PairwiseFunctor, bool useNewton3>
-  void processCellListsImpl(VLCAllCellsNeighborList<Particle> &neighborList, unsigned long cellIndex,
+  void processCellListsImpl(VLCAllCellsNeighborList<Particle> &neighborList, uint64_t cellIndex,
                             PairwiseFunctor *pairwiseFunctor) {
     auto &internalList = neighborList.getAoSNeighborList();
     for (auto &[particlePtr, neighbors] : internalList[cellIndex]) {
@@ -80,7 +80,7 @@ class VLCTraversalInterface {
    * @param pairwiseFunctor
    */
   template <class PairwiseFunctor, bool useNewton3>
-  void processCellListsImpl(VLCCellPairNeighborList<Particle> &neighborList, unsigned long cellIndex,
+  void processCellListsImpl(VLCCellPairNeighborList<Particle> &neighborList, uint64_t cellIndex,
                             PairwiseFunctor *pairwiseFunctor) {
     auto &internalList = neighborList.getAoSNeighborList();
     for (auto &cellPair : internalList[cellIndex]) {

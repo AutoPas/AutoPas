@@ -59,10 +59,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     }
   }
   if (node[config.iterations.name]) {
-    config.iterations.value = node[config.iterations.name].as<unsigned long>();
+    config.iterations.value = node[config.iterations.name].as<uint64_t>();
   }
   if (node[config.tuningPhases.name]) {
-    config.tuningPhases.value = node[config.tuningPhases.name].as<unsigned long>();
+    config.tuningPhases.value = node[config.tuningPhases.name].as<uint64_t>();
   }
   if (node[config.dontMeasureFlops.name]) {
     // "not" needed because of semantics
@@ -225,19 +225,19 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           CubeGrid cubeGrid({it->second[MDFlexConfig::velocityStr][0].as<double>(),
                              it->second[MDFlexConfig::velocityStr][1].as<double>(),
                              it->second[MDFlexConfig::velocityStr][2].as<double>()},
-                            it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+                            it->second[MDFlexConfig::particleTypeStr].as<uint64_t>(),
                             it->second[config.epsilonMap.name].as<double>(),
                             it->second[config.sigmaMap.name].as<double>(), it->second[config.massMap.name].as<double>(),
-                            {it->second[config.particlesPerDim.name][0].as<unsigned long>(),
-                             it->second[config.particlesPerDim.name][1].as<unsigned long>(),
-                             it->second[config.particlesPerDim.name][2].as<unsigned long>()},
+                            {it->second[config.particlesPerDim.name][0].as<uint64_t>(),
+                             it->second[config.particlesPerDim.name][1].as<uint64_t>(),
+                             it->second[config.particlesPerDim.name][2].as<uint64_t>()},
                             it->second[config.particleSpacing.name].as<double>(),
                             {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
                              it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
                              it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
 
           config.cubeGridObjects.emplace_back(cubeGrid);
-          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<uint64_t>(),
                                  it->second[config.epsilonMap.name].as<double>(),
                                  it->second[config.sigmaMap.name].as<double>(),
                                  it->second[config.massMap.name].as<double>());
@@ -250,7 +250,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               {it->second[MDFlexConfig::velocityStr][0].as<double>(),
                it->second[MDFlexConfig::velocityStr][1].as<double>(),
                it->second[MDFlexConfig::velocityStr][2].as<double>()},
-              it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+              it->second[MDFlexConfig::particleTypeStr].as<uint64_t>(),
               it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
               it->second[config.massMap.name].as<double>(),
               it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
@@ -266,7 +266,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
                it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
           config.cubeGaussObjects.emplace_back(cubeGauss);
-          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<uint64_t>(),
                                  it->second[config.epsilonMap.name].as<double>(),
                                  it->second[config.sigmaMap.name].as<double>(),
                                  it->second[config.massMap.name].as<double>());
@@ -279,7 +279,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               {it->second[MDFlexConfig::velocityStr][0].as<double>(),
                it->second[MDFlexConfig::velocityStr][1].as<double>(),
                it->second[MDFlexConfig::velocityStr][2].as<double>()},
-              it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+              it->second[MDFlexConfig::particleTypeStr].as<uint64_t>(),
               it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
               it->second[config.massMap.name].as<double>(),
               it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
@@ -289,7 +289,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
                it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
           config.cubeUniformObjects.emplace_back(cubeUniform);
-          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<uint64_t>(),
                                  it->second[config.epsilonMap.name].as<double>(),
                                  it->second[config.sigmaMap.name].as<double>(),
                                  it->second[config.massMap.name].as<double>());
@@ -301,7 +301,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           Sphere sphere({it->second[MDFlexConfig::velocityStr][0].as<double>(),
                          it->second[MDFlexConfig::velocityStr][1].as<double>(),
                          it->second[MDFlexConfig::velocityStr][2].as<double>()},
-                        it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+                        it->second[MDFlexConfig::particleTypeStr].as<uint64_t>(),
                         it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
                         it->second[config.massMap.name].as<double>(),
                         {it->second[MDFlexConfig::sphereCenterStr][0].as<double>(),
@@ -310,7 +310,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                         it->second[MDFlexConfig::sphereRadiusStr].as<int>(),
                         it->second[config.particleSpacing.name].as<double>());
           config.sphereObjects.emplace_back(sphere);
-          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<uint64_t>(),
                                  it->second[config.epsilonMap.name].as<double>(),
                                  it->second[config.sigmaMap.name].as<double>(),
                                  it->second[config.massMap.name].as<double>());
@@ -323,7 +323,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               {it->second[MDFlexConfig::velocityStr][0].as<double>(),
                it->second[MDFlexConfig::velocityStr][1].as<double>(),
                it->second[MDFlexConfig::velocityStr][2].as<double>()},
-              it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+              it->second[MDFlexConfig::particleTypeStr].as<uint64_t>(),
               it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
               it->second[config.massMap.name].as<double>(), it->second[config.particleSpacing.name].as<double>(),
               {it->second[config.boxLength.name][0].as<double>(), it->second[config.boxLength.name][1].as<double>(),
@@ -332,7 +332,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
                it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
           config.cubeClosestPackedObjects.emplace_back(cubeClosestPacked);
-          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
+          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<uint64_t>(),
                                  it->second[config.epsilonMap.name].as<double>(),
                                  it->second[config.sigmaMap.name].as<double>(),
                                  it->second[config.massMap.name].as<double>());

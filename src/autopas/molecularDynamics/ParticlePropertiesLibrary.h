@@ -19,7 +19,7 @@
  *
  * It also provides mixed values for (force) calculations between known types.
  */
-template <typename floatType = double, typename intType = unsigned long>
+template <typename floatType = double, typename intType = uint64_t>
 class ParticlePropertiesLibrary {
  public:
   /**

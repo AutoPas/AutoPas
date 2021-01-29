@@ -107,11 +107,11 @@ TEST_P(AllContainersTests, testUpdateContainerHalo) {
  * @param previouslyOwned Specifies whether the particle was previously owned.
  */
 void AllContainersTests::testUpdateContainerDeletesDummy(bool previouslyOwned) {
-  static std::atomic<unsigned long> numParticles = 0;
+  static std::atomic<uint64_t> numParticles = 0;
 
   class TestParticle : public autopas::Particle {
    public:
-    TestParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {
+    TestParticle(std::array<double, 3> r, std::array<double, 3> v, uint64_t id) : Particle(r, v, id) {
       ++numParticles;
     }
     TestParticle(const TestParticle &testParticle) : Particle(testParticle) { ++numParticles; }

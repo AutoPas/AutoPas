@@ -40,7 +40,7 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, d
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
    */
-  LCC04Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  LCC04Traversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                  const double interactionLength, const std::array<double, 3> &cellLength)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
@@ -68,7 +68,7 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, d
     // The cellsize cannot be smaller then the cutoff, if OpenMP is used.
     // Also see: https://github.com/AutoPas/AutoPas/issues/464
     const double minLength = *std::min_element(this->_cellLength.cbegin(), this->_cellLength.cend());
-    const unsigned long minDim = *std::min_element(this->_cellsPerDimension.cbegin(), this->_cellsPerDimension.cend());
+    const uint64_t minDim = *std::min_element(this->_cellsPerDimension.cbegin(), this->_cellsPerDimension.cend());
 
     return minLength >= this->_interactionLength and minDim > 3;
   }
@@ -164,7 +164,7 @@ void LCC04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proc
     }
 
     if (isIn) {
-      const unsigned long ulIndex = threeToOneD(index, signedDims);
+      const uint64_t ulIndex = threeToOneD(index, signedDims);
       _cellHandler.processBaseCell(cells, ulIndex);
     }
   }

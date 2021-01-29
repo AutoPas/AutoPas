@@ -210,7 +210,7 @@ class ClusterTower : public ParticleCell<Particle> {
   /**
    * @copydoc getNumActualParticles()
    */
-  [[nodiscard]] unsigned long numParticles() const override { return getNumActualParticles(); }
+  [[nodiscard]] uint64_t numParticles() const override { return getNumActualParticles(); }
 
   /**
    * Returns an iterator over all non-dummy particles contained in this tower.

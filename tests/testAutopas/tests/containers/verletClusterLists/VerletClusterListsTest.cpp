@@ -51,7 +51,7 @@ TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  unsigned long numParticles = 271;
+  uint64_t numParticles = 271;
   size_t clusterSize = 4;
   autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
@@ -72,7 +72,7 @@ TEST_F(VerletClusterListsTest, testIterator) {
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skin = 0.2;
-  unsigned long numParticles = 271;
+  uint64_t numParticles = 271;
   size_t clusterSize = 4;
   autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
@@ -122,7 +122,7 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
   double cutoff = 1.;
   double cutoffSqr = cutoff * cutoff;
   double skin = 0.2;
-  unsigned long numParticles = 271;
+  uint64_t numParticles = 271;
   size_t clusterSize = 4;
   autopas::VerletClusterLists<Particle> verletLists(min, max, cutoff, skin, clusterSize);
 
@@ -251,9 +251,9 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
   auto &list = functor._particlesPerThreadPerColor;
   for (int color = 0; color < 8; color++) {
     auto &colorList = list[color];
-    for (unsigned long i = 0; i < colorList.size(); i++) {
+    for (uint64_t i = 0; i < colorList.size(); i++) {
       for (auto *particlePtr : colorList[i]) {
-        for (unsigned long j = i + 1; j < colorList.size(); j++) {
+        for (uint64_t j = i + 1; j < colorList.size(); j++) {
           EXPECT_TRUE(colorList[j].find(particlePtr) == colorList[j].end())
               << particlePtr->toString() << " was accessed by " << i << " and " << j;
         }

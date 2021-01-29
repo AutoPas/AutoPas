@@ -32,7 +32,7 @@ class VCCTraversalInterface {
    * @param interactionCellRadius radius of cells which can be in the interaction length
    * @param distance Maximum distance between interacting cells
    */
-  virtual void rebuildVerlet(const std::array<unsigned long, 3> &dims, std::vector<ParticleCell> &cells,
+  virtual void rebuildVerlet(const std::array<uint64_t, 3> &dims, std::vector<ParticleCell> &cells,
                              std::vector<std::vector<std::array<double, 6>>> &boundingBoxes, int interactionCellRadius,
                              double distance) = 0;
 

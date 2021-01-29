@@ -852,7 +852,7 @@ class LJFunctorAVX
    * radius.
    * @return the number of floating point operations
    */
-  static unsigned long getNumFlopsPerKernelCall() {
+  static uint64_t getNumFlopsPerKernelCall() {
     // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply
     // scale) sum Forces: 6 (forces) kernel total = 12 + 6 = 18
     return 18ul;

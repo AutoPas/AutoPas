@@ -533,7 +533,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
    * Get the number of floating point operations used in one full kernel call
    * @return the number of floating point operations
    */
-  static unsigned long getNumFlopsPerKernelCall() {
+  static uint64_t getNumFlopsPerKernelCall() {
     ///@todo return correct flopcount
     return 1ul;
   }

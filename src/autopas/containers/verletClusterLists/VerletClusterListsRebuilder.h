@@ -167,7 +167,7 @@ class VerletClusterListsRebuilder {
     for (int d = 0; d < 2; d++) {
       towersPerDim[d] = static_cast<size_t>(std::ceil(boxSize[d] * towerSideLengthReciprocal));
       // at least one cell
-      towersPerDim[d] = std::max(towersPerDim[d], 1ul);
+      towersPerDim[d] = std::max(towersPerDim[d], 1ull);
     }
     return towersPerDim;
   }

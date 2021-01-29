@@ -64,7 +64,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
     return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
-  [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
+  [[nodiscard]] uint64_t numParticles() const override { return _particles.size(); }
 
   /**
    * Returns a reference to the element at position n in the cell.

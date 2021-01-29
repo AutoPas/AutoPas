@@ -39,7 +39,7 @@ class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, da
    * with newton 3 of the VerletClusterLists container is build in a way that the neighbor lists already contain only
    * the neighbor clusters of these cells.s
    */
-  static constexpr std::array<unsigned long, 3> _stride{3ul, 2ul, 1ul};
+  static constexpr std::array<uint64_t, 3> _stride{3ul, 2ul, 1ul};
 
   /**
    * Helper method to iterate over one color cell.
@@ -48,7 +48,7 @@ class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, da
    * @param zColorCell The z coordinate of the cell.
    * @param towersPerColoringCell The number of grids that every cell has in every dimension.
    */
-  void processColorCell(unsigned long xColorCell, unsigned long yColorCell, unsigned long zColorCell,
+  void processColorCell(uint64_t xColorCell, uint64_t yColorCell, uint64_t zColorCell,
                         int towersPerColoringCell);
 
  public:
@@ -88,13 +88,13 @@ class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, da
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
 
     const auto towersPerColoringCell = clusterList.getNumTowersPerInteractionLength();
-    std::array<unsigned long, 2> coloringCellsPerDim{};
+    std::array<uint64_t, 2> coloringCellsPerDim{};
     for (int i = 0; i < 2; i++) {
       coloringCellsPerDim[i] =
-          static_cast<unsigned long>(std::ceil(clusterList.getTowersPerDimension()[i] / (double)towersPerColoringCell));
+          static_cast<uint64_t>(std::ceil(clusterList.getTowersPerDimension()[i] / (double)towersPerColoringCell));
     }
 
-    auto loopBody = [this, towersPerColoringCell](unsigned long x, unsigned long y, unsigned long z) {
+    auto loopBody = [this, towersPerColoringCell](uint64_t x, uint64_t y, uint64_t z) {
       processColorCell(x, y, z, towersPerColoringCell);
     };
 
@@ -111,7 +111,7 @@ class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, da
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processColorCell(
-    unsigned long xColorCell, unsigned long yColorCell, unsigned long zColorCell, int towersPerColoringCell) {
+    uint64_t xColorCell, uint64_t yColorCell, uint64_t zColorCell, int towersPerColoringCell) {
   // We are only doing a 2D coloring.
   if (zColorCell != 0) {
     autopas::utils::ExceptionHandler::exception("Coloring should only be 2D, not in z-direction!");

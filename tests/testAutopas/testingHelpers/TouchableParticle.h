@@ -18,7 +18,7 @@ class TouchableParticle : public autopas::Particle {
    * @param pos position
    * @param id id of the particle
    */
-  TouchableParticle(std::array<double, 3> pos, unsigned long id)
+  TouchableParticle(std::array<double, 3> pos, uint64_t id)
       : autopas::Particle(pos, {0, 0, 0}, id), _numTouched(0){};
 
   /**
@@ -27,7 +27,7 @@ class TouchableParticle : public autopas::Particle {
    * @param velocity velocity
    * @param id id of the particle
    */
-  TouchableParticle(std::array<double, 3> pos, std::array<double, 3> velocity, unsigned long id)
+  TouchableParticle(std::array<double, 3> pos, std::array<double, 3> velocity, uint64_t id)
       : autopas::Particle(pos, velocity, id), _numTouched(0){};
 
   /**

@@ -234,7 +234,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * Get the number of cells per interaction length.
    * @return cells per interaction length.
    */
-  [[nodiscard]] unsigned long getCellsPerInteractionLength() const { return _cellsPerInteractionLength; }
+  [[nodiscard]] uint64_t getCellsPerInteractionLength() const { return _cellsPerInteractionLength; }
 
   /**
    * Get the cell lengths.
@@ -256,7 +256,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
 
   double _interactionLength;
 
-  unsigned long _cellsPerInteractionLength;
+  uint64_t _cellsPerInteractionLength;
 
   std::array<double, 3> _cellLength;
 

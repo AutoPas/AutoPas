@@ -61,16 +61,16 @@ void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, const st
                                       const std::array<double, 3> &spacing, const std::array<double, 3> &offset,
                                       const std::array<double, 3> &cellSize) {
   size_t id = defaultParticle.getID();
-  for (unsigned long z = 0; z < particlesPerDim[2]; ++z) {
-    for (unsigned long y = 0; y < particlesPerDim[1]; ++y) {
-      for (unsigned long x = 0; x < particlesPerDim[0]; ++x) {
+  for (uint64_t z = 0; z < particlesPerDim[2]; ++z) {
+    for (uint64_t y = 0; y < particlesPerDim[1]; ++y) {
+      for (uint64_t x = 0; x < particlesPerDim[0]; ++x) {
         auto p = defaultParticle;
         std::array<double, 3> pos{static_cast<double>(x) * spacing[0] + offset[0],
                                   static_cast<double>(y) * spacing[1] + offset[1],
                                   static_cast<double>(z) * spacing[2] + offset[2]};
-        std::array<unsigned long, 3> cellIndex3D{static_cast<unsigned long>(pos[0] / cellSize[0]),
-                                                 static_cast<unsigned long>(pos[1] / cellSize[1]),
-                                                 static_cast<unsigned long>(pos[2] / cellSize[2])};
+        std::array<uint64_t, 3> cellIndex3D{static_cast<uint64_t>(pos[0] / cellSize[0]),
+                                                 static_cast<uint64_t>(pos[1] / cellSize[1]),
+                                                 static_cast<uint64_t>(pos[2] / cellSize[2])};
         p.setR(pos);
         p.setID(id++);
         const auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(cellIndex3D, cellsPerDimension);

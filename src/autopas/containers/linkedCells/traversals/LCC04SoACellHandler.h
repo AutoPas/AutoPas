@@ -39,9 +39,9 @@ class LCC04SoACellHandler {
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    */
-  explicit LCC04SoACellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
+  explicit LCC04SoACellHandler(PairwiseFunctor *pairwiseFunctor, std::array<uint64_t, 3> cellsPerDimension,
                                const double interactionLength, const std::array<double, 3> &cellLength,
-                               const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
+                               const std::array<uint64_t, 3> &overlap = {1ul, 1ul, 1ul})
       : _interactionLength(interactionLength),
         _cellLength(cellLength),
         _overlap(overlap),
@@ -59,7 +59,7 @@ class LCC04SoACellHandler {
    * @param y cell index y-axis
    * @param z cell index z-axis
    */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+  void processBaseCell(std::vector<ParticleCell> &cells, uint64_t x, uint64_t y, uint64_t z);
 
   /**
    * Resize all buffers to match the current number of threads.
@@ -73,7 +73,7 @@ class LCC04SoACellHandler {
    * docs/C08TraversalScheme.py
    * @param cellsPerDimension
    */
-  void computeOffsets(std::array<unsigned long, 3> cellsPerDimension);
+  void computeOffsets(std::array<uint64_t, 3> cellsPerDimension);
 
   /**
    * Interaction Length (cutoff + skin).
@@ -88,9 +88,9 @@ class LCC04SoACellHandler {
   /**
    * overlap of interacting cells. Array allows asymmetric cell sizes.
    */
-  const std::array<unsigned long, 3> _overlap;
+  const std::array<uint64_t, 3> _overlap;
 
-  const std::array<unsigned long, 3> _cellsPerDimension;
+  const std::array<uint64_t, 3> _cellsPerDimension;
 
   /**
    * Cells containing combined SoA buffers.
@@ -105,22 +105,22 @@ class LCC04SoACellHandler {
   /**
    * Cell offsets of "base plate".
    */
-  std::vector<std::vector<unsigned long>> _baseOffsets;
+  std::vector<std::vector<uint64_t>> _baseOffsets;
 
   /**
    * Type to store an interval of indices.
    */
-  using interval_t = std::pair<unsigned long, unsigned long>;
+  using interval_t = std::pair<uint64_t, uint64_t>;
 
   /**
    * Interactions cell <-> baseplate interval.
    */
-  std::vector<std::vector<std::pair<unsigned long, interval_t>>> _offsets;
+  std::vector<std::vector<std::pair<uint64_t, interval_t>>> _offsets;
 
   /**
    * Partial sums of sizes of combined buffers to determine start and end quickly.
    */
-  std::vector<std::vector<std::vector<unsigned long>>> _combinationSlicesOffsets;
+  std::vector<std::vector<std::vector<uint64_t>>> _combinationSlicesOffsets;
 
   /**
    * Offset factor to avoid false sharing.
@@ -141,10 +141,10 @@ class LCC04SoACellHandler {
    * @param bufferSlice Index of slice in combinationSlice (source)
    * @param cellSlice Index of slice in _baseOffsets (destination)
    */
-  void writeBufferIntoCell(std::vector<ParticleCell> &cells, unsigned long baseIndex,
+  void writeBufferIntoCell(std::vector<ParticleCell> &cells, uint64_t baseIndex,
                            std::vector<ParticleCell> &combinationSlice,
-                           std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, unsigned long bufferSlice,
-                           unsigned long cellSlice);
+                           std::vector<std::vector<uint64_t>> &combinationSlicesOffsets, uint64_t bufferSlice,
+                           uint64_t cellSlice);
 
   /**
    * Writes cell content into buffer.
@@ -155,22 +155,22 @@ class LCC04SoACellHandler {
    * @param bufferSlice Index of slice in combinationSlice (destination)
    * @param cellSlice Index of slice in _baseOffsets (source)
    */
-  void writeCellIntoBuffer(const std::vector<ParticleCell> &cells, unsigned long baseIndex,
+  void writeCellIntoBuffer(const std::vector<ParticleCell> &cells, uint64_t baseIndex,
                            std::vector<ParticleCell> &combinationSlice,
-                           std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, unsigned int bufferSlice,
+                           std::vector<std::vector<uint64_t>> &combinationSlicesOffsets, unsigned int bufferSlice,
                            unsigned int cellSlice);
 
   /**
    * Creates offset intervals (stored in offset) from cellPairOffsets.
    * @param cellPairOffsets Source for interval creation.
    */
-  void setupIntervals(std::vector<std::vector<std::pair<unsigned long, unsigned long>>> &cellPairOffsets);
+  void setupIntervals(std::vector<std::vector<std::pair<uint64_t, uint64_t>>> &cellPairOffsets);
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
-    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
-  const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, _cellsPerDimension);
+    std::vector<ParticleCell> &cells, uint64_t x, uint64_t y, uint64_t z) {
+  const uint64_t baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, _cellsPerDimension);
 
   // get all information for current thread
   const auto threadID = static_cast<size_t>(autopas_get_thread_num());
@@ -193,7 +193,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
   }
 
   // compute interactions
-  for (unsigned long slice = 0; slice < numSlices; slice++) {
+  for (uint64_t slice = 0; slice < numSlices; slice++) {
     for (auto const &[offset1, interval] : _offsets[(slice + currentSlice) % numSlices]) {
       ParticleCell *cell1 = nullptr;
       size_t cell1ViewStart = 0;
@@ -237,7 +237,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
         cell1 = &combinationSlice[index];
         cell1ViewEnd = combinationSlicesOffsets[index][1];
       } else {
-        const unsigned long cellIndex1 = baseIndex + offset1;
+        const uint64_t cellIndex1 = baseIndex + offset1;
         cell1 = &cells[cellIndex1];
         cell1ViewEnd = cell1->_particleSoABuffer.getNumParticles();
       }
@@ -261,7 +261,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 
   // last cell in stripe need to save whole buffer
   if (x == _cellsPerDimension[0] - _overlap[0] - 1l) {
-    for (unsigned long slice = 1; slice < numSlices; slice++) {
+    for (uint64_t slice = 1; slice < numSlices; slice++) {
       const long bufferSlice = (currentSlice + slice) % numSlices;
       writeBufferIntoCell(cells, baseIndex, combinationSlice, combinationSlicesOffsets, bufferSlice, slice);
     }
@@ -270,17 +270,17 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::writeCellIntoBuffer(
-    const std::vector<ParticleCell> &cells, const unsigned long baseIndex, std::vector<ParticleCell> &combinationSlice,
-    std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, const unsigned int bufferSlice,
+    const std::vector<ParticleCell> &cells, const uint64_t baseIndex, std::vector<ParticleCell> &combinationSlice,
+    std::vector<std::vector<uint64_t>> &combinationSlicesOffsets, const unsigned int bufferSlice,
     const unsigned int cellSlice) {
   // delete old data
   combinationSlice[bufferSlice]._particleSoABuffer.clear();
   combinationSlicesOffsets[bufferSlice].clear();
   // fill buffer and compute partial sums
-  unsigned long sum = 0ul;
+  uint64_t sum = 0ul;
   combinationSlicesOffsets[bufferSlice].push_back(sum);
   for (const auto offset : _baseOffsets[cellSlice]) {
-    const unsigned long otherIndex = baseIndex + offset;
+    const uint64_t otherIndex = baseIndex + offset;
     const ParticleCell &otherCell = cells[otherIndex];
     combinationSlice[bufferSlice]._particleSoABuffer.append(otherCell._particleSoABuffer);
     sum += otherCell.numParticles();
@@ -290,9 +290,9 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::writeBufferIntoCell(
-    std::vector<ParticleCell> &cells, const unsigned long baseIndex, std::vector<ParticleCell> &combinationSlice,
-    std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, const unsigned long bufferSlice,
-    const unsigned long cellSlice) {
+    std::vector<ParticleCell> &cells, const uint64_t baseIndex, std::vector<ParticleCell> &combinationSlice,
+    std::vector<std::vector<uint64_t>> &combinationSlicesOffsets, const uint64_t bufferSlice,
+    const uint64_t cellSlice) {
   auto &buffer = combinationSlice[bufferSlice]._particleSoABuffer;
   for (long i = _baseOffsets[cellSlice].size() - 1l; i >= 0; i--) {
     const auto start = combinationSlicesOffsets[bufferSlice][i];
@@ -304,7 +304,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
     buffer.resizeArrays(end);
     auto bufferView = buffer.constructView(start, buffer.getNumParticles());
 
-    const unsigned long currentOffset = baseIndex + _baseOffsets[cellSlice][i];
+    const uint64_t currentOffset = baseIndex + _baseOffsets[cellSlice][i];
     // clear old cell buffer
     cells[currentOffset]._particleSoABuffer.clear();
     // make sure everything is correct
@@ -321,22 +321,22 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets(
-    std::array<unsigned long, 3> cellsPerDimension) {
+    std::array<uint64_t, 3> cellsPerDimension) {
   using std::make_pair;
 
-  std::vector<std::vector<std::pair<unsigned long, unsigned long>>> cellPairOffsets;
+  std::vector<std::vector<std::pair<uint64_t, uint64_t>>> cellPairOffsets;
 
   //////////////////////////////
   // @TODO: Replace following lines with vector to support asymmetric cells
-  const unsigned long ov1 = _overlap[0] + 1;
-  const unsigned long ov1_squared = ov1 * ov1;
+  const uint64_t ov1 = _overlap[0] + 1;
+  const uint64_t ov1_squared = ov1 * ov1;
   //////////////////////////////
 
   _baseOffsets.resize(ov1);
 
-  std::array<unsigned long, 3> overlap_1 = utils::ArrayMath::addScalar(_overlap, 1ul);
+  std::array<uint64_t, 3> overlap_1 = utils::ArrayMath::addScalar(_overlap, 1ul);
 
-  std::vector<unsigned long> cellOffsets;
+  std::vector<uint64_t> cellOffsets;
   cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
 
   cellPairOffsets.clear();
@@ -344,18 +344,18 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
 
-  for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
-    for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
+  for (uint64_t x = 0ul; x <= _overlap[0]; ++x) {
+    for (uint64_t y = 0ul; y <= _overlap[1]; ++y) {
       _baseOffsets[x].push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, 0ul, cellsPerDimension));
-      for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
+      for (uint64_t z = 0ul; z <= _overlap[2]; ++z) {
         cellOffsets.push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension));
       }
     }
   }
-  for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
-    for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
-      for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
-        const unsigned long offset = cellOffsets[ov1_squared * x + ov1 * y];
+  for (uint64_t x = 0ul; x <= _overlap[0]; ++x) {
+    for (uint64_t y = 0ul; y <= _overlap[1]; ++y) {
+      for (uint64_t z = 0ul; z <= _overlap[2]; ++z) {
+        const uint64_t offset = cellOffsets[ov1_squared * x + ov1 * y];
         // origin
         {
           // check whether cell is within cutoff radius
@@ -405,25 +405,25 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::setupIntervals(
-    std::vector<std::vector<std::pair<unsigned long, unsigned long>>> &cellPairOffsets) {
+    std::vector<std::vector<std::pair<uint64_t, uint64_t>>> &cellPairOffsets) {
   // Create intervals
-  const unsigned long numStripes = cellPairOffsets.size();
+  const uint64_t numStripes = cellPairOffsets.size();
   _offsets.resize(numStripes);
 
   // iterate over all stripes
-  for (unsigned long i = 0; i < numStripes; ++i) {
+  for (uint64_t i = 0; i < numStripes; ++i) {
     auto &currentStripe = cellPairOffsets[i];
     // Sort
     std::stable_sort(currentStripe.begin(), currentStripe.end(),
                      [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
 
     // Collect intervals
-    unsigned long current = currentStripe.front().first;
-    unsigned long startID =
+    uint64_t current = currentStripe.front().first;
+    uint64_t startID =
         std::distance(_baseOffsets[i].begin(),
                       std::find(_baseOffsets[i].begin(), _baseOffsets[i].end(), currentStripe.front().second));
-    unsigned long endID = startID;
-    for (unsigned long j = 0; j < currentStripe.size(); j++) {
+    uint64_t endID = startID;
+    for (uint64_t j = 0; j < currentStripe.size(); j++) {
       if (current != currentStripe[j].first) {
         auto interval = std::make_pair(startID, endID);
         _offsets[i].push_back(std::make_pair(current, interval));

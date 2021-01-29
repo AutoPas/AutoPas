@@ -236,7 +236,7 @@ class VerletClusterCellsRegionParticleIterator
 
     // 2. set _currentRegionIndex to current thread id
     // also ensure that _currentIndex does not go beyond _indicesInRegion.
-    _currentRegionIndex = std::min(static_cast<unsigned long>(autopas_get_thread_num()), _indicesInRegion.size() - 1);
+    _currentRegionIndex = std::min(static_cast<uint64_t>(autopas_get_thread_num()), _indicesInRegion.size() - 1);
 
     // 3. set the _cellID to the appropriate value
     this->_cellId = _indicesInRegion[_currentRegionIndex];

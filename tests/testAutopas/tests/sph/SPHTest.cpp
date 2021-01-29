@@ -646,7 +646,7 @@ void densityCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
     densityLinked.at(m.getID()) = m.getDensity();
   }
 
-  for (unsigned long i = 0; i < numMolecules; ++i) {
+  for (uint64_t i = 0; i < numMolecules; ++i) {
     double d1 = densityVerlet[i];
     double d2 = densityLinked[i];
     EXPECT_NEAR(d1, d2, std::fabs(d1 * relErrTolerance));
@@ -683,7 +683,7 @@ void hydroCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
     accLinked.at(m.getID()) = m.getAcceleration();
   }
 
-  for (unsigned long i = 0; i < numMolecules; ++i) {
+  for (uint64_t i = 0; i < numMolecules; ++i) {
     EXPECT_NEAR(vsigmaxVerlet[i], vsigmaxLinked[i], relErrTolerance * fabs(vsigmaxLinked[i]));
     EXPECT_NEAR(engdotVerlet[i], engdotLinked[i], relErrTolerance * fabs(engdotLinked[i]));
     EXPECT_NEAR(accVerlet[i][0], accLinked[i][0], relErrTolerance * fabs(accLinked[i][0]));

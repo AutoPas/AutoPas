@@ -46,7 +46,7 @@ class SlicedC02BasedTraversal
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit SlicedC02BasedTraversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                    const double interactionLength, const std::array<double, 3> &cellLength)
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>(
             dims, pairwiseFunctor, interactionLength, cellLength) {}
@@ -103,18 +103,18 @@ void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 #pragma omp parallel for schedule(dynamic, 1)
 #endif
     for (size_t slice = offset; slice < numSlices; slice += 2) {
-      array<unsigned long, 3> myStartArray{0, 0, 0};
+      array<uint64_t, 3> myStartArray{0, 0, 0};
       for (size_t i = 0; i < slice; ++i) {
         myStartArray[this->_dimsPerLength[0]] += this->_sliceThickness[i];
       }
 
       const auto lastLayer = myStartArray[this->_dimsPerLength[0]] + this->_sliceThickness[slice];
-      for (unsigned long dimSlice = myStartArray[this->_dimsPerLength[0]]; dimSlice < lastLayer; ++dimSlice) {
-        for (unsigned long dimMedium = 0;
+      for (uint64_t dimSlice = myStartArray[this->_dimsPerLength[0]]; dimSlice < lastLayer; ++dimSlice) {
+        for (uint64_t dimMedium = 0;
              dimMedium < this->_cellsPerDimension[this->_dimsPerLength[1]] - overLapps23[0]; ++dimMedium) {
-          for (unsigned long dimShort = 0;
+          for (uint64_t dimShort = 0;
                dimShort < this->_cellsPerDimension[this->_dimsPerLength[2]] - overLapps23[1]; ++dimShort) {
-            array<unsigned long, 3> idArray = {};
+            array<uint64_t, 3> idArray = {};
             idArray[this->_dimsPerLength[0]] = dimSlice;
             idArray[this->_dimsPerLength[1]] = dimMedium;
             idArray[this->_dimsPerLength[2]] = dimShort;

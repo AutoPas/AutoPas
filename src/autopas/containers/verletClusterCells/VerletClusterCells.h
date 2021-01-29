@@ -230,9 +230,10 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
    * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
    */
   TraversalSelectorInfo getTraversalSelectorInfo() const override {
-    return TraversalSelectorInfo(_cellsPerDim, this->getInteractionLength(),
-                                 {_gridSideLength, _gridSideLength, this->getBoxMax()[2] - this->getBoxMin()[2]},
-                                 _clusterSize);
+    std::array<double, 3> cellLength {_gridSideLength, _gridSideLength, this->getBoxMax()[2] - this->getBoxMin()[2]};
+    return TraversalSelectorInfo{_cellsPerDim, this->getInteractionLength(),
+                                 cellLength,
+                                 _clusterSize};
   }
 
   ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
@@ -347,7 +348,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
    * Get the number of particles excluding dummy Particles saved in the container.
    * @return Number of particles in the container.
    */
-  unsigned long getNumParticles() const override {
+  uint64_t getNumParticles() const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
     /// @todo: find a sensible value for magic number

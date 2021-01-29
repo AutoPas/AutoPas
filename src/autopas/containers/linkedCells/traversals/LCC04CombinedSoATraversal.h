@@ -36,7 +36,7 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
    */
-  explicit LCC04CombinedSoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit LCC04CombinedSoATraversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                      const double interactionLength, const std::array<double, 3> &cellLength)
       : C04BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, 2>(dims, pairwiseFunctor,
                                                                                     interactionLength, cellLength),
@@ -71,7 +71,7 @@ inline void LCC04CombinedSoATraversal<ParticleCell, PairwiseFunctor, dataLayout,
   _cellHandler.resizeBuffers();
   auto &cells = *(this->_cells);
   this->c04Traversal(
-      [&](unsigned long x, unsigned long y, unsigned long z) { _cellHandler.processBaseCell(cells, x, y, z); });
+      [&](uint64_t x, uint64_t y, uint64_t z) { _cellHandler.processBaseCell(cells, x, y, z); });
 }
 
 }  // namespace autopas

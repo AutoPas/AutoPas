@@ -13,9 +13,9 @@ void testIndex(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::array<dou
                std::array<double, 3> &dr, std::array<int, 3> &numParts) {
   auto mesh = CellBlock3DTest::getMesh(start, dr, numParts);
 
-  unsigned long counter = 0ul;
+  uint64_t counter = 0ul;
   for (auto &m : mesh) {
-    unsigned long index = cellBlock.get1DIndexOfPosition(m);
+    uint64_t index = cellBlock.get1DIndexOfPosition(m);
     ASSERT_EQ(index, counter) << "Pos: [" << autopas::utils::ArrayUtils::to_string(m) << "]";
     ++counter;
   }

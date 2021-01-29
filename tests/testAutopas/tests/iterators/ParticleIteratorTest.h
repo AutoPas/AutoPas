@@ -25,7 +25,7 @@ class ParticleIteratorTest : public AutoPasTestBase {
   template <class CellType>
   void fillWithParticles(CellType *pc) {
     // insert four particles
-    for (unsigned long i = _currentIndex; i < _currentIndex + 4; ++i) {
+    for (uint64_t i = _currentIndex; i < _currentIndex + 4; ++i) {
       pc->addParticle(_vecOfMolecules.at(i));
     }
     _currentIndex += 4;
@@ -36,5 +36,5 @@ class ParticleIteratorTest : public AutoPasTestBase {
   // for each unit test.
 
   std::vector<Molecule> _vecOfMolecules;
-  unsigned long _currentIndex;
+  uint64_t _currentIndex;
 };

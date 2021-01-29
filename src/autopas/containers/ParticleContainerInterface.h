@@ -165,7 +165,7 @@ class ParticleContainerInterface {
    * Get the number of particles saved in the container.
    * @return Number of particles in the container.
    */
-  [[nodiscard]] virtual unsigned long getNumParticles() const = 0;
+  [[nodiscard]] virtual uint64_t getNumParticles() const = 0;
 
   /**
    * Iterate over all particles using

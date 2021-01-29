@@ -30,7 +30,7 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
 
 TEST_F(BayesianSearchTest, testFindBest) {
   size_t maxEvidence = 7;
-  unsigned long seed = 21;
+  uint64_t seed = 21;
   autopas::BayesianSearch bayesSearch({autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1, 2}),
                                       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01},
                                       {autopas::LoadEstimatorOption::none},

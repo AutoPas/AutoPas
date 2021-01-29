@@ -123,7 +123,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * Get the number of particles saved in the container.
    * @return Number of particles in the container.
    */
-  [[nodiscard]] unsigned long getNumParticles() const override {
+  [[nodiscard]] uint64_t getNumParticles() const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
     /// @todo: find a sensible value for magic number

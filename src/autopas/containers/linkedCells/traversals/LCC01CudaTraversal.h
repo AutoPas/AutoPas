@@ -39,7 +39,7 @@ class LCC01CudaTraversal : public CellPairTraversal<ParticleCell>, public LCTrav
    * @param interactionLength The interaction length.
    * @param cellLengths The lengths of the cell.
    */
-  explicit LCC01CudaTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit LCC01CudaTraversal(const std::array<uint64_t, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                               double interactionLength, std::array<double, 3> cellLengths)
       : CellPairTraversal<ParticleCell>(dims),
         _functor{pairwiseFunctor},
@@ -151,13 +151,13 @@ inline void LCC01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNew
 
   std::vector<unsigned int> nonHaloCells((this->_cellsPerDimension[0] - 2) * (this->_cellsPerDimension[1] - 2) *
                                          (this->_cellsPerDimension[2] - 2));
-  const unsigned long end_y = this->_cellsPerDimension[1] - 1;
-  const unsigned long end_z = this->_cellsPerDimension[2] - 1;
-  const unsigned long length_x = this->_cellsPerDimension[0] - 2;
+  const uint64_t end_y = this->_cellsPerDimension[1] - 1;
+  const uint64_t end_z = this->_cellsPerDimension[2] - 1;
+  const uint64_t length_x = this->_cellsPerDimension[0] - 2;
 
   auto it = nonHaloCells.begin();
-  for (unsigned long z = 1; z < end_z; ++z) {
-    for (unsigned long y = 1; y < end_y; ++y) {
+  for (uint64_t z = 1; z < end_z; ++z) {
+    for (uint64_t y = 1; y < end_y; ++y) {
       std::iota(it, it + length_x, utils::ThreeDimensionalMapping::threeToOneD(1ul, y, z, this->_cellsPerDimension));
       it += length_x;
     }

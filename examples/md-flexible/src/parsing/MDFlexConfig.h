@@ -117,7 +117,7 @@ class MDFlexConfig {
    * @param sigma
    * @param mass
    */
-  void addParticleType(unsigned long typeId, double epsilon, double sigma, double mass);
+  void addParticleType(uint64_t typeId, double epsilon, double sigma, double mass);
 
   /**
    * Choice of the functor
@@ -355,17 +355,17 @@ class MDFlexConfig {
   /**
    * epsilonMap
    */
-  MDFlexOption<std::map<unsigned long, double>, 0> epsilonMap{
+  MDFlexOption<std::map<uint64_t, double>, 0> epsilonMap{
       {{0ul, 1.}}, "particle-epsilon", true, "Mapping from particle type to an epsilon value."};
   /**
    * sigmaMap
    */
-  MDFlexOption<std::map<unsigned long, double>, 0> sigmaMap{
+  MDFlexOption<std::map<uint64_t, double>, 0> sigmaMap{
       {{0ul, 1.}}, "particle-sigma", true, "Mapping from particle type to a sigma value."};
   /**
    * massMap
    */
-  MDFlexOption<std::map<unsigned long, double>, 0> massMap{
+  MDFlexOption<std::map<uint64_t, double>, 0> massMap{
       {{0ul, 1.}}, "particle-mass", true, "Mapping from particle type to a mass value."};
 
   // Options for additional Object Generation on command line

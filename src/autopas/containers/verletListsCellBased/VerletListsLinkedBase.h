@@ -71,7 +71,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getNumParticles()
    */
-  unsigned long getNumParticles() const override { return _linkedCells.getNumParticles(); }
+  uint64_t getNumParticles() const override { return _linkedCells.getNumParticles(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::deleteHaloParticles

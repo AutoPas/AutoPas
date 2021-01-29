@@ -23,7 +23,7 @@ namespace autopas::OptimumSelector {
  * @param values
  * @return Smallest value of the vector.
  */
-inline unsigned long minValue(const std::vector<unsigned long> &values) {
+inline uint64_t minValue(const std::vector<uint64_t> &values) {
   return *std::min_element(values.cbegin(), values.cend());
 }
 
@@ -32,7 +32,7 @@ inline unsigned long minValue(const std::vector<unsigned long> &values) {
  * @param values
  * @return Arithmetic mean of the vector.
  */
-inline unsigned long meanValue(const std::vector<unsigned long> &values) {
+inline uint64_t meanValue(const std::vector<uint64_t> &values) {
   return std::accumulate(values.cbegin(), values.cend(), 0ul) / values.size();
 }
 
@@ -41,7 +41,7 @@ inline unsigned long meanValue(const std::vector<unsigned long> &values) {
  * @param values
  * @return Middle ((size-1) /2) of the sorted vector.
  */
-inline unsigned long medianValue(std::vector<unsigned long> values) {
+inline uint64_t medianValue(std::vector<uint64_t> values) {
   if (values.empty()) return 0;
 
   std::sort(values.begin(), values.end());
@@ -55,7 +55,7 @@ inline unsigned long medianValue(std::vector<unsigned long> values) {
  * @param strategy For possible selector strategy choices see AutoPas::SelectorStrategy.
  * @return value
  */
-inline unsigned long optimumValue(const std::vector<unsigned long> &values, SelectorStrategyOption strategy) {
+inline uint64_t optimumValue(const std::vector<uint64_t> &values, SelectorStrategyOption strategy) {
   switch (strategy) {
     case SelectorStrategyOption::fastestAbs: {
       return minValue(values);

@@ -56,7 +56,7 @@ void GaussianGenerator::fillWithParticles(
       std::normal_distribution<double>{distributionMean[1], distributionStdDev[1]},
       std::normal_distribution<double>{distributionMean[2], distributionStdDev[2]}};
 
-  for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
+  for (uint64_t i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     std::array<double, 3> position = {distributions[0](generator), distributions[1](generator),
                                       distributions[2](generator)};
     // verifies that position is valid

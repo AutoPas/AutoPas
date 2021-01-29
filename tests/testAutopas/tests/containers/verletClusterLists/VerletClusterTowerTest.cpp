@@ -49,7 +49,7 @@ static void testClusterGenerationAndDummies(size_t clusterSize) {
       for (size_t particleIndex = 0; particleIndex < clusterSize; particleIndex++) {
         // Since the last particle is copied in the last cluster to fill it up, use minimum of expected index and
         // maximal index.
-        unsigned long expectedParticleID = std::min(clusterIndex * clusterSize + particleIndex, numParticles - 1);
+        uint64_t expectedParticleID = std::min(clusterIndex * clusterSize + particleIndex, numParticles - 1);
         EXPECT_EQ(expectedParticleID, cluster[particleIndex].getID());
       }
     }

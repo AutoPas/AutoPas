@@ -13,7 +13,7 @@ using namespace autopas;
 class MyMolecule : public Particle {
  public:
   MyMolecule() : Particle(), _myvar(0) {}
-  MyMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i, int myvar)
+  MyMolecule(std::array<double, 3> r, std::array<double, 3> v, uint64_t i, int myvar)
       : Particle(r, v, i), _myvar(myvar) {}
   void print() {
     std::cout << "Molecule with position: ";
@@ -39,7 +39,7 @@ TEST(myMoleculeTest, testConstructorAndGetters) {
   std::array<double, 3> r({1.1, 2.2, 3.3});
   int myvar = 5;
   std::array<double, 3> vel({4.4, 5.5, 6.6});
-  unsigned long id = 17ul;
+  uint64_t id = 17ul;
   MyMolecule m(r, vel, id, myvar);
 
   for (int d = 0; d < 3; ++d) {

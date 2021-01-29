@@ -29,7 +29,7 @@ class CubeClosestPacked : public Object {
    * @param boxLength
    * @param bottomLeftCorner
    */
-  CubeClosestPacked(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma,
+  CubeClosestPacked(const std::array<double, 3> &velocity, uint64_t typeId, double epsilon, double sigma,
                     double mass, double particleSpacing, const std::array<double, 3> &boxLength,
                     const std::array<double, 3> &bottomLeftCorner)
       : Object(velocity, typeId, epsilon, sigma, mass),

@@ -25,7 +25,7 @@ class Object {
    * @param sigma
    * @param mass
    */
-  Object(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass)
+  Object(const std::array<double, 3> &velocity, uint64_t typeId, double epsilon, double sigma, double mass)
       : _velocity(velocity), _typeId(typeId), _epsilon(epsilon), _sigma(sigma), _mass(mass) {}
 
   virtual ~Object() = default;
@@ -40,7 +40,7 @@ class Object {
    * Getter for typeId of Particles in Objet
    * @return typeId
    */
-  [[nodiscard]] unsigned long getTypeId() const { return _typeId; }
+  [[nodiscard]] uint64_t getTypeId() const { return _typeId; }
 
   /**
    * Getter for the smallest x,y,z coordinates for Object
@@ -107,7 +107,7 @@ class Object {
   /**
    * Type of every particle in the object.
    */
-  unsigned long _typeId;
+  uint64_t _typeId;
   /**
    * Epsilon of every particle in the object.
    */

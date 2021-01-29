@@ -101,13 +101,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   BalancedTraversal::EstimatorFunction getLoadEstimatorFunction() {
     switch (this->_loadEstimator) {
       case LoadEstimatorOption::neighborListLength: {
-        return [&](const std::array<unsigned long, 3> &cellsPerDimension,
-                   const std::array<unsigned long, 3> &lowerCorner, const std::array<unsigned long, 3> &upperCorner) {
+        return [&](const std::array<uint64_t, 3> &cellsPerDimension,
+                   const std::array<uint64_t, 3> &lowerCorner, const std::array<uint64_t, 3> &upperCorner) {
           // the neighborListLength function defined for verletListsCells in not compatible with this container.
-          unsigned long sum = 0;
-          for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
-            for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
-              unsigned long cellLoad = 0;
+          uint64_t sum = 0;
+          for (uint64_t x = lowerCorner[0]; x <= upperCorner[0]; x++) {
+            for (uint64_t y = lowerCorner[1]; y <= upperCorner[1]; y++) {
+              uint64_t cellLoad = 0;
               auto &tower = getTowerAtCoordinates(x, y);
               for (auto &cluster : tower.getClusters()) {
                 cellLoad += cluster.getNeighbors().size();
@@ -122,8 +122,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         [[fallthrough]];
       default: {
         return
-            [&](const std::array<unsigned long, 3> &cellsPerDimension, const std::array<unsigned long, 3> &lowerCorner,
-                const std::array<unsigned long, 3> &upperCorner) { return 1; };
+            [&](const std::array<uint64_t, 3> &cellsPerDimension, const std::array<uint64_t, 3> &lowerCorner,
+                const std::array<uint64_t, 3> &upperCorner) { return 1; };
       }
     }
   }
@@ -263,7 +263,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     std::array<double, 3> towerSize = {towerSideLength, towerSideLength,
 
                                        this->getHaloBoxMax()[2] - this->getHaloBoxMin()[2]};
-    std::array<unsigned long, 3> towerDimensions = {towersPerDim[0], towersPerDim[1], 1};
+    std::array<uint64_t, 3> towerDimensions = {towersPerDim[0], towersPerDim[1], 1};
     return TraversalSelectorInfo(towerDimensions, this->getInteractionLength(), towerSize, _clusterSize);
   }
 
@@ -400,8 +400,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   /**
    * @copydoc ParticleContainerInterface::getNumParticles()
    */
-  [[nodiscard]] unsigned long getNumParticles() const override {
-    unsigned long sum = 0;
+  [[nodiscard]] uint64_t getNumParticles() const override {
+    uint64_t sum = 0;
     for (size_t index = 0; index < _towers.size(); index++) {
       sum += _towers[index].getNumActualParticles();
     }
@@ -658,7 +658,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         std::clamp(static_cast<int>(numClusterPairs / minNumClusterPairsPerThread), 1, autopas_get_max_threads());
 
     size_t numClusterPairsPerThread =
-        std::max(static_cast<unsigned long>(std::ceil(static_cast<double>(numClusterPairs) / numThreads)), 1ul);
+        std::max(static_cast<uint64_t>(std::ceil(static_cast<double>(numClusterPairs) / numThreads)), 1ull);
     if (numClusterPairsPerThread * numThreads < numClusterPairs) {
       autopas::utils::ExceptionHandler::exception(
           "VerletClusterLists::calculateClusterThreadPartition(): numClusterPairsPerThread ({}) * numThreads ({})={} "

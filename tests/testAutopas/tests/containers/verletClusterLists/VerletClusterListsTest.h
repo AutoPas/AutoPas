@@ -104,7 +104,7 @@ class ColoringTraversalWithColorChangeNotify
     _whenColorChanges = std::move(whenColorChanges);
   }
 
-  void notifyColorChange(unsigned long newColor) override { _whenColorChanges(newColor); }
+  void notifyColorChange(uint64_t newColor) override { _whenColorChanges(newColor); }
 
  private:
   std::function<void(int)> _whenColorChanges;

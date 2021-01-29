@@ -89,7 +89,7 @@ class AlignedAllocator {
       static_assert(Alignment > 0, "Alignment must be bigger than 0!");
       // Rounds up to next multiple of Alignment.
       size_t sizeToRequest = ((neededSize + Alignment - 1) / Alignment) * Alignment;
-      T *ptr = static_cast<T *>(aligned_alloc(Alignment, sizeToRequest));
+      T *ptr = static_cast<T *>(std::aligned_alloc(Alignment, sizeToRequest));
       if (ptr == nullptr) {
         throw std::bad_alloc();
       }

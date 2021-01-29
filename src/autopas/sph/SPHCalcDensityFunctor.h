@@ -64,8 +64,8 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
    * Get the number of floating point operations used in one full kernel call
    * @return the number of floating point operations
    */
-  static unsigned long getNumFlopsPerKernelCall() {
-    unsigned long flops = 0;
+  static uint64_t getNumFlopsPerKernelCall() {
+    uint64_t flops = 0;
     flops += 3;                            // calculating dr
     flops += 2 * SPHKernels::getFlopsW();  // flops for calling W
     flops += 2 * 1;                        // calculating density
