@@ -89,7 +89,12 @@ class AlignedAllocator {
       static_assert(Alignment > 0, "Alignment must be bigger than 0!");
       // Rounds up to next multiple of Alignment.
       size_t sizeToRequest = ((neededSize + Alignment - 1) / Alignment) * Alignment;
+#ifndef _MSC_VER
       T *ptr = static_cast<T *>(std::aligned_alloc(Alignment, sizeToRequest));
+#else
+      // MSVC does not support aligned_alloc
+      T *ptr = static_cast<T *>(_aligned_malloc(sizeToRequest, Alignment));
+#endif
       if (ptr == nullptr) {
         throw std::bad_alloc();
       }
@@ -102,7 +107,14 @@ class AlignedAllocator {
    * \brief Deallocate memory pointed to by ptr
    * \param ptr pointer to deallocate
    */
-  void deallocate(T *ptr, std::size_t /*n*/) { free(ptr); }
+  void deallocate(T *ptr, std::size_t /*n*/) {
+#ifndef _MSC_VER
+    free(ptr);
+#else
+    // MSVC's _aligned_malloc needs _aligned_free
+    _aligned_free(ptr);
+#endif
+  }
 
   /**
    * \brief Construct object of type U at already allocated memory, pointed to
