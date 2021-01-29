@@ -53,8 +53,9 @@ class IterationLogger {
 
  private:
   static inline std::string loggerName() { return "IterationLogger"; };
-
+#ifdef AUTOPAS_LOG_ITERATIONS
   long bufferTimeTuning{0};
+#endif
 };
 
 }  // namespace autopas
