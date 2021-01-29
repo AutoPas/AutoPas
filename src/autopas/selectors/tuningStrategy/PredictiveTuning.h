@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <autopas/utils/logging/PredictionLogger.h>
-
 #include <limits>
 #include <set>
 #include <utility>
@@ -19,6 +17,7 @@
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/logging/PredictionLogger.h"
 
 namespace autopas {
 
