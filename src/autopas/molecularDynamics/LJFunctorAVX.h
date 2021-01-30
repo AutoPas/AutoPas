@@ -6,7 +6,9 @@
  */
 #pragma once
 
+#ifdef __AVX__
 #include <immintrin.h>
+#endif
 
 #include <array>
 
@@ -442,6 +444,7 @@ class LJFunctorAVX
 #endif
   }
 
+#ifdef __AVX__
   /**
    * Actual inner kernel of the SoAFunctors.
    *
@@ -480,7 +483,6 @@ class LJFunctorAVX
                         const size_t *const typeID2ptr, __m256d &fxacc, __m256d &fyacc, __m256d &fzacc,
                         __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ, __m256d *upotSum,
                         const unsigned int rest = 0) {
-#ifdef __AVX__
     __m256d epsilon24s = _epsilon24;
     __m256d sigmaSquares = _sigmaSquare;
     __m256d shift6s = _shift6;
@@ -608,8 +610,8 @@ class LJFunctorAVX
       *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
       *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
     }
-#endif
   }
+#endif
 
  public:
   // clang-format off
@@ -960,6 +962,7 @@ class LJFunctorAVX
   }
 
  private:
+#ifdef __AVX__
   /**
    * Wrapper function for FMA. If FMA is not supported it executes first the multiplication then the addition.
    * @param factorA
@@ -978,6 +981,7 @@ class LJFunctorAVX
     return __m256d();
 #endif
   }
+#endif
 
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
