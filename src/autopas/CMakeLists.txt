@@ -38,6 +38,8 @@ target_compile_definitions(
     $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
     $<$<BOOL:${AUTOPAS_MPI}>:AUTOPAS_MPI>
     _USE_MATH_DEFINES
+    # disable iterator debugging (we sometimes do nasty things, so we disable this.)
+    $<$<BOOL:${MSVC}>:_ITERATOR_DEBUG_LEVEL=0>
 )
 
 if (AUTOPAS_ENABLE_CUDA)

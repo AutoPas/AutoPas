@@ -70,3 +70,9 @@ target_compile_options(spdlog PRIVATE -w)
 
 get_target_property(propval spdlog INTERFACE_INCLUDE_DIRECTORIES)
 target_include_directories(spdlog SYSTEM PUBLIC "${propval}")
+
+target_compile_definitions(
+        spdlog
+        PUBLIC
+        $<$<BOOL:${MSVC}>:_ITERATOR_DEBUG_LEVEL=0>
+)
