@@ -64,9 +64,9 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
   void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y1ptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z1ptr = soa.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict x1ptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict y1ptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict z1ptr = soa.template begin<Particle::AttributeNames::posZ>();
 
     for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
       unsigned long distanceCalculationsAcc = 0;
@@ -100,12 +100,12 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
    */
   void SoAFunctorPair(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
                       bool newton3) override {
-    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
     for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
       unsigned long distanceCalculationsAcc = 0;
@@ -146,12 +146,12 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
     if (numParts == 0) return;
 
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
     const size_t listSizeI = neighborList.size();
-    const size_t *const __restrict__ currentList = neighborList.data();
+    const size_t *const __restrict currentList = neighborList.data();
 
     // this is a magic number, that should correspond to at least
     // vectorization width*N have testet multiple sizes:
