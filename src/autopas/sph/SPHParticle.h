@@ -307,7 +307,7 @@ class SPHParticle : public autopas::Particle {
     auto id = this->getID();
     double id_dbl;
     memcpy(&id_dbl, &id, sizeof(double));
-    static_assert(sizeof(id) == sizeof(double), "sizes shoule be the same, otherwise the above will not work");
+    static_assert(sizeof(id) == sizeof(double), "sizes should be the same, otherwise the above will not work");
 
     stream.push_back(id_dbl);
     stream.push_back(_density);
@@ -347,7 +347,7 @@ class SPHParticle : public autopas::Particle {
     double id_dbl = stream[index++];
     unsigned long id;
     memcpy(&id, &id_dbl, sizeof(double));
-    static_assert(sizeof(id) == sizeof(double), "sizes shoule be the same, otherwise the above will not work");
+    static_assert(sizeof(id) == sizeof(double), "sizes should be the same, otherwise the above will not work");
 
     double density = stream[index++];
     double pressure = stream[index++];
