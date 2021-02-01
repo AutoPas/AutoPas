@@ -91,7 +91,7 @@ class MDFlexConfig {
      * Returns a getopt option struct for this object.
      * @return
      */
-    [[nodiscard]] struct option toGetoptOption() const {
+    [[nodiscard]] auto toGetoptOption() const {
       struct option retStruct {
         name.c_str(), requiresArgument, nullptr, getOptChar
       };
