@@ -479,10 +479,9 @@ class LJFunctorAVX
                         const __m256d &x1, const __m256d &y1, const __m256d &z1, const double *const __restrict x2ptr,
                         const double *const __restrict y2ptr, const double *const __restrict z2ptr,
                         double *const __restrict fx2ptr, double *const __restrict fy2ptr,
-                        double *const __restrict fz2ptr, const size_t *const typeID1ptr,
-                        const size_t *const typeID2ptr, __m256d &fxacc, __m256d &fyacc, __m256d &fzacc,
-                        __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ, __m256d *upotSum,
-                        const unsigned int rest = 0) {
+                        double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
+                        __m256d &fxacc, __m256d &fyacc, __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY,
+                        __m256d *virialSumZ, __m256d *upotSum, const unsigned int rest = 0) {
     __m256d epsilon24s = _epsilon24;
     __m256d sigmaSquares = _sigmaSquare;
     __m256d shift6s = _shift6;
