@@ -52,8 +52,8 @@ class IterationLogger {
                     long timeRebuildNeighborLists, long timeWholeIteration);
 
  private:
-#ifdef AUTOPAS_LOG_ITERATIONS
   std::string _loggerName;
+#ifdef AUTOPAS_LOG_ITERATIONS
   long _bufferTimeTuning{0};
 #endif
 };

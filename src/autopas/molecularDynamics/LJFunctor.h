@@ -198,7 +198,7 @@ class LJFunctor
     if (soa.getNumParticles() == 0) return;
 
     const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
     const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 

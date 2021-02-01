@@ -46,9 +46,7 @@ class TuningDataLogger {
                      size_t reducedValue, size_t smoothedVale);
 
  private:
-#ifdef AUTOPAS_LOG_TUNINGDATA
   std::string _loggerName;
-#endif
 };
 
 }  // namespace autopas

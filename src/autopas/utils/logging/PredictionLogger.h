@@ -45,9 +45,7 @@ class PredictionLogger {
                          size_t predictionErrorValue, size_t tuningPhaseCounter);
 
  private:
-#ifdef AUTOPAS_LOG_PREDICTIONS
   std::string _loggerName;
-#endif
 };
 
 }  // namespace autopas
