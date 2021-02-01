@@ -202,7 +202,7 @@ pipeline {
                     steps {
                         container('autopas-clang6-cmake-ninja-make') {
                             dir("build-clang-ninja-addresssanitizer-debug") {
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug -DDAUTOPAS_LOG_ALL=ON -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_LOG_ALL=ON -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "entrypoint.sh ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }
@@ -213,7 +213,7 @@ pipeline {
                     steps {
                         container('autopas-clang6-cmake-ninja-make') {
                             dir("build-clang-ninja-addresssanitizer-release") {
-                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DDAUTOPAS_LOG_ALL=ON -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
+                                sh "CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake -G Ninja -DCCACHE=ON -DCMAKE_BUILD_TYPE=Release -DAUTOPAS_LOG_ALL=ON -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON .."
                                 sh "entrypoint.sh ninja -j 4 > buildlog_clang.txt 2>&1 || (cat buildlog_clang.txt && exit 1)"
                                 sh './tests/testAutopas/runTests'
                             }

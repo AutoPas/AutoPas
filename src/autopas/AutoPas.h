@@ -667,7 +667,7 @@ class AutoPas {
 
   /**
    * Suffix for all output files produced by this instance of AutoPas, e.g. from csv loggers.
-   * This is useful especially when multiple instances of AutoPas exist, especially in an MPI context.
+   * This is useful when multiple instances of AutoPas exist, especially in an MPI context.
    * @param suffix
    */
   void setOutputSuffix(const std::string &suffix) { _outputSuffix = suffix; }
@@ -813,7 +813,7 @@ class AutoPas {
 
   /**
    * Suffix for all output files produced by this instance of AutoPas, e.g. from csv loggers.
-   * This is useful especially when multiple instances of AutoPas exist, especially in an MPI context.
+   * This is useful when multiple instances of AutoPas exist, especially in an MPI context.
    */
   std::string _outputSuffix{""};
 
