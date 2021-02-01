@@ -52,9 +52,9 @@ class IterationLogger {
                     long timeRebuildNeighborLists, long timeWholeIteration);
 
  private:
-  static inline std::string loggerName() { return "IterationLogger"; };
 #ifdef AUTOPAS_LOG_ITERATIONS
-  long bufferTimeTuning{0};
+  std::string _loggerName;
+  long _bufferTimeTuning{0};
 #endif
 };
 

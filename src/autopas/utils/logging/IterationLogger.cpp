@@ -8,12 +8,13 @@
 
 #include "utils/Timer.h"
 
-autopas::IterationLogger::IterationLogger(const std::string &outputSuffix) {
+autopas::IterationLogger::IterationLogger(const std::string &outputSuffix)
+    : _loggerName("IterationLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_ITERATIONS
   auto outputFileName("AutoPas_iterationPerformance_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
   // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
   // Create and register a non-asychronous logger to write the header.
-  auto headerLoggerName = loggerName() + "header";
+  auto headerLoggerName = _loggerName + "header";
   auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
   // set the pattern to the message only
   headerLogger->set_pattern("%v");
@@ -25,7 +26,7 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix) {
   // End of workaround
 
   // create and register the actual logger
-  auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(loggerName(), outputFileName);
+  auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_loggerName, outputFileName);
   // set pattern to provide date
   logger->set_pattern("%Y-%m-%d %T,%v");
 #endif
@@ -33,13 +34,13 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix) {
 
 autopas::IterationLogger::~IterationLogger() {
 #ifdef AUTOPAS_LOG_ITERATIONS
-  spdlog::drop(loggerName());
+  spdlog::drop(_loggerName);
 #endif
 }
 
 void autopas::IterationLogger::logTimeTuning(long timeTuning) {
 #ifdef AUTOPAS_LOG_ITERATIONS
-  bufferTimeTuning = timeTuning;
+  _bufferTimeTuning = timeTuning;
 #endif
 }
 
@@ -47,11 +48,11 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                                             bool inTuningPhase, long timeIteratePairwise, long timeRebuildNeighborLists,
                                             long timeWholeIteration) {
 #ifdef AUTOPAS_LOG_ITERATIONS
-  spdlog::get(loggerName())
+  spdlog::get(_loggerName)
       ->info("{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false", configuration.getCSVLine(),
-             timeIteratePairwise, timeRebuildNeighborLists, timeWholeIteration, bufferTimeTuning);
+             timeIteratePairwise, timeRebuildNeighborLists, timeWholeIteration, _bufferTimeTuning);
 
   // reset buffer
-  bufferTimeTuning = 0;
+  _bufferTimeTuning = 0;
 #endif
 }

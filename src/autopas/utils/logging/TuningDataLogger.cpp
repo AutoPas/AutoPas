@@ -8,12 +8,13 @@
 
 #include "utils/Timer.h"
 
-autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string &outputSuffix) {
+autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string &outputSuffix)
+    : _loggerName("TuningDataLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_TUNINGDATA
   auto outputFileName("AutoPas_tuningData_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
   // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
   // create and register a non-asychronous logger to write the header
-  auto headerLoggerName = loggerName() + "header";
+  auto headerLoggerName = _loggerName + "header";
   auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
   // set the pattern to the message only
   headerLogger->set_pattern("%v");
@@ -27,7 +28,7 @@ autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string
   // End of workaround
 
   // create and register the actual logger
-  auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(loggerName(), outputFileName);
+  auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_loggerName, outputFileName);
   // set pattern to provide date
   logger->set_pattern("%Y-%m-%d %T,%v");
 #endif
@@ -35,7 +36,7 @@ autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string
 
 autopas::TuningDataLogger::~TuningDataLogger() {
 #ifdef AUTOPAS_LOG_TUNINGDATA
-  spdlog::drop(loggerName());
+  spdlog::drop(_loggerName);
 #endif
 }
 
@@ -43,7 +44,7 @@ void autopas::TuningDataLogger::logTuningData(const autopas::Configuration &conf
                                               const std::vector<size_t> &samples, size_t iteration, size_t reducedValue,
                                               size_t smoothedVale) {
 #ifdef AUTOPAS_LOG_TUNINGDATA
-  spdlog::get(loggerName())
+  spdlog::get(_loggerName)
       ->info("{},{},{},{},{}", iteration, configuration.getCSVLine(),
              utils::ArrayUtils::to_string(samples, ",", {"", ""}), reducedValue, smoothedVale);
 #endif

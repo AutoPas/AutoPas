@@ -42,7 +42,9 @@ class TuningResultLogger {
   void logTuningResult(const autopas::Configuration &configuration, size_t iteration, long timeTuning);
 
  private:
-  static inline std::string loggerName() { return "TuningResultLogger"; };
+#ifdef AUTOPAS_LOG_TUNINGRESULTS
+  std::string _loggerName;
+#endif
 };
 
 }  // namespace autopas
