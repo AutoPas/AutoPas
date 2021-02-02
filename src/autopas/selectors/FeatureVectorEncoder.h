@@ -7,6 +7,8 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <numeric>
+#include <optional>
 #include <vector>
 
 #include "FeatureVector.h"
