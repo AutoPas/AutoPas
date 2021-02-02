@@ -36,6 +36,8 @@ TEST_F(ParticleVectorTest, testdirtySizeAfterMarkAsClean) {
   particleVector.push_back(p7);
 
   EXPECT_EQ(particleVector.totalSize(), 7);
+  // The following line cannot be guaranteed (but works for gcc + clang)! MSVC, e.g., has a different growth rate!
+  // see: https://tylerayoung.com/2020/08/20/default-capacity-growth-rate-of-c-stdvector/
   EXPECT_EQ(particleVector.dirtySize(), 2);
 }
 
