@@ -49,6 +49,7 @@ TEST_F(AutoPasTest, checkRebuildingNewMove) {
     autoPasTmp.setCutoff(1.);
     autoPasTmp.setAllowedContainers({autopas::ContainerOption::linkedCells});
     autoPasTmp.setAllowedTraversals({autopas::TraversalOption::lc_c08});
+    autoPasTmp.setOutputSuffix("tmp_");
     autoPasTmp.init();
 
     // ensure no particles
