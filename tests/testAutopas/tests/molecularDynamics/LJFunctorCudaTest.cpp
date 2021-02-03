@@ -19,22 +19,22 @@ bool LJFunctorCudaTest::SoAParticlesEqual(autopas::SoA<typename Particle::SoAArr
   EXPECT_GT(soa1.getNumParticles(), 0);
   EXPECT_EQ(soa1.getNumParticles(), soa2.getNumParticles());
 
-  unsigned long *const __restrict__ idptr1 = soa1.template begin<Particle::AttributeNames::id>();
-  unsigned long *const __restrict__ idptr2 = soa2.template begin<Particle::AttributeNames::id>();
+  unsigned long *const __restrict idptr1 = soa1.template begin<Particle::AttributeNames::id>();
+  unsigned long *const __restrict idptr2 = soa2.template begin<Particle::AttributeNames::id>();
 
-  auto *const __restrict__ xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
-  auto *const __restrict__ yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
-  auto *const __restrict__ zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
-  auto *const __restrict__ xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
-  auto *const __restrict__ yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
-  auto *const __restrict__ zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
+  auto *const __restrict xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
+  auto *const __restrict yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
+  auto *const __restrict zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
+  auto *const __restrict xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
+  auto *const __restrict yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
+  auto *const __restrict zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
 
-  auto *const __restrict__ fxptr1 = soa1.template begin<Particle::AttributeNames::forceX>();
-  auto *const __restrict__ fyptr1 = soa1.template begin<Particle::AttributeNames::forceY>();
-  auto *const __restrict__ fzptr1 = soa1.template begin<Particle::AttributeNames::forceZ>();
-  auto *const __restrict__ fxptr2 = soa2.template begin<Particle::AttributeNames::forceX>();
-  auto *const __restrict__ fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
-  auto *const __restrict__ fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
+  auto *const __restrict fxptr1 = soa1.template begin<Particle::AttributeNames::forceX>();
+  auto *const __restrict fyptr1 = soa1.template begin<Particle::AttributeNames::forceY>();
+  auto *const __restrict fzptr1 = soa1.template begin<Particle::AttributeNames::forceZ>();
+  auto *const __restrict fxptr2 = soa2.template begin<Particle::AttributeNames::forceX>();
+  auto *const __restrict fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
+  auto *const __restrict fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
 
   for (size_t i = 0; i < soa1.getNumParticles(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);

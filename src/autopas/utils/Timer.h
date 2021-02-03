@@ -8,6 +8,8 @@
 #pragma once
 
 #include <chrono>
+#include <iomanip>
+#include <string>
 
 namespace autopas::utils {
 
@@ -43,6 +45,20 @@ class Timer {
    * @return Total time in nano seconds.
    */
   [[nodiscard]] long getTotalTime() const { return _totalTime; }
+
+  /**
+   * Create a date stamp for the current moment with the given format.
+   * @param format Date stamp format.
+   * @return String representation of the current date in the given format.
+   */
+  static std::string getDateStamp(const std::string &format = "%Y-%m-%d_%H-%M-%S") {
+    auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::ostringstream nowStrStr;
+    tm unused;
+    std::stringstream ss;
+    ss << std::put_time(localtime_r(&now, &unused), format.c_str());
+    return ss.str();
+  }
 
  private:
   /**

@@ -29,13 +29,13 @@ class TraversalSelector;
  * Neighbor list to be used with VerletListsCells container. Classic implementation of verlet lists based on linked
  * cells.
  * @tparam Particle Type of particle to be used for this neighbor list.
- * */
+ */
 template <class Particle>
 class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
  public:
   /**
    * Type of the data structure used to save the neighbor lists.
-   * */
+   */
   using listType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
 
   /**
@@ -51,17 +51,17 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
 
   /**
    * Constructor for VLCAllCellsNeighborList. Initializes private attributes.
-   * */
+   */
   VLCAllCellsNeighborList() : _aosNeighborList{}, _particleToCellMap{}, _soaNeighborList() {}
 
   /**
    * @copydoc VLCNeighborListInterface::getContainerType()
-   * */
+   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsCells; }
 
   /**
    * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
-   * */
+   */
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                             double interactionLength, const TraversalOption buildTraversalOption,
                             typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
@@ -89,7 +89,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
 
   /**
    * @copydoc VLCNeighborListInterface::getNumberOfPartners()
-   * */
+   */
   const size_t getNumberOfPartners(const Particle *particle) const override {
     const auto &[cellIndex, particleIndexInCell] = _particleToCellMap.at(const_cast<Particle *>(particle));
     return _aosNeighborList.at(cellIndex).at(particleIndexInCell).second.size();
@@ -98,7 +98,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
-   * */
+   */
   typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSNeighborList() { return _aosNeighborList; }
 
   /**
@@ -148,7 +148,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
  private:
   /**
    * @copydoc VLCNeighborListInterface::applyBuildFunctor()
-   * */
+   */
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                          double interactionLength, const TraversalOption buildTraversalOption,
                          typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
@@ -162,7 +162,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
 
     if (buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::Value::aosBuild) {
       autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-        auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::aos, n3>(
+        auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>, DataLayoutOption::aos, n3>(
             buildTraversalOption, f, traversalSelectorInfo);
         linkedCells.iteratePairwise(buildTraversal.get());
       });
@@ -179,7 +179,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
 
   /**
    * Internal neighbor list structure in AoS format - Verlet lists for each particle for each cell.
-   * */
+   */
   typename VerletListsCellsHelpers<Particle>::NeighborListsType _aosNeighborList;
 
   /**

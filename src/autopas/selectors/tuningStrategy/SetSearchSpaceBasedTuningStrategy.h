@@ -82,24 +82,24 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
                                   const std::set<Newton3Option> &allowedNewton3Options);
 
   /**
-   * Finds the optimum in an unordered map
-   * @param findOptimumSearchSpace
-   * @return optimum
+   * Finds the optimal configuration in a given search space.
+   * @param searchSpace Map<Configuration, runTime> to search.
+   * @return Iterator to optimal (=fastest) configuration.
    */
-  static inline auto getOptimum(const std::unordered_map<Configuration, size_t, ConfigHash> &findOptimumSearchSpace);
+  static inline auto getOptimum(const std::unordered_map<Configuration, size_t, ConfigHash> &searchSpace);
 
   /**
    * Contains every allowed container option.
    */
-  std::set<ContainerOption> _allowedContainerOptions;
+  std::set<ContainerOption> _allowedContainerOptions{};
   /**
    * Contains every configuration.
    */
-  std::set<Configuration> _searchSpace;
+  std::set<Configuration> _searchSpace{};
   /**
    * Contains the corrent configuration.
    */
-  std::set<Configuration>::iterator _currentConfig;
+  std::set<Configuration>::iterator _currentConfig{};
 };
 
 void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
@@ -143,8 +143,9 @@ void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
 }
 
 auto SetSearchSpaceBasedTuningStrategy::getOptimum(
-    const std::unordered_map<Configuration, size_t, ConfigHash> &findOptimumSearchSpace) {
-  return std::min_element(findOptimumSearchSpace.begin(), findOptimumSearchSpace.end(),
+    const std::unordered_map<Configuration, size_t, ConfigHash> &searchSpace) {
+  // find mapping with smallest second (=runtime)
+  return std::min_element(searchSpace.begin(), searchSpace.end(),
                           [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
                             return a.second < b.second;
                           });

@@ -11,6 +11,8 @@
 #include <tuple>
 
 #include "autopas/AutoPas.h"
+#include "autopas/particles/Particle.h"
+#include "autopas/utils/ArrayMath.h"
 
 using testingTuple =
     std::tuple<std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::LoadEstimatorOption>,
@@ -36,6 +38,18 @@ class AutoPasInterfaceTest : public testing::Test, public ::testing::WithParamIn
   };
 };
 
+class AutoPasInterface1ContainersTest : public testing::Test,
+                                        public ::testing::WithParamInterface<autopas::ContainerOption> {
+ public:
+  struct PrintToStringParamName {
+    template <class ParamType>
+    std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
+      const auto &option = static_cast<ParamType>(info.param);
+      return option.to_string();
+    }
+  };
+};
+
 class AutoPasInterface2ContainersTest
     : public testing::Test,
       public ::testing::WithParamInterface<std::tuple<autopas::ContainerOption, autopas::ContainerOption>> {
@@ -52,3 +66,49 @@ class AutoPasInterface2ContainersTest
     }
   };
 };
+
+static inline auto getTestableContainerOptions() {
+#ifdef AUTOPAS_CUDA
+  return autopas::ContainerOption::getAllOptions();
+#else
+  auto containerOptions = autopas::ContainerOption::getAllOptions();
+  containerOptions.erase(containerOptions.find(autopas::ContainerOption::verletClusterCells));
+  return containerOptions;
+#endif
+}
+
+/**
+ * Adds three particles (lower corner, mid, and high corner) to the container
+ * and also returns copies of the particles for checks.
+ * @tparam ParticleType
+ * @param container
+ * @return Vector of added particles
+ */
+template <class Container, class ParticleType = autopas::Particle>
+std::vector<ParticleType> addParticlesMinMidMax(Container &container) {
+  constexpr size_t numParticles = 3;
+  std::vector<ParticleType> addedParticles;
+  addedParticles.reserve(numParticles);
+
+  // helper for Positions
+  auto nearBoxMin = autopas::utils::ArrayMath::add(container.getBoxMin(), {0.1, 0.1, 0.1});
+  auto nearBoxMax = autopas::utils::ArrayMath::sub(container.getBoxMax(), {0.1, 0.1, 0.1});
+  auto nearBoxLength = autopas::utils::ArrayMath::sub(nearBoxMax, nearBoxMin);
+
+  for (size_t i = 0; i < numParticles; ++i) {
+    // place 3 particles:
+    //   - lower corner
+    //   - middle of domain
+    //   - high corner
+
+    // factor for relative positioning in the domain of the i-th particle
+    constexpr double scalingFactor = 1. / (numParticles - 1);
+    // boxMin + i/scalingFactor * boxMax
+    auto pos = autopas::utils::ArrayMath::add(nearBoxMin,
+                                              autopas::utils::ArrayMath::mulScalar(nearBoxLength, i * scalingFactor));
+    ParticleType particle(pos, {0., 0., 0.}, 1);
+    container.addParticle(particle);
+    addedParticles.push_back(particle);
+  }
+  return addedParticles;
+}

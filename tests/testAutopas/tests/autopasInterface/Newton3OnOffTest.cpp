@@ -8,8 +8,8 @@
 
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
-#include "autopas/utils/Logger.h"
 #include "autopas/utils/StaticCellSelector.h"
+#include "autopas/utils/logging/Logger.h"
 
 using ::testing::_;
 using ::testing::Combine;

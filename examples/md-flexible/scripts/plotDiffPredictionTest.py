@@ -62,8 +62,7 @@ for datafile in datafiles:
         iterationBeginTuning = 0
         tuning = True
 
-        regexConfigurationPrediction = '.* Traversal time prediction for +({.*}).*: *([0-9]+)'
-        regexNoPrediction = '.* No traversal time prediction for +({.*})'
+        regexConfigurationPrediction = '.* Prediction for +({.*}).*: *(.+)'
         regexCollectedTimes = '.* Collected times for +({.*})..*\[(.*)\].*: *([0-9]+)'
         regexIter = '.*Iteration +([0-9]+)'
         regexTuning = '.*tuning: +([a-z]+)'
@@ -72,8 +71,8 @@ for datafile in datafiles:
 
             if (match := re.search(regexIter, line)) is not None:
                 iteration = match.group(1)
-            elif (match := re.search(regexNoPrediction, line)) is not None:
-                continue
+                if (match.group(2) == 'none') :
+                    continue
             elif (match := re.search(regexConfigurationPrediction, line)) is not None:
                 configurationPrediction[match.group(1)] = (iteration, int(match.group(2)))
             elif (match := re.search(regexCollectedTimes, line)) is not None:

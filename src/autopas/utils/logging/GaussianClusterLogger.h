@@ -8,8 +8,8 @@
 
 #include <unordered_set>
 
-#include "GaussianModelTypes.h"
-#include "GaussianProcess.h"
+#include "autopas/selectors/tuningStrategy/GaussianModel/GaussianModelTypes.h"
+#include "autopas/selectors/tuningStrategy/GaussianModel/GaussianProcess.h"
 
 namespace autopas {
 
@@ -17,6 +17,9 @@ namespace autopas {
  * Used to print out the clusters of GaussianClusters.
  * The resulting graph represents each cluster as a node and the weight between clusters as edges.
  * The graph is printed as two csv-files.
+ *
+ * By default logging the data is disabled. It can be enabled by setting the cmake variable AUTOPAS_LOG_GAUSSIANCLUSTER
+ * to ON.
  */
 class GaussianClusterLogger {
   const std::string node_start_marker = "GaussianCluster Graph: Nodes";
@@ -30,25 +33,12 @@ class GaussianClusterLogger {
 
  public:
   /**
-   * Options how to output the graphs.
-   */
-  enum OutputType { none, trace, file };
-
-  /**
-   * Constructor. Use output file if log level debug or lower.
-   * @param vecToStringFun
-   */
-  explicit GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun)
-      : GaussianClusterLogger(std::move(vecToStringFun),
-                              autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug ? OutputType::file
-                                                                                                  : OutputType::none) {}
-
-  /**
    * Constructor
    * @param vecToStringFun function to convert vectors to readable string
-   * @param outputType
+   * @param outputSuffix Suffix for all output files produced by this class.
    */
-  GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun, OutputType outputType);
+  explicit GaussianClusterLogger(GaussianModelTypes::VectorToStringFun vecToStringFun,
+                                 const std::string &outputSuffix = "");
 
   /**
    * Change the used function to convert from vector to string.
@@ -60,34 +50,26 @@ class GaussianClusterLogger {
    * Add nodes and edges for given continuous sample.
    * @param clusters all clusters
    * @param discreteVectorMap map to convert index to vector
-   * @param currentContinous continuous sample
+   * @param currentContinuous continuous sample
    * @param means predicted mean for each cluster
    * @param vars predicted variance for each cluster
    * @param neighbourWeights neighbours for each cluster
    */
   void add(const std::vector<GaussianProcess> &clusters,
            const std::vector<GaussianModelTypes::VectorDiscrete> &discreteVectorMap,
-           const GaussianModelTypes::VectorContinuous &currentContinous, std::vector<double> means,
-           std::vector<double> vars, const GaussianModelTypes::NeighboursWeights &neighbourWeights);
+           const GaussianModelTypes::VectorContinuous &currentContinuous, const std::vector<double> &means,
+           const std::vector<double> &vars, const GaussianModelTypes::NeighboursWeights &neighbourWeights);
 
   /**
-   * Output graph stream accumulated from add() since last call of end().
+   * Dump all data accumulated by add() to the sink of this logger and clear all buffers.
    */
-  void end();
+  void flush();
 
  private:
   /**
    * Reset the stream for both csv-files.
    */
   void reset();
-
-  /**
-   * Checks if logger can skip calculations.
-   * @return
-   */
-  bool generatesNoOutput() const;
-
-  OutputType _outputType;
 
   std::string _outputFileName;
 
@@ -103,7 +85,7 @@ class GaussianClusterLogger {
   /**
    * Continuous samples already added to the graph.
    */
-  std::vector<GaussianModelTypes::VectorContinuous> _currentContinuous;
+  std::vector<GaussianModelTypes::VectorContinuous> _currentContinuous{};
 
   /**
    * Function to convert vectors to strings.

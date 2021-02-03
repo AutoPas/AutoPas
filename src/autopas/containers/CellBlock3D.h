@@ -249,7 +249,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
 
   std::array<index_t, 3> _cellsPerDimensionWithHalo;
   index_t _numCells;
-  std::vector<ParticleCell> *_vec1D;
+  std::vector<ParticleCell> *_cells;
 
   std::array<double, 3> _boxMin, _boxMax;
   std::array<double, 3> _haloBoxMin, _haloBoxMax;
@@ -308,7 +308,7 @@ template <class ParticleCell>
 inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin,
                                                const std::array<double, 3> &bMax, double interactionLength,
                                                double cellSizeFactor) {
-  _vec1D = &vec;
+  _cells = &vec;
   _boxMin = bMin;
   _boxMax = bMax;
   _interactionLength = interactionLength;
@@ -340,8 +340,8 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
     AutoPasLog(debug, "CellsPerDimensionWithHalo[{}]={}", d, _cellsPerDimensionWithHalo[d]);
   }
 
-  _vec1D->resize(_numCells);
-  for (auto &cell : *_vec1D) {
+  _cells->resize(_numCells);
+  for (auto &cell : *_cells) {
     cell.setCellLength(_cellLength);
   }
 }
@@ -388,12 +388,12 @@ inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(const std::arr
 
 template <class ParticleCell>
 inline ParticleCell &CellBlock3D<ParticleCell>::getCell(index_t index1d) const {
-  return _vec1D->at(index1d);
+  return _cells->at(index1d);
 }
 
 template <class ParticleCell>
 inline ParticleCell &CellBlock3D<ParticleCell>::getCell(const std::array<index_t, 3> &index3d) const {
-  return _vec1D->at(index1D(index3d));
+  return _cells->at(index1D(index3d));
 }
 
 template <class ParticleCell>
@@ -426,7 +426,7 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
     for (index_t j = 0; j < _cellsPerDimensionWithHalo[1]; j++) {
       for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
         index_t index = index1D({i, j, k});
-        (*_vec1D)[index].clear();
+        (*_cells)[index].clear();
       }
     }
   }
@@ -436,7 +436,7 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
     for (index_t j : haloSlices) {
       for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
         index_t index = index1D({i, j, k});
-        (*_vec1D)[index].clear();
+        (*_cells)[index].clear();
       }
     }
   }
@@ -446,7 +446,7 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
     for (index_t j = 1; j < _cellsPerDimensionWithHalo[1] - 1; j++) {  // 0 and cells-1 already done in previous loop
       for (index_t k : haloSlices) {
         index_t index = index1D({i, j, k});
-        (*_vec1D)[index].clear();
+        (*_cells)[index].clear();
       }
     }
   }

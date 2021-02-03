@@ -10,10 +10,10 @@
 
 namespace autopas {
 
-template <class Particle>
 /**
  * This functor can generate verlet lists using the typical pairwise traversal.
  */
+template <class Particle>
 class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGeneratorFunctor<Particle>> {
   using NeighborListsType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
   using SoAArraysType = typename Particle::SoAArraysType;

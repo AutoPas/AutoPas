@@ -33,13 +33,10 @@ namespace autopas {
  * @tparam typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList,
-          typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
+          class NeighborList, ContainerOption::Value typeOfList>
 class VLCSlicedC02Traversal
     : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
       public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
-  using VLCTypeOfList = typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList;
-
  public:
   /**
    * Constructor of the colored sliced traversal.
@@ -63,9 +60,9 @@ class VLCSlicedC02Traversal
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
     switch (typeOfList) {
-      case (VLCTypeOfList::vlc):
+      case (ContainerOption::verletListsCells):
         return TraversalOption::vlc_sliced_c02;
-      case (VLCTypeOfList::vlp):
+      case (ContainerOption::pairwiseVerletLists):
         return TraversalOption::vlp_sliced_c02;
     }
   }
@@ -79,8 +76,7 @@ class VLCSlicedC02Traversal
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList,
-          typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
+          class NeighborList, ContainerOption::Value typeOfList>
 inline void VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
                                   typeOfList>::traverseParticlePairs() {
   if (dataLayout == DataLayoutOption::soa) {

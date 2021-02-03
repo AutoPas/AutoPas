@@ -4,7 +4,7 @@ option(
 if (AUTOPAS_USE_VECTORIZATION)
     message(STATUS "Vectorization enabled.")
     # list of available options
-    set(VECTOR_INSTRUCTIONS_OPTIONS "NATIVE;SSE;AVX;AVX2;KNL")
+    set(VECTOR_INSTRUCTIONS_OPTIONS "NATIVE;DEFAULT;SSE;AVX;AVX2;KNL")
     # set instruction set type
     set(
         AUTOPAS_VECTOR_INSTRUCTIONS

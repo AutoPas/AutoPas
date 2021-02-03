@@ -14,13 +14,13 @@ namespace autopas {
 /**
  * Interface of neighbor lists to be used with VerletListsCells container.
  * @tparam Particle Type of particle to be used for the neighbor list.
- * */
+ */
 template <class Particle>
 class VLCNeighborListInterface {
  public:
   /**
    * Default destructor.
-   * */
+   */
   ~VLCNeighborListInterface() = default;
 
   /**
@@ -32,7 +32,7 @@ class VLCNeighborListInterface {
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
    * @param buildType Type of build functor to be used for the generation of the neighbor list.
-   * */
+   */
   virtual void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                                     double interactionLength, const TraversalOption buildTraversalOption,
                                     typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) = 0;
