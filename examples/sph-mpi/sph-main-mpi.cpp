@@ -495,7 +495,10 @@ int main(int argc, char *argv[]) {
     dataLayouts.erase(dataLayouts.find(autopas::DataLayoutOption::cuda));
   }
   sphSystem.setAllowedDataLayouts(dataLayouts);
+  int rank;
+  MPI_Comm_rank(comm, &rank);
 
+  sphSystem.setOutputSuffix("Rank" + std::to_string(rank) + "_");
   sphSystem.init();
 
   double dt;
@@ -519,8 +522,6 @@ int main(int argc, char *argv[]) {
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
-  int rank;
-  MPI_Comm_rank(comm, &rank);
   for (double time = 0.; time < t_end && step < 55; time += dt, ++step) {
     if (rank == 0) {
       std::cout << "\n-------------------------\ntime step " << step << "(t = " << time << ")..." << std::endl;

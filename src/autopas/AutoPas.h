@@ -118,7 +118,7 @@ class AutoPas {
             _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
             _maxTuningPhasesWithoutTest, _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption,
             _extrapolationMethodOption, _mpiStrategyOption, _autopasMPICommunicator)),
-        _selectorStrategy, _tuningInterval, _numSamples);
+        _selectorStrategy, _tuningInterval, _numSamples, _outputSuffix);
     _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()),
                                                                                         _verletRebuildFrequency);
   }
@@ -625,7 +625,7 @@ class AutoPas {
    * Getter for the currently selected configuration.
    * @return Configuration object currently used.
    */
-  [[nodiscard]] Configuration getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
+  [[nodiscard]] const Configuration &getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
 
   /**
    * Getter for the tuning strategy option.
@@ -664,6 +664,13 @@ class AutoPas {
    */
   MPI_Comm getMPICommunicator() { return _autopasMPICommunicator; }
 #endif
+
+  /**
+   * Suffix for all output files produced by this instance of AutoPas, e.g. from csv loggers.
+   * This is useful when multiple instances of AutoPas exist, especially in an MPI context.
+   * @param suffix
+   */
+  void setOutputSuffix(const std::string &suffix) { _outputSuffix = suffix; }
 
  private:
   /**
@@ -803,6 +810,12 @@ class AutoPas {
    * Stores whether the mpi communicator was provided externally or not
    */
   bool _externalMPICommunicator{false};
+
+  /**
+   * Suffix for all output files produced by this instance of AutoPas, e.g. from csv loggers.
+   * This is useful when multiple instances of AutoPas exist, especially in an MPI context.
+   */
+  std::string _outputSuffix{""};
 
 };  // class AutoPas
 }  // namespace autopas

@@ -83,7 +83,6 @@ bool FullSearch::tune(bool) {
 void FullSearch::selectOptimalConfiguration() {
   if (_searchSpace.size() == 1) {
     _currentConfig = _searchSpace.begin();
-    AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
     return;
   }
 
@@ -104,8 +103,6 @@ void FullSearch::selectOptimalConfiguration() {
     autopas::utils::ExceptionHandler::exception(
         "FullSearch: Optimal configuration not found in list of configurations!");
   }
-
-  AutoPasLog(debug, "Selected Configuration {}", _currentConfig->toString());
 }
 
 }  // namespace autopas

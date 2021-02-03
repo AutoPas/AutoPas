@@ -8,7 +8,7 @@
 
 #include <cstdlib>
 
-#include "autopas/utils/Logger.h"
+#include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
 namespace utils {

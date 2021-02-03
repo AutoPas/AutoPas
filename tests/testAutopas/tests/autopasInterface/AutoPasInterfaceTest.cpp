@@ -511,12 +511,14 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
                         size_t autoPasDirection) {
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas1;
+  autoPas1.setOutputSuffix("1_");
   autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption1});
   autoPas1.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption1));
 #ifdef AUTOPAS_CUDA
   autoPas1.setVerletClusterSize(32);
 #endif
   autopas::AutoPas<Molecule> autoPas2;
+  autoPas2.setOutputSuffix("2_");
   autoPas2.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption2});
   autoPas2.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption2));
 #ifdef AUTOPAS_CUDA
