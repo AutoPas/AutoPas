@@ -38,7 +38,7 @@ TEST_P(PairwiseVerletListsTest, testTwoParticles) {
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  if (useNewton3 == true) {
+  if (useNewton3) {
     autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
                              autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &emptyFunctor, verletLists.getInteractionLength(),
@@ -48,7 +48,7 @@ TEST_P(PairwiseVerletListsTest, testTwoParticles) {
     verletLists.iteratePairwise(&traversal);
   }
 
-  else if (useNewton3 == false) {
+  else {
     autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false,
                              autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &emptyFunctor, verletLists.getInteractionLength(),
@@ -66,7 +66,7 @@ TEST_P(PairwiseVerletListsTest, testTwoParticles) {
     partners += verletLists.getNumberOfPartners(pl);
   }
 
-  if (useNewton3 == false) {
+  if (not useNewton3) {
     partners = partners / 2;
   }
 
@@ -108,7 +108,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
   Particle p3(r3, {0., 0., 0.}, 1);
   verletLists.addParticle(p3);
 
-  if (useNewton3 == true) {
+  if (useNewton3) {
     autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
                              autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &emptyFunctorOther, verletLists.getInteractionLength(),
@@ -118,7 +118,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
     verletLists.iteratePairwise(&traversal);
   }
 
-  else if (useNewton3 == false) {
+  else {
     autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false,
                              autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &emptyFunctorOther, verletLists.getInteractionLength(),
@@ -139,7 +139,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
     ++iter;
   }
 
-  if (useNewton3 == false) {
+  if (not useNewton3) {
     partners = partners / 2;
   }
 
@@ -178,7 +178,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
   Particle p3(r3, {0., 0., 0.}, 1);
   verletLists.addParticle(p3);
 
-  if (useNewton3 == true) {
+  if (useNewton3) {
     autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
                              autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(),
@@ -188,7 +188,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
     verletLists.iteratePairwise(&traversal);
   }
 
-  else if (useNewton3 == false) {
+  else {
     autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false,
                              autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(),
@@ -209,7 +209,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
     ++iter;
   }
 
-  if (useNewton3 == false) {
+  if (not useNewton3) {
     partners = partners / 2;
   }
 
@@ -241,7 +241,7 @@ TEST_P(PairwiseVerletListsTest, testOneParticle) {
   Particle p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
 
-  if (useNewton3 == true) {
+  if (useNewton3) {
     autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
                              autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(),
@@ -251,7 +251,7 @@ TEST_P(PairwiseVerletListsTest, testOneParticle) {
     verletLists.iteratePairwise(&traversal);
   }
 
-  else if (useNewton3 == false) {
+  else {
     autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false,
                              autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(),
@@ -308,7 +308,7 @@ TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
   autopas::LJFunctor<Molecule> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
 
-  if (useNewton3 == false) {
+  if (not useNewton3) {
     autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, false,
                              autopas::VLCCellPairNeighborList<Molecule>,
                              autopas::ContainerOption::Value::pairwiseVerletLists>
@@ -326,7 +326,7 @@ TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
     verletLists2.iteratePairwise(&soaTraversal);
   }
 
-  if (useNewton3 == true) {
+  if (useNewton3) {
     autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, true,
                              autopas::VLCCellPairNeighborList<Molecule>,
                              autopas::ContainerOption::Value::pairwiseVerletLists>
