@@ -80,13 +80,11 @@ void soaTest(const double cellSizeFactor,
   ljFunctor.setParticleProperties(1., 1.);
 
   autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, true,
-                           autopas::VLCCellPairNeighborList<Molecule>,
-                           autopas::ContainerOption::verletListsCells>
+                           autopas::VLCCellPairNeighborList<Molecule>, autopas::ContainerOption::verletListsCells>
       verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
                        verletLists1.getCellLength());
   autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, true,
-                           autopas::VLCCellPairNeighborList<Molecule>,
-                           autopas::ContainerOption::verletListsCells>
+                           autopas::VLCCellPairNeighborList<Molecule>, autopas::ContainerOption::verletListsCells>
       soaTraversal(verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
                    verletLists2.getCellLength());
 

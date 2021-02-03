@@ -162,8 +162,10 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
 
     if (buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::Value::aosBuild) {
       autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-        auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>, DataLayoutOption::aos, n3>(
-            buildTraversalOption, f, traversalSelectorInfo);
+        auto buildTraversal =
+            traversalSelector
+                .template generateTraversal<std::remove_reference_t<decltype(f)>, DataLayoutOption::aos, n3>(
+                    buildTraversalOption, f, traversalSelectorInfo);
         linkedCells.iteratePairwise(buildTraversal.get());
       });
     }
