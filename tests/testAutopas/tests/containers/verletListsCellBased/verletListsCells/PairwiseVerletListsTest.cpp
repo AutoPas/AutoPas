@@ -311,12 +311,12 @@ TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
   if (useNewton3 == false) {
     autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, false,
                              autopas::VLCCellPairNeighborList<Molecule>,
-                             autopas::VerletListsCellsHelpers<Molecule>::VLCTypeOfList::vlp>
+                             autopas::ContainerOption::Value::pairwiseVerletLists>
         verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
                          verletLists1.getCellLength());
     autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, false,
                              autopas::VLCCellPairNeighborList<Molecule>,
-                             autopas::VerletListsCellsHelpers<Molecule>::VLCTypeOfList::vlp>
+                             autopas::ContainerOption::Value::pairwiseVerletLists>
         soaTraversal(verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
                      verletLists2.getCellLength());
 
@@ -329,12 +329,12 @@ TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
   if (useNewton3 == true) {
     autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, true,
                              autopas::VLCCellPairNeighborList<Molecule>,
-                             autopas::VerletListsCellsHelpers<Molecule>::VLCTypeOfList::vlp>
+                             autopas::ContainerOption::Value::pairwiseVerletLists>
         verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
                          verletLists1.getCellLength());
     autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, true,
                              autopas::VLCCellPairNeighborList<Molecule>,
-                             autopas::VerletListsCellsHelpers<Molecule>::VLCTypeOfList::vlp>
+                             autopas::ContainerOption::Value::pairwiseVerletLists>
         soaTraversal(verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
                      verletLists2.getCellLength());
 

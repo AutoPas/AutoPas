@@ -34,21 +34,6 @@ class VerletListsCellsHelpers {
       std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>;
 
   /**
-   * Indicates which type of neighbor list the VLC container is using.
-   * To be passed to the VLC traversals in TraversalSelector.
-   */
-  class VLCTypeOfList {
-   public:
-    /**
-     * Enum value indicating the type of neighbor list.
-     */
-    enum Value {
-      vlc,
-      vlp,
-    };
-  };
-
-  /**
    * Indicates which build functor should be used for the generation of the neighbor list.
    * To be passed to the generator functors in the neighbor lists.
    */
