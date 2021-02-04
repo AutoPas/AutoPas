@@ -249,3 +249,4 @@ This work was financially supported by:
 
 ## Papers to cite
 * F. A. Gratl, S. Seckler, N. Tchipev, H.-J. Bungartz and P. Neumann: [AutoPas: Auto-Tuning for Particle Simulations](https://ieeexplore.ieee.org/document/8778280) [BibTeX](https://mediatum.ub.tum.de/services/export/node/1535848/?format=template_test&mask=bibtex&lang=de&template=$$[defaultexport]$$&mimetype=text/plain) [MediaTum](https://mediatum.ub.tum.de/1535848), In 2019 IEEE International Parallel and Distributed Processing Symposium Workshops (IPDPSW), Rio de Janeiro, May 2019.
+* S. Seckler, F. Gratl, M. Heinen, J. Vrabec, H.-J. Bungartz, P. Neumann: [AutoPas in ls1 mardyn: Massively parallel particle simulations with node-level auto-tuning](https://www.sciencedirect.com/science/article/abs/pii/S1877750320305901), In Journal of Computational Science, Volume 50, 2021.
