@@ -567,6 +567,7 @@ int main(int argc, char *argv[]) {
 
   double dt;
   double t_end;
+  size_t max_step = 10000;
 
   // only adds particles to the current process, due to the right localBoxMin,
   // localBoxMax
@@ -586,7 +587,7 @@ int main(int argc, char *argv[]) {
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
-  for (double time = 0.; time < t_end && step < 55; time += dt, ++step) {
+  for (double time = 0.; step < max_step; time += dt, ++step) {
     if (rank == 0) {
       std::cout << "\n-------------------------\ntime step " << step << "(t = " << time << ")..." << std::endl;
     }
