@@ -18,8 +18,6 @@ using Particle = autopas::sph::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
 
 void writeVTKFile(unsigned int iteration, autopas::AutoPas<Particle> &autopas) {
-  //  _timers.vtk.start();
-
   std::string fileBaseName = "sph-main-mpi";
   // only count number of owned particles here
   const auto numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly);
@@ -76,8 +74,6 @@ void writeVTKFile(unsigned int iteration, autopas::AutoPas<Particle> &autopas) {
   vtkFile << "\n";
 
   vtkFile.close();
-
-  //  _timers.vtk.stop();
 }
 
 void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
@@ -398,8 +394,6 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const s
         }
         for (const auto &p : invalidParticles) {
           if (autopas::utils::inBox(p.getR(), requiredHaloMin, requiredHaloMax)) {
-            // std::cout << "sending particle at (" << p.getR()[0] << ", "
-            //          << p.getR()[1] << ", " << p.getR()[2] << ")" << std::endl;
             auto pCopy = p;
             pCopy.addR(shift);
             sendParticles.push_back(pCopy);
@@ -413,9 +407,8 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const s
         for (auto &particle : receiveParticles) {
           for (int i = 0; i < 3; i++) {
             auto r = particle.getR();
-            if (r[i] == sphSystem.getBoxMax()[i]) {  // required if -1e20 + 3 =
-                                                     // 3 and not < 3 //
-                                                     // floating point errors
+            // required if -1e20 + 3 = 3 and not < 3 due to floating point errors
+            if (r[i] == sphSystem.getBoxMax()[i]) {
               r[i] = nextafter(r[i], 0);
               particle.setR(r);
             }
@@ -470,7 +463,8 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
 
 void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
-  double energySum = 0.;                        // total energy
+  // total energy
+  double energySum = 0.;
   for (auto it = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); it.isValid(); ++it) {
     momSum = autopas::utils::ArrayMath::add(momSum, autopas::utils::ArrayMath::mulScalar(it->getV(), it->getMass()));
     energySum += (it->getEnergy() + 0.5 * autopas::utils::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
@@ -568,8 +562,7 @@ int main(int argc, char *argv[]) {
   double t_end;
   size_t max_step = 10000;
 
-  // only adds particles to the current process, due to the right localBoxMin,
-  // localBoxMax
+  // only adds particles to the current process, due to the right localBoxMin, localBoxMax
   SetupIC(sphSystem, &t_end, globalBoxMax);
   Initialize(sphSystem);
 
@@ -609,19 +602,6 @@ int main(int argc, char *argv[]) {
     dt = getTimeStepGlobal(sphSystem, comm);
     // 1.6 Leap frog: final Kick
     leapfrogFinalKick(sphSystem, dt);
-
-    //    for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
-    //      printf(
-    //          "%lu\t%lf\t%lf\t%lf\t%lf\t%lf\t"
-    //          "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
-    //          part->getID(), part->getMass(), part->getR()[0],
-    //          part->getR()[1],
-    //          part->getR()[2], part->getV()[0], part->getV()[1],
-    //          part->getV()[2],
-    //          part->getDensity(), part->getEnergy(), part->getPressure(),
-    //          part->getAcceleration()[0], part->getAcceleration()[1],
-    //          part->getAcceleration()[2], part->getEngDot(), part->getDt());
-    //    }
 
     printConservativeVariables(sphSystem, comm);
     if (step % 100 == 0) {
