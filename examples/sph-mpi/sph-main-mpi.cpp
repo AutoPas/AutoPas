@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cmath>
+#include <fstream>
 #include <iostream>
 
 #include "autopas/AutoPas.h"
@@ -15,6 +16,69 @@
 
 using Particle = autopas::sph::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
+
+void writeVTKFile(unsigned int iteration, autopas::AutoPas<Particle> &autopas) {
+  //  _timers.vtk.start();
+
+  std::string fileBaseName = "sph-main-mpi";
+  // only count number of owned particles here
+  const auto numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly);
+  std::ostringstream strstr;
+  //  auto maxNumDigits = std::to_string(_config->iterations.value).length();
+  // TODO: propperly set number of iterations and then derive this length here.
+  auto maxNumDigits = 4;
+  strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtk";
+  std::ofstream vtkFile;
+  vtkFile.open(strstr.str());
+
+  if (not vtkFile.is_open()) {
+    throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + strstr.str() + "\"");
+  }
+
+  vtkFile << "# vtk DataFile Version 2.0\n"
+          << "Timestep\n"
+          << "ASCII\n";
+
+  // print positions
+  vtkFile << "DATASET STRUCTURED_GRID\n"
+          << "DIMENSIONS 1 1 1\n"
+          << "POINTS " << numParticles << " double\n";
+
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    auto pos = iter->getR();
+    vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
+  }
+  vtkFile << "\n";
+
+  vtkFile << "POINT_DATA " << numParticles << "\n";
+  // print velocities
+  vtkFile << "VECTORS velocities double\n";
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    auto v = iter->getV();
+    vtkFile << v[0] << " " << v[1] << " " << v[2] << "\n";
+  }
+  vtkFile << "\n";
+
+  // print Forces
+  vtkFile << "VECTORS forces double\n";
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    auto f = iter->getF();
+    vtkFile << f[0] << " " << f[1] << " " << f[2] << "\n";
+  }
+  vtkFile << "\n";
+
+  // print ids
+  vtkFile << "SCALARS particleIds int\n";
+  vtkFile << "LOOKUP_TABLE default\n";
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    vtkFile << iter->getID() << "\n";
+  }
+  vtkFile << "\n";
+
+  vtkFile.close();
+
+  //  _timers.vtk.stop();
+}
 
 void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
   // Place SPH particles
@@ -560,6 +624,9 @@ int main(int argc, char *argv[]) {
     //    }
 
     printConservativeVariables(sphSystem, comm);
+    if (step % 100 == 0) {
+      writeVTKFile(step, sphSystem);
+    }
   }
   std::cout << "-----------------\nfinished" << std::endl;
   sphSystem.finalize();
