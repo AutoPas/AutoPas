@@ -87,6 +87,8 @@ class VLCNeighborListInterface {
     }
   }
 
+  virtual void setUpTraversal(TraversalInterface *traversal) = 0;
+
  protected:
   /**
    * Internal linked cells structure. Necessary for loading and extracting SoA.

@@ -109,7 +109,10 @@ class VLCTraversalInterface {
     else if (dataLayout == DataLayoutOption::soa) {
       auto &_soaList = neighborList.getSoANeighborList();
       for (auto &[particleIndex, neighbors] : _soaList[cellIndex]) {
-        pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);
+        if(!neighbors.empty())
+        {
+          pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);
+        }
       }
     }
   }

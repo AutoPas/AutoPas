@@ -133,6 +133,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
           Particle *currentParticle = &*particleIter;
           cellPair.emplace_back(std::make_pair(currentParticle, std::vector<Particle *>()));
           // TODO reserve experiment - Tina
+          // TODO cellPair.back().second.reserve(?);
 
           // add pair of cell's index and particle's index in the cell
           _particleToCellMap[currentParticle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
@@ -194,7 +195,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     return VerletListsCellsHelpers<Particle>::VLCTypeOfList::vlp;
   }
 
-  void setUpTraversal(TraversalInterface *traversal)
+  void setUpTraversal(TraversalInterface *traversal) override
   {
     auto vTraversal = dynamic_cast<VLCCellPairTraversalInterface<Particle> *>(traversal);
 

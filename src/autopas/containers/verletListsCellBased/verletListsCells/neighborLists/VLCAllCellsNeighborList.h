@@ -154,7 +154,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     return VerletListsCellsHelpers<Particle>::VLCTypeOfList::vlc;
   }
 
-  void setUpTraversal(TraversalInterface *traversal)
+  void setUpTraversal(TraversalInterface *traversal) override
   {
     auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, VLCAllCellsNeighborList<Particle>> *>(traversal);
 
