@@ -20,7 +20,7 @@ namespace autopas::compatibleTraversals {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allDSCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::ds_sequential};
+  static const std::set<TraversalOption> s{TraversalOption::ds_sequential, TraversalOption::ds_kokkos_parallel};
   return s;
 }
 

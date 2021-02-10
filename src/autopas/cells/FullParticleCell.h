@@ -16,6 +16,8 @@
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
 
+#include <Kokkos_Core.hpp>
+
 namespace autopas {
 
 /**
@@ -35,20 +37,28 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   FullParticleCell()
       : _cellLength({std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
-                     std::numeric_limits<double>::max()}) {}
+                     std::numeric_limits<double>::max()}), capacity(128), size(0),
+        _particles(Kokkos::View<Particle *> ("particles device", 128)){}
 
   /**
    * Constructs a new FullParticleCell with the given cell side length.
    * @param cellLength cell side length
    */
-  explicit FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
+  explicit FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength),
+  capacity(128), size(0), _particles(Kokkos::View<Particle *> ("particles device", 128)){}
 
   /**
    * @copydoc ParticleCell::addParticle()
    */
   void addParticle(const Particle &p) override {
     particlesLock.lock();
-    _particles.push_back(p);
+    if(size == capacity) {
+      capacity *= 2;
+      Kokkos::resize(_particles, capacity);
+    }
+    _particles[size] = p;
+    size++;
+
     particlesLock.unlock();
   }
 
@@ -60,7 +70,7 @@ class FullParticleCell : public ParticleCell<Particle> {
     return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
-  [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
+  [[nodiscard]] unsigned long numParticles() const override { return size; }
 
   /**
    * Returns a reference to the element at position n in the cell.
@@ -81,7 +91,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  Particle &at(size_t index) { return _particles.at(index); }
+  Particle &at(size_t index) { return _particles[index]; }
 
   /**
    * @copydoc ParticleCell::getParticleCellTypeAsEnum()
@@ -93,16 +103,16 @@ class FullParticleCell : public ParticleCell<Particle> {
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  const Particle &at(size_t index) const { return _particles.at(index); }
+  const Particle &at(size_t index) const { return _particles[index]; }
 
   [[nodiscard]] bool isNotEmpty() const override { return numParticles() > 0; }
 
-  void clear() override { _particles.clear(); }
+  void clear() override { size = 0; }
 
   void deleteDummyParticles() override {
-    _particles.erase(
-        std::remove_if(_particles.begin(), _particles.end(), [](const auto &particle) { return particle.isDummy(); }),
-        _particles.end());
+//    _particles.erase(
+//        std::remove_if(_particles.begin(), _particles.end(), [](const auto &particle) { return particle.isDummy(); }),
+//        _particles.end());
   }
 
   void deleteByIndex(size_t index) override {
@@ -112,9 +122,10 @@ class FullParticleCell : public ParticleCell<Particle> {
     }
 
     if (index < numParticles() - 1) {
-      std::swap(_particles[index], _particles[numParticles() - 1]);
+//      std::swap(_particles[index], _particles[numParticles() - 1]);
+      _particles[index] = _particles[numParticles() - 1];
     }
-    _particles.pop_back();
+    size--;
   }
 
   void setCellLength(std::array<double, 3> &cellLength) override { _cellLength = cellLength; }
@@ -133,8 +144,9 @@ class FullParticleCell : public ParticleCell<Particle> {
    * @param dim dimension to sort
    */
   void sortByDim(const size_t dim) {
-    std::sort(_particles.begin(), _particles.end(),
-              [dim](const Particle &a, const Particle &b) -> bool { return a.getR()[dim] < b.getR()[dim]; });
+    //noop atm TODO lgaertner
+//    std::sort(_particles.begin(), _particles.end(),
+//              [dim](const Particle &a, const Particle &b) -> bool { return a.getR()[dim] < b.getR()[dim]; });
   }
 
   /**
@@ -146,7 +158,8 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Storage of the molecules of the cell.
    */
-  std::vector<Particle> _particles;
+//  std::vector<Particle> _particles;
+  Kokkos::View<Particle *> _particles;
 
   /**
    * SoA buffer of this cell.
@@ -171,5 +184,8 @@ class FullParticleCell : public ParticleCell<Particle> {
  private:
   AutoPasLock particlesLock;
   std::array<double, 3> _cellLength;
+
+  size_t capacity;
+  size_t size;
 };
 }  // namespace autopas

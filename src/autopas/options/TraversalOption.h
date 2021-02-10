@@ -27,6 +27,11 @@ class TraversalOption : public Option<TraversalOption> {
      */
     ds_sequential,
 
+    /**
+     * DSKokkosParallelTraversal : Sequential double loop over all particles.
+     */
+    ds_kokkos_parallel,
+
     // LinkedCell Traversals:
     /**
      * LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice interface.
@@ -206,7 +211,8 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getDiscouragedOptions() {
-    return {Value::ds_sequential, Value::vcl_cluster_iteration};
+//    return {Value::ds_sequential, Value::vcl_cluster_iteration};
+    return {};
   }
 
   /**
@@ -217,6 +223,7 @@ class TraversalOption : public Option<TraversalOption> {
     return {
         // DirectSum Traversals:
         {TraversalOption::ds_sequential, "ds_sequential"},
+        {TraversalOption::ds_kokkos_parallel, "ds_kokkos_parallel"},
 
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},
