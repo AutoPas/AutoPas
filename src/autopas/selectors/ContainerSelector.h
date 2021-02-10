@@ -103,51 +103,51 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       break;
     }
 
-    case ContainerOption::linkedCells: {
-      container = std::make_unique<LinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                          containerInfo.cellSizeFactor, containerInfo.loadEstimator);
-      break;
-    }
-    case ContainerOption::linkedCellsReferences: {
-      container = std::make_unique<LinkedCellsReferences<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                                    containerInfo.cellSizeFactor);
-      break;
-    }
-    case ContainerOption::verletLists: {
-      container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                          VerletLists<Particle>::BuildVerletListType::VerletSoA,
-                                                          containerInfo.cellSizeFactor);
-      break;
-    }
-    case ContainerOption::verletListsCells: {
-      container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
-          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
-          containerInfo.loadEstimator);
-      break;
-    }
-    case ContainerOption::verletClusterLists: {
-      container =
-          std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                         containerInfo.verletClusterSize, containerInfo.loadEstimator);
-      break;
-    }
-    case ContainerOption::verletClusterCells: {
-      container = std::make_unique<VerletClusterCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                                 containerInfo.verletClusterSize);
-      break;
-    }
-    case ContainerOption::varVerletListsAsBuild: {
-      container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
-      break;
-    }
-
-    case ContainerOption::pairwiseVerletLists: {
-      container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
-          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
-          containerInfo.loadEstimator);
-      break;
-    }
+//    case ContainerOption::linkedCells: {
+//      container = std::make_unique<LinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+//                                                          containerInfo.cellSizeFactor, containerInfo.loadEstimator);
+//      break;
+//    }
+//    case ContainerOption::linkedCellsReferences: {
+//      container = std::make_unique<LinkedCellsReferences<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+//                                                                    containerInfo.cellSizeFactor);
+//      break;
+//    }
+//    case ContainerOption::verletLists: {
+//      container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+//                                                          VerletLists<Particle>::BuildVerletListType::VerletSoA,
+//                                                          containerInfo.cellSizeFactor);
+//      break;
+//    }
+//    case ContainerOption::verletListsCells: {
+//      container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
+//          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
+//          containerInfo.loadEstimator);
+//      break;
+//    }
+//    case ContainerOption::verletClusterLists: {
+//      container =
+//          std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+//                                                         containerInfo.verletClusterSize, containerInfo.loadEstimator);
+//      break;
+//    }
+//    case ContainerOption::verletClusterCells: {
+//      container = std::make_unique<VerletClusterCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+//                                                                 containerInfo.verletClusterSize);
+//      break;
+//    }
+//    case ContainerOption::varVerletListsAsBuild: {
+//      container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
+//          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+//      break;
+//    }
+//
+//    case ContainerOption::pairwiseVerletLists: {
+//      container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
+//          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
+//          containerInfo.loadEstimator);
+//      break;
+//    }
     default: {
       utils::ExceptionHandler::exception("ContainerSelector: Container type {} is not a known type!",
                                          containerChoice.to_string());
