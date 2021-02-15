@@ -45,7 +45,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+  void AoSFunctor(const Particle &i, const Particle &j, bool newton3) override {
     if (i.isDummy() or j.isDummy()) {
       return;
     }

@@ -169,7 +169,7 @@ class DSKokkosParallelTraversal : public CellPairTraversal<ParticleCell>, public
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
+  CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
                         true>
       _cellFunctor;
 
@@ -258,48 +258,17 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 template <bool newton3>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoS(
     ParticleCell &cell) {
-  if (cell.numParticles() > _startSorting) {
-    SortedCellView<Particle, ParticleCell> cellSorted(
-        cell, utils::ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
-    auto outer = cellSorted._particles.begin();
-    for (; outer != cellSorted._particles.end(); ++outer) {
-      Particle &p1 = *outer->second;
+      Kokkos::parallel_for("ds parallel process Cell", cell.numParticles(), KOKKOS_LAMBDA (size_t outerIndex) {
+      const Particle &p1 = cell.at(outerIndex);
 
-      auto inner = outer;
-      ++inner;
-      for (; inner != cellSorted._particles.end(); ++inner) {
-        if (std::abs(outer->first - inner->first) > _sortingCutoff) {
-          break;
-        }
-        Particle &p2 = *inner->second;
-        if constexpr (newton3) {
-          _functor->AoSFunctor(p1, p2, true);
-        } else {
-          _functor->AoSFunctor(p1, p2, false);
-          _functor->AoSFunctor(p2, p1, false);
-        }
+      auto inner = 0;
+      for (; inner < cell.numParticles(); ++inner) {
+        const Particle &p2 = cell.at(inner);
+
+        _functor->AoSFunctor(p1, p2, false);
       }
-    }
-  } else {
-    auto outer = getStaticCellIter(cell);
-    for (; outer.isValid(); ++outer) {
-      Particle &p1 = *outer;
-
-      auto inner = outer;
-      ++inner;
-      for (; inner.isValid(); ++inner) {
-        Particle &p2 = *inner;
-
-        if constexpr (newton3) {
-          _functor->AoSFunctor(p1, p2, true);
-        } else {
-          _functor->AoSFunctor(p1, p2, false);
-          _functor->AoSFunctor(p2, p1, false);
-        }
-      }
-    }
-  }
+    });
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,

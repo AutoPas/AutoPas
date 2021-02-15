@@ -134,7 +134,7 @@ class LJFunctor
     }
   }
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+  void AoSFunctor(const Particle &i, const Particle &j, bool newton3) override {
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -162,10 +162,10 @@ class LJFunctor
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = utils::ArrayMath::mulScalar(dr, fac);
-    i.addF(f);
+//    i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
-      j.subF(f);
+//      j.subF(f);
     }
     if (calculateGlobals) {
       auto virial = utils::ArrayMath::mul(dr, f);
