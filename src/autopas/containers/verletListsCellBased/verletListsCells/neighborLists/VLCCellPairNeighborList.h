@@ -90,6 +90,8 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
                             typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
     this->_internalLinkedCells = &linkedCells;
     _aosNeighborList.clear();
+    _globalToLocalIndex.clear();
+    _particleToCellMap.clear();
     auto &cells = linkedCells.getCells();
     auto cellsSize = cells.size();
     _aosNeighborList.resize(cellsSize);
@@ -118,6 +120,20 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
             neighborCells++;
           }
         }
+      }
+    }
+
+    if(useNewton3 == true)
+    {
+      if(neighborCells % 2 == 0)
+      {
+        neighborCells/=2;
+      }
+
+      else
+      {
+        neighborCells/=2;
+        neighborCells++;
       }
     }
 
