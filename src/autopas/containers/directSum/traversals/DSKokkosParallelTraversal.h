@@ -259,16 +259,25 @@ template <bool newton3>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoS(
     ParticleCell &cell) {
 
+      size_t index = 0;
+      auto r1 = cell.at(index).getR()[0];
+      auto f1 = cell.at(index).getF()[0];
       Kokkos::parallel_for("ds parallel process Cell", cell.numParticles(), KOKKOS_LAMBDA (size_t outerIndex) {
-      const Particle &p1 = cell.at(outerIndex);
+//      auto outerIndex = 0;
+//      for (; outerIndex < cell.numParticles(); outerIndex++) {
+        const Particle &p1 = cell.at(outerIndex);
 
-      auto inner = 0;
-      for (; inner < cell.numParticles(); ++inner) {
-        const Particle &p2 = cell.at(inner);
-
-        _functor->AoSFunctor(p1, p2, false);
-      }
-    });
+        auto inner = 0;
+        for (; inner < cell.numParticles(); ++inner) {
+          if (inner != outerIndex) {
+            const Particle &p2 = cell.at(inner);
+            _functor->AoSFunctor(p1, p2, false);
+          }
+        }
+      });
+//      }
+      auto f2 = cell.at(index).getF()[0];
+      printf("DEBUG r_x:%f f_x0:%f f_x1:%f \n", r1, f1, f2);
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,

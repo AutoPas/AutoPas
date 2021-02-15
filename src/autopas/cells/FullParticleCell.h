@@ -52,6 +52,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   void addParticle(const Particle &p) override {
     particlesLock.lock();
+    printf("Add Particle s:%u c:%u x:%f y:%f z:%f \n", numParticles(), capacity, p.getR()[0], p.getR()[1], p.getR()[2]);
     if(size == capacity) {
       capacity *= 2;
       Kokkos::resize(_particles, capacity);

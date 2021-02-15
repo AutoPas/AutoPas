@@ -51,17 +51,17 @@ class ParticleBase {
   /**
    * Particle position as 3D coordinates.
    */
-  std::array<floatType, 3> _r;
+  mutable std::array<floatType, 3> _r;
 
   /**
    * Particle velocity as 3D vector.
    */
-  std::array<floatType, 3> _v;
+  mutable std::array<floatType, 3> _v;
 
   /**
    * Force the particle experiences as 3D vector.
    */
-  std::array<floatType, 3> _f;
+  mutable std::array<floatType, 3> _f;
 
   /**
    * Particle id.
@@ -106,13 +106,13 @@ class ParticleBase {
    * Add a partial force to the force acting on the particle
    * @param f partial force to be added
    */
-  void addF(const std::array<double, 3> &f) { _f = utils::ArrayMath::add(_f, f); }
+  void addF(const std::array<double, 3> &f) const { _f = utils::ArrayMath::add(_f, f); }
 
   /**
    * Substract a partial force from the force acting on the particle
    * @param f partial force to be substracted
    */
-  void subF(const std::array<double, 3> &f) { _f = utils::ArrayMath::sub(_f, f); }
+  void subF(const std::array<double, 3> &f) const { _f = utils::ArrayMath::sub(_f, f); }
 
   /**
    * Get the id of the particle

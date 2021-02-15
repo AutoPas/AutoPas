@@ -162,7 +162,8 @@ class LJFunctor
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = utils::ArrayMath::mulScalar(dr, fac);
-//    i.addF(f);
+//    printf("DEBUG \f \n", f[0]);
+    i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
 //      j.subF(f);
