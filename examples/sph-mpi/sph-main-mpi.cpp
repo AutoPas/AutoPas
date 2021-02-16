@@ -525,8 +525,8 @@ int main(int argc, char *argv[]) {
   globalBoxMax[0] = 1.;
   globalBoxMax[1] = globalBoxMax[2] = globalBoxMax[0] / 8.0;
   double cutoff = 0.03;               // 0.012*2.5=0.03; where 2.5 = kernel support radius
-  unsigned int rebuildFrequency = 4;  // has to be multiple of 2
-  double skinToCutoffRatio = 0.2;
+  unsigned int rebuildFrequency = 6;  // has to be multiple of 2 bc two functor calls
+  double skinToCutoffRatio = 0.15;
 
   std::array<double, 3> localBoxMin{}, localBoxMax{};
 
@@ -535,7 +535,7 @@ int main(int argc, char *argv[]) {
 
   AutoPasContainer sphSystem;
   // has to be multiple of 2, should also be multiple of rebuildFrequency (but this is not necessary)
-  sphSystem.setNumSamples(4);
+  sphSystem.setNumSamples(rebuildFrequency);
   sphSystem.setBoxMin(localBoxMin);
   sphSystem.setBoxMax(localBoxMax);
   sphSystem.setCutoff(cutoff);
