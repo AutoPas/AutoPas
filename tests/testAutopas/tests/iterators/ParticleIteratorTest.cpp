@@ -31,30 +31,26 @@ std::vector<FMCell> ParticleIteratorTest::generateCellsWithPattern(const size_t 
 }
 
 void ParticleIteratorTest::testAllParticlesFoundPattern(const std::vector<size_t> &cellsWithParticles,
-                                                        bool testWithAdditionalParticles) {
+                                                        size_t numThreads, size_t numAdditionalParticleVectors) {
   constexpr size_t particlesPerCell = 4;
   auto cells = generateCellsWithPattern(10, cellsWithParticles, particlesPerCell);
-  std::vector<std::vector<Molecule>> additionalParticles(autopas_get_max_threads());
+  std::vector<std::vector<Molecule>> additionalParticles(numAdditionalParticleVectors);
   auto particlesTotal = cellsWithParticles.size() * particlesPerCell;
-  if (testWithAdditionalParticles) {
-    // three particles in the first thread buffer
-    additionalParticles.front().push_back(Molecule({1., 2., 3.}, {0, 0, 0}, particlesTotal++, 0));
-    additionalParticles.front().push_back(Molecule({1., 2., 3.}, {0, 0, 0}, particlesTotal++, 0));
-    additionalParticles.front().push_back(Molecule({1., 2., 3.}, {0, 0, 0}, particlesTotal++, 0));
-
-    // two particles in the last thread buffer
-    additionalParticles.back().push_back(Molecule({1., 2., 3.}, {0, 0, 0}, particlesTotal++, 0));
-    additionalParticles.back().push_back(Molecule({1., 2., 3.}, {0, 0, 0}, particlesTotal++, 0));
+  // fill every additional particle buffer with particles
+  for (auto &additionalParticleVector : additionalParticles) {
+    for (size_t i = 0; i < particlesPerCell; ++i) {
+      additionalParticleVector.push_back(Molecule({1., 2., 3.}, {0, 0, 0}, particlesTotal++, 0));
+    }
   }
 
   std::vector<size_t> foundParticles;
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(vecMerge : foundParticles)
+#pragma omp parallel num_threads(numThreads) reduction(vecMerge : foundParticles)
 #endif
   {
-    for (auto iter =
-             ParticleIterator<Molecule, FMCell, true>(&cells, 0, nullptr, IteratorBehavior::haloAndOwned,
-                                                      testWithAdditionalParticles ? &additionalParticles : nullptr);
+    for (auto iter = ParticleIterator<Molecule, FMCell, true>(
+             &cells, 0, nullptr, IteratorBehavior::haloAndOwned,
+             numAdditionalParticleVectors > 0 ? &additionalParticles : nullptr);
          iter.isValid(); ++iter) {
       auto particleID = iter->getID();
       foundParticles.push_back(particleID);
@@ -67,24 +63,16 @@ void ParticleIteratorTest::testAllParticlesFoundPattern(const std::vector<size_t
   ASSERT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
 }
 
-TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF_withoutAdditional) {
+TEST_P(ParticleIteratorTest, testFullIterator_EFEFFEEFEF) {
+  auto [numThreads, numAdditionalParticleVectors] = GetParam();
   // Empty Full Empty Full Full Empty Empty Full Empty Full
-  testAllParticlesFoundPattern({1ul, 3ul, 4ul, 7ul, 9ul}, false);
+  testAllParticlesFoundPattern({1ul, 3ul, 4ul, 7ul, 9ul}, numThreads, numAdditionalParticleVectors);
 }
 
-TEST_F(ParticleIteratorTest, testFullIterator_FEFEEFFEFE_withoutAdditional) {
+TEST_P(ParticleIteratorTest, testFullIterator_FEFEEFFEFE) {
+  auto [numThreads, numAdditionalParticleVectors] = GetParam();
   // Full Empty Full Empty Empty Full Full Empty Full Empty
-  testAllParticlesFoundPattern({0ul, 2ul, 5ul, 6ul, 8ul}, false);
-}
-
-TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF_withAdditional) {
-  // Empty Full Empty Full Full Empty Empty Full Empty Full
-  testAllParticlesFoundPattern({1ul, 3ul, 4ul, 7ul, 9ul}, true);
-}
-
-TEST_F(ParticleIteratorTest, testFullIterator_FEFEEFFEFE_withAdditional) {
-  // Full Empty Full Empty Empty Full Full Empty Full Empty
-  testAllParticlesFoundPattern({0ul, 2ul, 5ul, 6ul, 8ul}, true);
+  testAllParticlesFoundPattern({0ul, 2ul, 5ul, 6ul, 8ul}, numThreads, numAdditionalParticleVectors);
 }
 
 TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
@@ -246,3 +234,13 @@ TEST_F(ParticleIteratorTest, testIteratorBehaviorVerletLists) {
 
   testContainerIteratorBehavior(verletLists, mol, haloMol);
 }
+
+#ifdef AUTOPAS_OPENMP
+const std::vector<size_t> threadNumsToTest{1, 2, 4};
+#else
+// no need to test more thread counts when openmp is not enabled
+const std::vector<size_t> threadNumsToTest{1};
+#endif
+
+INSTANTIATE_TEST_SUITE_P(Generated, ParticleIteratorTest,
+                         ::testing::Combine(::testing::ValuesIn(threadNumsToTest), ::testing::Values(0, 1, 2, 4)));
