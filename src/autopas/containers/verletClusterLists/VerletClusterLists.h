@@ -73,6 +73,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         _clusterSize{clusterSize},
         _numClusters{0},
         _numTowersPerInteractionLength{0},
+        _particlesToAdd(autopas_get_max_threads()),
         _boxMin{boxMin},
         _boxMax{boxMax},
         _haloBoxMin{utils::ArrayMath::subScalar(boxMin, cutoff + skin)},
@@ -161,7 +162,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   void addParticleImpl(const Particle &p) override {
     _isValid = ValidityState::invalid;
-    _particlesToAdd.push_back(p);
+    _particlesToAdd[autopas_get_thread_num()].push_back(p);
   }
 
   /**
@@ -171,7 +172,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     _isValid = ValidityState::invalid;
     Particle copy = haloParticle;
     copy.setOwnershipState(OwnershipState::halo);
-    _particlesToAdd.push_back(copy);
+    _particlesToAdd[autopas_get_thread_num()].push_back(copy);
   }
 
   /**
@@ -295,7 +296,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     /// @todo use proper cellBorderAndFlagManager instead of the unknowing.
     if (_isValid != ValidityState::invalid) {
-      if (not _particlesToAdd.empty()) {
+      if (not particlesToAddEmpty()) {
         autopas::utils::ExceptionHandler::exception(
             "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
       }
@@ -345,7 +346,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   [[nodiscard]] ParticleIteratorWrapper<Particle, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    if (_isValid != ValidityState::invalid && not _particlesToAdd.empty()) {
+    if (_isValid != ValidityState::invalid && not particlesToAddEmpty()) {
       autopas::utils::ExceptionHandler::exception(
           "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
     }
@@ -401,11 +402,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @copydoc ParticleContainerInterface::getNumParticles()
    */
   [[nodiscard]] unsigned long getNumParticles() const override {
-    unsigned long sum = 0;
-    for (size_t index = 0; index < _towers.size(); index++) {
-      sum += _towers[index].getNumActualParticles();
-    }
-    sum += _particlesToAdd.size();
+    size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0,
+                                 [](size_t acc, const auto &tower) { return acc + tower.getNumActualParticles(); });
+    sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,
+                          [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
     return sum;
   }
 
@@ -578,7 +578,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   void deleteAllParticles() override {
     _isValid = ValidityState::invalid;
-    _particlesToAdd.clear();
+    std::for_each(_particlesToAdd.begin(), _particlesToAdd.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_towers.begin(), _towers.end(), [](auto &tower) { tower.clear(); });
   }
 
@@ -588,8 +588,17 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * This function sets the container structure to valid.
    */
   void rebuildTowersAndClusters() {
-    _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, _particlesToAdd,
-                                                                                 _clusterSize);
+    // collect all particles to add from accross the thread buffers
+    typename decltype(_particlesToAdd)::value_type particlesToAdd;
+    size_t numParticlesToAdd = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), 0,
+                                               [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
+    particlesToAdd.reserve(numParticlesToAdd);
+    std::for_each(_particlesToAdd.begin(), _particlesToAdd.end(), [&](auto &particlesBuffer) {
+      particlesToAdd.insert(particlesToAdd.end(), particlesBuffer.begin(), particlesBuffer.end());
+    });
+
+    _builder =
+        std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, particlesToAdd, _clusterSize);
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
         _builder->rebuildTowersAndClusters();
     _towerSideLengthReciprocal = 1 / _towerSideLength;
@@ -836,8 +845,22 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   /**
    * Contains all particles that should be added to the container during the next rebuild.
+   * Outer vector is for Thread buffer to allow parallel particle insertion.
    */
-  std::vector<Particle> _particlesToAdd;
+  std::vector<std::vector<Particle>> _particlesToAdd;
+
+  /**
+   * Checks if there are particles in at least one thread buffer of _particlesToAdd.
+   * @return true iff all thread buffer are empty.
+   */
+  [[nodiscard]] bool particlesToAddEmpty() const {
+    for (auto &threadBuffer : _particlesToAdd) {
+      if (not threadBuffer.empty()) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   /**
    * Defines a partition of the clusters to a number of threads.
