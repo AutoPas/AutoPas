@@ -52,6 +52,9 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
         _iteratorWithinOneCell(cont->begin()->begin()),
         _flagManager(flagManager),
         _behavior(behavior),
+        _additionalParticleVectorToIterateState(additionalVectorsToIterate
+                                                    ? AdditionalParticleVectorToIterateState::notStarted
+                                                    : AdditionalParticleVectorToIterateState::ignore),
         _additionalVectorIndex(autopas_get_thread_num()),
         _additionalVectorPosition(0),
         _additionalVectors(additionalVectorsToIterate) {}
@@ -132,8 +135,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
         }
       } while (not isValid() and _iteratorAcrossCells < _vectorOfCells->end());
       if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::notStarted and
-          _iteratorAcrossCells >= _vectorOfCells->end() and _additionalVectors and
-          _additionalVectors->size() > _additionalVectorIndex) {
+          _iteratorAcrossCells >= _vectorOfCells->end() and _additionalVectors->size() > _additionalVectorIndex) {
         _additionalParticleVectorToIterateState = AdditionalParticleVectorToIterateState::iterating;
         if (isValid()) {
           // if the first particle in the additional Vector is valid, we return here.
@@ -317,8 +319,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
   /**
    * Specifies if this iterator should also iterate over the additional array.
    */
-  AdditionalParticleVectorToIterateState _additionalParticleVectorToIterateState{
-      AdditionalParticleVectorToIterateState::notStarted};
+  AdditionalParticleVectorToIterateState _additionalParticleVectorToIterateState;
 
   /**
    * Pointer to an additional Particle Vector this ParticleIterator will iterate over.
