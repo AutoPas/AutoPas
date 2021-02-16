@@ -27,7 +27,8 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
   using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
   using CellBorderAndFlagManagerType =
       std::conditional_t<modifiable, internal::CellBorderAndFlagManager, const internal::CellBorderAndFlagManager>;
-  using ParticleVecType = std::conditional_t<modifiable, std::vector<Particle>, const std::vector<Particle>>;
+  using ParticleVecType =
+      std::conditional_t<modifiable, std::vector<std::vector<Particle>>, const std::vector<std::vector<Particle>>>;
 
  public:
   /**
