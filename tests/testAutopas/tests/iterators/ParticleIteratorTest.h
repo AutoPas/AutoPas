@@ -13,28 +13,22 @@
 #include "testingHelpers/commonTypedefs.h"
 
 class ParticleIteratorTest : public AutoPasTestBase {
- public:
-  ParticleIteratorTest() : _currentIndex(0ul) {}
-
-  void SetUp() override;
-
-  void TearDown() override;
-
-  ~ParticleIteratorTest() override = default;
-
-  template <class CellType>
-  void fillWithParticles(CellType *pc) {
-    // insert four particles
-    for (unsigned long i = _currentIndex; i < _currentIndex + 4; ++i) {
-      pc->addParticle(_vecOfMolecules.at(i));
-    }
-    _currentIndex += 4;
-  }
-
  protected:
-  // needs to be protected, because the test fixtures generate a derived class
-  // for each unit test.
+  /**
+   * Generates a given amount of cells where only indicated cells contain a given amount of particles.
+   * @param numCells
+   * @param cellsToFill
+   * @param particlesPerCell
+   * @return Vector of generated and filled cells.
+   */
+  std::vector<FMCell> generateCellsWithPattern(size_t numCells, const std::vector<size_t> &cellsToFill,
+                                               size_t particlesPerCell);
 
-  std::vector<Molecule> _vecOfMolecules;
-  unsigned long _currentIndex;
+  /**
+   * Checks that all particles in a vector of cells are accessed by the iterator.
+   * @param cellsWithParticles Indices of cells that shall contain particles.
+   * @param testWithAdditionalParticles Whether the iterator shall also consider a vector of additional particles
+   * besides the cells
+   */
+  void testAllParticlesFoundPattern(const std::vector<size_t> &cellsWithParticles, bool testWithAdditionalParticles);
 };

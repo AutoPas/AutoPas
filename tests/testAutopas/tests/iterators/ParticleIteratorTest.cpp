@@ -15,88 +15,83 @@
 using namespace autopas;
 using namespace autopas::internal;
 
-void ParticleIteratorTest::SetUp() {
-  for (int i = 0; i < 20; ++i) {
-    std::array<double, 3> arr{};
-    for (auto &a : arr) {
-      a = static_cast<double>(i);
+std::vector<FMCell> ParticleIteratorTest::generateCellsWithPattern(const size_t numCells,
+                                                                   const std::vector<size_t> &cellsToFill,
+                                                                   const size_t particlesPerCell) {
+  std::vector<FMCell> cells(numCells);
+  size_t numParticlesAdded = 0;
+  for (auto cellId : cellsToFill) {
+    for (size_t i = 0; i < particlesPerCell; ++i) {
+      auto iAsDouble = static_cast<double>(i);
+      Molecule m({iAsDouble, iAsDouble, iAsDouble}, {0, 0, 0}, numParticlesAdded++, 0);
+      cells[cellId].addParticle(m);
     }
-    Molecule m(arr, {0., 0., 0.}, static_cast<unsigned long>(i), 0);
-    _vecOfMolecules.push_back(m);
   }
-
-  _currentIndex = 0;
+  return cells;
 }
 
-void ParticleIteratorTest::TearDown() {}
+void ParticleIteratorTest::testAllParticlesFoundPattern(const std::vector<size_t> &cellsWithParticles,
+                                                        bool testWithAdditionalParticles) {
+  constexpr size_t particlesPerCell = 4;
+  auto cells = generateCellsWithPattern(10, cellsWithParticles, particlesPerCell);
+  std::vector<std::vector<Molecule>> additionalParticles(autopas_get_max_threads());
+  auto particlesTotal = cellsWithParticles.size() * particlesPerCell;
+  if (testWithAdditionalParticles) {
+    // three particles in the first thread buffer
+    additionalParticles.front().push_back(Molecule({1., 2., 3.}, {0, 0, 0}, particlesTotal++, 0));
+    additionalParticles.front().push_back(Molecule({1., 2., 3.}, {0, 0, 0}, particlesTotal++, 0));
+    additionalParticles.front().push_back(Molecule({1., 2., 3.}, {0, 0, 0}, particlesTotal++, 0));
 
-TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF) {
+    // two particles in the last thread buffer
+    additionalParticles.back().push_back(Molecule({1., 2., 3.}, {0, 0, 0}, particlesTotal++, 0));
+    additionalParticles.back().push_back(Molecule({1., 2., 3.}, {0, 0, 0}, particlesTotal++, 0));
+  }
+
+  std::vector<size_t> foundParticles;
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel reduction(vecMerge : foundParticles)
+#endif
+  {
+    for (auto iter =
+             ParticleIterator<Molecule, FMCell, true>(&cells, 0, nullptr, IteratorBehavior::haloAndOwned,
+                                                      testWithAdditionalParticles ? &additionalParticles : nullptr);
+         iter.isValid(); ++iter) {
+      auto particleID = iter->getID();
+      foundParticles.push_back(particleID);
+    }
+  }
+
+  // expect all indices from 1..N to be found
+  std::vector<size_t> expectedIndices(particlesTotal);
+  std::iota(expectedIndices.begin(), expectedIndices.end(), 0);
+  ASSERT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
+}
+
+TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF_withoutAdditional) {
   // Empty Full Empty Full Full Empty Empty Full Empty Full
-  std::vector<FMCell> data(10);
-
-  for (auto i : {1ul, 3ul, 4ul, 7ul, 9ul}) {
-    fillWithParticles(&data.at(i));
-  }
-
-  std::vector<size_t> foundParticles;
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(vecMerge : foundParticles)
-#endif
-  {
-    for (auto iter = ParticleIterator<Molecule, FMCell, true>(&data); iter.isValid(); ++iter) {
-      auto particleID = iter->getID();
-      foundParticles.push_back(particleID);
-      for (int d = 0; d < 3; ++d) {
-        EXPECT_DOUBLE_EQ(iter->getR()[d], particleID);
-      }
-    }
-  }
-
-  ASSERT_EQ(foundParticles.size(), 20);
-  std::sort(foundParticles.begin(), foundParticles.end());
-  for (size_t i = 0; i < 20; ++i) {
-    ASSERT_EQ(i, foundParticles[i]);
-  }
+  testAllParticlesFoundPattern({1ul, 3ul, 4ul, 7ul, 9ul}, false);
 }
 
-TEST_F(ParticleIteratorTest, testFullIterator_FEFEEFFEFE) {
+TEST_F(ParticleIteratorTest, testFullIterator_FEFEEFFEFE_withoutAdditional) {
   // Full Empty Full Empty Empty Full Full Empty Full Empty
-  std::vector<FMCell> data(10);
+  testAllParticlesFoundPattern({0ul, 2ul, 5ul, 6ul, 8ul}, false);
+}
 
-  for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
-    fillWithParticles(&data.at(i));
-  }
+TEST_F(ParticleIteratorTest, testFullIterator_EFEFFEEFEF_withAdditional) {
+  // Empty Full Empty Full Full Empty Empty Full Empty Full
+  testAllParticlesFoundPattern({1ul, 3ul, 4ul, 7ul, 9ul}, true);
+}
 
-  std::vector<size_t> foundParticles;
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(vecMerge : foundParticles)
-#endif
-  {
-    for (auto iter = ParticleIterator<Molecule, FMCell, true>(&data); iter.isValid(); ++iter) {
-      auto particleID = iter->getID();
-      foundParticles.push_back(particleID);
-      for (int d = 0; d < 3; ++d) {
-        EXPECT_DOUBLE_EQ(iter->getR()[d], particleID);
-      }
-    }
-  }
-
-  ASSERT_EQ(foundParticles.size(), 20);
-  std::sort(foundParticles.begin(), foundParticles.end());
-  for (size_t i = 0; i < 20; ++i) {
-    ASSERT_EQ(i, foundParticles[i]);
-  }
+TEST_F(ParticleIteratorTest, testFullIterator_FEFEEFFEFE_withAdditional) {
+  // Full Empty Full Empty Empty Full Full Empty Full Empty
+  testAllParticlesFoundPattern({0ul, 2ul, 5ul, 6ul, 8ul}, true);
 }
 
 TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
   // Full Empty Full Empty Empty Full Full Empty Full Empty
-  std::vector<FMCell> data(10);
-
-  for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
-    fillWithParticles(&data.at(i));
-  }
+  const std::vector<size_t> cellsToFill = {0ul, 2ul, 5ul, 6ul, 8ul};
+  const size_t numParticlesToAddPerCell = 4;
+  auto data = generateCellsWithPattern(10, cellsToFill, numParticlesToAddPerCell);
 
   int numFoundParticles = 0;
 #ifdef AUTOPAS_OPENMP
@@ -125,11 +120,9 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
 
 TEST_F(ParticleIteratorTest, testFullIterator_mutable) {
   // Full Empty Full Empty Empty Full Full Empty Full Empty
-  std::vector<FMCell> data(10);
-
-  for (auto i : {0ul, 2ul, 5ul, 6ul, 8ul}) {
-    fillWithParticles(&data.at(i));
-  }
+  std::vector<size_t> cellsToFill = {0ul, 2ul, 5ul, 6ul, 8ul};
+  const size_t numParticlesToAddPerCell = 4;
+  auto data = generateCellsWithPattern(10, cellsToFill, numParticlesToAddPerCell);
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
