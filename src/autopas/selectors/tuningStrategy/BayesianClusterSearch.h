@@ -63,15 +63,16 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * Constructor
    * @param allowedContainerOptions
+   * @param allowedCellSizeFactors
    * @param allowedTraversalOptions
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
-   * @param allowedCellSizeFactors
-   * @param predAcqFunction acquisition function used for prediction while tuning.
-   * @param predNumLHSamples number of latin-hypercube-samples used to find a evidence with high predicted acquisition
-   * @param maxEvidence stop tuning after given number of evidence provided.
-   * @param seed seed of random number generator (should only be used for tests)
+   * @param maxEvidence Stop tuning after given number of evidence provided.
+   * @param predAcqFunction Acquisition function used for prediction while tuning.
+   * @param outputSuffix Suffix for output logger.
+   * @param predNumLHSamples Number of latin-hypercube-samples used to find a evidence with high predicted acquisition
+   * @param seed Seed of random number generator (should only be used for tests)
    */
   explicit BayesianClusterSearch(
       const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),

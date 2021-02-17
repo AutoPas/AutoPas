@@ -54,6 +54,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * @param relativeRangeForBlacklist
    * @param testsUntilFirstPrediction
    * @param extrapolationMethodOption
+   * @param outputSuffix
    */
   PredictiveTuning(const std::set<ContainerOption> &allowedContainerOptions,
                    const std::set<double> &allowedCellSizeFactors,
