@@ -12,11 +12,21 @@ autopas::PredictionLogger::PredictionLogger(const std::string &outputSuffix)
     : _loggerName("PredictionLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_PREDICTIONS
   auto outputFileName("AutoPas_predictions_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
-  // create and register the logger
-  auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_loggerName, outputFileName);
+  // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
+  // create and register a non-asychronous logger to write the header
+  auto headerLoggerName = _loggerName + "header";
+  auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
   // set the pattern to the message only
-  logger->set_pattern("%v");
-  logger->info("Tuning phase,{},Prediction", Configuration().getCSVHeader());
+  headerLogger->set_pattern("%v");
+  // print csv header
+  headerLogger->info("Date,Tuning phase,{},Prediction", Configuration().getCSVHeader());
+  spdlog::drop(headerLoggerName);
+  // End of workaround
+
+  // create and register the actual logger
+  auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_loggerName, outputFileName);
+  // set pattern to provide date
+  logger->set_pattern("%Y-%m-%d %T,%v");
 #endif
 }
 
