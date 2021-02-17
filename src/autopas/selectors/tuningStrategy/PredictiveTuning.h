@@ -62,7 +62,8 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                    const std::set<Newton3Option> &allowedNewton3Options, double relativeOptimum,
                    unsigned int maxTuningIterationsWithoutTest, double relativeRangeForBlacklist,
-                   unsigned int testsUntilFirstPrediction, ExtrapolationMethodOption extrapolationMethodOption)
+                   unsigned int testsUntilFirstPrediction, ExtrapolationMethodOption extrapolationMethodOption,
+                   const std::string &outputSuffix = "")
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                           allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options),
         _relativeOptimumRange(relativeOptimum),
@@ -70,7 +71,8 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
         _relativeBlacklistRange(relativeRangeForBlacklist),
         _extrapolationMethod(extrapolationMethodOption),
         _evidenceFirstPrediction(
-            extrapolationMethodOption == ExtrapolationMethodOption::linePrediction ? 2 : testsUntilFirstPrediction) {
+            extrapolationMethodOption == ExtrapolationMethodOption::linePrediction ? 2 : testsUntilFirstPrediction),
+        _predictionLogger(outputSuffix) {
     // sets traversalTimesStorage
     _traversalTimesStorage.reserve(_searchSpace.size());
     for (const auto &configuration : _searchSpace) {
@@ -235,7 +237,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    */
   unsigned int _evidenceFirstPrediction{3};
 
-  PredictionLogger predictionLogger;
+  PredictionLogger _predictionLogger;
 };
 
 void PredictiveTuning::selectOptimalSearchSpace() {
@@ -296,8 +298,8 @@ void PredictiveTuning::calculatePredictions() {
     }
   }
   // if AutoPas is compiled without -DAUTOPAS_LOG_PREDICTIONS this does nothing
-  predictionLogger.logAllPredictions(_searchSpace, _configurationPredictions, _predictionErrorValue,
-                                     _tuningPhaseCounter);
+  _predictionLogger.logAllPredictions(_searchSpace, _configurationPredictions, _predictionErrorValue,
+                                      _tuningPhaseCounter);
 }
 
 void PredictiveTuning::linePrediction() {

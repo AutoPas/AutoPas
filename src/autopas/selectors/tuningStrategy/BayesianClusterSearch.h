@@ -81,7 +81,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
-      size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
+      const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
       : _containerOptionsSet(allowedContainerOptions),
         _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
         _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
@@ -92,7 +92,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _traversalTimes(),
         _rng(seed),
         _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::evidenceMatchingScaledProbabilityGM,
-                         sigma, _rng),
+                         sigma, _rng, GaussianCluster::defaultVecToString, outputSuffix),
         _neighbourFun([this](const Eigen::VectorXi &target) -> std::vector<std::pair<Eigen::VectorXi, double>> {
           return _encoder.clusterNeighboursManhattan1Container(target);
         }),
