@@ -19,7 +19,7 @@ autopas::PredictionLogger::PredictionLogger(const std::string &outputSuffix)
   // set the pattern to the message only
   headerLogger->set_pattern("%v");
   // print csv header
-  headerLogger->info("Date,Tuning phase,{},Prediction", Configuration().getCSVHeader());
+  headerLogger->info("Date,Tuning Phase,{},Prediction", Configuration().getCSVHeader());
   spdlog::drop(headerLoggerName);
   // End of workaround
 
