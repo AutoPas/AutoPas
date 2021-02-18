@@ -130,11 +130,11 @@ class Simulation {
    * Print a progressbar and progress information to the console.
    * @note Calling this function deletes the whole current line in the terminal.
    *
-   * @param iteration
+   * @param iterationProgress
    * @param maxIterations
    * @param maxIsPrecise Indicate whether maxIterations is precise (true) or an estimate (false).
    */
-  void printProgress(size_t iteration, size_t maxIterations, bool maxIsPrecise);
+  void printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise);
 
   using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
   constexpr static bool _shifting = true;
@@ -681,17 +681,17 @@ double Simulation<Particle>::calculateHomogeneity(autopas::AutoPas<Particle> &au
 }
 
 template <class Particle>
-void Simulation<Particle>::printProgress(size_t iteration, size_t maxIterations, bool maxIsPrecise) {
+void Simulation<Particle>::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
   // percentage of iterations complete
-  double fractionDone = static_cast<double>(iteration) / maxIterations;
+  double fractionDone = static_cast<double>(iterationProgress) / maxIterations;
 
   // length of the number of maxIterations
   size_t numCharsOfMaxIterations = std::to_string(maxIterations).size();
 
   // trailing information string
   std::stringstream info;
-  info << std::setw(3) << std::round(fractionDone * 100) << "% " << std::setw(numCharsOfMaxIterations) << iteration
-       << "/";
+  info << std::setw(3) << std::round(fractionDone * 100) << "% " << std::setw(numCharsOfMaxIterations)
+       << iterationProgress << "/";
   if (not maxIsPrecise) {
     info << "~";
   }
@@ -705,9 +705,15 @@ void Simulation<Particle>::printProgress(size_t iteration, size_t maxIterations,
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
   auto terminalWidth = w.ws_col;
   // the bar should fill the terminal window so subtract everything else (-2 for "] ")
-  size_t maxBarWidth = terminalWidth - info.str().size() - progressbar.str().size() - 2;
-  size_t barWidth = std::max(std::min(static_cast<size_t>(maxBarWidth * (fractionDone)), maxBarWidth), 1ul);
-  progressbar << std::string(barWidth - 1, '=') << '>' << std::string(maxBarWidth - barWidth, ' ') << "] ";
+  int maxBarWidth = terminalWidth - info.str().size() - progressbar.str().size() - 2;
+  // sanity check
+  if (maxBarWidth < 1) {
+    std::cerr << "Warning! Terminal width appears to be too small or could not be read. Disabling progress bar."
+              << std::endl;
+    _config->dontShowProgressBar.value = true;
+    return;
+  }
+  auto barWidth = std::max(std::min(static_cast<decltype(maxBarWidth)>(maxBarWidth * (fractionDone)), maxBarWidth), 1);
   // clear current line (=delete previous progress bar)
   std::cout << std::string(terminalWidth, '\r');
   // print everything
