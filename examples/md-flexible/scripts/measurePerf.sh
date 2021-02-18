@@ -142,6 +142,7 @@ do
                             --newton3 ${newton3Opt} \
                             --no-end-config \
                             --no-flops \
+                            --no-progress-bar \
                             --particle-generator uniform \
                             --particles-total ${Mols[$i]} \
                             --periodic false \
