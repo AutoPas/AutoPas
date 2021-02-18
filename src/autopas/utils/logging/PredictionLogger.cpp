@@ -45,7 +45,7 @@ void autopas::PredictionLogger::logAllPredictions(
     auto prediction = configurationPredictions.at(configuration);
     spdlog::get(_loggerName)
         ->info("{},{},{}", tuningPhaseCounter, configuration.getCSVLine(),
-               prediction == predictionErrorValue ? std::to_string(prediction) : "none");
+               prediction == predictionErrorValue ? "none" : std::to_string(prediction));
   }
 #endif
 }
