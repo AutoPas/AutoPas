@@ -729,7 +729,10 @@ void Simulation<Particle>::printProgress(size_t iterationProgress, size_t maxIte
 template <class Particle>
 std::tuple<size_t, bool> Simulation<Particle>::estimateNumIterations() const {
   if (_config->tuningPhases.value > 0) {
-    auto estimate = _config->tuningInterval.value * _config->tuningPhases.value + 100;
+    // @TODO: this can be improved by considering the tuning strategy
+    // 30 is just a random number for the number of tested configurations per tuning phase
+    auto estimate = (_config->tuningPhases.value - 1) * _config->tuningInterval.value +
+                    (_config->tuningPhases.value * _config->tuningSamples.value * 30);
     return {estimate, false};
   } else {
     return {_config->iterations.value, true};
