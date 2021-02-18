@@ -714,6 +714,13 @@ void Simulation<Particle>::printProgress(size_t iterationProgress, size_t maxIte
     return;
   }
   auto barWidth = std::max(std::min(static_cast<decltype(maxBarWidth)>(maxBarWidth * (fractionDone)), maxBarWidth), 1);
+  // don't print arrow tip if >= 100%
+  if (iterationProgress >= maxIterations) {
+    progressbar << std::string(barWidth, '=');
+  } else {
+    progressbar << std::string(barWidth - 1, '=') << '>' << std::string(maxBarWidth - barWidth, ' ');
+  }
+  progressbar << "] ";
   // clear current line (=delete previous progress bar)
   std::cout << std::string(terminalWidth, '\r');
   // print everything
