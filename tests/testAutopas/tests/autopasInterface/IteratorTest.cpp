@@ -317,7 +317,7 @@ TEST_P(IteratorTest, RangeBasedIterator) {
 
 /**
  * The main idea of this test is to compare the iterators using openmp with the iterators not using openmp.
- * If OPENMP is disabled, this tests mainly that no particle is traversed twice.
+ * If OPENMP is disabled, this tests mainly checks that no particle is traversed twice.
  */
 template <bool testConstIterators>
 void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption, double cellSizeFactor,
