@@ -339,7 +339,7 @@ void Simulation<Particle>::simulate(autopas::AutoPas<Particle> &autopas) {
   this->homogeneity = Simulation::calculateHomogeneity(autopas);
   _timers.simulate.start();
 
-  auto [maxIterationsEstimate, maxIterationsIsPrecice] = estimateNumIterations();
+  auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumIterations();
 
   // main simulation loop
   for (; needsMoreIterations(); ++iteration) {
@@ -347,7 +347,7 @@ void Simulation<Particle>::simulate(autopas::AutoPas<Particle> &autopas) {
       std::cout << "Iteration " << iteration << std::endl;
     }
     if (not _config->dontShowProgressBar.value) {
-      printProgress(iteration, maxIterationsEstimate, maxIterationsIsPrecice);
+      printProgress(iteration, maxIterationsEstimate, maxIterationsIsPrecise);
     }
 
     if (_config->deltaT.value != 0) {
