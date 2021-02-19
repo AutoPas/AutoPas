@@ -733,9 +733,14 @@ template <class Particle>
 std::tuple<size_t, bool> Simulation<Particle>::estimateNumIterations() const {
   if (_config->tuningPhases.value > 0) {
     // @TODO: this can be improved by considering the tuning strategy
-    // 30 is just a random number for the number of tested configurations per tuning phase
+    // This is just a randomly guessed number but seems to fit roughly for default settings.
+    size_t configsTestedPerTuningPhase = 90;
+    if(_config->tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianSearch or
+        _config->tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianSearch) {
+      configsTestedPerTuningPhase = _config->tuningMaxEvidence.value;
+    }
     auto estimate = (_config->tuningPhases.value - 1) * _config->tuningInterval.value +
-                    (_config->tuningPhases.value * _config->tuningSamples.value * 30);
+                    (_config->tuningPhases.value * _config->tuningSamples.value * configsTestedPerTuningPhase);
     return {estimate, false};
   } else {
     return {_config->iterations.value, true};
