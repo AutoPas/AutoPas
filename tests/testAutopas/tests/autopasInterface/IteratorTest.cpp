@@ -359,8 +359,9 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
     apContainer.iteratePairwise(&eFunctor);
   }
 
+  int numTouchedOpenMP = 0, numTouchedSerial = 0;
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel
+#pragma omp parallel reduction(+ : numTouchedOpenMP)
 #endif
   {
     // with OpenMP:
@@ -368,6 +369,7 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
                                      : apContainer.begin(behavior);
     for (auto iter = begin; iter.isValid(); ++iter) {
       iter->touch();
+      ++numTouchedOpenMP;
       if (behavior == autopas::IteratorBehavior::ownedOnly) {
         EXPECT_TRUE(iter->isOwned());
       } else if (behavior == autopas::IteratorBehavior::haloOnly) {
@@ -381,6 +383,7 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
                                      : autoPasRef.begin(behavior);
     for (auto iter = begin; iter.isValid(); ++iter) {
       EXPECT_EQ(1, iter->getNumTouched());
+      ++numTouchedSerial;
       if (behavior == autopas::IteratorBehavior::ownedOnly) {
         EXPECT_TRUE(iter->isOwned());
       } else if (behavior == autopas::IteratorBehavior::haloOnly) {
@@ -388,6 +391,8 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
       }
     }
   }
+  EXPECT_GT(numTouchedSerial, 0) << "Serial iterator did not touch anything!";
+  EXPECT_EQ(numTouchedSerial, numTouchedOpenMP) << "Iterator found a different number of particles when using OpenMP!";
 }
 
 /**
