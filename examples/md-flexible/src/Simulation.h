@@ -408,7 +408,8 @@ void Simulation<Particle>::simulate(autopas::AutoPas<Particle> &autopas) {
   }
   // final update for a full progress bar
   if (not _config->dontShowProgressBar.value) {
-    printProgress(iteration, maxIterationsEstimate, maxIterationsIsPrecice);
+    // The last update is precise, so we know the number of iterations.
+    printProgress(iteration, iteration, true);
   }
 
   // update temperature for generated config output
