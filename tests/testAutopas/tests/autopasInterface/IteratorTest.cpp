@@ -329,7 +329,6 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
   std::array<double, 3> lowCorner = {0, 0, 0};
   std::array<double, 3> highCorner = {3, 3, 3};
 
-  int clusterSize = 64;
   autopas::AutoPas<TouchableParticle> apContainer;
   // Reference to the AutoPas object to be able to check const iterators.
   std::conditional_t<testConstIterators, const autopas::AutoPas<TouchableParticle> &,
@@ -344,7 +343,7 @@ void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption,
   apContainer.setBoxMax(max);
   apContainer.setCutoff(cutoff);
   apContainer.setVerletSkin(skin);
-  apContainer.setVerletClusterSize(clusterSize);
+  apContainer.setVerletClusterSize(64);
 
   apContainer.init();
 
