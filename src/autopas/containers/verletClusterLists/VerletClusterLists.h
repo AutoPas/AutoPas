@@ -595,7 +595,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     particlesToAdd.reserve(numParticlesToAdd);
     std::for_each(_particlesToAdd.begin(), _particlesToAdd.end(), [&](auto &particlesBuffer) {
       particlesToAdd.insert(particlesToAdd.end(), particlesBuffer.begin(), particlesBuffer.end());
+      particlesBuffer.clear();
     });
+
 
     _builder =
         std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, particlesToAdd, _clusterSize);
