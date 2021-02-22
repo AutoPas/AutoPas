@@ -173,10 +173,11 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * Check whether the iterator currently points to a valid particle.
    * @return returns whether the iterator is valid
    */
-  bool isValid() const override {
+  [[nodiscard]] bool isValid() const override {
     if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
-      return _additionalVectorPosition < (*_additionalVectors)[_additionalVectorIndex].size() and
-             _additionalVectors->size() > _additionalVectorIndex and particleHasCorrectOwnershipState();
+      return _additionalVectorIndex < _additionalVectors->size() and
+             _additionalVectorPosition < (*_additionalVectors)[_additionalVectorIndex].size() and
+             particleHasCorrectOwnershipState();
     }
     return _vectorOfCells != nullptr and _iteratorAcrossCells < _vectorOfCells->end() and
            _iteratorWithinOneCell.isValid() and particleHasCorrectOwnershipState();
