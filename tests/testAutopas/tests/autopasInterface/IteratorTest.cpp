@@ -298,7 +298,7 @@ void testRangeBasedIterator(autopas::ContainerOption containerOption, double cel
 }
 
 TEST_P(IteratorTest, ParticleAdditionAndIteratorTestNormal) {
-  auto [containerOption, cellSizeFactor, testConstIterators, priorForceCalc] = GetParam();
+  const auto &[containerOption, cellSizeFactor, testConstIterators, priorForceCalc] = GetParam();
   if (testConstIterators) {
     testAdditionAndIteration<true>(containerOption, cellSizeFactor, priorForceCalc);
   } else {
