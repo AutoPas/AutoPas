@@ -18,9 +18,21 @@
 
 namespace autopas::internal {
 /**
- * ParticleIterator class to access particles inside of a container.
- * The particles can be accessed using "iterator->" or "*iterator". The next
- * particle using the ++operator, e.g. "++iterator".
+ * ParticleIterator class to access particles inside of a cell based container.
+ * The particles can be accessed using "iterator->" or "*iterator". The iterator is incremented using the ++operator.
+ *
+ * Incrementing this iterator works by jumping through the underlying particle cells from particle to particle
+ * incrementing until itfinds a particle that matches the iteration criteria (e.g. it continues to loop until it finds
+ * a halo particle if _behavior==haloOnly). Additionally there might be additional particle vectors which are not part
+ * of the cell structure and contain arbitrary unsorted particles. These buffers result from containers that
+ * have buffers they only sometimes merge with the actual data structure. Typically there is one buffer per OpenMP
+ * thread, however, there is no guarantee that the iterator region has the same number of therads so the number of
+ * buffers is considered arbitrary.
+ *
+ * When instantiated in a parallel region one iterator per thread is spawned. All iterators start at the cell of their
+ * thread ID and then jump cells by the number of threads. When a thread is done with its particles it continues with
+ * the additional buffers. Again starting at the buffer with its thread ID and jumping by the number of threads.
+ *
  * @tparam Particle Type of the particle that is accessed.
  * @tparam ParticleCell Type of the cell of the underlying data structure of the container.
  * @tparam modifiable Defines whether the ParticleIterator is modifiable or not. If it is false, it points to a const
