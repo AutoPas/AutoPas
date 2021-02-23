@@ -481,6 +481,12 @@ TEST_P(IteratorTest, testOpenMPRegionIteratorsHaloOnly) {
 
 /**
  * The main idea of this test is to check whether deletion through a RegionIterator doesn't do stupid things.
+ * Step by step:
+ * - Fill AutoPas object with 200 random owned particles (might be in halo)
+ * - Do or don't do a force calculation
+ * - Save all generated particles in a vector
+ * - Use region iterator to delete all particles from a region and save what was deleted
+ * - Use regular Iterator to check everything that should be there is there
  */
 template <bool testConstIterators>
 void testRegionIteratorDeletion(autopas::ContainerOption containerOption, double cellSizeFactor, bool priorForceCalc) {
