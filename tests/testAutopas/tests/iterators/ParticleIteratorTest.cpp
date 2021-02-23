@@ -91,7 +91,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
       autopas::internal::deleteParticle(iter);
     }
   }
-  ASSERT_EQ(numFoundParticles, 20);
+  ASSERT_EQ(numFoundParticles, cellsToFill.size() * numParticlesToAddPerCell);
 
   numFoundParticles = 0;
 #ifdef AUTOPAS_OPENMP
