@@ -110,8 +110,8 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
   inline RegionParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
     do {
       ParticleIterator<Particle, ParticleCell, modifiable>::operator++();
-    } while (ParticleIterator<Particle, ParticleCell, modifiable>::isValid() &&
-             utils::notInBox(this->operator*().getR(), _startRegion, _endRegion) &&
+    } while (ParticleIterator<Particle, ParticleCell, modifiable>::isValid() and
+             utils::notInBox(this->operator*().getR(), _startRegion, _endRegion) and
              this->getCurrentCellId() <= *(_indicesInRegion.end() - 1));
     return *this;
   }
