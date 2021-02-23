@@ -106,39 +106,6 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
   ASSERT_EQ(numFoundParticles, 0);
 }
 
-TEST_F(ParticleIteratorTest, testFullIterator_mutable) {
-  // Full Empty Full Empty Empty Full Full Empty Full Empty
-  std::vector<size_t> cellsToFill = {0ul, 2ul, 5ul, 6ul, 8ul};
-  const size_t numParticlesToAddPerCell = 4;
-  auto data = generateCellsWithPattern(10, cellsToFill, numParticlesToAddPerCell);
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  {
-    ParticleIterator<Molecule, FMCell, true> iter(&data);
-    for (; iter.isValid(); ++iter) {
-      double newVel = iter->getID() + 1;
-      std::array<double, 3> newVelArr = {newVel, newVel, newVel};
-      iter->setV(newVelArr);
-    }
-  }
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  {
-    ParticleIterator<Molecule, FMCell, true> iter(&data);
-    for (; iter.isValid(); ++iter) {
-      double expectedVel = iter->getID() + 1;
-      auto vel = iter->getV();
-      EXPECT_EQ(vel[0], expectedVel);
-      EXPECT_EQ(vel[1], expectedVel);
-      EXPECT_EQ(vel[2], expectedVel);
-    }
-  }
-}
-
 /**
  * Test the iterator behavior for owning and halo molecules.
  * this function expects that two molecules are already added to container:
