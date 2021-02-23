@@ -70,6 +70,7 @@ add_test(
         --periodic false
         --deltaT 0.
         --no-end-config
+        --no-progress-bar
         CONFIGURATIONS checkExamples
 )
 
@@ -92,6 +93,7 @@ add_test(
         --deltaT 0.005
         --no-end-config
         --no-flops
+        --no-progress-bar
         CONFIGURATIONS checkExamples
 )
 
@@ -135,6 +137,7 @@ if (HAS_AVX)
             --log-level debug
             --traversal lc_c04_combined_SoA
             --particles-total 71
+            --no-progress-bar
             CONFIGURATIONS checkExamples
     )
 else ()

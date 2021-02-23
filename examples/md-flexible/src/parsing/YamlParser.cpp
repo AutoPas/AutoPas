@@ -72,6 +72,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     // "not" needed because of semantics
     config.dontCreateEndConfig.value = not node[config.dontCreateEndConfig.name].as<bool>();
   }
+  if (node[config.dontShowProgressBar.name]) {
+    config.dontShowProgressBar.value = node[config.dontShowProgressBar.name].as<bool>();
+  }
   if (node[config.newton3Options.name]) {
     config.newton3Options.value = autopas::Newton3Option::parseOptions(
         autopas::utils::ArrayUtils::to_string(node[config.newton3Options.name], ", ", {"", ""}));
