@@ -22,6 +22,7 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_MPI}>:MPI::MPI_CXX>
+        kokkos
     PRIVATE
         # harmony and Eigen3 are only needed privately when building AutoPas.
         harmony Eigen3

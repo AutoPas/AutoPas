@@ -77,6 +77,16 @@ include(version.cmake)
 # libraries
 add_subdirectory(libs)
 
+
+include(FetchContent)
+FetchContent_Declare(
+        kokkos
+        GIT_REPOSITORY "https://github.com/kokkos/kokkos.git"
+        GIT_TAG "3.3.01"
+)
+FetchContent_MakeAvailable(kokkos)
+
+
 # autopas
 add_subdirectory(src)
 # autopasTools
@@ -94,14 +104,6 @@ add_subdirectory(examples)
 add_subdirectory(tests)
 
 include(doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES, which is defined in examples.
-
-include(FetchContent)
-FetchContent_Declare(
-        kokkos
-        GIT_REPOSITORY "https://github.com/kokkos/kokkos.git"
-        GIT_TAG "3.3.00"
-)
-FetchContent_MakeAvailable(kokkos)
 
 # write version information
 include(CMakePackageConfigHelpers)
