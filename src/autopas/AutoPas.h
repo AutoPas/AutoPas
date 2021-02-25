@@ -302,13 +302,13 @@ class AutoPas {
   [[nodiscard]] unsigned long getContainerType() const { return _autoTuner->getContainer()->getContainerType(); }
 
   /**
-   * Get the lower corner of the container.
+   * Get the lower corner of the container without the halo.
    * @return lower corner of the container.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const { return _autoTuner->getContainer()->getBoxMin(); }
 
   /**
-   * Get the upper corner of the container.
+   * Get the upper corner of the container without the halo.
    * @return upper corner of the container.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const { return _autoTuner->getContainer()->getBoxMax(); }
