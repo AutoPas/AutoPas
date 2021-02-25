@@ -306,17 +306,19 @@ auto IteratorTest::fillContainerAroundBoundary(AutoPasT &autoPas) {
 /////////////////////////////////// NEW TESTS ///////////////////////////////////
 
 template <class AutoPasT, class F>
-void IteratorTest::applyIterator(bool useRegionIterator, bool useConstIterator, autopas::IteratorBehavior behavior, AutoPasT &autoPas,
-                   F fun) {
+void IteratorTest::applyIterator(bool useRegionIterator, bool useConstIterator, autopas::IteratorBehavior behavior,
+                                 AutoPasT &autoPas, F fun) {
   if (useRegionIterator) {
+    const auto interactionLength = autoPas.getCutoff() + autoPas.getVerletSkin();
+    // halo has width of interactionLength
+    const auto haloBoxMin = autopas::utils::ArrayMath::subScalar(autoPas.getBoxMin(), interactionLength);
+    const auto haloBoxMax = autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), interactionLength);
     if (useConstIterator) {
       const auto &autoPasRef = autoPas;
-      typename AutoPasT::const_iterator_t iter =
-          autoPasRef.getRegionIterator(autoPas.getBoxMin(), autoPas.getBoxMax(), behavior);
+      typename AutoPasT::const_iterator_t iter = autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
       fun(autoPasRef, iter);
     } else {
-      typename AutoPasT::iterator_t iter =
-          autoPas.getRegionIterator(autoPas.getBoxMin(), autoPas.getBoxMax(), behavior);
+      typename AutoPasT::iterator_t iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
       fun(autoPas, iter);
     }
   } else {
@@ -365,9 +367,8 @@ TEST_P(IteratorTest, emptyContainer) {
   }
 
   // actual test
-  applyIterator(useRegionIterator, useConstIterator, behavior, autoPas, [&](const auto &autopas, auto &iter) {
-    findParticles(autoPas, iter, {});
-  });
+  applyIterator(useRegionIterator, useConstIterator, behavior, autoPas,
+                [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, {}); });
 }
 
 TEST_P(IteratorTest, findAllParticles) {
@@ -408,9 +409,8 @@ TEST_P(IteratorTest, findAllParticles) {
   }
 
   // actual test
-  applyIterator(useRegionIterator, useConstIterator, behavior, autoPas, [&](const auto &autopas, auto &iter) {
-    findParticles(autoPas, iter, expectedIDs);
-  });
+  applyIterator(useRegionIterator, useConstIterator, behavior, autoPas,
+                [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
 }
 
 /////////////////////////////////// OLD TESTS ///////////////////////////////////
