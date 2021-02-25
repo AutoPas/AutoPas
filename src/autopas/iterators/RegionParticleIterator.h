@@ -46,7 +46,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
   explicit RegionParticleIterator(CellVecType *cont, std::array<double, 3> startRegion, std::array<double, 3> endRegion,
                                   std::vector<size_t> &indicesInRegion,
                                   const CellBorderAndFlagManagerType *flagManager = nullptr,
-                                  IteratorBehavior behavior = haloAndOwned,
+                                  IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                   ParticleVecType *additionalParticleVectorToIterate = nullptr)
       : ParticleIterator<Particle, ParticleCell, modifiable>(cont, flagManager, behavior,
                                                              additionalParticleVectorToIterate),
@@ -74,7 +74,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
       return;
     }
 
-    if (behavior != haloAndOwned and flagManager == nullptr) {
+    if (behavior != IteratorBehavior::haloAndOwned and flagManager == nullptr) {
       AutoPasLog(error,
                  "Behavior is not haloAndOwned, but flagManager is "
                  "nullptr!");

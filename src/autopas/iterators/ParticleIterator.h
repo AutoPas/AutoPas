@@ -87,7 +87,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * @param additionalVectorsToIterate Additional Particle Vector to iterate over.
    */
   explicit ParticleIterator(CellVecType *cont, size_t offset = 0, CellBorderAndFlagManagerType *flagManager = nullptr,
-                            IteratorBehavior behavior = haloAndOwned,
+                            IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                             ParticleVecType *additionalVectorsToIterate = nullptr)
       : ParticleIterator(cont, flagManager, behavior, additionalVectorsToIterate) {
     auto myThreadId = autopas_get_thread_num();
@@ -104,7 +104,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
       return;
     }
 
-    if ((behavior != haloAndOwned and behavior != haloOwnedAndDummy) and flagManager == nullptr) {
+    if ((behavior != IteratorBehavior::haloAndOwned and behavior != IteratorBehavior::haloOwnedAndDummy) and flagManager == nullptr) {
       AutoPasLog(error, "Behavior is not haloAndOwned, but flagManager is nullptr!");
       utils::ExceptionHandler::exception("Behavior is not haloAndOwned, but flagManager is nullptr!");
     }
@@ -245,13 +245,13 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    */
   bool isCellTypeBehaviorCorrect() const {
     switch (_behavior) {
-      case haloOwnedAndDummy:
+      case IteratorBehavior::haloOwnedAndDummy:
         return true;
-      case haloAndOwned:
+      case IteratorBehavior::haloAndOwned:
         return true;
-      case haloOnly:
+      case IteratorBehavior::haloOnly:
         return _flagManager->cellCanContainHaloParticles(_iteratorAcrossCells - _vectorOfCells->begin());
-      case ownedOnly:
+      case IteratorBehavior::ownedOnly:
         return _flagManager->cellCanContainOwnedParticles(_iteratorAcrossCells - _vectorOfCells->begin());
       default:
         utils::ExceptionHandler::exception("unknown iterator behavior");
@@ -265,21 +265,21 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    */
   bool particleHasCorrectOwnershipState() const {
     switch (_behavior) {
-      case haloOwnedAndDummy:
+      case IteratorBehavior::haloOwnedAndDummy:
         return true;
-      case haloAndOwned:
+      case IteratorBehavior::haloAndOwned:
         if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
           return not(*_additionalVectors)[_additionalVectorIndex][_additionalVectorPosition].isDummy();
         } else {
           return not _iteratorWithinOneCell->isDummy();
         }
-      case haloOnly:
+      case IteratorBehavior::haloOnly:
         if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
           return (*_additionalVectors)[_additionalVectorIndex][_additionalVectorPosition].isHalo();
         } else {
           return _iteratorWithinOneCell->isHalo();
         }
-      case ownedOnly:
+      case IteratorBehavior::ownedOnly:
         if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
           return (*_additionalVectors)[_additionalVectorIndex][_additionalVectorPosition].isOwned();
         } else {

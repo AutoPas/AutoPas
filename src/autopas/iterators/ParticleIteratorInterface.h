@@ -8,28 +8,6 @@
 
 namespace autopas {
 
-/**
- * Enum to specify the behavior of an iterator.
- */
-enum IteratorBehavior {
-  /**
-   * Iterate only over halo particles.
-   */
-  haloOnly,
-  /**
-   * Iterate only over owned particles.
-   */
-  ownedOnly,
-  /**
-   * Iterate over both halo and owned particles.
-   */
-  haloAndOwned,
-  /**
-   * Iterate over both halo and owned particles and also dummy particles.
-   */
-  haloOwnedAndDummy,
-};
-
 namespace internal {
 
 /**

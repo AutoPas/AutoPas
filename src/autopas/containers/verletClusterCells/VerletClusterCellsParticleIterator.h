@@ -42,7 +42,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    * @param particleDeletedObserver Observer that should be called, when a particle is deleted. Can be nullptr.
    */
   explicit VerletClusterCellsParticleIterator(CellVecType *cont, DummyStartsType &dummyStarts, double offsetToDummy,
-                                              IteratorBehavior behavior = haloAndOwned,
+                                              IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
                                               ParticleDeletedObserver *particleDeletedObserver = nullptr)
       : _vectorOfCells(cont),
         _dummyStarts(dummyStarts),
@@ -222,7 +222,7 @@ class VerletClusterCellsRegionParticleIterator
   explicit VerletClusterCellsRegionParticleIterator(CellVecType *cont, DummyStartsType &dummyStarts,
                                                     std::array<double, 3> startRegion, std::array<double, 3> endRegion,
                                                     std::vector<size_t> indicesInRegion, double offsetToDummy,
-                                                    IteratorBehavior behavior = haloAndOwned, double skin = 0.0,
+                                                    IteratorBehavior behavior = IteratorBehavior::haloAndOwned, double skin = 0.0,
                                                     ParticleDeletedObserver *particleDeletedObserver = nullptr)
       : VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>(cont, dummyStarts, offsetToDummy,
                                                                                behavior, particleDeletedObserver),
