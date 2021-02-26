@@ -1,10 +1,10 @@
 /**
- * @file IteratorTest.cpp
+ * @file ParticleIteratorInterfaceTest.cpp
  * @author seckler
  * @date 22.07.19
  */
 
-#include "IteratorTest.h"
+#include "ParticleIteratorInterfaceTest.h"
 
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -16,7 +16,7 @@
 using ::testing::_;
 
 template <typename AutoPasT>
-auto IteratorTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption, double cellSizeFactor) {
+auto ParticleIteratorInterfaceTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption, double cellSizeFactor) {
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
@@ -64,7 +64,7 @@ auto IteratorTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &cont
 //}
 
 template <class AutoPasT>
-auto IteratorTest::fillContainerAroundBoundary(AutoPasT &autoPas) {
+auto ParticleIteratorInterfaceTest::fillContainerAroundBoundary(AutoPasT &autoPas) {
   constexpr size_t numParticles1dTotal = 10;
 
   auto cutoff = autoPas.getCutoff();
@@ -131,7 +131,7 @@ auto IteratorTest::fillContainerAroundBoundary(AutoPasT &autoPas) {
 // * @param containerOption
 // */
 // template <bool testConstIterators>
-// void IteratorTest::testAdditionAndIteration(autopas::ContainerOption containerOption, double cellSizeOption,
+// void ParticleIteratorInterfaceTest::testAdditionAndIteration(autopas::ContainerOption containerOption, double cellSizeOption,
 //                                            bool priorForceCalc) {
 //  // create AutoPas object
 //  autopas::AutoPas<Molecule> autoPas;
@@ -265,7 +265,7 @@ auto IteratorTest::fillContainerAroundBoundary(AutoPasT &autoPas) {
 //}
 //
 // template <bool testConstIterators>
-// void IteratorTest::testRangeBasedIterator(autopas::ContainerOption containerOption, double cellSizeOption,
+// void ParticleIteratorInterfaceTest::testRangeBasedIterator(autopas::ContainerOption containerOption, double cellSizeOption,
 //                                          bool priorForceCalc) {
 //  // create AutoPas object
 //  autopas::AutoPas<Molecule> autoPas;
@@ -306,7 +306,7 @@ auto IteratorTest::fillContainerAroundBoundary(AutoPasT &autoPas) {
 /////////////////////////////////// NEW TESTS ///////////////////////////////////
 
 template <class AutoPasT, class F>
-void IteratorTest::applyIterator(bool useRegionIterator, bool useConstIterator, autopas::IteratorBehavior behavior,
+void ParticleIteratorInterfaceTest::applyIterator(bool useRegionIterator, bool useConstIterator, autopas::IteratorBehavior behavior,
                                  AutoPasT &autoPas, F fun) {
   if (useRegionIterator) {
     const auto interactionLength = autoPas.getCutoff() + autoPas.getVerletSkin();
@@ -333,7 +333,7 @@ void IteratorTest::applyIterator(bool useRegionIterator, bool useConstIterator, 
 }
 
 template <class AutoPasT, class IteratorT>
-void IteratorTest::findParticles(AutoPasT &autopas, IteratorT &iterator,
+void ParticleIteratorInterfaceTest::findParticles(AutoPasT &autopas, IteratorT &iterator,
                                  const std::vector<size_t> &particleIDsExpected) {
   std::vector<size_t> particleIDsFound;
 
@@ -353,7 +353,7 @@ void IteratorTest::findParticles(AutoPasT &autopas, IteratorT &iterator,
   EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
 }
 
-TEST_P(IteratorTest, emptyContainer) {
+TEST_P(ParticleIteratorInterfaceTest, emptyContainer) {
   auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
@@ -371,7 +371,7 @@ TEST_P(IteratorTest, emptyContainer) {
                 [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, {}); });
 }
 
-TEST_P(IteratorTest, findAllParticles) {
+TEST_P(ParticleIteratorInterfaceTest, findAllParticles) {
   auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
@@ -415,7 +415,7 @@ TEST_P(IteratorTest, findAllParticles) {
 
 /////////////////////////////////// OLD TESTS ///////////////////////////////////
 
-// TEST_P(IteratorTest, ParticleAdditionAndIteratorTestNormal) {
+// TEST_P(ParticleIteratorInterfaceTest, ParticleAdditionAndIteratorTestNormal) {
 //  const auto &[containerOption, cellSizeFactor, useConstIterator, priorForceCalc] = GetParam();
 //  if (useConstIterator) {
 //    testAdditionAndIteration<true>(containerOption, cellSizeFactor, priorForceCalc);
@@ -424,7 +424,7 @@ TEST_P(IteratorTest, findAllParticles) {
 //  }
 //}
 //
-// TEST_P(IteratorTest, RangeBasedIterator) {
+// TEST_P(ParticleIteratorInterfaceTest, RangeBasedIterator) {
 //  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc] = GetParam();
 //  if (useConstIterator) {
 //    testRangeBasedIterator<true>(containerOption, cellSizeFactor, priorForceCalc);
@@ -438,7 +438,7 @@ TEST_P(IteratorTest, findAllParticles) {
 // * If OPENMP is disabled, this tests mainly checks that no particle is traversed twice.
 // */
 // template <bool useConstIterator>
-// void IteratorTest::testOpenMPIterators(autopas::ContainerOption containerOption, double cellSizeFactor,
+// void ParticleIteratorInterfaceTest::testOpenMPIterators(autopas::ContainerOption containerOption, double cellSizeFactor,
 //                                       autopas::IteratorBehavior behavior, bool testRegionIterators,
 //                                       bool priorForceCalc) {
 //  std::array<double, 3> min = {1, 1, 1};
@@ -517,7 +517,7 @@ TEST_P(IteratorTest, findAllParticles) {
 ///**
 // * Compare the OpenMP iterator behavior for owned only.
 // */
-// TEST_P(IteratorTest, testOpenMPIteratorsOwnedOnly) {
+// TEST_P(ParticleIteratorInterfaceTest, testOpenMPIteratorsOwnedOnly) {
 //  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc] = GetParam();
 //  if (useConstIterator) {
 //    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, false,
@@ -531,7 +531,7 @@ TEST_P(IteratorTest, findAllParticles) {
 ///**
 // * Compare the OpenMP iterator behavior for halo and owned particles.
 // */
-// TEST_P(IteratorTest, testOpenMPIteratorsHaloAndOwned) {
+// TEST_P(ParticleIteratorInterfaceTest, testOpenMPIteratorsHaloAndOwned) {
 //  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc] = GetParam();
 //  if (useConstIterator) {
 //    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, false,
@@ -545,7 +545,7 @@ TEST_P(IteratorTest, findAllParticles) {
 ///**
 // * Compare the OpenMP iterator behavior for halo only.
 // */
-// TEST_P(IteratorTest, testOpenMPIteratorsHaloOnly) {
+// TEST_P(ParticleIteratorInterfaceTest, testOpenMPIteratorsHaloOnly) {
 //  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc] = GetParam();
 //  if (useConstIterator) {
 //    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, false,
@@ -559,7 +559,7 @@ TEST_P(IteratorTest, findAllParticles) {
 ///**
 // * Compare the OpenMP RegionIterator behavior for owned only.
 // */
-// TEST_P(IteratorTest, testOpenMPRegionIteratorsOwnedOnly) {
+// TEST_P(ParticleIteratorInterfaceTest, testOpenMPRegionIteratorsOwnedOnly) {
 //  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc] = GetParam();
 //  if (useConstIterator) {
 //    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::ownedOnly, true,
@@ -573,7 +573,7 @@ TEST_P(IteratorTest, findAllParticles) {
 ///**
 // * Compare the OpenMP RegionIterator behavior for halo and owned particles.
 // */
-// TEST_P(IteratorTest, testOpenMPRegionIteratorsHaloAndOwned) {
+// TEST_P(ParticleIteratorInterfaceTest, testOpenMPRegionIteratorsHaloAndOwned) {
 //  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc] = GetParam();
 //  if (useConstIterator) {
 //    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloAndOwned, true,
@@ -587,7 +587,7 @@ TEST_P(IteratorTest, findAllParticles) {
 ///**
 // * Compare the OpenMP RegionIterator behavior for halo only.
 // */
-// TEST_P(IteratorTest, testOpenMPRegionIteratorsHaloOnly) {
+// TEST_P(ParticleIteratorInterfaceTest, testOpenMPRegionIteratorsHaloOnly) {
 //  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc] = GetParam();
 //  if (useConstIterator) {
 //    testOpenMPIterators<true>(containerOption, cellSizeFactor, autopas::IteratorBehavior::haloOnly, true,
@@ -599,7 +599,7 @@ TEST_P(IteratorTest, findAllParticles) {
 //}
 //
 // template <bool useConstIterator>
-// void IteratorTest::testRegionIteratorDeletion(autopas::ContainerOption containerOption, double cellSizeFactor,
+// void ParticleIteratorInterfaceTest::testRegionIteratorDeletion(autopas::ContainerOption containerOption, double cellSizeFactor,
 //                                              bool priorForceCalc) {
 //  // create AutoPas object
 //  autopas::AutoPas<Molecule> autoPas;
@@ -668,7 +668,7 @@ TEST_P(IteratorTest, findAllParticles) {
 //  EXPECT_EQ(afterParticles.size(), shouldBeParticles.size());
 //}
 //
-// TEST_P(IteratorTest, RegionIteratorDeletion) {
+// TEST_P(ParticleIteratorInterfaceTest, RegionIteratorDeletion) {
 //  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc] = GetParam();
 //  if (useConstIterator) {
 //    testRegionIteratorDeletion<true>(containerOption, cellSizeFactor, priorForceCalc);
@@ -702,7 +702,7 @@ static inline auto getIteratorBehaviorOptions() {
   return retSet;
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, IteratorTest,
+INSTANTIATE_TEST_SUITE_P(Generated, ParticleIteratorInterfaceTest,
                          Combine(ValuesIn(getTestableContainerOptions()), Values(0.5, 1., 1.5), Values(true, false),
                                  Values(true, false), Values(true, false), ValuesIn(getIteratorBehaviorOptions())),
-                         IteratorTest::PrintToStringParamName());
+                         ParticleIteratorInterfaceTest::PrintToStringParamName());
