@@ -16,7 +16,8 @@
 using ::testing::_;
 
 template <typename AutoPasT>
-auto ParticleIteratorInterfaceTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption, double cellSizeFactor) {
+auto ParticleIteratorInterfaceTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
+                                                double cellSizeFactor) {
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
@@ -131,7 +132,8 @@ auto ParticleIteratorInterfaceTest::fillContainerAroundBoundary(AutoPasT &autoPa
 // * @param containerOption
 // */
 // template <bool testConstIterators>
-// void ParticleIteratorInterfaceTest::testAdditionAndIteration(autopas::ContainerOption containerOption, double cellSizeOption,
+// void ParticleIteratorInterfaceTest::testAdditionAndIteration(autopas::ContainerOption containerOption, double
+// cellSizeOption,
 //                                            bool priorForceCalc) {
 //  // create AutoPas object
 //  autopas::AutoPas<Molecule> autoPas;
@@ -265,7 +267,8 @@ auto ParticleIteratorInterfaceTest::fillContainerAroundBoundary(AutoPasT &autoPa
 //}
 //
 // template <bool testConstIterators>
-// void ParticleIteratorInterfaceTest::testRangeBasedIterator(autopas::ContainerOption containerOption, double cellSizeOption,
+// void ParticleIteratorInterfaceTest::testRangeBasedIterator(autopas::ContainerOption containerOption, double
+// cellSizeOption,
 //                                          bool priorForceCalc) {
 //  // create AutoPas object
 //  autopas::AutoPas<Molecule> autoPas;
@@ -306,8 +309,8 @@ auto ParticleIteratorInterfaceTest::fillContainerAroundBoundary(AutoPasT &autoPa
 /////////////////////////////////// NEW TESTS ///////////////////////////////////
 
 template <class AutoPasT, class F>
-void ParticleIteratorInterfaceTest::applyIterator(bool useRegionIterator, bool useConstIterator, autopas::IteratorBehavior behavior,
-                                 AutoPasT &autoPas, F fun) {
+void ParticleIteratorInterfaceTest::applyIterator(bool useRegionIterator, bool useConstIterator,
+                                                  autopas::IteratorBehavior behavior, AutoPasT &autoPas, F fun) {
   if (useRegionIterator) {
     const auto interactionLength = autoPas.getCutoff() + autoPas.getVerletSkin();
     // halo has width of interactionLength
@@ -334,7 +337,7 @@ void ParticleIteratorInterfaceTest::applyIterator(bool useRegionIterator, bool u
 
 template <class AutoPasT, class IteratorT>
 void ParticleIteratorInterfaceTest::findParticles(AutoPasT &autopas, IteratorT &iterator,
-                                 const std::vector<size_t> &particleIDsExpected) {
+                                                  const std::vector<size_t> &particleIDsExpected) {
   std::vector<size_t> particleIDsFound;
 
 #ifdef AUTOPAS_OPENMP
@@ -438,7 +441,8 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticles) {
 // * If OPENMP is disabled, this tests mainly checks that no particle is traversed twice.
 // */
 // template <bool useConstIterator>
-// void ParticleIteratorInterfaceTest::testOpenMPIterators(autopas::ContainerOption containerOption, double cellSizeFactor,
+// void ParticleIteratorInterfaceTest::testOpenMPIterators(autopas::ContainerOption containerOption, double
+// cellSizeFactor,
 //                                       autopas::IteratorBehavior behavior, bool testRegionIterators,
 //                                       bool priorForceCalc) {
 //  std::array<double, 3> min = {1, 1, 1};
@@ -599,7 +603,8 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticles) {
 //}
 //
 // template <bool useConstIterator>
-// void ParticleIteratorInterfaceTest::testRegionIteratorDeletion(autopas::ContainerOption containerOption, double cellSizeFactor,
+// void ParticleIteratorInterfaceTest::testRegionIteratorDeletion(autopas::ContainerOption containerOption, double
+// cellSizeFactor,
 //                                              bool priorForceCalc) {
 //  // create AutoPas object
 //  autopas::AutoPas<Molecule> autoPas;

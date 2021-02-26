@@ -222,7 +222,8 @@ class VerletClusterCellsRegionParticleIterator
   explicit VerletClusterCellsRegionParticleIterator(CellVecType *cont, DummyStartsType &dummyStarts,
                                                     std::array<double, 3> startRegion, std::array<double, 3> endRegion,
                                                     std::vector<size_t> indicesInRegion, double offsetToDummy,
-                                                    IteratorBehavior behavior = IteratorBehavior::haloAndOwned, double skin = 0.0,
+                                                    IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                                    double skin = 0.0,
                                                     ParticleDeletedObserver *particleDeletedObserver = nullptr)
       : VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>(cont, dummyStarts, offsetToDummy,
                                                                                behavior, particleDeletedObserver),
