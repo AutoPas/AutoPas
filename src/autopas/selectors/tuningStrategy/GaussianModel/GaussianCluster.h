@@ -335,6 +335,30 @@ class GaussianCluster {
     return orderedVectors;
   }
 
+  /**
+   * Default function used to convert vectors to readable strings.
+   * @note begin() and end() currently not available for Eigen::Vector, so AutoPas ArrayUtils cannot be used.
+   * @param vec
+   * @return string with format (a,b,...,n) beginning with discrete values.
+   */
+  static std::string defaultVecToString(const GaussianModelTypes::VectorPairDiscreteContinuous &vec) {
+    std::stringstream result;
+    const auto &[discreteVec, continuousVec] = vec;
+
+    result << "(" << discreteVec[0];
+    for (long d = 1; d < discreteVec.size(); ++d) {
+      result << "," << discreteVec[d];
+    }
+
+    for (long c = 0; c < continuousVec.size(); ++c) {
+      result << "," << continuousVec[c];
+    }
+
+    result << ")";
+
+    return result.str();
+  }
+
  private:
   /**
    * Create a GaussianProcess for each cluster and precalculate DiscreteVector for each cluster index.
@@ -537,30 +561,6 @@ class GaussianCluster {
         }
       }
     }
-  }
-
-  /**
-   * Default function used to convert vectors to readable strings.
-   * @note begin() and end() currently not available for Eigen::Vector, so AutoPas ArrayUtils cannot be used.
-   * @param vec
-   * @return string with format (a,b,...,n) beginning with discrete values.
-   */
-  static std::string defaultVecToString(const GaussianModelTypes::VectorPairDiscreteContinuous &vec) {
-    std::stringstream result;
-    const auto &[discreteVec, continuousVec] = vec;
-
-    result << "(" << discreteVec[0];
-    for (long d = 1; d < discreteVec.size(); ++d) {
-      result << "," << discreteVec[d];
-    }
-
-    for (long c = 0; c < continuousVec.size(); ++c) {
-      result << "," << continuousVec[c];
-    }
-
-    result << ")";
-
-    return result.str();
   }
 
   /**

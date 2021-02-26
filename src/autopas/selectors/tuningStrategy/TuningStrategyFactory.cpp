@@ -24,7 +24,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
     double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
     AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
-    MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
+    const std::string &outputSuffix, MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
   // ======== prepare MPI =====================================================
 
   // only needed in the MPI case, but need to be declared here.
@@ -111,7 +111,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     case TuningStrategyOption::bayesianClusterSearch: {
       tuningStrategy = std::make_unique<BayesianClusterSearch>(
           allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-          allowedNewton3Options, maxEvidence, acquisitionFunctionOption);
+          allowedNewton3Options, maxEvidence, acquisitionFunctionOption, outputSuffix);
       break;
     }
 
@@ -133,7 +133,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       tuningStrategy = std::make_unique<PredictiveTuning>(
           allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals, allowedLoadEstimators,
           allowedDataLayouts, allowedNewton3Options, relativeOptimum, maxTuningPhasesWithoutTest,
-          relativeBlacklistRange, evidenceFirstPrediction, extrapolationMethodOption);
+          relativeBlacklistRange, evidenceFirstPrediction, extrapolationMethodOption, outputSuffix);
       break;
     }
 

@@ -12,19 +12,14 @@ autopas::TuningResultLogger::TuningResultLogger(const std::string &outputSuffix)
     : _loggerName("TuningResultLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_TUNINGRESULTS
   auto outputFileName("AutoPas_tuningResults_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
-  // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
-  // create and register a non-asychronous logger to write the header
-  auto headerLoggerName = _loggerName + "header";
-  auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
-  // set the pattern to the message only
-  headerLogger->set_pattern("%v");
-  // print csv header
-  headerLogger->info("Date,Iteration,{},tuning[ns]", Configuration().getCSVHeader());
-  spdlog::drop(headerLoggerName);
-  // End of workaround
-
   // create and register the actual logger
-  auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_loggerName, outputFileName);
+  auto logger = spdlog::basic_logger_mt(_loggerName, outputFileName);
+  // since this logger only writes rarely flush instantly in order to not lose any information if autopas is killed
+  logger->flush_on(spdlog::level::trace);
+  // set the pattern to the message only
+  logger->set_pattern("%v");
+  // print csv header
+  logger->info("Date,Iteration,{},tuning[ns]", Configuration().getCSVHeader());
   // set pattern to provide date
   logger->set_pattern("%Y-%m-%d %T,%v");
 #endif

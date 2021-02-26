@@ -31,15 +31,15 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   static const auto relevantOptions{std::make_tuple(
       config.newton3Options, config.checkpointfile, config.acquisitionFunctionOption, config.cellSizeFactors,
       config.boxLength, config.containerOptions, config.cutoff, config.dataLayoutOptions, config.deltaT,
-      config.dontCreateEndConfig, config.tuningMaxEvidence, config.extrapolationMethodOption,
-      config.evidenceFirstPrediction, config.functorOption, config.dontMeasureFlops, config.generatorOption,
-      config.iterations, config.tuningInterval, config.logLevel, config.logFileName, config.distributionMean,
-      config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal, config.relativeOptimumRange,
-      config.relativeBlacklistRange, config.periodic, config.tuningPhases, config.verletClusterSize,
-      config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
-      config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat, config.verletRebuildFrequency,
-      config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename,
-      config.distributionStdDev, config.globalForce, zshCompletionsOption, helpOption)};
+      config.dontCreateEndConfig, config.dontShowProgressBar, config.tuningMaxEvidence,
+      config.extrapolationMethodOption, config.evidenceFirstPrediction, config.functorOption, config.dontMeasureFlops,
+      config.generatorOption, config.iterations, config.tuningInterval, config.logLevel, config.logFileName,
+      config.distributionMean, config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal,
+      config.relativeOptimumRange, config.relativeBlacklistRange, config.periodic, config.tuningPhases,
+      config.verletClusterSize, config.verletSkinRadius, config.particleSpacing, config.tuningSamples,
+      config.traversalOptions, config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat,
+      config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy,
+      config.yamlFilename, config.distributionStdDev, config.globalForce, zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -159,6 +159,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.dontCreateEndConfig)::getoptChar: {
         config.dontCreateEndConfig.value = false;
+        break;
+      }
+      case decltype(config.dontShowProgressBar)::getoptChar: {
+        config.dontShowProgressBar.value = true;
         break;
       }
       case decltype(config.tuningMaxEvidence)::getoptChar: {

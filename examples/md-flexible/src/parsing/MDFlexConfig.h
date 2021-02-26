@@ -348,6 +348,11 @@ class MDFlexConfig {
   MDFlexOption<bool, __LINE__> dontCreateEndConfig{
       true, "no-end-config", false, "Set to omit the creation of a yaml file at the end of a simulation."};
   /**
+   * Omit the output of the progress bar and progress information. This might be useful if this upsets your output.
+   */
+  MDFlexOption<bool, __LINE__> dontShowProgressBar{false, "no-progress-bar", false,
+                                                   "Set to omit printing the progress bar."};
+  /**
    * deltaT
    */
   MDFlexOption<double, __LINE__> deltaT{0.001, "deltaT", true,
