@@ -94,7 +94,7 @@ class ParticleBase {
    * get the force acting on the particle
    * @return force
    */
-  const std::array<double, 3> &getF() const { return _f; }
+  [[nodiscard]] const std::array<double, 3> &getF() const { return _f; }
 
   /**
    * Set the force acting on the particle
@@ -130,7 +130,7 @@ class ParticleBase {
    * Get the position of the particle
    * @return current position
    */
-  const std::array<double, 3> &getR() const { return _r; }
+  [[nodiscard]] const std::array<double, 3> &getR() const { return _r; }
 
   /**
    * Set the position of the particle
@@ -148,7 +148,7 @@ class ParticleBase {
    * Get the velocity of the particle
    * @return current velocity
    */
-  const std::array<double, 3> &getV() const { return _v; }
+  [[nodiscard]] const std::array<double, 3> &getV() const { return _v; }
 
   /**
    * Set the velocity of the particle
@@ -166,7 +166,7 @@ class ParticleBase {
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
-  virtual std::string toString() const {
+  [[nodiscard]] virtual std::string toString() const {
     std::ostringstream text;
     // clang-format off
     text << "Particle"
@@ -187,20 +187,20 @@ class ParticleBase {
    * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is owned by the current AutoPas object, false otherwise
    */
-  bool isOwned() const { return _ownershipState == OwnershipState::owned; }
+  [[nodiscard]] bool isOwned() const { return _ownershipState == OwnershipState::owned; }
 
   /**
    * Defines whether the particle is a halo particle, i.e., not owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is not owned by the current AutoPas object, false otherwise.
    * @note when a
    */
-  bool isHalo() const { return _ownershipState == OwnershipState::halo; }
+  [[nodiscard]] bool isHalo() const { return _ownershipState == OwnershipState::halo; }
 
   /**
    * Returns whether the particle is a dummy particle.
    * @return true if the particle is a dummy.
    */
-  bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
+  [[nodiscard]] bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
 
   /**
    * Set the OwnershipState to the given value
