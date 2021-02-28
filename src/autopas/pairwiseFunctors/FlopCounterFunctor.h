@@ -45,7 +45,10 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
 
-  void AoSFunctor(const Particle &i, const Particle &j, bool newton3) override {
+  FlopCounterFunctor(FlopCounterFunctor& f) : FlopCounterFunctor(f.getCutoff()) {}
+
+  KOKKOS_INLINE_FUNCTION
+  void AoSFunctor(const Particle &i, const Particle &j, bool newton3) const override {
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -376,7 +379,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
  private:
   double _cutoffSquare;
-  std::atomic<size_t> _distanceCalculations, _kernelCalls;
+  mutable std::atomic<size_t> _distanceCalculations, _kernelCalls;
 };
 
 }  // namespace autopas

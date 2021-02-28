@@ -19,6 +19,7 @@ namespace autopas {
 template <typename floatType = double>
 class MoleculeLJ : public Particle {
  public:
+  KOKKOS_INLINE_FUNCTION
   MoleculeLJ() = default;
 
   /**

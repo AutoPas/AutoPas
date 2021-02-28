@@ -54,6 +54,7 @@ class SortedCellView : public ParticleCell<Particle> {
 
   SingleCellIteratorWrapper<Particle, false> begin() const override { return std::as_const(*_cell).begin(); }
 
+  KOKKOS_INLINE_FUNCTION
   unsigned long numParticles() const override { return _particles.size(); }
 
   bool isNotEmpty() const override { return numParticles() > 0; }

@@ -21,6 +21,7 @@ class PrintableMolecule
   /**
    * Empty Constructor.
    */
+  KOKKOS_INLINE_FUNCTION
   PrintableMolecule() : autopas::MoleculeLJ<>() {}
 
   /**

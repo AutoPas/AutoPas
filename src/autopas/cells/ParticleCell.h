@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <Kokkos_Core.hpp>
+
 #include "autopas/iterators/SingleCellIteratorWrapper.h"
 
 namespace autopas {
@@ -88,7 +90,9 @@ class ParticleCell {
    * Get the number of particles stored in this cell.
    * @return number of particles stored in this cell
    */
-  [[nodiscard]] virtual unsigned long numParticles() const = 0;
+  [[nodiscard]]
+  KOKKOS_INLINE_FUNCTION
+  virtual unsigned long numParticles() const = 0;
 
   /**
    * Check if the cell is not empty.

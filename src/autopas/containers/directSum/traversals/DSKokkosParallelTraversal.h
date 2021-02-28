@@ -8,6 +8,7 @@
 #pragma once
 
 #include <vector>
+#include <Kokkos_Core.hpp>
 
 #include "DSTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
@@ -262,20 +263,24 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
       size_t index = 0;
       auto r1 = cell.at(index).getR()[0];
       auto f1 = cell.at(index).getF()[0];
-      Kokkos::parallel_for("ds parallel process Cell", cell.numParticles(), KOKKOS_LAMBDA (size_t outerIndex) {
-//      auto outerIndex = 0;
-//      for (; outerIndex < cell.numParticles(); outerIndex++) {
-        const Particle &p1 = cell.at(outerIndex);
+
+      ParticleFunctor functor = *_functor;
+
+      Kokkos::parallel_for("ds parallel process Cell", cell.numParticles(), KOKKOS_LAMBDA (size_t outer) {
+//        auto outer = 0;
+        const Particle &p1 = cell.at(outer);
+        cell._particles(0) = cell.at(1);
 
         auto inner = 0;
         for (; inner < cell.numParticles(); ++inner) {
-          if (inner != outerIndex) {
+
+          if (inner != outer) {
             const Particle &p2 = cell.at(inner);
-            _functor->AoSFunctor(p1, p2, false);
+            functor.AoSFunctor(p1, p2, false);
           }
+
         }
       });
-//      }
       auto f2 = cell.at(index).getF()[0];
       printf("DEBUG r_x:%f f_x0:%f f_x1:%f \n", r1, f1, f2);
 }

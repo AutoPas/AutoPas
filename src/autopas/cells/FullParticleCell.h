@@ -9,14 +9,13 @@
 #include <array>
 #include <mutex>
 #include <vector>
+#include <Kokkos_Core.hpp>
 
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
-
-#include <Kokkos_Core.hpp>
 
 namespace autopas {
 
@@ -35,6 +34,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Constructs a new FullParticleCell.
    */
+  KOKKOS_INLINE_FUNCTION
   FullParticleCell()
       : _cellLength({std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
                      std::numeric_limits<double>::max()}), capacity(128), size(0),
@@ -44,6 +44,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    * Constructs a new FullParticleCell with the given cell side length.
    * @param cellLength cell side length
    */
+  KOKKOS_INLINE_FUNCTION
   explicit FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength),
   capacity(128), size(0), _particles(Kokkos::View<Particle *> ("particles device", 128)){}
 
@@ -52,12 +53,14 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   void addParticle(const Particle &p) override {
     particlesLock.lock();
-    printf("Add Particle s:%u c:%u x:%f y:%f z:%f \n", numParticles(), capacity, p.getR()[0], p.getR()[1], p.getR()[2]);
+    printf("Add Particle s:%lu c:%lu x:%f y:%f z:%f \n", numParticles(), capacity, p.getR()[0], p.getR()[1], p.getR()[2]);
     if(size == capacity) {
       capacity *= 2;
       Kokkos::resize(_particles, capacity);
     }
+//    Kokkos::parallel_for(1, KOKKOS_LAMBDA {
     _particles[size] = p;
+//    });
     size++;
 
     particlesLock.unlock();
@@ -71,28 +74,33 @@ class FullParticleCell : public ParticleCell<Particle> {
     return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
-  [[nodiscard]] unsigned long numParticles() const override { return size; }
+  [[nodiscard]]
+  KOKKOS_INLINE_FUNCTION
+  unsigned long numParticles() const override { return size; }
 
   /**
    * Returns a reference to the element at position n in the cell.
    * @param n Position of an element in the container
    * @return Reference to the element
    */
-  Particle &operator[](size_t n) { return _particles[n]; }
+  KOKKOS_INLINE_FUNCTION
+  Particle &operator[](size_t n) { return _particles(n); }
 
   /**
    * Returns a const reference to the element at position n in the cell.
    * @param n Position of an element in the container
    * @return Reference to the element
    */
-  const Particle &operator[](size_t n) const { return _particles[n]; }
+  KOKKOS_INLINE_FUNCTION
+  const Particle &operator[](size_t n) const { return _particles(n); }
 
   /**
    * Returns the particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  Particle &at(size_t index) { return _particles[index]; }
+  KOKKOS_INLINE_FUNCTION
+  Particle &at(size_t index) { return _particles(index); }
 
   /**
    * @copydoc ParticleCell::getParticleCellTypeAsEnum()
@@ -104,7 +112,8 @@ class FullParticleCell : public ParticleCell<Particle> {
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  const Particle &at(size_t index) const { return _particles[index]; }
+  KOKKOS_INLINE_FUNCTION
+  const Particle &at(size_t index) const { return _particles(index); }
 
   [[nodiscard]] bool isNotEmpty() const override { return numParticles() > 0; }
 

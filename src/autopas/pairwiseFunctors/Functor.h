@@ -8,6 +8,7 @@
 #pragma once
 
 #include <type_traits>
+#include <Kokkos_Core.hpp>
 
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -87,7 +88,8 @@ class Functor {
    * @param j Particle j
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void AoSFunctor(const Particle &i, const Particle &j, bool newton3) {
+  KOKKOS_INLINE_FUNCTION
+  virtual void AoSFunctor(const Particle &i, const Particle &j, bool newton3) const {
     utils::ExceptionHandler::exception("Functor::AoSFunctor: not yet implemented");
   }
 

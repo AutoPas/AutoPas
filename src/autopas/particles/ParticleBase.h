@@ -10,6 +10,7 @@
 #include <array>
 #include <sstream>
 #include <tuple>
+#include <Kokkos_Core.hpp>
 
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
@@ -94,6 +95,7 @@ class ParticleBase {
    * get the force acting on the particle
    * @return force
    */
+  KOKKOS_INLINE_FUNCTION
   const std::array<double, 3> &getF() const { return _f; }
 
   /**
@@ -106,12 +108,14 @@ class ParticleBase {
    * Add a partial force to the force acting on the particle
    * @param f partial force to be added
    */
+  KOKKOS_INLINE_FUNCTION
   void addF(const std::array<double, 3> &f) const { _f = utils::ArrayMath::add(_f, f); }
 
   /**
    * Substract a partial force from the force acting on the particle
    * @param f partial force to be substracted
    */
+  KOKKOS_INLINE_FUNCTION
   void subF(const std::array<double, 3> &f) const { _f = utils::ArrayMath::sub(_f, f); }
 
   /**
@@ -130,6 +134,7 @@ class ParticleBase {
    * Get the position of the particle
    * @return current position
    */
+  KOKKOS_INLINE_FUNCTION
   const std::array<double, 3> &getR() const { return _r; }
 
   /**
@@ -187,6 +192,7 @@ class ParticleBase {
    * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is owned by the current AutoPas object, false otherwise
    */
+  KOKKOS_INLINE_FUNCTION
   bool isOwned() const { return _ownershipState == OwnershipState::owned; }
 
   /**
@@ -194,12 +200,14 @@ class ParticleBase {
    * @return true if the particle is not owned by the current AutoPas object, false otherwise.
    * @note when a
    */
+  KOKKOS_INLINE_FUNCTION
   bool isHalo() const { return _ownershipState == OwnershipState::halo; }
 
   /**
    * Returns whether the particle is a dummy particle.
    * @return true if the particle is a dummy.
    */
+  KOKKOS_INLINE_FUNCTION
   bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
 
   /**

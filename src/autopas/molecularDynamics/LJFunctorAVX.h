@@ -11,6 +11,7 @@
 #endif
 
 #include <array>
+#include <Kokkos_Core.hpp>
 
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/iterators/SingleCellIterator.h"
@@ -121,7 +122,8 @@ class LJFunctorAVX
     return dataLayout == DataLayoutOption::aos;  // LJFunctorAVX does only support clusters via aos.
   }
 
-  void AoSFunctor(const Particle &i, const Particle &j, bool newton3) override {
+  KOKKOS_INLINE_FUNCTION
+  void AoSFunctor(const Particle &i, const Particle &j, bool newton3) const override {
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -129,50 +131,50 @@ class LJFunctorAVX
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
-      sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
-      if constexpr (applyShift) {
-        shift6 = _PPLibrary->mixingShift6(i.getTypeId(), j.getTypeId());
-      }
+//      sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
+//      epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
+//      if constexpr (applyShift) {
+//        shift6 = _PPLibrary->mixingShift6(i.getTypeId(), j.getTypeId());
+//      }
     }
-    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
-    double dr2 = utils::ArrayMath::dot(dr, dr);
+//    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+//    double dr2 = utils::ArrayMath::dot(dr, dr);
 
-    if (dr2 > _cutoffsquareAoS) {
-      return;
-    }
-
-    double invdr2 = 1. / dr2;
-    double lj6 = sigmasquare * invdr2;
-    lj6 = lj6 * lj6 * lj6;
-    double lj12 = lj6 * lj6;
-    double lj12m6 = lj12 - lj6;
-    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = utils::ArrayMath::mulScalar(dr, fac);
+//    if (dr2 > _cutoffsquareAoS) {
+//      return;
+//    }
+//
+//    double invdr2 = 1. / dr2;
+//    double lj6 = sigmasquare * invdr2;
+//    lj6 = lj6 * lj6 * lj6;
+//    double lj12 = lj6 * lj6;
+//    double lj12m6 = lj12 - lj6;
+//    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+//    auto f = utils::ArrayMath::mulScalar(dr, fac);
 //    i.addF(f);
-    if (newton3) {
-      // only if we use newton 3 here, we want to
+//    if (newton3) {
+//      // only if we use newton 3 here, we want to
 //      j.subF(f);
-    }
+//    }
     if (calculateGlobals) {
-      auto virial = utils::ArrayMath::mul(dr, f);
-      double upot = epsilon24 * lj12m6 + shift6;
-
-      const int threadnum = autopas_get_thread_num();
-      // for non-newton3 the division is in the post-processing step.
-      if (newton3) {
-        upot *= 0.5;
-        virial = utils::ArrayMath::mulScalar(virial, (double)0.5);
-      }
-      if (i.isOwned()) {
-        _aosThreadData[threadnum].upotSum += upot;
-        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
-      }
-      // for non-newton3 the second particle will be considered in a separate calculation
-      if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].upotSum += upot;
-        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
-      }
+//      auto virial = utils::ArrayMath::mul(dr, f);
+//      double upot = epsilon24 * lj12m6 + shift6;
+//
+//      const int threadnum = autopas_get_thread_num();
+//      // for non-newton3 the division is in the post-processing step.
+//      if (newton3) {
+//        upot *= 0.5;
+//        virial = utils::ArrayMath::mulScalar(virial, (double)0.5);
+//      }
+//      if (i.isOwned()) {
+//        _aosThreadData[threadnum].upotSum += upot;
+//        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+//      }
+//      // for non-newton3 the second particle will be considered in a separate calculation
+//      if (newton3 and j.isOwned()) {
+//        _aosThreadData[threadnum].upotSum += upot;
+//        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+//      }
     }
   }
 
