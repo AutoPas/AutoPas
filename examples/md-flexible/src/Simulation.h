@@ -14,6 +14,12 @@
  */
 class Simulation {
  public:
+
+  /**
+   * Particle type used for the simulation.
+   */
+  using ParticleType = ParticleType;
+
   /**
    * Constructor.
    *
