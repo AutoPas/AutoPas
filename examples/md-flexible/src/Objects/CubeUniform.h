@@ -5,7 +5,9 @@
  */
 #pragma once
 
+
 #include "Objects.h"
+#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/utils/ArrayMath.h"
 
 /**
@@ -51,6 +53,12 @@ class CubeUniform : public Object {
            << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
+  }
+
+  void generate(autopas::AutoPas<ParticleType> &autopas) const override {
+    ParticleType dummyParticle = getDummyParticle(autopas);
+    autopasTools::generators::RandomGenerator::fillWithParticles(autopas, dummyParticle, getBoxMin(), getBoxMax(),
+                                                                 numParticles);
   }
 
  private:

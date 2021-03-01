@@ -9,6 +9,7 @@
 #include <numeric>
 
 #include "Objects.h"
+#include "autopasTools/generators/GridGenerator.h"
 #include "autopas/utils/ArrayMath.h"
 
 /**
@@ -70,6 +71,12 @@ class CubeGrid : public Object {
            << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
+  }
+
+  void generate(autopas::AutoPas<ParticleType> &autopas) const override {
+    ParticleType dummyParticle = getDummyParticle(autopas);
+    autopasTools::generators::GridGenerator::fillWithParticles(
+        autopas, particlesPerDim, dummyParticle, {particleSpacing, particleSpacing, particleSpacing}, bottomLeftCorner);
   }
 
  private:

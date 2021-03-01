@@ -14,7 +14,6 @@
 
 #include "BoundaryConditions.h"
 #include "Checkpoint.h"
-#include "Generator.h"
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
@@ -86,20 +85,20 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   }
 
   // initializing Objects
-  for (const auto &grid : _config->cubeGridObjects) {
-    Generator::cubeGrid<ParticleType>(autopas, grid);
+  for (const auto &object : _config->cubeGridObjects) {
+    object.generate(autopas);
   }
-  for (const auto &cube : _config->cubeGaussObjects) {
-    Generator::cubeGauss<ParticleType>(autopas, cube);
+  for (const auto &object : _config->cubeGaussObjects) {
+    object.generate(autopas);
   }
-  for (const auto &cube : _config->cubeUniformObjects) {
-    Generator::cubeRandom<ParticleType>(autopas, cube);
+  for (const auto &object : _config->cubeUniformObjects) {
+    object.generate(autopas);
   }
-  for (const auto &sphere : _config->sphereObjects) {
-    Generator::sphere<ParticleType>(autopas, sphere);
+  for (const auto &object : _config->sphereObjects) {
+    object.generate(autopas);
   }
-  for (const auto &cube : _config->cubeClosestPackedObjects) {
-    Generator::cubeClosestPacked<ParticleType>(autopas, cube);
+  for (const auto &object : _config->cubeClosestPackedObjects) {
+    object.generate(autopas);
   }
 
   // initializing system to initial temperature and Brownian motion

@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include "Simulation.h"
+#include "TypeDefinitions.h"
 #include "parsing/MDFlexParser.h"
 
 /**
@@ -59,7 +60,7 @@ int main(int argc, char **argv) {
   std::ostream outputStream(streamBuf);
 
   // Initialization. Use particle type from the Simulation class.
-  autopas::AutoPas<Simulation::ParticleType> autopas(outputStream);
+  autopas::AutoPas<ParticleType> autopas(outputStream);
   simulation.initialize(config, autopas);
 
   std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;

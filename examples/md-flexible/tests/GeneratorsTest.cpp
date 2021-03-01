@@ -9,12 +9,8 @@
 #include "autopas/AutoPas.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "autopasTools/generators/RandomGenerator.h"
-#include "src/Generator.h"
 #include "src/parsing/YamlParser.h"
 #include "testingHelpers/commonTypedefs.h"
-
-// the following test only work if testParsing.yaml is well set
-// all ParticleVelocities = {0.,0.,0.}
 
 TEST_F(GeneratorsTest, GridFillwithBoxMin) {
   auto autoPas = autopas::AutoPas<Molecule>(std::cout);
@@ -34,6 +30,9 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
   }
 }
 
+/**
+ * This test expects multipleObjectsWithMultipleTypesTest.yaml to be placed in md-flexible/tests/yamlTestFiles
+ */
 TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   auto autoPas = autopas::AutoPas<Molecule>(std::cout);
   MDFlexConfig config;
@@ -58,19 +57,19 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
 
   size_t idcounter = 0;  // to avoid multiple particles with the same ids
 
-  Generator::cubeGrid(autoPas, cubeGrid[0]);
+  cubeGrid[0].generate(autoPas);
   idcounter += cubeGrid.at(0).getParticlesTotal();
   EXPECT_EQ(autoPas.getNumberOfParticles(), idcounter) << "CubeGrid generator added a wrong number of particles!";
 
-  Generator::cubeGauss(autoPas, cubeGauss[0]);
+  cubeGauss[0].generate(autoPas);
   idcounter += cubeGauss.at(0).getParticlesTotal();
   EXPECT_EQ(autoPas.getNumberOfParticles(), idcounter) << "CubeGauss generator added a wrong number of particles!";
 
-  Generator::cubeRandom(autoPas, cubeUniform[0]);
+  cubeUniform[0].generate(autoPas);
   idcounter += cubeUniform.at(0).getParticlesTotal();
   EXPECT_EQ(autoPas.getNumberOfParticles(), idcounter) << "CubeRandom generator added a wrong number of particles!";
 
-  Generator::sphere(autoPas, sphere[0]);
+  sphere[0].generate(autoPas);
   idcounter += sphere.at(0).getParticlesTotal();
   ASSERT_EQ(autoPas.getNumberOfParticles(), idcounter) << "Sphere generator added a wrong number of particles!";
 
