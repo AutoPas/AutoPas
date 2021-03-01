@@ -52,10 +52,9 @@ class Simulation {
 
   /**
    * Writes a VTK file for the current state of the AutoPas object.
-   * @param iteration
    * @param autopas
    */
-  void writeVTKFile(unsigned int iteration, autopas::AutoPas<Particle> &autopas);
+  void writeVTKFile(autopas::AutoPas<Particle> &autopas);
 
   /**
    * Initializes the ParticlePropertiesLibrary with properties from _config.
@@ -353,7 +352,7 @@ void Simulation<Particle>::simulate(autopas::AutoPas<Particle> &autopas) {
     if (_config->deltaT.value != 0) {
       // only write vtk files periodically and if a filename is given.
       if ((not _config->vtkFileName.value.empty()) and iteration % _config->vtkWriteFrequency.value == 0) {
-        this->writeVTKFile(iteration, autopas);
+        this->writeVTKFile(autopas);
       }
 
       // calculate new positions
@@ -426,7 +425,7 @@ void Simulation<Particle>::simulate(autopas::AutoPas<Particle> &autopas) {
     _timers.boundaries.start();
     BoundaryConditions::applyPeriodic(autopas, true);
     _timers.boundaries.stop();
-    this->writeVTKFile(_config->iterations.value, autopas);
+    this->writeVTKFile(autopas);
   }
 
   _timers.simulate.stop();
@@ -538,7 +537,7 @@ bool Simulation<Particle>::needsMoreIterations() const {
 }
 
 template <class Particle>
-void Simulation<Particle>::writeVTKFile(unsigned int iteration, autopas::AutoPas<Particle> &autopas) {
+void Simulation<Particle>::writeVTKFile(autopas::AutoPas<Particle> &autopas) {
   _timers.vtk.start();
 
   std::string fileBaseName = _config->vtkFileName.value;
