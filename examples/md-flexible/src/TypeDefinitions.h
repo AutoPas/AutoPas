@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include <autopas/molecularDynamics/MoleculeLJ.h>
-
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 
 /**
