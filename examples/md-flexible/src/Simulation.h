@@ -435,7 +435,7 @@ void Simulation<Particle>::simulate(autopas::AutoPas<Particle> &autopas) {
 template <class Particle>
 void Simulation<Particle>::printStatistics(autopas::AutoPas<Particle> &autopas) {
   using namespace std;
-  size_t flopsPerKernelCall = 0;
+  size_t flopsPerKernelCall;
 
   switch (_config->functorOption.value) {
     case MDFlexConfig::FunctorOption ::lj12_6: {
