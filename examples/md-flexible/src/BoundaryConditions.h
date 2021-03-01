@@ -41,7 +41,7 @@ void wrapPositionsAroundBoundaries(autopas::AutoPas<Particle> &autoPas, std::vec
     for (auto dim = 0; dim < pos.size(); dim++) {
       if (pos[dim] < boxMin[dim]) {
         // has to be smaller than boxMax
-        pos[dim] = std::min(std::nextafter(boxMax[dim], -1), pos[dim] + boxLength[dim]);
+        pos[dim] = std::min(std::nextafter(boxMax[dim], boxMin[dim]), pos[dim] + boxLength[dim]);
       } else if (pos[dim] >= boxMax[dim]) {
         // should at least be boxMin
         pos[dim] = std::max(boxMin[dim], pos[dim] - boxLength[dim]);
