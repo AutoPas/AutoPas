@@ -610,7 +610,7 @@ template <class Particle>
 double Simulation<Particle>::calculateHomogeneity(autopas::AutoPas<Particle> &autopas) {
   int numberOfParticles = autopas.getNumberOfParticles();
   // approximately the resolution we want to get.
-  int numberOfCells = ceil(numberOfParticles / 10.);
+  size_t numberOfCells = ceil(numberOfParticles / 10.);
 
   std::array<double, 3> startCorner = autopas.getBoxMin();
   std::array<double, 3> endCorner = autopas.getBoxMax();
@@ -703,19 +703,20 @@ void Simulation<Particle>::printProgress(size_t iterationProgress, size_t maxIte
   std::stringstream progressbar;
   progressbar << "[";
   // get current terminal width
-  struct winsize w;
+  struct winsize w {};
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
   auto terminalWidth = w.ws_col;
   // the bar should fill the terminal window so subtract everything else (-2 for "] ")
-  int maxBarWidth = terminalWidth - info.str().size() - progressbar.str().size() - 2;
-  // sanity check
-  if (maxBarWidth < 1) {
+  size_t maxBarWidth = terminalWidth - info.str().size() - progressbar.str().size() - 2;
+  // sanity check for underflow
+  if (maxBarWidth > terminalWidth) {
     std::cerr << "Warning! Terminal width appears to be too small or could not be read. Disabling progress bar."
               << std::endl;
     _config->dontShowProgressBar.value = true;
     return;
   }
-  auto barWidth = std::max(std::min(static_cast<decltype(maxBarWidth)>(maxBarWidth * (fractionDone)), maxBarWidth), 1);
+  auto barWidth =
+      std::max(std::min(static_cast<decltype(maxBarWidth)>(maxBarWidth * (fractionDone)), maxBarWidth), 1ul);
   // don't print arrow tip if >= 100%
   if (iterationProgress >= maxIterations) {
     progressbar << std::string(barWidth, '=');
