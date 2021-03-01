@@ -113,6 +113,7 @@ class Simulation {
 
   /**
    * Getter for ParticlePropertiesLibrary of Simulation.
+   * @note Used for testing.
    * @return unique_prt(ParticlePropertiesLibrary)
    */
   [[nodiscard]] const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
@@ -122,7 +123,7 @@ class Simulation {
    * @param autopas
    * @return double
    */
-  double calculateHomogeneity(autopas::AutoPas<Particle> &autopas);
+  [[nodiscard]] double calculateHomogeneity(autopas::AutoPas<Particle> &autopas) const;
 
  private:
   /**
@@ -135,44 +136,33 @@ class Simulation {
    */
   void printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise);
 
-  using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
+  /**
+   * Use the variant of the LJFunctor that uses the shifted Lennard-Jones potential.
+   */
   constexpr static bool _shifting = true;
+  /**
+   * Use the variant of the LJFunctor that supports mixing of particle types.
+   */
   constexpr static bool _mixing = true;
 
+  /**
+   * Configuration of the scenario.
+   */
   std::shared_ptr<MDFlexConfig> _config;
+
+  using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
+  /**
+   * Container for properties (e.g. mass) per particle type.
+   */
   std::unique_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
 
+  /**
+   * Struct containing all timers used for the simulation.
+   */
   struct timers {
     autopas::utils::Timer positionUpdate, forceUpdateTotal, forceUpdatePairwise, forceUpdateGlobal, forceUpdateTuning,
         forceUpdateNonTuning, velocityUpdate, simulate, vtk, init, total, thermostat, boundaries;
   } _timers;
-
-  /**
-   * Number of completed iterations. Aka. number of current iteration.
-   */
-  size_t iteration = 0;
-  /**
-   * Counts completed iterations that were used for tuning
-   */
-  size_t numTuningIterations = 0;
-  /**
-   * Counts completed tuning phases.
-   */
-  size_t numTuningPhasesCompleted = 0;
-  /**
-   * Indicator if the previous iteration was used for tuning.
-   */
-  bool previousIterationWasTuningIteration = false;
-
-  /**
-   * Precision of floating point numbers printed.
-   */
-  constexpr static auto _floatStringPrecision = 3;
-
-  /**
-   * Homogeneity of the scenario, calculated by the standard deviation of the density.
-   */
-  double homogeneity = 0;
 
   /**
    * Convert a time and a name to a properly formatted string.
@@ -183,6 +173,33 @@ class Simulation {
    * @return formatted std::string
    */
   std::string timerToString(const std::string &name, long timeNS, size_t numberWidth = 0, long maxTime = 0);
+
+  /**
+   * Number of completed iterations. Aka. number of current iteration.
+   */
+  size_t _iteration = 0;
+  /**
+   * Counts completed iterations that were used for tuning
+   */
+  size_t _numTuningIterations = 0;
+  /**
+   * Counts completed tuning phases.
+   */
+  size_t _numTuningPhasesCompleted = 0;
+  /**
+   * Indicator if the previous iteration was used for tuning.
+   */
+  bool _previousIterationWasTuningIteration = false;
+
+  /**
+   * Precision of floating point numbers printed.
+   */
+  constexpr static auto _floatStringPrecision = 3;
+
+  /**
+   * Homogeneity of the scenario, calculated by the standard deviation of the density.
+   */
+  double _homogeneity = 0;
 };
 
 template <typename Particle>
@@ -298,16 +315,16 @@ void Simulation<Particle>::calculateForces(autopas::AutoPas<Particle> &autopas) 
   // count time spent for tuning
   if (tuningIteration) {
     _timers.forceUpdateTuning.addTime(timeIteration);
-    ++numTuningIterations;
+    ++_numTuningIterations;
   } else {
     _timers.forceUpdateNonTuning.addTime(timeIteration);
     // if the previous iteration was a tuning iteration an the current one is not
     // we have reached the end of a tuning phase
-    if (previousIterationWasTuningIteration) {
-      ++numTuningPhasesCompleted;
+    if (_previousIterationWasTuningIteration) {
+      ++_numTuningPhasesCompleted;
     }
   }
-  previousIterationWasTuningIteration = tuningIteration;
+  _previousIterationWasTuningIteration = tuningIteration;
 
   // global forces
 
@@ -335,23 +352,23 @@ void Simulation<Particle>::globalForces(autopas::AutoPas<Particle> &autopas) {
 
 template <class Particle>
 void Simulation<Particle>::simulate(autopas::AutoPas<Particle> &autopas) {
-  this->homogeneity = Simulation::calculateHomogeneity(autopas);
+  this->_homogeneity = Simulation::calculateHomogeneity(autopas);
   _timers.simulate.start();
 
   auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumIterations();
 
   // main simulation loop
-  for (; needsMoreIterations(); ++iteration) {
+  for (; needsMoreIterations(); ++_iteration) {
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      std::cout << "Iteration " << iteration << std::endl;
+      std::cout << "Iteration " << _iteration << std::endl;
     }
     if (not _config->dontShowProgressBar.value) {
-      printProgress(iteration, maxIterationsEstimate, maxIterationsIsPrecise);
+      printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
     }
 
     if (_config->deltaT.value != 0) {
       // only write vtk files periodically and if a filename is given.
-      if ((not _config->vtkFileName.value.empty()) and iteration % _config->vtkWriteFrequency.value == 0) {
+      if ((not _config->vtkFileName.value.empty()) and _iteration % _config->vtkWriteFrequency.value == 0) {
         this->writeVTKFile(autopas);
       }
 
@@ -397,7 +414,7 @@ void Simulation<Particle>::simulate(autopas::AutoPas<Particle> &autopas) {
       _timers.velocityUpdate.stop();
 
       // applying Velocity scaling with Thermostat:
-      if (_config->useThermostat.value and (iteration % _config->thermostatInterval.value) == 0) {
+      if (_config->useThermostat.value and (_iteration % _config->thermostatInterval.value) == 0) {
         _timers.thermostat.start();
         Thermostat::apply(autopas, *_particlePropertiesLibrary, _config->targetTemperature.value,
                           _config->deltaTemp.value);
@@ -408,7 +425,7 @@ void Simulation<Particle>::simulate(autopas::AutoPas<Particle> &autopas) {
   // final update for a full progress bar
   if (not _config->dontShowProgressBar.value) {
     // The last update is precise, so we know the number of iterations.
-    printProgress(iteration, iteration, true);
+    printProgress(_iteration, _iteration, true);
     // The progress bar does not end the line. Since this is the last progress bar, end the line here.
     std::cout << std::endl;
   }
@@ -484,25 +501,25 @@ void Simulation<Particle>::printStatistics(autopas::AutoPas<Particle> &autopas) 
   cout << timerToString("    VTK         ", _timers.vtk.getTotalTime(), digitsTimeTotalNS, durationSimulate);
   cout << timerToString("    Thermostat  ", _timers.thermostat.getTotalTime(), digitsTimeTotalNS, durationSimulate);
 
-  cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / iteration, digitsTimeTotalNS,
+  cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / _iteration, digitsTimeTotalNS,
                         durationTotal);
-  auto mfups = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) * iteration * 1e-6 /
+  auto mfups = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) * _iteration * 1e-6 /
                (_timers.forceUpdateTotal.getTotalTime() * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
-  cout << "Tuning iterations: " << numTuningIterations << " / " << iteration << " = "
-       << ((double)numTuningIterations / iteration * 100) << "%" << endl;
+  cout << "Tuning iterations: " << _numTuningIterations << " / " << _iteration << " = "
+       << ((double)_numTuningIterations / _iteration * 100) << "%" << endl;
   cout << "MFUPs/sec    : " << mfups << endl;
-  cout << "Standard Deviation of Homogeneity    : " << homogeneity << endl;
+  cout << "Standard Deviation of Homogeneity    : " << _homogeneity << endl;
 
   if (_config->dontMeasureFlops.value) {
     autopas::FlopCounterFunctor<PrintableMolecule> flopCounterFunctor(autopas.getCutoff());
     autopas.iteratePairwise(&flopCounterFunctor);
 
-    auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * iteration;
+    auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * _iteration;
     // approximation for flops of verlet list generation
     if (autopas.getContainerType() == autopas::ContainerOption::verletLists)
       flops += flopCounterFunctor.getDistanceCalculations() *
                decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation *
-               floor(iteration / _config->verletRebuildFrequency.value);
+               floor(_iteration / _config->verletRebuildFrequency.value);
 
     cout << "GFLOPs       : " << flops * 1e-9 << endl;
     cout << "GFLOPs/sec   : " << flops * 1e-9 / durationSimulateSec << endl;
@@ -533,7 +550,7 @@ std::string Simulation<Particle>::timerToString(const std::string &name, long ti
 }
 template <class Particle>
 bool Simulation<Particle>::needsMoreIterations() const {
-  return iteration < _config->iterations.value or numTuningPhasesCompleted < _config->tuningPhases.value;
+  return _iteration < _config->iterations.value or _numTuningPhasesCompleted < _config->tuningPhases.value;
 }
 
 template <class Particle>
@@ -545,7 +562,7 @@ void Simulation<Particle>::writeVTKFile(autopas::AutoPas<Particle> &autopas) {
   const auto numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly);
   std::ostringstream strstr;
   auto maxNumDigits = std::to_string(_config->iterations.value).length();
-  strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << iteration << ".vtk";
+  strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << _iteration << ".vtk";
   std::ofstream vtkFile;
   vtkFile.open(strstr.str());
 
@@ -607,7 +624,7 @@ void Simulation<Particle>::writeVTKFile(autopas::AutoPas<Particle> &autopas) {
 }
 
 template <class Particle>
-double Simulation<Particle>::calculateHomogeneity(autopas::AutoPas<Particle> &autopas) {
+double Simulation<Particle>::calculateHomogeneity(autopas::AutoPas<Particle> &autopas) const {
   int numberOfParticles = autopas.getNumberOfParticles();
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
