@@ -14,7 +14,7 @@
 #include "parsing/MDFlexParser.h"
 
 /**
- * The main function.
+ * The main function for md-flexible.
  * @param argc
  * @param argv
  * @return

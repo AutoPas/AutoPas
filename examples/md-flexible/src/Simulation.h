@@ -5,31 +5,15 @@
  */
 #pragma once
 
+#include "TypeDefinitions.h"
 #include "autopas/AutoPas.h"
-#include "autopas/molecularDynamics/MoleculeLJ.h"
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "parsing/MDFlexConfig.h"
 
 /**
  * The main simulation class.
- * @tparam Particle
- * @tparam ParticleCell
  */
 class Simulation {
  public:
-
-  /**
-   * Precision used for particle representations. If you want to test other precisions change it here.
-   */
-  using FloatPrecicion = double;
-
-  /**
-   * Use the Particle type provided by AutoPas.
-   */
-  using ParticleType = autopas::MoleculeLJ<FloatPrecicion>;
-
-  using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecicion, size_t>;
-
   /**
    * Constructor.
    *
