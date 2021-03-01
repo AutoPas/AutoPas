@@ -5,10 +5,9 @@
  */
 #pragma once
 
-
 #include "Objects.h"
-#include "autopasTools/generators/RandomGenerator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 /**
  * Class describing an cuboid object filled with uniformly randomly distributed particles.

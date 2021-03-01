@@ -19,6 +19,9 @@
  */
 class Object {
  public:
+  /**
+   * Type of all particles generated.
+   */
   using ParticleType = ParticleType;
 
   /**

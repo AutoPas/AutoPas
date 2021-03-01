@@ -9,8 +9,8 @@
 #include <numeric>
 
 #include "Objects.h"
-#include "autopasTools/generators/GridGenerator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/GridGenerator.h"
 
 /**
  * Class describing a regular 3D particle grid object.

@@ -273,7 +273,7 @@ void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
     }
     case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
       flopsPerKernelCall = autopas::LJFunctor<ParticleType, _shifting, _mixing, autopas::FunctorN3Modes::Both,
-          /* globals */ true>::getNumFlopsPerKernelCall();
+                                              /* globals */ true>::getNumFlopsPerKernelCall();
       break;
     }
     case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
@@ -317,7 +317,7 @@ void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
   cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / _iteration, digitsTimeTotalNS,
                         durationTotal);
   auto mfups = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) * _iteration * 1e-6 /
-      (_timers.forceUpdateTotal.getTotalTime() * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
+               (_timers.forceUpdateTotal.getTotalTime() * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
   cout << "Tuning iterations: " << _numTuningIterations << " / " << _iteration << " = "
        << ((double)_numTuningIterations / _iteration * 100) << "%" << endl;
   cout << "MFUPs/sec    : " << mfups << endl;
@@ -331,8 +331,8 @@ void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
     // approximation for flops of verlet list generation
     if (autopas.getContainerType() == autopas::ContainerOption::verletLists)
       flops += flopCounterFunctor.getDistanceCalculations() *
-          decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation *
-          floor(_iteration / _config->verletRebuildFrequency.value);
+               decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation *
+               floor(_iteration / _config->verletRebuildFrequency.value);
 
     cout << "GFLOPs       : " << flops * 1e-9 << endl;
     cout << "GFLOPs/sec   : " << flops * 1e-9 / durationSimulateSec << endl;
@@ -344,8 +344,7 @@ const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &Simulation::ge
   return _particlePropertiesLibrary;
 }
 
-std::string Simulation::timerToString(const std::string &name, long timeNS, size_t numberWidth,
-                                      long maxTime) {
+std::string Simulation::timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime) {
   // only print timers that were actually used
   if (timeNS == 0) {
     return "";
@@ -491,8 +490,8 @@ double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas)
   std::vector<double> densityPerCell(numberOfCells, 0.0);
   for (int i = 0; i < particlesPerCell.size(); i++) {
     densityPerCell[i] = (particlesPerCell[i] == 0)
-                        ? 0
-                        : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
+                            ? 0
+                            : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
   }
 
   // get mean and reserve variable for variance
@@ -566,7 +565,7 @@ std::tuple<size_t, bool> Simulation::estimateNumIterations() const {
       configsTestedPerTuningPhase = _config->tuningMaxEvidence.value;
     }
     auto estimate = (_config->tuningPhases.value - 1) * _config->tuningInterval.value +
-        (_config->tuningPhases.value * _config->tuningSamples.value * configsTestedPerTuningPhase);
+                    (_config->tuningPhases.value * _config->tuningSamples.value * configsTestedPerTuningPhase);
     return {estimate, false};
   } else {
     return {_config->iterations.value, true};

@@ -59,7 +59,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle()
+   * See Functor::SoAFunctorSingle()
+   * @param soa
    */
   void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool /*newton3*/) override {
     if (soa.getNumParticles() == 0) return;
@@ -98,7 +99,9 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
   }
 
   /**
-   * @copydoc Functor::SoAFunctorPair()
+   * See Functor::SoAFunctorPair()
+   * @param soa1
+   * @param soa2
    */
   void SoAFunctorPair(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
                       bool /*newton3*/) override {
@@ -139,7 +142,10 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
   }
 
   /**
-   * @copydoc Functor::SoAFunctorVerlet()
+   * See Functor::SoAFunctorVerlet()
+   * @param soa
+   * @param indexFirst
+   * @param neighborList
    */
   void SoAFunctorVerlet(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,

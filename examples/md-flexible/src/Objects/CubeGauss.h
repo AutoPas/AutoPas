@@ -6,8 +6,8 @@
 #pragma once
 
 #include "Objects.h"
-#include "autopasTools/generators/GaussianGenerator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/GaussianGenerator.h"
 
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.

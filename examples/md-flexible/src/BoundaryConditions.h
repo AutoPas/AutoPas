@@ -24,7 +24,6 @@ namespace {
  * @tparam Particle
  * @param autoPas
  * @param particles Particles that are outside the domain box.
- * @return vector of particles that will enter the container.
  */
 template <class Particle>
 void wrapPositionsAroundBoundaries(autopas::AutoPas<Particle> &autoPas, std::vector<Particle> &particles) {

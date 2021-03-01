@@ -11,8 +11,8 @@
 #include <functional>
 
 #include "Objects.h"
-#include "autopasTools/generators/ClosestPackingGenerator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/ClosestPackingGenerator.h"
 
 /**
  * Class describing a cube of hexagonally closest packed particles.
