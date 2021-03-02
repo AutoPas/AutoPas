@@ -298,6 +298,8 @@ void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
        << autopas.getNumberOfParticles(autopas::IteratorBehavior::haloAndOwned) << endl;
   cout << "  Owned: " << autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) << endl;
   cout << "  Halo : " << autopas.getNumberOfParticles(autopas::IteratorBehavior::haloOnly) << endl;
+  cout << "Standard Deviation of Homogeneity    : " << _homogeneity << endl;
+
   cout << fixed << setprecision(_floatStringPrecision);
   cout << "Measurements:" << endl;
   cout << timerToString("Time total      ", durationTotal, digitsTimeTotalNS);
@@ -322,7 +324,6 @@ void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
   cout << "Tuning iterations: " << _numTuningIterations << " / " << _iteration << " = "
        << ((double)_numTuningIterations / _iteration * 100) << "%" << endl;
   cout << "MFUPs/sec    : " << mfups << endl;
-  cout << "Standard Deviation of Homogeneity    : " << _homogeneity << endl;
 
   if (_config->dontMeasureFlops.value) {
     autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(autopas.getCutoff());
