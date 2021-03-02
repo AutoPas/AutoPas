@@ -1139,6 +1139,5 @@ class LJFunctor
   utils::CudaDeviceVector<SoAFloatPrecision> _cudaGlobals;
 
 #endif
-
-};  // namespace autopas
+};
 }  // namespace autopas

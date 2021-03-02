@@ -280,5 +280,5 @@ class SoA {
 
   // storage container for the SoA's
   utils::SoAStorage<SoAArraysType> soaStorage;
-};  // namespace autopas
+};
 }  // namespace autopas

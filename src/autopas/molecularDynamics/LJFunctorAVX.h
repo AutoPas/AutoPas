@@ -1041,6 +1041,5 @@ class LJFunctorAVX
   // number of double values that fit into a vector register.
   // MUST be power of 2 because some optimizations make this assumption
   constexpr static size_t vecLength = 4;
-
-};  // namespace autopas
+};
 }  // namespace autopas
