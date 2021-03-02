@@ -21,6 +21,10 @@ namespace TimeDiscretization {
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void calculatePositions(AutoPasTemplate &autopas, const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
                         const double deltaT) {
+  // helper declarations for operations with vector
+  using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::ArrayMath::add;
+
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
@@ -30,9 +34,9 @@ void calculatePositions(AutoPasTemplate &autopas, const ParticlePropertiesLibrar
     auto f = iter->getF();
     iter->setOldF(f);
     iter->setF({0., 0., 0.});
-    v = autopas::utils::ArrayMath::mulScalar(v, deltaT);
-    f = autopas::utils::ArrayMath::mulScalar(f, (deltaT * deltaT / (2 * m)));
-    auto newR = autopas::utils::ArrayMath::add(v, f);
+    v = mulScalar(v, deltaT);
+    f = mulScalar(f, (deltaT * deltaT / (2 * m)));
+    auto newR = add(v, f);
     iter->addR(newR);
   }
 }
@@ -46,15 +50,18 @@ void calculatePositions(AutoPasTemplate &autopas, const ParticlePropertiesLibrar
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void calculateVelocities(AutoPasTemplate &autopas, const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
                          const double deltaT) {
+  // helper declarations for operations with vector
+  using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::ArrayMath::add;
+
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
   for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
     auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
     auto force = iter->getF();
-    auto old_force = iter->getOldf();
-    auto newV =
-        autopas::utils::ArrayMath::mulScalar((autopas::utils::ArrayMath::add(force, old_force)), deltaT / (2 * m));
+    auto oldForce = iter->getOldf();
+    auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
     iter->addV(newV);
   }
 }
