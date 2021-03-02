@@ -173,69 +173,33 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
 
   // main simulation loop
   for (; needsMoreIterations(); ++_iteration) {
-    if (not _config->dontShowProgressBar.value) {
-      printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
+    printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
+
+    // only write vtk files periodically and if a filename is given.
+    if ((not _config->vtkFileName.value.empty()) and _iteration % _config->vtkWriteFrequency.value == 0) {
+      this->writeVTKFile(autopas);
     }
+
+    // calculate new positions
+    _timers.positionUpdate.start();
+    // TODO: SWiMM
+    TimeDiscretization::calculatePositions(autopas, *_particlePropertiesLibrary, _config->deltaT.value);
+    _timers.positionUpdate.stop();
+
+    // apply boundary conditions AFTER the position update!
+    _timers.boundaries.start();
+    BoundaryConditions::applyPeriodic(autopas, false);
+    _timers.boundaries.stop();
+
+    // invoke the force calculation with the functor
+    // TODO: SWiMM
+    this->calculateForces<autopas::LJFunctor<ParticleType, _shifting, _mixing>>(autopas);
 
     // only do time step related stuff when there actually is time-stepping
-    if (_config->deltaT.value != 0) {
-      // only write vtk files periodically and if a filename is given.
-      if ((not _config->vtkFileName.value.empty()) and _iteration % _config->vtkWriteFrequency.value == 0) {
-        this->writeVTKFile(autopas);
-      }
-
-      // calculate new positions
-      _timers.positionUpdate.start();
-      TimeDiscretization::calculatePositions(autopas, *_particlePropertiesLibrary, _config->deltaT.value);
-      _timers.positionUpdate.stop();
-
-      // apply boundary conditions AFTER the position update!
-      if (_config->periodic.value) {
-        _timers.boundaries.start();
-        BoundaryConditions::applyPeriodic(autopas, false);
-        _timers.boundaries.stop();
-      } else {
-        throw std::runtime_error(
-            "Simulation::simulate(): at least one boundary condition has to be set. Please enable the periodic "
-            "boundary conditions!");
-      }
-    }
-    // invoke the force calculation with the functor specified in the configuration
-    switch (this->_config->functorOption.value) {
-      case MDFlexConfig::FunctorOption::lj12_6: {
-        this->calculateForces<autopas::LJFunctor<ParticleType, _shifting, _mixing>>(autopas);
-        break;
-      }
-      case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-        this->calculateForces<
-            autopas::LJFunctor<ParticleType, _shifting, _mixing, autopas::FunctorN3Modes::Both, /* globals */ true>>(
-            autopas);
-        break;
-      }
-      case MDFlexConfig::FunctorOption::lj12_6_AVX: {
-        this->calculateForces<autopas::LJFunctorAVX<ParticleType, _shifting, _mixing>>(autopas);
-        break;
-      }
-    }
-    // only show memory usage in when the logger is set to debug
-    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
-    }
-
-    // only do time step related stuff when there actually is time-stepping
-    if (_config->deltaT.value != 0) {
-      _timers.velocityUpdate.start();
-      TimeDiscretization::calculateVelocities(autopas, *_particlePropertiesLibrary, _config->deltaT.value);
-      _timers.velocityUpdate.stop();
-
-      // applying Velocity scaling with Thermostat:
-      if (_config->useThermostat.value and (_iteration % _config->thermostatInterval.value) == 0) {
-        _timers.thermostat.start();
-        Thermostat::apply(autopas, *_particlePropertiesLibrary, _config->targetTemperature.value,
-                          _config->deltaTemp.value);
-        _timers.thermostat.stop();
-      }
-    }
+    _timers.velocityUpdate.start();
+    // TODO: SWiMM
+    TimeDiscretization::calculateVelocities(autopas, *_particlePropertiesLibrary, _config->deltaT.value);
+    _timers.velocityUpdate.stop();
   }
   // final update for a full progress bar
   if (not _config->dontShowProgressBar.value) {
@@ -243,13 +207,6 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
     printProgress(_iteration, _iteration, true);
     // The progress bar does not end the line. Since this is the last progress bar, end the line here.
     std::cout << std::endl;
-  }
-
-  // update temperature for generated config output
-  if (_config->useThermostat.value) {
-    _timers.thermostat.start();
-    _config->initTemperature.value = Thermostat::calcTemperature(autopas, *_particlePropertiesLibrary);
-    _timers.thermostat.stop();
   }
 
   // writes final state of the simulation
