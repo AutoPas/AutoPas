@@ -251,7 +251,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         try {
           config.iterations.value = stoul(strArg);
           if (config.iterations.value < 1) {
-            cerr << "IterationNumber of iterations has to be a positive integer!" << endl;
+            cerr << "Number of iterations has to be a positive integer!" << endl;
             displayHelp = true;
           }
         } catch (const exception &) {
