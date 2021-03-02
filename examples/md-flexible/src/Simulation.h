@@ -17,7 +17,7 @@ class Simulation {
   /**
    * Particle type used for the simulation.
    */
-  using ParticleType = ParticleType;
+  using ParticleType = ::ParticleType;
 
   /**
    * Constructor.
