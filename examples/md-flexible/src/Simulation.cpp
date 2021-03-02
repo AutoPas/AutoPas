@@ -123,7 +123,10 @@ void Simulation::calculateForces(autopas::AutoPas<ParticleType> &autopas) {
   _timers.forceUpdatePairwise.start();
 
   FunctorType functor{autopas.getCutoff(), *_particlePropertiesLibrary};
-  bool tuningIteration = autopas.iteratePairwise(&functor);
+  // TODO: SWiMM
+  // FIXME: Apply the functor to the AutoPas object.
+  //        Also store the information whether AutoPas is currently tuning for later analysis.
+  bool tuningIteration = false;
 
   _timers.forceUpdateTotal.stop();
   auto timeIteration = _timers.forceUpdatePairwise.stop();
