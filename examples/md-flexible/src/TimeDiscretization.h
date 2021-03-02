@@ -50,4 +50,4 @@ void calculateVelocities(AutoPasTemplate &autopas, const ParticlePropertiesLibra
   //        v_new = v + deltaT * (f_old + f) / (2*m)
 }
 
-};  // namespace TimeDiscretization
+}  // namespace TimeDiscretization

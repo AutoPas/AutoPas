@@ -170,4 +170,4 @@ void applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
   // TODO: SWiMM
   addHaloParticles(autoPas, haloParticles);
 }
-};  // namespace BoundaryConditions
+}  // namespace BoundaryConditions
