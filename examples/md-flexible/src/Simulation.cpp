@@ -352,8 +352,11 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, size
   }
 
   std::ostringstream ss;
-  ss << std::fixed << std::setprecision(_floatStringPrecision);
-  ss << name << " : " << std::setw(numberWidth) << std::right << timeNS << " ns (" << ((double)timeNS * 1e-9) << "s)";
+  ss << std::fixed << std::setprecision(_floatStringPrecision) << name << " : " << std::setw(numberWidth) << std::right
+     << timeNS
+     << " ns ("
+     // min width of the representation of seconds is numberWidth - 9 (from conversion) + 4 (for dot and digits after)
+     << std::setw(numberWidth - 5ul) << ((double)timeNS * 1e-9) << "s)";
   if (maxTime != 0) {
     ss << " =" << std::setw(7) << std::right << ((double)timeNS / (double)maxTime * 100) << "%";
   }
