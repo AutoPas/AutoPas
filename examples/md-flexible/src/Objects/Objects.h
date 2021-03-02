@@ -22,7 +22,7 @@ class Object {
   /**
    * Type of all particles generated.
    */
-  using ParticleType = ParticleType;
+  using ParticleType = ::ParticleType;
 
   /**
    * Constructor that should be used by inheriting types.
