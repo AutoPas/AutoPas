@@ -215,6 +215,7 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
   // writes final state of the simulation
   if ((not _config->vtkFileName.value.empty())) {
     _timers.boundaries.start();
+    // TODO: SWiMM
     BoundaryConditions::applyPeriodic(autopas, true);
     _timers.boundaries.stop();
     this->writeVTKFile(autopas);
