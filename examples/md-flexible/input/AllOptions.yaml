@@ -52,6 +52,16 @@ Objects:
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1
+  CubeClosestPacked:
+    0:
+      box-length                 :  [4, 4, 4]
+      bottomLeftCorner           :  [0, 0, 0]
+      particle-spacing           :  0.5
+      velocity                   :  [0, 0, 0]
+      particle-type              :  2
+      particle-epsilon           :  1
+      particle-sigma             :  1
+      particle-mass              :  1
   Sphere:
     0:  
       center                     :  [5, 5, 5]
@@ -70,4 +80,4 @@ thermostat:
   addBrownianMotion              :  false
 vtk-filename                     :  AllOptionsSim
 vtk-write-frequency              :  1
-#checkpoint: AllOptionsSim_10.vtk
+#checkpoint : AllOptionsSim_10.vtk
