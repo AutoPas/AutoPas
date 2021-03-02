@@ -66,4 +66,4 @@ void calculateVelocities(AutoPasTemplate &autopas, const ParticlePropertiesLibra
   }
 }
 
-};  // namespace TimeDiscretization
+}  // namespace TimeDiscretization

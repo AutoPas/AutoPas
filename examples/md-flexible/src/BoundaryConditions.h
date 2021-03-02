@@ -168,4 +168,4 @@ void applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
   auto haloParticles = identifyNewHaloParticles(autoPas);
   addHaloParticles(autoPas, haloParticles);
 }
-};  // namespace BoundaryConditions
+}  // namespace BoundaryConditions
