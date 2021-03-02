@@ -177,6 +177,7 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
     }
 
+    // only do time step related stuff when there actually is time-stepping
     if (_config->deltaT.value != 0) {
       // only write vtk files periodically and if a filename is given.
       if ((not _config->vtkFileName.value.empty()) and _iteration % _config->vtkWriteFrequency.value == 0) {
@@ -199,6 +200,7 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
             "boundary conditions!");
       }
     }
+    // invoke the force calculation with the functor specified in the configuration
     switch (this->_config->functorOption.value) {
       case MDFlexConfig::FunctorOption::lj12_6: {
         this->calculateForces<autopas::LJFunctor<ParticleType, _shifting, _mixing>>(autopas);
@@ -215,10 +217,12 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
         break;
       }
     }
+    // only show memory usage in when the logger is set to debug
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
 
+    // only do time step related stuff when there actually is time-stepping
     if (_config->deltaT.value != 0) {
       _timers.velocityUpdate.start();
       TimeDiscretization::calculateVelocities(autopas, *_particlePropertiesLibrary, _config->deltaT.value);
