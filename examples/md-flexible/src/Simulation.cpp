@@ -173,9 +173,6 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
 
   // main simulation loop
   for (; needsMoreIterations(); ++_iteration) {
-    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      std::cout << "Iteration " << _iteration << std::endl;
-    }
     if (not _config->dontShowProgressBar.value) {
       printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
     }
