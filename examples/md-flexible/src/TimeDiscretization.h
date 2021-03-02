@@ -22,8 +22,8 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void calculatePositions(AutoPasTemplate &autopas, const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
                         const double deltaT) {
   // helper declarations for operations with vector
-  using autopas::utils::ArrayMath::mulScalar;
   using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::mulScalar;
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -51,8 +51,8 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void calculateVelocities(AutoPasTemplate &autopas, const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
                          const double deltaT) {
   // helper declarations for operations with vector
-  using autopas::utils::ArrayMath::mulScalar;
   using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::mulScalar;
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
