@@ -17,7 +17,7 @@ namespace autopas {
  * Molecule class for the LJFunctor.
  */
 template <typename floatType = double>
-class MoleculeLJ : public Particle {
+class MoleculeLJ final : public Particle {
  public:
   MoleculeLJ() = default;
 
@@ -32,7 +32,7 @@ class MoleculeLJ : public Particle {
                       unsigned long typeId = 0)
       : Particle(pos, v, moleculeId), _typeId(typeId) {}
 
-  ~MoleculeLJ() override = default;
+  ~MoleculeLJ() final = default;
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
