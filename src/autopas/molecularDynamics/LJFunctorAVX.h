@@ -40,7 +40,7 @@ namespace autopas {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-class LJFunctorAVX final
+class LJFunctorAVX
     : public Functor<Particle,
                      LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;

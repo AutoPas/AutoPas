@@ -45,7 +45,7 @@ namespace autopas {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-class LJFunctor final
+class LJFunctor
     : public Functor<Particle,
                      LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
