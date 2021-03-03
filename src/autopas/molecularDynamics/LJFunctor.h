@@ -114,9 +114,7 @@ class LJFunctor final
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
-  bool allowsNewton3() final {
-    return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both;
-  }
+  bool allowsNewton3() final { return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both; }
 
   bool allowsNonNewton3() final {
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
