@@ -45,7 +45,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
 
-  FlopCounterFunctor(FlopCounterFunctor& f) : FlopCounterFunctor(f.getCutoff()) {}
+  FlopCounterFunctor(const FlopCounterFunctor& f) : FlopCounterFunctor(f.getCutoff()) {}
 
   KOKKOS_INLINE_FUNCTION
   void AoSFunctor(const Particle &i, const Particle &j, bool newton3) const override {
@@ -54,11 +54,11 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
     }
     auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
     double dr2 = utils::ArrayMath::dot(dr, dr);
-    _distanceCalculations.fetch_add(1, std::memory_order_relaxed);
-
-    if (dr2 <= _cutoffSquare) {
-      _kernelCalls.fetch_add(1, std::memory_order_relaxed);
-    }
+//    _distanceCalculations.fetch_add(1, std::memory_order_relaxed);
+//
+//    if (dr2 <= _cutoffSquare) {
+//      _kernelCalls.fetch_add(1, std::memory_order_relaxed);
+//    }
   }
 
   /**

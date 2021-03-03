@@ -113,7 +113,10 @@ class LJFunctor
     _PPLibrary = &particlePropertiesLibrary;
   }
 
-  LJFunctor(LJFunctor& f) : LJFunctor(f.getCutoff(), nullptr) {}
+  LJFunctor(const LJFunctor &f) : LJFunctor(f.getCutoff(), nullptr) {}
+//  LJFunctor(const LJFunctor &f) = default;
+
+//  LJFunctor(LJFunctor&& f) : LJFunctor(f.getCutoff(), nullptr) {}
 
   bool isRelevantForTuning() override { return relevantForTuning; }
 

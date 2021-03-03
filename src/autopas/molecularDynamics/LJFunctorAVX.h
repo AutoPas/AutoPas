@@ -108,6 +108,8 @@ class LJFunctorAVX
     _PPLibrary = &particlePropertiesLibrary;
   }
 
+  LJFunctorAVX(const LJFunctorAVX &f) = default;
+
   bool isRelevantForTuning() override { return relevantForTuning; }
 
   bool allowsNewton3() override {
