@@ -11,6 +11,7 @@
 #include <cmath>
 #include <numeric>
 #include <sstream>
+#include <Kokkos_Core.hpp>
 
 namespace autopas::utils::ArrayMath {
 
@@ -23,7 +24,9 @@ namespace autopas::utils::ArrayMath {
  * @return a + b
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> add(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr std::array<T, SIZE> add(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] + b[d];
@@ -40,7 +43,9 @@ template <class T, std::size_t SIZE>
  * @return a - b
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> sub(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr std::array<T, SIZE> sub(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] - b[d];
@@ -57,7 +62,9 @@ template <class T, std::size_t SIZE>
  * @return min(a, b)
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> min(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr std::array<T, SIZE> min(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = std::min<T>(a[d], b[d]);
@@ -74,7 +81,9 @@ template <class T, std::size_t SIZE>
  * @return max(a, b)
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> max(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr std::array<T, SIZE> max(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = std::max<T>(a[d], b[d]);
@@ -91,7 +100,9 @@ template <class T, std::size_t SIZE>
  * @return element-wise multiplication of a and b
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> mul(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr std::array<T, SIZE> mul(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] * b[d];
@@ -108,7 +119,9 @@ template <class T, std::size_t SIZE>
  * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/b[i]`
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> div(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr std::array<T, SIZE> div(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] / b[d];
@@ -125,7 +138,9 @@ template <class T, std::size_t SIZE>
  * @return array who's elements are a[i]+s
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> addScalar(const std::array<T, SIZE> &a, T s) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr std::array<T, SIZE> addScalar(const std::array<T, SIZE> &a, T s) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] + s;
@@ -142,7 +157,9 @@ template <class T, std::size_t SIZE>
  * @return array who's elements are a[i]-s
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> subScalar(const std::array<T, SIZE> &a, T s) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr std::array<T, SIZE> subScalar(const std::array<T, SIZE> &a, T s) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] - s;
@@ -159,7 +176,9 @@ template <class T, std::size_t SIZE>
  * @return array who's elements are a[i]*s
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> mulScalar(const std::array<T, SIZE> &a, T s) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr std::array<T, SIZE> mulScalar(const std::array<T, SIZE> &a, T s) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] * s;
@@ -178,6 +197,7 @@ namespace {
  * @return
  */
 template <typename T, size_t... I>
+KOKKOS_INLINE_FUNCTION
 double dotAux(T a, T b, std::integer_sequence<size_t, I...>) {
   return ((std::get<I>(a) * std::get<I>(b)) + ...);
 }
@@ -193,7 +213,9 @@ double dotAux(T a, T b, std::integer_sequence<size_t, I...>) {
  * @return dot product of a and b
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr T dot(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr T dot(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   return dotAux(a, b, std::make_index_sequence<SIZE>{});
 }
 
@@ -205,7 +227,9 @@ template <class T, std::size_t SIZE>
  * @return L2Norm
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr T L2Norm(const std::array<T, SIZE> &a) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr T L2Norm(const std::array<T, SIZE> &a) {
   return std::sqrt(dot(a, a));
 }
 
@@ -216,7 +240,9 @@ template <class T, std::size_t SIZE>
  * @return product
  */
 template <class T>
-[[nodiscard]] constexpr typename T::value_type prod(const T &a) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr typename T::value_type prod(const T &a) {
   return std::accumulate(a.cbegin(), a.cend(), static_cast<typename T::value_type>(1), std::multiplies<>());
 }
 
@@ -228,7 +254,9 @@ template <class T>
  * @return normalized array of a
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
   return mulScalar(a, static_cast<T>(1) / L2Norm(a));
 }
 
