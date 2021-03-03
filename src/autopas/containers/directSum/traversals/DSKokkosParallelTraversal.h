@@ -260,7 +260,12 @@ template <bool newton3>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoS(
     ParticleCell &cell) {
 
+      size_t index = 0;
+      auto r1 = cell.at(index).getR()[0];
+      auto f1 = cell.at(index).getF()[0];
+
       ParticleFunctor functor = *_functor;
+
       Kokkos::parallel_for("ds parallel process Cell", cell.numParticles(), KOKKOS_LAMBDA (size_t outer) {
         const Particle &p1 = cell.at(outer);
 
