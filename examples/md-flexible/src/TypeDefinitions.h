@@ -12,16 +12,16 @@
 /**
  * Precision used for particle representations. If you want to test other precisions change it here.
  */
-using FloatPrecicion = double;
+using FloatPrecision = double;
 
 /**
  * Type of the Particles used in md-flexible.
  * Use the molecule type provided by AutoPas.
  */
-using ParticleType = autopas::MoleculeLJ<FloatPrecicion>;
+using ParticleType = autopas::MoleculeLJ<FloatPrecision>;
 
 /**
  * Type of the Particle Properties Library.
  * Set to the same precision as ParticleType.
  */
-using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecicion, size_t>;
+using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;

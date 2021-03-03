@@ -37,7 +37,7 @@ void wrapPositionsAroundBoundaries(autopas::AutoPas<Particle> &autoPas, std::vec
 
   for (auto &p : particles) {
     auto pos = p.getR();
-    for (auto dim = 0; dim < pos.size(); dim++) {
+    for (auto dim = 0ul; dim < pos.size(); dim++) {
       if (pos[dim] < boxMin[dim]) {
         // has to be smaller than boxMax
         pos[dim] = std::min(std::nextafter(boxMax[dim], boxMin[dim]), pos[dim] + boxLength[dim]);
@@ -51,7 +51,7 @@ void wrapPositionsAroundBoundaries(autopas::AutoPas<Particle> &autoPas, std::vec
 }
 
 /**
- * Identifies particles that are near the edge of the domain and inserts periodic copies of them as halo particles.
+ * Identifies particles that are near the edge of the domain and returns properly shifted periodic copies of them as halo particles.
  *
  * @tparam Particle
  * @param autoPas
@@ -77,7 +77,7 @@ std::vector<Particle> identifyNewHaloParticles(autopas::AutoPas<Particle> &autoP
         std::array<int, 3> direction{x, y, z};
         // Define a region where to search for particles that need to be copied to the halo.
         std::array<double, 3> min{}, max{}, shiftVec{};
-        for (auto dim = 0; dim < direction.size(); ++dim) {
+        for (auto dim = 0ul; dim < direction.size(); ++dim) {
           // Flag for the periodic wrap. Will occur in at least one direction.
           bool needsShift = false;
           // The search domain has to be enlarged by the skin as the position of the particles is not certain.
