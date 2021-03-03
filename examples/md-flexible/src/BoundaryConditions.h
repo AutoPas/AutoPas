@@ -51,7 +51,8 @@ void wrapPositionsAroundBoundaries(autopas::AutoPas<Particle> &autoPas, std::vec
 }
 
 /**
- * Identifies particles that are near the edge of the domain and returns properly shifted periodic copies of them as halo particles.
+ * Identifies particles that are near the edge of the domain and returns properly shifted periodic copies of them as
+ * halo particles.
  *
  * @tparam Particle
  * @param autoPas
