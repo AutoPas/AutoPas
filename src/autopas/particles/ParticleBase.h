@@ -102,6 +102,7 @@ class ParticleBase {
    * Set the force acting on the particle
    * @param f force
    */
+   KOKKOS_INLINE_FUNCTION
   void setF(const std::array<double, 3> &f) { _f = f; }
 
   /**
@@ -141,30 +142,35 @@ class ParticleBase {
    * Set the position of the particle
    * @param r new position
    */
+  KOKKOS_INLINE_FUNCTION
   void setR(const std::array<double, 3> &r) { _r = r; }
 
   /**
    * Add a distance vector to the position of the particle
    * @param r vector to be added
    */
+  KOKKOS_INLINE_FUNCTION
   void addR(const std::array<double, 3> &r) { _r = utils::ArrayMath::add(_r, r); }
 
   /**
    * Get the velocity of the particle
    * @return current velocity
    */
+  KOKKOS_INLINE_FUNCTION
   const std::array<double, 3> &getV() const { return _v; }
 
   /**
    * Set the velocity of the particle
    * @param v new velocity
    */
+  KOKKOS_INLINE_FUNCTION
   void setV(const std::array<double, 3> &v) { _v = v; }
 
   /**
    * Add a vector to the current velocity of the particle
    * @param v vector to be added
    */
+  KOKKOS_INLINE_FUNCTION
   void addV(const std::array<double, 3> &v) { _v = utils::ArrayMath::add(_v, v); }
 
   /**
