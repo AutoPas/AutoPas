@@ -126,6 +126,34 @@ auto ParticleIteratorInterfaceTest::fillContainerAroundBoundary(AutoPasT &autoPa
   return std::make_tuple(particleIDsOwned, particleIDsHalo);
 }
 
+template <class AutoPasT>
+auto ParticleIteratorInterfaceTest::fillContainerWithGrid(AutoPasT &autoPas) {
+  auto cutoff = autoPas.getCutoff();
+  auto skin = autoPas.getVerletSkin();
+  auto cellSizeFactor = *(autoPas.getAllowedCellSizeFactors().getAll().begin());
+
+  auto boxLength = autopas::utils::ArrayMath::sub(autoPas.getBoxMax(), autoPas.getBoxMin());
+
+  auto gridWidth1D = (cutoff + skin) * cellSizeFactor;
+  auto gridEdgesPerDim = autopas::utils::ArrayMath::mulScalar(boxLength, 1 / gridWidth1D);
+  auto gridWidth3D = autopas::utils::ArrayMath::div(boxLength, gridEdgesPerDim);
+
+  size_t id = 0;
+  std::vector<size_t> particleIDs;
+  for (double x = gridWidth3D[0] / 2; x < boxLength[0]; x += 3 * gridWidth3D[0]) {
+    for (double y = gridWidth3D[1] / 2; y < boxLength[1]; y += 3 * gridWidth3D[1]) {
+      for (double z = gridWidth3D[2] / 2; z < boxLength[2]; z += 3 * gridWidth3D[2]) {
+        std::array<double, 3> pos{x, y, z};
+        Molecule p(pos, {0., 0., 0.}, id++, 0);
+        autoPas.addParticle(p);
+        particleIDs.push_back(p.getID());
+      }
+    }
+  }
+
+  return particleIDs;
+}
+
 ///**
 // * Tests the addition and iteration over particles.
 // * Strategically places 10 particles around every corner of the domain
@@ -307,16 +335,25 @@ auto ParticleIteratorInterfaceTest::fillContainerAroundBoundary(AutoPasT &autoPa
 //}
 
 /////////////////////////////////// NEW TESTS ///////////////////////////////////
-
 template <class AutoPasT, class F>
 void ParticleIteratorInterfaceTest::applyIterator(bool useRegionIterator, bool useConstIterator,
                                                   autopas::IteratorBehavior behavior, AutoPasT &autoPas, F fun) {
+  if (useConstIterator) {
+    applyIterator<true>(useRegionIterator, behavior, autoPas, fun);
+  } else {
+    applyIterator<false>(useRegionIterator, behavior, autoPas, fun);
+  }
+}
+
+template <bool useConstIterator, class AutoPasT, class F>
+void ParticleIteratorInterfaceTest::applyIterator(bool useRegionIterator, autopas::IteratorBehavior behavior,
+                                                  AutoPasT &autoPas, F fun) {
   if (useRegionIterator) {
     const auto interactionLength = autoPas.getCutoff() + autoPas.getVerletSkin();
     // halo has width of interactionLength
     const auto haloBoxMin = autopas::utils::ArrayMath::subScalar(autoPas.getBoxMin(), interactionLength);
     const auto haloBoxMax = autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), interactionLength);
-    if (useConstIterator) {
+    if constexpr (useConstIterator) {
       const auto &autoPasRef = autoPas;
       typename AutoPasT::const_iterator_t iter = autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
       fun(autoPasRef, iter);
@@ -325,7 +362,7 @@ void ParticleIteratorInterfaceTest::applyIterator(bool useRegionIterator, bool u
       fun(autoPas, iter);
     }
   } else {
-    if (useConstIterator) {
+    if constexpr (useConstIterator) {
       typename AutoPasT::const_iterator_t iter = autoPas.cbegin(behavior);
       fun(autoPas, iter);
     } else {
@@ -355,7 +392,33 @@ void ParticleIteratorInterfaceTest::findParticles(AutoPasT &autopas, IteratorT &
   // check that everything was found
   EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
 }
+template <bool constIter, class AutoPasT, class F>
+auto ParticleIteratorInterfaceTest::deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator,
+                                                    autopas::IteratorBehavior behavior) {
+  if constexpr (not constIter) {
+    applyIterator<false>(useRegionIterator, behavior, autopas, [&](auto &autopas, auto &iter) {
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+      {
+        for (; iter.isValid(); ++iter) {
+          if (predicate(iter->getID())) {
+            autopas.deleteParticle(iter);
+          }
+        }
+      }
+    });
+  } else {
+    GTEST_FAIL() << "Calling deleteParticles with a const iterator! This indicates that the test is ill defined!";
+  }
+}
 
+/**
+ * This Test applies an iterator on the whole domain and expects to find that it is empty.
+ * Exact Behavior might vary depending on test parameters but the general flow is:
+ * - Create an AutoPas object with a specified container.
+ * - Apply an iterator and confirm that it finds no particles.
+ */
 TEST_P(ParticleIteratorInterfaceTest, emptyContainer) {
   auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
 
@@ -374,7 +437,60 @@ TEST_P(ParticleIteratorInterfaceTest, emptyContainer) {
                 [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, {}); });
 }
 
-TEST_P(ParticleIteratorInterfaceTest, findAllParticles) {
+/**
+ * This Test applies an iterator on the whole domain and expects to find all particles this way.
+ * Exact Behavior might vary depending on test parameters but the general flow is:
+ * - Create an AutoPas object with a specified container.
+ * - Place particles in a grid inside the domain.
+ * - Find the particles with iterators and compare their IDs with expectations.
+ */
+TEST_P(ParticleIteratorInterfaceTest, findAllParticlesInsideDomain) {
+  auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
+
+  // init autopas and fill it with some particles
+  autopas::AutoPas<Molecule> autoPas;
+  defaultInit(autoPas, containerOption, cellSizeFactor);
+  auto expectedIDs = fillContainerWithGrid(autoPas);
+
+  if (priorForceCalc) {
+    // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
+    EmptyFunctor<Molecule> eFunctor;
+    autoPas.iteratePairwise(&eFunctor);
+  }
+
+  // set up expectations
+  switch (behavior) {
+    case autopas::IteratorBehavior::haloAndOwned:
+      [[fallthrough]];
+    case autopas::IteratorBehavior::ownedOnly: {
+      // expectations already correct
+      break;
+    }
+    case autopas::IteratorBehavior::haloOnly: {
+      // no particles in the halo -> expect nothing
+      expectedIDs = {};
+      break;
+    }
+    case autopas::IteratorBehavior::haloOwnedAndDummy: {
+      GTEST_FAIL() << "IteratorBehavior::haloOwnedAndDummy should not be tested through this test"
+                      " as container behavior with dummy particles is not uniform.";
+      break;
+    }
+  }
+
+  // actual test
+  applyIterator(useRegionIterator, useConstIterator, behavior, autoPas,
+                [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
+}
+
+/**
+ * This Test applies an iterator on the whole domain and expects to find all particles this way.
+ * Exact Behavior might vary depending on test parameters but the general flow is:
+ * - Create an AutoPas object with a specified container.
+ * - Strategically place particles around the boundaries.
+ * - Find the particles with iterators and compare their IDs with expectations.
+ */
+TEST_P(ParticleIteratorInterfaceTest, findAllParticlesAroundBoundaries) {
   auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
@@ -413,6 +529,64 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticles) {
 
   // actual test
   applyIterator(useRegionIterator, useConstIterator, behavior, autoPas,
+                [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
+}
+
+/**
+ * This test uses an iterator to delete every particle with an odd ID.
+ * Since deletion does not work through const iterators this test is skipped when instantiated with
+ * useConstIterator==true.
+ */
+TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
+  auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
+
+  if (useConstIterator) {
+    GTEST_SKIP_("Not applicable since deleting with a const iterator is not possible");
+  }
+
+  // init autopas and fill it with some particles
+  autopas::AutoPas<Molecule> autoPas;
+  defaultInit(autoPas, containerOption, cellSizeFactor);
+  auto expectedIDs = fillContainerWithGrid(autoPas);
+
+  if (priorForceCalc) {
+    // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
+    EmptyFunctor<Molecule> eFunctor;
+    autoPas.iteratePairwise(&eFunctor);
+  }
+
+  auto isOdd = [](auto id) -> bool { return id % 2 != 0; };
+
+  // set up expectations
+  switch (behavior) {
+    case autopas::IteratorBehavior::haloAndOwned:
+      [[fallthrough]];
+    case autopas::IteratorBehavior::ownedOnly: {
+      // remove all odd numbers from expectations
+      expectedIDs.erase(std::remove_if(expectedIDs.begin(), expectedIDs.end(), [&](auto id) { return isOdd(id); }),
+                        expectedIDs.end());
+      break;
+    }
+    case autopas::IteratorBehavior::haloOnly: {
+      // nothing should be deleted so expect everything.
+      break;
+    }
+    case autopas::IteratorBehavior::haloOwnedAndDummy: {
+      GTEST_FAIL() << "IteratorBehavior::haloOwnedAndDummy should not be tested through this test"
+                      " as container behavior with dummy particles is not uniform.";
+      break;
+    }
+  }
+
+  // delete all particles with odd ids
+  if (useConstIterator) {
+    GTEST_FAIL() << "Calling deleteParticles with a const iterator! This indicates that the test is ill defined!";
+  } else {
+    deleteParticles<false>(autoPas, isOdd, true, behavior);
+  }
+
+  // now use again an iterator to confirm only the expected ones are still there
+  applyIterator(useRegionIterator, useConstIterator, autopas::IteratorBehavior::haloAndOwned, autoPas,
                 [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
 }
 
@@ -708,6 +882,8 @@ static inline auto getIteratorBehaviorOptions() {
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, ParticleIteratorInterfaceTest,
-                         Combine(ValuesIn(getTestableContainerOptions()), Values(0.5, 1., 1.5), Values(true, false),
-                                 Values(true, false), Values(true, false), ValuesIn(getIteratorBehaviorOptions())),
+                         Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
+                                 /*use region iter*/ Values(true, false),
+                                 /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
+                                 ValuesIn(getIteratorBehaviorOptions())),
                          ParticleIteratorInterfaceTest::PrintToStringParamName());

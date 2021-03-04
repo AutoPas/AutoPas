@@ -11,6 +11,7 @@
 #include <tuple>
 
 #include "autopas/AutoPas.h"
+#include "testingHelpers/commonTypedefs.h"
 
 using testingTuple =
     std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*regionIterator (true) or regular (false)*/,
@@ -66,6 +67,32 @@ class ParticleIteratorInterfaceTest : public testing::Test, public ::testing::Wi
   auto fillContainerAroundBoundary(AutoPasT &autoPas);
 
   /**
+   * Creats a grid of particles in the given AutoPas object.
+   * Grid width is 3 *( boxLength / ((cutoff + skin) * cellSizeFactor) ).
+   * The lower corner of the grid is offset from boxMin by half the grid width in every dimension.
+   * This way there should be one particle in every third Linked Cells cell.
+   * @tparam AutoPasT
+   * @param autoPas
+   * @return Vector of all particle IDs added.
+   */
+  template <class AutoPasT>
+  auto fillContainerWithGrid(AutoPasT &autoPas);
+
+  /**
+   * Deletes all particles whose ID matches the given Predicate.
+   * @tparam constIter
+   * @tparam AutoPasT
+   * @tparam F
+   * @param autopas
+   * @param predicate
+   * @param useRegionIterator
+   * @param behavior
+   * @return
+   */
+  template <bool constIter, class AutoPasT, class F>
+  auto deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator, autopas::IteratorBehavior behavior);
+
+  /**
    * Instantiates an iterator according to the given arguments and applies it to fun.
    * @tparam AutoPasT
    * @tparam F f(AutoPas, Iterator)
@@ -78,6 +105,19 @@ class ParticleIteratorInterfaceTest : public testing::Test, public ::testing::Wi
   template <class AutoPasT, class F>
   void applyIterator(bool useRegionIterator, bool useConstIterator, autopas::IteratorBehavior behavior,
                      AutoPasT &autoPas, F fun);
+
+  /**
+   * Same as applyIterator() but with const const indicator.
+   * @tparam useConstIterator
+   * @tparam AutoPasT
+   * @tparam F f(AutoPas, Iterator)
+   * @param useRegionIterator
+   * @param behavior
+   * @param autoPas
+   * @param fun Function taking the AutoPas object and the generated iterator.
+   */
+  template <bool useConstIterator, class AutoPasT, class F>
+  void applyIterator(bool useRegionIterator, autopas::IteratorBehavior behavior, AutoPasT &autoPas, F fun);
 
   template <bool testConstIterators>
   void testAdditionAndIteration(autopas::ContainerOption containerOption, double cellSizeOption, bool priorForceCalc);
