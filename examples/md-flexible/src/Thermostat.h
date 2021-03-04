@@ -197,4 +197,4 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     iter->setV(autopas::utils::ArrayMath::mulScalar(iter->getV(), scalingMap[iter->getTypeId()]));
   }
 }
-};  // namespace Thermostat
+}  // namespace Thermostat
