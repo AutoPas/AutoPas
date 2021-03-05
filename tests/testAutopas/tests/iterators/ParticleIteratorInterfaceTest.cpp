@@ -683,6 +683,13 @@ TEST_P(ParticleIteratorInterfaceTest, addParticles) {
 TEST_P(ParticleIteratorInterfaceTest, addOwnedAndHaloParticles) {
   auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
 
+//#ifdef AUTOPAS_OPENMP
+//  if (containerOption == autopas::ContainerOption::linkedCellsReferences and
+//      (behavior == autopas::IteratorBehavior::haloOnly or behavior == autopas::IteratorBehavior::haloAndOwned)) {
+//    GTEST_FAIL() << "TEST FAILED MANUALLY TO PREVENT CRASH!";
+//  }
+//#endif
+
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
