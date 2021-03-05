@@ -630,6 +630,8 @@ TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
 /**
  * This test iterates through all particles and adds a copy for every particle it encounters while iterating.
  * No copies of copies are created.
+ * @note Threads insert particles only in cells they are currently iterating. Insertion in cells of other threads is
+ *   untested!
  */
 TEST_P(ParticleIteratorInterfaceTest, addParticles) {
   auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
@@ -679,16 +681,18 @@ TEST_P(ParticleIteratorInterfaceTest, addParticles) {
  * This test iterates through all particles and adds a copy for every particle it encounters while iterating.
  * No copies of copies are created.
  * This scenario consists of owned and halo particles.
+ * @note Threads insert particles only in cells they are currently iterating. Insertion in cells of other threads is
+ *   untested!
  */
 TEST_P(ParticleIteratorInterfaceTest, addOwnedAndHaloParticles) {
   auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
 
-//#ifdef AUTOPAS_OPENMP
-//  if (containerOption == autopas::ContainerOption::linkedCellsReferences and
-//      (behavior == autopas::IteratorBehavior::haloOnly or behavior == autopas::IteratorBehavior::haloAndOwned)) {
-//    GTEST_FAIL() << "TEST FAILED MANUALLY TO PREVENT CRASH!";
-//  }
-//#endif
+#ifdef AUTOPAS_OPENMP
+  if (containerOption == autopas::ContainerOption::linkedCellsReferences and
+      (behavior == autopas::IteratorBehavior::haloOnly or behavior == autopas::IteratorBehavior::haloAndOwned)) {
+    GTEST_FAIL() << "TEST FAILED MANUALLY TO PREVENT CRASH!";
+  }
+#endif
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
