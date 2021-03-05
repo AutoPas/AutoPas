@@ -422,6 +422,7 @@ template <class AutoPasT>
 auto ParticleIteratorInterfaceTest::addParticles(AutoPasT &autopas, size_t idOffset, bool useRegionIterator,
                                                  const autopas::IteratorBehavior &behavior) {
   provideIterator<false>(useRegionIterator, behavior, autopas, [&](auto &autopas, auto getIter) {
+    std::atomic<bool> encounteredBadParticle = false;
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
@@ -432,9 +433,19 @@ auto ParticleIteratorInterfaceTest::addParticles(AutoPasT &autopas, size_t idOff
           // copy the particle, offset its ID and add it
           auto newParticle = *iter;
           newParticle.setID(newParticle.getID() + idOffset);
-          autopas.addParticle(newParticle);
+          if (newParticle.isOwned()) {
+            autopas.addParticle(newParticle);
+          } else if (newParticle.isHalo()) {
+            autopas.addOrUpdateHaloParticle(newParticle);
+          } else {
+            // we can not fail the test here since failing from inside an OpenMP region is not possible
+            encounteredBadParticle.store(true, std::memory_order_relaxed);
+          }
         }
       }
+    }
+    if (encounteredBadParticle) {
+      GTEST_FAIL() << "Particle to add is neither owned not halo!";
     }
   });
 }
@@ -656,6 +667,68 @@ TEST_P(ParticleIteratorInterfaceTest, addParticles) {
       break;
     }
   }
+
+  addParticles(autoPas, idOffset, useRegionIterator, behavior);
+
+  // now use again an iterator to confirm only the expected ones are still there
+  provideIterator(useRegionIterator, useConstIterator, autopas::IteratorBehavior::haloAndOwned, autoPas,
+                  [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
+}
+
+/**
+ * This test iterates through all particles and adds a copy for every particle it encounters while iterating.
+ * No copies of copies are created.
+ * This scenario consists of owned and halo particles.
+ */
+TEST_P(ParticleIteratorInterfaceTest, addOwnedAndHaloParticles) {
+  auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
+
+  // init autopas and fill it with some particles
+  autopas::AutoPas<Molecule> autoPas;
+  defaultInit(autoPas, containerOption, cellSizeFactor);
+  auto [particleIDsOwned, particleIDsHalo] = fillContainerAroundBoundary(autoPas);
+  // sanity check: There should be owned and halo particles
+  ASSERT_THAT(particleIDsOwned, ::testing::Not(::testing::IsEmpty()));
+  ASSERT_THAT(particleIDsHalo, ::testing::Not(::testing::IsEmpty()));
+
+  decltype(particleIDsOwned) allParticleIDs, idsToAdd;
+
+  allParticleIDs.insert(allParticleIDs.cend(), particleIDsOwned.begin(), particleIDsOwned.end());
+  allParticleIDs.insert(allParticleIDs.cend(), particleIDsHalo.begin(), particleIDsHalo.end());
+
+  auto expectedIDs = allParticleIDs;
+
+  // offset to be added to all inserted IDs.
+  // Should be large enough so that it is two orders of magnitude larger than the largest ID.
+  // E.g. max ID = 42 -> offset =1000
+  size_t idOffset =
+      std::pow(10ul, std::to_string(*std::max_element(allParticleIDs.cbegin(), allParticleIDs.cend())).length() + 1);
+
+  // set up expectations: fill idsToAdd depending on the iterator behavior
+  switch (behavior) {
+    case autopas::IteratorBehavior::haloAndOwned: {
+      std::transform(allParticleIDs.begin(), allParticleIDs.end(), std::back_insert_iterator(idsToAdd),
+                     [&](auto id) { return id + idOffset; });
+      break;
+    }
+    case autopas::IteratorBehavior::haloOnly: {
+      std::transform(particleIDsHalo.begin(), particleIDsHalo.end(), std::back_insert_iterator(idsToAdd),
+                     [&](auto id) { return id + idOffset; });
+      break;
+    }
+    case autopas::IteratorBehavior::ownedOnly: {
+      std::transform(particleIDsOwned.begin(), particleIDsOwned.end(), std::back_insert_iterator(idsToAdd),
+                     [&](auto id) { return id + idOffset; });
+      break;
+    }
+    case autopas::IteratorBehavior::haloOwnedAndDummy: {
+      GTEST_FAIL() << "IteratorBehavior::haloOwnedAndDummy should not be tested through this test"
+                      " as container behavior with dummy particles is not uniform.";
+      break;
+    }
+  }
+  // we expect to find all previously existing particles plus idsToAdd
+  expectedIDs.insert(expectedIDs.begin(), idsToAdd.begin(), idsToAdd.end());
 
   addParticles(autoPas, idOffset, useRegionIterator, behavior);
 
