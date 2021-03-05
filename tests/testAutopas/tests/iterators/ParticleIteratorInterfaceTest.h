@@ -91,7 +91,22 @@ class ParticleIteratorInterfaceTest : public testing::Test, public ::testing::Wi
    * @return
    */
   template <bool constIter, class AutoPasT, class F>
-  auto deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator, autopas::IteratorBehavior behavior);
+  auto deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator,
+                       const autopas::IteratorBehavior &behavior);
+
+  /**
+   * For every particle the iterator passes, which has an id smaller than idOffset, an identical particle
+   * with an id increased by idOffset is inserted.
+   * @tparam AutoPasT
+   * @param autopas
+   * @param idOffset
+   * @param useRegionIterator
+   * @param behavior
+   * @return
+   */
+  template <class AutoPasT>
+  auto addParticles(AutoPasT &autopas, size_t idOffset, bool useRegionIterator,
+                    const autopas::IteratorBehavior &behavior);
 
   /**
    * Creates a function to instantiate an iterator with the given properties and passes this function on to fun.

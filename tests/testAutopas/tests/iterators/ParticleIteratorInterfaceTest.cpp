@@ -418,6 +418,26 @@ auto ParticleIteratorInterfaceTest::deleteParticles(AutoPasT &autopas, F predica
     GTEST_FAIL() << "Calling deleteParticles with a const iterator! This indicates that the test is ill defined!";
   }
 }
+template <class AutoPasT>
+auto ParticleIteratorInterfaceTest::addParticles(AutoPasT &autopas, size_t idOffset, bool useRegionIterator,
+                                                 const autopas::IteratorBehavior &behavior) {
+  provideIterator<false>(useRegionIterator, behavior, autopas, [&](auto &autopas, auto getIter) {
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    {
+      for (auto iter = getIter(); iter.isValid(); ++iter) {
+        // only insert new particles for original particles. Otherwise this becomes an infinite loop.
+        if (iter->getID() < idOffset) {
+          // copy the particle, offset its ID and add it
+          auto newParticle = *iter;
+          newParticle.setID(newParticle.getID() + idOffset);
+          autopas.addParticle(newParticle);
+        }
+      }
+    }
+  });
+}
 
 /**
  * This Test applies an iterator on the whole domain and expects to find that it is empty.
@@ -588,8 +608,56 @@ TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
   if (useConstIterator) {
     GTEST_FAIL() << "Calling deleteParticles with a const iterator! This indicates that the test is ill defined!";
   } else {
-    deleteParticles<false>(autoPas, isOdd, true, behavior);
+    deleteParticles<false>(autoPas, isOdd, useRegionIterator, behavior);
   }
+
+  // now use again an iterator to confirm only the expected ones are still there
+  provideIterator(useRegionIterator, useConstIterator, autopas::IteratorBehavior::haloAndOwned, autoPas,
+                  [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
+}
+
+/**
+ * This test iterates through all particles and adds a copy for every particle it encounters while iterating.
+ * No copies of copies are created.
+ */
+TEST_P(ParticleIteratorInterfaceTest, addParticles) {
+  auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
+
+  // init autopas and fill it with some particles
+  autopas::AutoPas<Molecule> autoPas;
+  defaultInit(autoPas, containerOption, cellSizeFactor);
+  auto expectedIDs = fillContainerWithGrid(autoPas, 4);
+
+  decltype(expectedIDs) idsToAdd;
+  // offset to be added to all inserted IDs.
+  // Should be large enough so that it is two orders of magnitude larger than the largest ID.
+  // E.g. max ID = 42 -> offset =1000
+  size_t idOffset =
+      std::pow(10ul, std::to_string(*std::max_element(expectedIDs.cbegin(), expectedIDs.cend())).length() + 1);
+  std::transform(expectedIDs.begin(), expectedIDs.end(), std::back_insert_iterator(idsToAdd),
+                 [&](auto id) { return id + idOffset; });
+
+  // set up expectations
+  switch (behavior) {
+    case autopas::IteratorBehavior::haloAndOwned:
+      [[fallthrough]];
+    case autopas::IteratorBehavior::ownedOnly: {
+      // we insert everything a second time
+      expectedIDs.insert(expectedIDs.begin(), idsToAdd.begin(), idsToAdd.end());
+      break;
+    }
+    case autopas::IteratorBehavior::haloOnly: {
+      // nothing should be added so expect everything.
+      break;
+    }
+    case autopas::IteratorBehavior::haloOwnedAndDummy: {
+      GTEST_FAIL() << "IteratorBehavior::haloOwnedAndDummy should not be tested through this test"
+                      " as container behavior with dummy particles is not uniform.";
+      break;
+    }
+  }
+
+  addParticles(autoPas, idOffset, useRegionIterator, behavior);
 
   // now use again an iterator to confirm only the expected ones are still there
   provideIterator(useRegionIterator, useConstIterator, autopas::IteratorBehavior::haloAndOwned, autoPas,
