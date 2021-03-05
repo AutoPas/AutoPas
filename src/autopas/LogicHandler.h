@@ -137,6 +137,9 @@ class LogicHandler {
    * @copydoc AutoPas::addOrUpdateHaloParticle()
    */
   void addOrUpdateHaloParticle(const Particle &haloParticle) {
+    using ::autopas::utils::ArrayMath::addScalar;
+    using ::autopas::utils::ArrayMath::subScalar;
+
     auto container = _autoTuner.getContainer();
     if (not isContainerValid()) {
       if (not utils::inBox(haloParticle.getR(), _autoTuner.getContainer()->getBoxMin(),
@@ -150,23 +153,28 @@ class LogicHandler {
     } else {
       // check if the halo particle is actually a halo particle, i.e., not too far (more than skin/2) inside of the
       // domain.
-      if (not utils::inBox(haloParticle.getR(),
-                           utils::ArrayMath::addScalar(container->getBoxMin(), container->getSkin() / 2),
-                           utils::ArrayMath::subScalar(container->getBoxMax(), container->getSkin() / 2))) {
+      if (not utils::inBox(haloParticle.getR(), addScalar(container->getBoxMin(), container->getSkin() / 2),
+                           subScalar(container->getBoxMax(), container->getSkin() / 2))) {
         bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
         if (not updated) {
           // a particle has to be updated if it is within cutoff + skin/2 of the bounding box
           double dangerousDistance = container->getCutoff() + container->getSkin() / 2;
 
-          bool dangerous =
-              utils::inBox(haloParticle.getR(), utils::ArrayMath::subScalar(container->getBoxMin(), dangerousDistance),
-                           utils::ArrayMath::addScalar(container->getBoxMax(), dangerousDistance));
+          auto dangerousBoxMin = subScalar(container->getBoxMin(), dangerousDistance);
+          auto dangerousBoxMax = addScalar(container->getBoxMax(), dangerousDistance);
+          bool dangerous = utils::inBox(haloParticle.getR(), dangerousBoxMin, dangerousBoxMax);
           if (dangerous) {
             // throw exception, rebuild frequency not high enough / skin too small!
             utils::ExceptionHandler::exception(
                 "LogicHandler::addHaloParticle: wasn't able to update halo particle that is too close to "
-                "domain (more than cutoff + skin/2). Rebuild frequency not high enough / skin too small!\nParticle: " +
-                haloParticle.toString());
+                "domain (more than cutoff + skin/2). Rebuild frequency not high enough / skin too small!\n"
+                "Cutoff       : " + container->getCutoff() + "\n"
+                "Skin         : " + container->getSkin() + "\n"
+                "BoxMin       : " + container->getBoxMin() + "\n"
+                "BoxMax       : " + container->getBoxMax() + "\n"
+                "Dangerous Min: " + dangerousBoxMin + "\n"
+                "Dangerous Max: " + dangerousBoxMax + "\n"
+                "Particle     : " + haloParticle.toString());
           }
         }
       } else {
