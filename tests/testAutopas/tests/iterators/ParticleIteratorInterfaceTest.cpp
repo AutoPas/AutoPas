@@ -6,6 +6,7 @@
 
 #include "ParticleIteratorInterfaceTest.h"
 
+#include "IteratorTestHelper.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/RandomGenerator.h"
@@ -42,162 +43,11 @@ auto ParticleIteratorInterfaceTest::defaultInit(AutoPasT &autoPas, autopas::Cont
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }
 
-template <class AutoPasT>
-auto ParticleIteratorInterfaceTest::fillContainerAroundBoundary(AutoPasT &autoPas) {
-  constexpr size_t numParticles1dTotal = 10;
-
-  auto cutoff = autoPas.getCutoff();
-  auto skin = autoPas.getVerletSkin();
-
-  // generator function for critical coordinates (along  one dimension)
-  auto generateInteresting1DPositions = [&](double min, double max) -> auto {
-    // ensure that all particles are at most skin away from halo!
-    // interesting cases are:
-    //   - outside of the halo by skin
-    //   - edge of halo
-    //   - in the halo
-    //   - edge of actual domain
-    //   - just inside the domain
-    return std::array<double, numParticles1dTotal>{min - cutoff - skin + 1e-10,
-                                                   min - cutoff,
-                                                   min - skin / 4,
-                                                   min,
-                                                   min + skin / 4,
-                                                   max - skin / 4,
-                                                   max,
-                                                   max + skin / 4,
-                                                   max + cutoff,
-                                                   max + cutoff + skin - 1e-10};
-  };
-
-  // fill container
-  size_t id = 0;
-  auto boxMin = autoPas.getBoxMin();
-  auto boxMax = autoPas.getBoxMax();
-
-  std::vector<size_t> particleIDsHalo;
-  std::vector<size_t> particleIDsOwned;
-  for (auto x : generateInteresting1DPositions(boxMin[0], boxMax[0])) {
-    for (auto y : generateInteresting1DPositions(boxMin[1], boxMax[1])) {
-      for (auto z : generateInteresting1DPositions(boxMin[2], boxMax[2])) {
-        std::array<double, 3> pos{x, y, z};
-        Molecule p(pos, {0., 0., 0.}, id++, 0);
-        // add the particle as actual or halo particle
-        if (autopas::utils::inBox(pos, boxMin, boxMax)) {
-          autoPas.addParticle(p);
-          particleIDsOwned.push_back(p.getID());
-        } else {
-          // AutoPas should set the ownership state of this particle to halo
-          autoPas.addOrUpdateHaloParticle(p);
-          particleIDsHalo.push_back(p.getID());
-        }
-      }
-    }
-  }
-
-  // sanity check. Can not use assert because this introduces a different return.
-  EXPECT_EQ(particleIDsOwned.size() + particleIDsHalo.size(),
-            numParticles1dTotal * numParticles1dTotal * numParticles1dTotal);
-  // getNumberOfParticles works via counters in the logic handler
-  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly), particleIDsOwned.size());
-  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::haloOnly), particleIDsHalo.size());
-  return std::make_tuple(particleIDsOwned, particleIDsHalo);
-}
-
-template <class AutoPasT>
-auto ParticleIteratorInterfaceTest::fillContainerWithGrid(AutoPasT &autoPas, double sparsity) {
-  auto cutoff = autoPas.getCutoff();
-  auto skin = autoPas.getVerletSkin();
-  auto cellSizeFactor = *(autoPas.getAllowedCellSizeFactors().getAll().begin());
-
-  auto boxLength = autopas::utils::ArrayMath::sub(autoPas.getBoxMax(), autoPas.getBoxMin());
-
-  auto gridWidth1D = (cutoff + skin) * cellSizeFactor;
-  auto gridEdgesPerDim = autopas::utils::ArrayMath::mulScalar(boxLength, 1 / gridWidth1D);
-  auto gridWidth3D = autopas::utils::ArrayMath::div(boxLength, gridEdgesPerDim);
-
-  size_t id = 0;
-  std::vector<size_t> particleIDs;
-  for (double x = gridWidth3D[0] / 2; x < boxLength[0]; x += sparsity * gridWidth3D[0]) {
-    for (double y = gridWidth3D[1] / 2; y < boxLength[1]; y += sparsity * gridWidth3D[1]) {
-      for (double z = gridWidth3D[2] / 2; z < boxLength[2]; z += sparsity * gridWidth3D[2]) {
-        std::array<double, 3> pos{x, y, z};
-        Molecule p(pos, {0., 0., 0.}, id++, 0);
-        autoPas.addParticle(p);
-        particleIDs.push_back(p.getID());
-      }
-    }
-  }
-
-  return particleIDs;
-}
-
-template <class AutoPasT, class F>
-void ParticleIteratorInterfaceTest::provideIterator(bool useRegionIterator, bool useConstIterator,
-                                                    autopas::IteratorBehavior behavior, AutoPasT &autoPas, F fun) {
-  if (useConstIterator) {
-    provideIterator<true>(useRegionIterator, behavior, autoPas, fun);
-  } else {
-    provideIterator<false>(useRegionIterator, behavior, autoPas, fun);
-  }
-}
-
-template <bool useConstIterator, class AutoPasT, class F>
-void ParticleIteratorInterfaceTest::provideIterator(bool useRegionIterator, autopas::IteratorBehavior behavior,
-                                                    AutoPasT &autoPas, F fun) {
-  if (useRegionIterator) {
-    const auto interactionLength = autoPas.getCutoff() + autoPas.getVerletSkin();
-    // halo has width of interactionLength
-    const auto haloBoxMin = autopas::utils::ArrayMath::subScalar(autoPas.getBoxMin(), interactionLength);
-    const auto haloBoxMax = autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), interactionLength);
-    if constexpr (useConstIterator) {
-      const auto &autoPasRef = autoPas;
-      auto getIter = [&]() -> typename AutoPasT::const_iterator_t {
-        return autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
-      };
-      fun(autoPasRef, getIter);
-    } else {
-      auto getIter = [&]() -> typename AutoPasT::iterator_t {
-        return autoPas.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
-      };
-      fun(autoPas, getIter);
-    }
-  } else {
-    if constexpr (useConstIterator) {
-      auto getIter = [&]() -> typename AutoPasT::const_iterator_t { return autoPas.cbegin(behavior); };
-      fun(autoPas, getIter);
-    } else {
-      auto getIter = [&]() -> typename AutoPasT::iterator_t { return autoPas.begin(behavior); };
-      fun(autoPas, getIter);
-    }
-  }
-}
-
-template <class AutoPasT, class FgetIter>
-void ParticleIteratorInterfaceTest::findParticles(AutoPasT &autopas, FgetIter getIter,
-                                                  const std::vector<size_t> &particleIDsExpected) {
-  std::vector<size_t> particleIDsFound;
-
-#ifdef AUTOPAS_OPENMP
-  // aparently the version from WrapOpenMP.h can not be found
-#pragma omp declare reduction(vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
-#pragma omp parallel reduction(vecMerge : particleIDsFound)
-#endif
-  {
-    for (auto iterator = getIter(); iterator.isValid(); ++iterator) {
-      auto id = iterator->getID();
-      particleIDsFound.push_back(id);
-    }
-  }
-
-  // check that everything was found
-  EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
-}
 template <bool constIter, class AutoPasT, class F>
 auto ParticleIteratorInterfaceTest::deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator,
                                                     const autopas::IteratorBehavior &behavior) {
   if constexpr (not constIter) {
-    provideIterator<false>(useRegionIterator, behavior, autopas, [&](auto &autopas, auto getIter) {
+    IteratorTestHelper::provideIterator<false>(autopas, behavior, useRegionIterator, [&](auto &autopas, auto getIter) {
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
@@ -216,14 +66,15 @@ auto ParticleIteratorInterfaceTest::deleteParticles(AutoPasT &autopas, F predica
 template <class AutoPasT>
 auto ParticleIteratorInterfaceTest::addParticles(AutoPasT &autopas, size_t idOffset, bool useRegionIterator,
                                                  const autopas::IteratorBehavior &behavior) {
-  provideIterator<false>(useRegionIterator, behavior, autopas, [&](auto &autopas, auto getIter) {
+  IteratorTestHelper::provideIterator<false>(autopas, behavior, useRegionIterator, [&](auto &autopas, auto getIter) {
     std::atomic<bool> encounteredBadParticle = false;
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
     {
       for (auto iter = getIter(); iter.isValid(); ++iter) {
-        // only insert new particles for original particles. Otherwise this becomes an infinite loop.
+        // only insert new particles for original particles. Otherwise this
+        // becomes an infinite loop.
         if (iter->getID() < idOffset) {
           // copy the particle, offset its ID and add it
           auto newParticle = *iter;
@@ -233,7 +84,8 @@ auto ParticleIteratorInterfaceTest::addParticles(AutoPasT &autopas, size_t idOff
           } else if (newParticle.isHalo()) {
             autopas.addOrUpdateHaloParticle(newParticle);
           } else {
-            // we can not fail the test here since failing from inside an OpenMP region is not possible
+            // we can not fail the test here since failing from inside an
+            // OpenMP region is not possible
             encounteredBadParticle.store(true, std::memory_order_relaxed);
           }
         }
@@ -265,8 +117,8 @@ TEST_P(ParticleIteratorInterfaceTest, emptyContainer) {
   }
 
   // actual test
-  provideIterator(useRegionIterator, useConstIterator, behavior, autoPas,
-                  [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, {}); });
+  IteratorTestHelper::provideIterator(useConstIterator, autoPas, behavior, useRegionIterator,
+                                      [&](const auto &autopas, auto &iter) { IteratorTestHelper::findParticles(autoPas, iter, {}); });
 }
 
 /**
@@ -282,7 +134,7 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesInsideDomain) {
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
-  auto expectedIDs = fillContainerWithGrid(autoPas, 3);
+  auto expectedIDs = IteratorTestHelper::fillContainerWithGrid(autoPas, 3);
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
@@ -311,8 +163,9 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesInsideDomain) {
   }
 
   // actual test
-  provideIterator(useRegionIterator, useConstIterator, behavior, autoPas,
-                  [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
+  IteratorTestHelper::provideIterator(
+      useConstIterator, autoPas, behavior, useRegionIterator,
+      [&](const auto &autopas, auto &iter) { IteratorTestHelper::findParticles(autoPas, iter, expectedIDs); });
 }
 
 /**
@@ -328,7 +181,7 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesAroundBoundaries) {
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
-  auto [particleIDsOwned, particleIDsHalo] = fillContainerAroundBoundary(autoPas);
+  auto [particleIDsOwned, particleIDsHalo] = IteratorTestHelper::fillContainerAroundBoundary(autoPas);
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
@@ -360,8 +213,9 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesAroundBoundaries) {
   }
 
   // actual test
-  provideIterator(useRegionIterator, useConstIterator, behavior, autoPas,
-                  [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
+  IteratorTestHelper::provideIterator(
+      useConstIterator, autoPas, behavior, useRegionIterator,
+      [&](const auto &autopas, auto &iter) { IteratorTestHelper::findParticles(autoPas, iter, expectedIDs); });
 }
 
 /**
@@ -379,7 +233,7 @@ TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
-  auto expectedIDs = fillContainerWithGrid(autoPas, 3);
+  auto expectedIDs = IteratorTestHelper::fillContainerWithGrid(autoPas, 3);
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
@@ -418,8 +272,9 @@ TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
   }
 
   // now use again an iterator to confirm only the expected ones are still there
-  provideIterator(useRegionIterator, useConstIterator, autopas::IteratorBehavior::haloAndOwned, autoPas,
-                  [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
+  IteratorTestHelper::provideIterator(
+      useConstIterator, autoPas, autopas::IteratorBehavior::haloAndOwned, useRegionIterator,
+      [&](const auto &autopas, auto &iter) { IteratorTestHelper::findParticles(autoPas, iter, expectedIDs); });
 }
 
 /**
@@ -434,7 +289,7 @@ TEST_P(ParticleIteratorInterfaceTest, addParticles) {
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
-  auto expectedIDs = fillContainerWithGrid(autoPas, 4);
+  auto expectedIDs = IteratorTestHelper::fillContainerWithGrid(autoPas, 4);
 
   decltype(expectedIDs) idsToAdd;
   // offset to be added to all inserted IDs.
@@ -468,8 +323,9 @@ TEST_P(ParticleIteratorInterfaceTest, addParticles) {
   addParticles(autoPas, idOffset, useRegionIterator, behavior);
 
   // now use again an iterator to confirm only the expected ones are still there
-  provideIterator(useRegionIterator, useConstIterator, autopas::IteratorBehavior::haloAndOwned, autoPas,
-                  [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
+  IteratorTestHelper::provideIterator(
+      useConstIterator, autoPas, autopas::IteratorBehavior::haloAndOwned, useRegionIterator,
+      [&](const auto &autopas, auto &iter) { IteratorTestHelper::findParticles(autoPas, iter, expectedIDs); });
 }
 
 /**
@@ -491,7 +347,7 @@ TEST_P(ParticleIteratorInterfaceTest, addOwnedAndHaloParticles) {
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
-  auto [particleIDsOwned, particleIDsHalo] = fillContainerAroundBoundary(autoPas);
+  auto [particleIDsOwned, particleIDsHalo] = IteratorTestHelper::fillContainerAroundBoundary(autoPas);
   // sanity check: There should be owned and halo particles
   ASSERT_THAT(particleIDsOwned, ::testing::Not(::testing::IsEmpty()));
   ASSERT_THAT(particleIDsHalo, ::testing::Not(::testing::IsEmpty()));
@@ -538,8 +394,9 @@ TEST_P(ParticleIteratorInterfaceTest, addOwnedAndHaloParticles) {
   addParticles(autoPas, idOffset, useRegionIterator, behavior);
 
   // now use again an iterator to confirm only the expected ones are still there
-  provideIterator(useRegionIterator, useConstIterator, autopas::IteratorBehavior::haloAndOwned, autoPas,
-                  [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
+  IteratorTestHelper::provideIterator(
+      useConstIterator, autoPas, autopas::IteratorBehavior::haloAndOwned, useRegionIterator,
+      [&](const auto &autopas, auto &iter) { IteratorTestHelper::findParticles(autoPas, iter, expectedIDs); });
 }
 
 using ::testing::Combine;
