@@ -179,17 +179,15 @@ void ParticleIteratorInterfaceTest::findParticles(AutoPasT &autopas, FgetIter ge
   std::vector<size_t> particleIDsFound;
 
 #ifdef AUTOPAS_OPENMP
+  // aparently the version from WrapOpenMP.h can not be found
 #pragma omp declare reduction(vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 #pragma omp parallel reduction(vecMerge : particleIDsFound)
 #endif
   {
-    //    std::vector<size_t> myParticleIDsFound;
     for (auto iterator = getIter(); iterator.isValid(); ++iterator) {
       auto id = iterator->getID();
       particleIDsFound.push_back(id);
     }
-    //#pragma omp critical
-    //    { particleIDsFound.insert(particleIDsFound.end(), myParticleIDsFound.begin(), myParticleIDsFound.end()); }
   }
 
   // check that everything was found
