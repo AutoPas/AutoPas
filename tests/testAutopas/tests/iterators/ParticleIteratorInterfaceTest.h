@@ -135,30 +135,4 @@ class ParticleIteratorInterfaceTest : public testing::Test, public ::testing::Wi
    */
   template <bool useConstIterator, class AutoPasT, class F>
   void provideIterator(bool useRegionIterator, autopas::IteratorBehavior behavior, AutoPasT &autoPas, F fun);
-
-  template <bool testConstIterators>
-  void testAdditionAndIteration(autopas::ContainerOption containerOption, double cellSizeOption, bool priorForceCalc);
-
-  template <bool testConstIterators>
-  void testOpenMPIterators(autopas::ContainerOption containerOption, double cellSizeFactor,
-                           autopas::IteratorBehavior behavior, bool testRegionIterators, bool priorForceCalc);
-
-  /**
-   * The main idea of this test is to check whether deletion through a RegionIterator doesn't do stupid things.
-   * Step by step:
-   * - Fill AutoPas object with 200 random owned particles (might be in halo)
-   * - Do or don't do a force calculation
-   * - Save all generated particles in a vector
-   * - Use region iterator to delete all particles from a region and save what was deleted
-   * - Use regular Iterator to check everything that should be there is there
-   */
-  template <bool testConstIterators>
-  void testRegionIteratorDeletion(autopas::ContainerOption containerOption, double cellSizeFactor, bool priorForceCalc);
-
-  /**
-   * Tests the equivalence of the range-based for loop with the normal for loop using isValid
-   * @param containerOption
-   */
-  template <bool testConstIterators>
-  void testRangeBasedIterator(autopas::ContainerOption containerOption, double cellSizeOption, bool priorForceCalc);
 };
