@@ -13,6 +13,7 @@
 #include "autopas/iterators/ParticleIteratorInterface.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/iterators/SingleCellIteratorWrapper.h"
+#include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
 
