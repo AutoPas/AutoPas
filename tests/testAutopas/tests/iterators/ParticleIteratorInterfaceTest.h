@@ -54,8 +54,8 @@ class ParticleIteratorInterfaceTest : public testing::Test, public ::testing::Wi
    * @param iterator
    * @param particleIDsExpected
    */
-  template <class AutoPasT, class IteratorT>
-  void findParticles(AutoPasT &autopas, IteratorT &iterator, const std::vector<size_t> &particleIDsExpected);
+  template <class AutoPasT, class FgetIter>
+  void findParticles(AutoPasT &autopas, FgetIter getIter, const std::vector<size_t> &particleIDsExpected);
 
   /**
    * Inserts particles around all corners of the given AutoPas object at critical distances.
@@ -93,7 +93,8 @@ class ParticleIteratorInterfaceTest : public testing::Test, public ::testing::Wi
   auto deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator, autopas::IteratorBehavior behavior);
 
   /**
-   * Instantiates an iterator according to the given arguments and applies it to fun.
+   * Creates a function to instantiate an iterator with the given properties and passes this function on to fun.
+   * This is necessary so that fun can decide for itself if it wants Iterators to be created in an OpenMP region or not.
    * @tparam AutoPasT
    * @tparam F f(AutoPas, Iterator)
    * @param useRegionIterator
@@ -103,11 +104,11 @@ class ParticleIteratorInterfaceTest : public testing::Test, public ::testing::Wi
    * @param fun Function taking the AutoPas object and the generated iterator.
    */
   template <class AutoPasT, class F>
-  void applyIterator(bool useRegionIterator, bool useConstIterator, autopas::IteratorBehavior behavior,
-                     AutoPasT &autoPas, F fun);
+  void provideIterator(bool useRegionIterator, bool useConstIterator, autopas::IteratorBehavior behavior,
+                       AutoPasT &autoPas, F fun);
 
   /**
-   * Same as applyIterator() but with const const indicator.
+   * Same as provideIterator() but with const const indicator.
    * @tparam useConstIterator
    * @tparam AutoPasT
    * @tparam F f(AutoPas, Iterator)
@@ -117,7 +118,7 @@ class ParticleIteratorInterfaceTest : public testing::Test, public ::testing::Wi
    * @param fun Function taking the AutoPas object and the generated iterator.
    */
   template <bool useConstIterator, class AutoPasT, class F>
-  void applyIterator(bool useRegionIterator, autopas::IteratorBehavior behavior, AutoPasT &autoPas, F fun);
+  void provideIterator(bool useRegionIterator, autopas::IteratorBehavior behavior, AutoPasT &autoPas, F fun);
 
   template <bool testConstIterators>
   void testAdditionAndIteration(autopas::ContainerOption containerOption, double cellSizeOption, bool priorForceCalc);

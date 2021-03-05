@@ -336,18 +336,18 @@ auto ParticleIteratorInterfaceTest::fillContainerWithGrid(AutoPasT &autoPas) {
 
 /////////////////////////////////// NEW TESTS ///////////////////////////////////
 template <class AutoPasT, class F>
-void ParticleIteratorInterfaceTest::applyIterator(bool useRegionIterator, bool useConstIterator,
-                                                  autopas::IteratorBehavior behavior, AutoPasT &autoPas, F fun) {
+void ParticleIteratorInterfaceTest::provideIterator(bool useRegionIterator, bool useConstIterator,
+                                                    autopas::IteratorBehavior behavior, AutoPasT &autoPas, F fun) {
   if (useConstIterator) {
-    applyIterator<true>(useRegionIterator, behavior, autoPas, fun);
+    provideIterator<true>(useRegionIterator, behavior, autoPas, fun);
   } else {
-    applyIterator<false>(useRegionIterator, behavior, autoPas, fun);
+    provideIterator<false>(useRegionIterator, behavior, autoPas, fun);
   }
 }
 
 template <bool useConstIterator, class AutoPasT, class F>
-void ParticleIteratorInterfaceTest::applyIterator(bool useRegionIterator, autopas::IteratorBehavior behavior,
-                                                  AutoPasT &autoPas, F fun) {
+void ParticleIteratorInterfaceTest::provideIterator(bool useRegionIterator, autopas::IteratorBehavior behavior,
+                                                    AutoPasT &autoPas, F fun) {
   if (useRegionIterator) {
     const auto interactionLength = autoPas.getCutoff() + autoPas.getVerletSkin();
     // halo has width of interactionLength
@@ -355,38 +355,44 @@ void ParticleIteratorInterfaceTest::applyIterator(bool useRegionIterator, autopa
     const auto haloBoxMax = autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), interactionLength);
     if constexpr (useConstIterator) {
       const auto &autoPasRef = autoPas;
-      typename AutoPasT::const_iterator_t iter = autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
-      fun(autoPasRef, iter);
+      auto getIter = [&]() -> typename AutoPasT::const_iterator_t {
+        return autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
+      };
+      fun(autoPasRef, getIter);
     } else {
-      typename AutoPasT::iterator_t iter = autoPas.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
-      fun(autoPas, iter);
+      auto getIter = [&]() -> typename AutoPasT::iterator_t {
+        return autoPas.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
+      };
+      fun(autoPas, getIter);
     }
   } else {
     if constexpr (useConstIterator) {
-      typename AutoPasT::const_iterator_t iter = autoPas.cbegin(behavior);
-      fun(autoPas, iter);
+      auto getIter = [&]() -> typename AutoPasT::const_iterator_t { return autoPas.cbegin(behavior); };
+      fun(autoPas, getIter);
     } else {
-      typename AutoPasT::iterator_t iter = autoPas.begin(behavior);
-      fun(autoPas, iter);
+      auto getIter = [&]() -> typename AutoPasT::iterator_t { return autoPas.begin(behavior); };
+      fun(autoPas, getIter);
     }
   }
 }
 
-template <class AutoPasT, class IteratorT>
-void ParticleIteratorInterfaceTest::findParticles(AutoPasT &autopas, IteratorT &iterator,
+template <class AutoPasT, class FgetIter>
+void ParticleIteratorInterfaceTest::findParticles(AutoPasT &autopas, FgetIter getIter,
                                                   const std::vector<size_t> &particleIDsExpected) {
   std::vector<size_t> particleIDsFound;
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel  // reduction(vecMerge : particleIDsFound)
+#pragma omp declare reduction(vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+#pragma omp parallel reduction(vecMerge : particleIDsFound)
 #endif
   {
-    std::vector<size_t> myParticleIDsFound;
-    for (; iterator.isValid(); ++iterator) {
-      myParticleIDsFound.push_back(iterator->getID());
+    //    std::vector<size_t> myParticleIDsFound;
+    for (auto iterator = getIter(); iterator.isValid(); ++iterator) {
+      auto id = iterator->getID();
+      particleIDsFound.push_back(id);
     }
-#pragma omp critical
-    { particleIDsFound.insert(particleIDsFound.end(), myParticleIDsFound.begin(), myParticleIDsFound.end()); }
+    //#pragma omp critical
+    //    { particleIDsFound.insert(particleIDsFound.end(), myParticleIDsFound.begin(), myParticleIDsFound.end()); }
   }
 
   // check that everything was found
@@ -396,12 +402,12 @@ template <bool constIter, class AutoPasT, class F>
 auto ParticleIteratorInterfaceTest::deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator,
                                                     autopas::IteratorBehavior behavior) {
   if constexpr (not constIter) {
-    applyIterator<false>(useRegionIterator, behavior, autopas, [&](auto &autopas, auto &iter) {
+    provideIterator<false>(useRegionIterator, behavior, autopas, [&](auto &autopas, auto getIter) {
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
       {
-        for (; iter.isValid(); ++iter) {
+        for (auto iter = getIter(); iter.isValid(); ++iter) {
           if (predicate(iter->getID())) {
             autopas.deleteParticle(iter);
           }
@@ -433,8 +439,8 @@ TEST_P(ParticleIteratorInterfaceTest, emptyContainer) {
   }
 
   // actual test
-  applyIterator(useRegionIterator, useConstIterator, behavior, autoPas,
-                [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, {}); });
+  provideIterator(useRegionIterator, useConstIterator, behavior, autoPas,
+                  [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, {}); });
 }
 
 /**
@@ -479,8 +485,8 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesInsideDomain) {
   }
 
   // actual test
-  applyIterator(useRegionIterator, useConstIterator, behavior, autoPas,
-                [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
+  provideIterator(useRegionIterator, useConstIterator, behavior, autoPas,
+                  [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
 }
 
 /**
@@ -528,8 +534,8 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesAroundBoundaries) {
   }
 
   // actual test
-  applyIterator(useRegionIterator, useConstIterator, behavior, autoPas,
-                [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
+  provideIterator(useRegionIterator, useConstIterator, behavior, autoPas,
+                  [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
 }
 
 /**
@@ -586,8 +592,8 @@ TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
   }
 
   // now use again an iterator to confirm only the expected ones are still there
-  applyIterator(useRegionIterator, useConstIterator, autopas::IteratorBehavior::haloAndOwned, autoPas,
-                [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
+  provideIterator(useRegionIterator, useConstIterator, autopas::IteratorBehavior::haloAndOwned, autoPas,
+                  [&](const auto &autopas, auto &iter) { findParticles(autoPas, iter, expectedIDs); });
 }
 
 /////////////////////////////////// OLD TESTS ///////////////////////////////////
