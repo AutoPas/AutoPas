@@ -127,7 +127,7 @@ auto ParticleIteratorInterfaceTest::fillContainerAroundBoundary(AutoPasT &autoPa
 }
 
 template <class AutoPasT>
-auto ParticleIteratorInterfaceTest::fillContainerWithGrid(AutoPasT &autoPas) {
+auto ParticleIteratorInterfaceTest::fillContainerWithGrid(AutoPasT &autoPas, double sparsity) {
   auto cutoff = autoPas.getCutoff();
   auto skin = autoPas.getVerletSkin();
   auto cellSizeFactor = *(autoPas.getAllowedCellSizeFactors().getAll().begin());
@@ -140,9 +140,9 @@ auto ParticleIteratorInterfaceTest::fillContainerWithGrid(AutoPasT &autoPas) {
 
   size_t id = 0;
   std::vector<size_t> particleIDs;
-  for (double x = gridWidth3D[0] / 2; x < boxLength[0]; x += 3 * gridWidth3D[0]) {
-    for (double y = gridWidth3D[1] / 2; y < boxLength[1]; y += 3 * gridWidth3D[1]) {
-      for (double z = gridWidth3D[2] / 2; z < boxLength[2]; z += 3 * gridWidth3D[2]) {
+  for (double x = gridWidth3D[0] / 2; x < boxLength[0]; x += sparsity * gridWidth3D[0]) {
+    for (double y = gridWidth3D[1] / 2; y < boxLength[1]; y += sparsity * gridWidth3D[1]) {
+      for (double z = gridWidth3D[2] / 2; z < boxLength[2]; z += sparsity * gridWidth3D[2]) {
         std::array<double, 3> pos{x, y, z};
         Molecule p(pos, {0., 0., 0.}, id++, 0);
         autoPas.addParticle(p);
@@ -400,7 +400,7 @@ void ParticleIteratorInterfaceTest::findParticles(AutoPasT &autopas, FgetIter ge
 }
 template <bool constIter, class AutoPasT, class F>
 auto ParticleIteratorInterfaceTest::deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator,
-                                                    autopas::IteratorBehavior behavior) {
+                                                    const autopas::IteratorBehavior &behavior) {
   if constexpr (not constIter) {
     provideIterator<false>(useRegionIterator, behavior, autopas, [&](auto &autopas, auto getIter) {
 #ifdef AUTOPAS_OPENMP
@@ -456,7 +456,7 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesInsideDomain) {
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
-  auto expectedIDs = fillContainerWithGrid(autoPas);
+  auto expectedIDs = fillContainerWithGrid(autoPas, 3);
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
@@ -553,7 +553,7 @@ TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
-  auto expectedIDs = fillContainerWithGrid(autoPas);
+  auto expectedIDs = fillContainerWithGrid(autoPas, 3);
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.

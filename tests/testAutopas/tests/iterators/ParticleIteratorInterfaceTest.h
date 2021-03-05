@@ -68,15 +68,16 @@ class ParticleIteratorInterfaceTest : public testing::Test, public ::testing::Wi
 
   /**
    * Creats a grid of particles in the given AutoPas object.
-   * Grid width is 3 *( boxLength / ((cutoff + skin) * cellSizeFactor) ).
+   * Grid width is `sparsity *( boxLength / ((cutoff + skin) * cellSizeFactor) )`.
    * The lower corner of the grid is offset from boxMin by half the grid width in every dimension.
    * This way there should be one particle in every third Linked Cells cell.
    * @tparam AutoPasT
    * @param autoPas
+   * @param sparsity
    * @return Vector of all particle IDs added.
    */
   template <class AutoPasT>
-  auto fillContainerWithGrid(AutoPasT &autoPas);
+  auto fillContainerWithGrid(AutoPasT &autoPas, double sparsity);
 
   /**
    * Deletes all particles whose ID matches the given Predicate.
