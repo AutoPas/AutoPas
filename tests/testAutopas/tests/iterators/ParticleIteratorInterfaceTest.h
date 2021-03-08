@@ -38,7 +38,7 @@ class ParticleIteratorInterfaceTest : public testing::Test, public ::testing::Wi
   };
 
   /**
-   * Initialize the given AutoPas object with the default
+   * Initialize the given AutoPas object with the default values for this test class.
    * @tparam AutoPasT
    * @param autoPas
    * @return tuple {haloBoxMin, haloBoxMax}
