@@ -8,6 +8,13 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+#include <vector>
+
+#include "autopas/options/IteratorBehavior.h"
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/inBox.h"
 #include "testingHelpers/commonTypedefs.h"
 
 namespace IteratorTestHelper {
@@ -281,8 +288,6 @@ void findParticles(AutoPasT &autopas, FgetIter getIter, const std::vector<size_t
   std::vector<size_t> particleIDsFound;
 
 #ifdef AUTOPAS_OPENMP
-  // aparently the version from WrapOpenMP.h can not be found
-#pragma omp declare reduction(vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 #pragma omp parallel reduction(vecMerge : particleIDsFound)
 #endif
   {
