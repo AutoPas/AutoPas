@@ -5,9 +5,8 @@
  */
 #include "RegionParticleIteratorTest.h"
 
-#include <autopas/AutoPas.h>
-
 #include "IteratorTestHelper.h"
+#include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "testingHelpers/EmptyFunctor.h"
 
