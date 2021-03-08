@@ -262,20 +262,42 @@ class LogicHandler {
    * @copydoc AutoPas::getRegionIterator()
    */
   autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      std::array<double, 3> lowerCorner, std::array<double, 3> upperCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > upperCorner well.
+    for (size_t d = 0; d < 3; ++d) {
+      if (lowerCorner > upperCorner) {
+        autopas::utils::ExceptionHandler::exception(
+            "Requesting region Iterator where upper corner is lower than lower corner!\n"
+            "Lower corner: {}\n"
+            "Upper corner: {}",
+            autopas::utils::ArrayUtils::to_string(lowerCorner), autopas::utils::ArrayUtils::to_string(upperCorner));
+      }
+    }
+
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
+    return _autoTuner.getContainer()->getRegionIterator(lowerCorner, upperCorner, behavior);
   }
 
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
   autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+      std::array<double, 3> lowerCorner, std::array<double, 3> upperCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+    // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > upperCorner well.
+    for (size_t d = 0; d < 3; ++d) {
+      if (lowerCorner > upperCorner) {
+        autopas::utils::ExceptionHandler::exception(
+            "Requesting region Iterator where upperCorner corner is lower than lower corner!\n"
+            "Lower corner: {}\n"
+            "Upper corner: {}",
+            autopas::utils::ArrayUtils::to_string(lowerCorner), autopas::utils::ArrayUtils::to_string(upperCorner));
+      }
+    }
+
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    return std::as_const(_autoTuner).getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
+    return std::as_const(_autoTuner).getContainer()->getRegionIterator(lowerCorner, upperCorner, behavior);
   }
 
   /**
