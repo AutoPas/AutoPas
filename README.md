@@ -179,6 +179,9 @@ The default parameter is `haloAndOwned`, which is also used for range-based for 
 
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const_iterator`.
 
+Iterators are not guaranteed to be valid after particle insertion. 
+However particle deletion while iterating is supported via `autoPas.deleteParticle(iterator)`.
+
 ### Simulation Loop
 One simulation loop should always consist of the following phases:
 
