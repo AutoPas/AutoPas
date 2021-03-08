@@ -44,8 +44,8 @@ class VerletListsCellsHelpers {
      * the neighbor list.
      */
     enum Value {
-      soaBuild,
       aosBuild,
+      soaBuild,
     };
   };
 

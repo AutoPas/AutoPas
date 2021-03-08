@@ -60,7 +60,7 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, 
   }
 
   [[nodiscard]] bool isApplicable() const override {
-    return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa);
+    return (dataLayout == DataLayoutOption::aos or dataLayout == DataLayoutOption::soa);
   }
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }

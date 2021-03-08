@@ -70,7 +70,7 @@ class VLCSlicedBalancedTraversal
   }
 
   [[nodiscard]] bool isApplicable() const override {
-    return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa);
+    return (dataLayout == DataLayoutOption::aos or dataLayout == DataLayoutOption::soa);
   }
 
  private:

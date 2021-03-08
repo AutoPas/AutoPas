@@ -99,7 +99,7 @@ class VLCNeighborListInterface {
   SoA<typename Particle::SoAArraysType> _soa;
 
   /**
-   * Creates and applies generator functor for the building of the neighbor list.
+   * Creates and applies a generator functor for the building of the neighbor list.
    * @param linkedCells Linked Cells object used to build the neighbor list.
    * @param useNewton3 Whether Newton 3 should be used for the neighbor list.
    * @param cutoff Cutoff radius.
@@ -107,7 +107,7 @@ class VLCNeighborListInterface {
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
    * @param buildType Type of build functor to be used for the generation of the neighbor list.
-   * */
+   */
   virtual void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                                  double interactionLength, const TraversalOption buildTraversalOption,
                                  typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) = 0;

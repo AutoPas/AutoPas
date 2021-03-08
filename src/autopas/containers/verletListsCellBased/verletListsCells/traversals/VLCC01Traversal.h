@@ -56,7 +56,7 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
   }
 
   [[nodiscard]] bool isApplicable() const override {
-    return (not useNewton3) and (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa);
+    return (not useNewton3) and (dataLayout == DataLayoutOption::aos or dataLayout == DataLayoutOption::soa);
   }
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
