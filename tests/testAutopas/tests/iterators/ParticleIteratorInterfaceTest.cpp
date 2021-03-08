@@ -286,7 +286,7 @@ TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
  * @note Threads insert particles only in cells they are currently iterating. Insertion in cells of other threads is
  *   untested!
  */
-//TEST_P(ParticleIteratorInterfaceTest, addParticles) {
+// TEST_P(ParticleIteratorInterfaceTest, addParticles) {
 //  auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
 //
 //  // init autopas and fill it with some particles
@@ -338,7 +338,7 @@ TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
  * @note Threads insert particles only in cells they are currently iterating. Insertion in cells of other threads is
  *   untested!
  */
-//TEST_P(ParticleIteratorInterfaceTest, addOwnedAndHaloParticles) {
+// TEST_P(ParticleIteratorInterfaceTest, addOwnedAndHaloParticles) {
 //  auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
 //#ifdef AUTOPAS_OPENMP
 //  if (containerOption == autopas::ContainerOption::linkedCellsReferences and
