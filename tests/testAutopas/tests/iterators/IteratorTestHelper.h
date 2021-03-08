@@ -16,10 +16,17 @@ namespace IteratorTestHelper {
  * Inserts particles around all corners of the given AutoPas object at critical distances.
  * @tparam AutoPasT
  * @param autoPas
- * @return Tuple of two vectors containing IDs of added particles. First for owned, second for halo particles.
+ * @param boxOfInterestMin
+ * @param boxOfInterestMax
+ * @return Tuple of four vectors containing IDs of added particles.
+ *   1. All owned particles
+ *   2. All halo particles.
+ *   3. All owned particles in the box of interest.
+ *   3. All halo particles in the box of interest.
  */
 template <class AutoPasT>
-auto fillContainerAroundBoundary(AutoPasT &autoPas) {
+auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfInterestMin,
+                                 std::array<double, 3> boxOfInterestMax) {
   constexpr size_t numParticles1dTotal = 10;
 
   auto cutoff = autoPas.getCutoff();
@@ -51,6 +58,8 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas) {
   auto boxMin = autoPas.getBoxMin();
   auto boxMax = autoPas.getBoxMax();
 
+  std::vector<size_t> particleIDsInterestHalo;
+  std::vector<size_t> particleIDsInterestOwned;
   std::vector<size_t> particleIDsHalo;
   std::vector<size_t> particleIDsOwned;
   for (auto x : generateInteresting1DPositions(boxMin[0], boxMax[0])) {
@@ -62,10 +71,16 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas) {
         if (autopas::utils::inBox(pos, boxMin, boxMax)) {
           autoPas.addParticle(p);
           particleIDsOwned.push_back(p.getID());
+          if (autopas::utils::inBox(pos, boxOfInterestMin, boxOfInterestMax)) {
+            particleIDsInterestOwned.push_back(p.getID());
+          }
         } else {
           // AutoPas should set the ownership state of this particle to halo
           autoPas.addOrUpdateHaloParticle(p);
           particleIDsHalo.push_back(p.getID());
+          if (autopas::utils::inBox(pos, boxOfInterestMin, boxOfInterestMax)) {
+            particleIDsInterestHalo.push_back(p.getID());
+          }
         }
       }
     }
@@ -77,7 +92,22 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas) {
   // getNumberOfParticles works via counters in the logic handler
   EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly), particleIDsOwned.size());
   EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::haloOnly), particleIDsHalo.size());
-  return std::make_tuple(particleIDsOwned, particleIDsHalo);
+  return std::make_tuple(particleIDsOwned, particleIDsHalo, particleIDsInterestOwned, particleIDsInterestHalo);
+}
+
+/**
+ * Inserts particles around all corners of the given AutoPas object at critical distances.
+ * @tparam AutoPasT
+ * @param autoPas
+ * @return Tuple of two vectors containing IDs of added particles. First for owned, second for halo particles.
+ */
+template <class AutoPasT>
+auto fillContainerAroundBoundary(AutoPasT &autoPas) {
+  std::array<double, 3> numericLimitMin{std::numeric_limits<double>::min(), std::numeric_limits<double>::min(),
+                                        std::numeric_limits<double>::min()};
+  std::array<double, 3> numericLimitMax{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                                        std::numeric_limits<double>::max()};
+  return fillContainerAroundBoundary(autoPas, numericLimitMin, numericLimitMax);
 }
 
 /**

@@ -117,8 +117,9 @@ TEST_P(ParticleIteratorInterfaceTest, emptyContainer) {
   }
 
   // actual test
-  IteratorTestHelper::provideIterator(useConstIterator, autoPas, behavior, useRegionIterator,
-                                      [&](const auto &autopas, auto &iter) { IteratorTestHelper::findParticles(autoPas, iter, {}); });
+  IteratorTestHelper::provideIterator(
+      useConstIterator, autoPas, behavior, useRegionIterator,
+      [&](const auto &autopas, auto &iter) { IteratorTestHelper::findParticles(autoPas, iter, {}); });
 }
 
 /**
@@ -181,7 +182,7 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesAroundBoundaries) {
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
-  auto [particleIDsOwned, particleIDsHalo] = IteratorTestHelper::fillContainerAroundBoundary(autoPas);
+  auto [particleIDsOwned, particleIDsHalo, _, __] = IteratorTestHelper::fillContainerAroundBoundary(autoPas);
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
@@ -347,7 +348,7 @@ TEST_P(ParticleIteratorInterfaceTest, addOwnedAndHaloParticles) {
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
-  auto [particleIDsOwned, particleIDsHalo] = IteratorTestHelper::fillContainerAroundBoundary(autoPas);
+  auto [particleIDsOwned, particleIDsHalo, _, __] = IteratorTestHelper::fillContainerAroundBoundary(autoPas);
   // sanity check: There should be owned and halo particles
   ASSERT_THAT(particleIDsOwned, ::testing::Not(::testing::IsEmpty()));
   ASSERT_THAT(particleIDsHalo, ::testing::Not(::testing::IsEmpty()));
