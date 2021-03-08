@@ -11,7 +11,6 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/EmptyFunctor.h"
-#include "testingHelpers/TouchableParticle.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;

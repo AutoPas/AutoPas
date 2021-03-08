@@ -8,7 +8,6 @@
 
 #include "autopas/containers/verletClusterCells/VerletClusterCells.h"
 #include "autopas/containers/verletClusterCells/traversals/VCCClusterIterationCUDATraversal.h"
-#include "testingHelpers/TouchableParticle.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
