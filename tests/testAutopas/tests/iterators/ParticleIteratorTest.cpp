@@ -113,3 +113,40 @@ const std::vector<size_t> threadNumsToTest{1};
 
 INSTANTIATE_TEST_SUITE_P(Generated, ParticleIteratorTest,
                          ::testing::Combine(::testing::ValuesIn(threadNumsToTest), ::testing::Values(0, 1, 2, 4)));
+
+template <class Iter>
+auto ParticleIteratorTest::iteratorsBehaveEqually(Iter &iter1, Iter &iter2) {
+  for (; iter1.isValid() and iter2.isValid(); ++iter1, ++iter2) {
+    EXPECT_EQ(*iter1, *iter2);
+  }
+}
+
+TEST_F(ParticleIteratorTest, testCopyConstructor) {
+  constexpr size_t particlesPerCell = 4;
+  auto cells = generateCellsWithPattern(10, {1ul, 3ul, 4ul, 7ul, 9ul}, particlesPerCell);
+
+  std::vector<std::vector<Molecule>> additionalVectors(3);
+  additionalVectors[1].emplace_back(Molecule({0., 0., 0.}, {0., 0., 0.}, 1337));
+
+  constexpr bool modifyable = true;
+  autopas::internal::ParticleIterator<Molecule, FMCell, modifyable> iter(
+      &cells, 0, nullptr, IteratorBehavior::haloAndOwned, &additionalVectors);
+
+  auto iterCopy{iter};
+  iteratorsBehaveEqually(iter, iterCopy);
+}
+
+TEST_F(ParticleIteratorTest, testCopyAssignment) {
+  constexpr size_t particlesPerCell = 4;
+  auto cells = generateCellsWithPattern(10, {1ul, 3ul, 4ul, 7ul, 9ul}, particlesPerCell);
+
+  std::vector<std::vector<Molecule>> additionalVectors(3);
+  additionalVectors[1].emplace_back(Molecule({0., 0., 0.}, {0., 0., 0.}, 1337));
+
+  constexpr bool modifyable = true;
+  autopas::internal::ParticleIterator<Molecule, FMCell, modifyable> iter(
+      &cells, 0, nullptr, IteratorBehavior::haloAndOwned, &additionalVectors);
+
+  auto iterCopy = iter;
+  iteratorsBehaveEqually(iter, iterCopy);
+}

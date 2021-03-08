@@ -33,4 +33,15 @@ class ParticleIteratorTest : public AutoPasTestBase, public ::testing::WithParam
    */
   void testAllParticlesFoundPattern(const std::vector<size_t> &cellsWithParticles, size_t numThreads,
                                     size_t numAdditionalParticleVectors);
+
+
+  /**
+   * Applies two iterators and checks that they are behaving exactly the same.
+   * @tparam Iter
+   * @param iter1
+   * @param iter2
+   * @return
+   */
+  template <class Iter>
+  auto iteratorsBehaveEqually(Iter& iter1, Iter& iter2);
 };
