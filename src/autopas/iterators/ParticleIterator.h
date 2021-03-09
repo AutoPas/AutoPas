@@ -248,10 +248,12 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * checks if a cell has the correct cell type according to the behavior
    * @return true iff the cell type is proper according to the behavior
    */
-  bool isCellTypeBehaviorCorrect() const {
-    switch (_behavior) {
+  [[nodiscard]] bool isCellTypeBehaviorCorrect() const {
+    // IMPORTANT: `this->` is necessary here! Without it clang 7, 8 and 9 fail due to an compiler bug:
+    // https://stackoverflow.com/questions/55359614/clang-complains-about-constexpr-function-in-case-for-switch-statement
+    switch (this->_behavior) {
       case IteratorBehavior::haloOwnedAndDummy:
-        return true;
+        [[fallthrough]];
       case IteratorBehavior::haloAndOwned:
         return true;
       case IteratorBehavior::haloOnly:
@@ -268,8 +270,10 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * Indicates whether the particle has the correct owned state.
    * @return
    */
-  bool particleHasCorrectOwnershipState() const {
-    switch (_behavior) {
+  [[nodiscard]] bool particleHasCorrectOwnershipState() const {
+    // IMPORTANT: `this->` is necessary here! Without it clang 7, 8 and 9 fail due to an compiler bug:
+    // https://stackoverflow.com/questions/55359614/clang-complains-about-constexpr-function-in-case-for-switch-statement
+    switch (this->_behavior) {
       case IteratorBehavior::haloOwnedAndDummy:
         return true;
       case IteratorBehavior::haloAndOwned:

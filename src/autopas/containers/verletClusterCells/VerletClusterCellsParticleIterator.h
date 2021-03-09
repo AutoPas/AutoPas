@@ -134,8 +134,10 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    * @param p particle
    * @return true if particle fits the behavior
    */
-  bool fitsBehavior(const Particle &p) const {
-    switch (_behavior) {
+  [[nodiscard]] bool fitsBehavior(const Particle &p) const {
+    // IMPORTANT: `this->` is necessary here! Without it clang 7, 8 and 9 fail due to an compiler bug:
+    // https://stackoverflow.com/questions/55359614/clang-complains-about-constexpr-function-in-case-for-switch-statement
+    switch (this->_behavior) {
       case IteratorBehavior::haloOwnedAndDummy:
         return true;
       case IteratorBehavior::haloAndOwned:
