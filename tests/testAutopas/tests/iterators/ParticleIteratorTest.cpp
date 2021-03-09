@@ -150,3 +150,41 @@ TEST_F(ParticleIteratorTest, testCopyAssignment) {
   auto iterCopy = iter;
   iteratorsBehaveEqually(iter, iterCopy);
 }
+
+/**
+ * TODO also test region iter. Move to interface test?
+ */
+TEST_F(ParticleIteratorTest, testSerialIteratorInParallelRegion) {
+  constexpr size_t particlesPerCell = 1;
+  auto cells = generateCellsWithPattern(4, {0ul, 1ul, 2ul, 3ul}, particlesPerCell);
+  auto particlesTotal = cells.size() * particlesPerCell;
+  std::vector<size_t> expectedIndices(particlesTotal);
+  std::iota(expectedIndices.begin(), expectedIndices.end(), 0);
+
+  constexpr size_t numAdditionalVectors = 3;
+  std::vector<std::vector<Molecule>> additionalVectors(numAdditionalVectors);
+
+  size_t particleId = expectedIndices.size() + 100;
+  for (auto &vector : additionalVectors) {
+    vector.emplace_back(Molecule({0., 0., 0.}, {0., 0., 0.}, particleId));
+    expectedIndices.push_back(particleId);
+    ++particleId;
+  }
+
+  std::vector<size_t> foundParticles;
+#pragma omp parallel
+  {
+    constexpr bool modifyable = true;
+    constexpr bool forceSerial = true;
+    autopas::internal::ParticleIterator<Molecule, FMCell, modifyable, forceSerial> iter(
+        &cells, 0, nullptr, IteratorBehavior::haloAndOwned, &additionalVectors);
+#pragma omp master
+    {
+      for (; iter.isValid(); ++iter) {
+        foundParticles.push_back(iter->getID());
+      }
+    }
+  }
+
+  ASSERT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
+}
