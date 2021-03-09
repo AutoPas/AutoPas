@@ -219,8 +219,9 @@ class AutoPas {
   /**
    * Iterate over all particles by using
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
-   * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
+   * @param behavior The behavior of the iterator. You can specify whether to iterate over owned particles, halo
    * particles, or both.
+   * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    * @return iterator to the first particle.
    */
   iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) {
@@ -260,6 +261,7 @@ class AutoPas {
    * @param higherCorner higher corner of the region
    * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
    * particles, or both.
+   * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    * @return iterator to iterate over all particles in a specific region
    */
   iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,

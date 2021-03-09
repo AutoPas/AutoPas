@@ -44,6 +44,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
    * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
    * Can be nullptr if the behavior is haloAndOwned.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
+   * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    * @param additionalParticleVectorToIterate Additional Particle Vector to iterate over.
    */
   explicit RegionParticleIterator(CellVecType *cont, std::array<double, 3> startRegion, std::array<double, 3> endRegion,

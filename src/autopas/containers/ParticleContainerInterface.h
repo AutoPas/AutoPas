@@ -172,6 +172,7 @@ class ParticleContainerInterface {
    * Iterate over all particles using
    * for(auto iter = container.begin(); iter.isValid(); ++iter) .
    * @param behavior Behavior of the iterator, see IteratorBehavior.
+   * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    * @return Iterator to the first particle.
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, true> begin(
@@ -199,6 +200,7 @@ class ParticleContainerInterface {
    * @param lowerCorner Lower corner of the region
    * @param higherCorner Higher corner of the region
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
+   * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    * @return Iterator to iterate over all particles in a specific region.
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
