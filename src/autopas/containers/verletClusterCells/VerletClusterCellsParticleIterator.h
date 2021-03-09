@@ -51,6 +51,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
         _offsetToDummy(offsetToDummy),
         _particleDeletedObserver(particleDeletedObserver) {
     // 1. set _cellId to thread number.
+    // FIXME: support forceSequential mode
     _cellId = autopas_get_thread_num();
 
     if (_cellId >= _vectorOfCells->size()) {

@@ -221,20 +221,21 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::ParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, 0, &_cellBlock, behavior));
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) override {
+    return ParticleIteratorWrapper<ParticleType, true>(new internal::ParticleIterator<ParticleType, ParticleCell, true>(
+        &this->_cells, 0, &_cellBlock, behavior, nullptr, forceSequential));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) const override {
     return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBlock, behavior));
+        new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBlock, behavior,
+                                                                          nullptr, forceSequential));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) override {
     // We increase the search region by skin, as particles can move over cell borders.
     auto startIndex3D =
         this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
@@ -257,12 +258,13 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
     return ParticleIteratorWrapper<ParticleType, true>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, lowerCorner, higherCorner,
-                                                                               cellsOfInterest, &_cellBlock, behavior));
+                                                                               cellsOfInterest, &_cellBlock, behavior,
+                                                                               nullptr, forceSequential));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) const override {
     // We increase the search region by skin, as particles can move over cell borders.
     auto startIndex3D =
         this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
@@ -285,7 +287,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior));
+            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior, nullptr,
+            forceSequential));
   }
 
   /**

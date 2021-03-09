@@ -137,21 +137,21 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) override {
     return ParticleIteratorWrapper<ParticleType, true>(new internal::ParticleIterator<ParticleType, ParticleCell, true>(
-        &this->_cells, 0, &_cellBorderFlagManager, behavior));
+        &this->_cells, 0, &_cellBorderFlagManager, behavior, nullptr, forceSequential));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) const override {
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBorderFlagManager,
-                                                                          behavior));
+                                                                          behavior, nullptr, forceSequential));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) override {
     std::vector<size_t> cellsOfInterest;
 
     switch (behavior) {
@@ -171,13 +171,14 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     }
 
     return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
+        new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, lowerCorner, higherCorner,
+                                                                               cellsOfInterest, &_cellBorderFlagManager,
+                                                                               behavior, nullptr, forceSequential));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) const override {
     std::vector<size_t> cellsOfInterest;
 
     switch (behavior) {
@@ -198,7 +199,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
+            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior, nullptr,
+            forceSequential));
   }
 
  private:

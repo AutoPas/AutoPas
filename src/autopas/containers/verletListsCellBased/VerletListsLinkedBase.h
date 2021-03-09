@@ -129,16 +129,16 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
   [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return _linkedCells.begin(behavior);
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) override {
+    return _linkedCells.begin(behavior, forceSequential);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
   [[nodiscard]] ParticleIteratorWrapper<Particle, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    return _linkedCells.begin(behavior);
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) const override {
+    return _linkedCells.begin(behavior, forceSequential);
   }
 
   /**
@@ -146,8 +146,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   [[nodiscard]] ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, forceSequential);
   }
 
   /**
@@ -155,8 +155,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   [[nodiscard]] ParticleIteratorWrapper<Particle, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) const override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, forceSequential);
   }
 
   /**

@@ -152,9 +152,10 @@ TEST_F(ParticleIteratorTest, testCopyAssignment) {
 }
 
 /**
- * TODO also test region iter. Move to interface test?
+ * Generates an iterator in a parallel region but iterates with only one and expects to find everything.
+ * @note This behavior is needed by VerletClusterLists::updateHaloParticle().
  */
-TEST_F(ParticleIteratorTest, testSerialIteratorInParallelRegion) {
+TEST_F(ParticleIteratorTest, testForceSequential) {
   constexpr size_t particlesPerCell = 1;
   auto cells = generateCellsWithPattern(4, {0ul, 1ul, 2ul, 3ul}, particlesPerCell);
   auto particlesTotal = cells.size() * particlesPerCell;
@@ -175,9 +176,9 @@ TEST_F(ParticleIteratorTest, testSerialIteratorInParallelRegion) {
 #pragma omp parallel
   {
     constexpr bool modifyable = true;
-    constexpr bool forceSerial = true;
-    autopas::internal::ParticleIterator<Molecule, FMCell, modifyable, forceSerial> iter(
-        &cells, 0, nullptr, IteratorBehavior::haloAndOwned, &additionalVectors);
+    constexpr bool forceSequential = true;
+    autopas::internal::ParticleIterator<Molecule, FMCell, modifyable> iter(
+        &cells, 0, nullptr, IteratorBehavior::haloAndOwned, &additionalVectors, forceSequential);
 #pragma omp master
     {
       for (; iter.isValid(); ++iter) {

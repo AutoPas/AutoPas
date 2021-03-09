@@ -223,23 +223,27 @@ class AutoPas {
    * particles, or both.
    * @return iterator to the first particle.
    */
-  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-    return _logicHandler->begin(behavior);
+  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) {
+    return _logicHandler->begin(behavior, forceSequential);
   }
 
   /**
    * @copydoc begin()
    * @note const version
    */
-  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
-    return std::as_const(*_logicHandler).begin(behavior);
+  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                         bool forceSequential = false) const {
+    return std::as_const(*_logicHandler).begin(behavior, forceSequential);
   }
 
   /**
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const { return begin(behavior); }
+  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                          bool forceSequential = false) const {
+    return begin(behavior, forceSequential);
+  }
 
   /**
    * End of the iterator.
@@ -259,8 +263,9 @@ class AutoPas {
    * @return iterator to iterate over all particles in a specific region
    */
   iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                               IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-    return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
+                               IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                               bool forceSequential = false) {
+    return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior, forceSequential);
   }
 
   /**
@@ -268,8 +273,9 @@ class AutoPas {
    * @note const version
    */
   const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                                     IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
-    return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
+                                     IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                     bool forceSequential = false) const {
+    return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior, forceSequential);
   }
 
   /**
