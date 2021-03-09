@@ -277,12 +277,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
     // For good openmp scalability we want the particles to be sorted into the clusters, so we do this!
 #ifdef AUTOPAS_OPENMP
-#pragma omp single
+    // Can not use single here because not all threads might come through here which would lead to a deadlock.
+    // Critial + if behaves practically like single
+#pragma omp critical
 #endif
     if (_isValid == ValidityState::invalid) {
       rebuildTowersAndClusters();
     }
-    // there is an implicit barrier at end of single!
+
     return ParticleIteratorWrapper<Particle, true>(
         new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
             &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr));
@@ -321,14 +323,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                                                                           const std::array<double, 3> &higherCorner,
                                                                           IteratorBehavior behavior) override {
     // Special iterator requires sorted cells.
-    // Only one thread is allowed to rebuild the towers, so we do an omp single here.
+    // Only one thread is allowed to rebuild the towers.
 #ifdef AUTOPAS_OPENMP
-#pragma omp single
+    // Can not use single here because not all threads might come through here which would lead to a deadlock.
+    // Critial + if behaves practically like single
+#pragma omp critical
 #endif
     if (_isValid == ValidityState::invalid) {
       rebuildTowersAndClusters();
     }
-    // there is an implicit barrier at end of single!
 
     auto [lowerCornerInBounds, upperCornerInBounds, cellsOfInterest] =
         getRegionIteratorHelper(lowerCorner, higherCorner, behavior);
@@ -601,8 +604,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
     _builder =
         std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, particlesToAdd, _clusterSize);
+
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
         _builder->rebuildTowersAndClusters();
+
     _towerSideLengthReciprocal = 1 / _towerSideLength;
     _isValid = ValidityState::cellsValidListsInvalid;
     for (auto &tower : _towers) {
