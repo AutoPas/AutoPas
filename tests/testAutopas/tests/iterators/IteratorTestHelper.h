@@ -288,7 +288,9 @@ void findParticles(AutoPasT &autopas, FgetIter getIter, const std::vector<size_t
   std::vector<size_t> particleIDsFound;
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(vecMerge : particleIDsFound)
+  // aparently the version from WrapOpenMP.h can not be found
+#pragma omp declare reduction(vecMergeWorkaround : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+#pragma omp parallel reduction(vecMergeWorkaround : particleIDsFound)
 #endif
   {
     for (auto iterator = getIter(); iterator.isValid(); ++iterator) {
