@@ -172,20 +172,16 @@ TEST_F(ParticleIteratorTest, testForceSequential) {
     ++particleId;
   }
 
-  std::vector<size_t> foundParticles;
 #pragma omp parallel
   {
+    std::vector<size_t> foundParticles;
     constexpr bool modifyable = true;
     constexpr bool forceSequential = true;
     autopas::internal::ParticleIterator<Molecule, FMCell, modifyable> iter(
         &cells, 0, nullptr, IteratorBehavior::haloAndOwned, &additionalVectors, forceSequential);
-#pragma omp master
-    {
-      for (; iter.isValid(); ++iter) {
-        foundParticles.push_back(iter->getID());
-      }
+    for (; iter.isValid(); ++iter) {
+      foundParticles.push_back(iter->getID());
     }
+    ASSERT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
   }
-
-  ASSERT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
 }

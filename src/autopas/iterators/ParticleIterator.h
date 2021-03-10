@@ -70,7 +70,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
         _additionalParticleVectorToIterateState(additionalVectorsToIterate
                                                     ? AdditionalParticleVectorToIterateState::notStarted
                                                     : AdditionalParticleVectorToIterateState::ignore),
-        _additionalVectorIndex(forceSequential ? autopas_get_thread_num() : 0),
+        _additionalVectorIndex(forceSequential ? 0 : autopas_get_thread_num()),
         _additionalVectorPosition(0),
         _additionalVectors(additionalVectorsToIterate) {}
 
