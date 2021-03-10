@@ -234,9 +234,6 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
     // find the next non-empty cell
     const int stride = autopas_get_num_threads();  // num threads
     for (_iteratorAcrossCells += stride; _iteratorAcrossCells < _vectorOfCells->end(); _iteratorAcrossCells += stride) {
-      if (_iteratorAcrossCells >= _vectorOfCells->end()) {
-        break;
-      }
       if (_iteratorAcrossCells->isNotEmpty() and isCellTypeBehaviorCorrect()) {
         _iteratorWithinOneCell = _iteratorAcrossCells->begin();
         break;

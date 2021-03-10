@@ -91,7 +91,7 @@ auto ParticleIteratorInterfaceTest::addParticles(AutoPasT &autopas, size_t idOff
       }
     }
     if (encounteredBadParticle) {
-      GTEST_FAIL() << "Particle to add is neither owned not halo!";
+      GTEST_FAIL() << "Particle to add is neither owned nor halo!";
     }
   });
 }
