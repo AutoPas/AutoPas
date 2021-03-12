@@ -25,10 +25,20 @@ void calculatePositions(AutoPasTemplate &autopas, const ParticlePropertiesLibrar
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::mulScalar;
 
-  // TODO: SWiMM
-  // FIXME: Calculate the new positions for the owned particles.
-  //  Hint: You may use the Störmer-Verlet approach to update the positions (r) where:
-  //        r_new = r + v * deltaT + deltaT^2 * f/(2*m)
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    auto v = iter->getV();
+    auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
+    auto f = iter->getF();
+    iter->setOldF(f);
+    iter->setF({0., 0., 0.});
+    v = mulScalar(v, deltaT);
+    f = mulScalar(f, (deltaT * deltaT / (2 * m)));
+    auto newR = add(v, f);
+    iter->addR(newR);
+  }
 }
 
 /**

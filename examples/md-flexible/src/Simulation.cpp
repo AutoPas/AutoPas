@@ -185,7 +185,6 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
 
     // calculate new positions
     _timers.positionUpdate.start();
-    // TODO: SWiMM
     TimeDiscretization::calculatePositions(autopas, *_particlePropertiesLibrary, _config->deltaT.value);
     _timers.positionUpdate.stop();
 
