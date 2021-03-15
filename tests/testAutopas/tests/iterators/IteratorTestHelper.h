@@ -119,7 +119,8 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas) {
 
 /**
  * Creats a grid of particles in the given AutoPas object.
- * Grid width is `sparsity *( boxLength / ((cutoff + skin) * cellSizeFactor) )`.
+ * Grid width is `sparsity * ( boxLength / ((cutoff + skin) * cellSizeFactor) )`.
+ * E.g., for a sparsity of 1, 1 particle is inserted for every cell. For a sparsity of .5, 8 particles are inserted.
  * The lower corner of the grid is offset from boxMin by half the grid width in every dimension.
  * This way there should be one particle in every third Linked Cells cell.
  * @tparam AutoPasT
@@ -168,7 +169,7 @@ auto getHaloBoxMinMax(AutoPasT &autoPas) {
 /**
  * Creates a function to instantiate an iterator with the given properties and passes this function on to fun.
  * The iterator always covers the whole domain and, if necessary the halo.
- * This is necessary so that fun can decide for itself if it wants Iterators to be created in an OpenMP region or not.
+ * This is necessary so that fun can decide for itself if it wants iterators to be created in an OpenMP region or not.
  * @tparam AutoPasT
  * @tparam F f(AutoPas, Iterator)
  * @param useRegionIterator
@@ -206,7 +207,7 @@ void provideIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior, bool
 }
 
 /**
- * Same as provideIterator() but with const const indicator.
+ * Same as provideIterator() but `useConstIterator` is a run-time variable.
  * @tparam useConstIterator
  * @tparam AutoPasT
  * @tparam F f(AutoPas, Iterator)
@@ -227,7 +228,7 @@ void provideIterator(bool useConstIterator, AutoPasT &autoPas, autopas::Iterator
 
 /**
  * Creates a function to instantiate a region-iterator with the given properties and passes this function on to fun.
- * This is necessary so that fun can decide for itself if it wants Iterators to be created in an OpenMP region or not.
+ * This is necessary so that fun can decide for itself if it wants iterators to be created in an OpenMP region or not.
  * @tparam useConstIterator
  * @tparam AutoPasT
  * @tparam F f(AutoPas, Iterator)
@@ -255,7 +256,7 @@ void provideRegionIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior
 }
 
 /**
- * Same as provideRegionIterator() but with const const indicator.
+ * Same as provideRegionIterator() but `useConstIterator` is a run-time variable.
  * @tparam AutoPasT
  * @tparam F f(AutoPas, Iterator)
  * @param useConstIterator

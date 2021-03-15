@@ -168,26 +168,14 @@ class LogicHandler {
             utils::ExceptionHandler::exception(
                 "LogicHandler::addHaloParticle: wasn't able to update halo particle that is too close to "
                 "domain (more than cutoff + skin/2). Rebuild frequency not high enough / skin too small!\n"
-                "Cutoff       : " +
-                std::to_string(container->getCutoff()) +
-                "\n"
-                "Skin         : " +
-                std::to_string(container->getSkin()) +
-                "\n"
-                "BoxMin       : " +
-                utils::ArrayUtils::to_string(container->getBoxMin()) +
-                "\n"
-                "BoxMax       : " +
-                utils::ArrayUtils::to_string(container->getBoxMax()) +
-                "\n"
-                "Dangerous Min: " +
-                utils::ArrayUtils::to_string(dangerousBoxMin) +
-                "\n"
-                "Dangerous Max: " +
-                utils::ArrayUtils::to_string(dangerousBoxMax) +
-                "\n"
-                "Particle     : " +
-                haloParticle.toString());
+                "Cutoff       : {}\n" +
+                "Skin         : {}\n" +
+                "BoxMin       : {}\n" +
+                "BoxMax       : {}\n" +
+                "Dangerous Min: {}\n" +
+                "Dangerous Max: {}\n" +
+                "Particle     : {}\n" +
+                container->getCutoff(), container->getSkin(), container->getBoxMin(), container->getBoxMax(), dangerousBoxMin, dangerousBoxMax, haloParticle.toString());
           }
         }
       } else {
@@ -270,7 +258,7 @@ class LogicHandler {
             "Requesting region Iterator where upper corner is lower than lower corner!\n"
             "Lower corner: {}\n"
             "Upper corner: {}",
-            autopas::utils::ArrayUtils::to_string(lowerCorner), autopas::utils::ArrayUtils::to_string(higherCorner));
+            lowerCorner, higherCorner);
       }
     }
 
@@ -291,7 +279,7 @@ class LogicHandler {
             "Requesting region Iterator where higherCorner corner is lower than lower corner!\n"
             "Lower corner: {}\n"
             "Upper corner: {}",
-            autopas::utils::ArrayUtils::to_string(lowerCorner), autopas::utils::ArrayUtils::to_string(higherCorner));
+            lowerCorner, higherCorner);
       }
     }
 
