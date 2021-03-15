@@ -161,7 +161,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
       cellsOfInterest.push_back(1);
     }
     // sanity check
-    if (cellsOfInterest.size() == 0) {
+    if (cellsOfInterest.empty()) {
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
 
@@ -182,7 +182,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
       cellsOfInterest.push_back(1);
     }
     // sanity check
-    if (cellsOfInterest.size() == 0) {
+    if (cellsOfInterest.empty()) {
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
 
