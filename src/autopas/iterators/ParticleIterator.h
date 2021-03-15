@@ -57,20 +57,18 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * Can be nullptr if the behavior is ownedOrHalo.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    * @param additionalVectorsToIterate Thread buffers of additional Particle Vector to iterate over.
-   * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    */
   ParticleIterator(CellVecType *cont, const CellBorderAndFlagManagerType *flagManager, IteratorBehavior behavior,
-                   ParticleVecType *additionalVectorsToIterate, bool forceSequential)
+                   ParticleVecType *additionalVectorsToIterate)
       : _vectorOfCells(cont),
         _iteratorAcrossCells(cont->begin()),
         _iteratorWithinOneCell(cont->begin()->begin()),
         _flagManager(flagManager),
         _behavior(behavior),
-        _forceSequential(forceSequential),
         _additionalParticleVectorToIterateState(additionalVectorsToIterate
                                                     ? AdditionalParticleVectorToIterateState::notStarted
                                                     : AdditionalParticleVectorToIterateState::ignore),
-        _additionalVectorIndex(forceSequential ? 0 : autopas_get_thread_num()),
+        _additionalVectorIndex((behavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num()),
         _additionalVectorPosition(0),
         _additionalVectors(additionalVectorsToIterate) {}
 
@@ -88,14 +86,13 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * Can be nullptr if the behavior is ownedOrHalo.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    * @param additionalVectorsToIterate Additional Particle Vector to iterate over.
-   * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    */
   explicit ParticleIterator(CellVecType *cont, size_t offset = 0, CellBorderAndFlagManagerType *flagManager = nullptr,
                             IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                            ParticleVecType *additionalVectorsToIterate = nullptr, bool forceSequential = false)
-      : ParticleIterator(cont, flagManager, behavior, additionalVectorsToIterate, forceSequential) {
+                            ParticleVecType *additionalVectorsToIterate = nullptr)
+      : ParticleIterator(cont, flagManager, behavior, additionalVectorsToIterate) {
     auto myThreadId = autopas_get_thread_num();
-    if (not _forceSequential) {
+    if (not(_behavior & IteratorBehavior::forceSequential)) {
       offset += myThreadId;
     }
 
@@ -168,7 +165,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
         ++_additionalVectorPosition;
         // if we reach the end of this buffer jump to the next
         if (_additionalVectorPosition >= (*_additionalVectors)[_additionalVectorIndex].size()) {
-          _additionalVectorIndex += _forceSequential ? 1 : autopas_get_num_threads();
+          _additionalVectorIndex += (_behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
           _additionalVectorPosition = 0;
         }
         // continue looking for valid iterator positions until there are no buffers left
@@ -237,7 +234,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    */
   virtual void next_non_empty_cell() {
     // find the next non-empty cell
-    const int stride = _forceSequential ? 1 : autopas_get_num_threads();
+    const int stride = (_behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
     for (_iteratorAcrossCells += stride; _iteratorAcrossCells < _vectorOfCells->end(); _iteratorAcrossCells += stride) {
       if (_iteratorAcrossCells >= _vectorOfCells->end()) {
         break;
@@ -336,12 +333,6 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * The behavior of the iterator.
    */
   const IteratorBehavior _behavior;
-
-  /**
-   * Switch to force the iterator to behave as if it is the only iterator (visit every cell), as if it was not in
-   * parallel mode even if it is. This is useful if a serial iterator is needed in a forceSequential region.
-   */
-  bool _forceSequential;
 
   /**
    * Enum class that specifies the iterating state of the additional particle vector.

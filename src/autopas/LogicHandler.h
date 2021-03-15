@@ -244,27 +244,25 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::begin()
    */
-  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                                                         bool forceSequential = false) {
+  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior) {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    return _autoTuner.getContainer()->begin(behavior, forceSequential);
+    return _autoTuner.getContainer()->begin(behavior);
   }
 
   /**
    * @copydoc AutoPas::begin()
    */
-  autopas::ParticleIteratorWrapper<Particle, false> begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                                                          bool forceSequential = false) const {
+  autopas::ParticleIteratorWrapper<Particle, false> begin(IteratorBehavior behavior) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    return std::as_const(_autoTuner).getContainer()->begin(behavior, forceSequential);
+    return std::as_const(_autoTuner).getContainer()->begin(behavior);
   }
 
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) {
+  autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                                     std::array<double, 3> higherCorner,
+                                                                     IteratorBehavior behavior) {
     // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
       if (lowerCorner > higherCorner) {
@@ -277,15 +275,15 @@ class LogicHandler {
     }
 
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior, forceSequential);
+    return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) const {
+  autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                                      std::array<double, 3> higherCorner,
+                                                                      IteratorBehavior behavior) const {
     // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
       if (lowerCorner > higherCorner) {
@@ -298,9 +296,7 @@ class LogicHandler {
     }
 
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    return std::as_const(_autoTuner)
-        .getContainer()
-        ->getRegionIterator(lowerCorner, higherCorner, behavior, forceSequential);
+    return std::as_const(_autoTuner).getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
   /**

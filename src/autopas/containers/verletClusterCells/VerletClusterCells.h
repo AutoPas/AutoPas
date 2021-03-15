@@ -235,8 +235,8 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
                                  _clusterSize);
   }
 
-  ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                                                bool forceSequential = false) override {
+  ParticleIteratorWrapper<Particle, true> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
     return ParticleIteratorWrapper<Particle, true>(
         new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>, true>(
             &this->_cells, _dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior,
@@ -245,8 +245,8 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
             _isValid != ValidityState::invalid ? this : nullptr));
   }
 
-  ParticleIteratorWrapper<Particle, false> begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                                                 bool forceSequential = false) const override {
+  ParticleIteratorWrapper<Particle, false> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const override {
     return ParticleIteratorWrapper<Particle, false>(
         new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>, false>(
             &this->_cells, _dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior));
@@ -254,8 +254,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
 
   ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                             const std::array<double, 3> &higherCorner,
-                                                            IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                                                            bool forceSequential = false) override {
+                                                            IteratorBehavior behavior) override {
     // Special iterator requires sorted cells
 #ifdef AUTOPAS_OPENMP
 #pragma omp single
@@ -301,8 +300,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
 
   ParticleIteratorWrapper<Particle, false> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                              const std::array<double, 3> &higherCorner,
-                                                             IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                                                             bool forceSequential = false) const override {
+                                                             IteratorBehavior behavior) const override {
     // restrict search area to the region where particles are
     const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _boxMinWithHalo);
     const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _boxMaxWithHalo);

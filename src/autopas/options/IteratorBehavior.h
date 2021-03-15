@@ -18,10 +18,12 @@ inline namespace options {
  */
 class IteratorBehavior : public Option<IteratorBehavior> {
  public:
+  using Value_t = unsigned int;
+
   /**
    * Different possibilities for iterator behaviors.
    */
-  enum Value : unsigned int {
+  enum Value : Value_t {
     /**
      * Iterate only over owned particles.
      */
@@ -67,6 +69,14 @@ class IteratorBehavior : public Option<IteratorBehavior> {
    * @param option
    */
   constexpr IteratorBehavior(Value option) : _value(option) {}
+
+  /**
+   * Constructor from number value.
+   * This is useful when combining values and directly using the result as argument of type IteratorBehavior.
+   * This is necessary since e.g. owned & halo results in an object of Value_t instead of Value.
+   * @param option
+   */
+  constexpr IteratorBehavior(Value_t option) : _value(static_cast<IteratorBehavior::Value>(option)) {}
 
   /**
    * Cast to value.

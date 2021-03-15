@@ -178,7 +178,7 @@ TEST_F(ParticleIteratorTest, testForceSequential) {
     constexpr bool modifyable = true;
     constexpr bool forceSequential = true;
     autopas::internal::ParticleIterator<Molecule, FMCell, modifyable> iter(
-        &cells, 0, nullptr, IteratorBehavior::ownedOrHalo, &additionalVectors, forceSequential);
+        &cells, 0, nullptr, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, &additionalVectors);
     for (; iter.isValid(); ++iter) {
       foundParticles.push_back(iter->getID());
     }

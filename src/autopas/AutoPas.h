@@ -221,30 +221,23 @@ class AutoPas {
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
    * @param behavior The behavior of the iterator. You can specify whether to iterate over owned particles, halo
    * particles, or both.
-   * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    * @return iterator to the first particle.
    */
-  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) {
-    return _logicHandler->begin(behavior, forceSequential);
-  }
+  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) { return _logicHandler->begin(behavior); }
 
   /**
    * @copydoc begin()
    * @note const version
    */
-  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                         bool forceSequential = false) const {
-    return std::as_const(*_logicHandler).begin(behavior, forceSequential);
+  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    return std::as_const(*_logicHandler).begin(behavior);
   }
 
   /**
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                          bool forceSequential = false) const {
-    return begin(behavior, forceSequential);
-  }
+  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
 
   /**
    * End of the iterator.
@@ -261,13 +254,11 @@ class AutoPas {
    * @param higherCorner higher corner of the region
    * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
    * particles, or both.
-   * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    * @return iterator to iterate over all particles in a specific region
    */
   iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                               bool forceSequential = false) {
-    return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior, forceSequential);
+                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
   /**
@@ -275,9 +266,8 @@ class AutoPas {
    * @note const version
    */
   const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                                     IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                                     bool forceSequential = false) const {
-    return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior, forceSequential);
+                                     IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
   /**

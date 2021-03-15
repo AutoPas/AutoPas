@@ -172,25 +172,25 @@ class ParticleContainerInterface {
    * Iterate over all particles using
    * for(auto iter = container.begin(); iter.isValid(); ++iter) .
    * @param behavior Behavior of the iterator, see IteratorBehavior.
-   * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
+   * @note Default argument necessary to enable range based for loops.
    * @return Iterator to the first particle.
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) = 0;
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) = 0;
 
   /**
    * @copydoc begin()
    * @note const version
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) const = 0;
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const = 0;
 
   /**
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> cbegin(
-      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) const final {
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const final {
     return begin(behavior);
   };
 
@@ -200,12 +200,11 @@ class ParticleContainerInterface {
    * @param lowerCorner Lower corner of the region
    * @param higherCorner Higher corner of the region
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
-   * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    * @return Iterator to iterate over all particles in a specific region.
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) = 0;
+      IteratorBehavior behavior) = 0;
 
   /**
    * @copydoc getRegionIterator()
@@ -213,7 +212,7 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) const = 0;
+      IteratorBehavior behavior) const = 0;
 
   /**
    * End expression for all containers, this simply returns false.

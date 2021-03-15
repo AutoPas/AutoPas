@@ -20,8 +20,6 @@ namespace autopas::internal {
  * @tparam ParticleCell Cell type over which the iterator iterates
  * @tparam modifiable Defines whether the ParticleIterator is modifiable or not. If it is false, it points to a const
  * Particle.
- * @tparam forceSequential Switch to force the iterator to behave as if it is the only iterator (visit every cell), as
- * if it was not in parallel mode even if it is. This is useful if a serial iterator is needed in a parallel region.
  */
 template <class Particle, class ParticleCell, bool modifiable>
 class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, modifiable> {
@@ -44,22 +42,21 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
    * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
    * Can be nullptr if the behavior is ownedOrHalo.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
-   * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    * @param additionalParticleVectorToIterate Additional Particle Vector to iterate over.
    */
   explicit RegionParticleIterator(CellVecType *cont, std::array<double, 3> startRegion, std::array<double, 3> endRegion,
                                   std::vector<size_t> &indicesInRegion,
                                   const CellBorderAndFlagManagerType *flagManager = nullptr,
                                   IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                                  ParticleVecType *additionalParticleVectorToIterate = nullptr,
-                                  bool forceSequential = false)
-      : ParticleIteratorType(cont, flagManager, behavior, additionalParticleVectorToIterate, forceSequential),
+                                  ParticleVecType *additionalParticleVectorToIterate = nullptr)
+      : ParticleIteratorType(cont, flagManager, behavior, additionalParticleVectorToIterate),
         _startRegion(startRegion),
         _endRegion(endRegion),
         _indicesInRegion(indicesInRegion) {
+    bool forceSequential = this->_behavior & IteratorBehavior::forceSequential;
     auto myThreadId = autopas_get_thread_num();
-    _currentRegionIndex = this->_forceSequential ? 0 : myThreadId;
-    if (additionalParticleVectorToIterate and (this->_forceSequential or myThreadId == autopas_get_num_threads() - 1)) {
+    _currentRegionIndex = forceSequential ? 0 : myThreadId;
+    if (additionalParticleVectorToIterate and (forceSequential or myThreadId == autopas_get_num_threads() - 1)) {
       // we want to iterate with the last thread over the additional particle vector.
       this->_additionalParticleVectorToIterateState =
           decltype(this->_additionalParticleVectorToIterateState)::notStarted;
@@ -134,7 +131,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
    */
   void next_non_empty_cell() override {
     // find the next non-empty cell
-    const int stride = this->_forceSequential ? 1 : autopas_get_num_threads();
+    const int stride = (this->_behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
     if (_currentRegionIndex + stride >= _indicesInRegion.size()) {
       // make the iterator invalid!
       this->_iteratorAcrossCells = this->_vectorOfCells->end();
