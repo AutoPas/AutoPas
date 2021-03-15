@@ -182,6 +182,6 @@ TEST_F(ParticleIteratorTest, testForceSequential) {
     for (; iter.isValid(); ++iter) {
       foundParticles.push_back(iter->getID());
     }
-    ASSERT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
+    EXPECT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
   }
 }
