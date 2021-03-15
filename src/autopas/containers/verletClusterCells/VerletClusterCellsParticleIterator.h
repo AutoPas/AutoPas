@@ -42,7 +42,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    * @param particleDeletedObserver Observer that should be called, when a particle is deleted. Can be nullptr.
    */
   explicit VerletClusterCellsParticleIterator(CellVecType *cont, DummyStartsType &dummyStarts, double offsetToDummy,
-                                              IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                              IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                               ParticleDeletedObserver *particleDeletedObserver = nullptr)
       : _vectorOfCells(cont),
         _dummyStarts(dummyStarts),
@@ -136,19 +136,9 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    * @return true if particle fits the behavior
    */
   [[nodiscard]] bool fitsBehavior(const Particle &p) const {
-    // IMPORTANT: `this->` is necessary here! Without it clang 7, 8 and 9 fail due to an compiler bug:
-    // https://stackoverflow.com/questions/55359614/clang-complains-about-constexpr-function-in-case-for-switch-statement
-    switch (this->_behavior) {
-      case IteratorBehavior::haloOwnedAndDummy:
-        return true;
-      case IteratorBehavior::haloAndOwned:
-        return not p.isDummy();
-      case IteratorBehavior::ownedOnly:
-        return p.isOwned();
-      case IteratorBehavior::haloOnly:
-        return p.isHalo();
-    }
-    return false;
+    return (((this->_behavior & IteratorBehavior::owned) and p.isOwned()) or
+            ((this->_behavior & IteratorBehavior::halo) and p.isHalo()) or
+            ((this->_behavior & IteratorBehavior::dummy) and p.isDummy()));
   }
 
   /**
@@ -225,7 +215,7 @@ class VerletClusterCellsRegionParticleIterator
   explicit VerletClusterCellsRegionParticleIterator(CellVecType *cont, DummyStartsType &dummyStarts,
                                                     std::array<double, 3> startRegion, std::array<double, 3> endRegion,
                                                     std::vector<size_t> indicesInRegion, double offsetToDummy,
-                                                    IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                                    IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                                     double skin = 0.0,
                                                     ParticleDeletedObserver *particleDeletedObserver = nullptr)
       : VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>(cont, dummyStarts, offsetToDummy,

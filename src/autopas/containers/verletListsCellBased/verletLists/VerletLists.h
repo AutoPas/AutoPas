@@ -163,7 +163,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     _aosNeighborLists.clear();
     // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
     // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
-    for (auto iter = this->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++numParticles) {
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles) {
       // create the verlet list entries for all particles
       _aosNeighborLists[&(*iter)];
     }
@@ -185,7 +185,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
 
     // Here we have to iterate over all particles, as particles might be later on marked for deletion, and we cannot
     // differentiate them from particles already marked for deletion.
-    for (auto iter = this->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++index) {
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
       // set the map
       _particlePtr2indexMap[&(*iter)] = index;
     }

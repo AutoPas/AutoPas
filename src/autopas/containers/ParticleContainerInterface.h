@@ -176,21 +176,21 @@ class ParticleContainerInterface {
    * @return Iterator to the first particle.
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) = 0;
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) = 0;
 
   /**
    * @copydoc begin()
    * @note const version
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) const = 0;
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) const = 0;
 
   /**
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> cbegin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) const final {
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) const final {
     return begin(behavior);
   };
 
@@ -205,7 +205,7 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) = 0;
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) = 0;
 
   /**
    * @copydoc getRegionIterator()
@@ -213,7 +213,7 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) const = 0;
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) const = 0;
 
   /**
    * End expression for all containers, this simply returns false.

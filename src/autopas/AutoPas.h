@@ -224,7 +224,7 @@ class AutoPas {
    * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    * @return iterator to the first particle.
    */
-  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) {
+  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) {
     return _logicHandler->begin(behavior, forceSequential);
   }
 
@@ -232,7 +232,7 @@ class AutoPas {
    * @copydoc begin()
    * @note const version
    */
-  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                          bool forceSequential = false) const {
     return std::as_const(*_logicHandler).begin(behavior, forceSequential);
   }
@@ -241,7 +241,7 @@ class AutoPas {
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                           bool forceSequential = false) const {
     return begin(behavior, forceSequential);
   }
@@ -265,7 +265,7 @@ class AutoPas {
    * @return iterator to iterate over all particles in a specific region
    */
   iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                               IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                bool forceSequential = false) {
     return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior, forceSequential);
   }
@@ -275,7 +275,7 @@ class AutoPas {
    * @note const version
    */
   const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                                     IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                     IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                      bool forceSequential = false) const {
     return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior, forceSequential);
   }
@@ -285,22 +285,21 @@ class AutoPas {
    * @param behavior Tells this function to report the number of halo, owned or all particles.
    * @return the number of particles in this container.
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::ownedOnly) const {
-    switch (behavior) {
-      case IteratorBehavior::ownedOnly: {
-        return _logicHandler->getNumParticlesOwned();
-      }
-      case IteratorBehavior::haloOnly: {
-        return _logicHandler->getNumParticlesHalo();
-      }
-      case IteratorBehavior::haloAndOwned: {
-        return _logicHandler->getNumParticlesOwned() + _logicHandler->getNumParticlesHalo();
-      }
-      case IteratorBehavior::haloOwnedAndDummy: {
-        utils::ExceptionHandler::exception("behavior == haloOwnedAndDummy is not supported for getNumberOfParticles.");
-      }
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const {
+    size_t numParticles{0};
+    if (behavior & IteratorBehavior::owned) {
+      numParticles += _logicHandler->getNumParticlesOwned();
     }
-    return 0;
+    if (behavior & IteratorBehavior::halo) {
+      numParticles += _logicHandler->getNumParticlesHalo();
+    }
+    // non fatal sanity check whether the behavior contained anything else
+    if (behavior & ~(IteratorBehavior::ownedOrHalo)) {
+      utils::ExceptionHandler::exception(
+          "AutoPas::getNumberOfParticles() does not support iterator behaviors other than owned or halo.");
+    }
+
+    return numParticles;
   }
 
   /**

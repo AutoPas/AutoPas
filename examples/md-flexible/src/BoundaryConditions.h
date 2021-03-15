@@ -119,7 +119,7 @@ std::vector<Particle> BoundaryConditions<Particle>::identifyAndSendHaloParticles
           }
         }
         // here it is important to only iterate over the owned particles!
-        for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::ownedOnly); iter.isValid();
+        for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid();
              ++iter) {
           auto particleCopy = *iter;
           particleCopy.addR(shiftVec);

@@ -97,8 +97,8 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfI
   EXPECT_EQ(particleIDsOwned.size() + particleIDsHalo.size(),
             numParticles1dTotal * numParticles1dTotal * numParticles1dTotal);
   // getNumberOfParticles works via counters in the logic handler
-  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly), particleIDsOwned.size());
-  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::haloOnly), particleIDsHalo.size());
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::owned), particleIDsOwned.size());
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::halo), particleIDsHalo.size());
   return std::make_tuple(particleIDsOwned, particleIDsHalo, particleIDsInterestOwned, particleIDsInterestHalo);
 }
 

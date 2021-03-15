@@ -42,7 +42,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
    * @param endRegion Top corner of the region to iterate over.
    * @param indicesInRegion List of indices all threads will iterate over.
    * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
-   * Can be nullptr if the behavior is haloAndOwned.
+   * Can be nullptr if the behavior is ownedOrHalo.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    * @param additionalParticleVectorToIterate Additional Particle Vector to iterate over.
@@ -50,7 +50,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
   explicit RegionParticleIterator(CellVecType *cont, std::array<double, 3> startRegion, std::array<double, 3> endRegion,
                                   std::vector<size_t> &indicesInRegion,
                                   const CellBorderAndFlagManagerType *flagManager = nullptr,
-                                  IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                  IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                   ParticleVecType *additionalParticleVectorToIterate = nullptr,
                                   bool forceSequential = false)
       : ParticleIteratorType(cont, flagManager, behavior, additionalParticleVectorToIterate, forceSequential),
@@ -78,12 +78,12 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
       return;
     }
 
-    if (behavior != IteratorBehavior::haloAndOwned and flagManager == nullptr) {
+    if (behavior != IteratorBehavior::ownedOrHalo and flagManager == nullptr) {
       AutoPasLog(error,
-                 "Behavior is not haloAndOwned, but flagManager is "
+                 "Behavior is not ownedOrHalo, but flagManager is "
                  "nullptr!");
       utils::ExceptionHandler::exception(
-          "Behavior is not haloAndOwned, but flagManager is "
+          "Behavior is not ownedOrHalo, but flagManager is "
           "nullptr!");
     }
 

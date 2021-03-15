@@ -137,13 +137,13 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) override {
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) override {
     return ParticleIteratorWrapper<ParticleType, true>(new internal::ParticleIterator<ParticleType, ParticleCell, true>(
         &this->_cells, 0, &_cellBorderFlagManager, behavior, nullptr, forceSequential));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) const override {
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) const override {
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBorderFlagManager,
                                                                           behavior, nullptr, forceSequential));
@@ -151,23 +151,18 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) override {
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) override {
     std::vector<size_t> cellsOfInterest;
 
-    switch (behavior) {
-      case IteratorBehavior::ownedOnly:
-        cellsOfInterest.push_back(0);
-        break;
-      case IteratorBehavior::haloOnly:
-        cellsOfInterest.push_back(1);
-        break;
-      case IteratorBehavior::haloOwnedAndDummy:
-        // dummy particles can be in all cells.
-        [[fallthrough]];
-      case IteratorBehavior::haloAndOwned:
-        cellsOfInterest.push_back(0);
-        cellsOfInterest.push_back(1);
-        break;
+    if (behavior & IteratorBehavior::owned) {
+      cellsOfInterest.push_back(0);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      cellsOfInterest.push_back(1);
+    }
+    // sanity check
+    if (cellsOfInterest.size() == 0) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
 
     return ParticleIteratorWrapper<ParticleType, true>(
@@ -178,23 +173,18 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) const override {
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) const override {
     std::vector<size_t> cellsOfInterest;
 
-    switch (behavior) {
-      case IteratorBehavior::ownedOnly:
-        cellsOfInterest.push_back(0);
-        break;
-      case IteratorBehavior::haloOnly:
-        // for haloOnly all cells can contain halo particles!
-        [[fallthrough]];
-      case IteratorBehavior::haloOwnedAndDummy:
-        // dummy particles can be in all cells.
-        [[fallthrough]];
-      case IteratorBehavior::haloAndOwned:
-        cellsOfInterest.push_back(0);
-        cellsOfInterest.push_back(1);
-        break;
+    if (behavior & IteratorBehavior::owned) {
+      cellsOfInterest.push_back(0);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      cellsOfInterest.push_back(1);
+    }
+    // sanity check
+    if (cellsOfInterest.size() == 0) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
 
     return ParticleIteratorWrapper<ParticleType, false>(

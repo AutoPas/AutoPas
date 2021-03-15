@@ -7,10 +7,7 @@
 
 #include "IteratorTestHelper.h"
 #include "autopas/AutoPas.h"
-#include "autopas/utils/ArrayUtils.h"
 #include "testingHelpers/EmptyFunctor.h"
-
-using namespace autopas;
 
 template <typename AutoPasT>
 auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
@@ -66,22 +63,24 @@ TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
 
   std::vector<size_t> expectedIDs;
   switch (behavior) {
-    case autopas::IteratorBehavior::ownedOnly: {
+    case autopas::IteratorBehavior::owned: {
       expectedIDs = particleIDsInBoxOwned;
       break;
     }
-    case autopas::IteratorBehavior::haloOnly: {
+    case autopas::IteratorBehavior::halo: {
       expectedIDs = particleIDsInBoxHalo;
       break;
     }
-    case autopas::IteratorBehavior::haloAndOwned: {
+    case autopas::IteratorBehavior::ownedOrHalo: {
       expectedIDs = particleIDsInBoxOwned;
       expectedIDs.insert(expectedIDs.end(), particleIDsInBoxHalo.begin(), particleIDsInBoxHalo.end());
       break;
     }
-    case autopas::IteratorBehavior::haloOwnedAndDummy: {
-      GTEST_FAIL() << "IteratorBehavior::haloOwnedAndDummy should not be tested through this test"
-                      " as container behavior with dummy particles is not uniform.";
+    default: {
+      GTEST_FAIL() << "IteratorBehavior::" << behavior
+                   << "  should not be tested through this test!\n"
+                      "Container behavior with dummy particles is not uniform.\n"
+                      "forceSequential alone makes no sense.";
       break;
     }
   }
@@ -110,18 +109,8 @@ static inline auto getTestableContainerOptions() {
 #endif
 }
 
-static inline auto getIteratorBehaviorOptions() {
-  auto allOptions = autopas::IteratorBehavior::getAllOptions();
-  std::set<autopas::IteratorBehavior> retSet;
-  // we ignore dummy particles in the general tests because they can behave differently depending on the container
-  std::set<autopas::IteratorBehavior> ignoredOptions = {autopas::IteratorBehavior::haloOwnedAndDummy};
-  std::set_difference(allOptions.begin(), allOptions.end(), ignoredOptions.begin(), ignoredOptions.end(),
-                      std::inserter(retSet, retSet.begin()));
-  return retSet;
-}
-
 INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTest,
                          Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
-                                 ValuesIn(getIteratorBehaviorOptions())),
+                                 ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          RegionParticleIteratorTest::PrintToStringParamName());

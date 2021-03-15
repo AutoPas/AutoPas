@@ -24,7 +24,7 @@ namespace autopas::internal {
  *
  * Incrementing this iterator works by jumping through the underlying particle cells from particle to particle
  * incrementing until itfinds a particle that matches the iteration criteria (e.g. it continues to loop until it finds
- * a halo particle if _behavior==haloOnly). Additionally there might be additional particle vectors which are not part
+ * a halo particle if _behavior==halo). Additionally there might be additional particle vectors which are not part
  * of the cell structure and contain arbitrary unsorted particles. These buffers result from containers that
  * have buffers they only sometimes merge with the actual data structure. Typically there is one buffer per OpenMP
  * thread, however, there is no guarantee that the iterator region has the same number of therads so the number of
@@ -54,7 +54,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    *
    * @param cont Linear data vector of ParticleCells.
    * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
-   * Can be nullptr if the behavior is haloAndOwned.
+   * Can be nullptr if the behavior is ownedOrHalo.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    * @param additionalVectorsToIterate Thread buffers of additional Particle Vector to iterate over.
    * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
@@ -85,13 +85,13 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * @param cont Linear data vector of ParticleCells.
    * @param offset Number of cells to skip before starting to iterate.
    * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
-   * Can be nullptr if the behavior is haloAndOwned.
+   * Can be nullptr if the behavior is ownedOrHalo.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    * @param additionalVectorsToIterate Additional Particle Vector to iterate over.
    * @param forceSequential Whether to force the iterator to behave as if it is not parallel.
    */
   explicit ParticleIterator(CellVecType *cont, size_t offset = 0, CellBorderAndFlagManagerType *flagManager = nullptr,
-                            IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                            IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                             ParticleVecType *additionalVectorsToIterate = nullptr, bool forceSequential = false)
       : ParticleIterator(cont, flagManager, behavior, additionalVectorsToIterate, forceSequential) {
     auto myThreadId = autopas_get_thread_num();
@@ -110,10 +110,10 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
       return;
     }
 
-    if ((behavior != IteratorBehavior::haloAndOwned and behavior != IteratorBehavior::haloOwnedAndDummy) and
+    if ((behavior != IteratorBehavior::ownedOrHalo and behavior != IteratorBehavior::ownedOrHaloOrDummy) and
         flagManager == nullptr) {
-      AutoPasLog(error, "Behavior is not haloAndOwned, but flagManager is nullptr!");
-      utils::ExceptionHandler::exception("Behavior is not haloAndOwned, but flagManager is nullptr!");
+      AutoPasLog(error, "Behavior is not ownedOrHalo, but flagManager is nullptr!");
+      utils::ExceptionHandler::exception("Behavior is not ownedOrHalo, but flagManager is nullptr!");
     }
 
     if (_additionalParticleVectorToIterateState != AdditionalParticleVectorToIterateState::iterating) {
@@ -257,13 +257,13 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
     // IMPORTANT: `this->` is necessary here! Without it clang 7, 8 and 9 fail due to an compiler bug:
     // https://stackoverflow.com/questions/55359614/clang-complains-about-constexpr-function-in-case-for-switch-statement
     switch (this->_behavior) {
-      case IteratorBehavior::haloOwnedAndDummy:
+      case IteratorBehavior::ownedOrHaloOrDummy:
         [[fallthrough]];
-      case IteratorBehavior::haloAndOwned:
+      case IteratorBehavior::ownedOrHalo:
         return true;
-      case IteratorBehavior::haloOnly:
+      case IteratorBehavior::halo:
         return _flagManager->cellCanContainHaloParticles(_iteratorAcrossCells - _vectorOfCells->begin());
-      case IteratorBehavior::ownedOnly:
+      case IteratorBehavior::owned:
         return _flagManager->cellCanContainOwnedParticles(_iteratorAcrossCells - _vectorOfCells->begin());
       default:
         utils::ExceptionHandler::exception("unknown iterator behavior");
@@ -279,21 +279,21 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
     // IMPORTANT: `this->` is necessary here! Without it clang 7, 8 and 9 fail due to an compiler bug:
     // https://stackoverflow.com/questions/55359614/clang-complains-about-constexpr-function-in-case-for-switch-statement
     switch (this->_behavior) {
-      case IteratorBehavior::haloOwnedAndDummy:
+      case IteratorBehavior::ownedOrHaloOrDummy:
         return true;
-      case IteratorBehavior::haloAndOwned:
+      case IteratorBehavior::ownedOrHalo:
         if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
           return not(*_additionalVectors)[_additionalVectorIndex][_additionalVectorPosition].isDummy();
         } else {
           return not _iteratorWithinOneCell->isDummy();
         }
-      case IteratorBehavior::haloOnly:
+      case IteratorBehavior::halo:
         if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
           return (*_additionalVectors)[_additionalVectorIndex][_additionalVectorPosition].isHalo();
         } else {
           return _iteratorWithinOneCell->isHalo();
         }
-      case IteratorBehavior::ownedOnly:
+      case IteratorBehavior::owned:
         if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
           return (*_additionalVectors)[_additionalVectorIndex][_additionalVectorPosition].isOwned();
         } else {

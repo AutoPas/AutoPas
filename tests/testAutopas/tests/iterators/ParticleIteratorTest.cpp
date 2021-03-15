@@ -47,7 +47,7 @@ void ParticleIteratorTest::testAllParticlesFoundPattern(const std::vector<size_t
 #endif
   {
     for (auto iter = ParticleIterator<Molecule, FMCell, true>(
-             &cells, 0, nullptr, IteratorBehavior::haloAndOwned,
+             &cells, 0, nullptr, IteratorBehavior::ownedOrHalo,
              numAdditionalParticleVectors > 0 ? &additionalParticles : nullptr);
          iter.isValid(); ++iter) {
       auto particleID = iter->getID();
@@ -130,7 +130,7 @@ TEST_F(ParticleIteratorTest, testCopyConstructor) {
 
   constexpr bool modifyable = true;
   autopas::internal::ParticleIterator<Molecule, FMCell, modifyable> iter(
-      &cells, 0, nullptr, IteratorBehavior::haloAndOwned, &additionalVectors);
+      &cells, 0, nullptr, IteratorBehavior::ownedOrHalo, &additionalVectors);
 
   auto iterCopy{iter};
   iteratorsBehaveEqually(iter, iterCopy);
@@ -145,7 +145,7 @@ TEST_F(ParticleIteratorTest, testCopyAssignment) {
 
   constexpr bool modifyable = true;
   autopas::internal::ParticleIterator<Molecule, FMCell, modifyable> iter(
-      &cells, 0, nullptr, IteratorBehavior::haloAndOwned, &additionalVectors);
+      &cells, 0, nullptr, IteratorBehavior::ownedOrHalo, &additionalVectors);
 
   auto iterCopy = iter;
   iteratorsBehaveEqually(iter, iterCopy);
@@ -178,7 +178,7 @@ TEST_F(ParticleIteratorTest, testForceSequential) {
     constexpr bool modifyable = true;
     constexpr bool forceSequential = true;
     autopas::internal::ParticleIterator<Molecule, FMCell, modifyable> iter(
-        &cells, 0, nullptr, IteratorBehavior::haloAndOwned, &additionalVectors, forceSequential);
+        &cells, 0, nullptr, IteratorBehavior::ownedOrHalo, &additionalVectors, forceSequential);
     for (; iter.isValid(); ++iter) {
       foundParticles.push_back(iter->getID());
     }

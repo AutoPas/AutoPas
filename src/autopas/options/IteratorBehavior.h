@@ -13,31 +13,49 @@
 namespace autopas {
 inline namespace options {
 /**
- * Class representing the acquisition function choices for the Bayesian search.
+ * Class representing the choices for behaviors of iterators.
+ * Choices are a bit vector and can thus be combined via a logical OR.
  */
 class IteratorBehavior : public Option<IteratorBehavior> {
  public:
   /**
-   * Different possibilities for iterator behaviors
+   * Different possibilities for iterator behaviors.
    */
-  enum Value {
-    /**
-     * Iterate only over halo particles.
-     */
-    haloOnly,
+  enum Value : unsigned int {
     /**
      * Iterate only over owned particles.
      */
-    ownedOnly,
+    owned = 0b0001,
     /**
-     * Iterate over both halo and owned particles.
+     * Iterate only over halo particles.
      */
-    haloAndOwned,
+    halo = 0b0010,
     /**
-     * Iterate over both halo and owned particles and also dummy particles.
+     * Iterate over both halo and owned particles. Defined fore ease of access.
      */
-    haloOwnedAndDummy,
+    ownedOrHalo = 0b0011,
+    /**
+     * Iterate only over dummy particles.
+     */
+    dummy = 0b0100,
+    /**
+     * Iterate over both halo and owned particles and also dummy particles. Defined fore ease of access.
+     */
+    ownedOrHaloOrDummy = 0b0111,
+    /**
+     * Force the iterator to behave like a sequential iterator even when created in a parallel region.
+     */
+    forceSequential = 0b1000,
   };
+
+  // sanity checks
+  // combined values should be equivalent to the disjunction of their elements
+  static_assert((owned | halo) == ownedOrHalo, "Iterator behaviors are defined with non matching values!");
+  static_assert((owned | halo | dummy) == ownedOrHaloOrDummy,
+                "Iterator behaviors are defined with non matching values!");
+  // forceSequential must does not overlap with anything else
+  static_assert((ownedOrHaloOrDummy & forceSequential) == 0,
+                "Iterator behaviors are defined with non matching values!");
 
   /**
    * Constructor.
@@ -58,9 +76,13 @@ class IteratorBehavior : public Option<IteratorBehavior> {
 
   /**
    * Set of options that are very unlikely to be interesting.
+   * Technically these options are nor discouraged but when fetching a set of desired behaviors these are probably
+   * not useful and would be excluded anyway.
    * @return
    */
-  static std::set<IteratorBehavior> getDiscouragedOptions() { return {}; }
+  static std::set<IteratorBehavior> getDiscouragedOptions() {
+    return {IteratorBehavior::dummy, IteratorBehavior::ownedOrHaloOrDummy, IteratorBehavior::forceSequential};
+  }
 
   /**
    * Provides a way to iterate over the possible choices of AcquisitionFunction.
@@ -68,10 +90,12 @@ class IteratorBehavior : public Option<IteratorBehavior> {
    */
   static std::map<IteratorBehavior, std::string> getOptionNames() {
     return {
-        {IteratorBehavior::ownedOnly, "ownedOnly"},
-        {IteratorBehavior::haloOnly, "haloOnly"},
-        {IteratorBehavior::haloAndOwned, "haloAndOwned"},
-        {IteratorBehavior::haloOwnedAndDummy, "haloOwnedAndDummy"},
+        {IteratorBehavior::owned, "owned"},
+        {IteratorBehavior::halo, "halo"},
+        {IteratorBehavior::ownedOrHalo, "ownedOrHalo"},
+        {IteratorBehavior::dummy, "dummy"},
+        {IteratorBehavior::ownedOrHaloOrDummy, "ownedOrHaloOrDummy"},
+        {IteratorBehavior::forceSequential, "forceSequential"},
     };
   }
 

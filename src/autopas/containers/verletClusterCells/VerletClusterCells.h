@@ -128,9 +128,9 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
     Particle pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
 
-    for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
-                                     utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2),
-                                     IteratorBehavior::haloOnly);
+    for (auto it =
+             getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
+                               utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2), IteratorBehavior::halo);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
         *it = pCopy;
@@ -211,7 +211,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
 #endif
     {
       std::vector<Particle> myInvalidParticles;
-      for (auto iter = this->begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
         if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
           myInvalidParticles.push_back(*iter);
           internal::deleteParticle(iter);
@@ -235,7 +235,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
                                  _clusterSize);
   }
 
-  ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+  ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                                 bool forceSequential = false) override {
     return ParticleIteratorWrapper<Particle, true>(
         new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>, true>(
@@ -245,7 +245,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
             _isValid != ValidityState::invalid ? this : nullptr));
   }
 
-  ParticleIteratorWrapper<Particle, false> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+  ParticleIteratorWrapper<Particle, false> begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                                  bool forceSequential = false) const override {
     return ParticleIteratorWrapper<Particle, false>(
         new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>, false>(
@@ -254,7 +254,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
 
   ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                             const std::array<double, 3> &higherCorner,
-                                                            IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                                            IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                                             bool forceSequential = false) override {
     // Special iterator requires sorted cells
 #ifdef AUTOPAS_OPENMP
@@ -301,7 +301,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
 
   ParticleIteratorWrapper<Particle, false> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                              const std::array<double, 3> &higherCorner,
-                                                             IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+                                                             IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                                              bool forceSequential = false) const override {
     // restrict search area to the region where particles are
     const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _boxMinWithHalo);

@@ -8,7 +8,6 @@
 
 #include "IteratorTestHelper.h"
 #include "autopas/options/IteratorBehavior.h"
-#include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/EmptyFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -144,20 +143,22 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesInsideDomain) {
 
   // set up expectations
   switch (behavior) {
-    case autopas::IteratorBehavior::haloAndOwned:
+    case autopas::IteratorBehavior::ownedOrHalo:
       [[fallthrough]];
-    case autopas::IteratorBehavior::ownedOnly: {
+    case autopas::IteratorBehavior::owned: {
       // expectations already correct
       break;
     }
-    case autopas::IteratorBehavior::haloOnly: {
+    case autopas::IteratorBehavior::halo: {
       // no particles in the halo -> expect nothing
       expectedIDs = {};
       break;
     }
-    case autopas::IteratorBehavior::haloOwnedAndDummy: {
-      GTEST_FAIL() << "IteratorBehavior::haloOwnedAndDummy should not be tested through this test"
-                      " as container behavior with dummy particles is not uniform.";
+    default: {
+      GTEST_FAIL() << "IteratorBehavior::" << behavior
+                   << "  should not be tested through this test!\n"
+                      "Container behavior with dummy particles is not uniform.\n"
+                      "forceSequential alone makes no sense.";
       break;
     }
   }
@@ -192,22 +193,24 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesAroundBoundaries) {
   // set up expectations
   std::vector<size_t> expectedIDs;
   switch (behavior) {
-    case autopas::IteratorBehavior::ownedOnly: {
+    case autopas::IteratorBehavior::owned: {
       expectedIDs = particleIDsOwned;
       break;
     }
-    case autopas::IteratorBehavior::haloOnly: {
+    case autopas::IteratorBehavior::halo: {
       expectedIDs = particleIDsHalo;
       break;
     }
-    case autopas::IteratorBehavior::haloAndOwned: {
+    case autopas::IteratorBehavior::ownedOrHalo: {
       expectedIDs = particleIDsOwned;
       expectedIDs.insert(expectedIDs.end(), particleIDsHalo.begin(), particleIDsHalo.end());
       break;
     }
-    case autopas::IteratorBehavior::haloOwnedAndDummy: {
-      GTEST_FAIL() << "IteratorBehavior::haloOwnedAndDummy should not be tested through this test"
-                      " as container behavior with dummy particles is not uniform.";
+    default: {
+      GTEST_FAIL() << "IteratorBehavior::" << behavior
+                   << "  should not be tested through this test!\n"
+                      "Container behavior with dummy particles is not uniform.\n"
+                      "forceSequential alone makes no sense.";
       break;
     }
   }
@@ -245,21 +248,23 @@ TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
 
   // set up expectations
   switch (behavior) {
-    case autopas::IteratorBehavior::haloAndOwned:
+    case autopas::IteratorBehavior::ownedOrHalo:
       [[fallthrough]];
-    case autopas::IteratorBehavior::ownedOnly: {
+    case autopas::IteratorBehavior::owned: {
       // remove all odd numbers from expectations
       expectedIDs.erase(std::remove_if(expectedIDs.begin(), expectedIDs.end(), [&](auto id) { return isOdd(id); }),
                         expectedIDs.end());
       break;
     }
-    case autopas::IteratorBehavior::haloOnly: {
+    case autopas::IteratorBehavior::halo: {
       // nothing should be deleted so expect everything.
       break;
     }
-    case autopas::IteratorBehavior::haloOwnedAndDummy: {
-      GTEST_FAIL() << "IteratorBehavior::haloOwnedAndDummy should not be tested through this test"
-                      " as container behavior with dummy particles is not uniform.";
+    default: {
+      GTEST_FAIL() << "IteratorBehavior::" << behavior
+                   << "  should not be tested through this test!\n"
+                      "Container behavior with dummy particles is not uniform.\n"
+                      "forceSequential alone makes no sense.";
       break;
     }
   }
@@ -273,7 +278,7 @@ TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
 
   // now use again an iterator to confirm only the expected ones are still there
   IteratorTestHelper::provideIterator(
-      useConstIterator, autoPas, autopas::IteratorBehavior::haloAndOwned, useRegionIterator,
+      useConstIterator, autoPas, autopas::IteratorBehavior::ownedOrHalo, useRegionIterator,
       [&](const auto &autopas, auto &iter) { IteratorTestHelper::findParticles(autoPas, iter, expectedIDs); });
 }
 
@@ -292,19 +297,9 @@ static inline auto getTestableContainerOptions() {
 #endif
 }
 
-static inline auto getIteratorBehaviorOptions() {
-  auto allOptions = autopas::IteratorBehavior::getAllOptions();
-  std::set<autopas::IteratorBehavior> retSet;
-  // we ignore dummy particles in the general tests because they can behave differently depending on the container
-  std::set<autopas::IteratorBehavior> ignoredOptions = {autopas::IteratorBehavior::haloOwnedAndDummy};
-  std::set_difference(allOptions.begin(), allOptions.end(), ignoredOptions.begin(), ignoredOptions.end(),
-                      std::inserter(retSet, retSet.begin()));
-  return retSet;
-}
-
 INSTANTIATE_TEST_SUITE_P(Generated, ParticleIteratorInterfaceTest,
                          Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use region iter*/ Values(true, false),
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
-                                 ValuesIn(getIteratorBehaviorOptions())),
+                                 ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          ParticleIteratorInterfaceTest::PrintToStringParamName());

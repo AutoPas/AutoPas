@@ -244,7 +244,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::begin()
    */
-  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                                          bool forceSequential = false) {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return _autoTuner.getContainer()->begin(behavior, forceSequential);
@@ -253,7 +253,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::begin()
    */
-  autopas::ParticleIteratorWrapper<Particle, false> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned,
+  autopas::ParticleIteratorWrapper<Particle, false> begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                                           bool forceSequential = false) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return std::as_const(_autoTuner).getContainer()->begin(behavior, forceSequential);
@@ -264,7 +264,7 @@ class LogicHandler {
    */
   autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) {
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) {
     // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
       if (lowerCorner > higherCorner) {
@@ -285,7 +285,7 @@ class LogicHandler {
    */
   autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(
       std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned, bool forceSequential = false) const {
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, bool forceSequential = false) const {
     // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
       if (lowerCorner > higherCorner) {
