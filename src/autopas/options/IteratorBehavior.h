@@ -18,6 +18,9 @@ inline namespace options {
  */
 class IteratorBehavior : public Option<IteratorBehavior> {
  public:
+  /**
+   * Type used for the internal enum.
+   */
   using Value_t = unsigned int;
 
   /**
