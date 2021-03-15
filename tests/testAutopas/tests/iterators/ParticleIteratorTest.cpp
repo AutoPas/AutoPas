@@ -185,3 +185,23 @@ TEST_F(ParticleIteratorTest, testForceSequential) {
     EXPECT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
   }
 }
+
+/**
+ * Make sure the iterator does not crash and immediately is marked invalid when offset behind the last cell.
+ */
+TEST_F(ParticleIteratorTest, testNothing) {
+  std::vector<FMCell> cells{5};
+  ParticleIterator<Molecule, FMCell, true> iter{&cells, cells.size()};
+  EXPECT_FALSE(iter.isValid());
+}
+
+/**
+ * Same as testNothing but also with additional particle vectors.
+ */
+TEST_F(ParticleIteratorTest, testNothingWithAdditionalVectors) {
+  std::vector<FMCell> cells{5};
+  std::vector<std::vector<Molecule>> additionalPartilcleVectors(3);
+  ParticleIterator<Molecule, FMCell, true> iter{&cells, cells.size(), nullptr, IteratorBehavior::ownedOrHaloOrDummy,
+                                                &additionalPartilcleVectors};
+  EXPECT_FALSE(iter.isValid());
+}
