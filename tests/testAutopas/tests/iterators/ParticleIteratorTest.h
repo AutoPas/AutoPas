@@ -13,6 +13,20 @@
 #include "testingHelpers/commonTypedefs.h"
 
 class ParticleIteratorTest : public AutoPasTestBase, public ::testing::WithParamInterface<std::tuple<size_t, size_t>> {
+ public:
+  /**
+   * Converter functor for generated test names.
+   */
+  struct PrintToStringParamName {
+    template <class ParamType>
+    std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
+      auto [numThreads, numAdditionalParticleVectors] = static_cast<ParamType>(info.param);
+      std::stringstream ss;
+      ss << "Threads" << numThreads << "_AdditionalParticleVectors" << numAdditionalParticleVectors;
+      return ss.str();
+    }
+  };
+
  protected:
   /**
    * Generates a given amount of cells where only indicated cells contain a given amount of particles.

@@ -112,7 +112,8 @@ const std::vector<size_t> threadNumsToTest{1};
 #endif
 
 INSTANTIATE_TEST_SUITE_P(Generated, ParticleIteratorTest,
-                         ::testing::Combine(::testing::ValuesIn(threadNumsToTest), ::testing::Values(0, 1, 2, 4)));
+                         ::testing::Combine(::testing::ValuesIn(threadNumsToTest), ::testing::Values(0, 1, 2, 4)),
+                         ParticleIteratorTest::PrintToStringParamName());
 
 template <class Iter>
 auto ParticleIteratorTest::iteratorsBehaveEqually(Iter &iter1, Iter &iter2) {
