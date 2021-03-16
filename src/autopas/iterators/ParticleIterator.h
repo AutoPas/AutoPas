@@ -250,7 +250,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
   [[nodiscard]] bool isCellTypeBehaviorCorrect() const {
     // IMPORTANT: `this->` is necessary here! Without it clang 7, 8 and 9 fail due to an compiler bug:
     // https://stackoverflow.com/questions/55359614/clang-complains-about-constexpr-function-in-case-for-switch-statement
-    switch (this->_behavior) {
+    switch (this->_behavior & ~IteratorBehavior::forceSequential) {
       case IteratorBehavior::ownedOrHaloOrDummy:
         [[fallthrough]];
       case IteratorBehavior::ownedOrHalo:
@@ -260,7 +260,8 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
       case IteratorBehavior::owned:
         return _flagManager->cellCanContainOwnedParticles(_iteratorAcrossCells - _vectorOfCells->begin());
       default:
-        utils::ExceptionHandler::exception("unknown iterator behavior");
+        utils::ExceptionHandler::exception(
+            "ParticleIterator::isCellTypeBehaviorCorrect() encountered unknown iterator behavior: {}", this->_behavior);
         return false;
     }
   }
@@ -272,7 +273,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
   [[nodiscard]] bool particleHasCorrectOwnershipState() const {
     // IMPORTANT: `this->` is necessary here! Without it clang 7, 8 and 9 fail due to an compiler bug:
     // https://stackoverflow.com/questions/55359614/clang-complains-about-constexpr-function-in-case-for-switch-statement
-    switch (this->_behavior) {
+    switch (this->_behavior & ~IteratorBehavior::forceSequential) {
       case IteratorBehavior::ownedOrHaloOrDummy:
         return true;
       case IteratorBehavior::ownedOrHalo:
@@ -294,7 +295,9 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
           return _iteratorWithinOneCell->isOwned();
         }
       default:
-        utils::ExceptionHandler::exception("unknown iterator behavior");
+        utils::ExceptionHandler::exception(
+            "ParticleIterator::particleHasCorrectOwnershipState() encountered unknown iterator behavior: {}",
+            this->_behavior);
         return false;
     }
   }
