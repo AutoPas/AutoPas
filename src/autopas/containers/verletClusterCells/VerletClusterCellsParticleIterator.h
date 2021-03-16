@@ -51,8 +51,9 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
         _offsetToDummy(offsetToDummy),
         _particleDeletedObserver(particleDeletedObserver) {
     // 1. set _cellId to thread number.
-    // FIXME: support forceSequential mode
-    _cellId = autopas_get_thread_num();
+    if (not(_behavior & IteratorBehavior::forceSequential)) {
+      _cellId = autopas_get_thread_num();
+    }
 
     if (_cellId >= _vectorOfCells->size()) {
       // prevent segfaults if the _cellId is too large
@@ -80,7 +81,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
 
       while (_iteratorWithinOneCell == _cellEnd) {
         // increase _cellId by stride if we are at the end of a cell!
-        auto stride = autopas_get_num_threads();
+        auto stride = (_behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
         _cellId += stride;
 
         if (_cellId >= _vectorOfCells->size()) {
@@ -230,7 +231,9 @@ class VerletClusterCellsRegionParticleIterator
 
     // 2. set _currentRegionIndex to current thread id
     // also ensure that _currentIndex does not go beyond _indicesInRegion.
-    _currentRegionIndex = std::min(static_cast<unsigned long>(autopas_get_thread_num()), _indicesInRegion.size() - 1);
+    auto offset =
+        (behavior & IteratorBehavior::forceSequential) ? 1ul : static_cast<unsigned long>(autopas_get_thread_num());
+    _currentRegionIndex = std::min(offset, _indicesInRegion.size() - 1);
 
     // 3. set the _cellID to the appropriate value
     this->_cellId = _indicesInRegion[_currentRegionIndex];
@@ -266,7 +269,10 @@ class VerletClusterCellsRegionParticleIterator
         // Increase _currentRegionIndex by stride if we are at the end of a cell!
         // Also ensure that it does not go beyond _indicesInRegion.size() - 1.
         // The last entry of _indicesInRegion is invalid (>= _vectorOfCells->size()), so this is fine!
-        _currentRegionIndex = std::min(_currentRegionIndex + autopas_get_num_threads(), _indicesInRegion.size() - 1);
+        auto offset = (this->_behavior & IteratorBehavior::forceSequential)
+                          ? 1ul
+                          : static_cast<unsigned long>(autopas_get_num_threads());
+        _currentRegionIndex = std::min(_currentRegionIndex + offset, _indicesInRegion.size() - 1);
         this->_cellId = _indicesInRegion[_currentRegionIndex];
         if (this->_cellId >= this->_vectorOfCells->size()) {
           return *this;
