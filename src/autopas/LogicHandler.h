@@ -168,11 +168,15 @@ class LogicHandler {
             utils::ExceptionHandler::exception(
                 "LogicHandler::addHaloParticle: wasn't able to update halo particle that is too close to "
                 "domain (more than cutoff + skin/2). Rebuild frequency not high enough / skin too small!\n"
-                "Cutoff       : {}\n" +
-                    "Skin         : {}\n" + "BoxMin       : {}\n" + "BoxMax       : {}\n" + "Dangerous Min: {}\n" +
-                    "Dangerous Max: {}\n" + "Particle     : {}\n" + container->getCutoff(),
-                container->getSkin(), container->getBoxMin(), container->getBoxMax(), dangerousBoxMin, dangerousBoxMax,
-                haloParticle.toString());
+                "Cutoff       : {}\n"
+                "Skin         : {}\n"
+                "BoxMin       : {}\n"
+                "BoxMax       : {}\n"
+                "Dangerous Min: {}\n"
+                "Dangerous Max: {}\n"
+                "Particle     : {}\n",
+                container->getCutoff(), container->getSkin(), container->getBoxMin(), container->getBoxMax(),
+                dangerousBoxMin, dangerousBoxMax, haloParticle.toString());
           }
         }
       } else {
