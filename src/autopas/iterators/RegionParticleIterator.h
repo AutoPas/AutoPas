@@ -75,7 +75,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
       return;
     }
 
-    if (behavior != IteratorBehavior::ownedOrHalo and flagManager == nullptr) {
+    if ((behavior & IteratorBehavior::ownedOrHalo) and flagManager == nullptr) {
       AutoPasLog(error,
                  "Behavior is not ownedOrHalo, but flagManager is "
                  "nullptr!");

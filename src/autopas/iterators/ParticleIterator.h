@@ -107,8 +107,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
       return;
     }
 
-    if ((behavior != IteratorBehavior::ownedOrHalo and behavior != IteratorBehavior::ownedOrHaloOrDummy) and
-        flagManager == nullptr) {
+    if ((behavior & IteratorBehavior::ownedOrHalo) and flagManager == nullptr) {
       AutoPasLog(error, "Behavior is not ownedOrHalo, but flagManager is nullptr!");
       utils::ExceptionHandler::exception("Behavior is not ownedOrHalo, but flagManager is nullptr!");
     }
