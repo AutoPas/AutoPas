@@ -75,15 +75,6 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
       return;
     }
 
-    if ((behavior & IteratorBehavior::ownedOrHalo) and flagManager == nullptr) {
-      AutoPasLog(error,
-                 "Behavior is not ownedOrHalo, but flagManager is "
-                 "nullptr!");
-      utils::ExceptionHandler::exception(
-          "Behavior is not ownedOrHalo, but flagManager is "
-          "nullptr!");
-    }
-
     if (this->_additionalParticleVectorToIterateState !=
         decltype(this->_additionalParticleVectorToIterateState)::iterating) {
       if (not this->isCellTypeBehaviorCorrect()) {
