@@ -89,7 +89,7 @@ class IteratorBehavior : public Option<IteratorBehavior> {
 
   /**
    * Set of options that are very unlikely to be interesting.
-   * Technically these options are nor discouraged but when fetching a set of desired behaviors these are probably
+   * Technically these options are not discouraged but when fetching a set of desired behaviors these are probably
    * not useful and would be excluded anyway.
    * @return
    */

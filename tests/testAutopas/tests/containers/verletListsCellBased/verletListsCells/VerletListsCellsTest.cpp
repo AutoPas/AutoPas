@@ -37,8 +37,9 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor) {
   verletLists.iteratePairwise(&traversal);
 
   std::vector<Particle *> list;
-  for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter)
+  for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
     list.push_back(&*iter);
+  }
 
   EXPECT_EQ(list.size(), 2);
   size_t partners = 0;
