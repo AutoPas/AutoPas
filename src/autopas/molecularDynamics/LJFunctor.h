@@ -148,6 +148,7 @@ class LJFunctor
         shift6 = _PPLibrary->mixingShift6(i.getTypeId(), j.getTypeId());
       }
     }
+    // calculate distance between particles
     auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
     double dr2 = utils::ArrayMath::dot(dr, dr);
 
@@ -155,6 +156,7 @@ class LJFunctor
       return;
     }
 
+    // calculate LJ 12-6 Force
     double invdr2 = 1. / dr2;
     double lj6 = sigmasquare * invdr2;
     lj6 = lj6 * lj6 * lj6;
@@ -162,6 +164,8 @@ class LJFunctor
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = utils::ArrayMath::mulScalar(dr, fac);
+
+    // add force to particles
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to

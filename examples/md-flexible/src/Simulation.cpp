@@ -122,6 +122,7 @@ void Simulation::calculateForces(autopas::AutoPas<ParticleType> &autopas) {
 
   _timers.forceUpdatePairwise.start();
 
+  // Instantiation of the functor
   FunctorType functor{autopas.getCutoff(), *_particlePropertiesLibrary};
   // TODO: SWiMM
   // FIXME: Apply the functor to the AutoPas object.
