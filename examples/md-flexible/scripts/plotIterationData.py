@@ -22,5 +22,5 @@ fig = px.scatter(data,
         hover_data = ['Data Layout', 'Newton 3', 'Load Estimator'],
         color = 'Container',
         )
-fig.update_traces(marker=dict(size=2))
+fig.update_traces(marker=dict(size=3))
 fig.show()
