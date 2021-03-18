@@ -190,16 +190,17 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
 
     // apply boundary conditions AFTER the position update!
     _timers.boundaries.start();
+    // TODO: SWiMM 3
     BoundaryConditions::applyPeriodic(autopas, false);
     _timers.boundaries.stop();
 
     // invoke the force calculation with the functor
-    // TODO: SWiMM
+    // TODO: SWiMM 2
     this->calculateForces<autopas::LJFunctor<ParticleType, _shifting, _mixing>>(autopas);
 
     // only do time step related stuff when there actually is time-stepping
     _timers.velocityUpdate.start();
-    // TODO: SWiMM
+    // TODO: SWiMM 1
     TimeDiscretization::calculateVelocities(autopas, *_particlePropertiesLibrary, _config->deltaT.value);
     _timers.velocityUpdate.stop();
   }
@@ -214,7 +215,6 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
   // writes final state of the simulation
   if ((not _config->vtkFileName.value.empty())) {
     _timers.boundaries.start();
-    // TODO: SWiMM
     BoundaryConditions::applyPeriodic(autopas, true);
     _timers.boundaries.stop();
     this->writeVTKFile(autopas);
