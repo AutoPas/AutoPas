@@ -7,6 +7,8 @@
 #include "ParticleIteratorInterfaceTest.h"
 
 #include "IteratorTestHelper.h"
+#include "autopas/AutoPas.h"
+#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/EmptyFunctor.h"

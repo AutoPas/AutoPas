@@ -304,4 +304,26 @@ void findParticles(AutoPasT &autopas, FgetIter getIter, const std::vector<size_t
   EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
 }
 
+/**
+ * Generates a given amount of cells where only indicated cells contain a given amount of particles.
+ * Particle coordinates are the same as their ID in every dimension, so particles are placed equidistant on
+ * the main diagonal through space.
+ * @param numCells
+ * @param cellsToFill
+ * @param particlesPerCell
+ * @return Vector of generated and filled cells.
+ */
+static std::vector<FMCell> generateCellsWithPattern(const size_t numCells, const std::vector<size_t> &cellsToFill,
+                                                    const size_t particlesPerCell) {
+  std::vector<FMCell> cells(numCells);
+  size_t numParticlesAdded = 0;
+  for (auto cellId : cellsToFill) {
+    for (size_t i = 0; i < particlesPerCell; ++i) {
+      auto idAsDouble = static_cast<double>(numParticlesAdded);
+      Molecule m({idAsDouble, idAsDouble, idAsDouble}, {0, 0, 0}, numParticlesAdded++, 0);
+      cells[cellId].addParticle(m);
+    }
+  }
+  return cells;
+}
 }  // namespace IteratorTestHelper
