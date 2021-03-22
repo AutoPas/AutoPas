@@ -306,8 +306,9 @@ void findParticles(AutoPasT &autopas, FgetIter getIter, const std::vector<size_t
 
 /**
  * Generates a given amount of cells where only indicated cells contain a given amount of particles.
- * Particle coordinates are the same as their ID in every dimension, so particles are placed equidistant on
- * the main diagonal through space.
+ * Cells can be considered to be on the main diagonal through 3D space. So the xyz coordinates of each cell's lower
+ * corner are {cellID, cellID, cellID}. The particles are also placed along this line within their cells. Within each
+ * cell the particles are placed equidistant around the center.
  * @param numCells
  * @param cellsToFill
  * @param particlesPerCell
@@ -315,12 +316,16 @@ void findParticles(AutoPasT &autopas, FgetIter getIter, const std::vector<size_t
  */
 static std::vector<FMCell> generateCellsWithPattern(const size_t numCells, const std::vector<size_t> &cellsToFill,
                                                     const size_t particlesPerCell) {
+  constexpr double cellDiagonal = 1.;
+  // distance between particles within one cell
+  const double distBetweenParticles = cellDiagonal / (particlesPerCell + 1.);
+
   std::vector<FMCell> cells(numCells);
   size_t numParticlesAdded = 0;
   for (auto cellId : cellsToFill) {
     for (size_t i = 0; i < particlesPerCell; ++i) {
-      auto idAsDouble = static_cast<double>(numParticlesAdded);
-      Molecule m({idAsDouble, idAsDouble, idAsDouble}, {0, 0, 0}, numParticlesAdded++, 0);
+      auto position = cellId + distBetweenParticles * (i + 1.);
+      Molecule m({position, position, position}, {0, 0, 0}, numParticlesAdded++, 0);
       cells[cellId].addParticle(m);
     }
   }
