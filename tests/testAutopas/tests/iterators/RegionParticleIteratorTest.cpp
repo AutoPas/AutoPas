@@ -114,3 +114,49 @@ INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTest,
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          RegionParticleIteratorTest::PrintToStringParamName());
+
+/**
+ * Generates an iterator in a parallel region but iterates with only one and expects to find everything.
+ * @note This behavior is needed by VerletClusterLists::updateHaloParticle().
+ */
+TEST_F(RegionParticleIteratorTest, testForceSequential) {
+  constexpr size_t particlesPerCell = 1;
+  auto cells = IteratorTestHelper::generateCellsWithPattern(10, {1ul, 2ul, 4ul, 7ul, 8ul, 9ul}, particlesPerCell);
+
+  // min (inclusive) and max (exclusive) along the line of particles
+  size_t interestMin = 2;
+  size_t interestMax = 8;
+  const auto interestMinD = static_cast<double>(interestMin);
+  const auto interestMaxD = static_cast<double>(interestMax);
+  std::array<double, 3> searchBoxMin{interestMinD, interestMinD, interestMinD};
+  std::array<double, 3> searchBoxMax{interestMaxD, interestMaxD, interestMaxD};
+  std::vector<size_t> searchBoxCellIndices(interestMax - interestMin);
+  std::iota(searchBoxCellIndices.begin(), searchBoxCellIndices.end(), interestMin);
+
+  // IDs of particles in cells 2, 4, 7
+  std::vector<size_t> expectedIndices = {1, 2, 3};
+
+  constexpr size_t numAdditionalVectors = 3;
+  std::vector<std::vector<Molecule>> additionalVectors(numAdditionalVectors);
+
+  size_t particleId = cells.size() + 100;
+  for (auto &vector : additionalVectors) {
+    vector.emplace_back(Molecule({interestMinD, interestMinD, interestMinD}, {0., 0., 0.}, particleId));
+    expectedIndices.push_back(particleId);
+    ++particleId;
+  }
+
+#pragma omp parallel
+  {
+    std::vector<size_t> foundParticles;
+    constexpr bool modifyable = true;
+    autopas::internal::RegionParticleIterator<Molecule, FMCell, modifyable> iter(
+        &cells, searchBoxMin, searchBoxMax, searchBoxCellIndices, nullptr,
+        autopas::IteratorBehavior::ownedOrHalo | autopas::IteratorBehavior::forceSequential, &additionalVectors);
+    for (; iter.isValid(); ++iter) {
+      foundParticles.push_back(iter->getID());
+      std::cout << autopas::utils::ArrayUtils::to_string(iter->getR()) << std::endl;
+    }
+    EXPECT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
+  }
+}
