@@ -54,17 +54,18 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
         _endRegion(endRegion),
         _indicesInRegion(indicesInRegion) {
     bool forceSequential = this->_behavior & IteratorBehavior::forceSequential;
-    auto myThreadId = autopas_get_thread_num();
-    _currentRegionIndex = forceSequential ? 0 : myThreadId;
-    if (additionalParticleVectorToIterate and (forceSequential or myThreadId == autopas_get_num_threads() - 1)) {
+    size_t offset = forceSequential ? 0ul : autopas_get_thread_num();
+    _currentRegionIndex = offset;
+    if (additionalParticleVectorToIterate and
+        (forceSequential or autopas_get_thread_num() == autopas_get_num_threads() - 1)) {
       // we want to iterate with the last thread over the additional particle vector.
       this->_additionalParticleVectorToIterateState =
           decltype(this->_additionalParticleVectorToIterateState)::notStarted;
     }
 
     this->_vectorOfCells = cont;
-    if (_indicesInRegion.size() > static_cast<size_t>(myThreadId)) {
-      this->_iteratorAcrossCells = cont->begin() + _indicesInRegion[myThreadId];
+    if (_indicesInRegion.size() > offset) {
+      this->_iteratorAcrossCells = cont->begin() + _indicesInRegion[offset];
       this->_iteratorWithinOneCell = this->_iteratorAcrossCells->begin();
     } else if (this->_additionalParticleVectorToIterateState ==
                decltype(this->_additionalParticleVectorToIterateState)::notStarted) {
@@ -107,7 +108,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
     return *this;
   }
 
-  bool isValid() const override {
+  [[nodiscard]] bool isValid() const override {
     return ParticleIteratorType::isValid() && utils::inBox(this->operator*().getR(), _startRegion, _endRegion);
   }
 

@@ -155,7 +155,6 @@ TEST_F(RegionParticleIteratorTest, testForceSequential) {
         autopas::IteratorBehavior::ownedOrHalo | autopas::IteratorBehavior::forceSequential, &additionalVectors);
     for (; iter.isValid(); ++iter) {
       foundParticles.push_back(iter->getID());
-      std::cout << autopas::utils::ArrayUtils::to_string(iter->getR()) << std::endl;
     }
     EXPECT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
   }
