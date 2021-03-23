@@ -8,6 +8,7 @@
 
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <mpi.h>
 
 #include <iomanip>
 #include <iostream>
@@ -70,6 +71,7 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency.value);
   autopas.setVerletSkin(_config->verletSkinRadius.value);
   autopas.setAcquisitionFunction(_config->acquisitionFunctionOption.value);
+  autopas.setOutputSuffix(getMPISuffix());
   autopas::Logger::get()->set_level(_config->logLevel.value);
   autopas.init();
 
@@ -369,6 +371,16 @@ bool Simulation::needsMoreIterations() const {
   return _iteration < _config->iterations.value or _numTuningPhasesCompleted < _config->tuningPhases.value;
 }
 
+std::string Simulation::getMPISuffix() const {
+  std::string suffix;
+  if (_config->mpiStrategyOption.value.divideAndConquer) {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    suffix = "mpi_rank_" + std::to_string(rank) + "_";
+  }
+  return suffix;
+}
+
 void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   _timers.vtk.start();
 
@@ -377,7 +389,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   const auto numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly);
   std::ostringstream strstr;
   auto maxNumDigits = std::to_string(_config->iterations.value).length();
-  strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << _iteration << ".vtk";
+  strstr << fileBaseName << "_" << getMPISuffix() << std::setfill('0') << std::setw(maxNumDigits) << _iteration << ".vtk";
   std::ofstream vtkFile;
   vtkFile.open(strstr.str());
 
