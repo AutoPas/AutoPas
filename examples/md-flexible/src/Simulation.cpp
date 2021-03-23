@@ -8,7 +8,9 @@
 
 #include <sys/ioctl.h>
 #include <unistd.h>
+#ifdef AUTOPAS_MPI
 #include <mpi.h>
+#endif
 
 #include <iomanip>
 #include <iostream>
@@ -373,11 +375,13 @@ bool Simulation::needsMoreIterations() const {
 
 std::string Simulation::getMPISuffix() const {
   std::string suffix;
-  if (_config->mpiStrategyOption.value.divideAndConquer) {
+  #ifdef AUTOPAS_MPI
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    suffix = "mpi_rank_" + std::to_string(rank) + "_";
-  }
+    std::ostringstream output;
+    output << "mpi_rank_" << rank << "_";
+    suffix = output.str();
+  #endif
   return suffix;
 }
 

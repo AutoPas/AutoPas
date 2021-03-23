@@ -85,7 +85,7 @@ class Simulation {
   /**
    * Returns Suffix for the mpi rank the process is running on.
    * Otherwise returns empty string.
-   * @return
+   * @return suffix
    */
   [[nodiscard]] std::string getMPISuffix() const;
 
