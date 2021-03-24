@@ -168,14 +168,15 @@ class LogicHandler {
             utils::ExceptionHandler::exception(
                 "LogicHandler::addHaloParticle: wasn't able to update halo particle that is too close to "
                 "domain (more than cutoff + skin/2). Rebuild frequency not high enough / skin too small!\n"
-                "Cutoff       : {}\n" +
-                "Skin         : {}\n" +
-                "BoxMin       : {}\n" +
-                "BoxMax       : {}\n" +
-                "Dangerous Min: {}\n" +
-                "Dangerous Max: {}\n" +
-                "Particle     : {}\n" +
-                container->getCutoff(), container->getSkin(), container->getBoxMin(), container->getBoxMax(), dangerousBoxMin, dangerousBoxMax, haloParticle.toString());
+                "Cutoff       : {}\n"
+                "Skin         : {}\n"
+                "BoxMin       : {}\n"
+                "BoxMax       : {}\n"
+                "Dangerous Min: {}\n"
+                "Dangerous Max: {}\n"
+                "Particle     : {}\n",
+                container->getCutoff(), container->getSkin(), container->getBoxMin(), container->getBoxMax(),
+                dangerousBoxMin, dangerousBoxMax, haloParticle.toString());
           }
         }
       } else {
@@ -232,7 +233,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::begin()
    */
-  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior) {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return _autoTuner.getContainer()->begin(behavior);
   }
@@ -240,8 +241,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::begin()
    */
-  autopas::ParticleIteratorWrapper<Particle, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+  autopas::ParticleIteratorWrapper<Particle, false> begin(IteratorBehavior behavior) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return std::as_const(_autoTuner).getContainer()->begin(behavior);
   }
@@ -249,9 +249,9 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                                     std::array<double, 3> higherCorner,
+                                                                     IteratorBehavior behavior) {
     // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
       if (lowerCorner > higherCorner) {
@@ -270,9 +270,9 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+  autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                                      std::array<double, 3> higherCorner,
+                                                                      IteratorBehavior behavior) const {
     // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
       if (lowerCorner > higherCorner) {

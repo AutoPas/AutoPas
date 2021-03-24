@@ -257,20 +257,22 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   }
 
   ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
     return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::ParticleIterator<ParticleType, ReferenceCell, true>(&this->_cells, 0, &_cellBlock, behavior));
+        new internal::ParticleIterator<ParticleType, ReferenceCell, true>(&this->_cells, 0, &_cellBlock, behavior,
+                                                                          nullptr));
   }
 
   ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const override {
     return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::ParticleIterator<ParticleType, ReferenceCell, false>(&this->_cells, 0, &_cellBlock, behavior));
+        new internal::ParticleIterator<ParticleType, ReferenceCell, false>(&this->_cells, 0, &_cellBlock, behavior,
+                                                                           nullptr));
   }
 
-  ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                                const std::array<double, 3> &higherCorner,
+                                                                IteratorBehavior behavior) override {
     // We increase the search region by skin, as particles can move over cell borders.
     auto startIndex3D =
         this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
@@ -293,12 +295,12 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
     return ParticleIteratorWrapper<ParticleType, true>(
         new internal::RegionParticleIterator<ParticleType, ReferenceCell, true>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior));
+            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior, nullptr));
   }
 
-  ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+  ParticleIteratorWrapper<ParticleType, false> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                                 const std::array<double, 3> &higherCorner,
+                                                                 IteratorBehavior behavior) const override {
     // We increase the search region by skin, as particles can move over cell borders.
     auto startIndex3D =
         this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
@@ -321,7 +323,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ReferenceCell, false>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior));
+            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior, nullptr));
   }
 
   /**

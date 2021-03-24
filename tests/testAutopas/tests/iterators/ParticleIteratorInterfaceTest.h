@@ -10,8 +10,8 @@
 
 #include <tuple>
 
-#include "autopas/AutoPas.h"
-#include "testingHelpers/commonTypedefs.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/IteratorBehavior.h"
 
 using testingTuple =
     std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*regionIterator (true) or regular (false)*/,

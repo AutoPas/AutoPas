@@ -1,7 +1,7 @@
 /**
  * @file ParticleIteratorTest.h
- * @author tchipev
- * @date 19.01.18
+ * @author F. Gratl
+ * @date 08.03.21
  */
 
 #pragma once
@@ -9,21 +9,23 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/utils/WrapOpenMP.h"
-#include "testingHelpers/commonTypedefs.h"
 
 class ParticleIteratorTest : public AutoPasTestBase, public ::testing::WithParamInterface<std::tuple<size_t, size_t>> {
- protected:
+ public:
   /**
-   * Generates a given amount of cells where only indicated cells contain a given amount of particles.
-   * @param numCells
-   * @param cellsToFill
-   * @param particlesPerCell
-   * @return Vector of generated and filled cells.
+   * Converter functor for generated test names.
    */
-  static std::vector<FMCell> generateCellsWithPattern(size_t numCells, const std::vector<size_t> &cellsToFill,
-                                                      size_t particlesPerCell);
+  struct PrintToStringParamName {
+    template <class ParamType>
+    std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
+      auto [numThreads, numAdditionalParticleVectors] = static_cast<ParamType>(info.param);
+      std::stringstream ss;
+      ss << "Threads" << numThreads << "_AdditionalParticleVectors" << numAdditionalParticleVectors;
+      return ss.str();
+    }
+  };
 
+ protected:
   /**
    * Checks that all particles in a vector of cells are accessed by the iterator.
    * @param cellsWithParticles Indices of cells that shall contain particles.

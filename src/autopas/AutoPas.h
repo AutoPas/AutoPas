@@ -219,19 +219,17 @@ class AutoPas {
   /**
    * Iterate over all particles by using
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
-   * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
+   * @param behavior The behavior of the iterator. You can specify whether to iterate over owned particles, halo
    * particles, or both.
    * @return iterator to the first particle.
    */
-  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-    return _logicHandler->begin(behavior);
-  }
+  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) { return _logicHandler->begin(behavior); }
 
   /**
    * @copydoc begin()
    * @note const version
    */
-  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     return std::as_const(*_logicHandler).begin(behavior);
   }
 
@@ -239,7 +237,7 @@ class AutoPas {
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const { return begin(behavior); }
+  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
 
   /**
    * End of the iterator.
@@ -259,7 +257,7 @@ class AutoPas {
    * @return iterator to iterate over all particles in a specific region
    */
   iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                               IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
@@ -268,7 +266,7 @@ class AutoPas {
    * @note const version
    */
   const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                                     IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+                                     IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
@@ -277,22 +275,21 @@ class AutoPas {
    * @param behavior Tells this function to report the number of halo, owned or all particles.
    * @return the number of particles in this container.
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::ownedOnly) const {
-    switch (behavior) {
-      case IteratorBehavior::ownedOnly: {
-        return _logicHandler->getNumParticlesOwned();
-      }
-      case IteratorBehavior::haloOnly: {
-        return _logicHandler->getNumParticlesHalo();
-      }
-      case IteratorBehavior::haloAndOwned: {
-        return _logicHandler->getNumParticlesOwned() + _logicHandler->getNumParticlesHalo();
-      }
-      case IteratorBehavior::haloOwnedAndDummy: {
-        utils::ExceptionHandler::exception("behavior == haloOwnedAndDummy is not supported for getNumberOfParticles.");
-      }
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const {
+    size_t numParticles{0};
+    if (behavior & IteratorBehavior::owned) {
+      numParticles += _logicHandler->getNumParticlesOwned();
     }
-    return 0;
+    if (behavior & IteratorBehavior::halo) {
+      numParticles += _logicHandler->getNumParticlesHalo();
+    }
+    // non fatal sanity check whether the behavior contained anything else
+    if (behavior & ~(IteratorBehavior::ownedOrHalo)) {
+      utils::ExceptionHandler::exception(
+          "AutoPas::getNumberOfParticles() does not support iterator behaviors other than owned or halo.");
+    }
+
+    return numParticles;
   }
 
   /**

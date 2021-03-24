@@ -97,8 +97,8 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfI
   EXPECT_EQ(particleIDsOwned.size() + particleIDsHalo.size(),
             numParticles1dTotal * numParticles1dTotal * numParticles1dTotal);
   // getNumberOfParticles works via counters in the logic handler
-  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly), particleIDsOwned.size());
-  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::haloOnly), particleIDsHalo.size());
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::owned), particleIDsOwned.size());
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::halo), particleIDsHalo.size());
   return std::make_tuple(particleIDsOwned, particleIDsHalo, particleIDsInterestOwned, particleIDsInterestHalo);
 }
 
@@ -304,4 +304,31 @@ void findParticles(AutoPasT &autopas, FgetIter getIter, const std::vector<size_t
   EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
 }
 
+/**
+ * Generates a given amount of cells where only indicated cells contain a given amount of particles.
+ * Cells can be considered to be on the main diagonal through 3D space. So the xyz coordinates of each cell's lower
+ * corner are {cellID, cellID, cellID}. The particles are also placed along this line within their cells. Within each
+ * cell the particles are placed equidistant around the center.
+ * @param numCells
+ * @param cellsToFill
+ * @param particlesPerCell
+ * @return Vector of generated and filled cells.
+ */
+static std::vector<FMCell> generateCellsWithPattern(const size_t numCells, const std::vector<size_t> &cellsToFill,
+                                                    const size_t particlesPerCell) {
+  constexpr double cellDiagonal = 1.;
+  // distance between particles within one cell
+  const double distBetweenParticles = cellDiagonal / (particlesPerCell + 1.);
+
+  std::vector<FMCell> cells(numCells);
+  size_t numParticlesAdded = 0;
+  for (auto cellId : cellsToFill) {
+    for (size_t i = 0; i < particlesPerCell; ++i) {
+      auto position = cellId + distBetweenParticles * (i + 1.);
+      Molecule m({position, position, position}, {0, 0, 0}, numParticlesAdded++, 0);
+      cells[cellId].addParticle(m);
+    }
+  }
+  return cells;
+}
 }  // namespace IteratorTestHelper

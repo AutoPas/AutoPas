@@ -7,10 +7,7 @@
 
 #include "IteratorTestHelper.h"
 #include "autopas/AutoPas.h"
-#include "autopas/utils/ArrayUtils.h"
 #include "testingHelpers/EmptyFunctor.h"
-
-using namespace autopas;
 
 template <typename AutoPasT>
 auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
@@ -66,22 +63,24 @@ TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
 
   std::vector<size_t> expectedIDs;
   switch (behavior) {
-    case autopas::IteratorBehavior::ownedOnly: {
+    case autopas::IteratorBehavior::owned: {
       expectedIDs = particleIDsInBoxOwned;
       break;
     }
-    case autopas::IteratorBehavior::haloOnly: {
+    case autopas::IteratorBehavior::halo: {
       expectedIDs = particleIDsInBoxHalo;
       break;
     }
-    case autopas::IteratorBehavior::haloAndOwned: {
+    case autopas::IteratorBehavior::ownedOrHalo: {
       expectedIDs = particleIDsInBoxOwned;
       expectedIDs.insert(expectedIDs.end(), particleIDsInBoxHalo.begin(), particleIDsInBoxHalo.end());
       break;
     }
-    case autopas::IteratorBehavior::haloOwnedAndDummy: {
-      GTEST_FAIL() << "IteratorBehavior::haloOwnedAndDummy should not be tested through this test"
-                      " as container behavior with dummy particles is not uniform.";
+    default: {
+      GTEST_FAIL() << "IteratorBehavior::" << behavior
+                   << "  should not be tested through this test!\n"
+                      "Container behavior with dummy particles is not uniform.\n"
+                      "forceSequential alone makes no sense.";
       break;
     }
   }
@@ -110,18 +109,53 @@ static inline auto getTestableContainerOptions() {
 #endif
 }
 
-static inline auto getIteratorBehaviorOptions() {
-  auto allOptions = autopas::IteratorBehavior::getAllOptions();
-  std::set<autopas::IteratorBehavior> retSet;
-  // we ignore dummy particles in the general tests because they can behave differently depending on the container
-  std::set<autopas::IteratorBehavior> ignoredOptions = {autopas::IteratorBehavior::haloOwnedAndDummy};
-  std::set_difference(allOptions.begin(), allOptions.end(), ignoredOptions.begin(), ignoredOptions.end(),
-                      std::inserter(retSet, retSet.begin()));
-  return retSet;
-}
-
 INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTest,
                          Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
-                                 ValuesIn(getIteratorBehaviorOptions())),
+                                 ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          RegionParticleIteratorTest::PrintToStringParamName());
+
+/**
+ * Generates an iterator in a parallel region but iterates with only one and expects to find everything.
+ * @note This behavior is needed by VerletClusterLists::updateHaloParticle().
+ */
+TEST_F(RegionParticleIteratorTest, testForceSequential) {
+  constexpr size_t particlesPerCell = 1;
+  auto cells = IteratorTestHelper::generateCellsWithPattern(10, {1ul, 2ul, 4ul, 7ul, 8ul, 9ul}, particlesPerCell);
+
+  // min (inclusive) and max (exclusive) along the line of particles
+  size_t interestMin = 2;
+  size_t interestMax = 8;
+  const auto interestMinD = static_cast<double>(interestMin);
+  const auto interestMaxD = static_cast<double>(interestMax);
+  std::array<double, 3> searchBoxMin{interestMinD, interestMinD, interestMinD};
+  std::array<double, 3> searchBoxMax{interestMaxD, interestMaxD, interestMaxD};
+  std::vector<size_t> searchBoxCellIndices(interestMax - interestMin);
+  std::iota(searchBoxCellIndices.begin(), searchBoxCellIndices.end(), interestMin);
+
+  // IDs of particles in cells 2, 4, 7
+  std::vector<size_t> expectedIndices = {1, 2, 3};
+
+  constexpr size_t numAdditionalVectors = 3;
+  std::vector<std::vector<Molecule>> additionalVectors(numAdditionalVectors);
+
+  size_t particleId = cells.size() + 100;
+  for (auto &vector : additionalVectors) {
+    vector.emplace_back(Molecule({interestMinD, interestMinD, interestMinD}, {0., 0., 0.}, particleId));
+    expectedIndices.push_back(particleId);
+    ++particleId;
+  }
+
+#pragma omp parallel
+  {
+    std::vector<size_t> foundParticles;
+    constexpr bool modifyable = true;
+    autopas::internal::RegionParticleIterator<Molecule, FMCell, modifyable> iter(
+        &cells, searchBoxMin, searchBoxMax, searchBoxCellIndices, nullptr,
+        autopas::IteratorBehavior::ownedOrHalo | autopas::IteratorBehavior::forceSequential, &additionalVectors);
+    for (; iter.isValid(); ++iter) {
+      foundParticles.push_back(iter->getID());
+    }
+    EXPECT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
+  }
+}
