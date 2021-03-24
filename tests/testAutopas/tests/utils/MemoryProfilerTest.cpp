@@ -13,5 +13,5 @@
  */
 TEST(MemoryProfilerTest, currentMemoryUsage) {
   EXPECT_GT(autopas::memoryProfiler::currentMemoryUsage(), 0)
-      << "Memory profiler did not find any memory usage! Typically this test should report ~3300kb.";
+      << "Memory profiler did not find any memory usage! There should be some memory allocated by gtest.";
 }
