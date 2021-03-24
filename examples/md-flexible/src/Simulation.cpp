@@ -439,7 +439,6 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
 }
 
 double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const {
-
   size_t numberOfParticles = autopas.getNumberOfParticles();
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
