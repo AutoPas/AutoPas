@@ -181,6 +181,8 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
     }
 
+    std::cout << "This is " << getMPISuffix() << ". Homogeneity: " << calculateHomogeneity(autopas) << "\n";
+
     // only do time step related stuff when there actually is time-stepping
     if (_config->deltaT.value != 0) {
       // only write vtk files periodically and if a filename is given.

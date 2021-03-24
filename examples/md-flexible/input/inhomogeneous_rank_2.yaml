@@ -1,0 +1,40 @@
+container                        :  [DirectSum, LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterCells, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
+verlet-rebuild-frequency         :  20
+verlet-skin-radius               :  0.2
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Absolute-Value
+data-layout                      :  [AoS, SoA]
+traversal                        :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c01_cuda, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcc_cluster_iteration_cuda, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
+tuning-strategy                  :  full-Search
+mpi-strategy                     :  divide-and-conquer
+tuning-interval                  :  1000
+tuning-samples                   :  3
+tuning-max-evidence              :  10
+functor                          :  Lennard-Jones (12-6)
+newton3                          :  [disabled, enabled]
+cutoff                           :  3
+box-min                          :  [0, 0, 0]
+box-max                          :  [100, 100, 100]
+cell-size                        :  [1]
+deltaT                           :  0.00
+iterations                       :  10000
+periodic-boundaries              :  true
+Objects:
+  CubeGauss:
+    0:
+      particle-type: 0
+      particle-epsilon: 2.
+      particle-sigma: 2.
+      particle-mass: 2.
+      numberOfParticles: 10000
+      box-length: [80.,80.,80.]
+      distribution-mean: [50.0, 50.0, 50]
+      distribution-stddeviation: [3, 3, 3]
+      velocity: [0.,0.,0.]
+      bottomLeftCorner: [15.,0.,5.]
+log-level                        :  debug
+no-flops                         :  false
+no-end-config                    :  false
+no-progress-bar                  :  false
+vtk-filename                     :  inhomogeneous
+vtk-write-frequency              :  50
