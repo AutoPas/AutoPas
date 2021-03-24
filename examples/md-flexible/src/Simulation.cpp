@@ -457,6 +457,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
 }
 
 double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const {
+
   size_t numberOfParticles = autopas.getNumberOfParticles();
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
@@ -512,7 +513,7 @@ double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas)
   // calculate density for each cell
   std::vector<double> densityPerCell(numberOfCells, 0.0);
   for (int i = 0; i < particlesPerCell.size(); i++) {
-    densityPerCell[i] = (particlesPerCell[i] == 0)
+    densityPerCell[i] = (allVolumes[i] == 0)
                             ? 0
                             : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
   }
