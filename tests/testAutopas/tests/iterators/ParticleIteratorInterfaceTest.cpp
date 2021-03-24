@@ -63,39 +63,6 @@ auto ParticleIteratorInterfaceTest::deleteParticles(AutoPasT &autopas, F predica
     GTEST_FAIL() << "Calling deleteParticles with a const iterator! This indicates that the test is ill defined!";
   }
 }
-template <class AutoPasT>
-auto ParticleIteratorInterfaceTest::addParticles(AutoPasT &autopas, size_t idOffset, bool useRegionIterator,
-                                                 const autopas::IteratorBehavior &behavior) {
-  IteratorTestHelper::provideIterator<false>(autopas, behavior, useRegionIterator, [&](auto &autopas, auto getIter) {
-    std::atomic<bool> encounteredBadParticle = false;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-    {
-      for (auto iter = getIter(); iter.isValid(); ++iter) {
-        // only insert new particles for original particles. Otherwise this
-        // becomes an infinite loop.
-        if (iter->getID() < idOffset) {
-          // copy the particle, offset its ID and add it
-          auto newParticle = *iter;
-          newParticle.setID(newParticle.getID() + idOffset);
-          if (newParticle.isOwned()) {
-            autopas.addParticle(newParticle);
-          } else if (newParticle.isHalo()) {
-            autopas.addOrUpdateHaloParticle(newParticle);
-          } else {
-            // we can not fail the test here since failing from inside an
-            // OpenMP region is not possible
-            encounteredBadParticle.store(true, std::memory_order_relaxed);
-          }
-        }
-      }
-    }
-    if (encounteredBadParticle) {
-      GTEST_FAIL() << "Particle to add is neither owned nor halo!";
-    }
-  });
-}
 
 /**
  * This Test applies an iterator on the whole domain and expects to find that it is empty.
