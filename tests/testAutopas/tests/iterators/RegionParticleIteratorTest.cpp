@@ -80,7 +80,7 @@ TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
       GTEST_FAIL() << "IteratorBehavior::" << behavior
                    << "  should not be tested through this test!\n"
                       "Container behavior with dummy particles is not uniform.\n"
-                      "forceSequential alone makes no sense.";
+                      "Using forceSequential is not supported.";
       break;
     }
   }
