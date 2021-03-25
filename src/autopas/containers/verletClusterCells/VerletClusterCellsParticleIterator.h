@@ -42,7 +42,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    * @param particleDeletedObserver Observer that should be called, when a particle is deleted. Can be nullptr.
    */
   explicit VerletClusterCellsParticleIterator(CellVecType *cont, DummyStartsType &dummyStarts, double offsetToDummy,
-                                              IteratorBehavior behavior = haloAndOwned,
+                                              IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                               ParticleDeletedObserver *particleDeletedObserver = nullptr)
       : _vectorOfCells(cont),
         _dummyStarts(dummyStarts),
@@ -51,7 +51,9 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
         _offsetToDummy(offsetToDummy),
         _particleDeletedObserver(particleDeletedObserver) {
     // 1. set _cellId to thread number.
-    _cellId = autopas_get_thread_num();
+    if (not(_behavior & IteratorBehavior::forceSequential)) {
+      _cellId = autopas_get_thread_num();
+    }
 
     if (_cellId >= _vectorOfCells->size()) {
       // prevent segfaults if the _cellId is too large
@@ -79,7 +81,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
 
       while (_iteratorWithinOneCell == _cellEnd) {
         // increase _cellId by stride if we are at the end of a cell!
-        auto stride = autopas_get_num_threads();
+        auto stride = (_behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
         _cellId += stride;
 
         if (_cellId >= _vectorOfCells->size()) {
@@ -134,18 +136,10 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
    * @param p particle
    * @return true if particle fits the behavior
    */
-  bool fitsBehavior(const Particle &p) const {
-    switch (_behavior) {
-      case IteratorBehavior::haloOwnedAndDummy:
-        return true;
-      case IteratorBehavior::haloAndOwned:
-        return not p.isDummy();
-      case IteratorBehavior::ownedOnly:
-        return p.isOwned();
-      case IteratorBehavior::haloOnly:
-        return p.isHalo();
-    }
-    return false;
+  [[nodiscard]] bool fitsBehavior(const Particle &p) const {
+    return (((this->_behavior & IteratorBehavior::owned) and p.isOwned()) or
+            ((this->_behavior & IteratorBehavior::halo) and p.isHalo()) or
+            ((this->_behavior & IteratorBehavior::dummy) and p.isDummy()));
   }
 
   /**
@@ -222,7 +216,8 @@ class VerletClusterCellsRegionParticleIterator
   explicit VerletClusterCellsRegionParticleIterator(CellVecType *cont, DummyStartsType &dummyStarts,
                                                     std::array<double, 3> startRegion, std::array<double, 3> endRegion,
                                                     std::vector<size_t> indicesInRegion, double offsetToDummy,
-                                                    IteratorBehavior behavior = haloAndOwned, double skin = 0.0,
+                                                    IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+                                                    double skin = 0.0,
                                                     ParticleDeletedObserver *particleDeletedObserver = nullptr)
       : VerletClusterCellsParticleIterator<Particle, ParticleCell, modifiable>(cont, dummyStarts, offsetToDummy,
                                                                                behavior, particleDeletedObserver),
@@ -236,7 +231,9 @@ class VerletClusterCellsRegionParticleIterator
 
     // 2. set _currentRegionIndex to current thread id
     // also ensure that _currentIndex does not go beyond _indicesInRegion.
-    _currentRegionIndex = std::min(static_cast<unsigned long>(autopas_get_thread_num()), _indicesInRegion.size() - 1);
+    auto offset =
+        (behavior & IteratorBehavior::forceSequential) ? 1ul : static_cast<unsigned long>(autopas_get_thread_num());
+    _currentRegionIndex = std::min(offset, _indicesInRegion.size() - 1);
 
     // 3. set the _cellID to the appropriate value
     this->_cellId = _indicesInRegion[_currentRegionIndex];
@@ -272,7 +269,10 @@ class VerletClusterCellsRegionParticleIterator
         // Increase _currentRegionIndex by stride if we are at the end of a cell!
         // Also ensure that it does not go beyond _indicesInRegion.size() - 1.
         // The last entry of _indicesInRegion is invalid (>= _vectorOfCells->size()), so this is fine!
-        _currentRegionIndex = std::min(_currentRegionIndex + autopas_get_num_threads(), _indicesInRegion.size() - 1);
+        auto offset = (this->_behavior & IteratorBehavior::forceSequential)
+                          ? 1ul
+                          : static_cast<unsigned long>(autopas_get_num_threads());
+        _currentRegionIndex = std::min(_currentRegionIndex + offset, _indicesInRegion.size() - 1);
         this->_cellId = _indicesInRegion[_currentRegionIndex];
         if (this->_cellId >= this->_vectorOfCells->size()) {
           return *this;

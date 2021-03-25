@@ -1,39 +1,23 @@
 /**
  * @file ParticleIteratorTest.cpp
- * @author tchipev
- * @date 19.01.18
+ * @author F. Gratl
+ * @date 08.03.21
  */
 
 #include "ParticleIteratorTest.h"
 
-#include "autopas/containers/directSum/DirectSum.h"
-#include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "IteratorTestHelper.h"
 #include "autopas/iterators/ParticleIterator.h"
+#include "autopas/options/IteratorBehavior.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using namespace autopas;
 using namespace autopas::internal;
 
-std::vector<FMCell> ParticleIteratorTest::generateCellsWithPattern(const size_t numCells,
-                                                                   const std::vector<size_t> &cellsToFill,
-                                                                   const size_t particlesPerCell) {
-  std::vector<FMCell> cells(numCells);
-  size_t numParticlesAdded = 0;
-  for (auto cellId : cellsToFill) {
-    for (size_t i = 0; i < particlesPerCell; ++i) {
-      auto iAsDouble = static_cast<double>(i);
-      Molecule m({iAsDouble, iAsDouble, iAsDouble}, {0, 0, 0}, numParticlesAdded++, 0);
-      cells[cellId].addParticle(m);
-    }
-  }
-  return cells;
-}
-
 void ParticleIteratorTest::testAllParticlesFoundPattern(const std::vector<size_t> &cellsWithParticles,
                                                         size_t numThreads, size_t numAdditionalParticleVectors) {
   constexpr size_t particlesPerCell = 4;
-  auto cells = generateCellsWithPattern(10, cellsWithParticles, particlesPerCell);
+  auto cells = IteratorTestHelper::generateCellsWithPattern(10, cellsWithParticles, particlesPerCell);
   std::vector<std::vector<Molecule>> additionalParticles(numAdditionalParticleVectors);
   auto particlesTotal = cellsWithParticles.size() * particlesPerCell;
   // fill every additional particle buffer with particles
@@ -49,7 +33,7 @@ void ParticleIteratorTest::testAllParticlesFoundPattern(const std::vector<size_t
 #endif
   {
     for (auto iter = ParticleIterator<Molecule, FMCell, true>(
-             &cells, 0, nullptr, IteratorBehavior::haloAndOwned,
+             &cells, 0, nullptr, IteratorBehavior::ownedOrHalo,
              numAdditionalParticleVectors > 0 ? &additionalParticles : nullptr);
          iter.isValid(); ++iter) {
       auto particleID = iter->getID();
@@ -79,7 +63,7 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
   // Full Empty Full Empty Empty Full Full Empty Full Empty
   const std::vector<size_t> cellsToFill = {0ul, 2ul, 5ul, 6ul, 8ul};
   const size_t numParticlesToAddPerCell = 4;
-  auto data = generateCellsWithPattern(10, cellsToFill, numParticlesToAddPerCell);
+  auto data = IteratorTestHelper::generateCellsWithPattern(10, cellsToFill, numParticlesToAddPerCell);
 
   int numFoundParticles = 0;
 #ifdef AUTOPAS_OPENMP
@@ -106,135 +90,6 @@ TEST_F(ParticleIteratorTest, testFullIterator_deletion) {
   ASSERT_EQ(numFoundParticles, 0);
 }
 
-TEST_F(ParticleIteratorTest, testFullIterator_mutable) {
-  // Full Empty Full Empty Empty Full Full Empty Full Empty
-  std::vector<size_t> cellsToFill = {0ul, 2ul, 5ul, 6ul, 8ul};
-  const size_t numParticlesToAddPerCell = 4;
-  auto data = generateCellsWithPattern(10, cellsToFill, numParticlesToAddPerCell);
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  {
-    ParticleIterator<Molecule, FMCell, true> iter(&data);
-    for (; iter.isValid(); ++iter) {
-      double newVel = iter->getID() + 1;
-      std::array<double, 3> newVelArr = {newVel, newVel, newVel};
-      iter->setV(newVelArr);
-    }
-  }
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  {
-    ParticleIterator<Molecule, FMCell, true> iter(&data);
-    for (; iter.isValid(); ++iter) {
-      double expectedVel = iter->getID() + 1;
-      auto vel = iter->getV();
-      EXPECT_EQ(vel[0], expectedVel);
-      EXPECT_EQ(vel[1], expectedVel);
-      EXPECT_EQ(vel[2], expectedVel);
-    }
-  }
-}
-
-/**
- * Test the iterator behavior for owning and halo molecules.
- * this function expects that two molecules are already added to container:
- * mol should be added as normal particle.
- * haloMol as haloParticle.
- * @tparam Container
- * @tparam Molecule
- * @param container should have already an added mol (as owning molecule) and
- * haloMol (als halo molecule)
- * @param mol
- * @param haloMol
- */
-template <class Container, class Molecule>
-void testContainerIteratorBehavior(Container &container, Molecule &mol, Molecule &haloMol) {
-  // default
-  int count = 0;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(+ : count)
-#endif
-  for (auto iter = container.begin(); iter.isValid(); ++iter) {
-    count++;
-  }
-  EXPECT_EQ(count, 2);
-
-  // haloAndOwned (same as default)
-  count = 0;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(+ : count)
-#endif
-  for (auto iter = container.begin(IteratorBehavior::haloAndOwned); iter.isValid(); ++iter) {
-    count++;
-  }
-  EXPECT_EQ(count, 2);
-
-  // owned only
-  count = 0;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(+ : count)
-#endif
-  for (auto iter = container.begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
-    count++;
-    EXPECT_EQ(iter->getID(), mol.getID());
-  }
-  EXPECT_EQ(count, 1);
-
-  // halo only
-  count = 0;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(+ : count)
-#endif
-  for (auto iter = container.begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
-    count++;
-    EXPECT_EQ(iter->getID(), haloMol.getID());
-  }
-  EXPECT_EQ(count, 1);
-}
-
-TEST_F(ParticleIteratorTest, testIteratorBehaviorDirectSum) {
-  DirectSum<Molecule> ds({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
-  Molecule mol({1., 1., 1.}, {0., 0., 0.}, 1);
-  ds.addParticle(mol);
-  Molecule haloMol({-1., 1., 1.}, {0., 0., 0.}, 2, 0);
-  ds.addHaloParticle(haloMol);
-
-  testContainerIteratorBehavior(ds, mol, haloMol);
-}
-
-TEST_F(ParticleIteratorTest, testIteratorBehaviorLinkedCells) {
-  LinkedCells<Molecule> linkedCells({0., 0., 0.}, {10., 10., 10.}, 3, 0., 1.);
-  Molecule mol({1., 1., 1.}, {0., 0., 0.}, 1);
-  linkedCells.addParticle(mol);
-  Molecule haloMol({-1., 1., 1.}, {0., 0., 0.}, 2, 0);
-  linkedCells.addHaloParticle(haloMol);
-
-  testContainerIteratorBehavior(linkedCells, mol, haloMol);
-}
-
-TEST_F(ParticleIteratorTest, testIteratorBehaviorVerletLists) {
-  VerletLists<Molecule> verletLists({0., 0., 0.}, {10., 10., 10.}, 3, 0.);
-  Molecule mol({1., 1., 1.}, {0., 0., 0.}, 1, 0);
-  verletLists.addParticle(mol);
-  Molecule haloMol({-1., 1., 1.}, {0., 0., 0.}, 2, 0);
-  verletLists.addHaloParticle(haloMol);
-
-  // test normally
-  testContainerIteratorBehavior(verletLists, mol, haloMol);
-
-  // swap everything around, test if it still valid :)
-  haloMol.setR({1., 1., 1.});
-  mol.setR({-1., 1., 1.});
-  verletLists.begin(IteratorBehavior::ownedOnly)->setR({-1., 1., 1.});
-  verletLists.begin(IteratorBehavior::haloOnly)->setR({1., 1., 1.});
-
-  testContainerIteratorBehavior(verletLists, mol, haloMol);
-}
-
 #ifdef AUTOPAS_OPENMP
 const std::vector<size_t> threadNumsToTest{1, 2, 4};
 #else
@@ -243,4 +98,96 @@ const std::vector<size_t> threadNumsToTest{1};
 #endif
 
 INSTANTIATE_TEST_SUITE_P(Generated, ParticleIteratorTest,
-                         ::testing::Combine(::testing::ValuesIn(threadNumsToTest), ::testing::Values(0, 1, 2, 4)));
+                         ::testing::Combine(::testing::ValuesIn(threadNumsToTest), ::testing::Values(0, 1, 2, 4)),
+                         ParticleIteratorTest::PrintToStringParamName());
+
+template <class Iter>
+auto ParticleIteratorTest::iteratorsBehaveEqually(Iter &iter1, Iter &iter2) {
+  for (; iter1.isValid() and iter2.isValid(); ++iter1, ++iter2) {
+    EXPECT_EQ(*iter1, *iter2);
+  }
+}
+
+TEST_F(ParticleIteratorTest, testCopyConstructor) {
+  constexpr size_t particlesPerCell = 4;
+  auto cells = IteratorTestHelper::generateCellsWithPattern(10, {1ul, 3ul, 4ul, 7ul, 9ul}, particlesPerCell);
+
+  std::vector<std::vector<Molecule>> additionalVectors(3);
+  additionalVectors[1].emplace_back(Molecule({0., 0., 0.}, {0., 0., 0.}, 1337));
+
+  constexpr bool modifyable = true;
+  autopas::internal::ParticleIterator<Molecule, FMCell, modifyable> iter(
+      &cells, 0, nullptr, IteratorBehavior::ownedOrHalo, &additionalVectors);
+
+  auto iterCopy{iter};
+  iteratorsBehaveEqually(iter, iterCopy);
+}
+
+TEST_F(ParticleIteratorTest, testCopyAssignment) {
+  constexpr size_t particlesPerCell = 4;
+  auto cells = IteratorTestHelper::generateCellsWithPattern(10, {1ul, 3ul, 4ul, 7ul, 9ul}, particlesPerCell);
+
+  std::vector<std::vector<Molecule>> additionalVectors(3);
+  additionalVectors[1].emplace_back(Molecule({0., 0., 0.}, {0., 0., 0.}, 1337));
+
+  constexpr bool modifyable = true;
+  autopas::internal::ParticleIterator<Molecule, FMCell, modifyable> iter(
+      &cells, 0, nullptr, IteratorBehavior::ownedOrHalo, &additionalVectors);
+
+  auto iterCopy = iter;
+  iteratorsBehaveEqually(iter, iterCopy);
+}
+
+/**
+ * Generates an iterator in a parallel region but iterates with only one and expects to find everything.
+ * @note This behavior is needed by VerletClusterLists::updateHaloParticle().
+ */
+TEST_F(ParticleIteratorTest, testForceSequential) {
+  constexpr size_t particlesPerCell = 1;
+  auto cells = IteratorTestHelper::generateCellsWithPattern(4, {0ul, 1ul, 2ul, 3ul}, particlesPerCell);
+  auto particlesTotal = cells.size() * particlesPerCell;
+  std::vector<size_t> expectedIndices(particlesTotal);
+  std::iota(expectedIndices.begin(), expectedIndices.end(), 0);
+
+  constexpr size_t numAdditionalVectors = 3;
+  std::vector<std::vector<Molecule>> additionalVectors(numAdditionalVectors);
+
+  size_t particleId = expectedIndices.size() + 100;
+  for (auto &vector : additionalVectors) {
+    vector.emplace_back(Molecule({0., 0., 0.}, {0., 0., 0.}, particleId));
+    expectedIndices.push_back(particleId);
+    ++particleId;
+  }
+
+#pragma omp parallel
+  {
+    std::vector<size_t> foundParticles;
+    constexpr bool modifyable = true;
+    autopas::internal::ParticleIterator<Molecule, FMCell, modifyable> iter(
+        &cells, 0, nullptr, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, &additionalVectors);
+    for (; iter.isValid(); ++iter) {
+      foundParticles.push_back(iter->getID());
+    }
+    EXPECT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
+  }
+}
+
+/**
+ * Make sure the iterator does not crash and immediately is marked invalid when offset behind the last cell.
+ */
+TEST_F(ParticleIteratorTest, testNothing) {
+  std::vector<FMCell> cells{5};
+  ParticleIterator<Molecule, FMCell, true> iter{&cells, cells.size()};
+  EXPECT_FALSE(iter.isValid());
+}
+
+/**
+ * Same as testNothing but also with additional particle vectors.
+ */
+TEST_F(ParticleIteratorTest, testNothingWithAdditionalVectors) {
+  std::vector<FMCell> cells{5};
+  std::vector<std::vector<Molecule>> additionalPartilcleVectors(3);
+  ParticleIterator<Molecule, FMCell, true> iter{&cells, cells.size(), nullptr, IteratorBehavior::ownedOrHaloOrDummy,
+                                                &additionalPartilcleVectors};
+  EXPECT_FALSE(iter.isValid());
+}

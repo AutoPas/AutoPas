@@ -115,7 +115,7 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule> &autoPas) {
           }
         }
         // here it is important to only iterate over the owned particles!
-        for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::ownedOnly); iter.isValid();
+        for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid();
              ++iter) {
           auto particleCopy = *iter;
           particleCopy.addR(shiftVec);
@@ -216,7 +216,7 @@ template <typename Functor>
 void doAssertions(autopas::AutoPas<Molecule> &autoPas, Functor *functor, unsigned long numParticlesExpected) {
   std::vector<Molecule> molecules(numParticlesExpected);
   size_t numParticles = 0;
-  for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     ASSERT_LT(numParticles, numParticlesExpected) << "Too many particles owned by this container.";
     molecules[numParticles++] = *iter;
   }
@@ -237,11 +237,11 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecul
                   Functor *functor2) {
   std::array<Molecule, 2> molecules{};
   size_t numParticles = 0;
-  for (auto iter = autoPas1.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = autoPas1.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     ASSERT_LT(numParticles, 2) << "Too many owned particles.";
     molecules[numParticles++] = *iter;
   }
-  for (auto iter = autoPas2.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = autoPas2.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     ASSERT_LT(numParticles, 2) << "Too many owned particles.";
     molecules[numParticles++] = *iter;
   }
@@ -309,7 +309,7 @@ void testSimulationLoop(testingTuple options) {
   // update positions a bit (outside of domain!) + reset F
   {
     std::array<double, 3> moveVec{skin / 3., 0., 0.};
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
       iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
       iter->setF(zeroArr);
     }
@@ -322,7 +322,7 @@ void testSimulationLoop(testingTuple options) {
 
   // no position update this time, but resetF!
   {
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
       iter->setF(zeroArr);
     }
   }
@@ -467,12 +467,12 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
 
   autoPas.init();
 
-  ASSERT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::haloAndOwned), 0)
+  ASSERT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo), 0)
       << "Container was not initialized empty!";
 
   // add three purposely placed particles
   auto expectedParticles = addParticlesMinMidMax(autoPas);
-  ASSERT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly), expectedParticles.size())
+  ASSERT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::owned), expectedParticles.size())
       << "Container did not receive all particles before resize()!";
 
   auto boxMinNew = autopas::utils::ArrayMath::add(autoPas.getBoxMin(), {.5, .5, .5});
@@ -562,7 +562,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   {
     std::array<double, 3> moveVec{skin / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
-      for (auto iter = aP->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
         iter->setF(zeroArr);
       }
@@ -576,7 +576,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // reset F
   for (auto *aP : {&autoPas1, &autoPas2}) {
-    for (auto iter = aP->begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+    for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
       iter->setF(zeroArr);
     }
   }

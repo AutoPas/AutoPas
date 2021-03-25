@@ -171,7 +171,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     _aos2soaMap.reserve(_baseLinkedCells->getNumParticles());
     size_t i = 0;
     // needs to iterate also over dummies!
-    for (auto iter = _baseLinkedCells->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++i) {
+    for (auto iter = _baseLinkedCells->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
       _aos2soaMap[&(*iter)] = i;
     }
 
