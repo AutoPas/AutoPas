@@ -19,6 +19,13 @@ cmake ..
 make md-flexible
 ```
 
+## Testing
+Simple tests can be run via:
+```bash
+make mdFlexTests
+ctest -R mdFlexTests
+```
+
 ## Usage
 
 When starting md-flexible without any arguments a default simulation with

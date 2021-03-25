@@ -67,8 +67,6 @@ class AutoPas {
     // The logger is normally only flushed on successful program termination.
     // This line ensures flushing when log messages of level warning or more severe are created.
     autopas::Logger::get()->flush_on(spdlog::level::warn);
-
-    AutoPasLog(info, "AutoPas Version: {}", AutoPas_VERSION);
   }
 
   ~AutoPas() {
@@ -99,6 +97,7 @@ class AutoPas {
    *
    */
   void init() {
+    AutoPasLog(info, "AutoPas Version: {}", AutoPas_VERSION);
     if (_numSamples % _verletRebuildFrequency != 0) {
       AutoPasLog(warn,
                  "Number of samples ({}) is not a multiple of the rebuild frequency ({}). This can lead to problems "

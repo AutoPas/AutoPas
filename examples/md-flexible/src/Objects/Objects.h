@@ -10,13 +10,20 @@
 #include <iosfwd>
 #include <vector>
 
+#include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "src/TypeDefinitions.h"
 
 /**
  * Base class for describing objects made of particles.
  */
 class Object {
  public:
+  /**
+   * Type of all particles generated.
+   */
+  using ParticleType = ::ParticleType;
+
   /**
    * Constructor that should be used by inheriting types.
    * @param velocity
@@ -30,6 +37,26 @@ class Object {
 
   virtual ~Object() = default;
 
+  /**
+   * Generate the object in the given AutoPas container.
+   * @note Particle IDs for the new particles will start at the current value of autopas.getNumberOfParticles().
+   *
+   * @param autopas
+   */
+  virtual void generate(autopas::AutoPas<ParticleType> &autopas) const = 0;
+
+  /**
+   * Create a particle that acts as blueprint for all particles to be created for the object.
+   * @param autopas
+   * @return
+   */
+  [[nodiscard]] ParticleType getDummyParticle(const autopas::AutoPas<ParticleType> &autopas) const {
+    ParticleType dummyParticle;
+    dummyParticle.setV(_velocity);
+    dummyParticle.setID(autopas.getNumberOfParticles());
+    dummyParticle.setTypeId(_typeId);
+    return dummyParticle;
+  }
   /**
    * Getter for Velocity
    * @return velocity

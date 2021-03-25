@@ -12,6 +12,7 @@
 
 #include "Objects.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/ClosestPackingGenerator.h"
 
 /**
  * Class describing a cube of hexagonally closest packed particles.
@@ -56,6 +57,12 @@ class CubeClosestPacked : public Object {
            << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
+  }
+
+  void generate(autopas::AutoPas<ParticleType> &autopas) const override {
+    ParticleType dummyParticle = getDummyParticle(autopas);
+    autopasTools::generators::ClosestPackingGenerator::fillWithParticles(autopas, getBoxMin(), getBoxMax(),
+                                                                         dummyParticle, particleSpacing);
   }
 
  private:

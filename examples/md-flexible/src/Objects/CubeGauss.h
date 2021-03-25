@@ -7,6 +7,7 @@
 
 #include "Objects.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/GaussianGenerator.h"
 
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.
@@ -71,6 +72,12 @@ class CubeGauss : public Object {
            << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
+  }
+
+  void generate(autopas::AutoPas<ParticleType> &autopas) const override {
+    ParticleType dummyParticle = getDummyParticle(autopas);
+    autopasTools::generators::GaussianGenerator::fillWithParticles(autopas, getBoxMin(), getBoxMax(), numParticles,
+                                                                   dummyParticle, distributionMean, distributionStdDev);
   }
 
  private:
