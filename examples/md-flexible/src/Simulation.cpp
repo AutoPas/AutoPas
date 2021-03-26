@@ -375,13 +375,13 @@ bool Simulation::needsMoreIterations() const {
 
 std::string Simulation::getMPISuffix() const {
   std::string suffix;
-  #ifdef AUTOPAS_MPI
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    std::ostringstream output;
-    output << "mpi_rank_" << rank << "_";
-    suffix = output.str();
-  #endif
+#ifdef AUTOPAS_MPI
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  std::ostringstream output;
+  output << "mpi_rank_" << rank << "_";
+  suffix = output.str();
+#endif
   return suffix;
 }
 
@@ -393,7 +393,8 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   const auto numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly);
   std::ostringstream strstr;
   auto maxNumDigits = std::to_string(_config->iterations.value).length();
-  strstr << fileBaseName << "_" << getMPISuffix() << std::setfill('0') << std::setw(maxNumDigits) << _iteration << ".vtk";
+  strstr << fileBaseName << "_" << getMPISuffix() << std::setfill('0') << std::setw(maxNumDigits) << _iteration
+         << ".vtk";
   std::ofstream vtkFile;
   vtkFile.open(strstr.str());
 
