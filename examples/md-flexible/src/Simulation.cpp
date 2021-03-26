@@ -513,9 +513,8 @@ double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas)
   // calculate density for each cell
   std::vector<double> densityPerCell(numberOfCells, 0.0);
   for (int i = 0; i < particlesPerCell.size(); i++) {
-    densityPerCell[i] = (allVolumes[i] == 0)
-                            ? 0
-                            : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
+    densityPerCell[i] =
+        (allVolumes[i] == 0) ? 0 : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
   }
 
   // get mean and reserve variable for variance
