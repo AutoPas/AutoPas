@@ -78,9 +78,9 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   autopas::Logger::get()->set_level(_config->logLevel.value);
   autopas.init();
 
-  _homoName = "HomogeneityLogger" + getMPISuffix();
+  _homoName = "HomogeneityLogger_" + getMPISuffix();
 
-  auto outputFileName("AutoPas_iterationHomogeneity" + getMPISuffix() + ".csv");
+  auto outputFileName("AutoPas_iterationHomogeneity_" + getMPISuffix() + ".csv");
   auto headerLoggerName = _homoName + "header";
   auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
   headerLogger->set_pattern("%v");
