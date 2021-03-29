@@ -14,6 +14,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <fstream>
 
 #include "BoundaryConditions.h"
 #include "Checkpoint.h"
@@ -76,6 +77,18 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   autopas.setOutputSuffix(getMPISuffix());
   autopas::Logger::get()->set_level(_config->logLevel.value);
   autopas.init();
+
+  _homoName = "HomogeneityLogger" + getMPISuffix();
+
+  auto outputFileName("AutoPas_iterationHomogeneity" + getMPISuffix() + ".csv");
+  auto headerLoggerName = _homoName + "header";
+  auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
+  headerLogger->set_pattern("%v");
+  headerLogger->info(
+      "Iteration,homogeneity,density");
+  spdlog::drop(headerLoggerName);
+  auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_homoName, outputFileName);
+  logger->set_pattern("%v");
 
   // load checkpoint
   if (not _config->checkpointfile.value.empty()) {
@@ -181,7 +194,8 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
     }
 
-    std::cout << "This is " << getMPISuffix() << ". Homogeneity: " << calculateHomogeneity(autopas) << "\n";
+    spdlog::get(_homoName)
+        ->info("{},{},{}", _iteration, calculateHomogeneity(autopas), calcMeanDensity(autopas));
 
     // only do time step related stuff when there actually is time-stepping
     if (_config->deltaT.value != 0) {
@@ -455,6 +469,22 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   vtkFile.close();
 
   _timers.vtk.stop();
+}
+
+double Simulation::calcMeanDensity(autopas::AutoPas<ParticleType> &autopas) const {
+  size_t numberOfParticles = autopas.getNumberOfParticles();
+
+  std::array<double, 3> startCorner = autopas.getBoxMin();
+  std::array<double, 3> endCorner = autopas.getBoxMax();
+  std::array<double, 3> domainSizePerDimension = {};
+  for (int i = 0; i < 3; ++i) {
+    domainSizePerDimension[i] = endCorner[i] - startCorner[i];
+  }
+
+  // get cellLength which is equal in each direction, derived from the domainsize and the requested number of cells
+  double volume = domainSizePerDimension[0] * domainSizePerDimension[1] * domainSizePerDimension[2];
+
+  return numberOfParticles / volume;
 }
 
 double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const {

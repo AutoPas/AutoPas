@@ -8,6 +8,8 @@
 #include "TypeDefinitions.h"
 #include "autopas/AutoPas.h"
 #include "parsing/MDFlexConfig.h"
+#include <iostream>
+#include <fstream>
 
 /**
  * The main simulation class.
@@ -109,6 +111,13 @@ class Simulation {
   [[nodiscard]] const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
 
   /**
+   * Calculate the mean density of the scenario
+   * @param autopas
+   * @return
+   */
+  [[nodiscard]] double calcMeanDensity(autopas::AutoPas<ParticleType> &autopas) const;
+
+  /**
    * Calculate the homogeneity of the scenario by using the standard deviation.
    * @param autopas
    * @return double
@@ -189,4 +198,6 @@ class Simulation {
    * Homogeneity of the scenario, calculated by the standard deviation of the density.
    */
   double _homogeneity = 0;
+
+  std::string _homoName;
 };
