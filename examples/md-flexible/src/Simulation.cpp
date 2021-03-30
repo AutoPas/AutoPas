@@ -8,6 +8,9 @@
 
 #include <sys/ioctl.h>
 #include <unistd.h>
+#ifdef AUTOPAS_MPI
+#include <mpi.h>
+#endif
 
 #include <iomanip>
 #include <iostream>
@@ -70,6 +73,7 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency.value);
   autopas.setVerletSkin(_config->verletSkinRadius.value);
   autopas.setAcquisitionFunction(_config->acquisitionFunctionOption.value);
+  autopas.setOutputSuffix(getMPISuffix());
   autopas::Logger::get()->set_level(_config->logLevel.value);
   autopas.init();
 
@@ -369,6 +373,18 @@ bool Simulation::needsMoreIterations() const {
   return _iteration < _config->iterations.value or _numTuningPhasesCompleted < _config->tuningPhases.value;
 }
 
+std::string Simulation::getMPISuffix() const {
+  std::string suffix;
+#ifdef AUTOPAS_MPI
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  std::ostringstream output;
+  output << "mpi_rank_" << rank << "_";
+  suffix = output.str();
+#endif
+  return suffix;
+}
+
 void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   _timers.vtk.start();
 
@@ -377,7 +393,8 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   const auto numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::owned);
   std::ostringstream strstr;
   auto maxNumDigits = std::to_string(_config->iterations.value).length();
-  strstr << fileBaseName << "_" << std::setfill('0') << std::setw(maxNumDigits) << _iteration << ".vtk";
+  strstr << fileBaseName << "_" << getMPISuffix() << std::setfill('0') << std::setw(maxNumDigits) << _iteration
+         << ".vtk";
   std::ofstream vtkFile;
   vtkFile.open(strstr.str());
 
@@ -494,9 +511,8 @@ double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas)
   // calculate density for each cell
   std::vector<double> densityPerCell(numberOfCells, 0.0);
   for (int i = 0; i < particlesPerCell.size(); i++) {
-    densityPerCell[i] = (particlesPerCell[i] == 0)
-                            ? 0
-                            : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
+    densityPerCell[i] =
+        (allVolumes[i] == 0) ? 0 : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
   }
 
   // get mean and reserve variable for variance

@@ -83,6 +83,13 @@ class Simulation {
   [[nodiscard]] bool needsMoreIterations() const;
 
   /**
+   * Returns Suffix for the mpi rank the process is running on.
+   * Otherwise returns empty string.
+   * @return suffix
+   */
+  [[nodiscard]] std::string getMPISuffix() const;
+
+  /**
    * Gives an estimate of how many iterations the simulation will do in total.
    * @return The estimate and true iff this is the correct number and not only an estimate.
    */
