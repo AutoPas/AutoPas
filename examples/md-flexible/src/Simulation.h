@@ -122,7 +122,7 @@ class Simulation {
    * @param autopas
    * @return double
    */
-  [[nodiscard]] double calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const;
+  [[nodiscard]] double* calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const;
 
  private:
   /**

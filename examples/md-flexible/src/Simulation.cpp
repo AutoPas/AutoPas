@@ -85,7 +85,7 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
   headerLogger->set_pattern("%v");
   headerLogger->info(
-      "Iteration,homogeneity,density");
+      "Iteration,homogeneity,mean_density,max_density");
   spdlog::drop(headerLoggerName);
   auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_homoName, outputFileName);
   logger->set_pattern("%v");
@@ -183,7 +183,7 @@ void Simulation::globalForces(autopas::AutoPas<ParticleType> &autopas) {
 }
 
 void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
-  this->_homogeneity = Simulation::calculateHomogeneity(autopas);
+  this->_homogeneity = Simulation::calculateHomogeneity(autopas)[0];
   _timers.simulate.start();
 
   auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumIterations();
@@ -194,8 +194,10 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
     }
 
+    double* data = calculateHomogeneity(autopas);
+
     spdlog::get(_homoName)
-        ->info("{},{},{}", _iteration, calculateHomogeneity(autopas), calcMeanDensity(autopas));
+        ->info("{},{},{},{}", _iteration, data[0], data[1], data[2]);
 
     // only do time step related stuff when there actually is time-stepping
     if (_config->deltaT.value != 0) {
@@ -487,7 +489,8 @@ double Simulation::calcMeanDensity(autopas::AutoPas<ParticleType> &autopas) cons
   return numberOfParticles / volume;
 }
 
-double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const {
+double* Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const {
+  double* data = new double [3];
   size_t numberOfParticles = autopas.getNumberOfParticles();
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
@@ -541,14 +544,19 @@ double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas)
   }
 
   // calculate density for each cell
+  data[2] = 0;
   std::vector<double> densityPerCell(numberOfCells, 0.0);
   for (int i = 0; i < particlesPerCell.size(); i++) {
     densityPerCell[i] =
         (allVolumes[i] == 0) ? 0 : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
+    if (densityPerCell[i] > data[2]) {
+      data[2] = densityPerCell[i];
+    }
   }
 
   // get mean and reserve variable for variance
   double mean = numberOfParticles / volume;
+  data[1] = mean;
   double variance = 0.0;
 
   // calculate variance
@@ -558,7 +566,9 @@ double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas)
   }
 
   // finally calculate standard deviation
-  return sqrt(variance);
+  //return sqrt(variance);
+  data[0] = sqrt(variance);
+  return data;
 }
 
 void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
