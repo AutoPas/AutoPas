@@ -84,8 +84,7 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   auto headerLoggerName = _homoName + "header";
   auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
   headerLogger->set_pattern("%v");
-  headerLogger->info(
-      "Iteration,homogeneity,mean_density,max_density");
+  headerLogger->info("Iteration,homogeneity,mean_density,max_density");
   spdlog::drop(headerLoggerName);
   auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_homoName, outputFileName);
   logger->set_pattern("%v");
@@ -194,10 +193,9 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
     }
 
-    double* data = calculateHomogeneity(autopas);
+    double *data = calculateHomogeneity(autopas);
 
-    spdlog::get(_homoName)
-        ->info("{},{},{},{}", _iteration, data[0], data[1], data[2]);
+    spdlog::get(_homoName)->info("{},{},{},{}", _iteration, data[0], data[1], data[2]);
 
     // only do time step related stuff when there actually is time-stepping
     if (_config->deltaT.value != 0) {
@@ -489,8 +487,8 @@ double Simulation::calcMeanDensity(autopas::AutoPas<ParticleType> &autopas) cons
   return numberOfParticles / volume;
 }
 
-double* Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const {
-  double* data = new double [3];
+double *Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const {
+  double *data = new double[3];
   size_t numberOfParticles = autopas.getNumberOfParticles();
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
@@ -566,7 +564,7 @@ double* Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas
   }
 
   // finally calculate standard deviation
-  //return sqrt(variance);
+  // return sqrt(variance);
   data[0] = sqrt(variance);
   return data;
 }
