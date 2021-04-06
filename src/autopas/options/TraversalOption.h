@@ -44,6 +44,11 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_sliced_c02,
     /**
+     * LCSlicedBlocksTraversal : 3D slicing with as many blocks of minimal volume as possible. Tests for locks before
+     * setting them. Uses a single master lock for lock testing.
+     */
+    lc_sliced_blocks,
+    /**
      * LCC01Traversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
      * parallel. Good load balancing and no overhead.
      */
@@ -222,6 +227,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_sliced, "lc_sliced"},
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
+        {TraversalOption::lc_sliced_blocks, "lc_sliced_blocks"},
         {TraversalOption::lc_c01, "lc_c01"},
         {TraversalOption::lc_c01_cuda, "lc_c01_cuda"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},

@@ -21,6 +21,7 @@
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC18Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedBalancedTraversal.h"
+#include "autopas/containers/linkedCells/traversals/LCSlicedBlocks.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedC02Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
 #include "autopas/containers/verletClusterCells/traversals/VCCClusterIterationCUDATraversal.h"
@@ -114,6 +115,10 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     }
     case TraversalOption::lc_sliced_balanced: {
       return std::make_unique<LCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
+    case TraversalOption::lc_sliced_blocks: {
+      return std::make_unique<LCSlicedBlocksTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::lc_c01: {
