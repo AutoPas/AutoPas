@@ -17,16 +17,17 @@
 namespace autopas {
 
 /**
-* This class provides the multiple dimension (cuboid) sliced traversal.
-*
-* @tparam ParticleCell
-* @tparam PairwiseFunctor
-* @tparam dataLayout
-* @tparam useNewton3
-*/
+ * This class provides the multiple dimension (cuboid) sliced traversal.
+ *
+ * @tparam ParticleCell
+ * @tparam PairwiseFunctor
+ * @tparam dataLayout
+ * @tparam useNewton3
+ */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class LCSlicedBlocksTraversal : public SlicedBlocksBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                           public LCTraversalInterface<ParticleCell> {
+class LCSlicedBlocksTraversal
+    : public SlicedBlocksBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+      public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the multiple dimension sliced traversal
@@ -37,9 +38,9 @@ class LCSlicedBlocksTraversal : public SlicedBlocksBasedTraversal<ParticleCell, 
    * @param cellLength cell length.
    */
   explicit LCSlicedBlocksTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                              const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBlocksBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                       interactionLength, cellLength),
+                                   const double interactionLength, const std::array<double, 3> &cellLength)
+      : SlicedBlocksBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 
   void traverseParticlePairs() override;
@@ -62,4 +63,4 @@ inline void LCSlicedBlocksTraversal<ParticleCell, PairwiseFunctor, dataLayout, u
     _cellHandler.processBaseCell(cells, id);
   });
 }
-}
+}  // namespace autopas

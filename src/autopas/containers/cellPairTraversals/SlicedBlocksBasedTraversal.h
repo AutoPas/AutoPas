@@ -56,7 +56,7 @@ class SlicedBlocksBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param cellLength cell length.
    */
   explicit SlicedBlocksBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                   const double interactionLength, const std::array<double, 3> &cellLength)
+                                      const double interactionLength, const std::array<double, 3> &cellLength)
       : CellPairTraversal<ParticleCell>(dims),
         _overlap{},
         _dimsPerLength{},
@@ -231,14 +231,22 @@ class SlicedBlocksBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   int lockToSubBlocks(int x, int y, int z) {
     // 0 => my lock and 1 => neighbour lock
-    if (x == 0 and  y == 0 and  z == 0) return 0;
-    else if (x == 1 and  y == 0 and  z == 0) return 100;
-    else if (x == 0 and  y == 1 and  z == 0) return 10;
-    else if (x == 0 and  y == 0 and  z == 1) return 1;
-    else if (x == 1 and  y == 1 and  z == 0) return 110;
-    else if (x == 1 and  y == 0 and  z == 1) return 101;
-    else if (x == 0 and  y == 1 and  z == 1) return 11;
-    else if (x == 1 and  y == 1 and  z == 1) return 111;
+    if (x == 0 and y == 0 and z == 0)
+      return 0;
+    else if (x == 1 and y == 0 and z == 0)
+      return 100;
+    else if (x == 0 and y == 1 and z == 0)
+      return 10;
+    else if (x == 0 and y == 0 and z == 1)
+      return 1;
+    else if (x == 1 and y == 1 and z == 0)
+      return 110;
+    else if (x == 1 and y == 0 and z == 1)
+      return 101;
+    else if (x == 0 and y == 1 and z == 1)
+      return 11;
+    else if (x == 1 and y == 1 and z == 1)
+      return 111;
     else {
       AutoPasLog(error, "Requested not a SubBlock for Locking.");
       return 0;
@@ -275,7 +283,7 @@ class SlicedBlocksBasedTraversal : public CellPairTraversal<ParticleCell> {
     // IF LOCK IMPOSSIBLE UNLOCK locked Locks & SET MASTER LOCK & return false
     bool LocksThatCanBeSet[8] = {false, false, false, false, false, false, false, false};
     int no_locksSet = 0;
-    if(_masterlock.testlock()) {
+    if (_masterlock.testlock()) {
       for (unsigned long x = 0; x < 2; ++x) {
         for (unsigned long y = 0; y < 2; ++y) {
           for (unsigned long z = 0; z < 2; ++z) {
@@ -286,8 +294,8 @@ class SlicedBlocksBasedTraversal : public CellPairTraversal<ParticleCell> {
         }
       }
 
-      if (LocksThatCanBeSet[0] and  LocksThatCanBeSet[1] and  LocksThatCanBeSet[2] and  LocksThatCanBeSet[3] and
-          LocksThatCanBeSet[4] and  LocksThatCanBeSet[5] and  LocksThatCanBeSet[6] and  LocksThatCanBeSet[7]) {
+      if (LocksThatCanBeSet[0] and LocksThatCanBeSet[1] and LocksThatCanBeSet[2] and LocksThatCanBeSet[3] and
+          LocksThatCanBeSet[4] and LocksThatCanBeSet[5] and LocksThatCanBeSet[6] and LocksThatCanBeSet[7]) {
         _masterlock.unlock();
         return true;
       } else {
@@ -343,10 +351,9 @@ class SlicedBlocksBasedTraversal : public CellPairTraversal<ParticleCell> {
 
     return ((order[2] + coordinates[0] * 2) * (_cellBlockDimensions[2].size() * 2 + 1) +
             (order[1] + coordinates[1] * 2)) *
-           (_cellBlockDimensions[1].size() * 2 + 1) +
+               (_cellBlockDimensions[1].size() * 2 + 1) +
            order[0] + coordinates[2] * 2;
   }
-
 
   /**
    * Calculates the blocks and the block sizes and save them to blocks.
@@ -360,8 +367,8 @@ class SlicedBlocksBasedTraversal : public CellPairTraversal<ParticleCell> {
     using array3D = std::array<unsigned long, 3>;
 
     AutoPasLog(debug, "_cellBlockDimensions Size: " + std::to_string(_cellBlockDimensions[0].size()) + " " +
-                      std::to_string(_cellBlockDimensions[1].size()) + " " +
-                      std::to_string(_cellBlockDimensions[2].size()) + " ");
+                          std::to_string(_cellBlockDimensions[1].size()) + " " +
+                          std::to_string(_cellBlockDimensions[2].size()) + " ");
 
     blocks.resize(_cellBlockDimensions[0].size() * _cellBlockDimensions[1].size() * _cellBlockDimensions[2].size());
 
@@ -413,30 +420,30 @@ class SlicedBlocksBasedTraversal : public CellPairTraversal<ParticleCell> {
   }
 
   /**
-  * Splitting each block into its subBlocks
-  *            220      	     221    	        222
-  *           / |                / |                / |
-  *       120   |            121   |            122   |
-  *      / |   210          / |   211          / |   212
-  *  020   |  / |       021   |  / |       022   |  / |
-  *   |   110   |        |   111   |        |   112   |
-  *   |  / |   200       |  / |   201       |  / |   202
-  *  010   |  /         011   |  /         012   |  /
-  *   |   100            |   101            |   102
-  *   |  /               |  /               |  /
-  *  000................001................002
-  *
-  * Above model shows the numbering of each sub_block, be aware that they can be different in cellsizes.
-  * And the blocks bordering the end of a dimension, will have different sizes for subBlocks bordering a
-  * dimension end. Very often, if the simulation-dimension will not be perfectly splittable into the
-  * thread-amount of equally sized cubes.
-  *
-  * Each block including a 0 or a 2 is also a sub-block of another block. Unless the block borders the domain.
-  * Each sub-block saves its order and its starting coordinates. The end coordinates can be calculated by order
-  * and overlap.
-  *
-  * Generation of Subblocks always is in the Order: 000 - 100 - 200 - 010 - 110 - 210 - 020 - 120 - 220 - 001 - ...
-  */
+   * Splitting each block into its subBlocks
+   *            220      	     221    	        222
+   *           / |                / |                / |
+   *       120   |            121   |            122   |
+   *      / |   210          / |   211          / |   212
+   *  020   |  / |       021   |  / |       022   |  / |
+   *   |   110   |        |   111   |        |   112   |
+   *   |  / |   200       |  / |   201       |  / |   202
+   *  010   |  /         011   |  /         012   |  /
+   *   |   100            |   101            |   102
+   *   |  /               |  /               |  /
+   *  000................001................002
+   *
+   * Above model shows the numbering of each sub_block, be aware that they can be different in cellsizes.
+   * And the blocks bordering the end of a dimension, will have different sizes for subBlocks bordering a
+   * dimension end. Very often, if the simulation-dimension will not be perfectly splittable into the
+   * thread-amount of equally sized cubes.
+   *
+   * Each block including a 0 or a 2 is also a sub-block of another block. Unless the block borders the domain.
+   * Each sub-block saves its order and its starting coordinates. The end coordinates can be calculated by order
+   * and overlap.
+   *
+   * Generation of Subblocks always is in the Order: 000 - 100 - 200 - 010 - 110 - 210 - 020 - 120 - 220 - 001 - ...
+   */
   void calculateSubBlocks() {
     using array3D = std::array<unsigned long, 3>;
     using subBlock = std::array<std::array<unsigned long, 2>, 3>;
@@ -483,7 +490,6 @@ class SlicedBlocksBasedTraversal : public CellPairTraversal<ParticleCell> {
       _allSubBlocks[n] = _subBlocksSingleCellBlock;
     }
   }
-
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
