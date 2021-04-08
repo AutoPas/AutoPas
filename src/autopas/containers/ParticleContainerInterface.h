@@ -163,7 +163,7 @@ class ParticleContainerInterface {
   virtual void deleteAllParticles() = 0;
 
   /**
-   * Get the number of particles saved in the container.
+   * Get the total number of particles saved in the container (owned and halo but not dummies).
    * @return Number of particles in the container.
    */
   [[nodiscard]] virtual unsigned long getNumParticles() const = 0;
