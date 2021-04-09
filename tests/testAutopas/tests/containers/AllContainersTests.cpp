@@ -82,7 +82,8 @@ TEST_P(AllContainersTests, testParticleAdding) {
 }
 
 /**
- * Add particles in the halo in every direction. Then delete them via deleteHaloParticles() and check that they are gone.
+ * Add particles in the halo in every direction. Then delete them via deleteHaloParticles() and check that they are
+ * gone.
  */
 TEST_P(AllContainersTests, testDeleteHaloParticles) {
   using autopas::utils::ArrayMath::add;
