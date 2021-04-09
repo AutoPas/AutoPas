@@ -182,6 +182,10 @@ class TraversalOption : public Option<TraversalOption> {
      * 1D slicing with as many slices of minimal thickness as possible. No locks but two-way coloring of slices.
      */
     vlp_sliced_c02,
+
+    // Octree Traversals
+    // TODO(johannes): Documentation
+    ot_naive,
   };
 
   /**
@@ -261,6 +265,9 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::vlp_c18, "vlp_c18"},
         {TraversalOption::vlp_c01, "vlp_c01"},
         {TraversalOption::vlp_sliced_balanced, "vlp_sliced_balanced"},
+
+        // Octree Traversals:
+        {TraversalOption::ot_naive, "ot_naive"},
     };
   };
 

@@ -67,6 +67,8 @@ class ContainerOption : public Option<ContainerOption> {
      * Improves data locality and cache efficiency.
      */
     pairwiseVerletLists,
+    // TODO(johannes): Documentation
+    octree,
   };
 
   /**
@@ -109,6 +111,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::verletClusterCells, "VerletClusterCells"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
+        {ContainerOption::octree, "Octree"},
     };
   };
 
