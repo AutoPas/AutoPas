@@ -4,7 +4,7 @@
  * @author F. Gratl
  */
 
-#if defined(AUTOPAS_MPI)
+#if defined(AUTOPAS_INTERNODE_TUNING)
 #include <mpi.h>
 #endif
 
@@ -20,12 +20,14 @@
  * @return
  */
 int main(int argc, char **argv) {
-#if defined(AUTOPAS_MPI)
+
+#if defined(AUTOPAS_INTERNODE_TUNING)
   MPI_Init(&argc, &argv);
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   std::cout << "rank: " << rank << std::endl;
 #endif
+
   // start simulation timer
   Simulation simulation;
   // Parsing
@@ -85,7 +87,7 @@ int main(int argc, char **argv) {
     configFileEnd.close();
   }
 
-#if defined(AUTOPAS_MPI)
+#if defined(AUTOPAS_INTERNODE_TUNING)
   MPI_Finalize();
 #endif
 
