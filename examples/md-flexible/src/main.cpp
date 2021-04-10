@@ -20,14 +20,12 @@
  * @return
  */
 int main(int argc, char **argv) {
-
 #if defined(AUTOPAS_INTERNODE_TUNING)
   MPI_Init(&argc, &argv);
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   std::cout << "rank: " << rank << std::endl;
 #endif
-
   // start simulation timer
   Simulation simulation;
   // Parsing
