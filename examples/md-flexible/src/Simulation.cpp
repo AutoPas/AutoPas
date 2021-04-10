@@ -152,7 +152,7 @@ void Simulation::calculateForces(autopas::AutoPas<ParticleType> &autopas) {
   _timers.forceUpdateGlobal.start();
   globalForces(autopas);
   _timers.forceUpdateGlobal.stop();
-	_timers.forceUpdateTotal.stop();
+  _timers.forceUpdateTotal.stop();
 }
 
 void Simulation::globalForces(autopas::AutoPas<ParticleType> &autopas) {
