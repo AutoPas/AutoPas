@@ -84,7 +84,7 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   auto headerLoggerName = _homoName + "header";
   auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
   headerLogger->set_pattern("%v");
-  headerLogger->info("Iteration,homogeneity,mean_density,max_density");
+  headerLogger->info("Iteration,homogeneity,mean_density,max_density,hitrate,particles");
   spdlog::drop(headerLoggerName);
   auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_homoName, outputFileName);
   logger->set_pattern("%v");
@@ -193,9 +193,12 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
     }
 
+    autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(autopas.getCutoff());
+    autopas.iteratePairwise(&flopCounterFunctor);
+
     double *data = calculateHomogeneity(autopas);
 
-    spdlog::get(_homoName)->info("{},{},{},{}", _iteration, data[0], data[1], data[2]);
+    spdlog::get(_homoName)->info("{},{},{},{},{},{}", _iteration, data[0], data[1], data[2], flopCounterFunctor.getHitRate(), autopas.getNumberOfParticles());
 
     // only do time step related stuff when there actually is time-stepping
     if (_config->deltaT.value != 0) {
