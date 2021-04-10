@@ -82,7 +82,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 inline void VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
                                        typeOfList>::traverseParticlePairs() {
   if (dataLayout == DataLayoutOption::soa) {
-    this->setupLoadSoA(_functor, *(this->_verletList));
+    this->loadSoA(_functor, *(this->_verletList));
   }
 
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
@@ -91,7 +91,7 @@ inline void VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout
   });
 
   if (dataLayout == DataLayoutOption::soa) {
-    this->setupExtractSoA(_functor, *(this->_verletList));
+    this->extractSoA(_functor, *(this->_verletList));
   }
 }
 

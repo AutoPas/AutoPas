@@ -49,7 +49,6 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
    */
   using SoAListType = typename std::vector<std::vector<SoAPairOfParticleAndList>>;
 
-
   /**
    * @copydoc VLCNeighborListInterface::getContainerType()
    */
@@ -119,23 +118,28 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
 
     _soaNeighborList.resize(linkedCells.getCells().size());
 
+    // iterate over cells
     for (size_t firstCellIndex = 0; firstCellIndex < _aosNeighborList.size(); ++firstCellIndex) {
       const auto &aosCurrentCell = _aosNeighborList[firstCellIndex];
       auto &soaCurrentCell = _soaNeighborList[firstCellIndex];
       soaCurrentCell.reserve(aosCurrentCell.capacity());
 
-      size_t particleIndexCurrentCell = 0;
+      // iterate over pairs of particle and neighbor list
       for (const auto &aosParticleAndParticleList : aosCurrentCell) {
         Particle *currentParticle = aosParticleAndParticleList.first;
-        size_t currentIndex = particleToIndex.at(currentParticle);
+        // global index of current particle
+        size_t currentParticleGlobalIndex = particleToIndex.at(currentParticle);
 
-        soaCurrentCell.emplace_back(
-            std::make_pair(currentIndex, std::vector<size_t, autopas::AlignedAllocator<size_t>>()));
+        // create SoA neighbor list for current particle
+        std::vector<size_t, autopas::AlignedAllocator<size_t>> currentSoANeighborList{};
 
-        for (auto &neighborOfCurrentParticle : aosParticleAndParticleList.second) {
-          soaCurrentCell[particleIndexCurrentCell].second.emplace_back(particleToIndex.at(neighborOfCurrentParticle));
+        // fill the SoA neighbor list with the indices of the particles from the corresponding AoS neighbor list
+        for (const auto &neighborOfCurrentParticle : aosParticleAndParticleList.second) {
+          currentSoANeighborList.emplace_back(particleToIndex.at(neighborOfCurrentParticle));
         }
-        particleIndexCurrentCell++;
+
+        // add newly constructed pair of particle index and SoA neighbor list to cell
+        soaCurrentCell.emplace_back(std::make_pair(currentParticleGlobalIndex, currentSoANeighborList));
       }
     }
   }

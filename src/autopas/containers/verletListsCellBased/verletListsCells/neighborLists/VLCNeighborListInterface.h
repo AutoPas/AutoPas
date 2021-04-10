@@ -52,6 +52,8 @@ class VLCNeighborListInterface {
 
   /**
    * Generates neighbor list in SoA layout from available neighbor list in AoS layout.
+   * Copies the structure of the AoS neighbor list and replaces the particle pointers with the global indices of the
+   * particles.
    * @param linkedCells Underlying linked cells structure.
    */
   virtual void generateSoAFromAoS(LinkedCells<Particle> &linkedCells) = 0;

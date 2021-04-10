@@ -55,7 +55,7 @@ class VLCTraversalInterface {
    * @param neighborLists
    */
   template <class PairwiseFunctor>
-  void setupLoadSoA(PairwiseFunctor *pairwiseFunctor, NeighborList &neighborLists) {
+  void loadSoA(PairwiseFunctor *pairwiseFunctor, NeighborList &neighborLists) {
     // send to loadSoA in the neighbor list
     _soa = neighborLists.loadSoA(pairwiseFunctor);
   }
@@ -67,7 +67,7 @@ class VLCTraversalInterface {
    * @param neighborLists
    */
   template <class PairwiseFunctor>
-  void setupExtractSoA(PairwiseFunctor *pairwiseFunctor, NeighborList &neighborLists) {
+  void extractSoA(PairwiseFunctor *pairwiseFunctor, NeighborList &neighborLists) {
     // send to extractSoA in the neighbor list
     neighborLists.extractSoA(pairwiseFunctor);
     _soa = nullptr;

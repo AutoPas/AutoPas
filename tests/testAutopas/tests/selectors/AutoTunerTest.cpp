@@ -58,11 +58,11 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       configsPerContainer[autopas::ContainerOption::linkedCells] - 4;
   // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                             = 2
   configsPerContainer[autopas::ContainerOption::verletLists] = 2;
-  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
-  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics)           =
-  //                        12 vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3) = 4 vlc_c18 (AoS <=>
-  //                        SoA, newton3 <=> noNewton3)                         = 4 vlc_c01                     (AoS <=>
-  //                        SoA, noNewton3)                                     = 2
+  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics)   = 12
+  //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlc_c01                     (AoS <=> SoA, noNewton3)                             = 2
   configsPerContainer[autopas::ContainerOption::verletListsCells] = 26;
   // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                             = 2
   //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4

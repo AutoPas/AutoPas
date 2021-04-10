@@ -129,8 +129,9 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
-    _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(), this->getSkin(),
-                                       this->getInteractionLength(), _buildTraversalOption, _buildType);
+    _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
+                                       this->getSkin(), this->getInteractionLength(), _buildTraversalOption,
+                                       _buildType);
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {
       _neighborList.generateSoAFromAoS(this->_linkedCells);
