@@ -123,7 +123,6 @@ void Simulation::calculateForces(autopas::AutoPas<ParticleType> &autopas) {
   _timers.forceUpdateTotal.start();
 
   // pairwise forces
-
   _timers.forceUpdatePairwise.start();
 
   FunctorType functor{autopas.getCutoff(), *_particlePropertiesLibrary};
@@ -204,6 +203,7 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
             "boundary conditions!");
       }
     }
+
     // invoke the force calculation with the functor specified in the configuration
     switch (this->_config->functorOption.value) {
       case MDFlexConfig::FunctorOption::lj12_6: {
@@ -241,6 +241,7 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       }
     }
   }
+
   // final update for a full progress bar
   if (not _config->dontShowProgressBar.value) {
     // The last update is precise, so we know the number of iterations.

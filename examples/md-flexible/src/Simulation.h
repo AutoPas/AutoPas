@@ -5,9 +5,9 @@
  */
 #pragma once
 
+#include "parsing/MDFlexConfig.h"
 #include "TypeDefinitions.h"
 #include "autopas/AutoPas.h"
-#include "parsing/MDFlexConfig.h"
 
 /**
  * The main simulation class.
@@ -43,7 +43,6 @@ class Simulation {
    * Initializes the ParticlePropertiesLibrary with properties from _config.
    */
   void initializeParticlePropertiesLibrary();
-
   /**
    * Initializes the AutoPas Object with the given config and initializes the simulation domain with the Object
    * Generators.
