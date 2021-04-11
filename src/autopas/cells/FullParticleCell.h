@@ -60,6 +60,13 @@ class FullParticleCell : public ParticleCell<Particle> {
     return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda) {
+    for (Particle p : _particles) {
+      forEachLambda(p);
+    }
+  }
+
   [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
 
   /**

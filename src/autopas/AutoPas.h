@@ -222,23 +222,35 @@ class AutoPas {
    * particles, or both.
    * @return iterator to the first particle.
    */
-  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-    return _logicHandler->begin(behavior);
-  }
+  // iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  //   printf("begin used \n");
+  //   return _logicHandler->begin(behavior);
+  // }
 
   /**
    * @copydoc begin()
    * @note const version
    */
-  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
-    return std::as_const(*_logicHandler).begin(behavior);
+  // const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+  //   printf("begin used \n");
+  //   return std::as_const(*_logicHandler).begin(behavior);
+  // }
+
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behaviour = IteratorBehavior::haloAndOwned) {
+    _logicHandler->forEach(forEachLambda, behaviour);
+  }
+
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behaviour = IteratorBehavior::haloAndOwned) const {
+    _logicHandler->forEach(forEachLambda, behaviour);
   }
 
   /**
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const { return begin(behavior); }
+  // const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const { return begin(behavior); }
 
   /**
    * End of the iterator.

@@ -267,6 +267,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         new internal::ParticleIterator<ParticleType, ReferenceCell, false>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
+  void forEach(const std::function<void(Particle)> forEachLambda, IteratorBehavior behaviour) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
+
   ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

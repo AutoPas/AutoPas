@@ -51,14 +51,23 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
   // kinetic energy times 2
   double kineticEnergyMul2 = 0;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary)
-#endif
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    auto vel = iter->getV();
+
+// #ifdef AUTOPAS_OPENMP
+// #pragma omp parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary)
+// #endif
+//   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+//     auto vel = iter->getV();
+//     kineticEnergyMul2 +=
+//         particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
+//   }
+
+  auto forEachLambda = [&] (ParticleType particle) {
+    auto vel = particle.getV();
     kineticEnergyMul2 +=
-        particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
-  }
+        particlePropertiesLibrary.getMass(particle.getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
+  };
+  autopas.forEach(forEachLambda);
+
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};
   return kineticEnergyMul2 / (autopas.getNumberOfParticles() * dimensions);
@@ -98,12 +107,20 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
       numParticleMapThread[typeID] = 0ul;
     }
     // parallel iterators
-    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      auto vel = iter->getV();
-      kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
-          particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
-      numParticleMapThread.at(iter->getTypeId())++;
-    }
+    // for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    //   auto vel = iter->getV();
+    //   kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
+    //       particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
+    //   numParticleMapThread.at(iter->getTypeId())++;
+    // }
+    auto forEachLambda = [&] (ParticleType particle) {
+      auto vel = particle.getV();
+      kineticEnergyMul2MapThread.at(particle.getTypeId()) +=
+          particlePropertiesLibrary.getMass(particle.getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
+      numParticleMapThread.at(particle.getTypeId())++;
+    };
+    autopas.forEach(forEachLambda);
+
     // manual reduction
 #ifdef AUTOPAS_OPENMP
 #pragma omp critical
@@ -155,9 +172,12 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
     // we need one random engine and distribution per thread
     std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
     std::normal_distribution<double> normalDistribution{0, 1};
-    for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      addMaxwellBoltzmannDistributedVelocity(*iter, factors[iter->getTypeId()], randomEngine, normalDistribution);
-    }
+    // for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+    //   addMaxwellBoltzmannDistributedVelocity(*iter, factors[iter->getTypeId()], randomEngine, normalDistribution);
+    // }
+    autopas.forEach([&] (ParticleType particle) {
+      addMaxwellBoltzmannDistributedVelocity(particle, factors[particle.getTypeId()], randomEngine, normalDistribution);
+    });
   }
 }
 
@@ -190,11 +210,15 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     }
     scalingMap[particleTypeID] = std::sqrt(nextTargetTemperature / currentTemperature);
   }
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel default(none) shared(autopas, scalingMap)
-#endif
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    iter->setV(autopas::utils::ArrayMath::mulScalar(iter->getV(), scalingMap[iter->getTypeId()]));
-  }
+// #ifdef AUTOPAS_OPENMP
+// #pragma omp parallel default(none) shared(autopas, scalingMap)
+// #endif
+//   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+//     iter->setV(autopas::utils::ArrayMath::mulScalar(iter->getV(), scalingMap[iter->getTypeId()]));
+//   }
+  auto forEachLambda = [&] (ParticleType particle) {
+    particle.setV(autopas::utils::ArrayMath::mulScalar(particle.getV(), scalingMap[particle.getTypeId()]));
+  };
+  autopas.forEach(forEachLambda);
 }
 }  // namespace Thermostat

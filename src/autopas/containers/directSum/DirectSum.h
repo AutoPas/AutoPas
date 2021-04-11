@@ -149,6 +149,40 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
                                                                           behavior));
   }
 
+  // template <typename Lambda> TODO
+  void forEach(const std::function<void(Particle)> forEachLambda, IteratorBehavior behaviour) {
+
+    auto forEach = [&] (ParticleCell cell) {
+      for (Particle p : cell._particles) {
+        forEachLambda(p);
+      }
+    };
+
+    switch (behaviour)
+    {
+    case IteratorBehavior::haloAndOwned:
+      forEach(this->_cells.at(0));
+      forEach(this->_cells.at(1));
+      break;
+
+    case IteratorBehavior::haloOnly:
+      forEach(this->_cells.at(1));
+      break;
+
+    case IteratorBehavior::haloOwnedAndDummy:
+      forEach(this->_cells.at(0));
+      forEach(this->_cells.at(1));
+      break;
+
+    case IteratorBehavior::ownedOnly:
+      forEach(this->_cells.at(0));
+      break;
+
+    default:
+      break;
+    }
+  }
+
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

@@ -11,6 +11,7 @@
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
+#include "autopas/utils/StaticContainerSelector.h"
 
 namespace autopas {
 
@@ -235,6 +236,26 @@ class LogicHandler {
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return std::as_const(_autoTuner).getContainer()->begin(behavior);
+  }
+
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+
+    auto execOnContainer = [&] (auto container) {
+      container.forEach(forEachLambda, behavior);
+    };
+
+    // withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
+  }
+
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+
+    auto execOnContainer = [&] (auto container) {
+      container.forEach(forEachLambda, behavior);
+    };
+
+    // withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
   }
 
   /**

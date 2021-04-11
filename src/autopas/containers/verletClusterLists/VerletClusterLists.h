@@ -311,6 +311,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
+  void forEach(const std::function<void(Particle)> forEachLambda, IteratorBehavior behaviour) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
+
   /**
    * @copydoc ParticleContainerInterface::getRegionIterator()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.

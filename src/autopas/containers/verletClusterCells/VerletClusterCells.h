@@ -251,6 +251,10 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
             &this->_cells, _dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior));
   }
 
+  void forEach(const std::function<void(Particle)> forEachLambda, IteratorBehavior behaviour) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
+
   ParticleIteratorWrapper<Particle, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {

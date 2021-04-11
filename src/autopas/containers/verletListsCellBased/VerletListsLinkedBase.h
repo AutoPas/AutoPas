@@ -141,6 +141,10 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     return _linkedCells.begin(behavior);
   }
 
+  void forEach(const std::function<void(Particle)> forEachLambda, IteratorBehavior behaviour) {
+    utils::ExceptionHandler::exception("not yet implemented");
+  }
+
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
