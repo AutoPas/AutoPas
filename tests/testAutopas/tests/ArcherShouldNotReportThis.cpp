@@ -6,18 +6,24 @@
 #ifdef AUTOPAS_OPENMP
 
 #include <gtest/gtest.h>
+#include <omp.h>
 
-#include "omp.h"
+#include <numeric>
 
 class Container {
-  std::vector<int> vec;
+  std::vector<int> vec{0, 0, 0};
+  bool generated = false;
 
-  auto generate() { vec = {1, 2, 3}; }
+  auto generate() {
+    vec = {1, 2, 3};
+    std::iota(vec.begin(), vec.end(), 1);
+    generated = true;
+  }
 
  public:
   auto begin() {
 #pragma omp single
-    if (vec.empty()) {
+    if (not generated) {
       generate();
     }
 
@@ -40,7 +46,8 @@ TEST(ArcherShouldNotReportThis, testGenerateUsingSingleInBegin) {
   for (auto iter = c.begin(); iter < c.end(); iter += 1) {
     reference_res += *iter;
   }
-  GTEST_ASSERT_EQ(reference_res, res);
+  EXPECT_GT(res, 0);
+  EXPECT_EQ(res, reference_res);
 }
 
 #endif
