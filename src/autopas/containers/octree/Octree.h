@@ -33,13 +33,26 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
   using ParticleType = typename ParticleCell::ParticleType;
 
   Octree(Position boxMin, Position boxMax, const double cutoff,
-         const double skin) : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin), _root(nullptr) {
+         const double skin) : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
     printf("Johannes' Octree()\n");
-    initOctree(boxMin, boxMax);
+    _root = new Node(Node::Type::LEAF, this->getBoxMin(), this->getBoxMax());
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer() override {
-    printf("Johannes' Octree::updateContainer\n");
+    // This is a very primitive and inefficient way to recreate the container:
+    // 1. Copy all particles out of the container
+    // 2. Clear the container
+    // 3. Insert the particles back into the container
+
+    std::vector<Particle> particles;
+    _root->appendAllParticles(particles);
+
+    _root->clearChildren();
+
+    for(auto &particle : particles) {
+      _root->insert(particle);
+    }
+
     auto result = std::vector<ParticleType>();
     return result;
   }
@@ -63,7 +76,7 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
    */
   void addParticleImpl(const ParticleType &p) override {
     //printf("Johannes' Octree::addParticleImpl\n");
-    Node::insert(_root, p);
+    _root->insert(p);
   }
 
   /**
@@ -167,11 +180,11 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
      * @param point The node to test
      * @return true if the point is inside the node's bounding box and false otherwise
      */
-    static bool isInside(struct Node *node, Position point) {
+    bool isInside(Position point) {
       bool result = true;
       // Check if the point is within the bounding box for each dimension.
       for(auto d = 0; d < 3; d++) {
-        result &= (node->boxMin[d] <= point[d]) && (point[d] <= node->boxMax[d]);
+        result &= (boxMin[d] <= point[d]) && (point[d] <= boxMax[d]);
       }
       return result;
     }
@@ -190,64 +203,79 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
       return result;
     }
 
-    static void insert(Node *parent, Particle p) {
-      assert(parent != nullptr); // initOctree() should have been called already
+    void insert(Particle p) {
       const int unsigned maxParticlesInLeaf = 16;
 
-      if (isInside(parent, p.getR())) {
-        if (parent->type == Node::Type::LEAF) {
-          if (parent->particles.size() < maxParticlesInLeaf) {
-            parent->particles.push_back(p);
+      if (isInside(p.getR())) {
+        if (type == LEAF) {
+          if (particles.size() < maxParticlesInLeaf) {
+            particles.push_back(p);
             //parent->particles[parent->particlesUsed++] = p;
           } else {
             // Create a new subdivision
-            auto parentMin = parent->boxMin;
-            auto parentCenter = 0.5 * (parent->boxMin + parent->boxMax);
-            auto parentMax = parent->boxMax;
+            auto parentMin = boxMin;
+            auto parentCenter = 0.5 * (boxMin + boxMax);
+            auto parentMax = boxMax;
             for (auto i = 0; i < 8; i++) {
-              Position boxMin = {};
-              Position boxMax = {};
+              Position newBoxMin = {};
+              Position newBoxMax = {};
 
               // Subdivide the bounding box of the parent.
               for (auto d = 0; d < 3; ++d) {
                 auto mask = 1 << d;
-                boxMin[d] = !(i & mask) ? parentMin[d] : parentCenter[d];
-                boxMax[d] = !(i & mask) ? parentCenter[d] : parentMax[d];
+                newBoxMin[d] = !(i & mask) ? parentMin[d] : parentCenter[d];
+                newBoxMax[d] = !(i & mask) ? parentCenter[d] : parentMax[d];
               }
 
-              auto *newChild = new Node(Node::Type::LEAF, boxMin, boxMax);
-
-              parent->children[i] = newChild;
+              children[i] = new Node(LEAF, newBoxMin, newBoxMax);
             }
-            parent->type = Node::Type::INNER;
+            type = INNER;
 
-            for(auto oldParticle : parent->particles) {
-              insert(parent, oldParticle);
+            for(auto oldParticle : particles) {
+              insert(oldParticle);
             }
-            parent->particles.clear();
+            particles.clear();
 
             // Insert the particle
-            insert(parent, p);
+            insert(p);
           }
         } else {
           // Decide in which child the particle should be inserted.
-          for (auto i = 0; i < 8; i++) {
-            auto *child = parent->children[i];
-            if (isInside(child, p.getR())) {
-              insert(child, p);
+          for (auto child : children) {
+            if (child->isInside(p.getR())) {
+              child->insert(p);
               break;  // The particle should only be inserted into one box to avoid duplicate force calculations
             }
           }
         }
       }
     }
+
+    /**
+     * Put all particles that are below this node into the vector.
+     * @param ps A reference to the vector that should contain the particles after the operation
+     */
+    void appendAllParticles(std::vector<Particle> &ps) {
+      if(type == LEAF) {
+        ps.insert(ps.end(), particles.begin(), particles.end());
+      } else {
+        for(auto &child : children) {
+          child->appendAllParticles(ps);
+        }
+      }
+    }
+
+    void clearChildren() {
+      if(type == INNER) {
+        for(auto &child : children) {
+          child->clearChildren();
+          delete child;
+        }
+      }
+    }
   };
 
   Node *_root;
-
-  void initOctree(Position boxMin, Position boxMax) {
-    _root = new Node(Node::Type::LEAF, boxMin, boxMax);
-  }
 };
 
 } // namespace autopas
