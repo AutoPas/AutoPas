@@ -587,7 +587,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   doAssertions(autoPas1, autoPas2, &functor1, &functor2);
 }
 
-TEST_P(AutoPasInterface2ContainersTest, SimulatonLoopTest) {
+TEST_P(AutoPasInterface2ContainersTest, SimulationLoopTest) {
   // this test checks the correct behavior of the autopas interface.
   auto containerOptionTuple = GetParam();
   testSimulationLoop(std::get<0>(containerOptionTuple), std::get<1>(containerOptionTuple), 0);
