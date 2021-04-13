@@ -278,13 +278,19 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
     // For good openmp scalability we want the particles to be sorted into the clusters, so we do this!
-#ifdef AUTOPAS_OPENMP
     // Can not use single here because not all threads might come through here which would lead to a deadlock.
     // Critial + if behaves practically like single
-#pragma omp critical
+    if (behavior & IteratorBehavior::forceSequential) {
+      if (_isValid == ValidityState::invalid) {
+        autopas::utils::ExceptionHandler::exception("my fancy exception");
+      }
+    } else {
+#ifdef AUTOPAS_OPENMP
+#pragma omp single
 #endif
-    if (_isValid == ValidityState::invalid) {
-      rebuildTowersAndClusters();
+      if (_isValid == ValidityState::invalid) {
+        rebuildTowersAndClusters();
+      }
     }
 
     return ParticleIteratorWrapper<Particle, true>(
@@ -326,13 +332,20 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                                                                           IteratorBehavior behavior) override {
     // Special iterator requires sorted cells.
     // Only one thread is allowed to rebuild the towers.
-#ifdef AUTOPAS_OPENMP
+
     // Can not use single here because not all threads might come through here which would lead to a deadlock.
     // Critial + if behaves practically like single
-#pragma omp critical
+    if (behavior & IteratorBehavior::forceSequential) {
+      if (_isValid == ValidityState::invalid) {
+        autopas::utils::ExceptionHandler::exception("my fancy exception");
+      }
+    } else {
+#ifdef AUTOPAS_OPENMP
+#pragma omp single
 #endif
-    if (_isValid == ValidityState::invalid) {
-      rebuildTowersAndClusters();
+      if (_isValid == ValidityState::invalid) {
+        rebuildTowersAndClusters();
+      }
     }
 
     auto [lowerCornerInBounds, upperCornerInBounds, cellsOfInterest] =
