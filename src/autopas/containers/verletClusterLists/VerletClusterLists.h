@@ -277,21 +277,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
-    // For good openmp scalability we want the particles to be sorted into the clusters, so we do this!
-    // Can not use single here because not all threads might come through here which would lead to a deadlock.
-    // Critial + if behaves practically like single
-    if (behavior & IteratorBehavior::forceSequential) {
-      if (_isValid == ValidityState::invalid) {
-        autopas::utils::ExceptionHandler::exception("my fancy exception");
-      }
-    } else {
-#ifdef AUTOPAS_OPENMP
-#pragma omp single
-#endif
-      if (_isValid == ValidityState::invalid) {
-        rebuildTowersAndClusters();
-      }
-    }
+    prepareContainerForIterator(behavior);
 
     return ParticleIteratorWrapper<Particle, true>(
         new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
@@ -330,23 +316,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   [[nodiscard]] ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                                           const std::array<double, 3> &higherCorner,
                                                                           IteratorBehavior behavior) override {
-    // Special iterator requires sorted cells.
-    // Only one thread is allowed to rebuild the towers.
-
-    // Can not use single here because not all threads might come through here which would lead to a deadlock.
-    // Critial + if behaves practically like single
-    if (behavior & IteratorBehavior::forceSequential) {
-      if (_isValid == ValidityState::invalid) {
-        autopas::utils::ExceptionHandler::exception("my fancy exception");
-      }
-    } else {
-#ifdef AUTOPAS_OPENMP
-#pragma omp single
-#endif
-      if (_isValid == ValidityState::invalid) {
-        rebuildTowersAndClusters();
-      }
-    }
+    prepareContainerForIterator(behavior);
 
     auto [lowerCornerInBounds, upperCornerInBounds, cellsOfInterest] =
         getRegionIteratorHelper(lowerCorner, higherCorner, behavior);
@@ -782,6 +752,39 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
+
+  /**
+   * Checks the state of the container and whether it is ready to launch an iterator.
+   * Depending on the behavior and current state, this might rebuild towers and clusters.
+   *
+   * @note This function needs to be called by all functions that create an iterator with modifiable flag == true.
+   *
+   * @param behavior
+   */
+  void prepareContainerForIterator(const IteratorBehavior &behavior) {
+    // For good openmp scalability we want the particles to be sorted into the clusters, so we do this!
+
+    // If multiple asynchronous iterators are used the container must already be valid.
+    // Otherwise it is impossible to decide which thread needs to rebuild the tower structure and which need to wait.
+    if (behavior & IteratorBehavior::forceSequential) {
+      if (_isValid == ValidityState::invalid) {
+        autopas::utils::ExceptionHandler::exception(
+            "VerletClusterLists::prepareContainerForIterator(): Parallel iterators with behavior containing "
+            "forceSequential encountered, but the container is invalid.");
+      }
+    } else {
+      // Only one thread is allowed to rebuild the towers, so we do an omp single here.
+      // This single is only possible when we do not force sequential mode as otherwise not all threads might pass
+      // through here and we end up waiting for them forever.
+#ifdef AUTOPAS_OPENMP
+#pragma omp single
+#endif
+      if (_isValid == ValidityState::invalid) {
+        rebuildTowersAndClusters();
+      }
+      // there is an implicit barrier at end of single!
+    }
+  }
 
   /**
    * Helper function for the region iterators to determine bounds and towers to iterate over.
