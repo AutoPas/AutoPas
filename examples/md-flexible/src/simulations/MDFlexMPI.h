@@ -9,8 +9,6 @@
 
 class MDFlexMPI : MDFlexSimulation {
 	public:
-		void initialize(int argc, char** argv) override;
-		void initializeAutoPas() override;
 		void run() override;
-		void finalize(int argc, char** argv) override;
 };
+

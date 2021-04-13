@@ -7,19 +7,10 @@
 
 #include "../parsing/MDFlexParser.h"
 
-#include <iostream>
-
-MDFlexSimulation::MDFlexSimulation(){
-	_configuration = new MDFlexConfig();
+MDFlexSimulation::MDFlexSimulation(int argc, char** argv){
 	_simulation = new Simulation();
-}
+	_configuration = new MDFlexConfig();
 
-MDFlexSimulation::~MDFlexSimulation(){
-	delete _configuration;
-	delete _simulation;
-}
-
-void MDFlexSimulation::initialize(int argc, char** argv){
  	// parse input and only continue of parsing went without hickups
  	if (auto parserExitCode = MDFlexParser::parseInput(argc, argv, *_configuration);
      	parserExitCode != MDFlexParser::exitCodes::success) {
@@ -29,19 +20,12 @@ void MDFlexSimulation::initialize(int argc, char** argv){
 		}
 		exit(EXIT_SUCCESS);
 	}
-
  	// make sure sim box is big enough
  	_configuration->calcSimulationBox();
-
- 	// print config to console
- 	std::cout << *_configuration;
-
-	initializeAutoPas();
 }
 
-void MDFlexSimulation::run(){
- 	_simulation->simulate(*_autopas);
+MDFlexSimulation::~MDFlexSimulation(){
+	delete _configuration;
+	delete _simulation;
 }
-
-void MDFlexSimulation::finalize(int argc, char** argv){}
 

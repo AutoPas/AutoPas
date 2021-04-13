@@ -4,11 +4,9 @@
  * @author F. Gratl
  */
 
-#if defined(AUTOPAS_INTERNODE_TUNING)
+#if defined(AUTOPAS_MPI)
 #include <mpi.h>
 #endif
-
-#include <iostream>
 
 #include "simulations/MDFlexSingleNode.h"
 
@@ -19,9 +17,9 @@
  * @return
  */
 int main(int argc, char **argv) {
-	MDFlexSingleNode mdFlexSimulation;
-	mdFlexSimulation.initialize(argc, argv);
-	mdFlexSimulation.run();
-	mdFlexSimulation.finalize(argc, argv);
+
+	MDFlexSingleNode simulation(argc, argv);
+	simulation.run();
+
   return EXIT_SUCCESS;
 }

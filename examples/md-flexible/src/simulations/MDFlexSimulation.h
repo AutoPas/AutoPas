@@ -13,33 +13,13 @@
 */
 class MDFlexSimulation {
 	public:
-		MDFlexSimulation();
+		MDFlexSimulation(int argc, char** argv);
 		~MDFlexSimulation();
 
-		/**
-		* Used for parsing and for all other preparations required for the simulation
-		*/
-		virtual void initialize(int argc, char** argv);
-
-		/**
-		* Initializes AutoPas.
-		*/
-		virtual void initializeAutoPas() = 0;
-
-		/**
-		* A wrapper for running the simulation
-		*/
-		virtual void run();
-
-		/**
-		* This may be used to process runtime data / information for further use and / or to
-		* do additional required finalization (see MDFlexSingleNode.cpp)
-		*/
-		virtual void finalize(int argc, char** argv);
+		virtual void run() = 0;
 
 	protected:
-  		autopas::AutoPas<Simulation::ParticleType>* _autopas;
-  		MDFlexConfig* _configuration;
+		MDFlexConfig* _configuration;
 		Simulation* _simulation;
 
 };

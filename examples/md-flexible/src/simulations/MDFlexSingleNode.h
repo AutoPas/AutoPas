@@ -7,17 +7,14 @@
 
 #include "MDFlexSimulation.h"
 
-#include <fstream>
-
 class MDFlexSingleNode : MDFlexSimulation {
 	public:
-		void initialize(int argc, char** argv) override;
-		void initializeAutoPas() override;
+		MDFlexSingleNode(int argc, char** argv);
+		~MDFlexSingleNode();
+
 		void run() override;
-		void finalize(int argc, char** argv) override;
 
 	private:
- 		std::streambuf* _streamBuffer;
- 		std::ofstream _logFile;
- 		std::ostream* _outputStream;
+		int _argc;
+		char** _argv;
 };
