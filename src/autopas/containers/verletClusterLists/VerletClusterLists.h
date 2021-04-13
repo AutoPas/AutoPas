@@ -200,11 +200,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   void deleteHaloParticles() override {
     bool deletedSth = false;
-    // Using parallel iterators here leads to archer reporting a data race within internal::deleteParticle()
-    // Parallel region removed here for the moment since iterators are going to be replaced.
-    //#ifdef AUTOPAS_OPENMP
-    //#pragma omp parallel reduction(|| : deletedSth)
-    //#endif
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel reduction(|| : deletedSth)
+#endif
     {
       for (auto iter = this->begin(IteratorBehavior::halo); iter.isValid(); ++iter) {
         internal::deleteParticle(iter);
