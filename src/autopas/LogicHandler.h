@@ -245,7 +245,7 @@ class LogicHandler {
       container.forEach(forEachLambda, behavior);
     };
 
-    // withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
+    withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
   }
 
   template <typename Lambda>
@@ -255,7 +255,7 @@ class LogicHandler {
       container.forEach(forEachLambda, behavior);
     };
 
-    // withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
+    withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
   }
 
   /**
