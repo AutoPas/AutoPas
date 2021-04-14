@@ -50,7 +50,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
         _behavior(behavior),
         _offsetToDummy(offsetToDummy),
         _particleDeletedObserver(particleDeletedObserver) {
-    // 1. set _cellId to thread number.
+    // 1. set _cellId to thread number. If we force sequential mode start with _cellId==0.
     if (not(_behavior & IteratorBehavior::forceSequential)) {
       _cellId = autopas_get_thread_num();
     }
@@ -80,7 +80,7 @@ class VerletClusterCellsParticleIterator : public ParticleIteratorInterfaceImpl<
       ++_iteratorWithinOneCell;
 
       while (_iteratorWithinOneCell == _cellEnd) {
-        // increase _cellId by stride if we are at the end of a cell!
+        // increase _cellId by stride if we are at the end of a cell! In sequential mode always use stride of 1.
         auto stride = (_behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
         _cellId += stride;
 
@@ -229,7 +229,7 @@ class VerletClusterCellsRegionParticleIterator
     // 1. add a last entry within _indicesInRegion that points beyond the end of _vectorOfCells.
     _indicesInRegion.push_back(this->_vectorOfCells->size() + 1);
 
-    // 2. set _currentRegionIndex to current thread id
+    // 2. set _currentRegionIndex to current thread id (or 1 in sequential mode)
     // also ensure that _currentIndex does not go beyond _indicesInRegion.
     auto offset =
         (behavior & IteratorBehavior::forceSequential) ? 1ul : static_cast<unsigned long>(autopas_get_thread_num());
