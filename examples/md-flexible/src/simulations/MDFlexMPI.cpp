@@ -7,6 +7,11 @@
 #include "MDFlexMPI.h"
 
 void MDFlexMPI::run(){
+	autopas::AutoPas<Simulation::ParticleType> autopas();	
+	_simulation->initialize(*_configuration, autopas);
 
+	_simulation->simulate(autopas)
+
+	_simulation->printStatistics(autopas)
 }
 

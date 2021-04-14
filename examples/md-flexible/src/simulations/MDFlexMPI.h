@@ -9,6 +9,9 @@
 
 class MDFlexMPI : MDFlexSimulation {
 	public:
+		MDFlexMPI() = default;
+		~MDFlexMPI() = default;
+
 		void run() override;
 };
 
