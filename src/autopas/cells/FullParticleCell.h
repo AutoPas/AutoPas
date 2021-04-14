@@ -67,6 +67,32 @@ class FullParticleCell : public ParticleCell<Particle> {
     }
   }
 
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, autopas::IteratorBehavior behavior) {
+
+    bool isParticleValid = [&] (Particle &p) {
+      switch (behavior) {
+        case haloOwnedAndDummy:
+          return true;
+        case haloAndOwned:
+          return not p.isDummy();
+        case haloOnly:
+          return p.isHalo();
+        case ownedOnly:
+          return p.isOwned();
+        default:
+          utils::ExceptionHandler::exception("unknown iterator behavior");
+          return false;
+      }
+    };
+
+    for (Particle p : _particles) {
+      if(isParticleValid(p)) {
+        forEachLambda(p);
+        }
+    }
+  }
+
   [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
 
   /**
