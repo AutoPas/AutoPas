@@ -150,7 +150,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
   /**
    * Updates all the References in the cells that are out of date.
-   * @note throws out all dummy particles.
+   * @note Removes all dummy particles.
    */
   void updateDirtyParticleReferences() {
     if (_particleList.isDirty()) {

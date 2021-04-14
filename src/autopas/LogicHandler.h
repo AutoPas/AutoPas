@@ -256,7 +256,7 @@ class LogicHandler {
     for (size_t d = 0; d < 3; ++d) {
       if (lowerCorner > higherCorner) {
         autopas::utils::ExceptionHandler::exception(
-            "Requesting region Iterator where upper corner is lower than lower corner!\n"
+            "Requesting region Iterator where the upper corner is lower than the lower corner!\n"
             "Lower corner: {}\n"
             "Upper corner: {}",
             lowerCorner, higherCorner);
@@ -277,7 +277,7 @@ class LogicHandler {
     for (size_t d = 0; d < 3; ++d) {
       if (lowerCorner > higherCorner) {
         autopas::utils::ExceptionHandler::exception(
-            "Requesting region Iterator where higherCorner corner is lower than lower corner!\n"
+            "Requesting region Iterator where the upper corner is lower than the lower corner!\n"
             "Lower corner: {}\n"
             "Upper corner: {}",
             lowerCorner, higherCorner);

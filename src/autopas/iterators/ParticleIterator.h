@@ -23,11 +23,11 @@ namespace autopas::internal {
  * The particles can be accessed using "iterator->" or "*iterator". The iterator is incremented using the ++operator.
  *
  * Incrementing this iterator works by jumping through the underlying particle cells from particle to particle
- * incrementing until itfinds a particle that matches the iteration criteria (e.g. it continues to loop until it finds
- * a halo particle if _behavior==halo). Additionally there might be additional particle vectors which are not part
+ * incrementing until it finds a particle that matches the iteration criteria (e.g. it continues to loop until it finds
+ * a halo particle if _behavior==halo). Additionally, there might be additional particle vectors that are not part
  * of the cell structure and contain arbitrary unsorted particles. These buffers result from containers that
  * have buffers they only sometimes merge with the actual data structure. Typically there is one buffer per OpenMP
- * thread, however, there is no guarantee that the iterator region has the same number of therads so the number of
+ * thread, however, there is no guarantee that the iterator region has the same number of threads so the number of
  * buffers is considered arbitrary.
  *
  * When instantiated in a parallel region one iterator per thread is spawned. All iterators start at the cell of their
@@ -56,7 +56,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
    * Can be nullptr if the behavior is ownedOrHalo.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
-   * @param additionalVectorsToIterate Thread buffers of additional Particle Vector to iterate over.
+   * @param additionalVectorsToIterate Thread buffers of additional Particle vector to iterate over.
    */
   ParticleIterator(CellVecType *cont, const CellBorderAndFlagManagerType *flagManager, IteratorBehavior behavior,
                    ParticleVecType *additionalVectorsToIterate)
