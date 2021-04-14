@@ -242,7 +242,7 @@ class LogicHandler {
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
 
     auto execOnContainer = [&] (auto container) {
-      container.forEach(forEachLambda, behavior);
+      container->forEach(forEachLambda, behavior);
     };
 
     withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
@@ -252,7 +252,7 @@ class LogicHandler {
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
 
     auto execOnContainer = [&] (auto container) {
-      container.forEach(forEachLambda, behavior);
+      container->forEach(forEachLambda, behavior);
     };
 
     withStaticContainerType(_autoTuner.getContainer(), execOnContainer);

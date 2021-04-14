@@ -29,7 +29,7 @@ namespace autopas {
  * @return Returns whatever function returns.
  */
 template <typename Particle, typename FunctionType>
-decltype(auto) withStaticContainerType(std::shared_ptr<CellBasedParticleContainer<Particle>> &container,
+decltype(auto) withStaticContainerType(std::shared_ptr<ParticleContainerInterface<Particle>> container,
                                        FunctionType &&function) {
   auto containerPtr = container.get();
   switch (container->getContainerType()) {
@@ -51,43 +51,6 @@ decltype(auto) withStaticContainerType(std::shared_ptr<CellBasedParticleContaine
     case ContainerOption::pairwiseVerletLists:
       // return function(dynamic_cast<autopas::VerletListsCells<Particle> *>(containerPtr));
       autopas::utils::ExceptionHandler::exception("not implemented correctly");
-  }
-  autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
-                                              container->getContainerType());
-}
-
-/**
- * Will execute the passed function body with the static container type of container.
- *
- * @tparam Particle
- * @tparam ParticleCell
- * @tparam FunctionType
- * @param container The container to be used.
- * @param function The function body to be executed. Has to take exactly one argument being a pointer to the container.
- * E.g: [&](auto *container){container->doSth();}  // The * is optional here. The auto is necessary!
- * @return Returns whatever function returns.
- */
-template <typename Particle, typename FunctionType>
-void execOnStaticContainerType(std::shared_ptr<ParticleContainerInterface<Particle>> &container,
-                                       FunctionType &&function) {
-  auto containerPtr = container.get();
-  switch (container->getContainerType()) {
-    case ContainerOption::directSum:
-      dynamic_cast<autopas::DirectSum<Particle> *>(containerPtr)->forEach(function);
-    // case ContainerOption::linkedCells:
-    //   return function(dynamic_cast<autopas::LinkedCells<Particle> *>(containerPtr));
-    // case ContainerOption::linkedCellsReferences:
-    //   return function(dynamic_cast<autopas::LinkedCellsReferences<Particle> *>(containerPtr));
-    // case ContainerOption::verletLists:
-    //   return function(dynamic_cast<autopas::VerletLists<Particle> *>(containerPtr));
-    // case ContainerOption::verletListsCells:
-    //   return function(dynamic_cast<autopas::VerletListsCells<Particle> *>(containerPtr));
-    // case ContainerOption::verletClusterLists:
-    //   return function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(containerPtr));
-    // case ContainerOption::verletClusterCells:
-    //   return function(dynamic_cast<autopas::VerletClusterCells<Particle> *>(containerPtr));
-    // case ContainerOption::pairwiseVerletLists:
-    //   return function(dynamic_cast<autopas::VerletListsCells<Particle> *>(containerPtr));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container->getContainerType());

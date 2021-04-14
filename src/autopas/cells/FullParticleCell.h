@@ -70,7 +70,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   template <typename Lambda>
   void forEach(Lambda forEachLambda, autopas::IteratorBehavior behavior) {
 
-    bool isParticleValid = [&] (Particle &p) {
+    auto isParticleValid = [&] (Particle &p) -> bool {
       switch (behavior) {
         case haloOwnedAndDummy:
           return true;
