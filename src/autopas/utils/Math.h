@@ -8,6 +8,7 @@
 
 #include <Eigen/Core>
 #include <cmath>
+#include <vector>
 
 namespace autopas::utils::Math {
 
