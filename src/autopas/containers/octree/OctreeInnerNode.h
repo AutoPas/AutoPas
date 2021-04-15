@@ -91,6 +91,17 @@ namespace autopas {
             return result;
         }
 
+        /**
+         * @copydoc OctreeNodeInterface::getNumParticles()
+         */
+        unsigned int getNumParticles() override {
+            unsigned int result = 0;
+            for(auto &child : _children) {
+                result += child->getNumParticles();
+            }
+            return result;
+        }
+
     private:
         /**
          * Each inner node of an octree can contain exactly 8 children.

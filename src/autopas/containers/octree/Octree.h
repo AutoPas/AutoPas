@@ -40,7 +40,7 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
     std::vector<Particle> particles;
     _root->appendAllParticles(particles);
 
-    _root = _root->clearChildren();
+    deleteAllParticles();
 
     for(auto &particle : particles) {
       _root = _root->insert(particle);
@@ -129,6 +129,17 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
     std::array<double, 3> cellLength = {1, 1, 1};
     return TraversalSelectorInfo(dims, 0.0, cellLength, 1);
   }
+
+  [[nodiscard]] unsigned long getNumParticles() const override {
+      return _root->getNumParticles();
+  }
+
+    /**
+     * Deletes all particles from the container.
+     */
+    void deleteAllParticles() override {
+        _root = _root->clearChildren();
+    }
 
  private:
 #if 0

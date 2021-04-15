@@ -76,7 +76,15 @@ namespace autopas {
          * @copydoc OctreeNodeInterface::clearChildren()
          */
         OctreeNodeInterface<Particle> *clearChildren() override {
+            particles.clear();
             return this;
+        }
+
+        /**
+         * @copydoc OctreeNodeInterface::getNumParticles()
+         */
+        unsigned int getNumParticles() override {
+            return particles.size();
         }
 
     private:

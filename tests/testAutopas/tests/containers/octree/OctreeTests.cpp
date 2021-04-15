@@ -7,6 +7,6 @@
 #include "OctreeTests.h"
 
 TEST_F(OctreeTest, testDummy) {
-    int x = 2;
+    int x = 3;
     ASSERT_EQ(x, 3);
 }

@@ -38,6 +38,11 @@ namespace autopas {
         virtual OctreeNodeInterface<Particle> *clearChildren() = 0;
 
         /**
+         * @copydoc CellBasedParticleContainer::getNumParticles()
+         */
+        virtual unsigned int getNumParticles() = 0;
+
+        /**
          * Check if a 3d point is inside the node's axis aligned bounding box. (Set by the boxMin and boxMax fields.)
          * @param node The possible enclosing node
          * @param point The node to test
