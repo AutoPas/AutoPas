@@ -104,7 +104,7 @@ std::vector<Particle> identifyNewHaloParticles(autopas::AutoPas<Particle> &autoP
           }
         }
         // Find non-halo particles in the designated region, create periodic copies of them and insert those as halos.
-        for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::ownedOnly); iter.isValid();
+        for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid();
              ++iter) {
           auto particleCopy = *iter;
           particleCopy.addR(shiftVec);

@@ -41,7 +41,7 @@ TEST_F(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
   auto invalidParticles = directSum.updateContainer();
 
   // the particles should no longer be in the inner cells!
-  for (auto iter = directSum.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = directSum.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     EXPECT_EQ(movedIDs.count(iter->getID()), 0);
   }
 
