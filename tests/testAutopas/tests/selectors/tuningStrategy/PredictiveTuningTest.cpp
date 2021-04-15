@@ -8,16 +8,16 @@
 
 autopas::PredictiveTuning PredictiveTuningTest::getPredictiveTuning(
     unsigned int testsUntilFirstPrediction, autopas::ExtrapolationMethodOption extrapolationMethodOption,
-    double blacklistRange, const std::set<autopas::TraversalOption> &allowedTraversalOptions) {
+    double blacklistRange, const std::set<autopas::TraversalOption> &allowedLCTraversalOptions) {
   return autopas::PredictiveTuning(
-      {autopas::ContainerOption::linkedCells}, {1.}, allowedTraversalOptions, {autopas::LoadEstimatorOption::none},
-      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, relativeOptimumRange,
-      maxTuningIterationsWithoutTest, blacklistRange, testsUntilFirstPrediction, extrapolationMethodOption);
+      {autopas::ContainerOption::linkedCells}, {1.}, allowedLCTraversalOptions, {autopas::LoadEstimatorOption::none},
+      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, _relativeOptimumRange,
+      _maxTuningIterationsWithoutTest, blacklistRange, testsUntilFirstPrediction, extrapolationMethodOption);
 }
 
-void PredictiveTuningTest::testGeneric(autopas::ExtrapolationMethodOption extrapolationMethodOption,
-                                       const std::vector<std::vector<long>> &evidenceVectors,
-                                       size_t optimalPredictionIndex) {
+void PredictiveTuningTest::simulateTuningPhases(autopas::ExtrapolationMethodOption extrapolationMethodOption,
+                                                const std::vector<std::vector<long>> &evidenceVectors,
+                                                size_t optimalPredictionIndex) {
   size_t iteration = 0;
 
   auto predictiveTuning = getPredictiveTuning(evidenceVectors.size(), extrapolationMethodOption);
@@ -25,21 +25,23 @@ void PredictiveTuningTest::testGeneric(autopas::ExtrapolationMethodOption extrap
   // First reset tuning.
   predictiveTuning.reset(iteration);
 
-  autopas::Configuration optimalPrediction;
+  autopas::Configuration expectedOptimalConfiguration;
 
+  // simulate multiple tuning phases
   for (size_t index = 0; index < evidenceVectors.size(); ++index) {
+    // the tuning phase
+    auto testedConfigs = tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, evidenceVectors[index], iteration);
+
     if (index == 0) {
-      optimalPrediction = tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, evidenceVectors[index],
-                                                                iteration)[optimalPredictionIndex];
-    } else {
-      tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, evidenceVectors[index], iteration);
+      // In the first phase all configs are tested, so abuse this to retrieve the object for the expected optimum.
+      expectedOptimalConfiguration = testedConfigs[optimalPredictionIndex];
     }
-    // End of the first tuning phase.
+    // End of tuning phase.
     predictiveTuning.reset(iteration);
   }
 
   // This tests the actual prediction.
-  EXPECT_EQ(optimalPrediction, predictiveTuning.getCurrentConfiguration());
+  EXPECT_EQ(expectedOptimalConfiguration, predictiveTuning.getCurrentConfiguration());
 }
 
 /*
@@ -51,7 +53,7 @@ void PredictiveTuningTest::testGeneric(autopas::ExtrapolationMethodOption extrap
  * In the third iteration the first configuration should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testLinePrediction) {
-  testGeneric(autopas::ExtrapolationMethodOption::linePrediction, {{4, 1, 20}, {3, 2, 20}}, 0);
+  simulateTuningPhases(autopas::ExtrapolationMethodOption::linePrediction, {{4, 1, 20}, {3, 2, 20}}, 0);
 }
 
 /*
@@ -63,7 +65,7 @@ TEST_F(PredictiveTuningTest, testLinePrediction) {
  * In the third iteration the first configuration should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testLinearRegression) {
-  testGeneric(autopas::ExtrapolationMethodOption::linearRegression, {{375, 300, 2000}, {350, 325, 2000}}, 0);
+  simulateTuningPhases(autopas::ExtrapolationMethodOption::linearRegression, {{375, 300, 2000}, {350, 325, 2000}}, 0);
 }
 
 /*
@@ -75,7 +77,7 @@ TEST_F(PredictiveTuningTest, testLinearRegression) {
  * In the third iteration the first configuration should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testLagrange) {
-  testGeneric(autopas::ExtrapolationMethodOption::lagrange, {{6, 1, 20}, {5, 2, 20}, {4, 3, 20}}, 0);
+  simulateTuningPhases(autopas::ExtrapolationMethodOption::lagrange, {{6, 1, 20}, {5, 2, 20}, {4, 3, 20}}, 0);
 }
 
 /*
@@ -87,7 +89,7 @@ TEST_F(PredictiveTuningTest, testLagrange) {
  * In the third iteration the first configuration should be predicted to be the optimum.
  */
 TEST_F(PredictiveTuningTest, testNewton) {
-  testGeneric(autopas::ExtrapolationMethodOption::newton, {{60, 10, 200}, {50, 20, 200}, {40, 30, 200}}, 0);
+  simulateTuningPhases(autopas::ExtrapolationMethodOption::newton, {{60, 10, 200}, {50, 20, 200}, {40, 30, 200}}, 0);
 }
 
 /*
@@ -102,7 +104,7 @@ TEST_F(PredictiveTuningTest, testNewton) {
 TEST_F(PredictiveTuningTest, testLinearPredictionTuningThreeIterations) {
   size_t iteration = 0;
   auto predictiveTuning =
-      getPredictiveTuning(evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction);
+      getPredictiveTuning(_evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction);
 
   predictiveTuning.reset(iteration);
 
@@ -143,9 +145,9 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTuningThreeIterations) {
  */
 TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
   size_t iteration = 0;
-  std::vector<autopas::Configuration> configurationsToCompare{configurationLC_C08, configurationLC_Sliced};
+  std::vector<autopas::Configuration> configurationsToCompare{_configurationLC_C08, _configurationLC_Sliced};
   auto predictiveTuning =
-      getPredictiveTuning(evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction, 0,
+      getPredictiveTuning(_evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction, 0,
                           {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_sliced});
 
   predictiveTuning.reset(iteration);
@@ -171,7 +173,7 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
   EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 
   // Iterating through the maxNumberOfIterationsWithoutTest iterations where C08 should not be tested.
-  for (int i = 0; i < maxTuningIterationsWithoutTest; i++) {
+  for (int i = 0; i < _maxTuningIterationsWithoutTest; i++) {
     // End of the (i + 2)-th tuning phase.
     predictiveTuning.reset(iteration);
 
@@ -183,7 +185,7 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
     EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
   }
 
-  // End of the (maxTuningIterationsWithoutTest + 2)-th tuning phase.
+  // End of the (_maxTuningIterationsWithoutTest + 2)-th tuning phase.
   predictiveTuning.reset(iteration);
 
   EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
@@ -211,7 +213,7 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
 TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
   size_t iteration = 0;
   auto predictiveTuning =
-      getPredictiveTuning(evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction);
+      getPredictiveTuning(_evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction);
 
   predictiveTuning.reset(iteration);
 
@@ -260,7 +262,7 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
 TEST_F(PredictiveTuningTest, testBlacklist) {
   size_t iteration = 0;
   auto predictiveTuning =
-      getPredictiveTuning(evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction, 10);
+      getPredictiveTuning(_evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction, 10);
 
   auto testedConfigs = tuneForSomeIterationsAndCheckAllTuned(predictiveTuning, {1, 5, 20}, iteration);
 
