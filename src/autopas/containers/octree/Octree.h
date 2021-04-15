@@ -9,6 +9,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
+#include "autopas/iterators/ParticleIterator.h"
 #include <cstdio>
 
 namespace autopas {
@@ -34,7 +35,7 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
 
   Octree(Position boxMin, Position boxMax, const double cutoff,
          const double skin) : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
-    printf("Johannes' Octree()\n");
+    //printf("Johannes' Octree()\n");
     _root = new Node(Node::Type::LEAF, this->getBoxMin(), this->getBoxMax());
   }
 
@@ -43,6 +44,8 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
     // 1. Copy all particles out of the container
     // 2. Clear the container
     // 3. Insert the particles back into the container
+
+    // leaving: all outside boxMin/Max
 
     std::vector<Particle> particles;
     _root->appendAllParticles(particles);
@@ -58,6 +61,7 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
+    // TODO(johannes): Step 1
     printf("Johannes' Octree::iteratePairwise\n");
   }
 
@@ -137,6 +141,38 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
   }
 
  private:
+#if 0
+  template <bool modifiable>
+  struct OctreeIterator : public internal::ParticleIteratorInterfaceImpl<Particle, modifiable> {
+    Particle p = {};
+
+    Particle begin() {
+      return p;
+    }
+
+    OctreeIterator<modifiable> &operator++() {
+      return *this;
+    }
+
+    Particle &operator*() const {
+      Particle ref = p;
+      return ref;
+    }
+
+    [[nodiscard]] bool isValid() const {
+      return false;
+    }
+
+    void deleteCurrentParticleImpl() {
+
+    }
+
+    OctreeIterator *clone() const {
+      return new OctreeIterator<modifiable>();
+    }
+  };
+#endif
+
   struct Node {
     /** Node type that distinguishes inner nodes from leaf nodes.*/
     enum Type {
@@ -164,7 +200,7 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
       };
     };
 #else
-    Node *children[8];
+    Node *children[8]; // TODO: std::array
     std::vector<Particle> particles;
 #endif
 
@@ -214,6 +250,7 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
           } else {
             // Create a new subdivision
             auto parentMin = boxMin;
+            // TODO: Array maths
             auto parentCenter = 0.5 * (boxMin + boxMax);
             auto parentMax = boxMax;
             for (auto i = 0; i < 8; i++) {
@@ -271,6 +308,7 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
           child->clearChildren();
           delete child;
         }
+        type = LEAF;
       }
     }
   };
