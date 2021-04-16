@@ -120,6 +120,16 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
 
   inline bool tune(bool currentInvalid = false) override;
 
+  /**
+   * Getter for predicted runtimes.
+   * @return _configurationPredictions
+   *
+   * @note only used for unit tests.
+   */
+  const std::unordered_map<Configuration, size_t, ConfigHash> &getConfigurationPredictions() const {
+    return _configurationPredictions;
+  };
+
  private:
   /**
    * Selects the optimal (=fastest) configuration
@@ -323,7 +333,7 @@ void PredictiveTuning::linePrediction() {
       const auto &[traversal1Iteration, traversal1Time] = traversalValues[traversalValues.size() - 1];
       const auto &[traversal2Iteration, traversal2Time] = traversalValues[traversalValues.size() - 2];
 
-      const auto gradient = (traversal1Time - traversal2Time) / (traversal1Iteration - traversal2Iteration);
+      const long gradient = static_cast<long>(traversal1Time - traversal2Time) / static_cast<long>(traversal1Iteration - traversal2Iteration);
       const auto delta = _firstIterationOfTuningPhase - traversal1Iteration;
 
       // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
