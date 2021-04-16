@@ -333,7 +333,8 @@ void PredictiveTuning::linePrediction() {
       const auto &[traversal1Iteration, traversal1Time] = traversalValues[traversalValues.size() - 1];
       const auto &[traversal2Iteration, traversal2Time] = traversalValues[traversalValues.size() - 2];
 
-      const long gradient = static_cast<long>(traversal1Time - traversal2Time) / static_cast<long>(traversal1Iteration - traversal2Iteration);
+      const long gradient = static_cast<long>(traversal1Time - traversal2Time) /
+                            static_cast<long>(traversal1Iteration - traversal2Iteration);
       const auto delta = _firstIterationOfTuningPhase - traversal1Iteration;
 
       // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
