@@ -25,7 +25,9 @@ class PredictiveTuningTest : public AutoPasTestBase {
   static auto tuneForSomeIterationsAndCheckAllTuned(
       autopas::PredictiveTuning &predictiveTuning, const std::vector<long> &evidenceList, size_t &iteration,
       const std::vector<autopas::Configuration> &allConfigurations = _allConfigs) {
+    // collects all configurations that are tested in this phase
     std::vector<autopas::Configuration> testedConfigs(evidenceList.size());
+    // configuration object corresponding to the best entry in evidenceList
     autopas::Configuration optimalConfiguration;
     auto minTime = std::numeric_limits<size_t>::max();
     for (size_t index = 0ul; index < evidenceList.size(); ++index) {
@@ -50,7 +52,7 @@ class PredictiveTuningTest : public AutoPasTestBase {
    * The search space is fixed to LC, no N3, SoA, CSF = 1, LoadEstimator = none, and all given traversal options.
    * @param testsUntilFirstPrediction
    * @param extrapolationMethodOption
-   * @param blacklistRange
+   * @param blacklistRange Set to zero to disable blacklisting.
    * @param allowedLCTraversalOptions This is basically the whole search space.
    * @return Preconfigured PredictiveTuning object.
    */

@@ -164,6 +164,9 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    */
   inline void blacklistBadConfigurations();
 
+  /**
+   * Error value used as a placeholder for the predictions of configurations that are not predicted.
+   */
   constexpr static size_t _predictionErrorValue = std::numeric_limits<size_t>::max();
 
   /**

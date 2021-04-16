@@ -44,7 +44,7 @@ void PredictiveTuningTest::simulateTuningPhases(autopas::ExtrapolationMethodOpti
   EXPECT_EQ(expectedOptimalConfiguration, predictiveTuning.getCurrentConfiguration());
 }
 
-/*
+/**
  * Tests the prediction and the selection of the right optimum.
  * Three different configurations:
  *      - first that is not optimal but it getting less expensive.
@@ -80,19 +80,7 @@ TEST_F(PredictiveTuningTest, testLagrange) {
   simulateTuningPhases(autopas::ExtrapolationMethodOption::lagrange, {{6, 1, 20}, {5, 2, 20}, {4, 3, 20}}, 0);
 }
 
-/*
- * Tests the prediction and the selection of the right optimum with the newton interpolation method.
- * Three different configurations:
- *      - first that is not optimal but it getting less expensive.
- *      - second is optimal in the beginning but is getting more expensive.
- *      - third is constant and not in the optimum range.
- * In the third iteration the first configuration should be predicted to be the optimum.
- */
-TEST_F(PredictiveTuningTest, testNewton) {
-  simulateTuningPhases(autopas::ExtrapolationMethodOption::newton, {{60, 10, 200}, {50, 20, 200}, {40, 30, 200}}, 0);
-}
-
-/*
+/**
  * Tests the selection of the right optimumSearchSpace in the regard of the relativeOptimum and tuning.
  * Three different configurations:
  *      - first is constant near the optimum (11).
@@ -135,7 +123,7 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTuningThreeIterations) {
   EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 }
 
-/*
+/**
  * Tests the selection of the right optimumSearchSpace in the regard of the number of iterations without a test and
  * tuning. Two different configurations:
  *      - first is constant out of the optimum range (20).
@@ -201,7 +189,7 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
   EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
 }
 
-/*
+/**
  * Tests the recognition of an invalid _optimalSearchSpace in tuning and the reselection of _optimalSearchSpace
  * Three different configurations:
  *      - first is constant out of the optimum range (15) and invalid in the third iteration.
@@ -252,7 +240,7 @@ TEST_F(PredictiveTuningTest, testInvalidOptimalSearchSpaceTwice) {
   EXPECT_EQ(thirdBestConfiguration, predictiveTuning.getCurrentConfiguration());
 }
 
-/*
+/**
  * Tests the correct use of the blacklist:
  *      - first is constant the optimum (1).
  *      - second is constant in the blacklist range (5).
