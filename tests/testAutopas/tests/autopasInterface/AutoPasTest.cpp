@@ -196,9 +196,9 @@ TEST_F(AutoPasTest, checkConstIterator) {
 }
 
 void AutoPasTest::expectedParticles(size_t expectedOwned, size_t expectedHalo) {
-  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::haloAndOwned), expectedHalo + expectedOwned);
-  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly), expectedOwned);
-  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::haloOnly), expectedHalo);
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo), expectedHalo + expectedOwned);
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::owned), expectedOwned);
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::halo), expectedHalo);
 }
 
 TEST_F(AutoPasTest, getNumParticlesTest) {
