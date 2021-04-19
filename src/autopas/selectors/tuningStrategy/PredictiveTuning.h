@@ -361,7 +361,8 @@ void PredictiveTuning::linearRegression() {
       _configurationPredictions[configuration] = functionParams[0] * _firstIterationOfTuningPhase + functionParams[1];
     } else if (const auto &traversalValues = _traversalTimesStorage[configuration];
                traversalValues.size() >= _evidenceFirstPrediction) {
-      size_t iterationMultTime = 0, iterationSum = 0, iterationSquareSum = 0, timeSum = 0;
+      // we need signed types because calculation of the gradient might have negative result
+      long iterationMultTime = 0, iterationSum = 0, iterationSquareSum = 0, timeSum = 0;
 
       for (auto i = traversalValues.size() - _evidenceFirstPrediction; i < traversalValues.size(); i++) {
         const auto &[iteration, time] = traversalValues[i];
@@ -374,10 +375,9 @@ void PredictiveTuning::linearRegression() {
       // cast integer to decimal because this division contains small numbers which would cause precision lose
       const double iterationMeanValue =
           static_cast<double>(iterationSum) / static_cast<double>(_evidenceFirstPrediction);
-      const auto timeMeanValue = timeSum / _evidenceFirstPrediction;
+      const long timeMeanValue = timeSum / _evidenceFirstPrediction;
 
-      // cast unsigned to signed because this difference can be negative
-      const auto numerator = static_cast<long>(iterationMultTime) - static_cast<long>(iterationSum * timeMeanValue);
+      const auto numerator = iterationMultTime - iterationSum * timeMeanValue;
       const auto denominator =
           static_cast<double>(iterationSquareSum) - static_cast<double>(iterationSum * iterationMeanValue);
 
@@ -406,15 +406,18 @@ void PredictiveTuning::lagrangePolynomial() {
       const auto lengthTTS = traversalValues.size() - 1;
       long prediction = 0;
       // calculates lagrange basis functions L_i and multiplies it with the tested time of p_i
+      // loop for the sum
       for (unsigned int i = 0; i < _evidenceFirstPrediction; i++) {
         long numerator = 1;
         long denominator = 1;
-        const auto &[pointIIteration, pointITime] = traversalValues[lengthTTS - i];
+        const auto &[iterationI, timeI] = traversalValues[lengthTTS - i];
+        // loop for the product
         for (unsigned int j = 0; j < _evidenceFirstPrediction; j++) {
           if (i != j) {
+            const auto & iterationJ = traversalValues[lengthTTS - j].first;
             // cast unsigned to signed before subtraction, because this difference can be negative
-            numerator *= static_cast<long>(_firstIterationOfTuningPhase) - traversalValues[lengthTTS - j].first;
-            denominator *= static_cast<long>(pointIIteration) - traversalValues[lengthTTS - j].first;
+            numerator *= static_cast<long>(_firstIterationOfTuningPhase) - iterationJ;
+            denominator *= static_cast<long>(iterationI) - iterationJ;
             // TODO: Look if this is sufficient or if there is a better solution
             // Should only be needed when the denominator overflows and therefore gets set to zero
             if (denominator == 0) {
@@ -423,7 +426,8 @@ void PredictiveTuning::lagrangePolynomial() {
             }
           }
         }
-        prediction += numerator * pointITime / denominator;
+        // here occurs rounding error! However since we deal with quite large numbers (>10^6) they should be negligible.
+        prediction += numerator * timeI / denominator;
       }
       _configurationPredictions[configuration] = prediction;
     } else {
@@ -465,7 +469,7 @@ void PredictiveTuning::newtonPolynomial() {
         std::vector<double> ithColumn(lengthIthColumn);
         for (unsigned int j = 0; j < lengthIthColumn; j++) {
           if (i == 0) {
-            auto &[iteration, runTime] = traversalValues[lengthTTS - _evidenceFirstPrediction + j];
+            const auto &[iteration, runTime] = traversalValues[lengthTTS - _evidenceFirstPrediction + j];
             ithColumn[j] = runTime;
             iterationValues[j] = iteration;
           } else {
