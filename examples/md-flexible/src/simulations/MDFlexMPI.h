@@ -13,5 +13,9 @@ class MDFlexMPI : MDFlexSimulation {
 		~MDFlexMPI() = default;
 
 		void run() override;
+
+	private:
+		unsigned int _rank;
+		std::array<unsigned int, 3> _processorCoordinates;
 };
 

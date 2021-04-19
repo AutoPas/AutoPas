@@ -4,10 +4,6 @@
  * @author F. Gratl
  */
 
-#if defined(AUTOPAS_MPI)
-#include <mpi.h>
-#endif
-
 #include "simulations/MDFlexSingleNode.h"
 
 /**

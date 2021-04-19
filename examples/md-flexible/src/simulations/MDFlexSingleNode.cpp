@@ -6,6 +6,10 @@
 
 #include "MDFlexSingleNode.h"
 
+#if defined(AUTOPAS_MPI)
+#include <mpi.h>
+#endif
+
 #include <iostream>
 #include <fstream>
 
