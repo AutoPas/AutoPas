@@ -28,7 +28,7 @@ void calculatePositions(AutoPasTemplate &autopas, const ParticlePropertiesLibrar
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     auto v = iter->getV();
     auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
     auto f = iter->getF();
@@ -57,7 +57,7 @@ void calculateVelocities(AutoPasTemplate &autopas, const ParticlePropertiesLibra
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
     auto force = iter->getF();
     auto oldForce = iter->getOldf();

@@ -51,14 +51,14 @@ INSTANTIATE_TEST_SUITE_P(
                 MockFunctor<Particle> f;
                 // generate both newton3 versions of the same traversal and check that both are applicable
                 bool configOk = autopas::utils::withStaticCellType<Particle>(
-                    containerSelector.getCurrentContainer()->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+                    container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
                       auto traversalSelector = autopas::TraversalSelector<decltype(particleCellDummy)>();
-                      auto traversalWithN3 = traversalSelector.generateTraversal(
-                          traversalOption, f, containerSelector.getCurrentContainer()->getTraversalSelectorInfo(),
-                          dataLayoutOption, autopas::Newton3Option::enabled);
-                      auto traversalWithoutN3 = traversalSelector.generateTraversal(
-                          traversalOption, f, containerSelector.getCurrentContainer()->getTraversalSelectorInfo(),
-                          dataLayoutOption, autopas::Newton3Option::disabled);
+                      auto traversalWithN3 =
+                          traversalSelector.generateTraversal(traversalOption, f, container->getTraversalSelectorInfo(),
+                                                              dataLayoutOption, autopas::Newton3Option::enabled);
+                      auto traversalWithoutN3 =
+                          traversalSelector.generateTraversal(traversalOption, f, container->getTraversalSelectorInfo(),
+                                                              dataLayoutOption, autopas::Newton3Option::disabled);
 
                       return traversalWithN3->isApplicable() and traversalWithoutN3->isApplicable();
                     });
