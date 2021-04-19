@@ -120,6 +120,27 @@ TEST_P(PredictiveTuningTest, testPredictions) {
   }
 }
 
+/**
+ * Tests the prediction and the selection of the right optimum. Values are chosen so that the predictions result in
+ * under or overflow.
+ *
+ * @note We expect underflows to be set to 1 and overflows to max size_t - 1.
+ *
+ * (max-value itself is used as a indicator that no prediction was computed).
+ */
+TEST_P(PredictiveTuningTest, testUnderAndOverflow) {
+  auto extrapolationOption = GetParam();
+  constexpr auto maxSizeT = std::numeric_limits<size_t>::max();
+  simulateTuningPhasesAndCheckPrediction(
+      extrapolationOption,
+      {
+          {{_configurationLC_C01, 100}, {_configurationLC_C08, 1}, {_configurationLC_Sliced, 101}},
+          {{_configurationLC_C01, 10}, {_configurationLC_C08, maxSizeT / 4}, {_configurationLC_Sliced, 101}},
+      },
+      // all predictions are evaluated for the seventh iteration (iteration==6)
+      100, {{_configurationLC_C01, 1}, {_configurationLC_C08, maxSizeT - 1}, {_configurationLC_Sliced, 101}});
+}
+
 INSTANTIATE_TEST_SUITE_P(Generated, PredictiveTuningTest,
                          ::testing::ValuesIn(autopas::ExtrapolationMethodOption::getAllOptions()),
                          PredictiveTuningTest::PrintToStringParamName());
