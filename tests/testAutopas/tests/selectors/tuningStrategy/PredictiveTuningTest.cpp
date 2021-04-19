@@ -57,6 +57,7 @@ void PredictiveTuningTest::simulateTuningPhasesAndCheckPrediction(
  *      - first that starts optimal but becomes slowly more expensive.
  *      - second starts expensive but becomes quickly better. (expected optimum)
  *      - third is constant.
+ * @note All expected values in this test were calculated by hand and are precise if not stated otherwise.
  */
 TEST_P(PredictiveTuningTest, testPredictions) {
   auto extrapolationOption = GetParam();
@@ -73,12 +74,45 @@ TEST_P(PredictiveTuningTest, testPredictions) {
           {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
       break;
     }
-    case autopas::ExtrapolationMethodOption::lagrange:
-      // TODO
-    case autopas::ExtrapolationMethodOption::newton:
-      // TODO
-    case autopas::ExtrapolationMethodOption::linearRegression:
-      // TODO
+    case autopas::ExtrapolationMethodOption::lagrange: {
+      simulateTuningPhasesAndCheckPrediction(
+          extrapolationOption,
+          {
+              {{_configurationLC_C01, 79}, {_configurationLC_C08, 122}, {_configurationLC_Sliced, 101}},
+              {{_configurationLC_C01, 90}, {_configurationLC_C08, 111}, {_configurationLC_Sliced, 101}},
+              {{_configurationLC_C01, 97}, {_configurationLC_C08, 103}, {_configurationLC_Sliced, 101}},
+          },
+          // all predictions are evaluated for the tenth iteration (iteration==9)
+          // for _configurationLC_C08 we actually expect 99.2, however due to internal rounding errors we end up with 98
+          {{_configurationLC_C01, 100}, {_configurationLC_C08, 98}, {_configurationLC_Sliced, 101}});
+      break;
+    }
+    case autopas::ExtrapolationMethodOption::newton: {
+      simulateTuningPhasesAndCheckPrediction(
+          extrapolationOption,
+          {
+              {{_configurationLC_C01, 79}, {_configurationLC_C08, 115}, {_configurationLC_Sliced, 101}},
+              {{_configurationLC_C01, 90}, {_configurationLC_C08, 109}, {_configurationLC_Sliced, 101}},
+              {{_configurationLC_C01, 97}, {_configurationLC_C08, 103}, {_configurationLC_Sliced, 101}},
+          },
+          // all predictions are evaluated for the tenth iteration (iteration==9)
+          // for _configurationLC_C08 we actually expect 99.33
+          {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
+      break;
+    }
+    case autopas::ExtrapolationMethodOption::linearRegression: {
+      simulateTuningPhasesAndCheckPrediction(
+          extrapolationOption,
+          {
+              // values along the desired line offset so that the regression should still return the same line
+              {{_configurationLC_C01, 91 + 1}, {_configurationLC_C08, 115 - 1}, {_configurationLC_Sliced, 101 - 2}},
+              {{_configurationLC_C01, 94 - 2}, {_configurationLC_C08, 109 + 2}, {_configurationLC_Sliced, 101 + 4}},
+              {{_configurationLC_C01, 97 + 1}, {_configurationLC_C08, 103 - 1}, {_configurationLC_Sliced, 101 - 2}},
+          },
+          // all predictions are evaluated for the tenth iteration (iteration==9)
+          {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
+      break;
+    }
     default:
       GTEST_FAIL() << "No test implemented for extrapolation method " << extrapolationOption.to_string();
   }
