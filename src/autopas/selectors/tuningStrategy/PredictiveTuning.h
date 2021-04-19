@@ -180,6 +180,11 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   constexpr static size_t _predictionErrorValue = std::numeric_limits<size_t>::max();
 
   /**
+   * Placeholder value used when a prediciton overflows.
+   */
+  constexpr static size_t _predictionOverflowValue = std::numeric_limits<size_t>::max() - 1;
+
+  /**
    * For each configuration stores how long it took in which iteration.
    * Configuration -> vector<(iteration, runTime)>
    */
@@ -337,8 +342,19 @@ void PredictiveTuning::linePrediction() {
                             static_cast<long>(traversal1Iteration - traversal2Iteration);
       const auto delta = _firstIterationOfTuningPhase - traversal1Iteration;
 
-      // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
-      _configurationPredictions[configuration] = traversal1Time + gradient * delta;
+      const auto change = gradient * delta;
+
+      // check if prediction runs into over or underflow
+      if (gradient > 0 and change > std::numeric_limits<long>::max() - traversal1Time) {
+        // overflow
+        _configurationPredictions[configuration] = _predictionOverflowValue;
+      } else if (gradient < 0 and -change > traversal1Time) {
+        // underflow
+        _configurationPredictions[configuration] = 1;
+      } else {
+        // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
+        _configurationPredictions[configuration] = traversal1Time + change;
+      }
       functionParams.clear();
       functionParams.emplace_back(gradient);
       functionParams.emplace_back(traversal1Time);
@@ -364,12 +380,34 @@ void PredictiveTuning::linearRegression() {
       // we need signed types because calculation of the gradient might have negative result
       long iterationMultTime = 0, iterationSum = 0, iterationSquareSum = 0, timeSum = 0;
 
+      bool numericOverflow = false;
       for (auto i = traversalValues.size() - _evidenceFirstPrediction; i < traversalValues.size(); i++) {
         const auto &[iteration, time] = traversalValues[i];
-        iterationMultTime += iteration * time;
+        // check if iteration * time will overflow
+        if (iteration > std::numeric_limits<long>::max() / time) {
+          numericOverflow = true;
+          break;
+        } else {
+          auto iterationMultTimeI = iteration * time;
+          // check if iterationMultTime += iteration * time will overflow
+          if (iterationMultTimeI > std::numeric_limits<long>::max() - iterationMultTime) {
+            // TODO: set prediction to overflow and go to next config
+            numericOverflow = true;
+            break;
+          } else {
+            iterationMultTime += iterationMultTimeI;
+          }
+        }
         iterationSum += iteration;
+        // this will overflow at iteration 3 037 000 499
         iterationSquareSum += iteration * iteration;
         timeSum += time;
+      }
+
+      // if there is an overflow the actual prediction will also overflow so abort and continue.
+      if (numericOverflow) {
+        _configurationPredictions[configuration] = _predictionOverflowValue;
+        continue;
       }
 
       // cast integer to decimal because this division contains small numbers which would cause precision lose
@@ -384,11 +422,22 @@ void PredictiveTuning::linearRegression() {
       // ((Sum iteration_i * time_i) - n * iterationMeanValue * timeMeanValue) / ((Sum iteration_i^2) - n *
       // iterationMeanValue ^ 2)
       const auto gradient = numerator / denominator;
-      const auto yIntercept = timeMeanValue - gradient * iterationMeanValue;
 
-      _configurationPredictions[configuration] = gradient * _firstIterationOfTuningPhase + yIntercept;
+      const auto change = static_cast<long>(gradient * (_firstIterationOfTuningPhase - iterationMeanValue));
+      // check if prediction runs into over or underflow
+      if (gradient > 0 and change > std::numeric_limits<long>::max() - timeMeanValue) {
+        // overflow
+        _configurationPredictions[configuration] = _predictionOverflowValue;
+      } else if (gradient < 0 and -change > timeMeanValue) {
+        // underflow
+        _configurationPredictions[configuration] = 1;
+      } else {
+        // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
+        _configurationPredictions[configuration] = change + timeMeanValue;
+      }
       functionParams.clear();
       functionParams.emplace_back(gradient);
+      const auto yIntercept = timeMeanValue - gradient * iterationMeanValue;
       functionParams.emplace_back(yIntercept);
 
     } else {
@@ -414,7 +463,7 @@ void PredictiveTuning::lagrangePolynomial() {
         // loop for the product
         for (unsigned int j = 0; j < _evidenceFirstPrediction; j++) {
           if (i != j) {
-            const auto & iterationJ = traversalValues[lengthTTS - j].first;
+            const auto &iterationJ = traversalValues[lengthTTS - j].first;
             // cast unsigned to signed before subtraction, because this difference can be negative
             numerator *= static_cast<long>(_firstIterationOfTuningPhase) - iterationJ;
             denominator *= static_cast<long>(iterationI) - iterationJ;
