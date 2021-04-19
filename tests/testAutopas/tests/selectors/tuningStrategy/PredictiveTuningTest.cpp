@@ -19,7 +19,7 @@ autopas::PredictiveTuning PredictiveTuningTest::getPredictiveTuning(
 
 void PredictiveTuningTest::simulateTuningPhasesAndCheckPrediction(
     autopas::ExtrapolationMethodOption extrapolationMethodOption,
-    const std::vector<std::map<autopas::Configuration, long>> &evidencePerPhase,
+    const std::vector<std::map<autopas::Configuration, long>> &evidencePerPhase, unsigned int tuningInterval,
     const std::map<autopas::Configuration, long> &expectedPredictions) {
   // setup sanity check
   ASSERT_EQ(evidencePerPhase.back().size(), expectedPredictions.size())
@@ -41,6 +41,8 @@ void PredictiveTuningTest::simulateTuningPhasesAndCheckPrediction(
     // during these first phases it is expected that no predictions are made
     EXPECT_THAT(predictiveTuning.getConfigurationPredictions(), ::testing::IsEmpty());
   }
+
+  iteration += tuningInterval;
 
   // fake start of another tuning phase which triggers calculation of predictions.
   predictiveTuning.reset(iteration);
@@ -71,7 +73,7 @@ TEST_P(PredictiveTuningTest, testPredictions) {
               {{_configurationLC_C01, 97}, {_configurationLC_C08, 103}, {_configurationLC_Sliced, 101}},
           },
           // all predictions are evaluated for the seventh iteration (iteration==6)
-          {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
+          0, {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
       break;
     }
     case autopas::ExtrapolationMethodOption::lagrange: {
@@ -84,7 +86,7 @@ TEST_P(PredictiveTuningTest, testPredictions) {
           },
           // all predictions are evaluated for the tenth iteration (iteration==9)
           // for _configurationLC_C08 we actually expect 99.2, however due to internal rounding errors we end up with 98
-          {{_configurationLC_C01, 100}, {_configurationLC_C08, 98}, {_configurationLC_Sliced, 101}});
+          0, {{_configurationLC_C01, 100}, {_configurationLC_C08, 98}, {_configurationLC_Sliced, 101}});
       break;
     }
     case autopas::ExtrapolationMethodOption::newton: {
@@ -97,7 +99,7 @@ TEST_P(PredictiveTuningTest, testPredictions) {
           },
           // all predictions are evaluated for the tenth iteration (iteration==9)
           // for _configurationLC_C08 we actually expect 99.33
-          {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
+          0, {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
       break;
     }
     case autopas::ExtrapolationMethodOption::linearRegression: {
@@ -110,7 +112,7 @@ TEST_P(PredictiveTuningTest, testPredictions) {
               {{_configurationLC_C01, 97 + 1}, {_configurationLC_C08, 103 - 1}, {_configurationLC_Sliced, 101 - 2}},
           },
           // all predictions are evaluated for the tenth iteration (iteration==9)
-          {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
+          0, {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
       break;
     }
     default:

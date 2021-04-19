@@ -105,11 +105,12 @@ class PredictiveTuningTest : public AutoPasTestBase,
    *
    * @param extrapolationMethodOption
    * @param evidencePerPhase
+   * @param tuningInterval Number of iterations between the last tuning iteration and evaluation of expectations.
    * @param expectedPredictions
    */
   void simulateTuningPhasesAndCheckPrediction(
       autopas::ExtrapolationMethodOption extrapolationMethodOption,
-      const std::vector<std::map<autopas::Configuration, long>> &evidencePerPhase,
+      const std::vector<std::map<autopas::Configuration, long>> &evidencePerPhase, unsigned int tuningInterval,
       const std::map<autopas::Configuration, long> &expectedPredictions);
 
   static constexpr autopas::Configuration _configurationLC_C01 = autopas::Configuration(
