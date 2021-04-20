@@ -183,6 +183,10 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * Placeholder value used when a prediciton overflows.
    */
   constexpr static size_t _predictionOverflowValue = std::numeric_limits<size_t>::max() - 1;
+  /**
+   * Placeholder value used when a prediciton overflows.
+   */
+  constexpr static size_t _predictionUnderflowValue = 1;
 
   /**
    * For each configuration stores how long it took in which iteration.
@@ -350,7 +354,7 @@ void PredictiveTuning::linePrediction() {
         _configurationPredictions[configuration] = _predictionOverflowValue;
       } else if (gradient < 0 and -change > traversal1Time) {
         // underflow
-        _configurationPredictions[configuration] = 1;
+        _configurationPredictions[configuration] = _predictionUnderflowValue;
       } else {
         // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
         _configurationPredictions[configuration] = traversal1Time + change;
@@ -430,7 +434,7 @@ void PredictiveTuning::linearRegression() {
         _configurationPredictions[configuration] = _predictionOverflowValue;
       } else if (gradient < 0 and -change > timeMeanValue) {
         // underflow
-        _configurationPredictions[configuration] = 1;
+        _configurationPredictions[configuration] = _predictionUnderflowValue;
       } else {
         // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
         _configurationPredictions[configuration] = change + timeMeanValue;
@@ -454,6 +458,8 @@ void PredictiveTuning::lagrangePolynomial() {
     if (traversalValues.size() >= _evidenceFirstPrediction) {
       const auto lengthTTS = traversalValues.size() - 1;
       long prediction = 0;
+      bool numericOverflow = false;
+      bool numericUnderflow = false;
       // calculates lagrange basis functions L_i and multiplies it with the tested time of p_i
       // loop for the sum
       for (unsigned int i = 0; i < _evidenceFirstPrediction; i++) {
@@ -464,8 +470,8 @@ void PredictiveTuning::lagrangePolynomial() {
         for (unsigned int j = 0; j < _evidenceFirstPrediction; j++) {
           if (i != j) {
             const auto &iterationJ = traversalValues[lengthTTS - j].first;
-            // cast unsigned to signed before subtraction, because this difference can be negative
             numerator *= static_cast<long>(_firstIterationOfTuningPhase) - iterationJ;
+            // cast unsigned to signed before subtraction, because this difference can be negative
             denominator *= static_cast<long>(iterationI) - iterationJ;
             // TODO: Look if this is sufficient or if there is a better solution
             // Should only be needed when the denominator overflows and therefore gets set to zero
@@ -475,10 +481,36 @@ void PredictiveTuning::lagrangePolynomial() {
             }
           }
         }
-        // here occurs rounding error! However since we deal with quite large numbers (>10^6) they should be negligible.
-        prediction += numerator * timeI / denominator;
+
+        // check if numerator * timeI overflows
+        if (numerator > std::numeric_limits<long>::max() / timeI) {
+          // in case of overflow, set flag and abort.
+          numericOverflow = true;
+          break;
+        }
+        // rounding error occurs here!
+        // However, since we usually deal with quite large numbers (>10^6 ns) they should be negligible.
+        const long change = numerator * timeI / denominator;
+        // check if addition will overflow
+        if (change > 0 and change > std::numeric_limits<long>::max() - prediction) {
+          numericOverflow = true;
+          break;
+        }
+        // check if addition will underflow
+        if (change < 0 and -change > prediction) {
+          numericUnderflow = true;
+          break;
+        }
+
+        prediction += change;
       }
-      _configurationPredictions[configuration] = prediction;
+      if (numericOverflow) {
+        _configurationPredictions[configuration] = _predictionOverflowValue;
+      } else if (numericUnderflow) {
+        _configurationPredictions[configuration] = _predictionUnderflowValue;
+      } else {
+        _configurationPredictions[configuration] = prediction;
+      }
     } else {
       // When a configuration was not yet tested twice.
       _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
@@ -490,21 +522,47 @@ void PredictiveTuning::lagrangePolynomial() {
 void PredictiveTuning::newtonPolynomial() {
   for (const auto &configuration : _searchSpace) {
     auto &functionParams = _configurationPredictionFunctionParams[configuration];
+    bool numericOverflow = false;
+
     // if configuration was not tested in last tuning phase reuse prediction function.
     if ((_lastTest[configuration] != (_tuningPhaseCounter - 1)) and functionParams.size() == _evidenceFirstPrediction) {
       const auto &traversalValues = _traversalTimesStorage[configuration];
       auto lengthTTS = traversalValues.size() - 1;
       long prediction = 0;
+
       for (unsigned int i = 0; i < _evidenceFirstPrediction; i++) {
         auto interimValue = functionParams[i];
         for (unsigned int j = 0; j < i; j++) {
           // cast to double, because _configurationPredictionFunctionParams contains doubles
-          interimValue *= static_cast<double>(_firstIterationOfTuningPhase) -
-                          traversalValues[lengthTTS - _evidenceFirstPrediction + j].first;
+          auto factor = static_cast<double>(_firstIterationOfTuningPhase) -
+                        traversalValues[lengthTTS - _evidenceFirstPrediction + j].first;
+          // check if interimValue *= factor will overflow
+          if (interimValue > 0 and factor > std::numeric_limits<double>::max() / interimValue) {
+            numericOverflow = true;
+            break;
+          }
+          interimValue *= factor;
         }
-        prediction += interimValue;
+        // check if prediction += interimValue will overflow
+        if (numericOverflow or static_cast<decltype(prediction)>(interimValue) >
+                                   (std::numeric_limits<decltype(prediction)>::max() - prediction)) {
+          numericOverflow = true;
+        }
+        // if the inner loop overflowed no point in continuing the outer one.
+        if (numericOverflow) {
+          break;
+        }
+
+        prediction += static_cast<decltype(prediction)>(interimValue);
       }
-      _configurationPredictions[configuration] = prediction;
+
+      if (numericOverflow) {
+        _configurationPredictions[configuration] = _predictionOverflowValue;
+      } else if (prediction < 0) {
+        _configurationPredictions[configuration] = _predictionUnderflowValue;
+      } else {
+        _configurationPredictions[configuration] = prediction;
+      }
     } else if (const auto &traversalValues = _traversalTimesStorage[configuration];
                traversalValues.size() >= _evidenceFirstPrediction) {
       std::vector<std::vector<double>> interimCalculation(_evidenceFirstPrediction);
@@ -532,17 +590,41 @@ void PredictiveTuning::newtonPolynomial() {
         --lengthIthColumn;
       }
 
-      size_t prediction = 0;
+      long prediction = 0;
       for (unsigned int i = 0; i < _evidenceFirstPrediction; i++) {
         auto interimValue = coefficients[i];
         for (unsigned int j = 0; j < i; j++) {
           // cast to double, because coefficients contains doubles
-          interimValue *= static_cast<double>(_firstIterationOfTuningPhase - iterationValues[j]);
+          auto factor = static_cast<double>(_firstIterationOfTuningPhase - iterationValues[j]);
+          // check if interimValue *= factor will overflow
+          if (interimValue > 0 and factor > std::numeric_limits<double>::max() / interimValue) {
+            numericOverflow = true;
+            break;
+          }
+          interimValue *= factor;
         }
+        // check if prediction += interimValue will overflow
+        if (numericOverflow or interimValue > static_cast<double>(std::numeric_limits<decltype(prediction)>::max()) or
+            static_cast<decltype(prediction)>(interimValue) >
+                (std::numeric_limits<decltype(prediction)>::max() - prediction)) {
+          numericOverflow = true;
+        }
+        // if the inner loop overflowed no point in continuing the outer one.
+        if (numericOverflow) {
+          break;
+        }
+
         prediction += interimValue;
       }
 
-      _configurationPredictions[configuration] = prediction;
+      if (numericOverflow) {
+        _configurationPredictions[configuration] = _predictionOverflowValue;
+      } else if (prediction < 0) {
+        _configurationPredictions[configuration] = _predictionUnderflowValue;
+      } else {
+        _configurationPredictions[configuration] = prediction;
+      }
+
       functionParams = coefficients;
     } else {
       // When a configuration was not yet tested twice.
