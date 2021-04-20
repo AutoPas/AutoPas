@@ -8,13 +8,13 @@
 #include "MDFlexSimulation.h"
 
 class MDFlexSingleNode : MDFlexSimulation {
-	public:
-		MDFlexSingleNode(int argc, char** argv);
-		~MDFlexSingleNode();
+ public:
+  MDFlexSingleNode(int argc, char **argv);
+  ~MDFlexSingleNode();
 
-		void run() override;
+  void run() override;
 
-	private:
-		int _argc;
-		char** _argv;
+ private:
+  int _argc;
+  char **_argv;
 };
