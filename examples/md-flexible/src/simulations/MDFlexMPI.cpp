@@ -22,7 +22,6 @@ MDFlexMPI::MDFlexMPI(int argc, char** argv){
 		processorBlockDimension[1] = processorBlockDimension[0];
 		processorBlockDimension[2] = processorBlockCount / (processorBlockDimension[0] * processorBlockDimension[1]);
 
-  	MPI_Cart_get(MPI_COMM_WORLD, 3, processorBlockDimensions, false, _processorCoordinates);
 }
 
 void MDFlexMPI::run(){
