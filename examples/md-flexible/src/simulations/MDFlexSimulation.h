@@ -8,18 +8,17 @@
 #include "../Simulation.h"
 
 /**
-* Provides base functionality for MD-Flexible simulations. 
-* Maybe add unique identifier for each class or an MDFlex factory of some kind
-*/
+ * Provides base functionality for MD-Flexible simulations.
+ * Maybe add unique identifier for each class or an MDFlex factory of some kind
+ */
 class MDFlexSimulation {
-	public:
-		MDFlexSimulation(int argc, char** argv);
-		~MDFlexSimulation();
+ public:
+  MDFlexSimulation(int argc, char **argv);
+  ~MDFlexSimulation();
 
-		virtual void run() = 0;
+  virtual void run() = 0;
 
-	protected:
-		MDFlexConfig* _configuration;
-		Simulation* _simulation;
-
+ protected:
+  MDFlexConfig *_configuration;
+  Simulation *_simulation;
 };
