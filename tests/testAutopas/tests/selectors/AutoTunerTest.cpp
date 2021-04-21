@@ -46,13 +46,14 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        lc_sliced                   (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        lc_sliced_balanced          (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
   //                        lc_sliced_c02               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        lc_sliced_blocks            (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        lc_c18                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        lc_c01                      (AoS <=> SoA, noNewton3)                             = 2
   //                        lc_c01_combined_SoA         (SoA, noNewton3)                                     = 1
   //                        lc_c04                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        lc_c04_combined_SoA         (SoA, newton3 <=> noNewton3)                         = 2
   //                        lc_c04_HCP                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  configsPerContainer[autopas::ContainerOption::linkedCells] = 37;
+  configsPerContainer[autopas::ContainerOption::linkedCells] = 41;
   // same as linked Cells but load estimator stuff is currently missing
   configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
       configsPerContainer[autopas::ContainerOption::linkedCells] - 4;
