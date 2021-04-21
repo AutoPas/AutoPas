@@ -27,8 +27,8 @@ namespace autopas {
             const int unsigned maxParticlesInLeaf = 16;
 
             OctreeNodeInterface<Particle> *result;
-            if (particles.size() < maxParticlesInLeaf) {
-                particles.push_back(p);
+            if (_particles.size() < maxParticlesInLeaf) {
+                _particles.push_back(p);
                 result = this;
             } else {
                 // Create a new subdivision based on the lower, center and maximum coordinate
@@ -53,10 +53,10 @@ namespace autopas {
                 result = new OctreeInnerNode<Particle>(parentMin, parentMax, newChildren);
 
                 // Put all particles from the leaf inside the new nodes
-                for (auto oldParticle : particles) {
+                for (auto oldParticle : _particles) {
                     result = result->insert(oldParticle);
                 }
-                particles.clear();
+                _particles.clear();
 
                 // Insert the new particle
                 result = result->insert(p);
@@ -69,14 +69,14 @@ namespace autopas {
          * @copydoc OctreeNodeInterface::appendAllParticles()
          */
         void appendAllParticles(std::vector<Particle> &ps) override {
-            ps.insert(ps.end(), particles.begin(), particles.end());
+            ps.insert(ps.end(), _particles.begin(), _particles.end());
         }
 
         /**
          * @copydoc OctreeNodeInterface::clearChildren()
          */
         OctreeNodeInterface<Particle> *clearChildren() override {
-            particles.clear();
+            _particles.clear();
             return this;
         }
 
@@ -84,10 +84,10 @@ namespace autopas {
          * @copydoc OctreeNodeInterface::getNumParticles()
          */
         unsigned int getNumParticles() override {
-            return particles.size();
+            return _particles.size();
         }
 
     private:
-        std::vector<Particle> particles;
+        std::vector<Particle> _particles;
     };
 } // namespace autopas
