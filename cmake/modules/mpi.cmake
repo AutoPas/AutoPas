@@ -1,6 +1,6 @@
-option(AUTOPAS_MPI "Activates MPI distributed memory parallelization." OFF)
+option(AUTOPAS_INTERNODE_TUNING "Activates distributed tuning in MPI parallel simulations" OFF)
 
-if (AUTOPAS_MPI)
+if (AUTOPAS_INTERNODE_TUNING)
     message(STATUS "MPI enabled.")
     find_package(MPI REQUIRED)
     if (NOT ${MPI_CXX_FOUND})
