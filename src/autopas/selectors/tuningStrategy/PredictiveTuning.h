@@ -346,7 +346,7 @@ void PredictiveTuning::linePrediction() {
                             static_cast<long>(traversal1Iteration - traversal2Iteration);
       const auto delta = _firstIterationOfTuningPhase - traversal1Iteration;
 
-      const auto change = gradient * delta;
+      const long change = gradient * delta;
 
       // check if prediction runs into over or underflow
       if (gradient > 0 and change > std::numeric_limits<long>::max() - traversal1Time) {
@@ -388,11 +388,12 @@ void PredictiveTuning::linearRegression() {
       for (auto i = traversalValues.size() - _evidenceFirstPrediction; i < traversalValues.size(); i++) {
         const auto &[iteration, time] = traversalValues[i];
         // check if iteration * time will overflow
-        if (iteration > std::numeric_limits<long>::max() / time) {
+        // Assumption : We will never go beyond 2^63 iterations
+        if (static_cast<long>(iteration) > std::numeric_limits<long>::max() / time) {
           numericOverflow = true;
           break;
         } else {
-          auto iterationMultTimeI = iteration * time;
+          long iterationMultTimeI = static_cast<long>(iteration) * time;
           // check if iterationMultTime += iteration * time will overflow
           if (iterationMultTimeI > std::numeric_limits<long>::max() - iterationMultTime) {
             // TODO: set prediction to overflow and go to next config
