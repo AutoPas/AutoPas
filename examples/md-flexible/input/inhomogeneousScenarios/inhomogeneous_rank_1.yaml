@@ -24,7 +24,7 @@ Objects:
       particle-type              :  0
       particle-epsilon           :  1
       particle-sigma             :  1
-      particle-mass              :  5
+      particle-mass              :  2.5
 log-level                        :  debug
 no-flops                         :  false
 no-end-config                    :  true

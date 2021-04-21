@@ -15,16 +15,16 @@ deltaT                           :  0.0001
 iterations                       :  1000000
 periodic-boundaries              :  true
 Objects:
-  CubeClosestPacked:
+  CubeGrid:
     0:
-      box-length                 :  [20, 6, 20]
-      bottomLeftCorner           :  [0, 27, 0]
-      particle-spacing           :  1.
-      velocity                   :  [0, 0, 0]
       particle-type              :  0
-      particle-epsilon           :  1
-      particle-sigma             :  1
-      particle-mass              :  2
+      particle-epsilon           :  1.
+      particle-sigma             :  1.
+      particle-mass              :  1.
+      particles-per-dimension    :  [ 10,30,10 ]
+      particle-spacing           :  2
+      velocity                   :  [ 0.,0.,0. ]
+      bottomLeftCorner           :  [ 0.,0.,0. ]
 log-level                        :  debug
 no-flops                         :  false
 no-end-config                    :  true
