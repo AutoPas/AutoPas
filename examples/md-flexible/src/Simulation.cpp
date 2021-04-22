@@ -186,7 +186,7 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
   _timers.simulate.start();
 
   auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumIterations();
-  double *data;
+  auto *data = static_cast<double *>(malloc(3 * sizeof(double)));
 
   // main simulation loop
   for (; needsMoreIterations(); ++_iteration) {
