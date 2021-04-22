@@ -73,6 +73,14 @@ namespace autopas {
         }
 
         /**
+         * @copydoc OctreeNodeInterface::appendAllLeafBoxes()
+         */
+        void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) override {
+            auto minMax = std::make_pair(this->getBoxMin(), this->getBoxMax());
+            boxes.push_back(minMax);
+        }
+
+        /**
          * @copydoc OctreeNodeInterface::clearChildren()
          */
         OctreeNodeInterface<Particle> *clearChildren() override {

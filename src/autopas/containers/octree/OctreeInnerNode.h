@@ -69,6 +69,15 @@ namespace autopas {
         }
 
         /**
+         * @copydoc OctreeNodeInterface::appendAllLeafBoxes()
+         */
+        void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) override {
+            for (auto &child : _children) {
+                child->appendAllLeafBoxes(boxes);
+            }
+        }
+
+        /**
          * @copydoc OctreeNodeInterface::clearChildren()
          */
         OctreeNodeInterface<Particle> *clearChildren() {
@@ -85,6 +94,11 @@ namespace autopas {
                     delete test;
                 }
             }
+
+            assert(result);
+            // The leaf should now include the box of the inner node as well.
+            result->setBoxMin(this->getBoxMin());
+            result->setBoxMax(this->getBoxMax());
 
             // The inner node is deleted and the leaf node is returned to maintain the tree structure.
             delete this;

@@ -6,6 +6,11 @@
  */
 #pragma once
 
+#include <array>
+#include <vector>
+
+#include "autopas/utils/inBox.h"
+
 namespace autopas {
     /**
      * The base class that provides the necessary function definitions that can be applied to an octree.
@@ -32,6 +37,12 @@ namespace autopas {
         virtual void appendAllParticles(std::vector<Particle> &ps) = 0;
 
         /**
+         * Put the min/max corner coordinates of every leaf into the vector.
+         * @param boxes A reference to the vector that should contain pairs of the min/max corner coordinates
+         */
+         virtual void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) = 0;
+
+        /**
          * Delete the entire tree below this node.
          * @return A leaf node.
          */
@@ -53,10 +64,12 @@ namespace autopas {
             return inBox(point, _boxMin, _boxMax);
         }
 
-    protected:
+        void setBoxMin(std::array<double, 3> boxMin) {_boxMin = boxMin;}
+        void setBoxMax(std::array<double, 3> boxMax) {_boxMax = boxMax;}
         std::array<double, 3> getBoxMin() {return _boxMin;}
         std::array<double, 3> getBoxMax() {return _boxMax;}
 
+    protected:
         std::array<double, 3> _boxMin, _boxMax;
     };
 } // namespace autpas

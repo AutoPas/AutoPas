@@ -12,6 +12,7 @@
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeLeafNode.h"
+#include "autopas/utils/logging/OctreeLogger.h"
 #include <cstdio>
 
 namespace autopas {
@@ -45,6 +46,8 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
     for(auto &particle : particles) {
       _root = _root->insert(particle);
     }
+
+    logger.logTree(_root);
 
     auto result = std::vector<ParticleType>();
     return result;
@@ -175,6 +178,7 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
 #endif
 
   OctreeNodeInterface<Particle> *_root;
+  OctreeLogger logger;
 };
 
 } // namespace autopas
