@@ -12,9 +12,9 @@
 #include <mpi.h>
 #endif
 
+#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
 
 #include "BoundaryConditions.h"
 #include "Checkpoint.h"
@@ -84,7 +84,7 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   auto headerLoggerName = _homoName + "header";
   auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
   headerLogger->set_pattern("%v");
-  headerLogger->info("Iteration,homogeneity,mean_density,max_density,hitrate,particles");
+  headerLogger->info("Iteration,homogeneity,mean_density,max_density,hitrate,calculations,particles");
   spdlog::drop(headerLoggerName);
   auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_homoName, outputFileName);
   logger->set_pattern("%v");
@@ -186,6 +186,7 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
   _timers.simulate.start();
 
   auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumIterations();
+  double *data;
 
   // main simulation loop
   for (; needsMoreIterations(); ++_iteration) {
@@ -193,12 +194,22 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
     }
 
-    autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(autopas.getCutoff());
-    autopas.iteratePairwise(&flopCounterFunctor);
+    double *tmp = calculateHomogeneity(autopas);
+    data[0] += tmp[0];
+    data[1] += tmp[1];
+    data[2] += tmp[2];
 
-    double *data = calculateHomogeneity(autopas);
+    if ((_iteration + 1) % 10 == 0) {
+      autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(autopas.getCutoff());
+      autopas.iteratePairwise(&flopCounterFunctor);
 
-    spdlog::get(_homoName)->info("{},{},{},{},{},{}", _iteration, data[0], data[1], data[2], flopCounterFunctor.getHitRate(), autopas.getNumberOfParticles());
+      spdlog::get(_homoName)->info("{},{},{},{},{},{},{}", _iteration, data[0] / 10, data[1] / 10, data[2] / 10,
+                                   flopCounterFunctor.getHitRate(), flopCounterFunctor.getDistanceCalculations(),
+                                   autopas.getNumberOfParticles());
+      tmp[0] = 0.0;
+      tmp[1] = 0.0;
+      tmp[2] = 0.0;
+    }
 
     // only do time step related stuff when there actually is time-stepping
     if (_config->deltaT.value != 0) {
