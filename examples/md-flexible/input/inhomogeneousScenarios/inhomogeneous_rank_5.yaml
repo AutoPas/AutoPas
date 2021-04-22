@@ -20,20 +20,20 @@ Objects:
       particle-type              :  0
       particle-epsilon           :  1.
       particle-sigma             :  1.
-      particle-mass              :  0.5
-      particles-per-dimension    :  [ 36,30,36 ]
-      particle-spacing           :  0.5
+      particle-mass              :  2
+      particles-per-dimension    :  [ 18,20,18 ]
+      particle-spacing           :  1
       velocity                   :  [ 0.,0.,0. ]
-      bottomLeftCorner           :  [2, 20, 2]
+      bottomLeftCorner           :  [1, 20, 1]
     1:
       particle-type              :  1
       particle-epsilon           :  1.
       particle-sigma             :  1.
-      particle-mass              :  2.
+      particle-mass              :  0.5
       particles-per-dimension    :  [ 6,15,6 ]
       particle-spacing           :  3
       velocity                   :  [ 0.,0.,0. ]
-      bottomLeftCorner           :  [2, 50, 2]
+      bottomLeftCorner           :  [1, 50, 1]
 log-level                        :  debug
 no-flops                         :  false
 no-end-config                    :  true
