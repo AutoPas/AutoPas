@@ -9,13 +9,13 @@
 
 class MDFlexMPI : MDFlexSimulation {
 	public:
-		MDFlexMPI() = default;
+		MDFlexMPI(int argc, char** argv);
 		~MDFlexMPI() = default;
 
 		void run() override;
 
 	private:
-		unsigned int _rank;
+		int _rank;
 		std::array<unsigned int, 3> _processorCoordinates;
 };
 

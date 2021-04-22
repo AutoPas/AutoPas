@@ -6,14 +6,15 @@
 #pragma once
 
 #include "DomainDecomposition.h"
-#include "storageClass/Vector.h"
 
-class RegularGridDecomposition : DomainDecomposition<std::vector<unsigned int>, std::vector<unsigned int>> {
+class RegularGridDecomposition : protected DomainDecomposition<std::vector<int>, std::vector<int>> {
 	public:
-		RegularGridDecomposition(const unsigned int &numberOfSubdomains, const unsigned int &numberOfDimensions);
+		RegularGridDecomposition(const unsigned int &subdomainCount, const unsigned int &dimensionCount);
 		~RegularGridDecomposition() = default;
 
+	 void update() override;
+
 	private:
-		void convertIdToRank(const std::vector<unsigned int> &processorId);
+		unsigned int convertIdToRank(const std::vector<int> &processorId);
 		void computeNeighbourRanks();
 };

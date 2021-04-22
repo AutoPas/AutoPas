@@ -5,24 +5,23 @@
  */
 #pragma once
 
-#include "storageClass/StorageClass.h"
+#include <vector>
 
-template<class DecompositionStorageType, DomainIdType>
+template<class DecompositionStorageType, class DomainIdType>
 class DomainDecomposition {
 	public:
 		virtual void update() = 0;
 
 	protected:
 		DomainDecomposition();
-		~DomainDecomposition();
+		~DomainDecomposition() = default;
 
 		// Global data
-		const unsigned int _subdomainCount;
-		const unsigned int _dimensionCount;
+		unsigned int _subdomainCount;
+		unsigned int _dimensionCount;
 		DecompositionStorageType _decomposition;
 
 		// Processor specific data
 		DomainIdType _processorId;
 		std::vector<unsigned int> _neighbourRanks;
-
-} 
+};

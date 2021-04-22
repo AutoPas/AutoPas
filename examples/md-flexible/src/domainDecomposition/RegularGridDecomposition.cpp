@@ -5,9 +5,13 @@
  */
 #include "RegularGridDecomposition.h"
 
+#include "mpi.h"
+
 #include <algorithm>
+#include <functional>
 #include <list>
-#include <math>
+#include <math.h>
+#include <numeric>
 
 namespace {
 	void calculatePrimeFactors(unsigned int number, std::list<unsigned int>& oPrimeFactors){
@@ -27,7 +31,7 @@ namespace {
 		}
 	}
 
-	void generateRegularGridDecomposition(const unsigned int subdomainCount, const unsigned int dimensionCount, std::vector<unsigned int>& oGridDimensions){
+	void generateRegularGridDecomposition(const unsigned int subdomainCount, const unsigned int dimensionCount, std::vector<int>& oGridDimensions){
 		std::list<unsigned int> primeFactors;
 		calculatePrimeFactors(subdomainCount, primeFactors);
 
@@ -52,11 +56,13 @@ namespace {
 			}
 		}
 	}
-
 }
 
-RegularGridDecomposition::RegularGridDecomposition(const unsigned int subdomainCount, const unsigned int dimensionCount) : _subdomainCount(subdomainCount), _dimensionCount(dimensionCount) {
+RegularGridDecomposition::RegularGridDecomposition(const unsigned int &subdomainCount, const unsigned int &dimensionCount){
 	_neighbourRanks.resize(_dimensionCount * 2);
+
+	_subdomainCount = subdomainCount;
+	_dimensionCount = dimensionCount;
 
 	update();
 }
@@ -65,27 +71,34 @@ void RegularGridDecomposition::update(){
 	generateRegularGridDecomposition(_subdomainCount, _dimensionCount, _decomposition);
 
 	std::vector<int> periods(_dimensionCount, 0);
-	MPI_Cart_get(MPI_COMM_WORLD, _dimensionCount, _decomposition, periods, _processorId);
+	MPI_Cart_get(MPI_COMM_WORLD, _dimensionCount, &_decomposition[0], &periods[0], &_processorId[0]);
 
 	computeNeighbourRanks();
 }
 
-unsigned int RegularGridDecomposition::convertIdToRank(std::vector<unsigned int> processorId){
-	unsigned int neighbourRank = 0;
-	for (auto &dimension : _dimensions){
-		//@todo: calaculate neighbour rank
+unsigned int RegularGridDecomposition::convertIdToRank(const std::vector<int> &processorId){
+	int neighbourRank = 0;
+	for (unsigned int i = 0; i < _dimensionCount; ++i){
+		int accumulatedTail = 1;
+
+		if (i < _decomposition.size()-2) {
+			accumulatedTail = std::accumulate(_decomposition.begin()+1,_decomposition.end(), 1,std::multiplies<int>());
+		}
+
+		neighbourRank += accumulatedTail * (processorId[i]-1);
 	}
+	return neighbourRank;
 }
 
 void RegularGridDecomposition::computeNeighbourRanks(){
 	for (unsigned int i = 0; i < _dimensionCount; ++i){
 		auto neighbourIndex = i * 2;
-		std::vector<unsigned int> preceedingNeighbourId = _processorId;
+		std::vector<int> preceedingNeighbourId = _processorId;
 		preceedingNeighbourId[i] = --preceedingNeighbourId[i]%_decomposition[i];
 		_neighbourRanks[neighbourIndex] = convertIdToRank(preceedingNeighbourId);
 
 		++neighbourIndex;
-		std::vector<unsigned int> succeedingNeighbourId = _processorId;
+		std::vector<int> succeedingNeighbourId = _processorId;
 		succeedingNeighbourId[i] = ++succeedingNeighbourId[i]%_decomposition[i];
 		_neighbourRanks[neighbourIndex] = convertIdToRank(succeedingNeighbourId);
 	}

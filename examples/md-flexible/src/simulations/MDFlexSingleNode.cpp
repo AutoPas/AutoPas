@@ -40,6 +40,7 @@ MDFlexSingleNode::~MDFlexSingleNode() {
     MPI_Finalize();
 #endif
   }
+}
 
   void MDFlexSingleNode::run() {
     std::streambuf *streamBuffer;

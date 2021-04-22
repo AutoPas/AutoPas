@@ -6,30 +6,27 @@
 
 #include "MDFlexMPI.h"
 
+#include "../domainDecomposition/RegularGridDecomposition.h"
+
 #include <array>
 #include <mpi.h>
 
-MDFlexMPI::MDFlexMPI(int argc, char** argv){
+#include <iostream>
+
+MDFlexMPI::MDFlexMPI(int argc, char** argv) : MDFlexSimulation(argc, argv){
   	MPI_Init(&argc, &argv);
   	MPI_Comm_rank(MPI_COMM_WORLD, &_rank);
 
 		int processorCount;
-		MPI_Comm_size(MPI_COMM_WORLD, processorCount);
-
-		std::array<unsigned int, 3> processorBlockDimensions;
-
-		processorBlockDimension[0] = std::ceil(std::pow(processorCount, 1 / 3);
-		processorBlockDimension[1] = processorBlockDimension[0];
-		processorBlockDimension[2] = processorBlockCount / (processorBlockDimension[0] * processorBlockDimension[1]);
-
+		MPI_Comm_size(MPI_COMM_WORLD, &processorCount);
 }
 
 void MDFlexMPI::run(){
 	autopas::AutoPas<Simulation::ParticleType> autopas();	
 	_simulation->initialize(*_configuration, autopas);
 
-	_simulation->simulate(autopas)
+	_simulation->simulate(autopas);
 
-	_simulation->printStatistics(autopas)
+	_simulation->printStatistics(autopas);
 }
 
