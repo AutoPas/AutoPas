@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <AutoPasTestBase.h>
+#include "AutoPasTestBase.h"
 
 template <class NumberType>
 class MathTest : public AutoPasTestBase {};
