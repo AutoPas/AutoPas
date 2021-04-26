@@ -8,7 +8,5 @@
 
 #include <AutoPasTestBase.h>
 
-template<class NumberType>
-class MathTest : public AutoPasTestBase {
-
-};
+template <class NumberType>
+class MathTest : public AutoPasTestBase {};
