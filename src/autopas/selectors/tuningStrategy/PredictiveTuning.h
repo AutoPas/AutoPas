@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/utils/Math.h>
+
 #include <limits>
 #include <set>
 #include <utility>
@@ -342,23 +344,18 @@ void PredictiveTuning::linePrediction() {
 
       const long change = utils::Math::safeMul(gradient, delta);
 
-      // check if prediction runs into over or underflow
-      if (gradient > 0 and change > std::numeric_limits<long>::max() - traversal1Time) {
-        // overflow
-        _configurationPredictions[configuration] = _predictionOverflowValue;
-      } else if (gradient < 0 and -change > traversal1Time) {
-        // underflow
-        _configurationPredictions[configuration] = _predictionUnderflowValue;
-      } else {
-        // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
-        _configurationPredictions[configuration] = traversal1Time + change;
-      }
+      // this might overflow so use safeAdd.
+      const long newValue =
+          utils::Math::safeAdd(traversal1Time, change, _predictionUnderflowValue, _predictionOverflowValue);
+      // Do not accept values smaller zero.
+      _configurationPredictions[configuration] = newValue < 0 ? _predictionUnderflowValue : newValue;
+
       functionParams.clear();
       functionParams.emplace_back(gradient);
       functionParams.emplace_back(traversal1Time);
     } else {
       // When a configuration was not yet tested twice.
-      _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
+      _configurationPredictions[configuration] = _predictionErrorValue;
       _tooLongNotTestedSearchSpace.emplace(configuration);
     }
   }
@@ -383,21 +380,12 @@ void PredictiveTuning::linearRegression() {
       bool numericOverflow = false;
       for (auto i = traversalValues.size() - _evidenceFirstPrediction; i < traversalValues.size(); i++) {
         const auto &[iteration, time] = traversalValues[i];
-        // check if iteration * time will overflow
-        // Assumption : We will never go beyond 2^63 iterations
-        if (static_cast<long>(iteration) > std::numeric_limits<long>::max() / time) {
+        long iterationMultTimeI = utils::Math::safeMul(static_cast<long>(iteration), time);
+        iterationMultTime = utils::Math::safeAdd(iterationMultTime, iterationMultTimeI);
+        // if any of the safe operations overflow we can directly move to the next config
+        if (iterationMultTime == std::numeric_limits<decltype(iterationMultTime)>::max()) {
           numericOverflow = true;
           break;
-        } else {
-          long iterationMultTimeI = static_cast<long>(iteration) * time;
-          // check if iterationMultTime += iteration * time will overflow
-          if (iterationMultTimeI > std::numeric_limits<long>::max() - iterationMultTime) {
-            // TODO: set prediction to overflow and go to next config
-            numericOverflow = true;
-            break;
-          } else {
-            iterationMultTime += iterationMultTimeI;
-          }
         }
         iterationSum += iteration;
         // this will overflow at iteration 3 037 000 499
@@ -425,17 +413,12 @@ void PredictiveTuning::linearRegression() {
       const auto gradient = static_cast<double>(numerator) / denominator;
 
       const auto change = static_cast<long>(gradient * (_firstIterationOfTuningPhase - iterationMeanValue));
-      // check if prediction runs into over or underflow
-      if (gradient > 0 and change > std::numeric_limits<long>::max() - timeMeanValue) {
-        // overflow
-        _configurationPredictions[configuration] = _predictionOverflowValue;
-      } else if (gradient < 0 and -change > timeMeanValue) {
-        // underflow
-        _configurationPredictions[configuration] = _predictionUnderflowValue;
-      } else {
-        // time1 + (time1 - time2) / (iteration1 - iteration2) / tuningPhase - iteration1)
-        _configurationPredictions[configuration] = change + timeMeanValue;
-      }
+      // check if prediction runs into over or underflow.
+      const long newValue =
+          utils::Math::safeAdd(change, timeMeanValue, _predictionUnderflowValue, _predictionOverflowValue);
+      // Do not accept values smaller zero.
+      _configurationPredictions[configuration] = newValue < 0 ? _predictionUnderflowValue : newValue;
+
       functionParams.clear();
       functionParams.emplace_back(gradient);
       const auto yIntercept = static_cast<double>(timeMeanValue) - gradient * iterationMeanValue;
