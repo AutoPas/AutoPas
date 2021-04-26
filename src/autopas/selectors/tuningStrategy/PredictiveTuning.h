@@ -154,10 +154,6 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    */
   inline void linearRegression();
   /**
-   * Creates a polynomial function using the Lagrange interpolation and with this function the prediction is calculated.
-   */
-  inline void lagrangePolynomial();
-  /**
    * Creates a polynomial function using Newton's method of finite differences and with this function the prediction is
    * calculated.
    */
@@ -311,10 +307,6 @@ void PredictiveTuning::calculatePredictions() {
       linearRegression();
       break;
     }
-    case ExtrapolationMethodOption::lagrange: {
-      lagrangePolynomial();
-      break;
-    }
     case ExtrapolationMethodOption::newton: {
       newtonPolynomial();
       break;
@@ -445,73 +437,6 @@ void PredictiveTuning::linearRegression() {
       const auto yIntercept = timeMeanValue - gradient * iterationMeanValue;
       functionParams.emplace_back(yIntercept);
 
-    } else {
-      // When a configuration was not yet tested twice.
-      _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();
-      _tooLongNotTestedSearchSpace.emplace(configuration);
-    }
-  }
-}
-
-void PredictiveTuning::lagrangePolynomial() {
-  for (const auto &configuration : _searchSpace) {
-    const auto &traversalValues = _traversalTimesStorage[configuration];
-    if (traversalValues.size() >= _evidenceFirstPrediction) {
-      const auto lengthTTS = traversalValues.size() - 1;
-      long prediction = 0;
-      bool numericOverflow = false;
-      bool numericUnderflow = false;
-      // calculates lagrange basis functions L_i and multiplies it with the tested time of p_i
-      // loop for the sum
-      for (unsigned int i = 0; i < _evidenceFirstPrediction; i++) {
-        long numerator = 1;
-        long denominator = 1;
-        const auto &[iterationI, timeI] = traversalValues[lengthTTS - i];
-        // loop for the product
-        for (unsigned int j = 0; j < _evidenceFirstPrediction; j++) {
-          if (i != j) {
-            const auto &iterationJ = traversalValues[lengthTTS - j].first;
-            numerator *= static_cast<long>(_firstIterationOfTuningPhase) - iterationJ;
-            // cast unsigned to signed before subtraction, because this difference can be negative
-            denominator *= static_cast<long>(iterationI) - iterationJ;
-            // TODO: Look if this is sufficient or if there is a better solution
-            // Should only be needed when the denominator overflows and therefore gets set to zero
-            if (denominator == 0) {
-              denominator = std::numeric_limits<long>::max();
-              break;
-            }
-          }
-        }
-
-        // check if numerator * timeI overflows
-        if (numerator > std::numeric_limits<long>::max() / timeI) {
-          // in case of overflow, set flag and abort.
-          numericOverflow = true;
-          break;
-        }
-        // rounding error occurs here!
-        // However, since we usually deal with quite large numbers (>10^6 ns) they should be negligible.
-        const long change = numerator * timeI / denominator;
-        // check if addition will overflow
-        if (change > 0 and change > std::numeric_limits<long>::max() - prediction) {
-          numericOverflow = true;
-          break;
-        }
-        // check if addition will underflow
-        if (change < 0 and -change > prediction) {
-          numericUnderflow = true;
-          break;
-        }
-
-        prediction += change;
-      }
-      if (numericOverflow) {
-        _configurationPredictions[configuration] = _predictionOverflowValue;
-      } else if (numericUnderflow) {
-        _configurationPredictions[configuration] = _predictionUnderflowValue;
-      } else {
-        _configurationPredictions[configuration] = prediction;
-      }
     } else {
       // When a configuration was not yet tested twice.
       _configurationPredictions[configuration] = std::numeric_limits<long unsigned int>::max();

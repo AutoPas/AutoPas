@@ -76,19 +76,6 @@ TEST_P(PredictiveTuningTest, testPredictions) {
           0, {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
       break;
     }
-    case autopas::ExtrapolationMethodOption::lagrange: {
-      simulateTuningPhasesAndCheckPrediction(
-          extrapolationOption,
-          {
-              {{_configurationLC_C01, 79}, {_configurationLC_C08, 122}, {_configurationLC_Sliced, 101}},
-              {{_configurationLC_C01, 90}, {_configurationLC_C08, 111}, {_configurationLC_Sliced, 101}},
-              {{_configurationLC_C01, 97}, {_configurationLC_C08, 103}, {_configurationLC_Sliced, 101}},
-          },
-          // all predictions are evaluated for the tenth iteration (iteration==9)
-          // for _configurationLC_C08 we actually expect 99.2, however due to internal rounding errors we end up with 98
-          0, {{_configurationLC_C01, 100}, {_configurationLC_C08, 98}, {_configurationLC_Sliced, 101}});
-      break;
-    }
     case autopas::ExtrapolationMethodOption::newton: {
       simulateTuningPhasesAndCheckPrediction(
           extrapolationOption,
