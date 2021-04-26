@@ -19,7 +19,7 @@
  * @return Tuple of a vector containing the weights for the neighbors
  * and a bool indicating whether fitting is unnecessary.
  */
-std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<std::pair<size_t, size_t>> &points,
+std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<std::pair<size_t, long>> &points,
                                                              size_t pointsPerEstimation,
                                                              size_t maxDistFromIntervalEdge) {
   // since we will only smooth the last point there is no outer loop and indexToFit shall be fixed
@@ -84,7 +84,7 @@ std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<s
  * @param weights
  * @return
  */
-double calculateYFitSimple(const std::vector<std::pair<size_t, size_t>> &points, size_t pointsPerEstimation,
+double calculateYFitSimple(const std::vector<std::pair<size_t, long>> &points, size_t pointsPerEstimation,
                            const std::vector<double> &weights) {
   // since we will only smooth the last point there is no outer loop and indexToFit shall be fixed
   const size_t indexToFit = points.size() - 1;
@@ -124,8 +124,8 @@ double calculateYFitSimple(const std::vector<std::pair<size_t, size_t>> &points,
   return yFitted;
 }
 
-size_t autopas::smoothing::smoothLastPoint(const std::vector<std::pair<size_t, size_t>> &points,
-                                           size_t pointsPerEstimation) {
+long autopas::smoothing::smoothLastPoint(const std::vector<std::pair<size_t, long>> &points,
+                                         size_t pointsPerEstimation) {
   // if one or no points are used for smoothing do nothing
   if (pointsPerEstimation <= 2) {
     return points.back().second;
