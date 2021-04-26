@@ -27,9 +27,10 @@ const double normalScale = 1. / std::sqrt(2 * M_PI);
  * @param valOverflow Return value in case of overflow.
  * @return Sum or valOverflow or valUnderflow.
  */
-template <class T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
-T safeAdd(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>::min(),
-          const T &valOverflow = std::numeric_limits<T>::max()) {
+template <class T>
+std::enable_if_t<std::is_integral_v<T>, T> safeAdd(const T &a, const T &b,
+                                                   const T &valUnderflow = std::numeric_limits<T>::min(),
+                                                   const T &valOverflow = std::numeric_limits<T>::max()) {
   T result;
   bool overflow = __builtin_add_overflow(a, b, &result);
   if (overflow) {
@@ -56,9 +57,10 @@ T safeAdd(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>
  * @param valOverflow Returns value in case of overflow.
  * @return Sum or valUnderflow or valOverflow.
  */
-template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-T safeAdd(const T &a, const T &b, const T &valUnderflow = -std::numeric_limits<T>::max(),
-          const T &valOverflow = std::numeric_limits<T>::max()) {
+template <class T>
+std::enable_if_t<std::is_floating_point_v<T>, T> safeAdd(const T &a, const T &b,
+                                                         const T &valUnderflow = -std::numeric_limits<T>::max(),
+                                                         const T &valOverflow = std::numeric_limits<T>::max()) {
   T result = a + b;
   if (std::isinf(result)) {
     if (result > 0) {
@@ -80,9 +82,10 @@ T safeAdd(const T &a, const T &b, const T &valUnderflow = -std::numeric_limits<T
  * @param valOverflow Return value in case of overflow.
  * @return Difference or valOverflow or valUnderflow.
  */
-template <class T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
-T safeSub(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>::min(),
-          const T &valOverflow = std::numeric_limits<T>::max()) {
+template <class T>
+std::enable_if_t<std::is_integral_v<T>, T> safeSub(const T &a, const T &b,
+                                                   const T &valUnderflow = std::numeric_limits<T>::min(),
+                                                   const T &valOverflow = std::numeric_limits<T>::max()) {
   T result;
   bool overflow = __builtin_sub_overflow(a, b, &result);
   if (overflow) {
@@ -109,9 +112,10 @@ T safeSub(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>
  * @param valOverflow Returns value in case of overflow.
  * @return Sum or valUnderflow or valOverflow.
  */
-template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-T safeSub(const T &a, const T &b, const T &valUnderflow = -std::numeric_limits<T>::max(),
-          const T &valOverflow = std::numeric_limits<T>::max()) {
+template <class T>
+std::enable_if_t<std::is_floating_point_v<T>, T> safeSub(const T &a, const T &b,
+                                                         const T &valUnderflow = -std::numeric_limits<T>::max(),
+                                                         const T &valOverflow = std::numeric_limits<T>::max()) {
   T result = a - b;
   if (std::isinf(result)) {
     if (result > 0) {
@@ -133,9 +137,10 @@ T safeSub(const T &a, const T &b, const T &valUnderflow = -std::numeric_limits<T
  * @param valOverflow Return value in case of overflow.
  * @return Product or valUnderflow or valOverflow.
  */
-template <class T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
-T safeMul(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>::min(),
-          const T &valOverflow = std::numeric_limits<T>::max()) {
+template <class T>
+std::enable_if_t<std::is_integral_v<T>, T> safeMul(const T &a, const T &b,
+                                                   const T &valUnderflow = std::numeric_limits<T>::min(),
+                                                   const T &valOverflow = std::numeric_limits<T>::max()) {
   T result;
   bool overflow = __builtin_mul_overflow(a, b, &result);
   if (overflow) {
@@ -162,9 +167,10 @@ T safeMul(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>
  * @param valOverflow Returns value in case of overflow.
  * @return Product or valUnderflow or valOverflow.
  */
-template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-T safeMul(const T &a, const T &b, const T &valUnderflow = -std::numeric_limits<T>::max(),
-          const T &valOverflow = std::numeric_limits<T>::max()) {
+template <class T>
+std::enable_if_t<std::is_floating_point_v<T>, T> safeMul(const T &a, const T &b,
+                                                         const T &valUnderflow = -std::numeric_limits<T>::max(),
+                                                         const T &valOverflow = std::numeric_limits<T>::max()) {
   T result = a * b;
   if (std::isinf(result)) {
     if (result > 0) {
