@@ -6,7 +6,6 @@
 
 #pragma once
 
-
 #include <limits>
 #include <set>
 #include <utility>
