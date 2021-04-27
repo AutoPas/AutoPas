@@ -1,4 +1,4 @@
-option(AUTOPAS_INTERNODE_TUNING "Activates MPI distributed memory parallelization." OFF)
+option(AUTOPAS_INTERNODE_TUNING "Activates distributed tuning in MPI parallel simulations" OFF)
 
 if (AUTOPAS_INTERNODE_TUNING)
     message(STATUS "MPI enabled.")
