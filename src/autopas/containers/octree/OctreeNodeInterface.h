@@ -10,8 +10,12 @@
 #include <vector>
 
 #include "autopas/utils/inBox.h"
+#include "autopas/cells/FullParticleCell.h"
 
 namespace autopas {
+    template<typename Particle>
+    class OctreeLeafNode;
+
     /**
      * The base class that provides the necessary function definitions that can be applied to an octree.
      *
@@ -54,6 +58,18 @@ namespace autopas {
         virtual unsigned int getNumParticles() = 0;
 
         /**
+         * Put all leaf nodes into a vector.
+         * @param leaves A reference to the vector that should contain the leaf nodes after the operation.
+         * @param minCorner The min corner of the box from which the leaf nodes should be selected.
+         * @param maxCorner The max corner of the box from which the leaf nodes should be selected.
+         */
+        virtual void appendAllLeafNodesInside(std::vector<OctreeLeafNode<Particle> *> &leaves,
+                                              std::array<double, 3> minCorner,
+                                              std::array<double, 3> maxCorner) = 0;
+
+        virtual void appendAllParticleCellsInside(std::vector<FullParticleCell<Particle>> &cells) = 0;
+
+        /**
          * Check if a 3d point is inside the node's axis aligned bounding box. (Set by the boxMin and boxMax fields.)
          * @param node The possible enclosing node
          * @param point The node to test
@@ -62,6 +78,20 @@ namespace autopas {
         bool isInside(std::array<double, 3> point) {
             using namespace autopas::utils;
             return inBox(point, _boxMin, _boxMax);
+        }
+
+        /**
+         * Check if the node's axis aligned bounding box overlaps with the given axis aligned bounding box.
+         * @param otherMin The minimum coordinate of the other box
+         * @param otherMax The maximum coordinate of the other box
+         * @return true iff the overlapping volume is non-negative
+         */
+        bool overlapsBox(std::array<double, 3> otherMin, std::array<double, 3> otherMax) {
+            bool result = true;
+            for (auto d = 0; d < 3; ++d) {
+                result &= (this->_boxMin[d] <= otherMax[d]) && (this->_boxMax[d] >= otherMin[d]);
+            }
+            return result;
         }
 
         void setBoxMin(std::array<double, 3> boxMin) {_boxMin = boxMin;}

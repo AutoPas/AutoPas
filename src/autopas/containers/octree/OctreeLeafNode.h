@@ -8,14 +8,15 @@
 
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeInnerNode.h"
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
     template<typename Particle>
-    class OctreeLeafNode : public OctreeNodeInterface<Particle> {
+    class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticleCell<Particle> {
     public:
         OctreeLeafNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax)
-                : OctreeNodeInterface<Particle>(boxMin, boxMax) {}
+                : OctreeNodeInterface<Particle>(boxMin, boxMax), FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)) {}
 
         /**
          * @copydoc OctreeNodeInterface::insert()
@@ -27,8 +28,8 @@ namespace autopas {
             const int unsigned maxParticlesInLeaf = 16;
 
             OctreeNodeInterface<Particle> *result;
-            if (_particles.size() < maxParticlesInLeaf) {
-                _particles.push_back(p);
+            if (this->_particles.size() < maxParticlesInLeaf) {
+                this->_particles.push_back(p);
                 result = this;
             } else {
                 // Create a new subdivision based on the lower, center and maximum coordinate
@@ -53,10 +54,10 @@ namespace autopas {
                 result = new OctreeInnerNode<Particle>(parentMin, parentMax, newChildren);
 
                 // Put all particles from the leaf inside the new nodes
-                for (auto oldParticle : _particles) {
+                for (auto oldParticle : this->_particles) {
                     result = result->insert(oldParticle);
                 }
-                _particles.clear();
+                this->_particles.clear();
 
                 // Insert the new particle
                 result = result->insert(p);
@@ -69,7 +70,7 @@ namespace autopas {
          * @copydoc OctreeNodeInterface::appendAllParticles()
          */
         void appendAllParticles(std::vector<Particle> &ps) override {
-            ps.insert(ps.end(), _particles.begin(), _particles.end());
+            ps.insert(ps.end(), this->_particles.begin(), this->_particles.end());
         }
 
         /**
@@ -84,7 +85,7 @@ namespace autopas {
          * @copydoc OctreeNodeInterface::clearChildren()
          */
         OctreeNodeInterface<Particle> *clearChildren() override {
-            _particles.clear();
+            this->_particles.clear();
             return this;
         }
 
@@ -92,10 +93,29 @@ namespace autopas {
          * @copydoc OctreeNodeInterface::getNumParticles()
          */
         unsigned int getNumParticles() override {
-            return _particles.size();
+            return this->_particles.size();
+        }
+
+        /**
+         * @copydoc OctreeNodeInterface::appendAllLeafNodesInside()
+         */
+        void appendAllLeafNodesInside(std::vector<OctreeLeafNode<Particle> *> &leaves,
+                                      std::array<double, 3> minCorner,
+                                      std::array<double, 3> maxCorner) override {
+            assert(this->overlapsBox(minCorner, maxCorner));
+            leaves.push_back(this);
+        }
+
+        /**
+         * @copydoc OctreeNodeInterface::appendAllParticleCellsInside()
+         */
+        void appendAllParticleCellsInside(std::vector<FullParticleCell<Particle>> &cells) override {
+            //FullParticleCell<Particle> cell = *this;
+            //FullParticleCell<Particle> cell(std::array<double, 3>({1, 2, 3}));
+            //cells.push_back(cell);
         }
 
     private:
-        std::vector<Particle> _particles;
+        //std::vector<Particle> _particles;
     };
 } // namespace autopas

@@ -14,14 +14,16 @@
 #include "autopas/containers/octree/OctreeLeafNode.h"
 #include "autopas/utils/logging/OctreeLogger.h"
 #include <cstdio>
+#include <list>
+#include <stack>
 
 namespace autopas {
 
 // TODO(johannes): Documentation
 template <class Particle>
-class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
+class Octree : public CellBasedParticleContainer<OctreeLeafNode<Particle>> {
  public:
-  using ParticleCell = FullParticleCell<Particle>;
+  using ParticleCell = OctreeLeafNode<Particle>;
   using ParticleType = typename ParticleCell::ParticleType;
 
   Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff,
@@ -101,7 +103,24 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(IteratorBehavior behavior) override {
     printf("Johannes' Octree::begin<..., true>\n");
+
+    /*std::vector<OctreeLeafNode<Particle> *> leaves;
+    _root->appendAllLeafNodesInside(leaves, this->getBoxMin(), this->getBoxMax());
+
+    std::vector<OctreeLeafNode<Particle>> flatLeaves;
+    for(auto *leaf : leaves) {
+        flatLeaves.push_back(*leaf);
+    }*/
+    //std::vector<FullParticleCell<Particle>> cells;
+    //_root->appendAllParticleCellsInside(cells);
+    /*for(auto *leaf : leaves) {
+        auto *cell = dynamic_cast<FullParticleCell<Particle> *>(leaf);
+        cells.push_back(*cell);
+    }*/
+    //std::vector<FullParticleCell<Particle>> cells = flatLeaves;
+
     return ParticleIteratorWrapper<ParticleType, true>();
+            //new internal::ParticleIterator<ParticleType, ParticleCell, true>(flatLeaves, 0, behavior, 0));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(IteratorBehavior behavior) const override {
@@ -144,39 +163,29 @@ class Octree : public CellBasedParticleContainer<FullParticleCell<Particle>> {
         _root = _root->clearChildren();
     }
 
- private:
 #if 0
-  template <bool modifiable>
-  struct OctreeIterator : public internal::ParticleIteratorInterfaceImpl<Particle, modifiable> {
-    Particle p = {};
+    // Problem w/ registering leaves like this is that the leaves would have to know the octree structure and this
+    // back-pointer is not very nice.
 
-    Particle begin() {
-      return p;
+    void registerLeaf(OctreeLeafNode<Particle> *leaf) {
+        _leafs.insert(leaf);
     }
 
-    OctreeIterator<modifiable> &operator++() {
-      return *this;
+    void removeLeaf(OctreeLeafNode<Particle> *leaf) {
+        _leafs.erase(leaf);
     }
-
-    Particle &operator*() const {
-      Particle ref = p;
-      return ref;
-    }
-
-    [[nodiscard]] bool isValid() const {
-      return false;
-    }
-
-    void deleteCurrentParticleImpl() {
-
-    }
-
-    OctreeIterator *clone() const {
-      return new OctreeIterator<modifiable>();
-    }
-  };
 #endif
 
+    OctreeLeafNode<Particle> *allocateNewLeaf() {
+        OctreeLeafNode<Particle> dummy;
+        this->_cells.push_back(dummy);
+        auto index = this->_cells.size() - 1;
+        return &this->_cells[index];
+    }
+
+ private:
+  // TODO: vector<OctreeLeafNode *> _leafs;
+  //std::list<OctreeLeafNode<Particle> *> _leafs;
   OctreeNodeInterface<Particle> *_root;
   OctreeLogger logger;
 };

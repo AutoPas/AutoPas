@@ -19,20 +19,6 @@ namespace autopas {
                 : OctreeNodeInterface<Particle>(boxMin, boxMax), _children(children) {}
 
         /**
-         * Check if the node's axis aligned bounding box overlaps with the given axis aligned bounding box.
-         * @param otherMin The minimum coordinate of the other box
-         * @param otherMax The maximum coordinate of the other box
-         * @return true iff the overlapping volume is non-negative
-         */
-        bool overlapsBox(std::array<double, 3> otherMin, std::array<double, 3> otherMax) {
-            bool result = true;
-            for (auto d = 0; d < 3; ++d) {
-                result &= (this->boxMin[d] <= otherMax[d]) && (this->boxMax[d] >= otherMin[d]);
-            }
-            return result;
-        }
-
-        /**
          * @copydoc OctreeNodeInterface::insert()
          */
         OctreeNodeInterface<Particle> *insert(Particle p) override {
@@ -114,6 +100,26 @@ namespace autopas {
                 result += child->getNumParticles();
             }
             return result;
+        }
+
+        /**
+         * @copydoc OctreeNodeInterface::appendAllLeafNodesInside()
+         */
+        void appendAllLeafNodesInside(std::vector<OctreeLeafNode<Particle> *> &leaves,
+                                      std::array<double, 3> minCorner,
+                                      std::array<double, 3> maxCorner) override {
+            for(auto &child : _children) {
+                if(child->overlapsBox(minCorner, maxCorner)) {
+                    appendAllLeafNodesInside(leaves, minCorner, maxCorner);
+                }
+            }
+        }
+
+        /**
+         * @copydoc OctreeNodeInterface::appendAllParticleCellsInside()
+         */
+        void appendAllParticleCellsInside(std::vector<FullParticleCell<Particle>> &cells) override {
+
         }
 
     private:
