@@ -145,7 +145,7 @@ std::enable_if_t<std::is_integral_v<T>, T> safeMul(const T &a, const T &b,
   bool overflow = __builtin_mul_overflow(a, b, &result);
   if (overflow) {
     // if both args are negative this is an underflow.
-    if (a < 0 xor b < 0) {
+    if ((a < 0) xor (b < 0)) {
       result = valUnderflow;
     } else {
       result = valOverflow;
