@@ -12,7 +12,6 @@ set(DOXYGEN_RECOMMENDED_VERSION 1.9.2)
 # check if Doxygen is installed
 find_package(Doxygen COMPONENTS dot OPTIONAL_COMPONENTS mscgen dia)
 if (DOXYGEN_FOUND)
-    message(STATUS "Doxygen - Found Version ${DOXYGEN_VERSION}")
     if (${DOXYGEN_VERSION} VERSION_LESS ${DOXYGEN_RECOMMENDED_VERSION})
         # e.g. because of anonymous template arguments with default values in Math.h
         message(WARNING "Doxygen - Versions before ${DOXYGEN_RECOMMENDED_VERSION} might produce incomplete documentation.")
@@ -25,7 +24,6 @@ if (DOXYGEN_FOUND)
 
     # request to configure the file
     configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-    # note the option ALL which allows to build the docs together with the application
     add_custom_target(
         doc_doxygen
         COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
@@ -38,7 +36,6 @@ if (DOXYGEN_FOUND)
         set(DOXYGEN_MD-FLEXIBLE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_md-flexible)
         # request to configure the file
         configure_file(examples/md-flexible/Doxyfile.in ${DOXYGEN_MD-FLEXIBLE_OUT} @ONLY)
-        # note the option ALL which allows to build the docs together with the application
         add_custom_target(
                 doc_doxygen_md-flexible
                 COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_MD-FLEXIBLE_OUT}
