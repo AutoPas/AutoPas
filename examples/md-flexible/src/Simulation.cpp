@@ -206,9 +206,9 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       spdlog::get(_homoName)->info("{},{},{},{},{},{},{}", _iteration, data[0] / 10, data[1] / 10, data[2] / 10,
                                    flopCounterFunctor.getHitRate(), flopCounterFunctor.getDistanceCalculations(),
                                    autopas.getNumberOfParticles());
-      tmp[0] = 0.0;
-      tmp[1] = 0.0;
-      tmp[2] = 0.0;
+      data[0] = 0.0;
+      data[1] = 0.0;
+      data[2] = 0.0;
     }
 
     // only do time step related stuff when there actually is time-stepping
