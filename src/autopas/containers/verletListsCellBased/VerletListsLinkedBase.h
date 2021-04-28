@@ -141,8 +141,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     return _linkedCells.begin(behavior);
   }
 
-  void forEach(const std::function<void(Particle)> forEachLambda, IteratorBehavior behaviour) {
-    utils::ExceptionHandler::exception("not yet implemented");
+  void forEach(const std::function<void(Particle)> forEachLambda, IteratorBehavior behavior) {
+    return _linkedCells.forEach(forEachLambda, behavior);
   }
 
   /**
