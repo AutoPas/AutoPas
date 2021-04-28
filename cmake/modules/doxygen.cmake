@@ -6,9 +6,17 @@ if (NOT AUTOPAS_BUILD_TARGET_DOC)
     return()
 endif ()
 
+# Other versions will work but might throw warnings or incomplete documentation.
+set(DOXYGEN_RECOMMENDED_VERSION 1.9.2)
+
 # check if Doxygen is installed
 find_package(Doxygen COMPONENTS dot OPTIONAL_COMPONENTS mscgen dia)
 if (DOXYGEN_FOUND)
+    message(STATUS "Doxygen - Found Version ${DOXYGEN_VERSION}")
+    if (${DOXYGEN_VERSION} VERSION_LESS ${DOXYGEN_RECOMMENDED_VERSION})
+        # e.g. because of anonymous template arguments with default values in Math.h
+        message(WARNING "Doxygen - Versions before ${DOXYGEN_RECOMMENDED_VERSION} might produce incomplete documentation.")
+    endif ()
     # set input and output files
     set(DOXY_CONF_DIR docs)
     set(DOXYGEN_IN ${DOXY_CONF_DIR}/Doxyfile.in)
@@ -40,7 +48,7 @@ if (DOXYGEN_FOUND)
         )
     endif()
 
-    message(STATUS "Doxygen configured")
+    message(STATUS "Doxygen - Configured")
 else ()
     message(
         WARNING
