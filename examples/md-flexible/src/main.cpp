@@ -4,7 +4,7 @@
  * @author F. Gratl
  */
 
-#include "simulations/MDFlexSingleNode.h"
+#include "simulations/MDFlexMPI.h"
 
 /**
  * The main function for md-flexible.
@@ -13,7 +13,9 @@
  * @return
  */
 int main(int argc, char **argv) {
-  MDFlexSingleNode simulation(argc, argv);
-  simulation.run();
+
+  MDFlexMPI simulation(argc, argv);
+  //simulation.run();
+
   return EXIT_SUCCESS;
 }

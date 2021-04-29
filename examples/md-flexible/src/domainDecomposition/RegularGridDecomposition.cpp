@@ -5,8 +5,6 @@
  */
 #include "RegularGridDecomposition.h"
 
-#include "mpi.h"
-
 #include <algorithm>
 #include <functional>
 #include <list>
@@ -31,75 +29,131 @@ namespace {
 		}
 	}
 
-	void generateRegularGridDecomposition(const unsigned int subdomainCount, const unsigned int dimensionCount, std::vector<int>& oGridDimensions){
-		std::list<unsigned int> primeFactors;
-		calculatePrimeFactors(subdomainCount, primeFactors);
-
-		while (primeFactors.size() > dimensionCount)
-		{
-			primeFactors.sort();
-			auto firstElement = primeFactors.front();
-			primeFactors.pop_front();
-			primeFactors.front() *= firstElement; 
-		}
-
-		oGridDimensions.resize(subdomainCount);
-
-		for (auto& dimensionSize : oGridDimensions)
-		{
-			if (primeFactors.size() > 0) {
-				dimensionSize = primeFactors.front();
-				primeFactors.pop_front();
-			}
-			else {
-				dimensionSize = 1;
-			}
-		}
-	}
 }
 
-RegularGridDecomposition::RegularGridDecomposition(const unsigned int &subdomainCount, const unsigned int &dimensionCount){
-	_neighbourRanks.resize(_dimensionCount * 2);
-
+RegularGridDecomposition::RegularGridDecomposition(const unsigned int &subdomainCount, const unsigned int &dimensionCount, const unsigned int &domainIndex, const double* globalBoxMin, const double* globalBoxMax){
 	_subdomainCount = subdomainCount;
 	_dimensionCount = dimensionCount;
 
-	update();
+	initializeDecomposition();
+
+	initializeMPICommunicator();
+
+	initializeLocalDomain();
+
+	initializeGlobalBox(globalBoxMin, globalBoxMax);
+
+	initializeLocalBox();
+
+	initializeNeighbourIndices();
 }
 
 void RegularGridDecomposition::update(){
-	generateRegularGridDecomposition(_subdomainCount, _dimensionCount, _decomposition);
-
-	std::vector<int> periods(_dimensionCount, 0);
-	MPI_Cart_get(MPI_COMM_WORLD, _dimensionCount, &_decomposition[0], &periods[0], &_processorId[0]);
-
-	computeNeighbourRanks();
+	updateLocalBox();
 }
 
-unsigned int RegularGridDecomposition::convertIdToRank(const std::vector<int> &processorId){
-	int neighbourRank = 0;
+void RegularGridDecomposition::initializeDecomposition(){
+	std::list<unsigned int> primeFactors;
+	calculatePrimeFactors(_subdomainCount, primeFactors);
+
+	while (primeFactors.size() > _dimensionCount)
+	{
+		primeFactors.sort();
+		auto firstElement = primeFactors.front();
+		primeFactors.pop_front();
+		primeFactors.front() *= firstElement; 
+	}
+
+	_decomposition.resize(_dimensionCount);
+
+	for (auto& dimensionSize : _decomposition)
+	{
+		if (primeFactors.size() > 0) {
+			dimensionSize = primeFactors.front();
+			primeFactors.pop_front();
+		}
+		else {
+			dimensionSize = 1;
+		}
+	}
+}
+
+void RegularGridDecomposition::initializeMPICommunicator(){
+	std::vector<int> periods(_dimensionCount, 1);
+  MPI_Cart_create(MPI_COMM_WORLD, _dimensionCount, _decomposition.data(), periods.data(), true, &_communicator);
+}
+
+void RegularGridDecomposition::initializeLocalDomain(){
+	_domainId.resize(_dimensionCount);
+  MPI_Comm_rank(_communicator, &_domainIndex);
+
+	std::vector<int> periods(_dimensionCount, 1);
+	MPI_Cart_get(_communicator, _dimensionCount, _decomposition.data(), periods.data(), _domainId.data());
+}
+
+
+void RegularGridDecomposition::initializeNeighbourIndices(){
+	_neighbourDomainIndices.resize(_dimensionCount * 2);
+
+	for (unsigned int i = 0; i < _dimensionCount; ++i){
+		auto neighbourIndex = i * 2;
+		std::vector<int> preceedingNeighbourId = _domainId;
+		preceedingNeighbourId[i] =
+			(--preceedingNeighbourId[i] + _decomposition[i])%_decomposition[i];
+		_neighbourDomainIndices[neighbourIndex] = convertIdToIndex(preceedingNeighbourId);
+
+		++neighbourIndex;
+		std::vector<int> succeedingNeighbourId = _domainId;
+		succeedingNeighbourId[i] =
+			(++succeedingNeighbourId[i] + _decomposition[i])%_decomposition[i];
+		_neighbourDomainIndices[neighbourIndex] = convertIdToIndex(succeedingNeighbourId);
+	}
+}
+
+void RegularGridDecomposition::initializeGlobalBox(const double* globalBoxMin, const double* globalBoxMax){
+	_globalBoxMin.resize(_dimensionCount);
+	_globalBoxMax.resize(_dimensionCount);
+	for (int i = 0; i < _dimensionCount; ++i){
+		_globalBoxMin[i] = globalBoxMin[i];
+		_globalBoxMax[i] = globalBoxMax[i];
+	}
+}
+
+void RegularGridDecomposition::initializeLocalBox(){
+	_localBoxMin.resize(_dimensionCount);
+	_localBoxMax.resize(_dimensionCount);
+	updateLocalBox();
+}
+
+int RegularGridDecomposition::convertIdToIndex(const std::vector<int> &domainId){
+	int neighbourDomainIndex = 0;
+
 	for (unsigned int i = 0; i < _dimensionCount; ++i){
 		int accumulatedTail = 1;
 
-		if (i < _decomposition.size()-2) {
-			accumulatedTail = std::accumulate(_decomposition.begin()+1,_decomposition.end(), 1,std::multiplies<int>());
+		if (i < _decomposition.size()-1) {
+			accumulatedTail = std::accumulate(_decomposition.begin()+i+1, _decomposition.end(),
+				1, std::multiplies<int>());
 		}
 
-		neighbourRank += accumulatedTail * (processorId[i]-1);
+		neighbourDomainIndex += accumulatedTail * domainId[i];
 	}
-	return neighbourRank;
+
+	return neighbourDomainIndex;
 }
 
-void RegularGridDecomposition::computeNeighbourRanks(){
-	for (unsigned int i = 0; i < _dimensionCount; ++i){
-		auto neighbourIndex = i * 2;
-		std::vector<int> preceedingNeighbourId = _processorId;
-		preceedingNeighbourId[i] = --preceedingNeighbourId[i]%_decomposition[i];
-		_neighbourRanks[neighbourIndex] = convertIdToRank(preceedingNeighbourId);
+void RegularGridDecomposition::updateLocalBox(){
+  for (int i = 0; i < _dimensionCount; ++i) {
+		double _globalBoxWidth = _globalBoxMax[i] - _globalBoxMin[i];
+		double localBoxWidth = _globalBoxWidth / _decomposition[i];
 
-		++neighbourIndex;
-		std::vector<int> succeedingNeighbourId = _processorId;
-		succeedingNeighbourId[i] = ++succeedingNeighbourId[i]%_decomposition[i];
-		_neighbourRanks[neighbourIndex] = convertIdToRank(succeedingNeighbourId);
-	}
+    _localBoxMin[i] = _domainId[i] * localBoxWidth + _globalBoxMin[i];
+    _localBoxMax[i] = (_domainId[i] + 1) * localBoxWidth + _globalBoxMin[i];
+
+    if (_domainId[i] == 0) {
+      _localBoxMin[i] = _globalBoxMin[i];
+    } else if (_domainId[i] == _decomposition[i] - 1) {
+      _localBoxMax[i] = _globalBoxMax[i];
+    }
+  }
 }

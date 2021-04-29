@@ -9,20 +9,28 @@
 #include "../domainDecomposition/RegularGridDecomposition.h"
 
 #include <array>
-#include <mpi.h>
-
 #include <iostream>
 
 MDFlexMPI::MDFlexMPI(int argc, char** argv) : MDFlexSimulation(argc, argv){
   	MPI_Init(&argc, &argv);
-  	MPI_Comm_rank(MPI_COMM_WORLD, &_rank);
 
 		int processorCount;
 		MPI_Comm_size(MPI_COMM_WORLD, &processorCount);
+  	MPI_Comm_rank(MPI_COMM_WORLD, &_rank);
+
+		int dimensionCount = _configuration->boxMin.value.size();
+		double* globalBoxMin = &(_configuration->boxMin.value[0]);
+		double* globalBoxMax = &(_configuration->boxMax.value[0]);
+		RegularGridDecomposition decomposition(processorCount, dimensionCount, _rank, globalBoxMax, globalBoxMax);
+
+}
+
+MDFlexMPI::~MDFlexMPI() {
+	MPI_Finalize();
 }
 
 void MDFlexMPI::run(){
-	autopas::AutoPas<Simulation::ParticleType> autopas();	
+	autopas::AutoPas<Simulation::ParticleType> autopas(std::cout);	
 	_simulation->initialize(*_configuration, autopas);
 
 	_simulation->simulate(autopas);

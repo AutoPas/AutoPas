@@ -9,12 +9,27 @@
 
 class RegularGridDecomposition : protected DomainDecomposition<std::vector<int>, std::vector<int>> {
 	public:
-		RegularGridDecomposition(const unsigned int &subdomainCount, const unsigned int &dimensionCount);
+		RegularGridDecomposition(const unsigned int &subdomainCount, const unsigned int &dimensionCount, const unsigned int &domainIndex, const double* globalBoxMin, const double* golbalBoxMax);
 		~RegularGridDecomposition() = default;
 
-	 void update() override;
+	 	void update() override;
 
 	private:
-		unsigned int convertIdToRank(const std::vector<int> &processorId);
-		void computeNeighbourRanks();
+		// Global data
+		std::vector<double> _globalBoxMin;
+		std::vector<double> _globalBoxMax;
+
+		// Domain specific data
+  	std::vector<double> _localBoxMin;
+  	std::vector<double> _localBoxMax;
+
+		void initializeDecomposition();
+		void initializeMPICommunicator();
+		void initializeLocalDomain();
+		void initializeGlobalBox(const double* globalBoxMin, const double* globalBoxMax);
+		void initializeLocalBox();
+		void initializeNeighbourIndices();
+
+		int convertIdToIndex(const std::vector<int> &domainIndex);
+		void updateLocalBox();
 };

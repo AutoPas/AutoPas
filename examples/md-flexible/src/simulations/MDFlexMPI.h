@@ -7,10 +7,12 @@
 
 #include "MDFlexSimulation.h"
 
+#include <mpi.h>
+
 class MDFlexMPI : MDFlexSimulation {
 	public:
 		MDFlexMPI(int argc, char** argv);
-		~MDFlexMPI() = default;
+		~MDFlexMPI();
 
 		void run() override;
 

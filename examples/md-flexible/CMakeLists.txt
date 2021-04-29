@@ -5,7 +5,9 @@ file(
         "src/*.h"
 )
 
-if (AUTOPAS_INTERNODE_TUNING)
+set(AUTOPAS_INCLUDE_MPI "$ENV{AUTOPAS_INCLUDE_MPI}")
+
+if (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
     message(STATUS "AUTOPAS_INTERNODE_TUNING set, searching for mpi to link against md-flexible ...")
     find_package(MPI)
 
