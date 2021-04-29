@@ -41,9 +41,9 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     case MPIStrategyOption::divideAndConquer: {
-#ifndef AUTOPAS_MPI
+#ifndef AUTOPAS_INTERNODE_TUNING
       utils::ExceptionHandler::exception(
-          "Cannot use the divideAndConquer search-strategy without AUTOPAS_MPI=ON."
+          "Cannot use the divideAndConquer search-strategy without AUTOPAS_INTERNODE_TUNING=ON."
           "aborting.");
 #endif
       if (tuningStrategyOption == TuningStrategyOption::activeHarmony and getenv("HARMONY_HOST") != nullptr) {
