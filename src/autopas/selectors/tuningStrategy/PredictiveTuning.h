@@ -328,8 +328,10 @@ void PredictiveTuning::linePrediction() {
       const auto delta = _firstIterationOfTuningPhase - _traversalTimesStorage[configuration].back().first;
 
       // gradient * delta + last point
+      const double newValue = utils::Math::safeMul(functionParams[0], static_cast<double>(delta) + functionParams[1]);
+      // check if multiplication overflowed and then explicitly set error value. No cast to avoid rounding errors.
       _configurationPredictions[configuration] =
-          static_cast<long>(functionParams[0] * static_cast<double>(delta) + functionParams[1]);
+          newValue == std::numeric_limits<double>::max() ? _predictionOverflowValue : static_cast<long>(newValue);
     } else
         // if there is enough evidence calculate new prediction function
         if (const auto &traversalValues = _traversalTimesStorage[configuration];
@@ -368,13 +370,18 @@ void PredictiveTuning::linearRegression() {
     if ((_lastTest[configuration] != (_tuningPhaseCounter - 1)) and functionParams.size() == 2) {
       // if configuration was not tested in last tuning phase reuse prediction function.
       // gradient * iteration + y-intercept
+      const double newValue = utils::Math::safeMul(
+          functionParams[0], static_cast<double>(_firstIterationOfTuningPhase) + functionParams[1]);
+      // check if multiplication overflowed and then explicitly set error value. No cast to avoid rounding errors.
       _configurationPredictions[configuration] =
-          static_cast<long>(functionParams[0] * static_cast<double>(_firstIterationOfTuningPhase) + functionParams[1]);
+          newValue == std::numeric_limits<double>::max() ? _predictionOverflowValue : static_cast<long>(newValue);
     } else if (const auto &traversalValues = _traversalTimesStorage[configuration];
                traversalValues.size() >= _evidenceFirstPrediction) {
       // we need signed types because calculation of the gradient might have negative result
-      long iterationMultTime = 0, timeSum = 0;
-      size_t iterationSum = 0, iterationSquareSum = 0;
+      long iterationMultTime = 0;
+      long timeSum = 0;
+      size_t iterationSum = 0;
+      size_t iterationSquareSum = 0;
 
       bool numericOverflow = false;
       for (auto i = traversalValues.size() - _evidenceFirstPrediction; i < traversalValues.size(); i++) {
@@ -402,15 +409,16 @@ void PredictiveTuning::linearRegression() {
           static_cast<double>(iterationSum) / static_cast<double>(_evidenceFirstPrediction);
       const long timeMeanValue = timeSum / _evidenceFirstPrediction;
 
-      const long numerator = iterationMultTime - static_cast<long>(iterationSum) * timeMeanValue;
+      const auto numerator = static_cast<double>(iterationMultTime - static_cast<long>(iterationSum) * timeMeanValue);
       const double denominator =
           static_cast<double>(iterationSquareSum) - static_cast<double>(iterationSum) * iterationMeanValue;
 
       // ((Sum iteration_i * time_i) - n * iterationMeanValue * timeMeanValue) / ((Sum iteration_i^2) - n *
       // iterationMeanValue ^ 2)
-      const auto gradient = static_cast<double>(numerator) / denominator;
+      const auto gradient = numerator / denominator;
 
-      const auto change = static_cast<long>(gradient * (_firstIterationOfTuningPhase - iterationMeanValue));
+      const auto change =
+          static_cast<long>(utils::Math::safeMul(gradient, (_firstIterationOfTuningPhase - iterationMeanValue)));
       // check if prediction runs into over or underflow.
       const long newValue =
           utils::Math::safeAdd(change, timeMeanValue, _predictionUnderflowValue, _predictionOverflowValue);
