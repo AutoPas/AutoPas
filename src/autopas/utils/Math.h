@@ -139,7 +139,7 @@ T safeMul(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>
   T result;
   bool overflow = __builtin_mul_overflow(a, b, &result);
   if (overflow) {
-    // if both args are negative this is an underflow.
+    // if exactly one arg is negative this is an underflow.
     if ((a < 0) xor (b < 0)) {
       result = valUnderflow;
     } else {

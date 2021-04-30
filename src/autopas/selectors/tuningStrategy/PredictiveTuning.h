@@ -387,7 +387,6 @@ void PredictiveTuning::linearRegression() {
           break;
         }
         iterationSum += iteration;
-        // this will overflow at iteration 3 037 000 499
         iterationSquareSum += iteration * iteration;
         timeSum += time;
       }
