@@ -20,15 +20,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - run: pwd && ls
       - name: Create Doxygen target via cmake
-        run: pwd && ls && mkdir build-doxygen && ls && cd build-doxygen && cmake -DAUTOPAS_BUILD_TARGET_DOC=ON ..
+        run: build-doxygen && cd build-doxygen && cmake -DAUTOPAS_BUILD_TARGET_DOC=ON ..
 
       - name: Build documentation
         # Run make to build the doc. Pipe stderr through a subprocess which saves it to warnings.out.
+        # Explicitly use bash as sh is not able to do this nicely.
         # Doxygen seems to have stopped throwing warnings from our readme files.
         # If this reappears introduce a `grep -v` filter in the subprocess before tee.
-        run: make doc_doxygen 2> >(tee warnings.out >&2)
+        run: bash -c "make doc_doxygen 2> >(tee warnings.out >&2)"
         working-directory: build-doxygen
 
       - name: Print warnings
