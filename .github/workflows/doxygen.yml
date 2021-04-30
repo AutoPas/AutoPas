@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - run: pwd && ls
       - name: Create Doxygen target via cmake
         run: mkdir build-doxygen && cd $_ && cmake -DAUTOPAS_BUILD_TARGET_DOC=ON ..
 
