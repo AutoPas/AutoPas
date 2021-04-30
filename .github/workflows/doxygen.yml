@@ -22,7 +22,7 @@ jobs:
 
       - run: pwd && ls
       - name: Create Doxygen target via cmake
-        run: mkdir build-doxygen && cd $_ && cmake -DAUTOPAS_BUILD_TARGET_DOC=ON ..
+        run: pwd && ls && mkdir build-doxygen && ls && cd build-doxygen && cmake -DAUTOPAS_BUILD_TARGET_DOC=ON ..
 
       - name: Build documentation
         # Run make to build the doc. Pipe stderr through a subprocess which saves it to warnings.out.
