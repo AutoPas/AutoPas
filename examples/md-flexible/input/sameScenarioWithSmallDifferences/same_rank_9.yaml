@@ -9,7 +9,7 @@ tuning-max-evidence              :  10
 functor                          :  Lennard-Jones AVX (12-6)
 cutoff                           :  3
 box-min                          :  [0, 0, 0]
-box-max                          :  [30, 120, 30]
+box-max                          :  [25, 120, 25]
 cell-size                        :  [1]
 deltaT                           :  0.0005
 iterations                       :  100000
@@ -18,7 +18,7 @@ Objects:
   CubeClosestPacked:
     0:
       box-length                 :  [16, 8, 16]
-      bottomLeftCorner           :  [7, 24, 7]
+      bottomLeftCorner           :  [0, 24, 0]
       particle-spacing           :  1.
       velocity                   :  [0, 0, 0]
       particle-type              :  0
@@ -27,7 +27,7 @@ Objects:
       particle-mass              :  0.5
     1:
       box-length                 :  [16, 8, 16]
-      bottomLeftCorner           :  [7, 96, 7]
+      bottomLeftCorner           :  [0, 96, 0]
       particle-spacing           :  1.
       velocity                   :  [0, 0, 0]
       particle-type              :  1
@@ -38,5 +38,5 @@ log-level                        :  debug
 no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  false
-vtk-filename                     :  inhomogeneous
-vtk-write-frequency              :  100
+vtk-filename                     :  same
+vtk-write-frequency              :  10

@@ -38,5 +38,5 @@ log-level                        :  debug
 no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  false
-vtk-filename                     :  inhomogeneous
+vtk-filename                     :  same
 vtk-write-frequency              :  100
