@@ -29,7 +29,7 @@ class Octree : public CellBasedParticleContainer<OctreeLeafNode<Particle>> {
   Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff,
          const double skin) : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
     //printf("Johannes' Octree()\n");
-    _root = new OctreeLeafNode<Particle>(this->getBoxMin(), this->getBoxMax());
+    _root = std::make_unique<OctreeLeafNode<Particle>>(this->getBoxMin(), this->getBoxMax());
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer() override {
@@ -46,18 +46,21 @@ class Octree : public CellBasedParticleContainer<OctreeLeafNode<Particle>> {
     deleteAllParticles();
 
     for(auto &particle : particles) {
-      _root = _root->insert(particle);
+      addParticleImpl(particle);
     }
 
-    logger.logTree(_root);
+    //logger.logTree(_root);
 
     auto result = std::vector<ParticleType>();
     return result;
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    // TODO(johannes): Step 1
     printf("Johannes' Octree::iteratePairwise\n");
+
+    traversal->initTraversal();
+    traversal->traverseParticlePairs();
+    traversal->endTraversal();
   }
 
   /**
@@ -74,8 +77,7 @@ class Octree : public CellBasedParticleContainer<OctreeLeafNode<Particle>> {
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
   void addParticleImpl(const ParticleType &p) override {
-    //printf("Johannes' Octree::addParticleImpl\n");
-    _root = _root->insert(p);
+    _root->insert(_root, p);
   }
 
   /**
@@ -160,33 +162,14 @@ class Octree : public CellBasedParticleContainer<OctreeLeafNode<Particle>> {
      * Deletes all particles from the container.
      */
     void deleteAllParticles() override {
-        _root = _root->clearChildren();
-    }
-
-#if 0
-    // Problem w/ registering leaves like this is that the leaves would have to know the octree structure and this
-    // back-pointer is not very nice.
-
-    void registerLeaf(OctreeLeafNode<Particle> *leaf) {
-        _leafs.insert(leaf);
-    }
-
-    void removeLeaf(OctreeLeafNode<Particle> *leaf) {
-        _leafs.erase(leaf);
-    }
-#endif
-
-    OctreeLeafNode<Particle> *allocateNewLeaf() {
-        OctreeLeafNode<Particle> dummy;
-        this->_cells.push_back(dummy);
-        auto index = this->_cells.size() - 1;
-        return &this->_cells[index];
+        //_root = std::move(_root->clearChildren());
+        throw std::runtime_error("Implement this function");
     }
 
  private:
   // TODO: vector<OctreeLeafNode *> _leafs;
   //std::list<OctreeLeafNode<Particle> *> _leafs;
-  OctreeNodeInterface<Particle> *_root;
+  std::unique_ptr<OctreeNodeInterface<Particle>> _root;
   OctreeLogger logger;
 };
 

@@ -32,7 +32,7 @@ namespace autopas {
          * @param p The particle to insert
          * @return The subtree below the current node that now contains the particle
          */
-        virtual OctreeNodeInterface *insert(Particle p) = 0;
+        virtual void insert(std::unique_ptr<OctreeNodeInterface<Particle>> &ref, Particle p) = 0;
 
         /**
          * Put all particles that are below this node into the vector.
@@ -50,24 +50,12 @@ namespace autopas {
          * Delete the entire tree below this node.
          * @return A leaf node.
          */
-        virtual OctreeNodeInterface<Particle> *clearChildren() = 0;
+        virtual void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle>> &ref) = 0;
 
         /**
          * @copydoc CellBasedParticleContainer::getNumParticles()
          */
         virtual unsigned int getNumParticles() = 0;
-
-        /**
-         * Put all leaf nodes into a vector.
-         * @param leaves A reference to the vector that should contain the leaf nodes after the operation.
-         * @param minCorner The min corner of the box from which the leaf nodes should be selected.
-         * @param maxCorner The max corner of the box from which the leaf nodes should be selected.
-         */
-        virtual void appendAllLeafNodesInside(std::vector<OctreeLeafNode<Particle> *> &leaves,
-                                              std::array<double, 3> minCorner,
-                                              std::array<double, 3> maxCorner) = 0;
-
-        virtual void appendAllParticleCellsInside(std::vector<FullParticleCell<Particle>> &cells) = 0;
 
         /**
          * Check if a 3d point is inside the node's axis aligned bounding box. (Set by the boxMin and boxMax fields.)

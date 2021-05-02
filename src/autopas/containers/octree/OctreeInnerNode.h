@@ -6,6 +6,8 @@
  */
 #pragma once
 
+#include <variant>
+
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/inBox.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
@@ -14,34 +16,42 @@ namespace autopas {
     template<class Particle>
     class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     public:
-        OctreeInnerNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax,
-                        std::array<OctreeNodeInterface<Particle> *, 8> children)
-                : OctreeNodeInterface<Particle>(boxMin, boxMax), _children(children) {}
+        OctreeInnerNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax)
+                : OctreeNodeInterface<Particle>(boxMin, boxMax) {
+            using namespace autopas::utils;
+
+            // The inner node is initialized with 8 leaves.
+            auto center = ArrayMath::mulScalar(ArrayMath::add(boxMin, boxMax), 0.5);
+            for(auto i = 0; i < _children.size(); ++i) {
+                // Subdivide the bounding box of the parent.
+                std::array<double, 3> newBoxMin = {};
+                std::array<double, 3> newBoxMax = {};
+                for (auto d = 0; d < 3; ++d) {
+                    auto mask = 1 << d;
+                    newBoxMin[d] = !(i & mask) ? boxMin[d] : center[d];
+                    newBoxMax[d] = !(i & mask) ? center[d] : boxMax[d];
+                }
+
+                // Assign new leaves as the children.
+                _children[i] = std::make_unique<OctreeLeafNode<Particle>>(newBoxMin, newBoxMax);
+            }
+        }
 
         /**
          * @copydoc OctreeNodeInterface::insert()
          */
-        OctreeNodeInterface<Particle> *insert(Particle p) override {
-            //using namespace autopas::utils;
-            assert(this->isInside(p.getR()));
-
-            // Decide in which child the particle should be inserted.
-            for (auto childIndex = 0; childIndex < _children.size(); ++childIndex) {
-                if (_children[childIndex]->isInside(p.getR())) {
-                    auto child = _children[childIndex]->insert(p);
-
-                    // Check if the child changed its node type (maybe was split up?). If yes, deallocate the old child
-                    // and put in the new child.
-                    if (child != _children[childIndex]) {
-                        delete _children[childIndex];
-                        _children[childIndex] = child;
-                    }
-
-                    break;  // The particle should only be inserted into one box to avoid duplicate force calculations
-                }
+        void insert(std::unique_ptr<OctreeNodeInterface<Particle>> &ref, Particle p) override {
+            if(!this->isInside(p.getR())) {
+                throw std::runtime_error("Attempting to insert particle that is not inside this node");
             }
 
-            return this;
+            // Find a child to insert the particle into.
+            for(auto &child : _children) {
+                if(child->isInside(p.getR())) {
+                    child->insert(child, p);
+                    break;
+                }
+            }
         }
 
         /**
@@ -66,29 +76,13 @@ namespace autopas {
         /**
          * @copydoc OctreeNodeInterface::clearChildren()
          */
-        OctreeNodeInterface<Particle> *clearChildren() {
-            OctreeNodeInterface<Particle> *result = 0;
-
-            // Since there must be a leaf in this tree somewhere (by definition of the octree), this leaf can be reused in
-            // order to provide a leaf node as a result when deleting an inner node. All nodes but this leaf are first
-            // cleared an then deleted.
+        void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle>> &ref) {
             for (auto &child : _children) {
-                auto test = child->clearChildren();
-                if (!result) {
-                    result = test;
-                } else {
-                    delete test;
-                }
+                child->clearChildren(child);
             }
 
-            assert(result);
-            // The leaf should now include the box of the inner node as well.
-            result->setBoxMin(this->getBoxMin());
-            result->setBoxMax(this->getBoxMax());
-
-            // The inner node is deleted and the leaf node is returned to maintain the tree structure.
-            delete this;
-            return result;
+            std::unique_ptr<OctreeLeafNode<Particle>> newLeaf = std::make_unique<OctreeLeafNode<Particle>>(this->getBoxMin(), this->getBoxMax());
+            ref = std::move(newLeaf);
         }
 
         /**
@@ -102,30 +96,10 @@ namespace autopas {
             return result;
         }
 
-        /**
-         * @copydoc OctreeNodeInterface::appendAllLeafNodesInside()
-         */
-        void appendAllLeafNodesInside(std::vector<OctreeLeafNode<Particle> *> &leaves,
-                                      std::array<double, 3> minCorner,
-                                      std::array<double, 3> maxCorner) override {
-            for(auto &child : _children) {
-                if(child->overlapsBox(minCorner, maxCorner)) {
-                    appendAllLeafNodesInside(leaves, minCorner, maxCorner);
-                }
-            }
-        }
-
-        /**
-         * @copydoc OctreeNodeInterface::appendAllParticleCellsInside()
-         */
-        void appendAllParticleCellsInside(std::vector<FullParticleCell<Particle>> &cells) override {
-
-        }
-
     private:
         /**
          * Each inner node of an octree can contain exactly 8 children.
          */
-        std::array<OctreeNodeInterface<Particle> *, 8> _children;
+        std::array<std::unique_ptr<OctreeNodeInterface<Particle>>, 8> _children;
     };
 } // namespace autopas
