@@ -39,4 +39,4 @@ no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  false
 vtk-filename                     :  same
-vtk-write-frequency              :  10
+vtk-write-frequency              :  100
