@@ -228,12 +228,14 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
   }
   // Check for expected number of iterations
   size_t expectedNumIterationsPredicting = _maxTuningIterationsWithoutTest * evidenceBest.size();
-  EXPECT_EQ(iteration, expectedNumIterationsInitial + expectedNumIterationsPredicting) << "Tuning phases with predictions tested unexpected number of configurations!";
+  EXPECT_EQ(iteration, expectedNumIterationsInitial + expectedNumIterationsPredicting)
+      << "Tuning phases with predictions tested unexpected number of configurations!";
 
   // PHASE 3: Now the non-near-optimal configurations should be tested again
   simulateTuningPhase(predictiveTuning, evidenceAll, iteration);
   // Check for expected number of iterations
-  EXPECT_EQ(iteration, expectedNumIterationsInitial + expectedNumIterationsPredicting + evidenceAll.size()) << "Non-Optimal Conf is not retested after cooldown time.";
+  EXPECT_EQ(iteration, expectedNumIterationsInitial + expectedNumIterationsPredicting + evidenceAll.size())
+      << "Non-Optimal Conf is not retested after cooldown time.";
 }
 
 /**
