@@ -192,65 +192,48 @@ TEST_F(PredictiveTuningTest, testLinearPredictionTuningThreeIterations) {
  */
 TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
   size_t iteration = 0;
-  std::vector<autopas::Configuration> configurationsToCompare{_configurationLC_C08, _configurationLC_Sliced};
+  //  std::vector<autopas::Configuration> configurationsToCompare{_configurationLC_C08, _configurationLC_Sliced};
   auto predictiveTuning =
       getPredictiveTuning(_evidenceFirstPrediction, autopas::ExtrapolationMethodOption::linePrediction, 0,
                           {autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_c08});
 
   predictiveTuning.reset(iteration);
 
-  std::map<autopas::Configuration, long> evidence{{_configurationLC_C01, 20}, {_configurationLC_C08, 10}};
+  std::map<autopas::Configuration, long> evidenceBest{{_configurationLC_C08, 10}};
+  // Not a hard requirement but if this is violated the merge into evidenceAll needs to be done differently.
+  ASSERT_EQ(evidenceBest.size(), 1);
+  std::map<autopas::Configuration, long> evidenceAll{{_configurationLC_C01, 20}, *evidenceBest.begin()};
 
-  std::vector<std::pair<autopas::Configuration, long>> evidenceSorted(evidence.begin(), evidence.end());
+  std::vector<std::pair<autopas::Configuration, long>> evidenceSorted(evidenceAll.begin(), evidenceAll.end());
   std::sort(evidenceSorted.begin(), evidenceSorted.end(),
             [](const auto &pairA, const auto &pairB) { return pairA.second < pairB.second; });
   auto optimalConfiguration = evidenceSorted[0].first;
   auto badConfiguration = evidenceSorted[1].first;
 
-  simulateTuningPhase(predictiveTuning, evidence, iteration);
-
-  // End of the first tuning phase.
-  predictiveTuning.reset(iteration);
-
-  EXPECT_EQ(badConfiguration, predictiveTuning.getCurrentConfiguration());
-  predictiveTuning.addEvidence(20, iteration);
-  ++iteration;
-  predictiveTuning.tune();
-
-  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
-  predictiveTuning.addEvidence(10, iteration);
-  ++iteration;
-  predictiveTuning.tune();
-
-  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
-
-  // Iterating through the maxNumberOfIterationsWithoutTest iterations where C08 should not be tested.
-  for (int i = 0; i < _maxTuningIterationsWithoutTest; i++) {
-    // End of the (i + 2)-th tuning phase.
-    predictiveTuning.reset(iteration);
-
-    EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
-    predictiveTuning.addEvidence(10, iteration);
-    ++iteration;
-
-    EXPECT_FALSE(predictiveTuning.tune());
-    EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
+  // PHASE 1: Initial tuning phases where every configuration is tested because we can no make predictions yet
+  size_t tuningPhase = 1;
+  for (; tuningPhase <= _evidenceFirstPrediction; ++tuningPhase) {
+    simulateTuningPhase(predictiveTuning, evidenceAll, iteration);
   }
+  // Check for expected number of iterations
+  size_t expectedNumIterationsInitial = _evidenceFirstPrediction * evidenceAll.size();
+  EXPECT_EQ(iteration, expectedNumIterationsInitial) << "First tuning phases did not test all configurations!";
 
-  // End of the (_maxTuningIterationsWithoutTest + 2)-th tuning phase.
-  predictiveTuning.reset(iteration);
+  // PHASE 2: Predictions are made and non-near-optimal configurations are not tested
+  for (; tuningPhase <= _evidenceFirstPrediction + _maxTuningIterationsWithoutTest; ++tuningPhase) {
+    // We pass only evidence information for configurations that should be tested. If the tuning strategy wants to
+    // test anything else we get an exception that the requested conf is not in the evidence map.
+    EXPECT_NO_THROW(simulateTuningPhase(predictiveTuning, evidenceBest, iteration))
+        << "Iteration: " << iteration << "\nTesting a configuration other than " << evidenceBest.begin()->first;
+  }
+  // Check for expected number of iterations
+  size_t expectedNumIterationsPredicting = _maxTuningIterationsWithoutTest * evidenceBest.size();
+  EXPECT_EQ(iteration, expectedNumIterationsInitial + expectedNumIterationsPredicting) << "Tuning phases with predictions tested unexpected number of configurations!";
 
-  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
-  predictiveTuning.addEvidence(10, iteration);
-  ++iteration;
-
-  // Tests that a configuration gets selected into _tooLongNotTested.
-  predictiveTuning.tune();
-  EXPECT_EQ(badConfiguration, predictiveTuning.getCurrentConfiguration());
-  predictiveTuning.addEvidence(20, iteration);
-
-  predictiveTuning.tune();
-  EXPECT_EQ(optimalConfiguration, predictiveTuning.getCurrentConfiguration());
+  // PHASE 3: Now the non-near-optimal configurations should be tested again
+  simulateTuningPhase(predictiveTuning, evidenceAll, iteration);
+  // Check for expected number of iterations
+  EXPECT_EQ(iteration, expectedNumIterationsInitial + expectedNumIterationsPredicting + evidenceAll.size()) << "Non-Optimal Conf is not retested after cooldown time.";
 }
 
 /**

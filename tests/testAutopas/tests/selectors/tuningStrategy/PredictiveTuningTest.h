@@ -61,6 +61,8 @@ class PredictiveTuningTest : public AutoPasTestBase,
       auto config = predictiveTuning.getCurrentConfiguration();
       testedConfigs.push_back(config);
 
+      EXPECT_NO_THROW(evidence.at(config)) << "Did not expect to test configuration " << config;
+
       predictiveTuning.addEvidence(evidence.at(config), iteration);
 
       stillTuning = predictiveTuning.tune();
