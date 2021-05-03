@@ -7,6 +7,8 @@
 
 #include "MDFlexSimulation.h"
 
+#include "../domainDecomposition/RegularGridDecomposition.h"
+
 #include <mpi.h>
 
 class MDFlexMPI : MDFlexSimulation {
@@ -17,7 +19,14 @@ class MDFlexMPI : MDFlexSimulation {
 		void run() override;
 
 	private:
-		int _rank;
+		std::unique_ptr<autopas::AutoPas<Simulation::ParticleType>> _autoPasContainer;
+  	std::unique_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
+
+		std::unique_ptr<RegularGridDecomposition> _domainDecomposition;
 		std::array<unsigned int, 3> _processorCoordinates;
+
+
+		void updateParticles(const int iterationsPerSupErstep);
+		void executeSuperstep(const int iterationsPerSuperstep);
 };
 

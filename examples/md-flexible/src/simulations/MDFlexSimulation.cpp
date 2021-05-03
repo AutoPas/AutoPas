@@ -8,10 +8,10 @@
 #include "../parsing/MDFlexParser.h"
 
 MDFlexSimulation::MDFlexSimulation(int argc, char **argv) {
-  _simulation = new Simulation();
-  _configuration = new MDFlexConfig();
+  _simulation = std::shared_ptr<Simulation>(new Simulation());
+  _configuration = std::shared_ptr<MDFlexConfig>(new MDFlexConfig());
 
-  // parse input and only continue of parsing went without hickups
+  // parse input and only continue if parsing went without hiccups
   if (auto parserExitCode = MDFlexParser::parseInput(argc, argv, *_configuration);
       parserExitCode != MDFlexParser::exitCodes::success) {
     if (parserExitCode == MDFlexParser::exitCodes::parsingError) {
@@ -23,9 +23,4 @@ MDFlexSimulation::MDFlexSimulation(int argc, char **argv) {
 
   // make sure sim box is big enough
   _configuration->calcSimulationBox();
-}
-
-MDFlexSimulation::~MDFlexSimulation() {
-  delete _configuration;
-  delete _simulation;
 }

@@ -7,6 +7,8 @@
 
 #include "../Simulation.h"
 
+#include <memory>
+
 /**
  * Handles minimal initialization requriements for MD-Flexible simulations.
  * Derivce this class to create custom simulations.
@@ -20,7 +22,7 @@ class MDFlexSimulation {
    */
   MDFlexSimulation(int argc, char **argv);
 
-  ~MDFlexSimulation();
+  ~MDFlexSimulation() = default;
 
   /**
    * Runs the simulation
@@ -32,11 +34,11 @@ class MDFlexSimulation {
    * Stores the configuration used for the simulation.
    * The configuration is defined by the .yaml file passed to the application  with the '--yaml-file' argument.
    */
-  MDFlexConfig *_configuration;
+  std::shared_ptr<MDFlexConfig> _configuration;
 
   /**
    * The simulation, which will be started using the run function.
    * @todo: Create a simulation interface to allow users to provide their own simulation class
    */
-  Simulation *_simulation;
+  std::shared_ptr<Simulation> _simulation;
 };

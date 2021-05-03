@@ -9,10 +9,19 @@
 
 class RegularGridDecomposition : protected DomainDecomposition<std::vector<int>, std::vector<int>> {
 	public:
-		RegularGridDecomposition(const unsigned int &subdomainCount, const unsigned int &dimensionCount, const unsigned int &domainIndex, const double* globalBoxMin, const double* golbalBoxMax);
+		RegularGridDecomposition(const unsigned int &dimensionCount, const double* globalBoxMin, const double* golbalBoxMax);
 		~RegularGridDecomposition() = default;
 
 	 	void update() override;
+
+		const int getDimensionCount() override { return _dimensionCount; }
+		const MPI_Comm getCommunicator() override { return _communicator; }
+
+		std::vector<double> getLocalBoxMin() { return _localBoxMin; }	
+		std::vector<double> getLocalBoxMax() { return _localBoxMax; }	
+
+		int convertIdToIndex(const std::vector<int> &domainIndex);
+
 
 	private:
 		// Global data
@@ -20,6 +29,7 @@ class RegularGridDecomposition : protected DomainDecomposition<std::vector<int>,
 		std::vector<double> _globalBoxMax;
 
 		// Domain specific data
+		int _domainIndex;
   	std::vector<double> _localBoxMin;
   	std::vector<double> _localBoxMax;
 
@@ -28,8 +38,7 @@ class RegularGridDecomposition : protected DomainDecomposition<std::vector<int>,
 		void initializeLocalDomain();
 		void initializeGlobalBox(const double* globalBoxMin, const double* globalBoxMax);
 		void initializeLocalBox();
-		void initializeNeighbourIndices();
+		void initializeNeighbourIds();
 
-		int convertIdToIndex(const std::vector<int> &domainIndex);
 		void updateLocalBox();
 };
