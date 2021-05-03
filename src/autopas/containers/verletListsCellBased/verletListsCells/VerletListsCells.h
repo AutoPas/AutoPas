@@ -117,7 +117,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param particle
    * @return the size of the neighbor list(s) of this particle
    */
-  const size_t getNumberOfPartners(const Particle *particle) const {
+  size_t getNumberOfPartners(const Particle *particle) const {
     return _neighborList.getNumberOfPartners(particle);
   }
 
