@@ -11,6 +11,8 @@
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopasTools/generators/GridGenerator.h"
 
+#include "testingHelpers/EmptyFunctor.h"
+
 using ::testing::_;
 
 TEST_F(AutoTunerTest, testAllConfigurations) {
@@ -272,6 +274,112 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   doRebuild = true;
   autoTuner.iteratePairwise(&functor, doRebuild);  // optimum
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
+}
+
+/**
+ * Initialize a tuner, do a tuning phase, then instead of waiting for the full tuning interval restart the tuning
+ * earlier via forceRetune.
+ */
+TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
+  std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {2, 4, 2};
+  const double cutoff = 1;
+  const double cellSizeFactor = 1;
+  const double verletSkin = 0;
+  const unsigned int verletClusterSize = 4;
+  const unsigned int maxSamples = 3;
+
+  autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
+                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                autopas::Newton3Option::disabled);
+  autopas::Configuration confLc_c04(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c04,
+                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                autopas::Newton3Option::disabled);
+  autopas::Configuration confLc_c08(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
+                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                autopas::Newton3Option::disabled);
+
+  auto configsList = {confLc_c01, confLc_c04, confLc_c08};
+
+  auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
+  autopas::AutoTuner<Particle> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
+                                         std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs, 100,
+                                         maxSamples);
+
+  size_t numExpectedTuningIterations = configsList.size() * maxSamples;
+  EmptyFunctor<Particle> emptyFunctor;
+
+  // expect a full tuning phase
+  for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
+    // since we don't actually do anything doRebuild can always be false.
+    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should still be tuning.";
+  }
+  // first iteration after tuning phase
+  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should be done be tuning.";
+
+  // instead of waiting the full tuning interval restart tuning immediately
+  autoTuner.forceRetune();
+
+  // expect a full tuning phase
+  for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
+    // since we don't actually do anything doRebuild can always be false.
+    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should still be tuning.";
+  }
+  // first iteration after tuning phase
+  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should be done be tuning.";
+}
+
+
+TEST_F(AutoTunerTest, testForceRetuneInPhase) {
+  std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {2, 4, 2};
+  const double cutoff = 1;
+  const double cellSizeFactor = 1;
+  const double verletSkin = 0;
+  const unsigned int verletClusterSize = 4;
+  const unsigned int maxSamples = 3;
+
+  autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
+                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                    autopas::Newton3Option::disabled);
+  autopas::Configuration confLc_c04(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c04,
+                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                    autopas::Newton3Option::disabled);
+  autopas::Configuration confLc_c08(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
+                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                    autopas::Newton3Option::disabled);
+
+  auto configsList = {confLc_c01, confLc_c04, confLc_c08};
+
+  auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
+  autopas::AutoTuner<Particle> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
+                                         std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs, 100,
+                                         maxSamples);
+
+  size_t numExpectedTuningIterations = configsList.size() * maxSamples;
+  EmptyFunctor<Particle> emptyFunctor;
+
+  // Do part of the tuning phase. After the loop we should be in the middle of sampling the second configuration.
+  ASSERT_GT(maxSamples, 1);
+  ASSERT_GT(configsList.size(), 1);
+  size_t iteration = 0;
+  for (; iteration < maxSamples + 1; ++iteration) {
+    // since we don't actually do anything doRebuild can always be false.
+    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should still be tuning.\n"
+                                                                    "Phase 1\n"
+                                                                    "Iteration " << iteration;
+  }
+  // restart the full tuning phase
+  autoTuner.forceRetune();
+
+  // expect a full tuning phase
+  for (size_t i = 0; i < numExpectedTuningIterations; ++i, ++iteration) {
+    // since we don't actually do anything doRebuild can always be false.
+    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should still be tuning.\n"
+                                                                    "Phase 2\n"
+                                                                    "Iteration " << iteration;
+  }
+  // first iteration after tuning phase
+  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should be done be tuning.\n"
+                                                                   "Iteration " << iteration;
 }
 
 /**

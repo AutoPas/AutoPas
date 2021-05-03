@@ -135,6 +135,13 @@ class AutoPas {
   }
 
   /**
+   * Force the internal tuner to enter a new tuning phase upon the next call to iteratePairwise().
+   */
+  void forceRetune() {
+    _autoTuner.forceRetune();
+  }
+
+  /**
    * Free the AutoPas MPI communicator.
    * To be called before MPI_Finalize.
    * If no MPI is used just call this at the end of the program.
