@@ -328,7 +328,7 @@ void PredictiveTuning::linePrediction() {
       const auto delta = _firstIterationOfTuningPhase - _traversalTimesStorage[configuration].back().first;
 
       // gradient * delta + last point
-      const double newValue = utils::Math::safeMul(functionParams[0], static_cast<double>(delta) + functionParams[1]);
+      const double newValue = utils::Math::safeMul(functionParams[0], static_cast<double>(delta)) + functionParams[1];
       // check if multiplication overflowed and then explicitly set error value. No cast to avoid rounding errors.
       _configurationPredictions[configuration] =
           newValue == std::numeric_limits<double>::max() ? _predictionOverflowValue : static_cast<long>(newValue);
@@ -370,8 +370,9 @@ void PredictiveTuning::linearRegression() {
     if ((_lastTest[configuration] != (_tuningPhaseCounter - 1)) and functionParams.size() == 2) {
       // if configuration was not tested in last tuning phase reuse prediction function.
       // gradient * iteration + y-intercept
-      const double newValue = utils::Math::safeMul(
-          functionParams[0], static_cast<double>(_firstIterationOfTuningPhase) + functionParams[1]);
+      const double newValue =
+          utils::Math::safeMul(functionParams[0], static_cast<double>(_firstIterationOfTuningPhase)) +
+          functionParams[1];
       // check if multiplication overflowed and then explicitly set error value. No cast to avoid rounding errors.
       _configurationPredictions[configuration] =
           newValue == std::numeric_limits<double>::max() ? _predictionOverflowValue : static_cast<long>(newValue);
