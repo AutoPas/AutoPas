@@ -23,3 +23,17 @@ TEST_F(DifferentParticlesTest, testNonConstructibleParticle) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(false));
   autoPas.iteratePairwise(&functor);
 }
+
+/**
+ * Tests if AutoPas compiles with a Particle that uses 32-bit floating point precision.
+ */
+TEST_F(DifferentParticlesTest, testOtherPrecisionParticle) {
+  autopas::AutoPas<autopas::ParticleFP32> autoPas;
+  autoPas.setBoxMax({10., 10., 10.});
+  autoPas.init();
+
+  // We also check if iteratePairwise can be instantiated.
+  MockFunctor<autopas::ParticleFP32> functor;
+  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(false));
+  autoPas.iteratePairwise(&functor);
+}
