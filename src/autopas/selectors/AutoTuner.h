@@ -154,7 +154,6 @@ class AutoTuner {
     if (_tuningStrategy->searchSpaceIsTrivial()) {
       return false;
     }
-    // TODO This will not return true if forceRetune is called during a tuning phase while sampling something.
     return _iterationsSinceTuning >= _tuningInterval and _samples.size() >= _maxSamples;
   }
 
