@@ -41,8 +41,8 @@ autopas::TuningDataLogger::~TuningDataLogger() {
 }
 
 void autopas::TuningDataLogger::logTuningData(const autopas::Configuration &configuration,
-                                              const std::vector<size_t> &samples, size_t iteration, size_t reducedValue,
-                                              size_t smoothedVale) {
+                                              const std::vector<long> &samples, size_t iteration, long reducedValue,
+                                              long smoothedVale) {
 #ifdef AUTOPAS_LOG_TUNINGDATA
   spdlog::get(_loggerName)
       ->info("{},{},{},{},{}", iteration, configuration.getCSVLine(),
