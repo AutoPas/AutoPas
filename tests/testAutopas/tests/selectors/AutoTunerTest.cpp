@@ -315,8 +315,10 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   // first iteration after tuning phase
   EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should be done be tuning.";
 
+  EXPECT_FALSE(autoTuner.willRebuild()) << "No rebuilding expected here.";
   // instead of waiting the full tuning interval restart tuning immediately
   autoTuner.forceRetune();
+  EXPECT_TRUE(autoTuner.willRebuild()) << "willRebuild() does not recognize forceRetune()";
 
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
@@ -368,6 +370,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   }
   // restart the full tuning phase
   autoTuner.forceRetune();
+  EXPECT_TRUE(autoTuner.willRebuild()) << "willRebuild() does not recognize forceRetune()";
 
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i, ++iteration) {
