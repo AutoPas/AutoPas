@@ -13,43 +13,41 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: autopas/autopas-build-doxygen
+    env:
+      # this is currently dictated by the autopas-build-doxygen container
+      BUILD_DIR: docker-build-doxygen
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Create Doxygen target via cmake
-        run: mkdir build-doxygen && cd build-doxygen && cmake -DAUTOPAS_BUILD_TARGET_DOC=ON ..
-
       - name: Build documentation
-        # Run make to build the doc. Pipe stderr through a subprocess which saves it to warnings.out.
-        # Explicitly use bash as sh is not able to do this nicely.
-        # Doxygen seems to have stopped throwing warnings from our readme files.
-        # If this reappears introduce a `grep -v` filter in the subprocess before tee.
-        run: bash -c "make doc_doxygen 2> >(tee warnings.out >&2)"
-        working-directory: build-doxygen
+        uses: docker://autopas/autopas-build-doxygen
+        with:
+          entrypoint: buildDocumentation.sh
+          # arg1 make target doc_doxygen
+          # arg2 path to root of AutoPas directory.
+          args: doc_doxygen .
 
       - name: Print warnings
         # Print all warnings collected previously. Exit code depends on number of warnings.
         run: cat warnings.out && exit $(wc -l warnings.out | cut -d' ' -f1)
-        working-directory: build-doxygen
+        working-directory: ${{ env.BUILD_DIR }}
 
-#  publish:
-#    needs: build
-#    runs-on: ubuntu-latest
-#    steps:
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
 
-#      - name: Deploy AutoPas doxygen documentation (only on master)
-#        uses: peaceiris/actions-gh-pages@v3.7.2
-#        if: github.ref == 'refs/heads/master'
-#        with:
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-#          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-#          publish_dir: ./build-doxygen/doc_doxygen/html/
-#          destination_dir: doxygen_documentation/git-master/
-#          publish_branch: main
-#          external_repository: AutoPas/AutoPas.github.io
-#          user_name: github-actions[bot]
-#          user_email: github-actions[bot]@users.noreply.github.com
+      - name: Deploy AutoPas doxygen documentation (only on master)
+        uses: peaceiris/actions-gh-pages@v3.7.2
+        if: github.ref == 'refs/heads/master'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          publish_dir: ./${{ env.BUILD_DIR }}/doc_doxygen/html/
+          destination_dir: doxygen_documentation/git-master/
+          publish_branch: main
+          external_repository: AutoPas/AutoPas.github.io
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
