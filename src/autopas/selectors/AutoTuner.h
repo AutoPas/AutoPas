@@ -291,6 +291,7 @@ void AutoTuner<Particle>::selectCurrentContainer() {
 template <class Particle>
 void AutoTuner<Particle>::forceRetune() {
   _iterationsSinceTuning = _tuningInterval;
+  _samples.resize(_maxSamples);
 }
 
 template <class Particle>
