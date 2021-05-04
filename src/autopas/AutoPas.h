@@ -137,7 +137,7 @@ class AutoPas {
   /**
    * Force the internal tuner to enter a new tuning phase upon the next call to iteratePairwise().
    */
-  void forceRetune() { _autoTuner.forceRetune(); }
+  void forceRetune() { _autoTuner->forceRetune(); }
 
   /**
    * Free the AutoPas MPI communicator.
