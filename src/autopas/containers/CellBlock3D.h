@@ -17,6 +17,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/ParticleTypeTrait.h"
 
 namespace autopas::internal {
 /**
@@ -32,6 +33,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * the index type to access the particle cells
    */
   using index_t = std::size_t;
+
+  using ParticleFloatType = typename utils::ParticleTypeTrait<ParticleCell>::value::ParticleSoAFloatPrecision;
+
   /**
    * Constructor of CellBlock3D
    * @param vec vector of ParticleCells that this class manages
@@ -112,7 +116,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param pos the position for which the cell is needed
    * @return cell at the given position
    */
-  ParticleCell &getContainingCell(const std::array<double, 3> &pos) const;
+  ParticleCell &getContainingCell(const std::array<ParticleFloatType, 3> &pos) const;
 
   /**
    * Get the lower and upper corner of the cell at the 1d index index1d
@@ -134,14 +138,16 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param pos the position
    * @return the 3d index
    */
-  [[nodiscard]] std::array<index_t, 3> get3DIndexOfPosition(const std::array<double, 3> &pos) const;
+   template<typename FloatType>
+  [[nodiscard]] std::array<index_t, 3> get3DIndexOfPosition(const std::array<FloatType, 3> &pos) const;
 
   /**
    * get the 1d index of the cellblock for a given position
    * @param pos the position
    * @return the 1d index
    */
-  [[nodiscard]] index_t get1DIndexOfPosition(const std::array<double, 3> &pos) const;
+   template<typename FloatType>
+  [[nodiscard]] index_t get1DIndexOfPosition(const std::array<FloatType, 3> &pos) const;
 
   /**
    * get the dimension of the cellblock including the haloboxes
@@ -174,7 +180,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param allowedDistance the maximal distance to the position
    * @return a container of references to nearby halo cells
    */
-  std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) const {
+  std::vector<ParticleCell *> getNearbyHaloCells(const std::array<ParticleFloatType, 3> &position,
+                                                 double allowedDistance) const {
     auto index3d = get3DIndexOfPosition(position);
 
     std::vector<ParticleCell *> closeHaloCells;
@@ -266,14 +273,16 @@ class CellBlock3D : public CellBorderAndFlagManager {
 };
 
 template <class ParticleCell>
+template <typename FloatType>
 inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::get1DIndexOfPosition(
-    const std::array<double, 3> &pos) const {
+    const std::array<FloatType, 3> &pos) const {
   return index1D(get3DIndexOfPosition(pos));
 }
 
 template <class ParticleCell>
+template <typename FloatType>
 inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<ParticleCell>::get3DIndexOfPosition(
-    const std::array<double, 3> &pos) const {
+    const std::array<FloatType, 3> &pos) const {
   std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
 
   for (size_t dim = 0; dim < 3; dim++) {
@@ -381,7 +390,7 @@ inline std::pair<std::array<double, 3>, std::array<double, 3>> CellBlock3D<Parti
 }
 
 template <class ParticleCell>
-inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(const std::array<double, 3> &pos) const {
+inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(const std::array<ParticleFloatType, 3> &pos) const {
   auto ind = get1DIndexOfPosition(pos);
   return getCell(ind);
 }

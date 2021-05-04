@@ -90,7 +90,9 @@ void GridGenerator::fillWithParticles(
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
         auto p = defaultParticle;
-        p.setR({x * spacing[0] + offset[0], y * spacing[1] + offset[1], z * spacing[2] + offset[2]});
+        using floatType = typename autopas::utils::ParticleTypeTrait<Container>::value::ParticleSoAFloatPrecision;
+        p.setR(autopas::utils::ArrayUtils::static_cast_array<floatType>(
+            std::array{x * spacing[0] + offset[0], y * spacing[1] + offset[1], z * spacing[2] + offset[2]}));
         p.setID(id++);
         container.addParticle(p);
       }

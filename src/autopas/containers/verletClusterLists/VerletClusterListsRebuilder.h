@@ -418,9 +418,11 @@ class VerletClusterListsRebuilder {
    * If the location is outside of the domain, the tower nearest tower is returned.
    *
    * @param location The 3D coordinates.
+   * @tparam FloatType the floating point type of the array
    * @return Tower reference.
    */
-  auto &getTower(std::array<double, 3> location) {
+  template<typename FloatType>
+  auto &getTower(std::array<FloatType, 3> location) {
     auto [towerIndexX, towerIndexY] = getTowerCoordinates(location);
     return getTower(towerIndexX, towerIndexY);
   }
@@ -430,9 +432,11 @@ class VerletClusterListsRebuilder {
    * If the location is outside of the domain, the tower nearest tower is returned.
    *
    * @param location The 3D coordinates.
+   * @tparam FloatType the floating point type of the array
    * @return Tower reference.
    */
-  std::array<size_t, 2> getTowerCoordinates(std::array<double, 3> location) {
+  template<typename FloatType>
+  std::array<size_t, 2> getTowerCoordinates(std::array<FloatType, 3> location) {
     std::array<size_t, 2> towerIndex2D{};
 
     for (int dim = 0; dim < 2; dim++) {

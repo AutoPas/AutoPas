@@ -118,15 +118,16 @@ template <class T, std::size_t SIZE>
 
 /**
  * Adds a scalar s to each element of array a and returns the result.
- * @tparam T floating point type
+ * @tparam T1 floating point type for array
+ * @tparam T2 floating point type for s
  * @tparam SIZE size of the array a
  * @param a the array
  * @param s the scalar to be added to each element of a
  * @return array who's elements are a[i]+s
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> addScalar(const std::array<T, SIZE> &a, T s) {
-  std::array<T, SIZE> result{};
+template <class T1, class T2, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T1, SIZE> addScalar(const std::array<T1, SIZE> &a, T2 s) {
+  std::array<T1, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] + s;
   }
@@ -135,15 +136,16 @@ template <class T, std::size_t SIZE>
 
 /**
  * Subtracts a scalar s from each element of array a and returns the result.
- * @tparam T floating point type
+ * @tparam T1 floating point type for array
+ * @tparam T2 floating point type for s
  * @tparam SIZE size of the array a
  * @param a the array
  * @param s the scalar to be subtracted from each element of a
  * @return array who's elements are a[i]-s
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> subScalar(const std::array<T, SIZE> &a, T s) {
-  std::array<T, SIZE> result{};
+template <class T1, class T2, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T1, SIZE> subScalar(const std::array<T1, SIZE> &a, T2 s) {
+  std::array<T1, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] - s;
   }
@@ -152,15 +154,16 @@ template <class T, std::size_t SIZE>
 
 /**
  * Multiplies a scalar s to each element of array a and returns the result.
- * @tparam T floating point type
+ * @tparam T1 floating point type for array
+ * @tparam T2 floating point type for s
  * @tparam SIZE size of the array a
  * @param a the array
  * @param s the scalar to be multiplied to each element of a
  * @return array who's elements are a[i]*s
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> mulScalar(const std::array<T, SIZE> &a, T s) {
-  std::array<T, SIZE> result{};
+template <class T1, class T2, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T1, SIZE> mulScalar(const std::array<T1, SIZE> &a, T2 s) {
+  std::array<T1, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] * s;
   }

@@ -54,7 +54,8 @@ class ClosestPackingGenerator {
         double startx = evenRow ? boxMin[0] : boxMin[0] + xOffset;
         for (double x = startx; x < boxMax[0]; x += spacing) {
           auto p = defaultParticle;
-          p.setR({x, y, z});
+          using floatType = typename autopas::utils::ParticleTypeTrait<Container>::value::ParticleSoAFloatPrecision;
+          p.setR(autopas::utils::ArrayUtils::static_cast_array<floatType>(std::array{x, y, z}));
           p.setID(id++);
           container.addParticle(p);
         }

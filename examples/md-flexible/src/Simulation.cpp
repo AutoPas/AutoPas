@@ -165,7 +165,8 @@ void Simulation::globalForces(autopas::AutoPas<ParticleType> &autopas) {
 #pragma omp parallel default(none) shared(autopas)
 #endif
   for (auto particleItr = autopas.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
-    particleItr->addF(_config->globalForce.value);
+    particleItr->addF(autopas::utils::ArrayUtils::static_cast_array<ParticleType::ParticleSoAFloatPrecision>(
+        _config->globalForce.value));
   }
 }
 
@@ -346,7 +347,7 @@ void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
   }
 }
 
-const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &Simulation::getPpl() const {
+const std::unique_ptr<ParticlePropertiesLibrary<FloatPrecision , size_t>> &Simulation::getPpl() const {
   return _particlePropertiesLibrary;
 }
 
@@ -489,7 +490,7 @@ double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas)
 
   // add particles accordingly to their cell to get the amount of particles in each cell
   for (auto particleItr = autopas.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
-    std::array<double, 3> particleLocation = particleItr->getR();
+    auto particleLocation = particleItr->getR();
     std::array<size_t, 3> index = {};
     for (int i = 0; i < particleLocation.size(); i++) {
       index[i] = particleLocation[i] / cellLength;

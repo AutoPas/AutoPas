@@ -34,7 +34,7 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
  * This test expects multipleObjectsWithMultipleTypesTest.yaml to be placed in md-flexible/tests/yamlTestFiles
  */
 TEST_F(GeneratorsTest, MultipleObjectGeneration) {
-  auto autoPas = autopas::AutoPas<Molecule>(std::cout);
+  auto autoPas = autopas::AutoPas<ParticleType>(std::cout);
   MDFlexConfig config;
   config.yamlFilename.value = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
   MDFlexParser::YamlParser::parseYamlFile(config);
@@ -42,7 +42,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   autoPas.setBoxMax(config.boxMax.value);
   autoPas.setBoxMin(config.boxMin.value);
   autoPas.init();
-  std::array<double, 3> velocity = {0., 0., 0.};
+  std::array<ParticleType::ParticleSoAFloatPrecision, 3> velocity = {0., 0., 0.};
   // parses the multiple Objects input of "multipleObjectsWithMultipleTypesTest" and generates a VTK File from the Input
   // yaml input file with all 4 different Object types
   auto cubeGrid(config.cubeGridObjects);

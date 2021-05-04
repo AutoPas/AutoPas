@@ -25,7 +25,8 @@ namespace {
  * @param randomEngine Random engine used for the generation of the velocity.
  * @param normalDistribution Distribution used for constructing the maxwell boltzmann distribution.
  */
-void addMaxwellBoltzmannDistributedVelocity(autopas::Particle &p, const double averageVelocity,
+template<typename ParticleType>
+void addMaxwellBoltzmannDistributedVelocity(ParticleType &p, const double averageVelocity,
                                             std::default_random_engine &randomEngine,
                                             std::normal_distribution<double> &normalDistribution) {
   // when adding independent normally distributed values to all velocity components
@@ -34,7 +35,8 @@ void addMaxwellBoltzmannDistributedVelocity(autopas::Particle &p, const double a
   for (double &v : randomVelocity) {
     v = averageVelocity * normalDistribution(randomEngine);
   }
-  p.setV(autopas::utils::ArrayMath::add(p.getV(), randomVelocity));
+  p.addV(autopas::utils::ArrayUtils::static_cast_array<typename ParticleType::ParticleSoAFloatPrecision>(
+      randomVelocity));
 }
 }  // namespace
 

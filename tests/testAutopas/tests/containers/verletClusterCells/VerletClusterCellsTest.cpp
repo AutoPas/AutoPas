@@ -203,7 +203,7 @@ TEST_F(VerletClusterCellsTest, testParticleAdding) {
   for (double x : {-.5, 0., 5., 9.999, 10., 10.5}) {
     for (double y : {-.5, 0., 5., 9.999, 10., 10.5}) {
       for (double z : {-.5, 0., 5., 9.999, 10., 10.5}) {
-        autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
+        autopas::ParticleFP64 p({x, y, z}, {0., 0., 0.}, id++);
         if (x == 10. or y == 10. or z == 10. or x == -.5 or y == -.5 or z == -.5 or x == 10.5 or y == 10.5 or
             z == 10.5) {
           EXPECT_ANY_THROW(verletClusterCells.addParticle(p));     // outside, therefore not ok!

@@ -129,8 +129,11 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
     pCopy.setOwnershipState(OwnershipState::halo);
 
     for (auto it =
-             getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
-                               utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2), IteratorBehavior::halo);
+             getRegionIterator(utils::ArrayUtils::static_cast_array<double>(
+                                   utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2)),
+                               utils::ArrayUtils::static_cast_array<double>(
+                                   utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2)),
+                               IteratorBehavior::halo);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
         *it = pCopy;
@@ -472,9 +475,10 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
       if (numDummys != 0) {
         Particle dummyParticle = *(this->_cells[i].begin());
         for (unsigned int j = 0; j < numDummys; ++j) {
-          dummyParticle.setR({_boxMaxWithHalo[0] + 8 * this->getInteractionLength() + static_cast<double>(i),
-                              _boxMaxWithHalo[1] + 8 * this->getInteractionLength() + static_cast<double>(j),
-                              _boxMaxWithHalo[2] + 8 * this->getInteractionLength()});
+          dummyParticle.setR(utils::ArrayUtils::static_cast_array<typename Particle::ParticleSoAFloatPrecision>(
+              std::array{_boxMaxWithHalo[0] + 8 * this->getInteractionLength() + static_cast<double>(i),
+               _boxMaxWithHalo[1] + 8 * this->getInteractionLength() + static_cast<double>(j),
+               _boxMaxWithHalo[2] + 8 * this->getInteractionLength()}));
           dummyParticle.setID(std::numeric_limits<size_t>::max());
           dummyParticle.setOwnershipState(OwnershipState::dummy);
           this->_cells[i].addParticle(dummyParticle);
@@ -519,8 +523,8 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
    */
   void expandBoundingBox(std::array<double, 6> &box, const Particle &p) {
     for (int i = 0; i < 3; ++i) {
-      box[i] = std::min(box[i], p.getR()[i]);
-      box[3 + i] = std::max(box[3 + i], p.getR()[i]);
+      box[i] = std::min(box[i], static_cast<double>(p.getR()[i]));
+      box[3 + i] = std::max(box[3 + i], static_cast<double>(p.getR()[i]));
     }
   }
 

@@ -12,6 +12,7 @@
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -37,7 +38,8 @@ class SortedCellView : public ParticleCell<Particle> {
   SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
     _particles.reserve(cell.numParticles());
     for (auto p = getStaticCellIter(cell); p.isValid(); ++p) {
-      _particles.push_back(std::make_pair(utils::ArrayMath::dot(p->getR(), r), &(*p)));
+      auto castedParticlePosition = utils::ArrayUtils::static_cast_array<double>(p->getR());
+      _particles.push_back(std::make_pair(utils::ArrayMath::dot(castedParticlePosition, r), &(*p)));
     }
     std::sort(_particles.begin(), _particles.end(),
               [](const auto &a, const auto &b) -> bool { return a.first < b.first; });

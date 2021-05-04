@@ -62,7 +62,7 @@ TEST_P(AllContainersTests, testParticleAdding) {
                      boxMax[1] + .5, boxMax[1] + 1.5}) {
       for (double z : {boxMin[2] - 1.5, boxMin[2] - .5, boxMin[2], boxMin[2] + 5., boxMax[2] - 0.001, boxMax[2],
                        boxMax[2] + .5, boxMax[2] + 1.5}) {
-        autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
+        autopas::ParticleFP64 p({x, y, z}, {0., 0., 0.}, id++);
         if (x == -1.5 or y == -1.5 or z == -1.5 or x == 11.5 or y == 11.5 or z == 11.5) {
           EXPECT_ANY_THROW(container->addParticle(p));     // outside, therefore not ok!
           EXPECT_NO_THROW(container->addHaloParticle(p));  // much outside, still ok because it is ignored!
@@ -132,7 +132,7 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
  */
 TEST_P(AllContainersTests, testUpdateContainerHalo) {
   auto container = getInitializedContainer();
-  autopas::Particle p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42);
+  autopas::ParticleFP64 p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42);
   container->addHaloParticle(p);
 
   EXPECT_EQ(container->getNumParticles(), 1);
@@ -155,12 +155,12 @@ TEST_P(AllContainersTests, testUpdateContainerHalo) {
 void AllContainersTests::testUpdateContainerDeletesDummy(bool previouslyOwned) {
   static std::atomic<unsigned long> numParticles = 0;
 
-  class TestParticle : public autopas::Particle {
+  class TestParticle : public autopas::ParticleFP64 {
    public:
-    TestParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : Particle(r, v, id) {
+    TestParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id) : autopas::ParticleFP64(r, v, id) {
       ++numParticles;
     }
-    TestParticle(const TestParticle &testParticle) : Particle(testParticle) { ++numParticles; }
+    TestParticle(const TestParticle &testParticle) : autopas::ParticleFP64(testParticle) { ++numParticles; }
     ~TestParticle() override { --numParticles; }
   };
 

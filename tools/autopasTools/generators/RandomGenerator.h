@@ -10,6 +10,7 @@
 #include <functional>
 
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/ArrayUtils.h"
 
 namespace autopasTools::generators {
 /**
@@ -109,7 +110,8 @@ void RandomGenerator::fillWithParticles(Container &container, const Particle &de
 
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     Particle particle(defaultParticle);
-    particle.setR(randomPosition(boxMin, boxMax));
+    particle.setR(autopas::utils::ArrayUtils::static_cast_array<typename Particle::ParticleSoAFloatPrecision>(
+        randomPosition(boxMin, boxMax)));
     particle.setID(i);
     container.addParticle(particle);
   }

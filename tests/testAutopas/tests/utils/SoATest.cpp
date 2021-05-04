@@ -6,7 +6,7 @@
 
 #include "SoATest.h"
 
-TEST_F(SoATest, testInitialization) { autopas::SoA<autopas::Particle::SoAArraysType> soa; }
+TEST_F(SoATest, testInitialization) { autopas::SoA<autopas::ParticleFP64::SoAArraysType> soa; }
 
 TEST_F(SoATest, SoATypeTest) {
   static_assert(std::is_same<autopas::utils::SoAType<size_t, double, double, double>::Type,
@@ -85,7 +85,7 @@ TEST_F(SoATest, SoAStorageTestApply) {
 
 TEST_F(SoATest, SoATestPush) {
   // default soa using autopas::Particle
-  using autopas::Particle;
+  using Particle = autopas::ParticleFP64;
   autopas::SoA<Particle::SoAArraysType> soa;
 
   EXPECT_EQ(soa.getNumParticles(), 0);
@@ -111,7 +111,7 @@ TEST_F(SoATest, SoATestPush) {
 
 TEST_F(SoATest, SoATestAppend) {
   // default soa using autopas::Particle
-  using autopas::Particle;
+  using Particle = autopas::ParticleFP64;
   std::array<autopas::SoA<Particle::SoAArraysType>, 2> soaBuffer;
 
   soaBuffer[0].push<Particle::AttributeNames::id>(2);
@@ -144,7 +144,7 @@ TEST_F(SoATest, SoATestAppend) {
 
 TEST_F(SoATest, SoATestSwap) {
   // default soa using autopas::Particle
-  using autopas::Particle;
+  using Particle = autopas::ParticleFP64;
   autopas::SoA<Particle::SoAArraysType> soa;
 
   soa.resizeArrays(2);
@@ -202,7 +202,7 @@ TEST_F(SoATest, SoATestSwap) {
 
 TEST_F(SoATest, SoATestMultiWriteRead) {
   // default soa using autopas::Particle
-  using autopas::Particle;
+  using Particle = autopas::ParticleFP64;
   autopas::SoA<Particle::SoAArraysType> soa;
 
   soa.resizeArrays(1);
@@ -239,7 +239,7 @@ TEST_F(SoATest, SoATestMultiWriteRead) {
 // this test makes certain that methods don't destroy the inner state of the test
 TEST_F(SoATest, SoATestComplicatedAccess) {
   // default soa using autopas::Particle
-  using autopas::Particle;
+  using Particle = autopas::ParticleFP64;
   autopas::SoA<Particle::SoAArraysType> soa;
 
   EXPECT_EQ(soa.getNumParticles(), 0);

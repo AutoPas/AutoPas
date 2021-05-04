@@ -23,7 +23,7 @@ void DSSequentialTraversalTest::testTraversal(bool useSoA) {
   MFunctor functor;
   std::vector<FPCell> cells;
   cells.resize(2);
-  autopas::Particle defaultParticle;
+  autopas::ParticleFP64 defaultParticle;
 
   Particle particle;
   for (size_t i = 0; i < numParticles + numHaloParticles; ++i) {

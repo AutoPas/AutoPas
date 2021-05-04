@@ -104,7 +104,7 @@ class LJFunctor
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<SoAFloatPrecision, size_t> &particlePropertiesLibrary)
       : LJFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
@@ -166,7 +166,7 @@ class LJFunctor
       j.subF(f);
     }
     if (calculateGlobals) {
-      auto virial = utils::ArrayMath::mul(dr, f);
+      auto virial = utils::ArrayUtils::static_cast_array<double>(utils::ArrayMath::mul(dr, f));
       double upot = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();

@@ -75,7 +75,7 @@ void GaussianGenerator::fillWithParticles(
       position = {distributions[0](generator), distributions[1](generator), distributions[2](generator)};
     };
     auto p = defaultParticle;
-    p.setR(position);
+    p.setR(autopas::utils::ArrayUtils::static_cast_array<typename decltype(p)::ParticleSoAFloatPrecision>(position));
     p.setID(i);
     container.addParticle(p);
   }

@@ -17,7 +17,7 @@ namespace autopas {
  * Molecule class for the LJFunctor.
  */
 template <typename floatType = double>
-class MoleculeLJ final : public Particle {
+class MoleculeLJ final : public Particle<floatType> {
  public:
   MoleculeLJ() = default;
 
@@ -30,7 +30,7 @@ class MoleculeLJ final : public Particle {
    */
   explicit MoleculeLJ(std::array<floatType, 3> pos, std::array<floatType, 3> v, unsigned long moleculeId,
                       unsigned long typeId = 0)
-      : Particle(pos, v, moleculeId), _typeId(typeId) {}
+      : Particle<floatType>(pos, v, moleculeId), _typeId(typeId) {}
 
   ~MoleculeLJ() final = default;
 
@@ -78,19 +78,19 @@ class MoleculeLJ final : public Particle {
     if constexpr (attribute == AttributeNames::ptr) {
       return this;
     } else if constexpr (attribute == AttributeNames::id) {
-      return getID();
+      return this->getID();
     } else if constexpr (attribute == AttributeNames::posX) {
-      return getR()[0];
+      return this->getR()[0];
     } else if constexpr (attribute == AttributeNames::posY) {
-      return getR()[1];
+      return this->getR()[1];
     } else if constexpr (attribute == AttributeNames::posZ) {
-      return getR()[2];
+      return this->getR()[2];
     } else if constexpr (attribute == AttributeNames::forceX) {
-      return getF()[0];
+      return this->getF()[0];
     } else if constexpr (attribute == AttributeNames::forceY) {
-      return getF()[1];
+      return this->getF()[1];
     } else if constexpr (attribute == AttributeNames::forceZ) {
-      return getF()[2];
+      return this->getF()[2];
     } else if constexpr (attribute == AttributeNames::typeId) {
       return getTypeId();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
@@ -111,17 +111,17 @@ class MoleculeLJ final : public Particle {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {
-      _r[0] = value;
+      this->_r[0] = value;
     } else if constexpr (attribute == AttributeNames::posY) {
-      _r[1] = value;
+      this->_r[1] = value;
     } else if constexpr (attribute == AttributeNames::posZ) {
-      _r[2] = value;
+      this->_r[2] = value;
     } else if constexpr (attribute == AttributeNames::forceX) {
-      _f[0] = value;
+      this->_f[0] = value;
     } else if constexpr (attribute == AttributeNames::forceY) {
-      _f[1] = value;
+      this->_f[1] = value;
     } else if constexpr (attribute == AttributeNames::forceZ) {
-      _f[2] = value;
+      this->_f[2] = value;
     } else if constexpr (attribute == AttributeNames::typeId) {
       setTypeId(value);
     } else if constexpr (attribute == AttributeNames::ownershipState) {
@@ -135,13 +135,13 @@ class MoleculeLJ final : public Particle {
    * Get the old force.
    * @return
    */
-  [[nodiscard]] std::array<double, 3> getOldf() const { return _oldF; }
+  [[nodiscard]] std::array<floatType, 3> getOldf() const { return _oldF; }
 
   /**
    * Set old force.
    * @param oldForce
    */
-  void setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; }
+  void setOldF(const std::array<floatType, 3> &oldForce) { _oldF = oldForce; }
 
   /**
    * Get TypeId.
@@ -164,7 +164,7 @@ class MoleculeLJ final : public Particle {
   /**
    * Old Force of the particle experiences as 3D vector.
    */
-  std::array<double, 3> _oldF = {0., 0., 0.};
+  std::array<floatType, 3> _oldF = {0., 0., 0.};
 };
 
 }  // namespace autopas

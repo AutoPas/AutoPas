@@ -120,7 +120,7 @@ class Sphere : public Object {
   void generate(autopas::AutoPas<ParticleType> &autopas) const override {
     ParticleType dummyParticle = getDummyParticle(autopas);
     iteratePositions([&](auto pos) {
-      dummyParticle.setR(pos);
+      dummyParticle.setR(autopas::utils::ArrayUtils::static_cast_array<floatType>(pos));
       autopas.addParticle(dummyParticle);
       dummyParticle.setID(dummyParticle.getID() + 1);
     });

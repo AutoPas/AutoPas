@@ -19,9 +19,9 @@
 
 class VerletClusterListsTest : public AutoPasTestBase {};
 
-class CollectParticlePairsFunctor : public autopas::Functor<autopas::Particle, CollectParticlePairsFunctor> {
+class CollectParticlePairsFunctor : public autopas::Functor<autopas::ParticleFP64, CollectParticlePairsFunctor> {
  public:
-  std::vector<std::pair<Particle *, Particle *>> _pairs{};
+  std::vector<std::pair<autopas::ParticleFP64 *, autopas::ParticleFP64 *>> _pairs{};
   std::array<double, 3> _min;
   std::array<double, 3> _max;
 
@@ -58,7 +58,7 @@ class CollectParticlePairsFunctor : public autopas::Functor<autopas::Particle, C
 };
 
 #if defined(AUTOPAS_OPENMP)
-class CollectParticlesPerThreadFunctor : public autopas::Functor<autopas::Particle, CollectParticlesPerThreadFunctor> {
+class CollectParticlesPerThreadFunctor : public autopas::Functor<autopas::ParticleFP64, CollectParticlesPerThreadFunctor> {
  public:
   int _currentColor{};
 

@@ -11,7 +11,7 @@
 /**
  * A particle class without an actual constructor (only copy, etc.).
  */
-class NonConstructibleParticle : public autopas::Particle {
+class NonConstructibleParticle : public autopas::ParticleFP64 {
  public:
   /**
    * Default constructor is deleted.
@@ -42,19 +42,19 @@ class NonConstructibleParticle : public autopas::Particle {
     if constexpr (attribute == AttributeNames::ptr) {
       return this;
     } else if constexpr (attribute == AttributeNames::id) {
-      return getID();
+      return this->getID();
     } else if constexpr (attribute == AttributeNames::posX) {
-      return getR()[0];
+      return this->getR()[0];
     } else if constexpr (attribute == AttributeNames::posY) {
-      return getR()[1];
+      return this->getR()[1];
     } else if constexpr (attribute == AttributeNames::posZ) {
-      return getR()[2];
+      return this->getR()[2];
     } else if constexpr (attribute == AttributeNames::forceX) {
-      return getF()[0];
+      return this->getF()[0];
     } else if constexpr (attribute == AttributeNames::forceY) {
-      return getF()[1];
+      return this->getF()[1];
     } else if constexpr (attribute == AttributeNames::forceZ) {
-      return getF()[2];
+      return this->getF()[2];
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {

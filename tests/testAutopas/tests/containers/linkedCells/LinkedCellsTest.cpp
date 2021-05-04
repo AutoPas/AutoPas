@@ -14,11 +14,11 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   using LinkedCellsType = TypeParam;
   LinkedCellsType linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
 
-  autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
-  autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
-  autopas::Particle p3({1.6, 1.5, 1.5}, {0, 0, 0}, 2);
-  autopas::Particle p4({2.5, 1.5, 1.5}, {0, 0, 0}, 3);
-  autopas::Particle p5({2.5, 2.5, 2.5}, {0, 0, 0}, 4);
+  autopas::ParticleFP64 p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
+  autopas::ParticleFP64 p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
+  autopas::ParticleFP64 p3({1.6, 1.5, 1.5}, {0, 0, 0}, 2);
+  autopas::ParticleFP64 p4({2.5, 1.5, 1.5}, {0, 0, 0}, 3);
+  autopas::ParticleFP64 p5({2.5, 2.5, 2.5}, {0, 0, 0}, 4);
 
   linkedCells.addParticle(p1);
   linkedCells.addParticle(p2);
@@ -82,7 +82,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   for (double x : {0., 5., 9.999}) {
     for (double y : {0., 5., 9.999}) {
       for (double z : {0., 5., 9.999}) {
-        autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
+        autopas::ParticleFP64 p({x, y, z}, {0., 0., 0.}, id++);
         EXPECT_NO_THROW(this->_linkedCells.addParticle(p));  // inside, therefore ok!
       }
     }
