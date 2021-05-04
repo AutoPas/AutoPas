@@ -10,7 +10,6 @@
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopasTools/generators/GridGenerator.h"
-
 #include "testingHelpers/EmptyFunctor.h"
 
 using ::testing::_;
@@ -288,15 +287,15 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   const unsigned int verletClusterSize = 4;
   const unsigned int maxSamples = 3;
 
-  autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
-                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                autopas::Newton3Option::disabled);
-  autopas::Configuration confLc_c04(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c04,
-                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                autopas::Newton3Option::disabled);
-  autopas::Configuration confLc_c08(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                autopas::Newton3Option::disabled);
+  autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor,
+                                    autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
+                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+  autopas::Configuration confLc_c04(autopas::ContainerOption::linkedCells, cellSizeFactor,
+                                    autopas::TraversalOption::lc_c04, autopas::LoadEstimatorOption::none,
+                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+  autopas::Configuration confLc_c08(autopas::ContainerOption::linkedCells, cellSizeFactor,
+                                    autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
+                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto configsList = {confLc_c01, confLc_c04, confLc_c08};
 
@@ -328,7 +327,6 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should be done be tuning.";
 }
 
-
 TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {2, 4, 2};
   const double cutoff = 1;
@@ -337,15 +335,15 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   const unsigned int verletClusterSize = 4;
   const unsigned int maxSamples = 3;
 
-  autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
-                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                    autopas::Newton3Option::disabled);
-  autopas::Configuration confLc_c04(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c04,
-                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                    autopas::Newton3Option::disabled);
-  autopas::Configuration confLc_c08(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                    autopas::Newton3Option::disabled);
+  autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor,
+                                    autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
+                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+  autopas::Configuration confLc_c04(autopas::ContainerOption::linkedCells, cellSizeFactor,
+                                    autopas::TraversalOption::lc_c04, autopas::LoadEstimatorOption::none,
+                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+  autopas::Configuration confLc_c08(autopas::ContainerOption::linkedCells, cellSizeFactor,
+                                    autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
+                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto configsList = {confLc_c01, confLc_c04, confLc_c08};
 
@@ -365,7 +363,8 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
     // since we don't actually do anything doRebuild can always be false.
     EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should still be tuning.\n"
                                                                     "Phase 1\n"
-                                                                    "Iteration " << iteration;
+                                                                    "Iteration "
+                                                                 << iteration;
   }
   // restart the full tuning phase
   autoTuner.forceRetune();
@@ -375,11 +374,13 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
     // since we don't actually do anything doRebuild can always be false.
     EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should still be tuning.\n"
                                                                     "Phase 2\n"
-                                                                    "Iteration " << iteration;
+                                                                    "Iteration "
+                                                                 << iteration;
   }
   // first iteration after tuning phase
   EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should be done be tuning.\n"
-                                                                   "Iteration " << iteration;
+                                                                   "Iteration "
+                                                                << iteration;
 }
 
 /**
