@@ -25,7 +25,7 @@ jobs:
         uses: docker://autopas/autopas-build-doxygen
         with:
           entrypoint: buildDocumentation.sh
-          # arg1 make target doc_doxygen
+          # arg1 make target
           # arg2 path to root of AutoPas directory.
           args: doc_doxygen .
 
@@ -45,8 +45,8 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          publish_dir: ./${{ env.BUILD_DIR }}/doc_doxygen/html/
-          destination_dir: doxygen_documentation/git-master/
+          publish_dir: ./${{ env.BUILD_DIR }}/doc_doxygen/html/ # from dir
+          destination_dir: doxygen_documentation/git-master/ # to dir
           publish_branch: main
           external_repository: AutoPas/AutoPas.github.io
           user_name: github-actions[bot]
