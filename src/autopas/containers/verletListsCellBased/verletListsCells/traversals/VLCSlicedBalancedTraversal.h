@@ -67,6 +67,8 @@ class VLCSlicedBalancedTraversal
       case (ContainerOption::pairwiseVerletLists):
         return TraversalOption::vlp_sliced_balanced;
     }
+    // should never be reached.
+    return TraversalOption();
   }
 
   [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
