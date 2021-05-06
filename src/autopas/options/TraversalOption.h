@@ -18,7 +18,7 @@ inline namespace options {
 class TraversalOption : public Option<TraversalOption> {
  public:
   /**
-   * Possible choices for the cell pair traversal.
+   * Possible choices for the cell pair traversal. Try to maintain lexicographic ordering.
    */
   enum Value {
     // DirectSum Traversals:
@@ -28,21 +28,6 @@ class TraversalOption : public Option<TraversalOption> {
     ds_sequential,
 
     // LinkedCell Traversals:
-    /**
-     * LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice interface.
-     * Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
-     */
-    lc_sliced,
-    /**
-     * LCSlicedBalancedTraversal : Same as lc_sliced but tries to balance slice thickness according to a given
-     * LoadEstimatorOption.
-     */
-    lc_sliced_balanced,
-    /**
-     * LCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
-     * coloring of slices.
-     */
-    lc_sliced_c02,
     /**
      * LCC01Traversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
      * parallel. Good load balancing and no overhead.
@@ -80,6 +65,21 @@ class TraversalOption : public Option<TraversalOption> {
      * LCC18Traversal : More compact form of LCC01Traversal supporting Newton3 by only accessing forward neighbors.
      */
     lc_c18,
+    /**
+     * LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice interface.
+     * Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
+     */
+    lc_sliced,
+    /**
+     * LCSlicedBalancedTraversal : Same as lc_sliced but tries to balance slice thickness according to a given
+     * LoadEstimatorOption.
+     */
+    lc_sliced_balanced,
+    /**
+     * LCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
+     * coloring of slices.
+     */
+    lc_sliced_c02,
 
     // VerletClusterCells Traversals:
     /**
@@ -90,19 +90,19 @@ class TraversalOption : public Option<TraversalOption> {
 
     // VerletClusterLists Traversals:
     /**
-     * VCLClusterIterationTraversal : Schedule ClusterTower to threads.
+     * VCLC01BalancedTraversal : Assign a fixed set of towers to each thread balanced by number of contained clusters.
+     * Does not support Newton3.
      */
-    vcl_cluster_iteration,
+    vcl_c01_balanced,
     /**
      * VCLC06Traversal : Six-way coloring of the 2D ClusterTower grid in the c18 base step style.
      * Rather coarse but dynamically balanced.
      */
     vcl_c06,
     /**
-     * VCLC01BalancedTraversal : Assign a fixed set of towers to each thread balanced by number of contained clusters.
-     * Does not support Newton3.
+     * VCLClusterIterationTraversal : Schedule ClusterTower to threads.
      */
-    vcl_c01_balanced,
+    vcl_cluster_iteration,
     /**
      * VCLSlicedTraversal : Equivalent to lc_sliced with slicing applied to the tower grid.
      */
@@ -150,14 +150,6 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vlc_sliced_c02,
 
-    // VarVerlet Traversals:
-    /**
-     * VVLAsBuildTraversal : Track which thread built what neighbor list and schedule them the same way for the pairwise
-     * iteration. Provides some kind of load balancing if the force calculation is cheap but is sensitive to hardware
-     * fluctuations.
-     */
-    vvl_as_built,
-
     // PairwiseVerletLists Traversals - same traversals as VLC but with a new name for the pairwise container
     /**
      * VLCC01Traversal : Equivalent to LCC01Traversal. Schedules all neighbor lists of one cell at once.
@@ -182,6 +174,14 @@ class TraversalOption : public Option<TraversalOption> {
      * 1D slicing with as many slices of minimal thickness as possible. No locks but two-way coloring of slices.
      */
     vlp_sliced_c02,
+
+    // VarVerlet Traversals:
+    /**
+     * VVLAsBuildTraversal : Track which thread built what neighbor list and schedule them the same way for the pairwise
+     * iteration. Provides some kind of load balancing if the force calculation is cheap but is sensitive to hardware
+     * fluctuations.
+     */
+    vvl_as_built,
   };
 
   /**

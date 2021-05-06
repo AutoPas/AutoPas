@@ -103,6 +103,11 @@ class AutoTuner {
   }
 
   /**
+   * @copydoc AutoPas::forceRetune()
+   */
+  void forceRetune();
+
+  /**
    * Getter for the current container.
    * @return Smart pointer to the current container.
    */
@@ -149,7 +154,6 @@ class AutoTuner {
     if (_tuningStrategy->searchSpaceIsTrivial()) {
       return false;
     }
-
     return _iterationsSinceTuning >= _tuningInterval and _samples.size() >= _maxSamples;
   }
 
@@ -263,13 +267,13 @@ class AutoTuner {
    *
    * @note Initialized with size of _maxSamples to start tuning at start of simulation.
    */
-  std::vector<size_t> _samples;
+  std::vector<long> _samples;
 
   /**
    * For each configuration the collection of all evidence (smoothed values) collected so far and in which iteration.
    * Configuration -> vector< iteration, time >
    */
-  std::map<Configuration, std::vector<std::pair<size_t, size_t>>> _evidences;
+  std::map<Configuration, std::vector<std::pair<size_t, long>>> _evidences;
 
   IterationLogger _iterationLogger;
   TuningResultLogger _tuningResultLogger;
@@ -281,6 +285,12 @@ void AutoTuner<Particle>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
   _containerSelector.selectContainer(
       conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
+}
+
+template <class Particle>
+void AutoTuner<Particle>::forceRetune() {
+  _iterationsSinceTuning = _tuningInterval;
+  _samples.resize(_maxSamples);
 }
 
 template <class Particle>
