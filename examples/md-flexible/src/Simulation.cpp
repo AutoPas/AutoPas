@@ -8,7 +8,7 @@
 
 #include <sys/ioctl.h>
 #include <unistd.h>
-#ifdef AUTOPAS_MPI
+#ifdef AUTOPAS_INTERNODE_TUNING
 #include <mpi.h>
 #endif
 
@@ -376,7 +376,7 @@ bool Simulation::needsMoreIterations() const {
 
 std::string Simulation::getMPISuffix() const {
   std::string suffix;
-#ifdef AUTOPAS_MPI
+#ifdef AUTOPAS_INTERNODE_TUNING
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   std::ostringstream output;

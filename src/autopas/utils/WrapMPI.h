@@ -12,7 +12,7 @@
  * May be extended when necessary.
  */
 
-#if defined(AUTOPAS_MPI)
+#if defined(AUTOPAS_INTERNODE_TUNING)
 #include <mpi.h>
 #else
 #include <cstdio>
@@ -23,7 +23,7 @@
 
 namespace autopas {
 
-#if defined(AUTOPAS_MPI)
+#if defined(AUTOPAS_INTERNODE_TUNING)
 
 // MPI_Comm
 /** Wrapper for MPI_COMM_NULL */
@@ -324,7 +324,7 @@ inline int AutoPas_MPI_Wait(AutoPas_MPI_Request *request, AutoPas_MPI_Status *st
  */
 inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request);
 
-#if defined(AUTOPAS_MPI)
+#if defined(AUTOPAS_INTERNODE_TUNING)
 
 inline int AutoPas_MPI_Init(int *argc, char ***argv) { return MPI_Init(argc, argv); }
 

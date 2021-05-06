@@ -76,7 +76,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * @copydoc VLCNeighborListInterface::getNumberOfPartners()
    */
-  const size_t getNumberOfPartners(const Particle *particle) const override {
+  size_t getNumberOfPartners(const Particle *particle) const override {
     const auto &[cellIndex, particleIndexInCell] = _particleToCellMap.at(const_cast<Particle *>(particle));
     return _aosNeighborList.at(cellIndex).at(particleIndexInCell).second.size();
   }

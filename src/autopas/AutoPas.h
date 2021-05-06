@@ -135,6 +135,11 @@ class AutoPas {
   }
 
   /**
+   * Force the internal tuner to enter a new tuning phase upon the next call to iteratePairwise().
+   */
+  void forceRetune() { _autoTuner->forceRetune(); }
+
+  /**
    * Free the AutoPas MPI communicator.
    * To be called before MPI_Finalize.
    * If no MPI is used just call this at the end of the program.
@@ -644,9 +649,9 @@ class AutoPas {
    */
   void setMPIStrategy(MPIStrategyOption mpiStrategyOption) { _mpiStrategyOption = mpiStrategyOption; }
 
-// Only define the interface for the MPI communicator if AUTOPAS_MPI=ON
-// The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_MPI
-#if defined(AUTOPAS_MPI)
+// Only define the interface for the MPI communicator if AUTOPAS_INTERNODE_TUNING=ON
+// The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_INTERNODE_TUNING
+#if defined(AUTOPAS_INTERNODE_TUNING)
   /**
    * Setter for the MPI communicator that AutoPas uses for potential MPI calls.
    * If not set, MPI_COMM_WORLD will be used.

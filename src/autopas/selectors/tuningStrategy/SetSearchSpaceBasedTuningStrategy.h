@@ -86,7 +86,7 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
    * @param searchSpace Map<Configuration, runTime> to search.
    * @return Iterator to optimal (=fastest) configuration.
    */
-  static inline auto getOptimum(const std::unordered_map<Configuration, size_t, ConfigHash> &searchSpace);
+  static inline auto getOptimum(const std::unordered_map<Configuration, long, ConfigHash> &searchSpace);
 
   /**
    * Contains every allowed container option.
@@ -143,12 +143,11 @@ void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
 }
 
 auto SetSearchSpaceBasedTuningStrategy::getOptimum(
-    const std::unordered_map<Configuration, size_t, ConfigHash> &searchSpace) {
+    const std::unordered_map<Configuration, long, ConfigHash> &searchSpace) {
   // find mapping with smallest second (=runtime)
-  return std::min_element(searchSpace.begin(), searchSpace.end(),
-                          [](std::pair<Configuration, size_t> a, std::pair<Configuration, size_t> b) -> bool {
-                            return a.second < b.second;
-                          });
+  return std::min_element(
+      searchSpace.begin(), searchSpace.end(),
+      [](std::pair<Configuration, long> a, std::pair<Configuration, long> b) -> bool { return a.second < b.second; });
 }
 
 void SetSearchSpaceBasedTuningStrategy::removeN3Option(Newton3Option badNewton3Option) {
