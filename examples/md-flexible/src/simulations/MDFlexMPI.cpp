@@ -6,6 +6,7 @@
 
 #include "MDFlexMPI.h"
 
+#include "mpi.h"
 #include "autopas/utils/ArrayMath.h"
 
 #include <algorithm>
@@ -99,55 +100,47 @@ namespace {
 }
 
 MDFlexMPI::MDFlexMPI(int argc, char** argv) : MDFlexSimulation(argc, argv){
-  MPI_Init(&argc, &argv);
-
 	int dimensionCount = _configuration->boxMin.value.size();
 	double* globalBoxMin = &_configuration->boxMin.value[0];
 	double* globalBoxMax = &_configuration->boxMax.value[0];
 	_domainDecomposition = std::make_unique<RegularGridDecomposition>(dimensionCount, globalBoxMin, globalBoxMax);
 
-  _particlePropertiesLibrary = std::make_unique<ParticlePropertiesLibraryType>(_configuration->cutoff.value);
+  _autoPasContainer->setBoxMin(_configuration->boxMin.value);
+  _autoPasContainer->setBoxMax(_configuration->boxMax.value);
+  _autoPasContainer->init();
 
-	std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
-	std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();
-
-	for (int i = 0; i < dimensionCount; ++i){
-		_configuration->boxMin.value[i] = localBoxMin[i];
-		_configuration->boxMax.value[i] = localBoxMax[i];
-	}
-
-	_autoPasContainer = std::make_unique<autopas::AutoPas<ParticleType>>(std::cout);	
+	// @todo properly assign particles to autoPasContainer	
 }
 
 MDFlexMPI::~MDFlexMPI() {
-	MPI_Finalize();
 }
 
 void MDFlexMPI::run(){
-
 	// @todo: make variable part of MDFlexConfig
 	int iterationsPerSuperstep = 10;
 	int remainingIterations = _configuration->iterations.value;
 
 	for (int i = 0; i < _configuration->iterations.value; i+=iterationsPerSuperstep){
 		executeSuperstep(iterationsPerSuperstep);
-
-	//	remainingIterations -= iterationsPerSuperstep;
 	}
-
-	//_simulation->printStatistics(autopasContainer);
 }
 
 void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep){
+	std::cout << "Start Superstep" << std::endl;
 	updateParticles(iterationsPerSuperstep);
+
+	std::cout << "Finished updating the particles" << std::endl;
 
 	MPI_Barrier(_domainDecomposition->getCommunicator());
 
 	auto [emigrants, updated] = _autoPasContainer->updateContainer();
 
+	std::cout << "Finished updating the autoPasContainer" << std::endl;
+
 	if (updated) {
 		sendEmigrantsToNeighbours(emigrants);
 	}
+	std::cout << "End Superstep" << std::endl;
 }
 
 void MDFlexMPI::updateParticles(const int iterationsPerSuperstep){
@@ -183,11 +176,13 @@ void MDFlexMPI::sendEmigrantsToNeighbours(std::vector<ParticleType> &emigrants){
 	std::array<MPI_Request, 2> sendRequests;
 	std::array<std::vector<char>, 2> sendBuffers;
 
+	int neighbourCount = dimensionCount * 2;
+
 	for(int i = 0; i < dimensionCount; ++i){
 		// @todo: neighbours are dependent on type of domain decomposition.
 		// Move neighbour identification to domain decomposition class.
-		int preceedingNeighbour = dimensionCount * 2;
-		int succeedingNeighbour = dimensionCount * 2 + 1;
+		int preceedingNeighbour = i * 2;
+		int succeedingNeighbour = i * 2 + 1;
 
 		for (auto &particle : emigrants){
 			if (particle.getR()[i] - localBoxMin[i] < 0){
@@ -217,7 +212,10 @@ void MDFlexMPI::sendEmigrantsToNeighbours(std::vector<ParticleType> &emigrants){
 		sendBuffers[0].clear();
 		sendBuffers[1].clear();
 
-		int nextDimensionIndex = (i + 1) % dimensionCount;
+		int nextDimensionIndex = i + 1;
+		preceedingNeighbour = (preceedingNeighbour + 2)%neighbourCount;
+		succeedingNeighbour = (succeedingNeighbour + 3)%neighbourCount;
+
 		for (auto &particle : migrants){
 			if (particle.getR()[nextDimensionIndex] - localBoxMin[nextDimensionIndex] < 0){
 				particlesForPreceedingNeighbour.push_back(particle);

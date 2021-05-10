@@ -370,10 +370,6 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, size
   return ss.str();
 }
 
-bool Simulation::needsMoreIterations() const {
-  return _iteration < _config->iterations.value or _numTuningPhasesCompleted < _config->tuningPhases.value;
-}
-
 std::string Simulation::getMPISuffix() const {
   std::string suffix;
 #ifdef AUTOPAS_INTERNODE_TUNING

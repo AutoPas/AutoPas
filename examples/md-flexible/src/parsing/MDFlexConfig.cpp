@@ -6,7 +6,25 @@
 
 #include "MDFlexConfig.h"
 
+#include "MDFlexParser.h"
 #include "autopas/utils/StringUtils.h"
+
+MDFlexConfig::MDFlexConfig(int argc, char **argv){
+	auto parserExitCode = MDFlexParser::parseInput(argc, argv, *this);
+  if (parserExitCode != MDFlexParser::exitCodes::success) {
+    if (parserExitCode == MDFlexParser::exitCodes::parsingError) {
+      std::cout << "Error when parsing configuration file." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    exit(EXIT_SUCCESS);
+  }
+
+  calcSimulationBox();
+
+  if (tuningPhases.value > 0) {
+    iterations.value = 0ul;
+  }
+}
 
 std::string MDFlexConfig::to_string() const {
   using namespace std;

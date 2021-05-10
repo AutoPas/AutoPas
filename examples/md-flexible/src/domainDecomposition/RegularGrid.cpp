@@ -1,9 +1,9 @@
 /**
- * @file RegularGridDecomposition.cpp
+ * @file RegularGrid.cpp
  * @author J. Körner
  * @date 19.04.2021
  */
-#include "RegularGridDecomposition.h"
+#include "RegularGrid.h"
 
 #include <algorithm>
 #include <functional>
@@ -31,8 +31,11 @@ namespace {
 
 }
 
-RegularGridDecomposition::RegularGridDecomposition(const unsigned int &dimensionCount, const double* globalBoxMin, const double* globalBoxMax){
+RegularGrid::RegularGrid(int argc, char** argv, const int &dimensionCount,
+	const std::vector<double> &globalBoxMin, const std::vector<double> &globalBoxMax){
 	_dimensionCount = dimensionCount;
+
+	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &_subdomainCount);
 
 	initializeDecomposition();
@@ -48,11 +51,20 @@ RegularGridDecomposition::RegularGridDecomposition(const unsigned int &dimension
 	initializeNeighbourIds();
 }
 
-void RegularGridDecomposition::update(){
+RegularGrid::~RegularGrid(){
+	MPI_Finalize();
+}
+
+void RegularGrid::update(){
 	updateLocalBox();
 }
 
-void RegularGridDecomposition::initializeDecomposition(){
+void RegularGrid::exchangeHaloData() {
+	// @todo: implement halo exchange
+}
+
+
+void RegularGrid::initializeDecomposition(){
 	std::list<unsigned int> primeFactors;
 	calculatePrimeFactors(_subdomainCount, primeFactors);
 
@@ -78,13 +90,13 @@ void RegularGridDecomposition::initializeDecomposition(){
 	}
 }
 
-void RegularGridDecomposition::initializeMPICommunicator(){
+void RegularGrid::initializeMPICommunicator(){
 	std::vector<int> periods(_dimensionCount, 1);
   MPI_Cart_create(MPI_COMM_WORLD, _dimensionCount, _decomposition.data(), periods.data(), true, &_communicator);
  	MPI_Comm_rank(_communicator, &_domainIndex);
 }
 
-void RegularGridDecomposition::initializeLocalDomain(){
+void RegularGrid::initializeLocalDomain(){
 	_domainId.resize(_dimensionCount);
   MPI_Comm_rank(_communicator, &_domainIndex);
 
@@ -92,43 +104,29 @@ void RegularGridDecomposition::initializeLocalDomain(){
 	MPI_Cart_get(_communicator, _dimensionCount, _decomposition.data(), periods.data(), _domainId.data());
 }
 
-
-void RegularGridDecomposition::initializeGlobalBox(const double* globalBoxMin, const double* globalBoxMax){
-	_globalBoxMin.resize(_dimensionCount);
-	_globalBoxMax.resize(_dimensionCount);
-	for (int i = 0; i < _dimensionCount; ++i){
-		_globalBoxMin[i] = globalBoxMin[i];
-		_globalBoxMax[i] = globalBoxMax[i];
-	}
-}
-
-void RegularGridDecomposition::initializeLocalBox(){
+void RegularGrid::initializeLocalBox(){
 	_localBoxMin.resize(_dimensionCount);
 	_localBoxMax.resize(_dimensionCount);
 	updateLocalBox();
-
 }
 
-void RegularGridDecomposition::initializeNeighbourIds(){
+void RegularGrid::initializeNeighbourIds(){
 	_neighbourDomainIndices.resize(_dimensionCount * 2);
-	_neighbourDomainIds.resize(_dimensionCount * 2);
 
 	for (int i = 0; i < _dimensionCount; ++i){
 		auto neighbourIndex = i * 2;
-		auto preceedingNeighbourId = _neighbourDomainIds[neighbourIndex];
-		preceedingNeighbourId = _domainId;
+		auto preceedingNeighbourId = _domainId;
 		preceedingNeighbourId[i] = (--preceedingNeighbourId[i] + _decomposition[i])%_decomposition[i];
-		_neighbourDomainIndices[neighbourIndex] = convertIdToIndex(_neighbourDomainIds[neighbourIndex]);
+		_neighbourDomainIndices[neighbourIndex] = convertIdToIndex(preceedingNeighbourId);
 
 		++neighbourIndex;
-		auto succeedingNeighbourId = _neighbourDomainIds[neighbourIndex];
-		succeedingNeighbourId = _domainId;
+		auto succeedingNeighbourId = _domainId;
 		succeedingNeighbourId[i] = (++succeedingNeighbourId[i] + _decomposition[i])%_decomposition[i];
-		_neighbourDomainIndices[neighbourIndex] = convertIdToIndex(_neighbourDomainIds[neighbourIndex]);
+		_neighbourDomainIndices[neighbourIndex] = convertIdToIndex(succeedingNeighbourId);
 	}
 }
 
-int RegularGridDecomposition::convertIdToIndex(const std::vector<int> &domainId){
+int RegularGrid::convertIdToIndex(const std::vector<int> &domainId){
 	int neighbourDomainIndex = 0;
 
 	for (int i = 0; i < _dimensionCount; ++i){
@@ -145,7 +143,7 @@ int RegularGridDecomposition::convertIdToIndex(const std::vector<int> &domainId)
 	return neighbourDomainIndex;
 }
 
-void RegularGridDecomposition::updateLocalBox(){
+void RegularGrid::updateLocalBox(){
   for (int i = 0; i < _dimensionCount; ++i) {
 		double localBoxWidth = (_globalBoxMax[i] - _globalBoxMin[i]) / static_cast<double>(_decomposition[i]);
 
@@ -158,4 +156,14 @@ void RegularGridDecomposition::updateLocalBox(){
       _localBoxMax[i] = _globalBoxMax[i];
     }
   }
+}
+
+void RegularGrid::initializeGlobalBox(const std::vector<double> &globalBoxMin,
+	const std::vector<double> &globalBoxMax){
+	_globalBoxMin.resize(_dimensionCount);
+	_globalBoxMax.resize(_dimensionCount);
+	for (int i = 0; i < _dimensionCount; ++i){
+		_globalBoxMin[i] = globalBoxMin[i];
+		_globalBoxMax[i] = globalBoxMax[i];
+	}
 }

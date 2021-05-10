@@ -34,7 +34,7 @@
  */
 class MDFlexConfig {
  public:
-  MDFlexConfig() = default;
+  MDFlexConfig(int argc, char **argv);
 
   /**
    * Struct to bundle information for options.
