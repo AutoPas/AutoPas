@@ -65,6 +65,8 @@ class VLCSlicedC02Traversal
       case (ContainerOption::pairwiseVerletLists):
         return TraversalOption::vlp_sliced_c02;
     }
+    // should never be reached.
+    return TraversalOption();
   }
 
   [[nodiscard]] bool isApplicable() const override { return dataLayout == DataLayoutOption::aos; }
