@@ -175,9 +175,12 @@ for(auto iter = autoPas.getRegionIterator(lowCorner, highCorner); iter != autoPa
 Both `begin()` and `getRegionIterator()` can also take the additional parameter `IteratorBehavior`,
 which indicates over which particles the iteration should be performed. See [autopas::IteratorBehavior
 ](https://autopas.github.io/doxygen_documentation/git-master/namespaceautopas.html#a520fefd51e4555074cd16e7c3fd19c42) for possible options and details.
-The default parameter is `haloAndOwned`, which is also used for range-based for loops.
+The default parameter is `ownedOrHalo`, which is also used for range-based for loops.
 
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const_iterator`.
+
+Iterators are not guaranteed to be valid after particle insertion. 
+However, particle deletion while iterating is supported via `autoPas.deleteParticle(iterator)`.
 
 ### Simulation Loop
 One simulation loop should always consist of the following phases:

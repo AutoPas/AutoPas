@@ -13,46 +13,47 @@ pipeline {
         }
         stage("style check") {
             parallel {
-                stage("build documentation") {
-                    steps {
-                        container('autopas-cmake-doxygen-make') {
-                            dir("build-doxygen") {
-                                sh 'entrypoint.sh ccache -s'
-                                sh 'cmake ..'
-                                sh 'make doc_doxygen 2>DoxygenWarningLog.txt'
-                            }
-                        }
-                        stash includes: 'build-doxygen/doc_doxygen/html/**', name: 'doxydocs'
-
-                        // get doxygen warnings
-                        recordIssues filters: [excludeFile('.*README.*')], tools: [doxygen(id: 'docAutoPas', pattern: 'build-doxygen/DoxygenWarningLog.txt')], failedTotalAll: 1
-                    }
-                    post {
-                        failure {
-                            error "warnings in doxygen documentation"
-                        }
-                    }
-                }
-                stage("build md-flexible documentation") {
-                    steps {
-                        container('autopas-cmake-doxygen-make') {
-                            dir("build-doxygen-md-flexible") {
-                                sh 'entrypoint.sh ccache -s'
-                                sh 'cmake ..'
-                                sh 'make doc_doxygen_md-flexible 2>DoxygenWarningLog.txt'
-                            }
-                        }
-                        stash includes: 'build-doxygen-md-flexible/doc_doxygen_md-flexible/html/**', name: 'doxydocs_md-flexible'
-
-                        // get doxygen warnings
-                        recordIssues filters: [excludeFile('.*README.*')], tools: [doxygen(id: 'docMdFlex', pattern: 'build-doxygen-md-flexible/DoxygenWarningLog.txt')], failedTotalAll: 1
-                    }
-                    post {
-                        failure {
-                            error "warnings in doxygen documentation for md-flexible"
-                        }
-                    }
-                }
+// These stages are currently done via Github Actions. See AutoPas/.github/workflows
+//                 stage("build documentation") {
+//                     steps {
+//                         container('autopas-cmake-doxygen-make') {
+//                             dir("build-doxygen") {
+//                                 sh 'entrypoint.sh ccache -s'
+//                                 sh 'cmake ..'
+//                                 sh 'make doc_doxygen 2>DoxygenWarningLog.txt'
+//                             }
+//                         }
+//                         stash includes: 'build-doxygen/doc_doxygen/html/**', name: 'doxydocs'
+//
+//                         // get doxygen warnings
+//                         recordIssues filters: [excludeFile('.*README.*')], tools: [doxygen(id: 'docAutoPas', pattern: 'build-doxygen/DoxygenWarningLog.txt')], failedTotalAll: 1
+//                     }
+//                     post {
+//                         failure {
+//                             error "warnings in doxygen documentation"
+//                         }
+//                     }
+//                 }
+//                 stage("build md-flexible documentation") {
+//                     steps {
+//                         container('autopas-cmake-doxygen-make') {
+//                             dir("build-doxygen-md-flexible") {
+//                                 sh 'entrypoint.sh ccache -s'
+//                                 sh 'cmake ..'
+//                                 sh 'make doc_doxygen_md-flexible 2>DoxygenWarningLog.txt'
+//                             }
+//                         }
+//                         stash includes: 'build-doxygen-md-flexible/doc_doxygen_md-flexible/html/**', name: 'doxydocs_md-flexible'
+//
+//                         // get doxygen warnings
+//                         recordIssues filters: [excludeFile('.*README.*')], tools: [doxygen(id: 'docMdFlex', pattern: 'build-doxygen-md-flexible/DoxygenWarningLog.txt')], failedTotalAll: 1
+//                     }
+//                     post {
+//                         failure {
+//                             error "warnings in doxygen documentation for md-flexible"
+//                         }
+//                     }
+//                 }
                 stage ("clang and cmake format") {
                     steps {
                         dir("format") {

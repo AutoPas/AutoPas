@@ -8,6 +8,7 @@
 
 #include <Eigen/Core>
 #include <cmath>
+#include <vector>
 
 namespace autopas::utils::Math {
 
@@ -17,6 +18,165 @@ namespace autopas::utils::Math {
 const double normalScale = 1. / std::sqrt(2 * M_PI);
 
 /**
+ * Addition function for integer types that is safe against over and underflow.
+ * If over or underflow is detected, the function returns the specified values.
+ * @tparam T
+ * @param a
+ * @param b
+ * @param valUnderflow Return value in case of underflow.
+ * @param valOverflow Return value in case of overflow.
+ * @return Sum or valOverflow or valUnderflow.
+ */
+template <class T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+T safeAdd(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>::min(),
+          const T &valOverflow = std::numeric_limits<T>::max()) {
+  T result;
+  bool overflow = __builtin_add_overflow(a, b, &result);
+  if (overflow) {
+    // if both args are negative this is an underflow.
+    if (a < 0 and b < 0) {
+      result = valUnderflow;
+    } else {
+      result = valOverflow;
+    }
+  }
+  return result;
+}
+
+/**
+ * Addition function for floating point types that is safe against over and underflow.
+ * If over or underflow is detected, the function returns the specified values.
+ *
+ * @note Underflow here refers to a value more negative than representable and not the underflow gap around zero.
+ *
+ * @tparam T
+ * @param a
+ * @param b
+ * @param valUnderflow Return value in case of underflow.
+ * @param valOverflow Returns value in case of overflow.
+ * @return Sum or valUnderflow or valOverflow.
+ */
+template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+T safeAdd(const T &a, const T &b, const T &valUnderflow = -std::numeric_limits<T>::max(),
+          const T &valOverflow = std::numeric_limits<T>::max()) {
+  T result = a + b;
+  if (std::isinf(result)) {
+    if (result > 0) {
+      result = valOverflow;
+    } else {
+      result = valUnderflow;
+    }
+  }
+  return result;
+}
+
+/**
+ * Subtraction function for integer types that is safe against over and underflow.
+ * If over or underflow is detected, the function returns the specified values.
+ * @tparam T
+ * @param a
+ * @param b
+ * @param valUnderflow Return value in case of underflow.
+ * @param valOverflow Return value in case of overflow.
+ * @return Difference or valOverflow or valUnderflow.
+ */
+template <class T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+T safeSub(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>::min(),
+          const T &valOverflow = std::numeric_limits<T>::max()) {
+  T result;
+  bool overflow = __builtin_sub_overflow(a, b, &result);
+  if (overflow) {
+    // underflow is only possible if we subtract a positive number. Everything else is an overflow.
+    if (b > 0) {
+      result = valUnderflow;
+    } else {
+      result = valOverflow;
+    }
+  }
+  return result;
+}
+
+/**
+ * Addition function for floating point types that is safe against over and underflow.
+ * If over or underflow is detected, the function returns the specified values.
+ *
+ * @note Underflow here refers to a value more negative than representable and not the underflow gap around zero.
+ *
+ * @tparam T
+ * @param a
+ * @param b
+ * @param valUnderflow Return value in case of underflow.
+ * @param valOverflow Returns value in case of overflow.
+ * @return Sum or valUnderflow or valOverflow.
+ */
+template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+T safeSub(const T &a, const T &b, const T &valUnderflow = -std::numeric_limits<T>::max(),
+          const T &valOverflow = std::numeric_limits<T>::max()) {
+  T result = a - b;
+  if (std::isinf(result)) {
+    if (result > 0) {
+      result = valOverflow;
+    } else {
+      result = valUnderflow;
+    }
+  }
+  return result;
+}
+
+/**
+ * Multiplication function for integer types that is safe against over and underflow.
+ * If over or underflow is detected, the function returns the specified values.
+ * @tparam T
+ * @param a
+ * @param b
+ * @param valUnderflow Return value in case of underflow.
+ * @param valOverflow Return value in case of overflow.
+ * @return Product or valUnderflow or valOverflow.
+ */
+template <class T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+T safeMul(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>::min(),
+          const T &valOverflow = std::numeric_limits<T>::max()) {
+  T result;
+  bool overflow = __builtin_mul_overflow(a, b, &result);
+  if (overflow) {
+    // if exactly one arg is negative this is an underflow.
+    if ((a < 0) xor (b < 0)) {
+      result = valUnderflow;
+    } else {
+      result = valOverflow;
+    }
+  }
+  return result;
+}
+
+/**
+ * Multiplication function for floating point types that is safe against over and underflow.
+ * If over or underflow is detected, the function returns the specified values.
+ *
+ * @note Underflow here refers to a value more negative than representable and not the underflow gap around zero.
+ *
+ * @tparam T
+ * @param a
+ * @param b
+ * @param valUnderflow Return value in case of underflow.
+ * @param valOverflow Returns value in case of overflow.
+ * @return Product or valUnderflow or valOverflow.
+ */
+template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+T safeMul(const T &a, const T &b, const T &valUnderflow = -std::numeric_limits<T>::max(),
+          const T &valOverflow = std::numeric_limits<T>::max()) {
+  T result = a * b;
+  if (std::isinf(result)) {
+    if (result > 0) {
+      result = valOverflow;
+    } else {
+      result = valUnderflow;
+    }
+  }
+  return result;
+}
+
+/**
  * No-overhead power function with exponent known at compile time.
  * @tparam exponent
  * @tparam T
@@ -24,7 +184,7 @@ const double normalScale = 1. / std::sqrt(2 * M_PI);
  * @return
  */
 template <size_t exponent, class T>
-T pow(T base) {
+T pow(const T &base) {
   if (exponent == 0) {
     return 1;
   }

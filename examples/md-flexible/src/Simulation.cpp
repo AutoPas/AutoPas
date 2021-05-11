@@ -8,7 +8,7 @@
 
 #include <sys/ioctl.h>
 #include <unistd.h>
-#ifdef AUTOPAS_MPI
+#ifdef AUTOPAS_INTERNODE_TUNING
 #include <mpi.h>
 #endif
 
@@ -176,7 +176,7 @@ void Simulation::globalForces(autopas::AutoPas<ParticleType> &autopas) {
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel default(none) shared(autopas)
 #endif
-  for (auto particleItr = autopas.begin(autopas::IteratorBehavior::ownedOnly); particleItr.isValid(); ++particleItr) {
+  for (auto particleItr = autopas.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
     particleItr->addF(_config->globalForce.value);
   }
 }
@@ -329,9 +329,9 @@ void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
   // Statistics
   cout << endl;
   cout << "Total number of particles at end of Simulation: "
-       << autopas.getNumberOfParticles(autopas::IteratorBehavior::haloAndOwned) << endl;
-  cout << "  Owned: " << autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) << endl;
-  cout << "  Halo : " << autopas.getNumberOfParticles(autopas::IteratorBehavior::haloOnly) << endl;
+       << autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo) << endl;
+  cout << "  Owned: " << autopas.getNumberOfParticles(autopas::IteratorBehavior::owned) << endl;
+  cout << "  Halo : " << autopas.getNumberOfParticles(autopas::IteratorBehavior::halo) << endl;
   cout << "Standard Deviation of Homogeneity    : " << _homogeneity << endl;
 
   cout << fixed << setprecision(_floatStringPrecision);
@@ -353,7 +353,7 @@ void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
 
   cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / _iteration, digitsTimeTotalNS,
                         durationTotal);
-  auto mfups = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly) * _iteration * 1e-6 /
+  auto mfups = autopas.getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration * 1e-6 /
                (_timers.forceUpdateTotal.getTotalTime() * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
   cout << "Tuning iterations: " << _numTuningIterations << " / " << _iteration << " = "
        << ((double)_numTuningIterations / _iteration * 100) << "%" << endl;
@@ -405,7 +405,7 @@ bool Simulation::needsMoreIterations() const {
 
 std::string Simulation::getMPISuffix() const {
   std::string suffix;
-#ifdef AUTOPAS_MPI
+#ifdef AUTOPAS_INTERNODE_TUNING
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   std::ostringstream output;
@@ -420,7 +420,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
 
   std::string fileBaseName = _config->vtkFileName.value;
   // only count number of owned particles here
-  const auto numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOnly);
+  const auto numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::owned);
   std::ostringstream strstr;
   auto maxNumDigits = std::to_string(_config->iterations.value).length();
   strstr << fileBaseName << "_" << getMPISuffix() << std::setfill('0') << std::setw(maxNumDigits) << _iteration
@@ -441,7 +441,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
           << "DIMENSIONS 1 1 1\n"
           << "POINTS " << numParticles << " double\n";
 
-  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     auto pos = iter->getR();
     vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
   }
@@ -450,7 +450,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   vtkFile << "POINT_DATA " << numParticles << "\n";
   // print velocities
   vtkFile << "VECTORS velocities double\n";
-  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     auto v = iter->getV();
     vtkFile << v[0] << " " << v[1] << " " << v[2] << "\n";
   }
@@ -458,7 +458,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
 
   // print Forces
   vtkFile << "VECTORS forces double\n";
-  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     auto f = iter->getF();
     vtkFile << f[0] << " " << f[1] << " " << f[2] << "\n";
   }
@@ -467,7 +467,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   // print TypeIDs
   vtkFile << "SCALARS typeIds int\n";
   vtkFile << "LOOKUP_TABLE default\n";
-  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     vtkFile << iter->getTypeId() << "\n";
   }
   vtkFile << "\n";
@@ -475,7 +475,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   // print TypeIDs
   vtkFile << "SCALARS particleIds int\n";
   vtkFile << "LOOKUP_TABLE default\n";
-  for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     vtkFile << iter->getID() << "\n";
   }
   vtkFile << "\n";
@@ -535,7 +535,7 @@ double *Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas
   std::vector<double> allVolumes(numberOfCells, 0);
 
   // add particles accordingly to their cell to get the amount of particles in each cell
-  for (auto particleItr = autopas.begin(autopas::IteratorBehavior::ownedOnly); particleItr.isValid(); ++particleItr) {
+  for (auto particleItr = autopas.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
     std::array<double, 3> particleLocation = particleItr->getR();
     std::array<size_t, 3> index = {};
     for (int i = 0; i < particleLocation.size(); i++) {

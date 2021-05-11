@@ -21,7 +21,7 @@ target_link_libraries(
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
-        $<$<BOOL:${AUTOPAS_MPI}>:MPI::MPI_CXX>
+        $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
     PRIVATE
         # harmony and Eigen3 are only needed privately when building AutoPas.
         harmony Eigen3
@@ -35,7 +35,7 @@ target_compile_definitions(
     $<$<BOOL:${AUTOPAS_OPENMP}>:AUTOPAS_OPENMP>
     $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:AUTOPAS_CUDA>
     $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
-    $<$<BOOL:${AUTOPAS_MPI}>:AUTOPAS_MPI>
+    $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
     _USE_MATH_DEFINES
 )
 

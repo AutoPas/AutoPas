@@ -27,7 +27,9 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
   using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
   using CellBorderAndFlagManagerType =
       std::conditional_t<modifiable, internal::CellBorderAndFlagManager, const internal::CellBorderAndFlagManager>;
-  using ParticleVecType = std::conditional_t<modifiable, std::vector<Particle>, const std::vector<Particle>>;
+  using ParticleVecType =
+      std::conditional_t<modifiable, std::vector<std::vector<Particle>>, const std::vector<std::vector<Particle>>>;
+  using ParticleIteratorType = ParticleIterator<Particle, ParticleCell, modifiable>;
 
  public:
   /**
@@ -38,31 +40,32 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
    * @param endRegion Top corner of the region to iterate over.
    * @param indicesInRegion List of indices all threads will iterate over.
    * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
-   * Can be nullptr if the behavior is haloAndOwned.
+   * Can be nullptr if the behavior is ownedOrHalo.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    * @param additionalParticleVectorToIterate Additional Particle Vector to iterate over.
    */
   explicit RegionParticleIterator(CellVecType *cont, std::array<double, 3> startRegion, std::array<double, 3> endRegion,
                                   std::vector<size_t> &indicesInRegion,
                                   const CellBorderAndFlagManagerType *flagManager = nullptr,
-                                  IteratorBehavior behavior = haloAndOwned,
+                                  IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                   ParticleVecType *additionalParticleVectorToIterate = nullptr)
-      : ParticleIterator<Particle, ParticleCell, modifiable>(cont, flagManager, behavior,
-                                                             additionalParticleVectorToIterate),
+      : ParticleIteratorType(cont, flagManager, behavior, additionalParticleVectorToIterate),
         _startRegion(startRegion),
         _endRegion(endRegion),
         _indicesInRegion(indicesInRegion) {
-    auto myThreadId = autopas_get_thread_num();
-    _currentRegionIndex = myThreadId;
-    if (additionalParticleVectorToIterate and myThreadId == autopas_get_num_threads() - 1) {
+    bool forceSequential = this->_behavior & IteratorBehavior::forceSequential;
+    size_t offset = forceSequential ? 0ul : autopas_get_thread_num();
+    _currentRegionIndex = offset;
+    if (additionalParticleVectorToIterate and
+        (forceSequential or autopas_get_thread_num() == autopas_get_num_threads() - 1)) {
       // we want to iterate with the last thread over the additional particle vector.
       this->_additionalParticleVectorToIterateState =
           decltype(this->_additionalParticleVectorToIterateState)::notStarted;
     }
 
     this->_vectorOfCells = cont;
-    if (_indicesInRegion.size() > static_cast<size_t>(myThreadId)) {
-      this->_iteratorAcrossCells = cont->begin() + _indicesInRegion[myThreadId];
+    if (_indicesInRegion.size() > offset) {
+      this->_iteratorAcrossCells = cont->begin() + _indicesInRegion[offset];
       this->_iteratorWithinOneCell = this->_iteratorAcrossCells->begin();
     } else if (this->_additionalParticleVectorToIterateState ==
                decltype(this->_additionalParticleVectorToIterateState)::notStarted) {
@@ -73,15 +76,6 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
       return;
     }
 
-    if (behavior != haloAndOwned and flagManager == nullptr) {
-      AutoPasLog(error,
-                 "Behavior is not haloAndOwned, but flagManager is "
-                 "nullptr!");
-      utils::ExceptionHandler::exception(
-          "Behavior is not haloAndOwned, but flagManager is "
-          "nullptr!");
-    }
-
     if (this->_additionalParticleVectorToIterateState !=
         decltype(this->_additionalParticleVectorToIterateState)::iterating) {
       if (not this->isCellTypeBehaviorCorrect()) {
@@ -90,7 +84,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
 
       // The iterator might still be invalid (because the cell is empty or the owned-state of the particle is wrong), so
       // we check it here!
-      if (ParticleIterator<Particle, ParticleCell, modifiable>::isValid()) {
+      if (ParticleIteratorType::isValid()) {
         // The iterator is valid, so there is a particle, now we need to check whether it's actually in the box!
         if (utils::notInBox(this->operator*().getR(), _startRegion, _endRegion)) {
           operator++();
@@ -108,16 +102,14 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
 
   inline RegionParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
     do {
-      ParticleIterator<Particle, ParticleCell, modifiable>::operator++();
-    } while (ParticleIterator<Particle, ParticleCell, modifiable>::isValid() &&
-             utils::notInBox(this->operator*().getR(), _startRegion, _endRegion) &&
+      ParticleIteratorType::operator++();
+    } while (ParticleIteratorType::isValid() and utils::notInBox(this->operator*().getR(), _startRegion, _endRegion) and
              this->getCurrentCellId() <= *(_indicesInRegion.end() - 1));
     return *this;
   }
 
-  bool isValid() const override {
-    return ParticleIterator<Particle, ParticleCell, modifiable>::isValid() &&
-           utils::inBox(this->operator*().getR(), _startRegion, _endRegion);
+  [[nodiscard]] bool isValid() const override {
+    return ParticleIteratorType::isValid() && utils::inBox(this->operator*().getR(), _startRegion, _endRegion);
   }
 
   inline ParticleIteratorInterfaceImpl<Particle, modifiable> *clone() const override {
@@ -131,7 +123,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
    */
   void next_non_empty_cell() override {
     // find the next non-empty cell
-    const int stride = autopas_get_num_threads();  // num threads
+    const int stride = (this->_behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
     if (_currentRegionIndex + stride >= _indicesInRegion.size()) {
       // make the iterator invalid!
       this->_iteratorAcrossCells = this->_vectorOfCells->end();
