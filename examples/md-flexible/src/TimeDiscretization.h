@@ -72,7 +72,7 @@ void calculateVelocities(AutoPasTemplate &autopas, const ParticlePropertiesLibra
   for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
     auto force = iter->getF();
-    auto oldForce = iter->getOldf();
+    auto oldForce = iter->getOldF();
     auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
     iter->addV(newV);
   }

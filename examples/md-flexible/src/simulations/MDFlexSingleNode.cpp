@@ -6,13 +6,14 @@
 
 #include "MDFlexSingleNode.h"
 
-MDFlexSingleNode::MDFlexSingleNode(int argc, char **argv) : MDFlexSimulation(argc, argv) {
+#include "../BoundaryConditions.h"
+#include "../Thermostat.h"
+#include "../TimeDiscretization.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "autopas/utils/MemoryProfiler.h"
 
-}
-
-MDFlexSingleNode::~MDFlexSingleNode() {
-
-}
+MDFlexSingleNode::MDFlexSingleNode(int dimensionCount, int argc, char **argv) : MDFlexSimulation(dimensionCount, argc, argv) {}
 
 void MDFlexSingleNode::run() {
   std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
@@ -32,7 +33,7 @@ void MDFlexSingleNode::run() {
     // only do time step related stuff when there actually is time-stepping
     if (_configuration->deltaT.value != 0) {
       // only write vtk files periodically and if a filename is given.
-      if ((not _configuration->vtkFileName.value.empty()) and _iteration % _configuration->vtkWriteFrequency.value == 0) {
+      if (not _configuration->vtkFileName.value.empty() and _iteration % _configuration->vtkWriteFrequency.value == 0) {
         this->writeVTKFile();
       }
 
@@ -117,4 +118,55 @@ void MDFlexSingleNode::run() {
 
   // Statistics about the simulation
   printStatistics();
+}
+
+void MDFlexSingleNode::initializeDomainDecomposition(int &dimensionCount){
+	std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
+	std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
+	
+	_domainDecomposition = std::make_shared<SingleDomain>(_argc, _argv, dimensionCount, boxMin, boxMax);
+
+	std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
+	std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();
+	
+	for (int i = 0; i < localBoxMin.size(); ++i){
+		_configuration->boxMin.value[i] = localBoxMin[i];
+		_configuration->boxMax.value[i] = localBoxMax[i];
+	}
+}
+
+template <class FunctorType>
+void MDFlexSingleNode::calculateForces() {
+  _timers.forceUpdateTotal.start();
+
+  // pairwise forces
+  _timers.forceUpdatePairwise.start();
+
+  FunctorType functor{_autoPasContainer->getCutoff(), *_particlePropertiesLibrary};
+  bool tuningIteration = _autoPasContainer->iteratePairwise(&functor);
+
+  _timers.forceUpdateTotal.stop();
+  auto timeIteration = _timers.forceUpdatePairwise.stop();
+
+  // count time spent for tuning
+  if (tuningIteration) {
+    _timers.forceUpdateTuning.addTime(timeIteration);
+    ++_numTuningIterations;
+  } else {
+    _timers.forceUpdateNonTuning.addTime(timeIteration);
+    // if the previous iteration was a tuning iteration an the current one is not
+    // we have reached the end of a tuning phase
+    if (_previousIterationWasTuningIteration) {
+      ++_numTuningPhasesCompleted;
+    }
+  }
+  _previousIterationWasTuningIteration = tuningIteration;
+
+  // global forces
+
+  _timers.forceUpdateTotal.start();
+  _timers.forceUpdateGlobal.start();
+  globalForces();
+  _timers.forceUpdateGlobal.stop();
+  _timers.forceUpdateTotal.stop();
 }

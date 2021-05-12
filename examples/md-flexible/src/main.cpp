@@ -4,9 +4,8 @@
  * @author F. Gratl
  */
 
-#include "simulations/MDFlexSimulation.h"
-#include "domainDecomposition/SingleDomain.h"
-#include "domainDecomposition/RegularGrid.h"
+#include "simulations/MDFlexSingleNode.h"
+#include "simulations/MDFlexMPI.h"
 
 /**
  * The main function for md-flexible.
@@ -15,7 +14,7 @@
  * @return
  */
 int main(int argc, char **argv) {
-  MDFlexSimulation<SingleDomain> simulation(3, argc, argv);
+  MDFlexMPI simulation(3, argc, argv);
   simulation.run();
 
   return EXIT_SUCCESS;

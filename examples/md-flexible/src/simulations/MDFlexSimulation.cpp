@@ -5,25 +5,18 @@
  */
 #include "MDFlexSimulation.h"
 
-#include "../BoundaryConditions.h"
 #include "../Checkpoint.h"
-#include "../domainDecomposition/RegularGrid.h"
-#include "../domainDecomposition/SingleDomain.h"
 #include "../parsing/MDFlexConfig.h"
 #include "../Thermostat.h"
-#include "../TimeDiscretization.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
-#include "autopas/utils/ArrayUtils.h"
-#include "autopas/utils/MemoryProfiler.h"
 
 #include <iostream>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-template<class T> 
-MDFlexSimulation<T>::MDFlexSimulation(int dimensionCount, int argc, char **argv) {
+MDFlexSimulation::MDFlexSimulation(int dimensionCount, int argc, char **argv) {
  	_timers.total.start(); 
 	_timers.initialization.start();
 
@@ -43,8 +36,7 @@ MDFlexSimulation<T>::MDFlexSimulation(int dimensionCount, int argc, char **argv)
 	_timers.initialization.stop();
 }
 
-template<class T> 
-MDFlexSimulation<T>::~MDFlexSimulation() {
+MDFlexSimulation::~MDFlexSimulation() {
   if (_configuration->dontCreateEndConfig.value) {
     std::ofstream configFileEnd("MDFlex_end_" + autopas::utils::Timer::getDateStamp() + ".yaml");
     if (configFileEnd.is_open()) {
@@ -60,238 +52,7 @@ MDFlexSimulation<T>::~MDFlexSimulation() {
   }
 }
 
-
-template<class T> 
-void MDFlexSimulation<T>::run() {
-  std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
-  std::cout << "Starting simulation... " << std::endl;
-
-  //this->_homogeneity = Simulation::calculateHomogeneity(autopas);
-  _timers.simulate.start();
-
-  auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
-
-  // main simulation loop
-  for (; needsMoreIterations(); ++_iteration) {
-    if (not _configuration->dontShowProgressBar.value) {
-      printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
-    }
-
-    // only do time step related stuff when there actually is time-stepping
-    if (_configuration->deltaT.value != 0) {
-      // only write vtk files periodically and if a filename is given.
-      if ((not _configuration->vtkFileName.value.empty()) and _iteration % _configuration->vtkWriteFrequency.value == 0) {
-        this->writeVTKFile();
-      }
-
-      // calculate new positions
-      _timers.positionUpdate.start();
-      calculatePositions();
-      _timers.positionUpdate.stop();
-
-      // apply boundary conditions AFTER the position update!
-      if (_configuration->periodic.value) {
-        _timers.boundaries.start();
-        BoundaryConditions::applyPeriodic(*_autoPasContainer, false);
-        _timers.boundaries.stop();
-      } else {
-        throw std::runtime_error(
-            "Simulation::simulate(): at least one boundary condition has to be set. Please enable the periodic "
-            "boundary conditions!");
-      }
-    }
-
-    // invoke the force calculation with the functor specified in the configuration
-    switch (_configuration->functorOption.value) {
-      case MDFlexConfig::FunctorOption::lj12_6: {
-        calculateForces<autopas::LJFunctor<ParticleType, _shifting, _mixing>>();
-        break;
-      }
-      case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-        calculateForces<autopas::LJFunctor<ParticleType, _shifting, _mixing, autopas::FunctorN3Modes::Both, true>>();
-        break;
-      }
-      case MDFlexConfig::FunctorOption::lj12_6_AVX: {
-        calculateForces<autopas::LJFunctorAVX<ParticleType, _shifting, _mixing>>();
-        break;
-      }
-    }
-    // only show memory usage in when the logger is set to debug
-    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
-    }
-
-    // only do time step related stuff when there actually is time-stepping
-    if (_configuration->deltaT.value != 0) {
-      _timers.velocityUpdate.start();
-      TimeDiscretization::calculateVelocities(*_autoPasContainer, *_particlePropertiesLibrary, _configuration->deltaT.value);
-      _timers.velocityUpdate.stop();
-
-      // applying Velocity scaling with Thermostat:
-      if (_configuration->useThermostat.value and (_iteration % _configuration->thermostatInterval.value) == 0) {
-        _timers.thermostat.start();
-        Thermostat::apply(*_autoPasContainer, *_particlePropertiesLibrary, _configuration->targetTemperature.value,
-                          _configuration->deltaTemp.value);
-        _timers.thermostat.stop();
-      }
-    }
-  }
-
-  // final update for a full progress bar
-  if (not _configuration->dontShowProgressBar.value) {
-    // The last update is precise, so we know the number of iterations.
-    printProgress(_iteration, _iteration, true);
-    // The progress bar does not end the line. Since this is the last progress bar, end the line here.
-    std::cout << std::endl;
-  }
-
-  // update temperature for generated config output
-  if (_configuration->useThermostat.value) {
-    _timers.thermostat.start();
-    _configuration->initTemperature.value = Thermostat::calcTemperature(*_autoPasContainer, *_particlePropertiesLibrary);
-    _timers.thermostat.stop();
-  }
-
-  // writes final state of the simulation
-  if ((not _configuration->vtkFileName.value.empty())) {
-    _timers.boundaries.start();
-    BoundaryConditions::applyPeriodic(*_autoPasContainer, true);
-    _timers.boundaries.stop();
-    this->writeVTKFile();
-  }
-
-  _timers.simulate.stop();
-  std::cout << "Simulation done!" << std::endl << std::endl;
-
-  // Statistics about the simulation
-  printStatistics();
-}
-
-template<class T> 
-void MDFlexSimulation<T>::updateParticles(const int iterationsPerSuperstep){
-	double deltaT = _configuration->deltaT.value;
-	for (int i = 0; i < iterationsPerSuperstep; ++i){
- 		for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-   		auto v = particle->getV();
-   		auto m = _particlePropertiesLibrary->getMass(particle->getTypeId());
-   		auto f = particle->getF();
-   		particle->setOldF(f);
-   		particle->setF({0., 0., 0.});
-   		v = autopas::utils::ArrayMath::mulScalar(v, deltaT);
-   		f = autopas::utils::ArrayMath::mulScalar(f, (deltaT * deltaT / (2 * m)));
-   		auto newR = autopas::utils::ArrayMath::add(v, f);
-   		particle->addR(newR);
- 		}
-	}
-}
-
-template<class T> 
-void MDFlexSimulation<T>::initializeDomainDecomposition(int &dimensionCount){
-	std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
-	std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
-	_domainDecomposition = std::make_shared<T>(_argc, _argv, dimensionCount, boxMin, boxMax);
-
-	std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
-	std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();
-	
-	for (int i = 0; i < localBoxMin.size(); ++i){
-		_configuration->boxMin.value[i] = localBoxMin[i];
-		_configuration->boxMax.value[i] = localBoxMax[i];
-	}
-}
-
-template<class T> 
-void MDFlexSimulation<T>::initializeParticlePropertiesLibrary(){
-  if (_configuration->epsilonMap.value.empty()) {
-    throw std::runtime_error("No properties found in particle properties library!");
-  }
-
-  if (_configuration->epsilonMap.value.size() != _configuration->sigmaMap.value.size() or
-      _configuration->epsilonMap.value.size() != _configuration->massMap.value.size()) {
-    throw std::runtime_error("Number of particle properties differ!");
-  }
-
-  _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(_configuration->cutoff.value);
-
-  for (auto [type, epsilon] : _configuration->epsilonMap.value) {
-    _particlePropertiesLibrary->addType(type, epsilon, _configuration->sigmaMap.value.at(type),
-                                        _configuration->massMap.value.at(type));
-  }
-  _particlePropertiesLibrary->calculateMixingCoefficients();
-}
-
-template<class T> 
-void MDFlexSimulation<T>::initializeAutoPasContainer() {
-  if (_configuration->logFileName.value.empty()) {
-  	_outputStream = &std::cout;
-  } else {
-  	_logFile = std::make_shared<std::ofstream>();
-		_logFile->open(_configuration->logFileName.value);
-  	_outputStream = &(*_logFile);
-  }
-
-  _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
-  _autoPasContainer->setAllowedCellSizeFactors(*_configuration->cellSizeFactors.value);
-  _autoPasContainer->setAllowedContainers(_configuration->containerOptions.value);
-  _autoPasContainer->setAllowedDataLayouts(_configuration->dataLayoutOptions.value);
-  _autoPasContainer->setAllowedNewton3Options(_configuration->newton3Options.value);
-  _autoPasContainer->setAllowedTraversals(_configuration->traversalOptions.value);
-  _autoPasContainer->setAllowedLoadEstimators(_configuration->loadEstimatorOptions.value);
-  _autoPasContainer->setBoxMin(_configuration->boxMin.value);
-  _autoPasContainer->setBoxMax(_configuration->boxMax.value);
-  _autoPasContainer->setCutoff(_configuration->cutoff.value);
-  _autoPasContainer->setRelativeOptimumRange(_configuration->relativeOptimumRange.value);
-  _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration->maxTuningPhasesWithoutTest.value);
-  _autoPasContainer->setRelativeBlacklistRange(_configuration->relativeBlacklistRange.value);
-  _autoPasContainer->setEvidenceFirstPrediction(_configuration->evidenceFirstPrediction.value);
-  _autoPasContainer->setExtrapolationMethodOption(_configuration->extrapolationMethodOption.value);
-  _autoPasContainer->setNumSamples(_configuration->tuningSamples.value);
-  _autoPasContainer->setMaxEvidence(_configuration->tuningMaxEvidence.value);
-  _autoPasContainer->setSelectorStrategy(_configuration->selectorStrategy.value);
-  _autoPasContainer->setTuningInterval(_configuration->tuningInterval.value);
-  _autoPasContainer->setTuningStrategyOption(_configuration->tuningStrategyOption.value);
-  _autoPasContainer->setMPIStrategy(_configuration->mpiStrategyOption.value);
-  _autoPasContainer->setVerletClusterSize(_configuration->verletClusterSize.value);
-  _autoPasContainer->setVerletRebuildFrequency(_configuration->verletRebuildFrequency.value);
-  _autoPasContainer->setVerletSkin(_configuration->verletSkinRadius.value);
-  _autoPasContainer->setAcquisitionFunction(_configuration->acquisitionFunctionOption.value);
-  _autoPasContainer->init();
-}
-
-template<class T> 
-void MDFlexSimulation<T>::initializeObjects(){
-  if (not _configuration->checkpointfile.value.empty()) {
-    Checkpoint::loadParticles(*_autoPasContainer, _configuration->checkpointfile.value);
-  }
-
-  for (const auto &object : _configuration->cubeGridObjects) {
-    object.generate(*_autoPasContainer);
-  }
-  for (const auto &object : _configuration->cubeGaussObjects) {
-    object.generate(*_autoPasContainer);
-  }
-  for (const auto &object : _configuration->cubeUniformObjects) {
-    object.generate(*_autoPasContainer);
-  }
-  for (const auto &object : _configuration->sphereObjects) {
-    object.generate(*_autoPasContainer);
-  }
-  for (const auto &object : _configuration->cubeClosestPackedObjects) {
-    object.generate(*_autoPasContainer);
-  }
-
-  if (_configuration->useThermostat.value and _configuration->deltaT.value != 0) {
-    if (_configuration->addBrownianMotion.value) {
-      Thermostat::addBrownianMotion(*_autoPasContainer, *_particlePropertiesLibrary,
-				_configuration->initTemperature.value);
-    }
-    Thermostat::apply(*_autoPasContainer, *_particlePropertiesLibrary, _configuration->initTemperature.value,
-                      std::numeric_limits<double>::max());
-  }
-}
-
-template<class T> 
-std::tuple<size_t, bool> MDFlexSimulation<T>::estimateNumberOfIterations() const {
+std::tuple<size_t, bool> MDFlexSimulation::estimateNumberOfIterations() const {
   if (_configuration->tuningPhases.value > 0) {
     // @TODO: this can be improved by considering the tuning strategy
     // This is just a randomly guessed number but seems to fit roughly for default settings.
@@ -308,50 +69,13 @@ std::tuple<size_t, bool> MDFlexSimulation<T>::estimateNumberOfIterations() const
   }
 }
 
-template<class T> 
-bool MDFlexSimulation<T>::needsMoreIterations() {
+bool MDFlexSimulation::needsMoreIterations() {
   return
 		_iteration < _configuration->iterations.value
 		or _numTuningPhasesCompleted < _configuration->tuningPhases.value;
 }
 
-template<class T> 
-template<class FunctorType>
-void MDFlexSimulation<T>::calculateForces() {
-  _timers.forceUpdateTotal.start();
-
-  // pairwise forces
-  _timers.forceUpdatePairwise.start();
-
-  FunctorType functor{_autoPasContainer->getCutoff(), *_particlePropertiesLibrary};
-  bool tuningIteration = _autoPasContainer->iteratePairwise(&functor);
-
-  _timers.forceUpdateTotal.stop();
-  auto timeIteration = _timers.forceUpdatePairwise.stop();
-
-  // count time spent for tuning
-  if (tuningIteration) {
-    _timers.forceUpdateTuning.addTime(timeIteration);
-    ++_numTuningIterations;
-  } else {
-    _timers.forceUpdateNonTuning.addTime(timeIteration);
-    // if the previous iteration was a tuning iteration an the current one is not
-    // we have reached the end of a tuning phase
-    if (_previousIterationWasTuningIteration) {
-      ++_numTuningPhasesCompleted;
-    }
-  }
-  _previousIterationWasTuningIteration = tuningIteration;
-
-  _timers.forceUpdateTotal.start();
-  _timers.forceUpdateGlobal.start();
-  globalForces();
-  _timers.forceUpdateGlobal.stop();
-  _timers.forceUpdateTotal.stop();
-}
-
-template <class T>
-void MDFlexSimulation<T>::globalForces() {
+void MDFlexSimulation::globalForces() {
   // skip application of zero force
   if (_configuration->globalForceIsZero()) {
     return;
@@ -365,8 +89,7 @@ void MDFlexSimulation<T>::globalForces() {
   }
 }
 
-template <class T>
-void MDFlexSimulation<T>::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
+void MDFlexSimulation::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
   // percentage of iterations complete
   double fractionDone = static_cast<double>(iterationProgress) / maxIterations;
 
@@ -413,8 +136,7 @@ void MDFlexSimulation<T>::printProgress(size_t iterationProgress, size_t maxIter
   std::cout << progressbar.str() << info.str() << std::flush;
 }
 
-template<class T>
-void MDFlexSimulation<T>::printStatistics() {
+void MDFlexSimulation::printStatistics() {
   using namespace std;
   size_t flopsPerKernelCall;
 
@@ -493,8 +215,7 @@ void MDFlexSimulation<T>::printStatistics() {
   }
 }
 
-template<class T>
-void MDFlexSimulation<T>::writeVTKFile() {
+void MDFlexSimulation::writeVTKFile() {
   _timers.vtk.start();
 
   std::string fileBaseName = _configuration->vtkFileName.value;
@@ -564,8 +285,7 @@ void MDFlexSimulation<T>::writeVTKFile() {
   _timers.vtk.stop();
 }
 
-template<class T>
-std::string MDFlexSimulation<T>::getMPISuffix() {
+std::string MDFlexSimulation::getMPISuffix() {
   std::string suffix;
 #ifdef AUTOPAS_INTERNODE_TUNING
   int rank;
@@ -577,8 +297,7 @@ std::string MDFlexSimulation<T>::getMPISuffix() {
   return suffix;
 }
 
-template<class T>
-std::string MDFlexSimulation<T>::timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime) {
+std::string MDFlexSimulation::timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime) {
   // only print timers that were actually used
   if (timeNS == 0) {
     return "";
@@ -597,8 +316,7 @@ std::string MDFlexSimulation<T>::timerToString(const std::string &name, long tim
   return ss.str();
 }
 
-template<class T>
-void MDFlexSimulation<T>::calculatePositions() {
+void MDFlexSimulation::calculatePositions() {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::mulScalar;
 
@@ -620,5 +338,91 @@ void MDFlexSimulation<T>::calculatePositions() {
   }
 }
 
-template class MDFlexSimulation<SingleDomain>;
-//template class MDFlexSimulation<RegularGrid>;
+void MDFlexSimulation::initializeDomainDecomposition(int &dimensionCount){ }
+
+void MDFlexSimulation::initializeParticlePropertiesLibrary(){
+  if (_configuration->epsilonMap.value.empty()) {
+    throw std::runtime_error("No properties found in particle properties library!");
+  }
+
+  if (_configuration->epsilonMap.value.size() != _configuration->sigmaMap.value.size() or
+      _configuration->epsilonMap.value.size() != _configuration->massMap.value.size()) {
+    throw std::runtime_error("Number of particle properties differ!");
+  }
+
+  _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(_configuration->cutoff.value);
+
+  for (auto [type, epsilon] : _configuration->epsilonMap.value) {
+    _particlePropertiesLibrary->addType(type, epsilon, _configuration->sigmaMap.value.at(type),
+                                        _configuration->massMap.value.at(type));
+  }
+  _particlePropertiesLibrary->calculateMixingCoefficients();
+}
+
+void MDFlexSimulation::initializeAutoPasContainer() {
+  if (_configuration->logFileName.value.empty()) {
+  	_outputStream = &std::cout;
+  } else {
+  	_logFile = std::make_shared<std::ofstream>();
+		_logFile->open(_configuration->logFileName.value);
+  	_outputStream = &(*_logFile);
+  }
+
+  _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
+  _autoPasContainer->setAllowedCellSizeFactors(*_configuration->cellSizeFactors.value);
+  _autoPasContainer->setAllowedContainers(_configuration->containerOptions.value);
+  _autoPasContainer->setAllowedDataLayouts(_configuration->dataLayoutOptions.value);
+  _autoPasContainer->setAllowedNewton3Options(_configuration->newton3Options.value);
+  _autoPasContainer->setAllowedTraversals(_configuration->traversalOptions.value);
+  _autoPasContainer->setAllowedLoadEstimators(_configuration->loadEstimatorOptions.value);
+  _autoPasContainer->setBoxMin(_configuration->boxMin.value);
+  _autoPasContainer->setBoxMax(_configuration->boxMax.value);
+  _autoPasContainer->setCutoff(_configuration->cutoff.value);
+  _autoPasContainer->setRelativeOptimumRange(_configuration->relativeOptimumRange.value);
+  _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration->maxTuningPhasesWithoutTest.value);
+  _autoPasContainer->setRelativeBlacklistRange(_configuration->relativeBlacklistRange.value);
+  _autoPasContainer->setEvidenceFirstPrediction(_configuration->evidenceFirstPrediction.value);
+  _autoPasContainer->setExtrapolationMethodOption(_configuration->extrapolationMethodOption.value);
+  _autoPasContainer->setNumSamples(_configuration->tuningSamples.value);
+  _autoPasContainer->setMaxEvidence(_configuration->tuningMaxEvidence.value);
+  _autoPasContainer->setSelectorStrategy(_configuration->selectorStrategy.value);
+  _autoPasContainer->setTuningInterval(_configuration->tuningInterval.value);
+  _autoPasContainer->setTuningStrategyOption(_configuration->tuningStrategyOption.value);
+  _autoPasContainer->setMPIStrategy(_configuration->mpiStrategyOption.value);
+  _autoPasContainer->setVerletClusterSize(_configuration->verletClusterSize.value);
+  _autoPasContainer->setVerletRebuildFrequency(_configuration->verletRebuildFrequency.value);
+  _autoPasContainer->setVerletSkin(_configuration->verletSkinRadius.value);
+  _autoPasContainer->setAcquisitionFunction(_configuration->acquisitionFunctionOption.value);
+  _autoPasContainer->init();
+}
+
+void MDFlexSimulation::initializeObjects(){
+  if (not _configuration->checkpointfile.value.empty()) {
+    Checkpoint::loadParticles(*_autoPasContainer, _configuration->checkpointfile.value);
+  }
+
+  for (const auto &object : _configuration->cubeGridObjects) {
+    object.generate(*_autoPasContainer);
+  }
+  for (const auto &object : _configuration->cubeGaussObjects) {
+    object.generate(*_autoPasContainer);
+  }
+  for (const auto &object : _configuration->cubeUniformObjects) {
+    object.generate(*_autoPasContainer);
+  }
+  for (const auto &object : _configuration->sphereObjects) {
+    object.generate(*_autoPasContainer);
+  }
+  for (const auto &object : _configuration->cubeClosestPackedObjects) {
+    object.generate(*_autoPasContainer);
+  }
+
+  if (_configuration->useThermostat.value and _configuration->deltaT.value != 0) {
+    if (_configuration->addBrownianMotion.value) {
+      Thermostat::addBrownianMotion(*_autoPasContainer, *_particlePropertiesLibrary,
+				_configuration->initTemperature.value);
+    }
+    Thermostat::apply(*_autoPasContainer, *_particlePropertiesLibrary, _configuration->initTemperature.value,
+                      std::numeric_limits<double>::max());
+  }
+}

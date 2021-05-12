@@ -7,21 +7,25 @@
 
 #include "MDFlexSimulation.h"
 
+#include "../domainDecomposition/RegularGrid.h"
 
 #include <mpi.h>
 
-class MDFlexMPI : MDFlexSimulation {
+class MDFlexMPI : protected MDFlexSimulation {
 	public:
-		MDFlexMPI(int argc, char** argv);
-		~MDFlexMPI();
+		MDFlexMPI(int dimensionCount, int argc, char **argv);
+		~MDFlexMPI() = default;
 
 		void run() override;
+		void initializeDomainDecomposition(int &dimensionCount) override;
 
 	private:
-		std::unique_ptr<RegularGridDecomposition> _domainDecomposition;
+		std::shared_ptr<RegularGrid> _domainDecomposition;
 
 		void updateParticles(const int iterationsPerSupErstep);
 		void executeSuperstep(const int iterationsPerSuperstep);
-		void sendEmigrantsToNeighbours(std::vector<ParticleType> &emigrants);
+
+		void sendParticles(std::vector<ParticleType> &particles, int &receiver);
+		void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
 };
 

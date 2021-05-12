@@ -19,10 +19,16 @@
  * Handles minimal initialization requriements for MD-Flexible simulations.
  * Derivce this class to create custom simulations.
  */
-template<class T> 
 class MDFlexSimulation {
  public:
+  /**
+   * Runs the simulation
+   */
+  virtual void run() = 0;
 
+	virtual void initializeDomainDecomposition(int &dimensionCount);
+
+ protected:
   /**
    * Initializes the simulation on a domain according to the arguments passed to the main function.
 	 * @param dimensionCount The number of dimensions in the simulation domain.
@@ -36,14 +42,6 @@ class MDFlexSimulation {
    */
   ~MDFlexSimulation();
 
-  /**
-   * Runs the simulation
-   */
-  void run();
-
-	void updateParticles(const int iterationsPerSuperstep);
-
- private:
   /**
    * Stores the argument count passed to the constructor for later reuse.
    */
@@ -59,8 +57,6 @@ class MDFlexSimulation {
    * The configuration is defined by the .yaml file passed to the application  with the '--yaml-file' argument.
    */
   std::shared_ptr<MDFlexConfig> _configuration;
-
-	std::shared_ptr<T> _domainDecomposition;
 
 	/**
 	* The the nodes' autopas container used for simulation.
@@ -136,10 +132,6 @@ class MDFlexSimulation {
 	bool needsMoreIterations();
 	std::tuple<size_t, bool> estimateNumberOfIterations() const;
 	void globalForces();
-	void initializeAutoPasContainer();
-	void initializeDomainDecomposition(int &dimensionCount);
-	void initializeObjects();
-	void initializeParticlePropertiesLibrary();
 	void printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise);
 	void printStatistics();
 	void writeVTKFile();
@@ -147,7 +139,8 @@ class MDFlexSimulation {
 	std::string timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime);
 	void calculatePositions();
 
-	template <class FunctorType>
-	void calculateForces();
-
+	private:
+		void initializeAutoPasContainer();
+		void initializeObjects();
+		void initializeParticlePropertiesLibrary();
 };

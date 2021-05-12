@@ -6,31 +6,15 @@
 
 #include "SingleDomain.h"
 
-#ifdef AUTOPAS_INTERNODE_TUNING
-#include "mpi.h"
-#endif
-
 SingleDomain::SingleDomain(int argc, char** argv, const int &dimensionCount,
 	const std::vector<double> &globalBoxMin, const std::vector<double> &globalBoxMax) {
-	#ifdef AUTOPAS_INTERNODE_TUNING
-	MPI_Init(&argc, &argv); 
-	#endif
-
 	_dimensionCount = dimensionCount;
 	initializeGlobalBox(globalBoxMin, globalBoxMax);
 }
 
-SingleDomain::~SingleDomain(){
-#ifdef AUTOPAS_INTERNODE_TUNING
-	MPI_Finalize(); 
-#endif
-}
+SingleDomain::~SingleDomain(){ }
 
 void SingleDomain::update(){
-	// Do nothing
-}
-
-void SingleDomain::exchangeHaloData() {
 	// Do nothing
 }
 

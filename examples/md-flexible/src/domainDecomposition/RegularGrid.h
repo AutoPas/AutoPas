@@ -7,23 +7,33 @@
 
 #include "DomainDecomposition.h"
 
-#include "mpi.h"
+#include "../TypeDefinitions.h"
+#include "autopas/AutoPas.h"
 
-class RegularGrid : protected DomainDecomposition {
+#include "mpi.h"
+#include <list>
+#include <memory>
+
+class RegularGrid final : protected DomainDecomposition {
 	public:
 		RegularGrid(int argc, char** argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
 			const std::vector<double> &globalBoxMax);
 		~RegularGrid();
 	
+		using SharedAutoPasContainer = std::shared_ptr<autopas::AutoPas<ParticleType>>;
+
 	 	void update() override;
-		void exchangeHaloData() override;
 		const int getDimensionCount() override { return _dimensionCount; }
 		std::vector<double> getLocalBoxMin() { return _localBoxMin; }	
 		std::vector<double> getLocalBoxMax() { return _localBoxMax; }	
 
-		const MPI_Comm getCommunicator() { return _communicator; }
-
 		int convertIdToIndex(const std::vector<int> &domainIndex);
+		void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);
+		void receiveDataFromNeighbour(const int &neighbour, std::vector<char> &dataBuffer);
+		void waitForSendRequests();
+		void synchronizeDomains();
+		void exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer);
+		void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
 
 	private:
 		// Global data
@@ -40,6 +50,8 @@ class RegularGrid : protected DomainDecomposition {
 		std::vector<int> _neighbourDomainIndices;
   	std::vector<double> _localBoxMin;
   	std::vector<double> _localBoxMax;
+		std::list<MPI_Request> _sendRequests;
+		std::list<std::vector<char>> _sendBuffers;
 
 		void initializeDecomposition();
 		void initializeMPICommunicator();
@@ -49,4 +61,6 @@ class RegularGrid : protected DomainDecomposition {
 		void initializeNeighbourIds();
 
 		void updateLocalBox();
+		void sendParticles(std::vector<ParticleType> &particles, int &receiver);
+		void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
 };
