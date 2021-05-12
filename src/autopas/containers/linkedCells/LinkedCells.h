@@ -232,8 +232,9 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
         new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBlock, behavior));
   }
 
-  void forEach(const std::function<void(Particle)> forEachLambda, IteratorBehavior behavior) {
-    for(auto cell : this->_cells) {
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
+    for (auto cell : this->_cells) {
       cell.forEach(forEachLambda, behavior);
     }
   }
@@ -292,6 +293,11 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior));
+  }
+
+  void forEachInRegion(const std::function<void(Particle)> forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behaviour) {
+    utils::ExceptionHandler::exception("not yet implemented");
   }
 
   /**

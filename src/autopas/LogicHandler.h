@@ -9,9 +9,9 @@
 
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/selectors/AutoTuner.h"
+#include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
-#include "autopas/utils/StaticContainerSelector.h"
 
 namespace autopas {
 
@@ -240,20 +240,14 @@ class LogicHandler {
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-
-    auto execOnContainer = [&] (auto container) {
-      container->forEach(forEachLambda, behavior);
-    };
+    auto execOnContainer = [&](auto container) { container->forEach(forEachLambda, behavior); };
 
     withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
   }
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
-
-    auto execOnContainer = [&] (auto container) {
-      container->forEach(forEachLambda, behavior);
-    };
+    auto execOnContainer = [&](auto container) { container->forEach(forEachLambda, behavior); };
 
     withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
   }
@@ -276,6 +270,26 @@ class LogicHandler {
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return std::as_const(_autoTuner).getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
+  }
+
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    auto execOnContainer = [&](auto container) {
+      container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    };
+
+    withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
+  }
+
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+    auto execOnContainer = [&](auto container) {
+      container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    };
+
+    withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
   }
 
   /**

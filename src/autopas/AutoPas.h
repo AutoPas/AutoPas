@@ -235,13 +235,13 @@ class AutoPas {
   }
 
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behaviour = IteratorBehavior::haloAndOwned) {
-    _logicHandler->forEach(forEachLambda, behaviour);
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    _logicHandler->forEach(forEachLambda, behavior);
   }
 
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behaviour = IteratorBehavior::haloAndOwned) const {
-    _logicHandler->forEach(forEachLambda, behaviour);
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+    _logicHandler->forEach(forEachLambda, behavior);
   }
 
   /**
@@ -279,6 +279,18 @@ class AutoPas {
   const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                                      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
     return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
+  }
+
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+    _logicHandler->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+  }
+
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+    _logicHandler->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
   /**

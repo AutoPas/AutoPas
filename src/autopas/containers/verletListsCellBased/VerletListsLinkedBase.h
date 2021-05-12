@@ -141,7 +141,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     return _linkedCells.begin(behavior);
   }
 
-  void forEach(const std::function<void(Particle)> forEachLambda, IteratorBehavior behavior) {
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
     return _linkedCells.forEach(forEachLambda, behavior);
   }
 
@@ -161,6 +162,11 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+  }
+
+  void forEachInRegion(const std::function<void(Particle)> forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behaviour) {
+    utils::ExceptionHandler::exception("not yet implemented");
   }
 
   /**

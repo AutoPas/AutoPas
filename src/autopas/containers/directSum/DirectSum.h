@@ -149,37 +149,35 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
                                                                           behavior));
   }
 
-  // template <typename Lambda> TODO
-  void forEach(const std::function<void(Particle)> forEachLambda, IteratorBehavior behaviour) {
-
-    auto forEach = [&] (ParticleCell cell) {
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behaviour) {
+    auto forEach = [&](ParticleCell cell) {
       for (Particle p : cell._particles) {
         forEachLambda(p);
       }
     };
 
-    switch (behaviour)
-    {
-    case IteratorBehavior::haloAndOwned:
-      forEach(this->_cells.at(0));
-      forEach(this->_cells.at(1));
-      break;
+    switch (behaviour) {
+      case IteratorBehavior::haloAndOwned:
+        forEach(this->_cells.at(0));
+        forEach(this->_cells.at(1));
+        break;
 
-    case IteratorBehavior::haloOnly:
-      forEach(this->_cells.at(1));
-      break;
+      case IteratorBehavior::haloOnly:
+        forEach(this->_cells.at(1));
+        break;
 
-    case IteratorBehavior::haloOwnedAndDummy:
-      forEach(this->_cells.at(0));
-      forEach(this->_cells.at(1));
-      break;
+      case IteratorBehavior::haloOwnedAndDummy:
+        forEach(this->_cells.at(0));
+        forEach(this->_cells.at(1));
+        break;
 
-    case IteratorBehavior::ownedOnly:
-      forEach(this->_cells.at(0));
-      break;
+      case IteratorBehavior::ownedOnly:
+        forEach(this->_cells.at(0));
+        break;
 
-    default:
-      break;
+      default:
+        break;
     }
   }
 
@@ -233,6 +231,38 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
+  }
+
+  void forEachInRegion(const std::function<void(Particle)> forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behaviour) {
+    auto forEach = [&](ParticleCell cell) {
+      for (Particle p : cell._particles) {
+        forEachLambda(p);
+      }
+    };
+
+    switch (behaviour) {
+      case IteratorBehavior::haloAndOwned:
+        forEach(this->_cells.at(0));
+        forEach(this->_cells.at(1));
+        break;
+
+      case IteratorBehavior::haloOnly:
+        forEach(this->_cells.at(1));
+        break;
+
+      case IteratorBehavior::haloOwnedAndDummy:
+        forEach(this->_cells.at(0));
+        forEach(this->_cells.at(1));
+        break;
+
+      case IteratorBehavior::ownedOnly:
+        forEach(this->_cells.at(0));
+        break;
+
+      default:
+        break;
+    }
   }
 
  private:

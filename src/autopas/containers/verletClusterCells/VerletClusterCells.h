@@ -251,7 +251,8 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
             &this->_cells, _dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior));
   }
 
-  void forEach(const std::function<void(Particle)> forEachLambda, IteratorBehavior behaviour) {
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behaviour) {
     utils::ExceptionHandler::exception("not yet implemented");
   }
 
@@ -345,6 +346,11 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
               &this->_cells, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
               &internal::UnknowingCellBorderAndFlagManager::get(), behavior));
     }
+  }
+
+  void forEachInRegion(const std::function<void(Particle)> forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behaviour) {
+    utils::ExceptionHandler::exception("not yet implemented");
   }
 
   /**
