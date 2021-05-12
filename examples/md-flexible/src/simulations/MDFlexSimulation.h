@@ -26,7 +26,7 @@ class MDFlexSimulation {
    */
   virtual void run() = 0;
 
-	virtual void initializeDomainDecomposition(int &dimensionCount);
+	virtual void initializeDomainDecomposition(int &dimensionCount) = 0;
 
  protected:
   /**
@@ -35,7 +35,7 @@ class MDFlexSimulation {
    * @param argc The number of arguments passed in argv.
    * @param argv The arguments passed to the program.
    */
-  MDFlexSimulation(int dimensionCount, int argc, char **argv);
+  MDFlexSimulation() = default;
 
   /**
    * Destructor.
@@ -129,6 +129,8 @@ class MDFlexSimulation {
 		autopas::utils::Timer boundaries;
   } _timers;
 
+	
+	void initialize(int dimensionCount, int argc, char **argv);
 	bool needsMoreIterations();
 	std::tuple<size_t, bool> estimateNumberOfIterations() const;
 	void globalForces();
@@ -140,7 +142,8 @@ class MDFlexSimulation {
 	void calculatePositions();
 
 	private:
-		void initializeAutoPasContainer();
-		void initializeObjects();
 		void initializeParticlePropertiesLibrary();
+		void initializeAutoPasContainer();
+		void loadParticles():
+		void initializeObjects();
 };

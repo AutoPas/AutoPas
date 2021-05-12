@@ -5,6 +5,8 @@
  */
 #include "RegularGrid.h"
 
+#include "autopas/utils/ArrayUtils.h"
+
 #include <algorithm>
 #include <functional>
 #include <list>
@@ -217,11 +219,15 @@ void RegularGrid::initializeGlobalBox(const std::vector<double> &globalBoxMin,
 }
 
 void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
+	std::cout << "Start exchanging Halo Particles" << std::endl;
 	// @todo: create configuration parameter for halo width
 	double haloWidth;
-
+	
+	std::cout << "Patrick 0" << std::endl;
 	int dimensionCount = _localBoxMin.size();
+	std::cout << "Patrick 1" << std::endl;
 	int neighbourCount = dimensionCount * 2;
+	std::cout << "Patrick 2" << std::endl;
 
 	std::vector<ParticleType> particlesForLeftNeighbour;
 	std::vector<ParticleType> particlesForRightNeighbour;
@@ -237,7 +243,7 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
 	int leftNeighbour, rightNeighbour;
 
 	int nextDimensionIndex;
-
+	std::cout << "Patrick 3" << std::endl;
 	for(int i = 0; i < dimensionCount; ++i){
 		leftNeighbour = (i * 2) % neighbourCount;
 		rightNeighbour = (i * 2 + 1) % neighbourCount;
@@ -249,6 +255,7 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
 		nextDimensionIndex = (i + 1) % dimensionCount;
 		// @todo: remove as soon es the configuration parameter for the halo width has been defined
 		haloWidth = (_localBoxMax[nextDimensionIndex] - _localBoxMin[nextDimensionIndex]) / 20.0;
+
 		for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
 			particlePosition = particle->getR()[i];
 			if (particlePosition < leftNeighbourHaloEnd){
@@ -298,6 +305,7 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
 		particlesForLeftNeighbour.clear();
 		particlesForRightNeighbour.clear();
 	}
+	std::cout << "Start exchanging Halo Particles" << std::endl;
 
 	for (auto &particle : haloParticles) {
 		autoPasContainer->addOrUpdateHaloParticle(particle);

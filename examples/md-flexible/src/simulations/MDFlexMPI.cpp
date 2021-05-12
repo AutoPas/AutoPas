@@ -11,7 +11,9 @@
 #include <algorithm>
 #include <iostream>
 
-MDFlexMPI::MDFlexMPI(int dimensionCount, int argc, char **argv) : MDFlexSimulation(dimensionCount, argc, argv) {}
+MDFlexMPI::MDFlexMPI(int dimensionCount, int argc, char **argv) {
+	MDFlexSimulation::initialize(dimensionCount, argc, argv);
+}
 
 void MDFlexMPI::run(){
 	// @todo: make variable part of MDFlexConfig
@@ -26,7 +28,7 @@ void MDFlexMPI::run(){
 void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep){
 	_domainDecomposition->exchangeHaloParticles(_autoPasContainer);
 
-	updateParticles(iterationsPerSuperstep);
+	//updateParticles(iterationsPerSuperstep);
 
 	// todo: Not sure if this synchronization is required. Check performance with and without it.
 	_domainDecomposition->synchronizeDomains();
@@ -53,6 +55,7 @@ void MDFlexMPI::updateParticles(const int iterationsPerSuperstep){
 }
 
 void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount){
+	std::cout << "InitializeDomainDecomposition" << std::endl;
 	std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
 	std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
 	
@@ -60,10 +63,12 @@ void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount){
 
 	std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
 	std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();
-	
 	for (int i = 0; i < localBoxMin.size(); ++i){
 		_configuration->boxMin.value[i] = localBoxMin[i];
 		_configuration->boxMax.value[i] = localBoxMax[i];
 	}
+	std::cout << "Initialized Local Box" << std::endl;
+	std::cout << autopas::utils::ArrayUtils::to_string(localBoxMin) << std::endl;
+	std::cout << autopas::utils::ArrayUtils::to_string(localBoxMax) << std::endl;
 }
 

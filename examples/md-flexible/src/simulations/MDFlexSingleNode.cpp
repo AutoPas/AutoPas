@@ -13,7 +13,9 @@
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/utils/MemoryProfiler.h"
 
-MDFlexSingleNode::MDFlexSingleNode(int dimensionCount, int argc, char **argv) : MDFlexSimulation(dimensionCount, argc, argv) {}
+MDFlexSingleNode::MDFlexSingleNode(int dimensionCount, int argc, char **argv){
+	MDFlexSimulation::initialize(dimensionCount, argc, argv);
+}
 
 void MDFlexSingleNode::run() {
   std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;

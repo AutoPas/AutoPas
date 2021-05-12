@@ -16,26 +16,6 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-MDFlexSimulation::MDFlexSimulation(int dimensionCount, int argc, char **argv) {
- 	_timers.total.start(); 
-	_timers.initialization.start();
-
-	_argc = argc;
-	_argv = argv;
-
-  _configuration = std::make_shared<MDFlexConfig>(argc, argv);
-
-	initializeDomainDecomposition(dimensionCount);
-
-	initializeParticlePropertiesLibrary();
-
-	initializeAutoPasContainer();
-
-	initializeObjects();
-
-	_timers.initialization.stop();
-}
-
 MDFlexSimulation::~MDFlexSimulation() {
   if (_configuration->dontCreateEndConfig.value) {
     std::ofstream configFileEnd("MDFlex_end_" + autopas::utils::Timer::getDateStamp() + ".yaml");
@@ -50,6 +30,28 @@ MDFlexSimulation::~MDFlexSimulation() {
       configFileEnd.close();
     }
   }
+}
+
+void MDFlexSimulation::initialize(int dimensionCount, int argc, char **argv) {
+ 	_timers.total.start(); 
+	_timers.initialization.start();
+
+	_argc = argc;
+	_argv = argv;
+
+  _configuration = std::make_shared<MDFlexConfig>(argc, argv);
+
+	initializeDomainDecomposition(dimensionCount);
+
+	initializeParticlePropertiesLibrary();
+
+	initializeAutoPasContainer();
+
+	initializeParticles();
+
+	initializeObjects();
+
+	_timers.initialization.stop();
 }
 
 std::tuple<size_t, bool> MDFlexSimulation::estimateNumberOfIterations() const {
@@ -338,8 +340,6 @@ void MDFlexSimulation::calculatePositions() {
   }
 }
 
-void MDFlexSimulation::initializeDomainDecomposition(int &dimensionCount){ }
-
 void MDFlexSimulation::initializeParticlePropertiesLibrary(){
   if (_configuration->epsilonMap.value.empty()) {
     throw std::runtime_error("No properties found in particle properties library!");
@@ -394,6 +394,25 @@ void MDFlexSimulation::initializeAutoPasContainer() {
   _autoPasContainer->setVerletSkin(_configuration->verletSkinRadius.value);
   _autoPasContainer->setAcquisitionFunction(_configuration->acquisitionFunctionOption.value);
   _autoPasContainer->init();
+}
+
+void MDFlexSimulation::initializeParticles(){
+
+	std::vector<double> positions;
+	std::vector<double> velocities;
+	std::vector<double> forces;
+	std::vector<size_t> typeIds;
+
+  // creating Particles from checkpoint:
+  for (auto i = 0ul; i < numParticles; ++i) {
+    typename AutoPasTemplate::Particle_t p;
+    p.setR(positions[i]);
+    p.setV(velocities[i]);
+    p.setF(forces[i]);
+    p.setTypeId(typeID[i]);
+    p.setID(i);
+    autopas.addParticle(p);
+  }
 }
 
 void MDFlexSimulation::initializeObjects(){
