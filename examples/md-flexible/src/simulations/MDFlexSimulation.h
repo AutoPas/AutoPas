@@ -144,6 +144,5 @@ class MDFlexSimulation {
 	private:
 		void initializeParticlePropertiesLibrary();
 		void initializeAutoPasContainer();
-		void loadParticles():
 		void initializeObjects();
 };

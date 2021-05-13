@@ -5,6 +5,7 @@
  */
 #include "RegularGrid.h"
 
+#include "../ParticleSerializationTools.h"
 #include "autopas/utils/ArrayUtils.h"
 
 #include <algorithm>
@@ -14,26 +15,6 @@
 #include <numeric>
 
 namespace {
-	struct Attributes {
-		// ParticleBase attributes
-		double positionX; 		
-		double positionY;
-		double positionZ;
-		double velocityX; 		
-		double velocityY;
-		double velocityZ;
-		double forceX;
-		double forceY;
-		double forceZ;
- 		unsigned long id; 		
-
-		// MoleculeLJ attributes
-  	size_t typeId;
-		double oldForceX;
-		double oldForceY;
-		double oldForceZ;
-	};
-
 	void calculatePrimeFactors(unsigned int number, std::list<unsigned int>& oPrimeFactors){
 		while (number%2 == 0)
 		{
@@ -49,40 +30,6 @@ namespace {
 				number = number / i;
 			}
 		}
-	}
-
-	void transferParticleAttributes(ParticleType &particle, Attributes &attributes){
-		attributes.positionX = particle.getR()[0];
-		attributes.positionY = particle.getR()[1];
-		attributes.positionZ = particle.getR()[2];
-
-		attributes.velocityX = particle.getV()[0];
-		attributes.velocityY = particle.getV()[1];
-		attributes.velocityZ = particle.getV()[2];
-
-		attributes.forceX = particle.getF()[0];
-		attributes.forceY = particle.getF()[1];
-		attributes.forceZ = particle.getF()[2];
-
-		attributes.id = particle.getID();
-
-		attributes.typeId = particle.getTypeId();
-		attributes.oldForceX = particle.getOldF()[0];
-		attributes.oldForceY = particle.getOldF()[1];
-		attributes.oldForceZ = particle.getOldF()[2];
-	}
-
-	void applyAttributestoParticle(Attributes &attributes, ParticleType &particle){
-		particle.setR({attributes.positionX, attributes.positionY, attributes.positionZ});
-		particle.setV({attributes.velocityX, attributes.velocityY, attributes.velocityZ});
-		particle.setF({attributes.forceX, attributes.forceY, attributes.forceZ});
-		particle.setOldF({attributes.oldForceX, attributes.oldForceY, attributes.oldForceZ});
-		particle.setID(attributes.id);
-		particle.setTypeId(attributes.typeId);
-	}
-
-	const char* serializeAttributes(ParticleType &particle, Attributes &attributes){
- 		return reinterpret_cast<const char*>(&(particle.getR()[0])); 
 	}
 }
 
@@ -392,32 +339,15 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
 void RegularGrid::sendParticles(std::vector<ParticleType> &particles, int &receiver) {
 	std::vector<char> buffer;
  	for (auto &particle : particles) {
-		Attributes attributes;
-		transferParticleAttributes(particle, attributes);
-
-		const char* attributesStart = serializeAttributes(particle, attributes);
-		const char* attributesEnd = attributesStart + sizeof(Attributes) - 1;
-
-   	buffer.insert(std::end(buffer), attributesStart, attributesEnd);
+		ParticleSerializationTools::serializeParticle(particle, buffer);
  	}
 	sendDataToNeighbour(buffer, receiver);
 }
 
 void RegularGrid::receiveParticles(std::vector<ParticleType> &receivedParticles, int &source) {
  	std::vector<char> receiveBuffer;
-
 	receiveDataFromNeighbour(source, receiveBuffer);
-
-	size_t sizeOfParticleAttributes = sizeof(Attributes);
-	char* start = &receiveBuffer[0];
-	char* end = &receiveBuffer[receiveBuffer.size() - 1];
- 	for (char* i = start; i != end; i += sizeOfParticleAttributes){
-		Attributes* attributes = reinterpret_cast<Attributes*>(i);
-
-   	ParticleType particle;
-		applyAttributestoParticle(*attributes, particle);
-   	receivedParticles.push_back(particle);
- 	}
+	ParticleSerializationTools::deserializeParticleData(receiveBuffer, receivedParticles);
 }
 
 void RegularGrid::sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour){

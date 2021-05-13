@@ -47,8 +47,6 @@ void MDFlexSimulation::initialize(int dimensionCount, int argc, char **argv) {
 
 	initializeAutoPasContainer();
 
-	initializeParticles();
-
 	initializeObjects();
 
 	_timers.initialization.stop();
@@ -394,25 +392,6 @@ void MDFlexSimulation::initializeAutoPasContainer() {
   _autoPasContainer->setVerletSkin(_configuration->verletSkinRadius.value);
   _autoPasContainer->setAcquisitionFunction(_configuration->acquisitionFunctionOption.value);
   _autoPasContainer->init();
-}
-
-void MDFlexSimulation::initializeParticles(){
-
-	std::vector<double> positions;
-	std::vector<double> velocities;
-	std::vector<double> forces;
-	std::vector<size_t> typeIds;
-
-  // creating Particles from checkpoint:
-  for (auto i = 0ul; i < numParticles; ++i) {
-    typename AutoPasTemplate::Particle_t p;
-    p.setR(positions[i]);
-    p.setV(velocities[i]);
-    p.setF(forces[i]);
-    p.setTypeId(typeID[i]);
-    p.setID(i);
-    autopas.addParticle(p);
-  }
 }
 
 void MDFlexSimulation::initializeObjects(){
