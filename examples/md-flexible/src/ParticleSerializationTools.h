@@ -5,8 +5,8 @@
  */
 #pragma once
 
-#include "TypeDefinitions.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
+#include "TypeDefinitions.h"
 
 #include <vector>
 
@@ -14,30 +14,6 @@
 * Provides tools to de-/serialize particles of type autopas::MoleculeLJ<double>.
 */
 namespace ParticleSerializationTools {
-	/*
-	* A struct containing all properties of autopas::MoleculeLJ<double>.
-	* This can be used to align the attributes of a particle in memory to make serialization and deserialization easier.
-	*/
-	struct ParticleAttributes {
-		// ParticleBase attributes
-		double positionX; 		
-		double positionY;
-		double positionZ;
-		double velocityX; 		
-		double velocityY;
-		double velocityZ;
-		double forceX;
-		double forceY;
-		double forceZ;
-		unsigned long id; 		
-
-		// MoleculeLJ attributes
-		size_t typeId;
-		double oldForceX;
-		double oldForceY;
-		double oldForceZ;
-	};
-
 	/* 
 	* Serializes a particle and appends it to the serializedParticles container.
 	* @param particle The particle which will be serialized.
