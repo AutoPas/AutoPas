@@ -112,7 +112,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     std::unordered_map<Particle *, size_t> particleToIndex;
     particleToIndex.reserve(linkedCells.getNumParticles());
     size_t i = 0;
-    for (auto iter = linkedCells.begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++i) {
+    for (auto iter = linkedCells.begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
       particleToIndex[&(*iter)] = i;
     }
 
