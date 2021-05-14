@@ -13,7 +13,7 @@
  * Runs the MD-Flex simulation on a single node.
  * This is the default demonstration of AutoPas.
  */
-class MDFlexSingleNode : protected MDFlexSimulation {
+class MDFlexSingleNode : public MDFlexSimulation {
  public:
 	MDFlexSingleNode(int dimensionCount, int argc, char **argv);
   ~MDFlexSingleNode() = default;
@@ -23,6 +23,10 @@ class MDFlexSingleNode : protected MDFlexSimulation {
    */
   void run() override;
 	void initializeDomainDecomposition(int &dimensionCount) override;
+
+	DomainDecomposition* getDomainDecomposition() override {
+			return static_cast<DomainDecomposition*>(&(*_domainDecomposition));
+	}
 
 	private:
 		std::shared_ptr<SingleDomain> _domainDecomposition;

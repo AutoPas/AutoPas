@@ -11,13 +11,18 @@
 
 #include <mpi.h>
 
-class MDFlexMPI : protected MDFlexSimulation {
+class MDFlexMPI : public MDFlexSimulation {
 	public:
 		MDFlexMPI(int dimensionCount, int argc, char **argv);
 		~MDFlexMPI() = default;
 
 		void run() override;
 		void initializeDomainDecomposition(int &dimensionCount) override;
+
+		DomainDecomposition* getDomainDecomposition() override {
+			return static_cast<DomainDecomposition*>(&(*_domainDecomposition));
+		}
+
 
 	private:
 		std::shared_ptr<RegularGrid> _domainDecomposition;

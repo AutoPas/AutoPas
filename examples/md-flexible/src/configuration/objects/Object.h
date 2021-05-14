@@ -10,6 +10,7 @@
 #include <iosfwd>
 #include <vector>
 
+#include "src/ParticleAttributes.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "src/TypeDefinitions.h"
@@ -39,24 +40,27 @@ class Object {
 
   /**
    * Generate the object in the given AutoPas container.
-   * @note Particle IDs for the new particles will start at the current value of autopas.getNumberOfParticles().
-   *
-   * @param autopas
+   * @note Particle IDs for the new particles will start at particles.size().
+   * @param particles The container to which the new particles will be appendet to.
    */
-  virtual void generate(autopas::AutoPas<ParticleType> &autopas) const = 0;
+  virtual void generate(std::vector<ParticleAttributes> particles) const = 0;
 
   /**
    * Create a particle that acts as blueprint for all particles to be created for the object.
    * @param autopas
    * @return
    */
-  [[nodiscard]] ParticleType getDummyParticle(const autopas::AutoPas<ParticleType> &autopas) const {
-    ParticleType dummyParticle;
-    dummyParticle.setV(_velocity);
-    dummyParticle.setID(autopas.getNumberOfParticles());
-    dummyParticle.setTypeId(_typeId);
-    return dummyParticle;
+  [[nodiscard]] ParticleAttributes getDummyParticle(const int &particleId) const {
+    ParticleAttributes particle;
+		particle.id = particleId;
+    particle.typeId = _typeId;
+    particle.velocityX = _velocity[0];
+    particle.velocityY = _velocity[1];
+    particle.velocityZ = _velocity[2];
+
+    return particle;
   }
+
   /**
    * Getter for Velocity
    * @return velocity

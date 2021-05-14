@@ -5,9 +5,11 @@
  */
 #pragma once
 
-#include "Objects.h"
+#include <ctime>
+
 #include "autopas/utils/ArrayMath.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "Object.h"
+#include "src/ParticleAttributes.h"
 
 /**
  * Class describing an cuboid object filled with uniformly randomly distributed particles.
@@ -54,10 +56,16 @@ class CubeUniform : public Object {
     return output.str();
   }
 
-  void generate(autopas::AutoPas<ParticleType> &autopas) const override {
-    ParticleType dummyParticle = getDummyParticle(autopas);
-    autopasTools::generators::RandomGenerator::fillWithParticles(autopas, dummyParticle, getBoxMin(), getBoxMax(),
-                                                                 numParticles);
+  void generate(std::vector<ParticleAttributes> particles) const override {
+    ParticleAttributes particle = getDummyParticle(particles.size());
+		std::srand(std::time(0));
+  	for (unsigned long i = 0; i < numParticles; ++i) {
+      particle.id++;
+    	particle.positionX = static_cast<double>(std::rand()) / RAND_MAX;
+    	particle.positionY = static_cast<double>(std::rand()) / RAND_MAX;
+    	particle.positionZ = static_cast<double>(std::rand()) / RAND_MAX;
+      particles.push_back(particle);
+  	}
   }
 
  private:

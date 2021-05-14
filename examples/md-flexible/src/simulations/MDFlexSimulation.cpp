@@ -5,14 +5,15 @@
  */
 #include "MDFlexSimulation.h"
 
-#include "../Checkpoint.h"
-#include "../parsing/MDFlexConfig.h"
+#include "../configuration/MDFlexConfig.h"
 #include "../Thermostat.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+#include "src/ParticleSerializationTools.h"
 
 #include <iostream>
+#include <fstream>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -43,11 +44,7 @@ void MDFlexSimulation::initialize(int dimensionCount, int argc, char **argv) {
 
 	initializeDomainDecomposition(dimensionCount);
 
-	initializeParticlePropertiesLibrary();
-
 	initializeAutoPasContainer();
-
-	initializeObjects();
 
 	_timers.initialization.stop();
 }
@@ -327,7 +324,7 @@ void MDFlexSimulation::calculatePositions() {
 #endif
   for (auto iter = _autoPasContainer->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     auto v = iter->getV();
-    auto m = _particlePropertiesLibrary->getMass(iter->getTypeId());
+    auto m = _configuration->getParticlePropertiesLibrary()->getMass(iter->getTypeId());
     auto f = iter->getF();
     iter->setOldF(f);
     iter->setF({0., 0., 0.});
@@ -336,25 +333,6 @@ void MDFlexSimulation::calculatePositions() {
     auto newR = add(v, f);
     iter->addR(newR);
   }
-}
-
-void MDFlexSimulation::initializeParticlePropertiesLibrary(){
-  if (_configuration->epsilonMap.value.empty()) {
-    throw std::runtime_error("No properties found in particle properties library!");
-  }
-
-  if (_configuration->epsilonMap.value.size() != _configuration->sigmaMap.value.size() or
-      _configuration->epsilonMap.value.size() != _configuration->massMap.value.size()) {
-    throw std::runtime_error("Number of particle properties differ!");
-  }
-
-  _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(_configuration->cutoff.value);
-
-  for (auto [type, epsilon] : _configuration->epsilonMap.value) {
-    _particlePropertiesLibrary->addType(type, epsilon, _configuration->sigmaMap.value.at(type),
-                                        _configuration->massMap.value.at(type));
-  }
-  _particlePropertiesLibrary->calculateMixingCoefficients();
 }
 
 void MDFlexSimulation::initializeAutoPasContainer() {
@@ -392,35 +370,20 @@ void MDFlexSimulation::initializeAutoPasContainer() {
   _autoPasContainer->setVerletSkin(_configuration->verletSkinRadius.value);
   _autoPasContainer->setAcquisitionFunction(_configuration->acquisitionFunctionOption.value);
   _autoPasContainer->init();
-}
-
-void MDFlexSimulation::initializeObjects(){
-  if (not _configuration->checkpointfile.value.empty()) {
-    Checkpoint::loadParticles(*_autoPasContainer, _configuration->checkpointfile.value);
-  }
-
-  for (const auto &object : _configuration->cubeGridObjects) {
-    object.generate(*_autoPasContainer);
-  }
-  for (const auto &object : _configuration->cubeGaussObjects) {
-    object.generate(*_autoPasContainer);
-  }
-  for (const auto &object : _configuration->cubeUniformObjects) {
-    object.generate(*_autoPasContainer);
-  }
-  for (const auto &object : _configuration->sphereObjects) {
-    object.generate(*_autoPasContainer);
-  }
-  for (const auto &object : _configuration->cubeClosestPackedObjects) {
-    object.generate(*_autoPasContainer);
-  }
 
   if (_configuration->useThermostat.value and _configuration->deltaT.value != 0) {
     if (_configuration->addBrownianMotion.value) {
-      Thermostat::addBrownianMotion(*_autoPasContainer, *_particlePropertiesLibrary,
+      Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()),
 				_configuration->initTemperature.value);
     }
-    Thermostat::apply(*_autoPasContainer, *_particlePropertiesLibrary, _configuration->initTemperature.value,
+    Thermostat::apply(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()), _configuration->initTemperature.value,
                       std::numeric_limits<double>::max());
   }
+
+	for (auto &particle : _configuration->getParticles()){
+		// @todo: convert particle coordinates to global domain
+		if (getDomainDecomposition()->isInsideLocalDomain({particle.positionX, particle.positionY, particle.positionZ})){
+			_autoPasContainer->addParticle(ParticleSerializationTools::convertParticleAttributesToParticle(particle));
+		}
+	}
 }

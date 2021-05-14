@@ -6,7 +6,7 @@
 #pragma once
 
 #include "../domainDecomposition/DomainDecomposition.h"
-#include "../parsing/MDFlexConfig.h"
+#include "../configuration/MDFlexConfig.h"
 #include "../TypeDefinitions.h"
 #include "autopas/AutoPas.h"
 
@@ -27,6 +27,8 @@ class MDFlexSimulation {
   virtual void run() = 0;
 
 	virtual void initializeDomainDecomposition(int &dimensionCount) = 0;
+
+	virtual DomainDecomposition* getDomainDecomposition() = 0;
 
  protected:
   /**
@@ -58,13 +60,13 @@ class MDFlexSimulation {
    */
   std::shared_ptr<MDFlexConfig> _configuration;
 
+	//std::shared_ptr<DomainDecomposition> _domainDecomposition;
+
 	/**
 	* The the nodes' autopas container used for simulation.
 	* This member will not be initialized by the constructor and therefore has to be initialized by the deriving class.
 	*/
 	std::shared_ptr<autopas::AutoPas<ParticleType>> _autoPasContainer;
-
-  std::shared_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
 
   std::shared_ptr<std::ofstream> _logFile;
 
@@ -142,7 +144,6 @@ class MDFlexSimulation {
 	void calculatePositions();
 
 	private:
-		void initializeParticlePropertiesLibrary();
 		void initializeAutoPasContainer();
 		void initializeObjects();
 };

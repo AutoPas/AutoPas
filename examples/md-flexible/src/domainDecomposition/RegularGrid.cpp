@@ -7,6 +7,7 @@
 
 #include "../ParticleSerializationTools.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "DomainTools.h"
 
 #include <algorithm>
 #include <functional>
@@ -381,4 +382,8 @@ void RegularGrid::waitForSendRequests(){
 
 void RegularGrid::synchronizeDomains(){
 	MPI_Barrier(_communicator);
+}
+
+bool RegularGrid::isInsideLocalDomain(std::vector<double> coordinates){
+	return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);
 }

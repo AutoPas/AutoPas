@@ -23,11 +23,12 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/NumberSet.h"
-#include "src/Objects/CubeClosestPacked.h"
-#include "src/Objects/CubeGauss.h"
-#include "src/Objects/CubeGrid.h"
-#include "src/Objects/CubeUniform.h"
-#include "src/Objects/Sphere.h"
+#include "objects/CubeClosestPacked.h"
+#include "objects/CubeGauss.h"
+#include "objects/CubeGrid.h"
+#include "objects/CubeUniform.h"
+#include "objects/Sphere.h"
+#include "src/ParticleAttributes.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
@@ -110,6 +111,16 @@ class MDFlexConfig {
    */
   void calcSimulationBox();
 
+	/**
+	 * Returns the particles generated based on the povided configuration file
+	 */
+	std::vector<ParticleAttributes> getParticles() { return _particles; }
+
+
+	/**
+	 * Returns the ParticlePropertiesLibrary
+	 */
+  std::shared_ptr<ParticlePropertiesLibraryType> getParticlePropertiesLibrary() { return _particlePropertiesLibrary; }
   /**
    * Adds parameters to all relevant particle property attributes and checks if the type already exists.
    * @param typeId
@@ -442,9 +453,7 @@ class MDFlexConfig {
   /**
    * cubeGridObjects
    */
-  std::vector<CubeGrid> cubeGridObjects{};
-  /**
-   * cubeGaussObjectsStr
+  std::vector<CubeGrid> cubeGridObjects{}; /** * cubeGaussObjectsStr
    */
   static inline const char *const cubeGaussObjectsStr{"CubeGauss"};
   /**
@@ -553,6 +562,35 @@ class MDFlexConfig {
    * valueOffset used for cli-output alignment
    */
   static constexpr size_t valueOffset{33};
+
+	private:
+		/**
+		 * Stores the particles generated based on the provided configuration file
+		 * These particles can be added to the respective autopas container,
+		 * but have to be converted to the respective particle type, first.
+		 */
+		std::vector<ParticleAttributes> _particles;
+
+		/**
+		 * Stores the physical properties of the particles used in the an MDFlexSimulation
+		 */
+  	std::shared_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
+
+		/**
+		 * Initializes the ParticlePropertiesLibrary
+		 */
+		void initializeParticlePropertiesLibrary();
+
+		/**
+		 * Iniitalizes all particles present at the start of the simulation.
+		 * The particles are contained in a normalized domain where every coordinate is between 0 and 1.
+		 */
+		void initializeObjects();
+
+		/**
+		 * Loads the particles from the checkpoint file defined in the configuration file.
+		 */
+		void loadParticlesFromCheckpoint();
 };
 
 /**

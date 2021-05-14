@@ -20,7 +20,7 @@ MDFlexSingleNode::MDFlexSingleNode(int dimensionCount, int argc, char **argv){
 void MDFlexSingleNode::run() {
   std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
   std::cout << "Starting simulation... " << std::endl;
-
+	
   //this->_homogeneity = Simulation::calculateHomogeneity(autopas);
   _timers.simulate.start();
 
@@ -79,14 +79,15 @@ void MDFlexSingleNode::run() {
     // only do time step related stuff when there actually is time-stepping
     if (_configuration->deltaT.value != 0) {
       _timers.velocityUpdate.start();
-      TimeDiscretization::calculateVelocities(*_autoPasContainer, *_particlePropertiesLibrary, _configuration->deltaT.value);
+      TimeDiscretization::calculateVelocities(*_autoPasContainer,
+				*(_configuration->getParticlePropertiesLibrary()), _configuration->deltaT.value);
       _timers.velocityUpdate.stop();
 
       // applying Velocity scaling with Thermostat:
       if (_configuration->useThermostat.value and (_iteration % _configuration->thermostatInterval.value) == 0) {
         _timers.thermostat.start();
-        Thermostat::apply(*_autoPasContainer, *_particlePropertiesLibrary, _configuration->targetTemperature.value,
-                          _configuration->deltaTemp.value);
+        Thermostat::apply(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()),
+					_configuration->targetTemperature.value, _configuration->deltaTemp.value);
         _timers.thermostat.stop();
       }
     }
@@ -103,7 +104,8 @@ void MDFlexSingleNode::run() {
   // update temperature for generated config output
   if (_configuration->useThermostat.value) {
     _timers.thermostat.start();
-    _configuration->initTemperature.value = Thermostat::calcTemperature(*_autoPasContainer, *_particlePropertiesLibrary);
+    _configuration->initTemperature.value = Thermostat::calcTemperature(*_autoPasContainer,
+			*(_configuration->getParticlePropertiesLibrary()));
     _timers.thermostat.stop();
   }
 
@@ -128,6 +130,9 @@ void MDFlexSingleNode::initializeDomainDecomposition(int &dimensionCount){
 	
 	_domainDecomposition = std::make_shared<SingleDomain>(_argc, _argv, dimensionCount, boxMin, boxMax);
 
+//	MDFlexSimulation::_domainDecomposition = std::shared_ptr<DomainDecomposition>(
+//		static_cast<std::shared_ptr<DomainDecomposition>>(_domainDecomposition));
+
 	std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
 	std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();
 	
@@ -144,7 +149,7 @@ void MDFlexSingleNode::calculateForces() {
   // pairwise forces
   _timers.forceUpdatePairwise.start();
 
-  FunctorType functor{_autoPasContainer->getCutoff(), *_particlePropertiesLibrary};
+  FunctorType functor{_autoPasContainer->getCutoff(), *(_configuration->getParticlePropertiesLibrary())};
   bool tuningIteration = _autoPasContainer->iteratePairwise(&functor);
 
   _timers.forceUpdateTotal.stop();

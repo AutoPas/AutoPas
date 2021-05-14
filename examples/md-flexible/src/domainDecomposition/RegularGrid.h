@@ -14,7 +14,7 @@
 #include <list>
 #include <memory>
 
-class RegularGrid final : protected DomainDecomposition {
+class RegularGrid final : public DomainDecomposition {
 	public:
 		RegularGrid(int argc, char** argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
 			const std::vector<double> &globalBoxMax);
@@ -26,6 +26,7 @@ class RegularGrid final : protected DomainDecomposition {
 		const int getDimensionCount() override { return _dimensionCount; }
 		std::vector<double> getLocalBoxMin() { return _localBoxMin; }	
 		std::vector<double> getLocalBoxMax() { return _localBoxMax; }	
+		bool isInsideLocalDomain(std::vector<double> coordinates) override;
 
 		int convertIdToIndex(const std::vector<int> &domainIndex);
 		void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);

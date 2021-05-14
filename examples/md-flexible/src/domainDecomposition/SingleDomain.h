@@ -7,7 +7,7 @@
 
 #include "DomainDecomposition.h"
 
-class SingleDomain final : DomainDecomposition {
+class SingleDomain final : public DomainDecomposition {
 	public:
 		SingleDomain(int argc, char** argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
 			const std::vector<double> &globalBoxMax);
@@ -17,6 +17,7 @@ class SingleDomain final : DomainDecomposition {
 		const int getDimensionCount() override { return _dimensionCount; }
 		std::vector<double> getLocalBoxMin() override { return _globalBoxMin; }
 		std::vector<double> getLocalBoxMax() override { return _globalBoxMax; }
+		bool isInsideLocalDomain(std::vector<double> coordinates) override;
 
 	private:
 		int _dimensionCount;

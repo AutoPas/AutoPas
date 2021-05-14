@@ -14,8 +14,8 @@
  * @return
  */
 int main(int argc, char **argv) {
-  MDFlexMPI simulation(3, argc, argv);
-  //simulation.run();
+  MDFlexSingleNode simulation(3, argc, argv);
+  simulation.run();
 
   return EXIT_SUCCESS;
 }

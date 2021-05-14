@@ -5,8 +5,6 @@
  */
 #include "ParticleSerializationTools.h"
 
-#include "ParticleAttributes.h"
-
 namespace ParticleSerializationTools {
 	void serializeParticle(ParticleType &particle, std::vector<char> &serializedParticles) {
  		std::vector<char> attributesVector;
@@ -54,5 +52,18 @@ namespace ParticleSerializationTools {
 			deserializeParticleData(&particlesData[i], particle);
    		particles.push_back(particle);
  		}
+	}
+
+	ParticleType convertParticleAttributesToParticle(ParticleAttributes &attributes) {
+		ParticleType particle;
+
+		particle.setR({attributes.positionX, attributes.positionY, attributes.positionZ});
+		particle.setV({attributes.velocityX, attributes.velocityY, attributes.velocityZ});
+		particle.setF({attributes.forceX, attributes.forceY, attributes.forceZ});
+		particle.setID(attributes.id);
+		particle.setTypeId(attributes.typeId);
+		particle.setOldF({attributes.oldForceX, attributes.oldForceY, attributes.oldForceZ});
+
+		return particle;
 	}
 }

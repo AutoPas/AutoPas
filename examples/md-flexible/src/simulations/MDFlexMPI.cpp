@@ -42,7 +42,7 @@ void MDFlexMPI::updateParticles(const int iterationsPerSuperstep){
 	for (int i = 0; i < iterationsPerSuperstep; ++i){
  		for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
    		auto v = particle->getV();
-   		auto m = _particlePropertiesLibrary->getMass(particle->getTypeId());
+   		auto m = _configuration->getParticlePropertiesLibrary()->getMass(particle->getTypeId());
    		auto f = particle->getF();
    		particle->setOldF(f);
    		particle->setF({0., 0., 0.});

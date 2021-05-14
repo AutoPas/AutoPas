@@ -5,9 +5,9 @@
  */
 #pragma once
 
-#include "Objects.h"
+#include "src/ParticleAttributes.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopasTools/generators/GaussianGenerator.h"
+#include "Object.h"
 
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.
@@ -31,25 +31,25 @@ class CubeGauss : public Object {
             size_t numParticles, const std::array<double, 3> &boxLength, const std::array<double, 3> &distributionMean,
             const std::array<double, 3> &distributionStdDev, const std::array<double, 3> &bottomLeftCorner)
       : Object(velocity, typeId, epsilon, sigma, mass),
-        numParticles(numParticles),
+        _numParticles(numParticles),
         boxLength(boxLength),
-        distributionMean(distributionMean),
-        distributionStdDev(distributionStdDev),
+        _distributionMean(distributionMean),
+        _distributionStdDev(distributionStdDev),
         bottomLeftCorner(bottomLeftCorner) {}
 
   /**
    * Getter for distribution mean
    * @return distributionMean
    */
-  [[nodiscard]] const std::array<double, 3> &getDistributionMean() const { return distributionMean; }
+  [[nodiscard]] const std::array<double, 3> &getDistributionMean() const { return _distributionMean; }
 
   /**
    * Getter for distributionStdDev
    * @return distributionStdDev
    */
-  [[nodiscard]] const std::array<double, 3> &getDistributionStdDev() const { return distributionStdDev; }
+  [[nodiscard]] const std::array<double, 3> &getDistributionStdDev() const { return _distributionStdDev; }
 
-  [[nodiscard]] size_t getParticlesTotal() const override { return numParticles; }
+  [[nodiscard]] size_t getParticlesTotal() const override { return _numParticles; }
 
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
 
@@ -61,11 +61,11 @@ class CubeGauss : public Object {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "distribution-mean"
-           << ":  " << autopas::utils::ArrayUtils::to_string(distributionMean) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_distributionMean) << std::endl;
     output << std::setw(_valueOffset) << std::left << "distribution-stddeviation"
-           << ":  " << autopas::utils::ArrayUtils::to_string(distributionStdDev) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_distributionStdDev) << std::endl;
     output << std::setw(_valueOffset) << std::left << "numberOfParticles"
-           << ":  " << numParticles << std::endl;
+           << ":  " << _numParticles << std::endl;
     output << std::setw(_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(boxLength) << std::endl;
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
@@ -74,16 +74,27 @@ class CubeGauss : public Object {
     return output.str();
   }
 
-  void generate(autopas::AutoPas<ParticleType> &autopas) const override {
-    ParticleType dummyParticle = getDummyParticle(autopas);
-    autopasTools::generators::GaussianGenerator::fillWithParticles(autopas, getBoxMin(), getBoxMax(), numParticles,
-                                                                   dummyParticle, distributionMean, distributionStdDev);
+  void generate(std::vector<ParticleAttributes> particles) const override {
+    ParticleAttributes particle = getDummyParticle(particles.size());
+  	std::default_random_engine generator(42);
+  	std::array<std::normal_distribution<double>, 3> distributions = {
+      std::normal_distribution<double>{_distributionMean[0], _distributionStdDev[0]},
+      std::normal_distribution<double>{_distributionMean[1], _distributionStdDev[1]},
+      std::normal_distribution<double>{_distributionMean[2], _distributionStdDev[2]}
+		};
+  	for (int i = 0; i < _numParticles; ++i) {
+			particle.id++;
+			particle.positionX = distributions[0](generator) / distributions[0].max();
+			particle.positionY = distributions[1](generator) / distributions[1].max();
+			particle.positionZ = distributions[2](generator) / distributions[2].max();
+			particles.push_back(particle);
+  	}
   }
 
  private:
-  size_t numParticles;
+  size_t _numParticles;
   std::array<double, 3> boxLength;
-  std::array<double, 3> distributionMean;
-  std::array<double, 3> distributionStdDev;
+  std::array<double, 3> _distributionMean;
+  std::array<double, 3> _distributionStdDev;
   std::array<double, 3> bottomLeftCorner;
 };

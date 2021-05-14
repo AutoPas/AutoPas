@@ -5,8 +5,9 @@
  */
 #pragma once
 
-#include "Objects.h"
 #include "autopas/utils/ArrayMath.h"
+#include "Object.h"
+#include "src/ParticleAttributes.h"
 
 /**
  * Class describing a regular 3D spherical particle grid object.
@@ -27,23 +28,23 @@ class Sphere : public Object {
   Sphere(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
          const std::array<double, 3> &center, int radius, double particleSpacing)
       : Object(velocity, typeId, epsilon, sigma, mass),
-        center(center),
-        radius(radius),
-        particleSpacing(particleSpacing) {}
+        _center(center),
+        _radius(radius),
+        _particleSpacing(particleSpacing) {}
 
   /**
    * Getter for center of Sphere
    * @return center
    */
-  [[nodiscard]] const std::array<double, 3> &getCenter() const { return center; }
+  [[nodiscard]] const std::array<double, 3> &getCenter() const { return _center; }
 
   /**
    * Getter for radius in number of Particles of Sphere
    * @return radius
    */
-  [[nodiscard]] int getRadius() const { return radius; }
+  [[nodiscard]] int getRadius() const { return _radius; }
 
-  [[nodiscard]] double getParticleSpacing() const override { return particleSpacing; }
+  [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
   /**
    * Call f for every point on the sphere where a particle should be.
@@ -51,9 +52,9 @@ class Sphere : public Object {
    */
   void iteratePositions(const std::function<void(std::array<double, 3>)> &f) const {
     // generate regular grid for 1/8th of the sphere
-    for (int z = 0; z <= radius; ++z) {
-      for (int y = 0; y <= radius; ++y) {
-        for (int x = 0; x <= radius; ++x) {
+    for (int z = 0; z <= _radius; ++z) {
+      for (int y = 0; y <= _radius; ++y) {
+        for (int x = 0; x <= _radius; ++x) {
           // position relative to the center
           std::array<double, 3> relativePos = {(double)x, (double)y, (double)z};
           // mirror to rest of sphere
@@ -63,13 +64,13 @@ class Sphere : public Object {
                 std::array<double, 3> mirrorMultipliers = {(double)i, (double)k, (double)l};
                 // position mirrored, scaled and absolute
                 std::array<double, 3> posVector = autopas::utils::ArrayMath::add(
-                    center, autopas::utils::ArrayMath::mulScalar(
-                                autopas::utils::ArrayMath::mul(relativePos, mirrorMultipliers), particleSpacing));
+                    _center, autopas::utils::ArrayMath::mulScalar(
+                                autopas::utils::ArrayMath::mul(relativePos, mirrorMultipliers), _particleSpacing));
 
                 double distFromCentersSquare =
-                    autopas::utils::ArrayMath::dot(autopas::utils::ArrayMath::sub(posVector, center),
-                                                   autopas::utils::ArrayMath::sub(posVector, center));
-                const auto r = (radius + 1) * particleSpacing;
+                    autopas::utils::ArrayMath::dot(autopas::utils::ArrayMath::sub(posVector, _center),
+                                                   autopas::utils::ArrayMath::sub(posVector, _center));
+                const auto r = (_radius + 1) * _particleSpacing;
                 const auto rSquare = r * r;
                 // since the loops create a cubic grid only apply f for positions inside the sphere
                 if (distFromCentersSquare <= rSquare) {
@@ -95,34 +96,37 @@ class Sphere : public Object {
   }
 
   [[nodiscard]] std::array<double, 3> getBoxMin() const override {
-    return {center[0] - ((double)radius) * particleSpacing, center[1] - ((double)radius) * particleSpacing,
-            center[2] - ((double)radius) * particleSpacing};
+    return {_center[0] - ((double)_radius) * _particleSpacing, _center[1] - ((double)_radius) * _particleSpacing,
+            _center[2] - ((double)_radius) * _particleSpacing};
   }
 
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
-    return {center[0] + ((double)radius) * particleSpacing, center[1] + ((double)radius) * particleSpacing,
-            center[2] + ((double)radius) * particleSpacing};
+    return {_center[0] + ((double)_radius) * _particleSpacing, _center[1] + ((double)_radius) * _particleSpacing,
+            _center[2] + ((double)_radius) * _particleSpacing};
   }
 
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "center"
-           << ":  " << autopas::utils::ArrayUtils::to_string(center) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_center) << std::endl;
     output << std::setw(_valueOffset) << std::left << "radius"
-           << ":  " << radius << std::endl;
+           << ":  " << _radius << std::endl;
     output << std::setw(_valueOffset) << std::left << "particle-spacing"
-           << ":  " << particleSpacing << std::endl;
+           << ":  " << _particleSpacing << std::endl;
     output << Object::to_string();
     return output.str();
   }
 
-  void generate(autopas::AutoPas<ParticleType> &autopas) const override {
-    ParticleType dummyParticle = getDummyParticle(autopas);
+  void generate(std::vector<ParticleAttributes> particles) const override {
+    ParticleAttributes particle = getDummyParticle(particles.size());
     iteratePositions([&](auto pos) {
-      dummyParticle.setR(pos);
-      autopas.addParticle(dummyParticle);
-      dummyParticle.setID(dummyParticle.getID() + 1);
+    	particle.positionX = pos[0] / (_center[0] + _radius);
+    	particle.positionY = pos[1] / (_center[1] + _radius);
+    	particle.positionZ = pos[2] / (_center[2] + _radius);
+      particles.push_back(particle);
+
+      particle.id++;
     });
   }
 
@@ -130,10 +134,11 @@ class Sphere : public Object {
   /**
    * coordinates of the sphere's center
    */
-  std::array<double, 3> center;
+  std::array<double, 3> _center;
+
   /**
    * radius of the sphere in number of particles
    */
-  int radius;
-  double particleSpacing;
+  int _radius;
+  double _particleSpacing;
 };
