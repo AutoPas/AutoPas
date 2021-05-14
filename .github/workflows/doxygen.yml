@@ -45,7 +45,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          publish_dir: ./${{ env.BUILD_DIR }}/doc_doxygen/html/ # from dir
+          publish_dir: ./docker-build-doxygen/doc_doxygen/html/ # from dir  Start needs to be the same as env.BUILD_DIR
           destination_dir: doxygen_documentation/git-master/ # to dir
           publish_branch: main
           external_repository: AutoPas/AutoPas.github.io
