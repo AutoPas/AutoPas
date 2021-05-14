@@ -17,7 +17,7 @@ namespace autopas {
  * Molecule class for the LJFunctor.
  */
 template <typename floatType = double>
-class MoleculeLJ : public Particle {
+class MoleculeLJ final : public Particle {
  public:
   MoleculeLJ() = default;
 
@@ -32,7 +32,7 @@ class MoleculeLJ : public Particle {
                       unsigned long typeId = 0)
       : Particle(pos, v, moleculeId), _typeId(typeId) {}
 
-  ~MoleculeLJ() override = default;
+  ~MoleculeLJ() final = default;
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -74,7 +74,7 @@ class MoleculeLJ : public Particle {
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type get() {
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
     if constexpr (attribute == AttributeNames::ptr) {
       return this;
     } else if constexpr (attribute == AttributeNames::id) {
@@ -107,8 +107,7 @@ class MoleculeLJ : public Particle {
    * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr void set(
-      typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {

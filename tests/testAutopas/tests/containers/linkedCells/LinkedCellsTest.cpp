@@ -111,7 +111,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   auto invalidParticles = this->_linkedCells.updateContainer();
 
   // the particles should no longer be in the inner cells!
-  for (auto iter = this->_linkedCells.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+  for (auto iter = this->_linkedCells.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     EXPECT_EQ(movedIDs.count(iter->getID()), 0);
   }
 

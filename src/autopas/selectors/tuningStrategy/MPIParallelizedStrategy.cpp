@@ -92,4 +92,4 @@ void MPIParallelizedStrategy::nextFallbackConfig() {
                     *_configIterator->getDataLayoutIterator(), *_configIterator->getNewton3Iterator());
 }
 
-};  // namespace autopas
+}  // namespace autopas

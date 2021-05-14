@@ -67,8 +67,6 @@ class AutoPas {
     // The logger is normally only flushed on successful program termination.
     // This line ensures flushing when log messages of level warning or more severe are created.
     autopas::Logger::get()->flush_on(spdlog::level::warn);
-
-    AutoPasLog(info, "AutoPas Version: {}", AutoPas_VERSION);
   }
 
   ~AutoPas() {
@@ -99,6 +97,7 @@ class AutoPas {
    *
    */
   void init() {
+    AutoPasLog(info, "AutoPas Version: {}", AutoPas_VERSION);
     if (_numSamples % _verletRebuildFrequency != 0) {
       AutoPasLog(warn,
                  "Number of samples ({}) is not a multiple of the rebuild frequency ({}). This can lead to problems "
@@ -117,7 +116,7 @@ class AutoPas {
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
             _maxTuningPhasesWithoutTest, _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption,
-            _extrapolationMethodOption, _mpiStrategyOption, _autopasMPICommunicator)),
+            _extrapolationMethodOption, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator)),
         _selectorStrategy, _tuningInterval, _numSamples, _outputSuffix);
     _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()),
                                                                                         _verletRebuildFrequency);
@@ -134,6 +133,11 @@ class AutoPas {
     _boxMax = boxMax;
     return _logicHandler->resizeBox(boxMin, boxMax);
   }
+
+  /**
+   * Force the internal tuner to enter a new tuning phase upon the next call to iteratePairwise().
+   */
+  void forceRetune() { _autoTuner->forceRetune(); }
 
   /**
    * Free the AutoPas MPI communicator.
@@ -219,19 +223,17 @@ class AutoPas {
   /**
    * Iterate over all particles by using
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
-   * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
+   * @param behavior The behavior of the iterator. You can specify whether to iterate over owned particles, halo
    * particles, or both.
    * @return iterator to the first particle.
    */
-  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
-    return _logicHandler->begin(behavior);
-  }
+  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) { return _logicHandler->begin(behavior); }
 
   /**
    * @copydoc begin()
    * @note const version
    */
-  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     return std::as_const(*_logicHandler).begin(behavior);
   }
 
@@ -239,7 +241,7 @@ class AutoPas {
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const { return begin(behavior); }
+  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
 
   /**
    * End of the iterator.
@@ -259,7 +261,7 @@ class AutoPas {
    * @return iterator to iterate over all particles in a specific region
    */
   iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                               IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
@@ -268,7 +270,7 @@ class AutoPas {
    * @note const version
    */
   const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                                     IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+                                     IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
@@ -277,22 +279,21 @@ class AutoPas {
    * @param behavior Tells this function to report the number of halo, owned or all particles.
    * @return the number of particles in this container.
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::ownedOnly) const {
-    switch (behavior) {
-      case IteratorBehavior::ownedOnly: {
-        return _logicHandler->getNumParticlesOwned();
-      }
-      case IteratorBehavior::haloOnly: {
-        return _logicHandler->getNumParticlesHalo();
-      }
-      case IteratorBehavior::haloAndOwned: {
-        return _logicHandler->getNumParticlesOwned() + _logicHandler->getNumParticlesHalo();
-      }
-      case IteratorBehavior::haloOwnedAndDummy: {
-        utils::ExceptionHandler::exception("behavior == haloOwnedAndDummy is not supported for getNumberOfParticles.");
-      }
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const {
+    size_t numParticles{0};
+    if (behavior & IteratorBehavior::owned) {
+      numParticles += _logicHandler->getNumParticlesOwned();
     }
-    return 0;
+    if (behavior & IteratorBehavior::halo) {
+      numParticles += _logicHandler->getNumParticlesHalo();
+    }
+    // non fatal sanity check whether the behavior contained anything else
+    if (behavior & ~(IteratorBehavior::ownedOrHalo)) {
+      utils::ExceptionHandler::exception(
+          "AutoPas::getNumberOfParticles() does not support iterator behaviors other than owned or halo.");
+    }
+
+    return numParticles;
   }
 
   /**
@@ -302,13 +303,13 @@ class AutoPas {
   [[nodiscard]] unsigned long getContainerType() const { return _autoTuner->getContainer()->getContainerType(); }
 
   /**
-   * Get the lower corner of the container.
+   * Get the lower corner of the container without the halo.
    * @return lower corner of the container.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const { return _autoTuner->getContainer()->getBoxMin(); }
 
   /**
-   * Get the upper corner of the container.
+   * Get the upper corner of the container without the halo.
    * @return upper corner of the container.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const { return _autoTuner->getContainer()->getBoxMax(); }
@@ -648,9 +649,9 @@ class AutoPas {
    */
   void setMPIStrategy(MPIStrategyOption mpiStrategyOption) { _mpiStrategyOption = mpiStrategyOption; }
 
-// Only define the interface for the MPI communicator if AUTOPAS_MPI=ON
-// The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_MPI
-#if defined(AUTOPAS_MPI)
+// Only define the interface for the MPI communicator if AUTOPAS_INTERNODE_TUNING=ON
+// The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_INTERNODE_TUNING
+#if defined(AUTOPAS_INTERNODE_TUNING)
   /**
    * Setter for the MPI communicator that AutoPas uses for potential MPI calls.
    * If not set, MPI_COMM_WORLD will be used.

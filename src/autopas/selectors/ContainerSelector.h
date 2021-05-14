@@ -157,7 +157,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
 
   // copy particles so they do not get lost when container is switched
   if (_currentContainer != nullptr) {
-    for (auto particleIter = _currentContainer->begin(IteratorBehavior::haloAndOwned); particleIter.isValid();
+    for (auto particleIter = _currentContainer->begin(IteratorBehavior::ownedOrHalo); particleIter.isValid();
          ++particleIter) {
       // add particle as inner if it is owned
       if (particleIter->isOwned()) {

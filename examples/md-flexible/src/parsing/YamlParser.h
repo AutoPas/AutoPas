@@ -29,4 +29,4 @@ namespace MDFlexParser::YamlParser {
  * @note FIXME: at the moment false is never returned and the parser just ungracefully crashes.
  */
 bool parseYamlFile(MDFlexConfig &config);
-};  // namespace MDFlexParser::YamlParser
+}  // namespace MDFlexParser::YamlParser

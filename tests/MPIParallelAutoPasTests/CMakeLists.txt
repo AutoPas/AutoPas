@@ -13,7 +13,7 @@ if (AUTOPAS_ENABLE_CUDA)
     )
 endif ()
 
-if (NOT AUTOPAS_MPI)
+if (NOT AUTOPAS_INTERNODE_TUNING)
     return()
 endif()
 

@@ -7,6 +7,7 @@
 
 #include "Objects.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 /**
  * Class describing an cuboid object filled with uniformly randomly distributed particles.
@@ -51,6 +52,12 @@ class CubeUniform : public Object {
            << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
+  }
+
+  void generate(autopas::AutoPas<ParticleType> &autopas) const override {
+    ParticleType dummyParticle = getDummyParticle(autopas);
+    autopasTools::generators::RandomGenerator::fillWithParticles(autopas, dummyParticle, getBoxMin(), getBoxMax(),
+                                                                 numParticles);
   }
 
  private:

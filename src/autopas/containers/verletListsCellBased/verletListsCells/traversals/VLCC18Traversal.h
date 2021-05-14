@@ -57,6 +57,8 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, 
       case (ContainerOption::pairwiseVerletLists):
         return TraversalOption::vlp_c18;
     }
+    // should never be reached.
+    return TraversalOption();
   }
 
   [[nodiscard]] bool isApplicable() const override {

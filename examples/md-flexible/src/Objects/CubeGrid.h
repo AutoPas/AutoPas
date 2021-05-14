@@ -10,6 +10,7 @@
 
 #include "Objects.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/GridGenerator.h"
 
 /**
  * Class describing a regular 3D particle grid object.
@@ -70,6 +71,12 @@ class CubeGrid : public Object {
            << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
+  }
+
+  void generate(autopas::AutoPas<ParticleType> &autopas) const override {
+    ParticleType dummyParticle = getDummyParticle(autopas);
+    autopasTools::generators::GridGenerator::fillWithParticles(
+        autopas, particlesPerDim, dummyParticle, {particleSpacing, particleSpacing, particleSpacing}, bottomLeftCorner);
   }
 
  private:

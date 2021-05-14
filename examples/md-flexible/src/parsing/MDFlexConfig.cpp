@@ -31,7 +31,8 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << left << traversalOptions.name << ":  "
      << autopas::utils::ArrayUtils::to_string(traversalOptions.value) << endl;
   os << setw(valueOffset) << left << tuningStrategyOption.name << ":  " << tuningStrategyOption.value << endl;
-  if (tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianSearch) {
+  if (tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianSearch or
+      tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianClusterSearch) {
     os << setw(valueOffset) << left << acquisitionFunctionOption.name << ":  " << acquisitionFunctionOption.value
        << endl;
   }
@@ -126,6 +127,7 @@ std::string MDFlexConfig::to_string() const {
 
   os << setw(valueOffset) << dontMeasureFlops.name << ":  " << (not dontMeasureFlops.value) << endl;
   os << setw(valueOffset) << dontCreateEndConfig.name << ":  " << (not dontCreateEndConfig.value) << endl;
+  os << setw(valueOffset) << dontShowProgressBar.name << ":  " << (dontShowProgressBar.value) << endl;
   return os.str();
 }
 

@@ -112,17 +112,15 @@ class LJFunctor
     _PPLibrary = &particlePropertiesLibrary;
   }
 
-  bool isRelevantForTuning() override { return relevantForTuning; }
+  bool isRelevantForTuning() final { return relevantForTuning; }
 
-  bool allowsNewton3() override {
-    return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both;
-  }
+  bool allowsNewton3() final { return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both; }
 
-  bool allowsNonNewton3() override {
+  bool allowsNonNewton3() final {
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const final {
     if (dataLayout == DataLayoutOption::cuda) {
 #if defined(AUTOPAS_CUDA)
       return _cudawrapper.isAppropriateClusterSize(clusterSize);
@@ -134,7 +132,7 @@ class LJFunctor
     }
   }
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -194,7 +192,7 @@ class LJFunctor
    * This functor ignores will use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.getNumParticles() == 0) return;
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -342,7 +340,7 @@ class LJFunctor
   /**
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -519,7 +517,7 @@ class LJFunctor
   // clang-format on
   void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) override {
+                        bool newton3) final {
     if (soa.getNumParticles() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
@@ -536,7 +534,7 @@ class LJFunctor
    * @param device_handle soa in device memory
    * @param newton3 defines whether or whether not to use newton
    */
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) override {
+  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) final {
 #if defined(AUTOPAS_CUDA)
     const size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
     if (size == 0) {
@@ -589,7 +587,7 @@ class LJFunctor
    * @param newton3 defines whether or whether not to use newton
    */
   void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-                   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {
+                   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) final {
 #if defined(AUTOPAS_CUDA)
     const size_t size1 = device_handle1.template get<Particle::AttributeNames::posX>().size();
     const size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();
@@ -613,10 +611,10 @@ class LJFunctor
 #endif
   }
 #if defined(AUTOPAS_CUDA)
-  CudaWrapperInterface<SoAFloatPrecision> *getCudaWrapper() override { return &_cudawrapper; }
+  CudaWrapperInterface<SoAFloatPrecision> *getCudaWrapper() final { return &_cudawrapper; }
 
   std::unique_ptr<FunctorCudaSoA<SoAFloatPrecision>> createFunctorCudaSoA(
-      CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
+      CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) final {
     if (calculateGlobals) {
       return std::make_unique<LJFunctorCudaGlobalsSoA<SoAFloatPrecision>>(
           device_handle.template get<Particle::AttributeNames::posX>().size(),
@@ -645,7 +643,7 @@ class LJFunctor
    * @copydoc Functor::deviceSoALoader
    */
   void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
-                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
+                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) final {
 #if defined(AUTOPAS_CUDA)
 
     const size_t size = soa.getNumParticles();
@@ -677,7 +675,7 @@ class LJFunctor
    * @copydoc Functor::deviceSoAExtractor
    */
   void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
-                          CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
+                          CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) final {
 #if defined(AUTOPAS_CUDA)
 
     const size_t size = soa.getNumParticles();
@@ -744,7 +742,7 @@ class LJFunctor
    * Reset the global values.
    * Will set the global values to zero to prepare for the next iteration.
    */
-  void initTraversal() override {
+  void initTraversal() final {
     _upotSum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
@@ -763,7 +761,7 @@ class LJFunctor
    * Postprocesses global values, e.g. upot and virial
    * @param newton3
    */
-  void endTraversal(bool newton3) override {
+  void endTraversal(bool newton3) final {
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
@@ -1139,6 +1137,5 @@ class LJFunctor
   utils::CudaDeviceVector<SoAFloatPrecision> _cudaGlobals;
 
 #endif
-
-};  // namespace autopas
+};
 }  // namespace autopas

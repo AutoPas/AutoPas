@@ -107,21 +107,19 @@ class LJFunctorAVX
     _PPLibrary = &particlePropertiesLibrary;
   }
 
-  bool isRelevantForTuning() override { return relevantForTuning; }
+  bool isRelevantForTuning() final { return relevantForTuning; }
 
-  bool allowsNewton3() override {
-    return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both;
-  }
+  bool allowsNewton3() final { return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both; }
 
-  bool allowsNonNewton3() override {
+  bool allowsNonNewton3() final {
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
+  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const final {
     return dataLayout == DataLayoutOption::aos;  // LJFunctorAVX does only support clusters via aos.
   }
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -180,7 +178,7 @@ class LJFunctorAVX
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
     if (newton3) {
       SoAFunctorSingleImpl<true>(soa);
     } else {
@@ -193,7 +191,7 @@ class LJFunctorAVX
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
   // clang-format on
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -622,7 +620,7 @@ class LJFunctorAVX
   // clang-format on
   void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) override {
+                        bool newton3) final {
     if (soa.getNumParticles() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
@@ -863,7 +861,7 @@ class LJFunctorAVX
    * Reset the global values.
    * Will set the global values to zero to prepare for the next iteration.
    */
-  void initTraversal() override {
+  void initTraversal() final {
     _upotSum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
@@ -876,7 +874,7 @@ class LJFunctorAVX
    * Accumulates global values, e.g. upot and virial.
    * @param newton3
    */
-  void endTraversal(bool newton3) override {
+  void endTraversal(bool newton3) final {
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
@@ -1041,6 +1039,5 @@ class LJFunctorAVX
   // number of double values that fit into a vector register.
   // MUST be power of 2 because some optimizations make this assumption
   constexpr static size_t vecLength = 4;
-
-};  // namespace autopas
+};
 }  // namespace autopas

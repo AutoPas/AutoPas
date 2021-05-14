@@ -9,44 +9,37 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/cells/FullParticleCell.h"
-#include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopasTools/generators/RandomGenerator.h"
-#include "testingHelpers/TouchableParticle.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/IteratorBehavior.h"
 
-class RegionParticleIteratorTest : public AutoPasTestBase {
+using testingTuple = std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*testConstIterators*/,
+                                bool /*priorForceCalc*/, autopas::IteratorBehavior>;
+
+class RegionParticleIteratorTest : public AutoPasTestBase, public ::testing::WithParamInterface<testingTuple> {
  public:
-  using LCTouch = autopas::LinkedCells<TouchableParticle>;
-
-  RegionParticleIteratorTest()
-      : _boxMin{0., 0., 0.}, _boxMax{5., 5., 5.}, _regionMin{1., 1., 1.}, _regionMax{3., 3., 3.}, _cutoff{.9} {}
-
-  void SetUp() override{};
-
-  void TearDown() override{};
-
-  ~RegionParticleIteratorTest() override = default;
+  struct PrintToStringParamName {
+    template <class ParamType>
+    std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
+      auto [containerOption, cellSizeFactor, testConstIterators, priorForceCalc, behavior] =
+          static_cast<ParamType>(info.param);
+      std::string str;
+      str += containerOption.to_string() + "_";
+      str += std::string{"cellSizeFactor"} + std::to_string(cellSizeFactor);
+      str += testConstIterators ? "_const" : "_nonConst";
+      str += priorForceCalc ? "_priorForceCalc" : "_noPriorForceCalc";
+      str += "_" + behavior.to_string();
+      std::replace(str.begin(), str.end(), '-', '_');
+      std::replace(str.begin(), str.end(), '.', '_');
+      return str;
+    }
+  };
 
   /**
-   * Checks if all particles in the given region of a Lined Cells container are touched exactly once and provides debug
-   * output.
-   * @param lcContainer
-   * @param regionMin
-   * @param regionMax
+   * Initialize the given AutoPas object with the default values for this test class.
+   * @tparam AutoPasT
+   * @param autoPas
+   * @return tuple {haloBoxMin, haloBoxMax}
    */
-  static void checkTouches(LCTouch &lcContainer, std::array<double, 3> &regionMin, std::array<double, 3> &regionMax);
-
- protected:
-  void testLinkedCellsRegionParticleIteratorBehaviorOwned();
-
-  void testLinkedCellsRegionParticleIteratorBehaviorHalo();
-
-  // needs to be protected, because the test fixtures generate a derived class
-  // for each unit test.
-
-  std::array<double, 3> _boxMin, _boxMax;
-
-  std::array<double, 3> _regionMin, _regionMax;
-
-  double _cutoff;
+  template <class AutoPasT>
+  auto defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption, double cellSizeFactor);
 };

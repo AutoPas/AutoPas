@@ -117,6 +117,15 @@ class Sphere : public Object {
     return output.str();
   }
 
+  void generate(autopas::AutoPas<ParticleType> &autopas) const override {
+    ParticleType dummyParticle = getDummyParticle(autopas);
+    iteratePositions([&](auto pos) {
+      dummyParticle.setR(pos);
+      autopas.addParticle(dummyParticle);
+      dummyParticle.setID(dummyParticle.getID() + 1);
+    });
+  }
+
  private:
   /**
    * coordinates of the sphere's center
