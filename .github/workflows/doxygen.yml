@@ -34,18 +34,13 @@ jobs:
         run: cat warnings.out && exit $(wc -l warnings.out | cut -d' ' -f1)
         working-directory: ${{ env.BUILD_DIR }}
 
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-
       - name: Deploy AutoPas doxygen documentation (only on master)
         uses: peaceiris/actions-gh-pages@v3.7.2
         if: github.ref == 'refs/heads/master'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          publish_dir: ./docker-build-doxygen/doc_doxygen/html/ # from dir  Start needs to be the same as env.BUILD_DIR
+          publish_dir: ./${{ env.BUILD_DIR }}/doc_doxygen/html/ # from dir
           destination_dir: doxygen_documentation/git-master/ # to dir
           publish_branch: main
           external_repository: AutoPas/AutoPas.github.io
