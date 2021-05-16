@@ -34,11 +34,6 @@ jobs:
         run: cat warnings.out && exit $(wc -l warnings.out | cut -d' ' -f1)
         working-directory: ${{ env.BUILD_DIR }}
 
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-
       - name: Deploy AutoPas doxygen documentation (only on master)
         uses: peaceiris/actions-gh-pages@v3.7.2
         if: github.ref == 'refs/heads/master'
